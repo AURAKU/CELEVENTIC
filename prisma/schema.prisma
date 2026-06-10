@@ -1,0 +1,2808 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth & Users ───────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  ORGANIZER
+  VENDOR
+  VENUE_OWNER
+  AGENCY
+  STAFF
+  GUEST
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+model User {
+  id             String     @id @default(cuid())
+  email          String?    @unique
+  phone          String?    @unique
+  passwordHash   String?
+  name           String
+  avatarUrl      String?
+  role           UserRole   @default(ORGANIZER)
+  status         UserStatus @default(ACTIVE)
+  organizationId String?
+  emailVerified  DateTime?
+  phoneVerified  DateTime?
+  isVerified     Boolean    @default(false)
+  lastLoginAt            DateTime?
+  acceptedTermsVersion   String?
+  acceptedPrivacyVersion String?
+  cookieConsent          String?
+  consentTimestamp       DateTime?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  organization     Organization?  @relation(fields: [organizationId], references: [id])
+  accounts         Account[]
+  sessions         Session[]
+  events           Event[]
+  guests           Guest[]
+  tickets          Ticket[]
+  ticketOrders     TicketOrder[]
+  payments         Payment[]
+  campaigns        Campaign[]
+  vendors          Vendor[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]
+  contributions    Contribution[]
+  vendorBookings   VendorBooking[]
+  venueBookings    VenueBooking[]
+  qrScans          QrScan[]
+  offlineDevices   OfflineDevice[]
+  twoFactor        TwoFactorAuth?
+  flyerDesigns       FlyerDesign[]
+  inspirationUploads InspirationUpload[]
+  eventStaff         EventStaff[]
+  vendorReviews         VendorReview[]
+  vendorFavorites       VendorFavorite[]
+  vendorLeadsSubmitted  VendorLead[]
+  vendorClaimRequests   VendorClaimRequest[]
+  venueProfiles         Venue[]              @relation("VenueOwner")
+  designTemplates    DesignTemplate[]  @relation("TemplateCreator")
+  designedTemplates  DesignTemplate[]  @relation("TemplateDesigner")
+  designerProfile    DesignerProfile?
+  templateFavorites  TemplateFavorite[]
+  templatePurchases  TemplatePurchase[]
+  designExports      DesignExport[]
+  aiDesignRequests   AiDesignRequest[]
+  invitationOrders       InvitationOrder[]
+  assignedInvitationOrders InvitationOrder[] @relation("OrderDesigner")
+  languagePreference     UserLanguagePreference?
+  generatedDesigns   GeneratedDesign[]
+  eventPlans         EventPlan[]
+  memoryVaults       MemoryVault[]
+  aiRequests         AiRequest[]
+  walletTransactions       WalletTransaction[]    @relation("WalletTransactionCreator")
+  consentRecords           UserConsentRecord[]
+  revisionComments         RevisionComment[]
+  productionAssignments    ProductionAssignment[] @relation("ProductionDesigner")
+
+  @@index([role])
+  @@index([status])
+  @@index([organizationId])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── Events ─────────────────────────────────────────────────────
+
+enum EventType {
+  WEDDING
+  FUNERAL
+  BIRTHDAY
+  CONFERENCE
+  CHURCH_PROGRAM
+  CORPORATE_EVENT
+  CONCERT
+  FESTIVAL
+  SCHOOL_EVENT
+  PRODUCT_LAUNCH
+  PRIVATE_EVENT
+  CUSTOM
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PricingType {
+  FREE
+  PAID
+}
+
+model Event {
+  id              String      @id @default(cuid())
+  slug            String      @unique
+  title           String
+  eventType       EventType
+  hostName        String
+  description     String?    
+  startDate       DateTime
+  endDate         DateTime?
+  venueName       String?
+  landmark        String?
+  mapsLink        String?
+  contactPhone    String?
+  dressCode       String?
+  expectedGuests  Int?
+  pricingType     PricingType @default(FREE)
+  coverImageUrl   String?
+  themeId         String?
+  packageId       String?
+  organizationId  String?
+  city            String?
+  region          String?
+  country         String?     @default("GH")
+  latitude        Decimal?   
+  longitude       Decimal?   
+  isPublic        Boolean     @default(false)
+  isFeatured      Boolean     @default(false)
+  status          EventStatus @default(DRAFT)
+  organizerId     String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  organizer      User           @relation(fields: [organizerId], references: [id])
+  organization   Organization?  @relation(fields: [organizationId], references: [id])
+  package        EventPackage?  @relation(fields: [packageId], references: [id])
+  theme          EventTemplate? @relation("EventTheme", fields: [themeId], references: [id])
+  invitations    Invitation[]
+  guests         Guest[]
+  tickets        Ticket[]
+  ticketOrders   TicketOrder[]
+  qrCodes        QrCode[]
+  qrScans        QrScan[]
+  campaigns      Campaign[]
+  contributions  Contribution[]
+  memories       EventMemory[]
+  media          EventMedia[]
+  offlineDevices OfflineDevice[]
+  flyerDesigns   FlyerDesign[]
+  inspirationUploads InspirationUpload[]
+  gates          EventGate[]
+  staff          EventStaff[]
+  seatingPlans   SeatingPlan[]
+  expenses       EventExpense[]
+  wallet         Wallet?
+  fraudLogs      FraudDetectionLog[]
+  reminders      ReminderSchedule[]
+  eventPlans     EventPlan[]
+  funeralProfile FuneralProfile?
+  tributeMessages TributeMessage[]
+  funeralPrograms FuneralProgram[]
+  memoryVault    MemoryVault?
+
+  @@index([organizerId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([eventType])
+  @@index([isPublic, isFeatured])
+  @@index([city, country])
+  @@map("events")
+}
+
+model EventPackage {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String? 
+  price           Decimal 
+  currency        String   @default("GHS")
+  guestLimit      Int      @default(100)
+  invitationLimit Int      @default(50)
+  ticketLimit     Int      @default(500)
+  smsCredits      Int      @default(0)
+  emailCredits    Int      @default(0)
+  whatsappCredits Int      @default(0)
+  features        Json?
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events Event[]
+
+  @@map("event_packages")
+}
+
+model EventTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  category    String
+  previewUrl  String?
+  config      Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  themedEvents Event[] @relation("EventTheme")
+  invitations  Invitation[]
+
+  @@map("event_templates")
+}
+
+model EventMedia {
+  id        String   @id @default(cuid())
+  eventId   String
+  url       String
+  type      String
+  caption   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_media")
+}
+
+// ─── Invitations & Guests ───────────────────────────────────────
+
+enum InvitationStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+}
+
+enum GuestStatus {
+  INVITED
+  OPENED
+  ACCEPTED
+  DECLINED
+  MAYBE
+  CHECKED_IN
+  NO_SHOW
+}
+
+enum RsvpResponse {
+  ACCEPTED
+  DECLINED
+  MAYBE
+}
+
+model Invitation {
+  id           String           @id @default(cuid())
+  eventId      String
+  name         String
+  slug         String           @unique
+  templateId   String?
+  message      String?         
+  designConfig Json?
+  status       InvitationStatus @default(DRAFT)
+  uniqueLink   String           @unique
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  event    Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  template EventTemplate? @relation(fields: [templateId], references: [id])
+  guests   Guest[]
+  blocks   InvitationBlock[]
+
+  @@index([eventId])
+  @@map("invitations")
+}
+
+model GuestGroup {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  createdAt DateTime @default(now())
+
+  guests Guest[]
+
+  @@map("guest_groups")
+}
+
+model Guest {
+  id            String      @id @default(cuid())
+  eventId       String
+  invitationId  String?
+  groupId       String?
+  userId        String?
+  name          String
+  email         String?
+  phone         String?
+  status        GuestStatus @default(INVITED)
+  qrToken       String      @unique @default(cuid())
+  plusOnes      Int         @default(0)
+  notes            String?
+  inviteOpenedAt   DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitation Invitation? @relation(fields: [invitationId], references: [id])
+  group      GuestGroup? @relation(fields: [groupId], references: [id])
+  user       User?       @relation(fields: [userId], references: [id])
+  rsvps      Rsvp[]
+  qrCodes    QrCode[]
+  qrScans    QrScan[]
+  tickets    Ticket[]
+
+  @@index([eventId])
+  @@index([status])
+  @@map("guests")
+}
+
+model Rsvp {
+  id        String       @id @default(cuid())
+  guestId   String
+  response  RsvpResponse
+  message   String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  @@map("rsvps")
+}
+
+// ─── Ticketing ──────────────────────────────────────────────────
+
+enum TicketType {
+  FREE
+  PAID
+  VIP
+  VVIP
+  GROUP
+  TABLE
+}
+
+enum TicketStatus {
+  PENDING
+  PAID
+  USED
+  CANCELLED
+  REFUNDED
+  EXPIRED
+}
+
+model Ticket {
+  id          String       @id @default(cuid())
+  eventId     String
+  guestId     String?
+  userId      String?
+  type        TicketType   @default(FREE)
+  name        String
+  description String?
+  price       Decimal      @default(0)
+  currency    String       @default("GHS")
+  quantity    Int          @default(1)
+  soldCount   Int          @default(0)
+  maxQuantity Int?
+  status      TicketStatus @default(PENDING)
+  promoCode   String?
+  qrToken     String       @unique @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest  Guest?  @relation(fields: [guestId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+  orders TicketOrder[]
+  qrCodes QrCode[]
+  qrScans QrScan[]
+
+  @@index([eventId])
+  @@map("tickets")
+}
+
+model TicketOrder {
+  id          String       @id @default(cuid())
+  eventId     String
+  ticketId    String
+  userId      String?
+  buyerName   String
+  buyerEmail  String?
+  buyerPhone  String?
+  quantity    Int          @default(1)
+  totalAmount Decimal     
+  currency    String       @default("GHS")
+  status      TicketStatus @default(PENDING)
+  promoCode   String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  event    Event     @relation(fields: [eventId], references: [id])
+  ticket   Ticket    @relation(fields: [ticketId], references: [id])
+  user     User?     @relation(fields: [userId], references: [id])
+  payments Payment[]
+
+  @@index([eventId])
+  @@map("ticket_orders")
+}
+
+// ─── Payments ───────────────────────────────────────────────────
+
+enum PaymentProvider {
+  PAYSTACK
+  FLUTTERWAVE
+  HUBTEL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+  DISPUTED
+}
+
+enum PaymentPurpose {
+  EVENT_PACKAGE
+  TICKET_PURCHASE
+  BULK_MESSAGING
+  ADVERTISING
+  VENDOR_BOOKING
+  CONTRIBUTION
+  INVITATION_ORDER
+  INVITATION_REVISION
+}
+
+model Payment {
+  id                  String          @id @default(cuid())
+  userId              String?
+  reference           String          @unique
+  provider            PaymentProvider
+  purpose             PaymentPurpose
+  amount              Decimal
+  currency            String          @default("GHS")
+  baseCurrency        String          @default("GHS")
+  baseAmount          Decimal?
+  displayCurrency     String?
+  displayAmount       Decimal?
+  exchangeRate        Decimal?
+  idempotencyKey      String?         @unique
+  status              PaymentStatus   @default(PENDING)
+  metadata            Json?
+  ticketOrderId       String?
+  campaignId          String?
+  invitationOrderId   String?         @unique
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  user              User?                @relation(fields: [userId], references: [id])
+  ticketOrder       TicketOrder?         @relation(fields: [ticketOrderId], references: [id])
+  campaign          Campaign?            @relation(fields: [campaignId], references: [id])
+  invitationOrder   InvitationOrder?     @relation(fields: [invitationOrderId], references: [id])
+  logs              PaymentLog[]
+  currencyLogs      PaymentCurrencyLog[]
+  revisionPayment   RevisionPayment?
+
+  @@index([status])
+  @@index([reference])
+  @@map("payments")
+}
+
+model PaymentLog {
+  id        String   @id @default(cuid())
+  paymentId String
+  action    String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@map("payment_logs")
+}
+
+// ─── QR System ──────────────────────────────────────────────────
+
+enum QrScanResult {
+  VALID
+  INVALID
+  ALREADY_USED
+  EXPIRED
+  WRONG_EVENT
+}
+
+model QrCode {
+  id        String   @id @default(cuid())
+  eventId   String
+  guestId   String?
+  ticketId  String?
+  token     String   @unique
+  type      String
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest  Guest?  @relation(fields: [guestId], references: [id])
+  ticket Ticket? @relation(fields: [ticketId], references: [id])
+  scans  QrScan[]
+
+  @@index([token])
+  @@map("qr_codes")
+}
+
+model QrScan {
+  id         String       @id @default(cuid())
+  eventId    String
+  qrCodeId   String?
+  guestId    String?
+  ticketId   String?
+  scannedBy  String?
+  gate       String?
+  result     QrScanResult
+  deviceInfo String?
+  createdAt  DateTime     @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id])
+  qrCode    QrCode?  @relation(fields: [qrCodeId], references: [id])
+  guest     Guest?   @relation(fields: [guestId], references: [id])
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
+  scanner   User?    @relation(fields: [scannedBy], references: [id])
+
+  @@index([eventId])
+  @@map("qr_scans")
+}
+
+// ─── Offline QR ─────────────────────────────────────────────────
+
+model OfflineDevice {
+  id           String   @id @default(cuid())
+  eventId      String
+  userId       String
+  deviceName   String
+  deviceToken  String   @unique
+  isAuthorized Boolean  @default(true)
+  lastSyncAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  event    Event             @relation(fields: [eventId], references: [id])
+  user     User              @relation(fields: [userId], references: [id])
+  checkins OfflineCheckin[]
+  syncLogs OfflineSyncLog[]
+
+  @@map("offline_devices")
+}
+
+model OfflineCheckin {
+  id           String   @id @default(cuid())
+  deviceId     String
+  guestId      String?
+  ticketId     String?
+  qrToken      String
+  result       QrScanResult
+  checkedInAt  DateTime @default(now())
+  synced       Boolean  @default(false)
+  syncedAt     DateTime?
+
+  device OfflineDevice @relation(fields: [deviceId], references: [id])
+
+  @@map("offline_checkins")
+}
+
+model OfflineSyncLog {
+  id         String   @id @default(cuid())
+  deviceId   String
+  action     String
+  records    Int      @default(0)
+  conflicts  Int      @default(0)
+  payload    Json?
+  createdAt  DateTime @default(now())
+
+  device OfflineDevice @relation(fields: [deviceId], references: [id])
+
+  @@map("offline_sync_logs")
+}
+
+// ─── Communications ─────────────────────────────────────────────
+
+enum CampaignChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  COMPLETED
+  FAILED
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  OPENED
+  CLICKED
+}
+
+model Campaign {
+  id          String          @id @default(cuid())
+  eventId     String?
+  userId      String
+  name        String
+  channel     CampaignChannel
+  message     String         
+  status      CampaignStatus  @default(DRAFT)
+  guestTier   Int             @default(50)
+  totalCost   Decimal         @default(0)
+  sentCount   Int             @default(0)
+  failedCount Int             @default(0)
+  scheduledAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  event    Event?            @relation(fields: [eventId], references: [id])
+  user     User              @relation(fields: [userId], references: [id])
+  messages CampaignMessage[]
+  payments Payment[]
+
+  @@map("campaigns")
+}
+
+model CampaignMessage {
+  id         String        @id @default(cuid())
+  campaignId String
+  recipient  String
+  guestName  String?
+  status     MessageStatus @default(PENDING)
+  sentAt     DateTime?
+  createdAt  DateTime      @default(now())
+
+  campaign Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  logs     MessageLog[]
+
+  @@map("campaign_messages")
+}
+
+model MessageLog {
+  id        String   @id @default(cuid())
+  messageId String
+  action    String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  message CampaignMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("message_logs")
+}
+
+// ─── VendorOS / Marketplace ───────────────────────────────────────
+
+enum VendorProfileStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum VendorVerificationStatus {
+  NOT_VERIFIED
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+enum VendorLeadStatus {
+  NEW
+  VIEWED
+  CONTACTED
+  QUOTED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  BOOKED
+}
+
+enum VendorAvailabilityStatus {
+  AVAILABLE
+  PARTIAL
+  FULLY_BOOKED
+  UNAVAILABLE
+  VACATION
+}
+
+model VendorCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments VendorCategoryAssignment[]
+
+  @@map("vendor_categories")
+}
+
+model VendorPlan {
+  id                   String   @id @default(cuid())
+  slug                 String   @unique
+  name                 String
+  priceGhs             Decimal  @default(0)
+  currency             String   @default("GHS")
+  durationDays         Int      @default(365)
+  imageLimit           Int      @default(10)
+  videoLimit           Int      @default(2)
+  storageLimitMb       Int      @default(500)
+  categoryLimit        Int      @default(2)
+  portfolioEventLimit  Int      @default(5)
+  verifiedBadge        Boolean  @default(false)
+  featuredSearch       Boolean  @default(false)
+  advancedAnalytics    Boolean  @default(false)
+  priorityLeads        Boolean  @default(false)
+  isActive             Boolean  @default(true)
+  sortOrder            Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  vendors       Vendor[]
+  subscriptions VendorSubscription[]
+
+  @@map("vendor_plans")
+}
+
+model Vendor {
+  id                    String                   @id @default(cuid())
+  userId                String
+  slug                  String?                  @unique
+  businessName          String
+  vendorType            String                   @default("individual")
+  ownerName             String?
+  email                 String?
+  phone                 String?
+  whatsapp              String?
+  category              String
+  description           String?
+  bio                   String?
+  location              String?
+  address               String?
+  city                  String?
+  region                String?
+  country               String                   @default("Ghana")
+  serviceAreas          Json?
+  yearsExperience       Int?
+  profileImage          String?
+  coverImage            String?
+  rating                Decimal                  @default(0)
+  reviewCount           Int                      @default(0)
+  verificationStatus    VendorVerificationStatus @default(NOT_VERIFIED)
+  planId                String?
+  isVerified            Boolean                  @default(false)
+  isFeatured            Boolean                  @default(false)
+  isActive              Boolean                  @default(true)
+  status                VendorProfileStatus      @default(ACTIVE)
+  trustScore            Decimal                  @default(0)
+  responseRate          Decimal                  @default(0)
+  averageResponseTime   Int?
+  completedEventsCount  Int                      @default(0)
+  isClaimable           Boolean                  @default(false)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  user                  User                       @relation(fields: [userId], references: [id])
+  plan                  VendorPlan?                @relation(fields: [planId], references: [id])
+  services              VendorService[]
+  bookings              VendorBooking[]
+  reviews               VendorReview[]
+  socialLinks           VendorSocialLink[]
+  media                 VendorMedia[]
+  rateCards             VendorRateCard[]
+  eventReferences       VendorEventReference[]
+  availability          VendorAvailability[]
+  leads                 VendorLead[]
+  verificationRequests  VendorVerificationRequest[]
+  favorites             VendorFavorite[]
+  claimRequests         VendorClaimRequest[]
+  categoryAssignments   VendorCategoryAssignment[]
+  analyticsEvents       VendorAnalyticsEvent[]
+  subscriptions         VendorSubscription[]
+  portfolioCases        EventPortfolioCase[]
+
+  @@index([category])
+  @@index([city])
+  @@index([isFeatured])
+  @@index([verificationStatus])
+  @@map("vendors")
+}
+
+model VendorCategoryAssignment {
+  id         String @id @default(cuid())
+  vendorId   String
+  categoryId String
+
+  vendor   Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category VendorCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, categoryId])
+  @@map("vendor_category_assignments")
+}
+
+model VendorSocialLink {
+  id        String   @id @default(cuid())
+  vendorId  String
+  platform  String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("vendor_social_links")
+}
+
+model VendorMedia {
+  id               String   @id @default(cuid())
+  vendorId         String
+  type             String
+  url              String
+  thumbnailUrl     String?
+  caption          String?
+  eventReferenceId String?
+  status           String   @default("active")
+  sortOrder        Int      @default(0)
+  sizeBytes        Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  vendor         Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  eventReference VendorEventReference? @relation(fields: [eventReferenceId], references: [id])
+
+  @@index([vendorId])
+  @@map("vendor_media")
+}
+
+model VendorRateCard {
+  id          String   @id @default(cuid())
+  vendorId    String
+  serviceName String
+  priceMin    Decimal
+  priceMax    Decimal?
+  currency    String   @default("GHS")
+  description String?
+  packageType String?
+  duration    String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_rate_cards")
+}
+
+model VendorEventReference {
+  id              String   @id @default(cuid())
+  vendorId        String
+  eventTitle      String
+  eventType       String?
+  location        String?
+  eventYear       Int?
+  roleProvided    String?
+  testimonial     String?
+  celeventicEventId String?
+  isPublished     Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  media  VendorMedia[]
+
+  @@map("vendor_event_references")
+}
+
+model VendorAvailability {
+  id        String                   @id @default(cuid())
+  vendorId  String
+  date      DateTime
+  status    VendorAvailabilityStatus @default(AVAILABLE)
+  note      String?
+  eventId   String?
+  createdBy String?
+  createdAt DateTime                 @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, date])
+  @@index([vendorId, date])
+  @@map("vendor_availability")
+}
+
+model VendorLead {
+  id           String           @id @default(cuid())
+  vendorId     String
+  organizerId  String
+  eventId      String?
+  eventType    String?
+  eventDate    DateTime?
+  guestCount   Int?
+  budgetMin    Decimal?
+  budgetMax    Decimal?
+  location     String?
+  message      String?
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  status       VendorLeadStatus @default(NEW)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  vendor    Vendor @relation(fields: [vendorId], references: [id])
+  organizer User   @relation(fields: [organizerId], references: [id])
+
+  @@index([vendorId, status])
+  @@map("vendor_leads")
+}
+
+model VendorVerificationRequest {
+  id                  String                   @id @default(cuid())
+  vendorId            String
+  submittedBy         String
+  idDocumentUrl       String?
+  businessDocumentUrl String?
+  socialProofUrl      String?
+  notes               String?
+  status              VendorVerificationStatus @default(PENDING)
+  reviewedBy          String?
+  reviewedAt          DateTime?
+  rejectionReason     String?
+  createdAt           DateTime                 @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_verification_requests")
+}
+
+model VendorFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  vendorId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vendorId])
+  @@map("vendor_favorites")
+}
+
+model VendorClaimRequest {
+  id           String   @id @default(cuid())
+  vendorId     String
+  userId       String
+  proofEmail   String?
+  proofPhone   String?
+  proofDocUrl  String?
+  socialProof  String?
+  status       String   @default("pending")
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("vendor_claim_requests")
+}
+
+model VendorSubscription {
+  id        String   @id @default(cuid())
+  vendorId  String
+  planId    String
+  startsAt  DateTime @default(now())
+  endsAt    DateTime
+  isActive  Boolean  @default(true)
+  paymentId String?
+  createdAt DateTime @default(now())
+
+  vendor Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  plan   VendorPlan @relation(fields: [planId], references: [id])
+
+  @@map("vendor_subscriptions")
+}
+
+model VendorAnalyticsEvent {
+  id        String   @id @default(cuid())
+  vendorId  String
+  eventType String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, eventType])
+  @@map("vendor_analytics_events")
+}
+
+model VendorService {
+  id          String   @id @default(cuid())
+  vendorId    String
+  name        String
+  description String?
+  priceFrom   Decimal
+  priceTo     Decimal?
+  currency    String   @default("GHS")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_services")
+}
+
+model VendorBooking {
+  id        String   @id @default(cuid())
+  vendorId  String
+  userId    String
+  eventId   String?
+  status    String   @default("pending")
+  notes     String?
+  createdAt DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("vendor_bookings")
+}
+
+model Venue {
+  id            String   @id @default(cuid())
+  ownerId       String?
+  slug          String?  @unique
+  name          String
+  description   String?
+  capacity      Int
+  location      String
+  address       String?
+  city          String?
+  region        String?
+  priceFrom     Decimal
+  priceTo       Decimal?
+  currency      String   @default("GHS")
+  mapsLink      String?
+  photos        Json?
+  coverImage    String?
+  amenities     Json?
+  hasParking    Boolean  @default(false)
+  hasGenerator  Boolean  @default(false)
+  hasAc         Boolean  @default(false)
+  hasSecurity   Boolean  @default(false)
+  isFeatured    Boolean  @default(false)
+  isVerified    Boolean  @default(false)
+  rating        Decimal  @default(0)
+  reviewCount   Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner        User?              @relation("VenueOwner", fields: [ownerId], references: [id])
+  bookings     VenueBooking[]
+  availability VenueAvailability[]
+
+  @@index([city])
+  @@map("venues")
+}
+
+model VenueAvailability {
+  id        String                   @id @default(cuid())
+  venueId   String
+  date      DateTime
+  status    VendorAvailabilityStatus @default(AVAILABLE)
+  note      String?
+  createdAt DateTime                 @default(now())
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, date])
+  @@map("venue_availability")
+}
+
+model VenueBooking {
+  id        String   @id @default(cuid())
+  venueId   String
+  userId    String
+  eventDate DateTime
+  status    String   @default("pending")
+  notes     String?
+  createdAt DateTime @default(now())
+
+  venue Venue @relation(fields: [venueId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@map("venue_bookings")
+}
+
+model EventPortfolioCase {
+  id          String    @id @default(cuid())
+  vendorId    String?
+  eventId     String?
+  title       String
+  eventType   String?
+  location    String?
+  eventDate   DateTime?
+  description String?
+  coverImage  String?
+  isPublic    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  vendor Vendor? @relation(fields: [vendorId], references: [id])
+
+  @@map("event_portfolio_cases")
+}
+
+model AdminVendorSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("admin_vendor_settings")
+}
+
+// ─── Advertising ────────────────────────────────────────────────
+
+model Advertisement {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  imageUrl    String?
+  linkUrl     String?
+  type        String
+  price       Decimal 
+  duration    Int
+  isActive    Boolean  @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  placements AdPlacement[]
+
+  @@map("advertisements")
+}
+
+model AdPlacement {
+  id       String @id @default(cuid())
+  adId     String
+  position String
+  priority Int    @default(0)
+
+  ad Advertisement @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@map("ad_placements")
+}
+
+// ─── Contributions & Wallets ────────────────────────────────────
+
+model Wallet {
+  id        String   @id @default(cuid())
+  eventId   String?  @unique
+  balance   Decimal  @default(0)
+  revenue   Decimal  @default(0)
+  expenses  Decimal  @default(0)
+  currency  String   @default("GHS")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event        Event?              @relation(fields: [eventId], references: [id])
+  transactions WalletTransaction[]
+  eventExpenses EventExpense[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id          String   @id @default(cuid())
+  walletId    String
+  eventId     String?
+  type        String
+  amount      Decimal 
+  currency    String   @default("GHS")
+  source      String   @default("manual")
+  reference   String?
+  paymentId   String?
+  description String?
+  isLocked    Boolean  @default(false)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  wallet  Wallet @relation(fields: [walletId], references: [id])
+  creator User?  @relation("WalletTransactionCreator", fields: [createdBy], references: [id])
+
+  @@index([eventId])
+  @@index([paymentId])
+  @@map("wallet_transactions")
+}
+
+model Contribution {
+  id          String   @id @default(cuid())
+  eventId     String
+  userId      String?
+  contributor String
+  amount      Decimal 
+  currency    String   @default("GHS")
+  message     String?
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id])
+  user  User? @relation(fields: [userId], references: [id])
+
+  @@map("contributions")
+}
+
+// ─── Event Memory ───────────────────────────────────────────────
+
+model EventMemory {
+  id        String   @id @default(cuid())
+  eventId   String
+  type      String
+  url       String?
+  content   String? 
+  author    String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_memories")
+}
+
+// ─── Admin & Settings ───────────────────────────────────────────
+
+model AdminSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  category  String
+  updatedAt DateTime @updatedAt
+
+  @@map("admin_settings")
+}
+
+model ApiSetting {
+  id           String   @id @default(cuid())
+  provider     String   @unique
+  config       Json
+  isEnabled    Boolean  @default(false)
+  encryptedKey String?
+  updatedAt    DateTime @updatedAt
+
+  @@map("api_settings")
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  CREATE
+  UPDATE
+  DELETE
+  SUSPEND
+  REACTIVATE
+  SWITCH_TO_USER_VIEW
+  RETURN_TO_ADMIN
+  PAYMENT
+  QR_SCAN
+  WEBHOOK
+  FRAUD_DETECTED
+  TWO_FACTOR_ENABLED
+  TWO_FACTOR_DISABLED
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?
+  action    AuditAction
+  entity    String?
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([action])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// ─── Multi-Tenant ───────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      String   @default("starter")
+  country   String   @default("GH")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users  User[]
+  events Event[]
+
+  @@map("organizations")
+}
+
+// ─── Two-Factor Authentication ──────────────────────────────────
+
+model TwoFactorAuth {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  secret      String
+  isEnabled   Boolean  @default(false)
+  backupCodes Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("two_factor_auth")
+}
+
+// ─── Flyer & Design Studio ──────────────────────────────────────
+
+enum DesignType {
+  FLYER
+  POSTER
+  BANNER
+  SOCIAL_MEDIA
+  INVITATION_ANIMATED
+  INVITATION_VIDEO
+}
+
+enum DesignStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model FlyerDesign {
+  id         String       @id @default(cuid())
+  eventId    String?
+  userId     String
+  name       String
+  type       DesignType   @default(FLYER)
+  config     Json?
+  previewUrl String?
+  exportUrl  String?
+  status     DesignStatus @default(DRAFT)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  event Event? @relation(fields: [eventId], references: [id])
+  user  User   @relation(fields: [userId], references: [id])
+
+  @@index([eventId])
+  @@index([userId])
+  @@map("flyer_designs")
+}
+
+// ─── Inspiration Upload Engine ──────────────────────────────────
+
+enum InspirationType {
+  IMAGE
+  FLYER
+  INVITATION
+  BUSINESS_CARD
+  VIDEO
+}
+
+enum UpgradeStyle {
+  INSPIRED
+  SIMILAR
+  LUXURY
+  IMPROVED
+  MODERN
+  TRADITIONAL_GHANAIAN
+  FUTURISTIC
+}
+
+enum InspirationStatus {
+  UPLOADED
+  ANALYZING
+  READY
+  GENERATED
+  FAILED
+}
+
+model InspirationUpload {
+  id           String            @id @default(cuid())
+  userId       String
+  eventId      String?
+  type         InspirationType
+  url          String
+  analysis     Json?
+  upgradeStyle UpgradeStyle?
+  generatedUrl String?
+  status       InspirationStatus @default(UPLOADED)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id])
+  event Event? @relation(fields: [eventId], references: [id])
+
+  @@index([userId])
+  @@map("inspiration_uploads")
+}
+
+// ─── Staff & Gate Management ────────────────────────────────────
+
+model EventGate {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  location  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  event Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  staff EventStaff[]
+
+  @@index([eventId])
+  @@map("event_gates")
+}
+
+model EventStaff {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  gateId    String?
+  role      String   @default("scanner")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  event Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id])
+  gate  EventGate? @relation(fields: [gateId], references: [id])
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@map("event_staff")
+}
+
+model SeatingPlan {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  layout    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("seating_plans")
+}
+
+// ─── Fraud Detection ────────────────────────────────────────────
+
+enum FraudSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model FraudDetectionLog {
+  id        String        @id @default(cuid())
+  eventId   String?
+  type      String
+  severity  FraudSeverity @default(MEDIUM)
+  details   Json?
+  resolved  Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  event Event? @relation(fields: [eventId], references: [id])
+
+  @@index([eventId])
+  @@index([severity])
+  @@map("fraud_detection_logs")
+}
+
+// ─── Reminders ──────────────────────────────────────────────────
+
+enum ReminderStatus {
+  SCHEDULED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model ReminderSchedule {
+  id          String         @id @default(cuid())
+  eventId     String
+  campaignId  String?
+  channel     CampaignChannel
+  message     String        
+  scheduledAt DateTime
+  status      ReminderStatus @default(SCHEDULED)
+  createdAt   DateTime       @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([scheduledAt])
+  @@map("reminder_schedules")
+}
+
+// ─── Vendor Reviews ─────────────────────────────────────────────
+
+model VendorReview {
+  id              String   @id @default(cuid())
+  vendorId        String
+  userId          String
+  leadId          String?
+  rating          Int
+  comment         String?
+  eventType       String?
+  serviceQuality  Int?
+  communication   Int?
+  valueRating     Int?
+  timeliness      Int?
+  wouldRecommend  Boolean?
+  status          String   @default("published")
+  createdAt       DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([vendorId])
+  @@map("vendor_reviews")
+}
+
+// ─── Event Expenses ─────────────────────────────────────────────
+
+model EventExpense {
+  id          String   @id @default(cuid())
+  eventId     String
+  walletId    String?
+  category    String
+  amount      Decimal 
+  description String?
+  createdAt   DateTime @default(now())
+
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  wallet Wallet? @relation(fields: [walletId], references: [id])
+
+  @@index([eventId])
+  @@map("event_expenses")
+}
+
+// ─── Background Jobs ────────────────────────────────────────────
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model BackgroundJob {
+  id          String    @id @default(cuid())
+  queue       String
+  payload     Json
+  status      JobStatus @default(PENDING)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  error       String?
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([queue, status])
+  @@map("background_jobs")
+}
+
+// ─── Dynamic Template Intelligence Engine ───────────────────────
+
+enum TemplateProductType {
+  INVITATION
+  FLYER
+  TICKET
+  BUSINESS_CARD
+  COMPLIMENTARY_CARD
+  SOCIAL_POST
+  SOCIAL_STORY
+  WHATSAPP_SHARE
+}
+
+enum TemplatePricingTier {
+  FREE
+  PREMIUM
+}
+
+enum TemplateApprovalStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AssetLibraryType {
+  BACKGROUND
+  PATTERN
+  FRAME
+  ICON
+  FLORAL
+  KENTE
+  ADINKRA
+  QR_FRAME
+  DIVIDER
+  TICKET_SHAPE
+}
+
+enum ExportFormat {
+  PNG
+  JPG
+  PDF
+  WEB
+  TICKET_PDF
+  QR_PASS
+}
+
+enum AiRequestStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model DesignTemplate {
+  id                      String                 @id @default(cuid())
+  slug                    String                 @unique
+  name                    String
+  description             String?
+  productType             TemplateProductType    @default(INVITATION)
+  category                String
+  eventType               String?
+  style                   String
+  colorPalette            Json
+  fontPairing             Json
+  layoutType              String
+  canvas                  Json
+  blocks                  Json
+  variables               Json?
+  themePreset             String?
+  isPremium               Boolean                @default(false)
+  price                   Float                  @default(0)
+  supportsAnimation       Boolean                @default(false)
+  supportsQr              Boolean                @default(true)
+  supportsRsvp            Boolean                @default(true)
+  supportsTicket          Boolean                @default(false)
+  supportsPersonalization Boolean                @default(true)
+  previewUrl              String?
+  thumbnailUrl            String?
+  popularity              Int                    @default(0)
+  conversionRate          Float                  @default(0)
+  approvalStatus          TemplateApprovalStatus @default(APPROVED)
+  isFeatured              Boolean                @default(false)
+  isActive                Boolean                @default(true)
+  designerId              String?
+  createdById             String
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+
+  designer        User?              @relation("TemplateDesigner", fields: [designerId], references: [id])
+  createdBy       User               @relation("TemplateCreator", fields: [createdById], references: [id])
+  favorites       TemplateFavorite[]
+  purchases       TemplatePurchase[]
+  exports         DesignExport[]
+  generatedDesigns GeneratedDesign[]
+
+  @@index([category])
+  @@index([productType])
+  @@index([isPremium])
+  @@index([isFeatured])
+  @@map("design_templates")
+}
+
+model TemplateFavorite {
+  id         String   @id @default(cuid())
+  userId     String
+  templateId String
+  createdAt  DateTime @default(now())
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template DesignTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, templateId])
+  @@map("template_favorites")
+}
+
+model TemplatePurchase {
+  id         String   @id @default(cuid())
+  userId     String
+  templateId String
+  amount     Float
+  currency   String   @default("GHS")
+  createdAt  DateTime @default(now())
+
+  user     User           @relation(fields: [userId], references: [id])
+  template DesignTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([userId])
+  @@map("template_purchases")
+}
+
+model DesignerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  displayName    String
+  bio            String?
+  portfolioUrl   String?
+  commissionRate Float    @default(15)
+  isVerified     Boolean  @default(false)
+  totalSales     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("designer_profiles")
+}
+
+model TemplateAsset {
+  id        String           @id @default(cuid())
+  name      String
+  type      AssetLibraryType
+  category  String?
+  url       String
+  metadata  Json?
+  isPremium Boolean          @default(false)
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+
+  @@index([type])
+  @@map("template_assets")
+}
+
+model ColorPalette {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  colors    Json
+  category  String?
+  isPremium Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("color_palettes")
+}
+
+model FontAsset {
+  id        String   @id @default(cuid())
+  name      String
+  family    String
+  category  String?
+  isPremium Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("font_assets")
+}
+
+model PatternAsset {
+  id        String           @id @default(cuid())
+  name      String
+  type      AssetLibraryType @default(PATTERN)
+  url       String?
+  svgData   String?
+  category  String?
+  isPremium Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@map("pattern_assets")
+}
+
+model DesignExport {
+  id         String       @id @default(cuid())
+  userId     String
+  templateId String?
+  eventId    String?
+  format     ExportFormat
+  width      Int?
+  height     Int?
+  url        String?
+  status     String       @default("pending")
+  createdAt  DateTime     @default(now())
+
+  user     User            @relation(fields: [userId], references: [id])
+  template DesignTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([userId])
+  @@map("design_exports")
+}
+
+model AiDesignRequest {
+  id        String          @id @default(cuid())
+  userId    String
+  eventId   String?
+  prompt    String
+  status    AiRequestStatus @default(PENDING)
+  result    Json?
+  error     String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  user              User              @relation(fields: [userId], references: [id])
+  generatedDesigns  GeneratedDesign[]
+
+  @@index([userId])
+  @@map("ai_design_requests")
+}
+
+model GeneratedDesign {
+  id           String              @id @default(cuid())
+  userId       String
+  eventId      String?
+  templateId   String?
+  aiRequestId  String?
+  productType  TemplateProductType
+  name         String
+  config       Json
+  previewUrl   String?
+  status       DesignStatus        @default(DRAFT)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  user       User             @relation(fields: [userId], references: [id])
+  template   DesignTemplate?  @relation(fields: [templateId], references: [id])
+  aiRequest  AiDesignRequest? @relation(fields: [aiRequestId], references: [id])
+  versions   DesignVersion[]
+
+  @@index([userId])
+  @@index([eventId])
+  @@map("generated_designs")
+}
+
+model DesignVersion {
+  id                String   @id @default(cuid())
+  generatedDesignId String
+  version           Int
+  config            Json
+  createdAt         DateTime @default(now())
+
+  design GeneratedDesign @relation(fields: [generatedDesignId], references: [id], onDelete: Cascade)
+
+  @@unique([generatedDesignId, version])
+  @@map("design_versions")
+}
+
+// ─── AI Event Planner ─────────────────────────────────────────────
+
+enum EventPlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model EventPlan {
+  id           String          @id @default(cuid())
+  eventId      String?
+  userId       String
+  eventType    String
+  eventTitle   String?
+  budget       Decimal?
+  currency     String          @default("GHS")
+  guestCount   Int?
+  location     String?
+  venue        String?
+  eventDate    DateTime?
+  eventGoal    String?
+  style        String?
+  culturalPref String?
+  isTicketed   Boolean         @default(false)
+  isIndoor     Boolean?
+  hostDetails  String?
+  planSummary  String?
+  aiProvider   String          @default("mock")
+  status       EventPlanStatus @default(ACTIVE)
+  version      Int             @default(1)
+  rawPlan      Json?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  event          Event?               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user           User                 @relation(fields: [userId], references: [id])
+  budgetItems    EventBudgetItem[]
+  timelineItems  EventTimelineItem[]
+  checklistItems EventChecklistItem[]
+  riskScores     EventRiskScore[]
+  versions       EventPlanVersion[]
+
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_plans")
+}
+
+model EventPlanVersion {
+  id           String   @id @default(cuid())
+  eventPlanId  String
+  version      Int
+  planSnapshot Json
+  createdAt    DateTime @default(now())
+
+  plan EventPlan @relation(fields: [eventPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([eventPlanId, version])
+  @@map("event_plan_versions")
+}
+
+model EventBudgetItem {
+  id              String  @id @default(cuid())
+  eventPlanId     String
+  category        String
+  description     String?
+  estimatedAmount Decimal
+  priority        String  @default("medium")
+  notes           String?
+
+  plan EventPlan @relation(fields: [eventPlanId], references: [id], onDelete: Cascade)
+
+  @@map("event_budget_items")
+}
+
+model EventTimelineItem {
+  id          String  @id @default(cuid())
+  eventPlanId String
+  title       String
+  description String?
+  dueDate     String?
+  phase       String?
+  status      String  @default("pending")
+  priority    String  @default("medium")
+
+  plan EventPlan @relation(fields: [eventPlanId], references: [id], onDelete: Cascade)
+
+  @@map("event_timeline_items")
+}
+
+model EventChecklistItem {
+  id          String  @id @default(cuid())
+  eventPlanId String
+  task        String
+  assignedTo  String?
+  dueDate     String?
+  status      String  @default("pending")
+  priority    String  @default("medium")
+
+  plan EventPlan @relation(fields: [eventPlanId], references: [id], onDelete: Cascade)
+
+  @@map("event_checklists")
+}
+
+model EventRiskScore {
+  id             String  @id @default(cuid())
+  eventPlanId    String
+  riskType       String
+  score          Int     @default(50)
+  severity       String
+  recommendation String?
+
+  plan EventPlan @relation(fields: [eventPlanId], references: [id], onDelete: Cascade)
+
+  @@map("event_risk_scores")
+}
+
+model AiRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  module    String
+  provider  String   @default("mock")
+  tokens    Int?
+  status    String   @default("completed")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([module])
+  @@map("ai_requests")
+}
+
+// ─── FuneralOS ────────────────────────────────────────────────────
+
+enum PrivacyStatus {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model FuneralProfile {
+  id               String        @id @default(cuid())
+  eventId          String        @unique
+  deceasedName     String
+  dateOfBirth      DateTime?
+  dateOfPassing    DateTime?
+  age              Int?
+  biography        String?
+  familyName       String?
+  photoUrl         String?
+  theme            String        @default("midnight-ivory")
+  privacyStatus    PrivacyStatus @default(PUBLIC)
+  burialVenue      String?
+  burialDirections String?
+  livestreamUrl    String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("funeral_profiles")
+}
+
+model TributeMessage {
+  id             String         @id @default(cuid())
+  eventId        String
+  userName       String
+  message        String
+  mediaUrl       String?
+  approvalStatus ApprovalStatus @default(PENDING)
+  createdAt      DateTime       @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("tribute_messages")
+}
+
+model FuneralProgram {
+  id          String   @id @default(cuid())
+  eventId     String
+  title       String
+  description String?
+  startTime   String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("funeral_programs")
+}
+
+// ─── Memory Vault ───────────────────────────────────────────────
+
+model MemoryVault {
+  id                 String        @id @default(cuid())
+  eventId            String        @unique
+  ownerId            String
+  title              String?
+  description        String?
+  privacyStatus      PrivacyStatus @default(PRIVATE)
+  storageLimitMb     Int           @default(500)
+  subscriptionStatus String        @default("free")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  owner User  @relation(fields: [ownerId], references: [id])
+
+  @@map("memory_vaults")
+}
+
+// ─── Invitation MVP Product ─────────────────────────────────────
+
+enum InvitationMvpStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  IN_PRODUCTION
+  REVISION_REQUESTED
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum InvitationWorkflowType {
+  SELF_SERVICE
+  AI_ASSISTED
+  DESIGNER_ASSISTED
+  BESPOKE
+}
+
+enum InvitationWorkflowStage {
+  PACKAGE_SELECTED
+  ADDONS_SELECTED
+  PAYMENT_PENDING
+  PAYMENT_SUCCESSFUL
+  INFORMATION_PENDING
+  PRODUCTION_STARTED
+  DESIGN_READY
+  CUSTOMER_REVIEWING
+  REVISION_REQUESTED
+  REVISION_IN_PROGRESS
+  APPROVED
+  DELIVERED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum InvitationProductionStatus {
+  NOT_STARTED
+  ASSIGNED
+  DESIGNING
+  AWAITING_CUSTOMER_INFO
+  AWAITING_APPROVAL
+  REVISION
+  APPROVED
+  DELIVERED
+}
+
+enum RevisionType {
+  MINOR
+  MAJOR
+}
+
+enum RevisionChangeCategory {
+  DATE_CHANGE
+  TIME_CHANGE
+  VENUE_CHANGE
+  PHONE_CHANGE
+  SPELLING
+  THEME_CHANGE
+  LAYOUT_CHANGE
+  COLOR_OVERHAUL
+  NEW_ANIMATION
+  NEW_SECTION
+  OTHER
+}
+
+enum RevisionPaymentStatus {
+  PENDING
+  PAID
+  WAIVED
+}
+
+model InvitationCatalogTemplate {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  name                String
+  description         String?
+  category            String
+  style               String
+  layoutSlug          String
+  eventTypes          Json?
+  packageSlugs        Json?
+  previewGradient     String?
+  previewImageUrl     String?
+  previewVideoUrl     String?
+  backgroundImageUrl  String?
+  backgroundVideoUrl  String?
+  motionReferenceUrl  String?
+  inspirationMediaUrl String?
+  priceGhs            Decimal?
+  languages           Json?
+  isPremium           Boolean  @default(false)
+  isFeatured          Boolean  @default(false)
+  isActive            Boolean  @default(true)
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  orders InvitationOrder[]
+
+  @@index([category])
+  @@index([style])
+  @@map("invitation_catalog_templates")
+}
+
+model InvitationProductPackage {
+  id                        String   @id @default(cuid())
+  name                      String
+  slug                      String   @unique
+  description               String?
+  tagline                   String?
+  bestFor                   String?
+  priceGhs                  Decimal
+  revisions                 Int      @default(1)
+  deliveryDays              Int      @default(3)
+  features                  Json?
+  designerAssist            Boolean  @default(false)
+  paymentRequiredToPublish  Boolean  @default(true)
+  isPopular                 Boolean  @default(false)
+  isBestValue               Boolean  @default(false)
+  isActive                  Boolean  @default(true)
+  sortOrder                 Int      @default(0)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  orders  InvitationOrder[]
+  prices  PackagePrice[]
+
+  @@map("invitation_product_packages")
+}
+
+model InvitationAddon {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  name               String
+  description        String?
+  category           String   @default("general")
+  priceGhs           Decimal
+  packageEligibility Json?
+  deliveryImpactDays Int      @default(0)
+  adminNotes         String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("invitation_addons")
+}
+
+model InvitationOrder {
+  id                 String                     @id @default(cuid())
+  userId             String
+  templateSlug       String
+  packageSlug        String
+  status             InvitationMvpStatus        @default(DRAFT)
+  productionStatus   InvitationProductionStatus @default(NOT_STARTED)
+  workflowType       InvitationWorkflowType     @default(SELF_SERVICE)
+  workflowStage      InvitationWorkflowStage    @default(PACKAGE_SELECTED)
+  previewUrl         String?
+  previewVideoUrl    String?
+  extraRevisionPriceGhs Decimal                 @default(79)
+  eventType          String
+  hostName           String?
+  coupleName1        String?
+  coupleName2        String?
+  deceasedName       String?
+  eventTitle         String?
+  eventDate          DateTime?
+  eventTime          String?
+  venueName          String?
+  landmark           String?
+  mapsLink           String?
+  dressCode          String?
+  contactPhone       String?
+  contactEmail       String?
+  story              String?
+  galleryUrls        Json?
+  musicPreference    String?
+  rsvpRequired       Boolean                    @default(true)
+  guestCount         Int?
+  addonSlugs         Json?
+  designConfig       Json?
+  sections           Json?
+  invitationId       String?
+  eventId            String?
+  totalAmountGhs     Decimal                    @default(0)
+  displayCurrency    String                     @default("GHS")
+  displayAmount      Decimal?
+  exchangeRate       Decimal?
+  currency           String                     @default("GHS")
+  shareUrl           String?
+  languageMode         InvitationLanguageMode     @default(EN_FR)
+  assignedDesignerId   String?
+  adminNotes           String?
+  revisionsUsed        Int                        @default(0)
+  missingInfoRequest   String?
+  archivedAt             DateTime?
+  portfolioConsent       Boolean                    @default(false)
+  termsAcceptedVersion   String?
+  privacyAcceptedVersion String?
+  aiGeneratedContent     Json?
+  inspirationAssets      Json?
+  fulfilledAddons        Json?
+  idempotencyKey         String?                    @unique
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+
+  user              User                        @relation(fields: [userId], references: [id])
+  template          InvitationCatalogTemplate   @relation(fields: [templateSlug], references: [slug])
+  package           InvitationProductPackage    @relation(fields: [packageSlug], references: [slug])
+  assignedDesigner  User?                       @relation("OrderDesigner", fields: [assignedDesignerId], references: [id])
+  payment           Payment?
+  languageVersions  InvitationLanguageVersion[]
+  blocks                InvitationBlock[]
+  revisions             InvitationRevision[]
+  productionAssignments ProductionAssignment[]
+  approvals             InvitationApproval[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([workflowStage])
+  @@index([assignedDesignerId])
+  @@map("invitation_orders")
+}
+
+enum InvitationReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model InvitationReview {
+  id         String                 @id @default(cuid())
+  author     String
+  role       String?
+  content    String
+  rating     Int                    @default(5)
+  status     InvitationReviewStatus @default(PENDING)
+  isVerified Boolean                @default(false)
+  isFeatured Boolean                @default(false)
+  isActive   Boolean                @default(true)
+  sortOrder  Int                    @default(0)
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+
+  @@map("invitation_reviews")
+}
+
+enum InvitationRevisionStatus {
+  REQUESTED
+  AWAITING_PAYMENT
+  IN_PROGRESS
+  AWAITING_APPROVAL
+  COMPLETED
+  CANCELLED
+}
+
+model InvitationRevision {
+  id                String                   @id @default(cuid())
+  invitationOrderId String
+  revisionNumber    Int
+  revisionType      RevisionType             @default(MINOR)
+  changeCategory    RevisionChangeCategory   @default(OTHER)
+  status            InvitationRevisionStatus @default(REQUESTED)
+  notes             String?
+  adminNotes        String?
+  adminResponse     String?
+  isExtraPaid       Boolean                  @default(false)
+  amountGhs         Decimal?
+  customerApproved  Boolean                  @default(false)
+  customerApprovedAt DateTime?
+  requestedAt       DateTime                 @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  invitationOrder InvitationOrder    @relation(fields: [invitationOrderId], references: [id], onDelete: Cascade)
+  comments        RevisionComment[]
+  payments        RevisionPayment[]
+  approvals       InvitationApproval[]
+
+  @@index([invitationOrderId])
+  @@map("invitation_revisions")
+}
+
+model RevisionComment {
+  id         String   @id @default(cuid())
+  revisionId String
+  userId     String
+  isAdmin    Boolean  @default(false)
+  content    String
+  createdAt  DateTime @default(now())
+
+  revision InvitationRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  user     User               @relation(fields: [userId], references: [id])
+
+  @@index([revisionId])
+  @@map("revision_comments")
+}
+
+model RevisionPayment {
+  id         String                @id @default(cuid())
+  revisionId String
+  paymentId  String?               @unique
+  amountGhs  Decimal
+  status     RevisionPaymentStatus @default(PENDING)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  revision InvitationRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  payment  Payment?           @relation(fields: [paymentId], references: [id])
+
+  @@index([revisionId])
+  @@map("revision_payments")
+}
+
+model ProductionAssignment {
+  id          String    @id @default(cuid())
+  orderId     String
+  designerId  String
+  assignedBy  String?
+  notes       String?
+  status      String    @default("ACTIVE")
+  assignedAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  order    InvitationOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  designer User            @relation("ProductionDesigner", fields: [designerId], references: [id])
+
+  @@index([orderId])
+  @@index([designerId])
+  @@map("production_assignments")
+}
+
+model InvitationApproval {
+  id         String   @id @default(cuid())
+  orderId    String
+  revisionId String?
+  approvedBy String
+  notes      String?
+  approvedAt DateTime @default(now())
+
+  order    InvitationOrder     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  revision InvitationRevision? @relation(fields: [revisionId], references: [id])
+
+  @@index([orderId])
+  @@map("invitation_approvals")
+}
+
+// ─── Invitation Commerce Engine ───────────────────────────────────
+
+model Currency {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  symbol    String
+  name      String
+  enabled   Boolean  @default(true)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("currencies")
+}
+
+model ExchangeRate {
+  id             String   @id @default(cuid())
+  baseCurrency   String   @default("GHS")
+  targetCurrency String
+  rate           Decimal
+  source         String   @default("manual")
+  updatedBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([baseCurrency, targetCurrency])
+  @@map("exchange_rates")
+}
+
+model PackagePrice {
+  id        String   @id @default(cuid())
+  packageId String
+  amountGhs Decimal
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  package InvitationProductPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([packageId, isActive])
+  @@map("package_prices")
+}
+
+model PaymentCurrencyLog {
+  id                String   @id @default(cuid())
+  paymentId         String
+  invitationOrderId String?
+  baseCurrency      String   @default("GHS")
+  baseAmount        Decimal
+  displayCurrency   String
+  displayAmount     Decimal
+  exchangeRate      Decimal
+  rateSource        String   @default("manual")
+  createdAt         DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@map("payment_currency_logs")
+}
+
+// ─── Internationalization (i18n) ──────────────────────────────────
+
+enum InvitationLanguageMode {
+  EN_ONLY
+  FR_ONLY
+  EN_FR
+}
+
+model Language {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  enabled   Boolean  @default(true)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("languages")
+}
+
+model Translation {
+  id              String   @id @default(cuid())
+  key             String
+  namespace       String   @default("common")
+  enValue         String
+  frValue         String?
+  editableByAdmin Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([namespace, key])
+  @@index([namespace])
+  @@map("translations")
+}
+
+model UserLanguagePreference {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  languageCode String   @default("en")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_language_preferences")
+}
+
+model InvitationLanguageVersion {
+  id                String                 @id @default(cuid())
+  invitationOrderId String?
+  invitationId      String?
+  languageCode      String
+  mode              InvitationLanguageMode @default(EN_FR)
+  eventTitle        String?
+  story             String?
+  dressCode         String?
+  venueName         String?
+  landmark          String?
+  hostName          String?
+  customLabels      Json?
+  isPublished       Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  invitationOrder InvitationOrder? @relation(fields: [invitationOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([invitationOrderId, languageCode])
+  @@index([invitationId])
+  @@map("invitation_language_versions")
+}
+
+// ─── Dynamic Invitation Block Builder ─────────────────────────────
+
+model InvitationBlockTemplate {
+  id                  String   @id @default(cuid())
+  blockType           String
+  category            String   @default("default")
+  eventTypes          Json?
+  titleEn             String
+  titleFr             String?
+  subtitleEn          String?
+  subtitleFr          String?
+  defaultContentJson  Json?
+  defaultStyleVariant String   @default("elegant")
+  sortOrder           Int      @default(0)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([blockType, category])
+  @@index([category])
+  @@map("invitation_block_templates")
+}
+
+model InvitationBlock {
+  id                String   @id @default(cuid())
+  invitationId      String?
+  invitationOrderId String?
+  blockType         String
+  title             String?
+  subtitle          String?
+  contentJson       Json?
+  sortOrder         Int      @default(0)
+  isVisible         Boolean  @default(true)
+  styleVariant      String   @default("elegant")
+  language          String   @default("en")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  invitation      Invitation?      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  invitationOrder InvitationOrder? @relation(fields: [invitationOrderId], references: [id], onDelete: Cascade)
+  contents        InvitationBlockContent[]
+  media           InvitationMedia[]
+  galleryItems    InvitationGalleryItem[]
+
+  @@index([invitationId, sortOrder])
+  @@index([invitationOrderId, sortOrder])
+  @@map("invitation_blocks")
+}
+
+model InvitationBlockContent {
+  id          String   @id @default(cuid())
+  blockId     String
+  language    String   @default("en")
+  title       String?
+  subtitle    String?
+  content     String?
+  contentJson Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  block InvitationBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@unique([blockId, language])
+  @@map("invitation_block_content")
+}
+
+model InvitationMedia {
+  id                String   @id @default(cuid())
+  blockId           String?
+  invitationId      String?
+  invitationOrderId String?
+  url               String
+  type              String   @default("image")
+  alt               String?
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  block InvitationBlock? @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@index([blockId])
+  @@map("invitation_media")
+}
+
+model InvitationGalleryItem {
+  id        String   @id @default(cuid())
+  blockId   String
+  url       String
+  caption   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  block InvitationBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@index([blockId, sortOrder])
+  @@map("invitation_gallery_items")
+}
+
+// ─── Legal & Compliance ───────────────────────────────────────────
+
+enum ConsentType {
+  TERMS
+  PRIVACY
+  COOKIE
+  PORTFOLIO
+  DATA_EXPORT
+  DATA_DELETION
+}
+
+model LegalDocumentVersion {
+  id                   String   @id @default(cuid())
+  slug                 String
+  version              String
+  titleEn              String
+  titleFr              String
+  descriptionEn        String   @default("")
+  descriptionFr        String   @default("")
+  contentEn            String
+  contentFr            String
+  effectiveDate        DateTime @default(now())
+  requiresReacceptance Boolean  @default(false)
+  isPublished          Boolean  @default(true)
+  createdBy            String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([slug, version])
+  @@index([slug, isPublished])
+  @@map("legal_document_versions")
+}
+
+model UserConsentRecord {
+  id        String      @id @default(cuid())
+  userId    String
+  type      ConsentType
+  version   String?
+  value     String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("user_consent_records")
+}
+
+// ─── InvitationOS Analytics ───────────────────────────────────────
+
+model InvitationAnalyticsEvent {
+  id             String   @id @default(cuid())
+  eventType      String
+  orderId        String?
+  invitationId   String?
+  guestId        String?
+  userId         String?
+  templateSlug   String?
+  packageSlug    String?
+  addonSlug      String?
+  revenueGhs     Decimal?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([orderId])
+  @@index([invitationId])
+  @@index([userId])
+  @@map("invitation_analytics_events")
+}
