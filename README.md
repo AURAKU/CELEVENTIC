@@ -1,5 +1,7 @@
 # Celeventic
 
+The hub for event organization — managing, tracking, connectivity, and marketplace for all.
+
 **The Intelligent Event Operating System**
 
 Built by Aura Group Innovations (AGI)
