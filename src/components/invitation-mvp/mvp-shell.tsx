@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { Footer } from "@/components/layout/footer";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
 interface MvpShellProps {
   children: React.ReactNode;
@@ -31,7 +30,6 @@ export function MvpShell({ children, step, title, subtitle }: MvpShellProps) {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <Logo size="sm" />
           <div className="flex items-center gap-3">
-            <LanguageSwitcher compact />
             <Link href="/invitations/catalogue" className="text-sm font-medium text-[#0B8A83] hover:underline">
               {t("invitations.browse_templates")}
             </Link>

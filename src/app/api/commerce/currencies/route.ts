@@ -16,7 +16,8 @@ export async function GET() {
     ratesMap[r.targetCurrency] = Number(r.rate);
   }
 
-  return NextResponse.json({
+  return NextResponse.json(
+    {
     success: true,
     data: {
       currencies: currencies.map((c) => ({
@@ -29,5 +30,11 @@ export async function GET() {
       symbols: symbolsMap,
       baseCurrency: "GHS",
     },
-  });
+  },
+    {
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    }
+  );
 }

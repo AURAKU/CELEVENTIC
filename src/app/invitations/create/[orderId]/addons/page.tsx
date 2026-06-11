@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import { MvpShell } from "@/components/invitation-mvp/mvp-shell";
 import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/components/commerce/currency-provider";
-import { CurrencySwitcher } from "@/components/commerce/currency-switcher";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 interface AddonRow {
@@ -85,7 +84,6 @@ export default function AddonsPage() {
   return (
     <MvpShell step={2} title={t("forms.addons_title")} subtitle={t("forms.addons_subtitle")}>
       <div className="max-w-2xl mx-auto space-y-4">
-        <div className="flex justify-center"><CurrencySwitcher /></div>
         {suggested.length > 0 && (
           <div className="rounded-2xl border border-[#D4A63A]/30 bg-[#D4A63A]/5 p-4">
             <p className="text-sm font-semibold text-[#0F172A]">Celeventic Smart Upsells</p>

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { MvpShell } from "@/components/invitation-mvp/mvp-shell";
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/page-loader";
-import { CurrencySwitcher } from "@/components/commerce/currency-switcher";
 import { useCurrency } from "@/components/commerce/currency-provider";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { formatCurrency } from "@/lib/utils";
@@ -85,9 +84,6 @@ export default function CheckoutPage() {
   return (
     <MvpShell step={5} title={t("checkout.title")} subtitle={t("checkout.subtitle")}>
       <div className="max-w-md mx-auto space-y-4">
-        <div className="flex justify-center">
-          <CurrencySwitcher />
-        </div>
         <div className="rounded-2xl border border-slate-200/80 bg-white p-8">
           {error && <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-600 mb-4">{error}</div>}
           <div className="space-y-3 text-sm">

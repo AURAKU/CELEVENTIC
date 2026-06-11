@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
 interface HeaderProps {
   initialSession?: Session | null;
@@ -52,7 +51,6 @@ export function Header({ initialSession }: HeaderProps) {
           ))}
         </nav>
         <div className="hidden md:flex items-center gap-3">
-          <LanguageSwitcher compact />
           {session ? (
             <Button asChild>
               <Link href={dashboardHref}>{t("common.dashboard")}</Link>
@@ -87,9 +85,6 @@ export function Header({ initialSession }: HeaderProps) {
               {t(link.key)}
             </a>
           ))}
-          <div className="pt-3 border-t border-slate-100">
-            <LanguageSwitcher className="px-3 pb-3" />
-          </div>
           <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
             {session ? (
               <Button asChild>

@@ -261,4 +261,9 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
 
   // ── Footer extra ──
   { namespace: "footer", key: "funeral_os", enValue: "FuneralOS", frValue: "FuneralOS" },
+
+  // ── Commerce / currency ──
+  { namespace: "commerce", key: "currency_label", enValue: "Display currency", frValue: "Devise d'affichage" },
+  { namespace: "commerce", key: "currency_hint", enValue: "Base prices in GHS · charged in GHS via Paystack", frValue: "Prix de base en GHS · facturé en GHS via Paystack" },
+  { namespace: "commerce", key: "display_currency_note", enValue: "Prices shown in {currency} for reference · you pay in GHS", frValue: "Prix affichés en {currency} à titre indicatif · paiement en GHS" },
 ];

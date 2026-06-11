@@ -8,7 +8,7 @@ import { InvitationRenderer } from "@/components/invitation/invitation-renderer"
 import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { BlockRenderer } from "@/components/invitation-blocks/block-renderer";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { PreferencesToolbar } from "@/components/layout/preferences-toolbar";
 import { PortalSection } from "@/components/guest-portal/portal-section";
 import { AddToCalendarButton } from "@/components/guest-portal/add-to-calendar-button";
 import { AgiFooter } from "@/components/agi-engine/agi-badge";
@@ -119,14 +119,19 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
       )}
 
       <div className="relative z-10">
-        {props.allowedLocales && props.allowedLocales.length > 1 && (
-          <div className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/90 backdrop-blur-xl">
-            <div className="mx-auto max-w-2xl flex items-center justify-between px-4 py-2">
-              <span className="text-xs font-medium text-slate-500">{t("invite.guest_language")}</span>
-              <LanguageSwitcher compact allowedLocales={props.allowedLocales} />
-            </div>
+        <div className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/90 backdrop-blur-xl">
+          <div className="mx-auto max-w-2xl flex items-center justify-between px-4 py-2 gap-3">
+            <span className="text-xs font-medium text-slate-500 shrink-0">{t("invite.guest_language")}</span>
+            <PreferencesToolbar
+              allowedLocales={
+                props.allowedLocales && props.allowedLocales.length > 0
+                  ? props.allowedLocales
+                  : undefined
+              }
+              showLanguage={!props.allowedLocales || props.allowedLocales.length > 1}
+            />
           </div>
-        )}
+        </div>
 
         <InvitationRenderer
           invitation={displayInvitation}

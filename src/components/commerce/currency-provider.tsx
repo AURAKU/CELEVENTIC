@@ -11,11 +11,13 @@ interface CurrencyContextValue {
   convert: (amountGhs: number) => number;
   format: (amountGhs: number) => string;
   loading: boolean;
+  refreshRates: () => Promise<void>;
 }
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 
 const STORAGE_KEY = "celeventic_display_currency";
+const RATE_POLL_MS = 45_000;
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [currency, setCurrencyState] = useState<DisplayCurrency>("GHS");
@@ -23,19 +25,34 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [symbols, setSymbols] = useState<Record<string, string>>({ GHS: "₵", USD: "$", GBP: "£" });
   const [loading, setLoading] = useState(true);
 
+  const refreshRates = useCallback(async () => {
+    try {
+      const res = await fetch("/api/commerce/currencies", { cache: "no-store" });
+      const d = await res.json();
+      if (d.success) {
+        setRates(d.data.rates);
+        setSymbols(d.data.symbols);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as DisplayCurrency | null;
     if (stored && ["GHS", "USD", "GBP"].includes(stored)) setCurrencyState(stored);
-    fetch("/api/commerce/currencies")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) {
-          setRates(d.data.rates);
-          setSymbols(d.data.symbols);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, []);
+
+    refreshRates();
+    const interval = setInterval(refreshRates, RATE_POLL_MS);
+
+    const onFocus = () => refreshRates();
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [refreshRates]);
 
   const setCurrency = useCallback((c: DisplayCurrency) => {
     setCurrencyState(c);
@@ -61,7 +78,9 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, rates, symbols, convert, format, loading }}>
+    <CurrencyContext.Provider
+      value={{ currency, setCurrency, rates, symbols, convert, format, loading, refreshRates }}
+    >
       {children}
     </CurrencyContext.Provider>
   );

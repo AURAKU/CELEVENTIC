@@ -7,7 +7,6 @@ import { VendorCard, type VendorCardData } from "@/components/vendor-os/vendor-c
 import { Search, Store } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
 interface Category {
   slug: string;
@@ -46,9 +45,6 @@ export function MarketplaceClient() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F4]">
-      <div className="flex justify-end px-4 pt-4 max-w-6xl mx-auto">
-        <LanguageSwitcher compact />
-      </div>
       <div className="bg-gradient-to-br from-[#0F172A] via-[#1a3a38] to-[#0B8A83] text-white py-16 px-4">
         <div className="max-w-5xl mx-auto text-center space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm">

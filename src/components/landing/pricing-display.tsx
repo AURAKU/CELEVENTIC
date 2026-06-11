@@ -6,18 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { useCurrency } from "@/components/commerce/currency-provider";
+import type { PricingPlan } from "@/lib/packages";
 
-export interface PricingPlanDisplay {
-  name: string;
-  desc: string;
-  price: string;
-  guests: number;
-  features: string[];
-  popular?: boolean;
-}
-
-export function PricingDisplay({ plans }: { plans: PricingPlanDisplay[] }) {
+export function PricingDisplay({ plans }: { plans: PricingPlan[] }) {
   const { t } = useLocale();
+  const { format, currency } = useCurrency();
 
   return (
     <section id="pricing" className="py-28 bg-mesh relative">
@@ -30,6 +24,9 @@ export function PricingDisplay({ plans }: { plans: PricingPlanDisplay[] }) {
           </span>
           <h2 className="section-heading">{t("landing.pricing_title")}</h2>
           <p className="section-subheading mx-auto">{t("landing.pricing_subtitle_short")}</p>
+          {currency !== "GHS" && (
+            <p className="mt-3 text-xs text-slate-500">{t("commerce.display_currency_note", { currency })}</p>
+          )}
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => (
@@ -50,11 +47,16 @@ export function PricingDisplay({ plans }: { plans: PricingPlanDisplay[] }) {
                 <CardTitle>{plan.name}</CardTitle>
                 <CardDescription>{plan.desc}</CardDescription>
                 <div className="mt-4">
-                  <span className="font-display text-4xl font-bold text-slate-900">{plan.price}</span>
-                  {plan.price !== t("common.free") && (
+                  <span className="font-display text-4xl font-bold text-slate-900">
+                    {plan.priceGhs === 0 ? t("common.free") : format(plan.priceGhs)}
+                  </span>
+                  {plan.priceGhs > 0 && (
                     <span className="text-slate-500 text-sm">{t("landing.pricing_per_event")}</span>
                   )}
                 </div>
+                {plan.priceGhs > 0 && currency !== "GHS" && (
+                  <p className="text-xs text-slate-400 mt-1">{t("invitations.base_price_note")}</p>
+                )}
                 <p className="text-sm text-slate-500">
                   {t("landing.pricing_guests", { n: plan.guests.toLocaleString() })}
                 </p>

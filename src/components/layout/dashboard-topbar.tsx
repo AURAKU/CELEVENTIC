@@ -5,7 +5,6 @@ import { Bell, Search, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
 interface DashboardTopbarProps {
   onMenuClick?: () => void;
@@ -51,7 +50,6 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <LanguageSwitcher compact />
         <Button variant="ghost" size="icon" className="relative rounded-xl">
           <Bell className="h-4 w-4" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-gold-400 ring-2 ring-white" />
