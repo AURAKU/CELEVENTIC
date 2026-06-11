@@ -16,7 +16,7 @@ export function Footer() {
     ],
     [t("footer.solutions")]: [
       { label: t("footer.wedding_invitations"), href: "/templates" },
-      { label: "FuneralOS", href: "/discover" },
+      { label: t("footer.funeral_os"), href: "/discover" },
       { label: t("footer.discover_events"), href: "/discover" },
     ],
     [t("footer.company")]: [
@@ -25,13 +25,14 @@ export function Footer() {
       { label: t("footer.faq"), href: "/legal/faq" },
     ],
     [t("footer.legal")]: [
+      { label: t("footer.legal_center"), href: "/legal" },
       { label: t("footer.terms"), href: "/legal/terms" },
       { label: t("footer.privacy"), href: "/legal/privacy" },
       { label: t("footer.refund"), href: "/legal/refund" },
-      { label: "Cookie Policy", href: "/legal/cookie" },
-      { label: "Revision Policy", href: "/legal/revision-policy" },
-      { label: "IP Policy", href: "/legal/intellectual-property" },
-      { label: "Data Rights", href: "/legal/data-rights" },
+      { label: t("footer.cookie_policy"), href: "/legal/cookie" },
+      { label: t("footer.revision_policy"), href: "/legal/revision-policy" },
+      { label: t("footer.ip_policy"), href: "/legal/intellectual-property" },
+      { label: t("footer.data_rights"), href: "/legal/data-rights" },
     ],
   };
 

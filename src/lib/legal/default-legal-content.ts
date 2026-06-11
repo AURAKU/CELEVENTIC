@@ -1,5 +1,6 @@
-import { LEGAL_CONTACT } from "./constants";
+import { LEGAL_CONTACT, LEGAL_POLICY_SLUGS } from "./constants";
 import type { LegalPolicySlug } from "./constants";
+import { FRENCH_LEGAL_CONTENT } from "./french-legal-content";
 
 export interface LegalDocumentDefaults {
   titleEn: string;
@@ -13,69 +14,234 @@ export interface LegalDocumentDefaults {
 const { phone, email, company, jurisdiction } = LEGAL_CONTACT;
 
 export const DEFAULT_LEGAL_DOCUMENTS: Record<LegalPolicySlug, LegalDocumentDefaults> = {
+  terms: {
+    titleEn: "Terms and Conditions",
+    titleFr: "Conditions générales",
+    descriptionEn: "Terms governing your use of Celeventic invitation, event, and marketplace services.",
+    descriptionFr: "Conditions régissant l'utilisation des services Celeventic.",
+    contentEn: `## 1. Agreement
+These Terms and Conditions ("Terms") are a binding agreement between you and ${company}, operating from the ${jurisdiction}. Contact: ${email} | ${phone}.
+
+By creating an account, placing an invitation order, using VendorOS, or accessing guest invitation links, you agree to these Terms and our [Privacy Policy](/legal/privacy).
+
+## 2. Platform Overview
+Celeventic is an Event Operating System that includes:
+
+- **InvitationOS** — digital invitation studio, guest portal, RSVP, QR admission, and production workflow
+- **VendorOS** — vendor marketplace, profiles, lead requests, and verified vendor plans
+- **Event tools** — guest CRM, ticketing, communications, and event discovery
+- **Celeventic Intelligence** — smart design assistance and content tools (publicly branded as AGI Engine / Celeventic Intelligence)
+
+Features vary by package, role, and subscription plan.
+
+## 3. Accounts & Roles
+You must provide accurate registration information and keep credentials secure. Celeventic supports organizer, vendor, venue, agency, and admin roles. You are responsible for all activity under your account.
+
+## 4. Invitation Orders
+The invitation flow works as follows:
+
+1. Choose a template and package (Starter, Celebration, Signature, Prestige, or Bespoke)
+2. Add event details, blocks, and optional add-ons
+3. Review checkout pricing in GHS (with USD/GBP display references)
+4. Pay via Paystack where applicable
+5. Progress through production stages: information collection → design → review → revisions → approval → publish
+
+You confirm event details and accept these Terms, [Refund Policy](/legal/refund), and [Privacy Policy](/legal/privacy) at checkout.
+
+## 5. Production & Delivery
+Digital invitations are delivered electronically via your unique guest link (\`/invite/[link]\`), QR codes, and optional WhatsApp sharing. Delivery timelines depend on your package. Delays caused by incomplete information, late feedback, or revision rounds may extend timelines.
+
+Production modes include self-service, designer-assisted, and bespoke flows as described at checkout.
+
+## 6. Revisions
+Included revisions depend on your package. Minor information changes (date, time, venue, spelling) may be handled differently from major design changes (layout, theme, new sections). See our [Revision Policy](/legal/revision-policy).
+
+## 7. Payments
+Prices are displayed in Ghana Cedis (GHS). Paystack processes card and mobile money payments in GHS. Payment references and transaction metadata are stored; Celeventic does not store full card numbers. See [Refund Policy](/legal/refund) for cancellation rules.
+
+## 8. VendorOS Marketplace
+Vendors may create profiles, upload media within plan limits, receive leads, and subscribe to Free, Verified, Premium, or Enterprise plans. Organizers may browse vendors, request quotes, and save favorites. Vendor listings must be accurate and lawful. Celeventic may verify, suspend, or remove vendors who violate these Terms.
+
+## 9. Guest Data & Organiser Responsibilities
+As an event organiser, you are responsible for lawful collection and use of guest data (names, phone numbers, RSVP responses). You must have appropriate consent to upload guest lists and send communications. Celeventic processes guest data on your instructions to deliver invitation and admission services.
+
+## 10. Intellectual Property
+Celeventic retains rights in platform code, base templates, and design systems. You retain rights in your personal content. Portfolio showcase requires explicit opt-in at checkout. See [Intellectual Property Policy](/legal/intellectual-property).
+
+## 11. Acceptable Use
+You may not: spam guests; commit fraud; scrape the platform; upload infringing or harmful content; misuse vendor or guest data; attempt unauthorised access; or circumvent payment or plan limits.
+
+## 12. Limitation of Liability
+To the fullest extent permitted by Ghanaian law, Celeventic is not liable for indirect or consequential damages. Our aggregate liability for a single paid order is limited to fees paid for that order in the preceding twelve months, except where liability cannot be limited by law.
+
+## 13. Modifications
+We may update these Terms via the Legal Center. Material changes may require re-acceptance when you next sign in. Continued use after notice constitutes acceptance where permitted by law.
+
+## 14. Governing Law
+These Terms are governed by the laws of the ${jurisdiction}. Disputes should first be raised via ${email}.
+
+## 15. Contact
+${email} | ${phone}`,
+    contentFr: `## Accord
+Contrat entre vous et ${company} (${jurisdiction}). Contact : ${email}
+
+## Plateforme
+Celeventic comprend InvitationOS (invitations, RSVP, QR), VendorOS (marketplace prestataires), et les outils événementiels associés.
+
+## Commandes
+Choix du modèle et forfait, paiement Paystack en GHS, production et publication via lien invité unique.
+
+## Révisions et remboursements
+Voir [Politique de révision](/legal/revision-policy) et [Politique de remboursement](/legal/refund).
+
+## Propriété intellectuelle
+Voir [Politique de propriété intellectuelle](/legal/intellectual-property).
+
+## Droit applicable
+Lois de la ${jurisdiction}. Contact : ${email} | ${phone}`,
+  },
+
   privacy: {
     titleEn: "Privacy Policy",
     titleFr: "Politique de confidentialité",
-    descriptionEn: "How Celeventic collects, uses, and protects your personal data.",
+    descriptionEn: "How Celeventic collects, uses, and protects your personal data across InvitationOS and VendorOS.",
     descriptionFr: "Comment Celeventic collecte, utilise et protège vos données personnelles.",
     contentEn: `## Effective Date
-This Privacy Policy is effective as of the date published on this page and applies to all users of the Celeventic platform.
+This Privacy Policy applies to all users of Celeventic — organisers, vendors, guests, and administrators.
 
 ## Data Controller
-Celeventic ("we", "us", "our") is the data controller for personal information processed through our invitation, event, and ticketing services. Our primary place of business is ${jurisdiction}.
+${company} is the data controller for personal information processed through our platform. Primary place of business: ${jurisdiction}.
 
 Contact: ${email} | Phone: ${phone}
 
-## Scope & Jurisdiction
-This policy is designed with reference to the Ghana Data Protection Act, 2012 (Act 843) and applicable international data protection principles for users outside Ghana. Where payment processing is involved, our payment partners (including Paystack) act as independent processors under their own terms.
+## Scope
+This policy covers data processed through:
+
+- Account registration and authentication (including NextAuth sessions and optional 2FA)
+- InvitationOS orders, guest portals, RSVP, and QR admission
+- VendorOS profiles, leads, media uploads, and marketplace interactions
+- Payments via Paystack (we receive references and metadata, not full card numbers)
+- Communications (email, SMS, WhatsApp where enabled)
+- Privacy Center consent records and cookie preferences
+
+We design this policy with reference to the Ghana Data Protection Act, 2012 (Act 843).
 
 ## Data We Collect
-We may collect: account details (name, email, phone); event and invitation content (names, dates, venues, photos, messages); guest and RSVP data you upload; payment references and transaction metadata (we do not store full card numbers); technical data (IP address, device type, browser); communications with support; and consent records.
 
-## Purpose of Processing
-We process data to: provide and improve our services; fulfil invitation orders; process payments; send service communications; prevent fraud; comply with law; and maintain platform security.
+| Category | Examples |
+|----------|----------|
+| Account | Name, email, phone, role, password hash |
+| Event & invitation | Event title, date, venue, photos, messages, blocks |
+| Guest data | Names, RSVP status, dietary notes, QR tokens (uploaded by organisers) |
+| Vendor | Business name, category, portfolio media, verification documents |
+| Payment | Paystack reference, amount, status, purpose |
+| Technical | IP address, device type, browser, session logs |
+| Consent | Terms version, privacy version, cookie choice, portfolio opt-in |
+
+## How We Use Data
+We process data to: deliver invitation and event services; operate VendorOS; process payments; send service notifications; provide Celeventic Intelligence features; prevent fraud; maintain security audit logs; and comply with legal obligations.
 
 ## Legal Basis
-Depending on context, we rely on: contract performance (delivering your order); legitimate interests (security, analytics, service improvement); consent (marketing, portfolio showcase, non-essential cookies); and legal obligation.
+Contract performance (fulfilling your order); legitimate interests (security, analytics, service improvement); consent (marketing, portfolio showcase, non-essential cookies); and legal obligation.
 
-## Data Retention
-Account data is retained while your account is active and for a reasonable period thereafter. Order and payment records are kept as required for accounting, dispute resolution, and legal compliance. You may request earlier deletion subject to lawful exceptions.
+## Data Sharing
+We share data with: Paystack and other payment processors; hosting providers; email/SMS/WhatsApp providers; designers assigned to your order; and authorities when required by law. We do not sell personal data.
 
-## Data Recipients
-We share data with: payment processors (e.g. Paystack); hosting and infrastructure providers; email and messaging providers; designers assigned to your order; and authorities when required by law. We do not sell personal data.
-
-## International Transfers
-Where data is processed outside Ghana, we apply appropriate safeguards consistent with applicable law and processor agreements.
+## Retention
+Account data is retained while active and for a reasonable period after closure. Payment and order records are kept for accounting, disputes, and legal compliance. Guest RSVP data may be retained per organiser settings and event lifecycle.
 
 ## Your Rights
-Subject to Act 843 and applicable law, you may: access your data; correct inaccuracies; request deletion; restrict or object to certain processing; withdraw consent; and lodge a complaint with the Ghana Data Protection Commission. Use our Data Rights page or contact ${email}.
+Under Act 843 you may access, correct, delete, restrict, or object to processing, and withdraw consent. Exercise rights via [Data Rights](/legal/data-rights) or Dashboard → [Privacy Center](/dashboard/privacy-center).
 
-## Data Security
-We implement administrative, technical, and organisational measures including access controls, encryption in transit, audit logging, and staff confidentiality obligations. No system is completely risk-free; report concerns promptly.
+## Cookies
+See our [Cookie Policy](/legal/cookie). Manage preferences in Privacy Center or via the site cookie banner.
+
+## Security
+We use access controls, encryption in transit, audit logging, and staff confidentiality obligations. Report concerns to ${email}.
 
 ## Children's Data
-Our services are not directed at children under 16 without parental or guardian involvement. Organisers are responsible for lawful collection of guest data, including minors.
+Services are not directed at children under 16 without guardian involvement. Organisers are responsible for lawful guest data collection.
 
-## Policy Updates
-We may update this policy. Material changes will be communicated via the platform or email. Continued use after notice constitutes acceptance where permitted by law.
+## Updates
+Material changes are published in the Legal Center and may require re-acceptance.
 
 ## Contact
 ${company} — ${email} | ${phone}`,
-    contentFr: `## Date d'effet
-Cette politique s'applique à tous les utilisateurs de la plateforme Celeventic.
-
-## Responsable du traitement
-Celeventic est le responsable du traitement. Siège principal : ${jurisdiction}.
-Contact : ${email} | Tél. : ${phone}
+    contentFr: `## Responsable
+${company}, ${jurisdiction}. Contact : ${email}
 
 ## Données collectées
-Compte, contenu d'événements et d'invitations, données RSVP, références de paiement, données techniques et historique de consentement.
-
-## Finalités
-Fourniture du service, traitement des commandes, paiements, sécurité, conformité légale et amélioration de la plateforme.
+Compte, invitations, données invités, profils vendeurs, paiements Paystack, consentements.
 
 ## Vos droits
-Accès, rectification, suppression, limitation, opposition et retrait du consentement conformément à la loi ghanéenne (Act 843) et aux principes internationaux applicables.
+Accès, rectification, suppression via [Droits sur les données](/legal/data-rights) ou le [Centre de confidentialité](/dashboard/privacy-center).
+
+## Cookies
+Voir [Politique des cookies](/legal/cookie).
+
+## Contact
+${email} | ${phone}`,
+  },
+
+  refund: {
+    titleEn: "Refund Policy",
+    titleFr: "Politique de remboursement",
+    descriptionEn: "Refund rules for Celeventic digital invitation packages and production services.",
+    descriptionFr: "Règles de remboursement pour les forfaits d'invitation numérique.",
+    contentEn: `## Nature of Service
+Celeventic provides custom digital invitation and design production through InvitationOS. Once creative production begins — including designer assignment, draft creation, or AGI Engine-assisted generation — resources are allocated specifically to your project.
+
+## Package Reference
+
+| Package | Price (GHS) | Included Revisions |
+|---------|-------------|-------------------|
+| Starter | Free | 1 |
+| Celebration | 199 | 2 |
+| Signature | 499 | 3 |
+| Prestige | 999 | 5 |
+| Bespoke | 2,499 | 10 |
+
+Paid packages are subject to the refund rules below. Free Starter orders have no payment to refund.
+
+## Full Refund — Before Production Starts
+You may request a full refund if:
+
+- Payment was made in error
+- You cancel before production status moves beyond payment/information collection
+- You contact us within 48 hours of payment
+
+Refunds are processed to the original Paystack payment method where possible.
+
+## No Refund After Production Begins
+Once production status reaches **Production Started**, **Design Ready**, **Revision In Progress**, or beyond, fees are generally non-refundable because custom work has begun.
+
+This includes partial completion, designer-assisted work, and revision rounds.
+
+## Payment Processor Fees
+Paystack and other processor fees may be non-refundable and deducted from approved refunds.
+
+## Revisions Before Refunds
+If you are dissatisfied with design direction, use your included revisions or purchase extra revisions per our [Revision Policy](/legal/revision-policy) before requesting cancellation.
+
+## Extra Revision Purchases
+Paid extra revisions (default GHS 79 per round beyond package allowance) are non-refundable once the revision work has started.
+
+## How to Request a Refund
+Email ${email} or call ${phone} with your order reference. We review production status, revision history, and package terms. Approved refunds are processed within 14 business days.
+
+## Chargebacks
+Unauthorised chargebacks without contacting us first may result in account suspension.
+
+## Contact
+${email} | ${phone}`,
+    contentFr: `## Service personnalisé
+Les invitations numériques sont produites sur mesure. Après le début de la production, les frais ne sont généralement pas remboursables.
+
+## Avant production
+Remboursement intégral possible si annulation dans les 48 heures et avant le début du travail créatif.
+
+## Révisions
+Utilisez d'abord les révisions incluses — voir [Politique de révision](/legal/revision-policy).
 
 ## Contact
 ${email} | ${phone}`,
@@ -84,202 +250,122 @@ ${email} | ${phone}`,
   cookie: {
     titleEn: "Cookie Policy",
     titleFr: "Politique des cookies",
-    descriptionEn: "How Celeventic uses cookies and similar technologies.",
+    descriptionEn: "How Celeventic uses cookies, local storage, and session technologies.",
     descriptionFr: "Comment Celeventic utilise les cookies et technologies similaires.",
     contentEn: `## What Are Cookies
-Cookies are small text files stored on your device when you visit Celeventic. They help us operate the platform, remember preferences, and understand usage.
+Cookies are small text files stored on your device. Celeventic also uses local storage and secure session tokens for authentication and preferences.
 
-## How We Use Cookies
-We use cookies and similar technologies (local storage, session tokens) for authentication, security, language preference, currency display, and — with your consent — analytics and marketing.
+## How We Use Them
+
+| Type | Purpose |
+|------|---------|
+| Necessary | Login sessions (NextAuth), security, load balancing, consent status |
+| Functional | Language (EN/FR), currency display (GHS/USD/GBP), dashboard preferences |
+| Analytics | Feature usage and performance (with your consent only) |
+| Marketing | Campaign measurement (with your consent only) |
 
 ## Necessary Cookies
-These are essential for the platform to function. They include session authentication, security tokens, load balancing, and consent status. These cannot be disabled while using the service.
 
 | Name | Purpose | Duration |
 |------|---------|----------|
 | session / auth token | Keeps you signed in securely | Session |
-| celeventic_cookie_consent | Records your cookie choice | 12 months |
+| celeventic_cookie_consent | Records your cookie banner choice | 12 months |
 | locale / currency prefs | Language and display currency | 12 months |
 
-## Analytics Cookies
-With your consent, we may use analytics to understand feature usage and improve performance. These are not essential.
-
-## Marketing Cookies
-With your consent, we may use cookies for campaign measurement and remarketing. You may decline marketing cookies and still use core features.
+These cannot be disabled while using authenticated features.
 
 ## Third-Party Cookies
-Payment providers (e.g. Paystack) may set cookies during checkout under their own policies. Embedded maps or media may also set third-party cookies.
+Paystack may set cookies during checkout under their own policy. Embedded maps, media, or social widgets may set third-party cookies.
 
-## Consent
-On first visit, we present a cookie banner. You may accept all cookies or essential only. You can change your choice anytime in Privacy Center.
+## Consent Management
+On first visit, a cookie banner lets you choose **Essential Only** or **Accept All**. Signed-in users can update preferences anytime in [Privacy Center](/dashboard/privacy-center).
 
 ## Managing Cookies
-Use our Privacy Center, browser settings, or contact ${email}. Blocking necessary cookies may prevent login or checkout.
+- Use Privacy Center to update consent
+- Use browser settings to block cookies (may break login or checkout)
+- Contact ${email} for assistance
 
-## Updates
-We may update this policy. See the effective date at the top of this page.
+## Related Policies
+[Privacy Policy](/legal/privacy) · [Data Rights](/legal/data-rights)
 
 ## Contact
 ${email} | ${phone}`,
-    contentFr: `## Qu'est-ce qu'un cookie
-Fichiers texte stockés sur votre appareil pour faire fonctionner Celeventic et mémoriser vos préférences.
-
-## Cookies nécessaires
+    contentFr: `## Cookies nécessaires
 Authentification, sécurité, langue et consentement — indispensables au service.
 
-## Cookies analytiques et marketing
-Utilisés uniquement avec votre consentement via la bannière ou le Centre de confidentialité.
-
-## Gestion
-Modifiez vos choix dans le Centre de confidentialité ou les paramètres du navigateur.
-Contact : ${email}`,
-  },
-
-  terms: {
-    titleEn: "Terms and Conditions",
-    titleFr: "Conditions générales",
-    descriptionEn: "Terms governing your use of Celeventic invitation and event services.",
-    descriptionFr: "Conditions régissant l'utilisation des services Celeventic.",
-    contentEn: `## 1. Identification
-These Terms and Conditions ("Terms") are a binding agreement between you and Celeventic, operating from ${jurisdiction}. Contact: ${email} | ${phone}.
-
-## 2. Service Description
-Celeventic provides digital invitation design, event microsites, guest management, ticketing tools, and related premium event services. Features vary by package.
-
-## 3. Account Registration
-You must provide accurate information and keep credentials secure. You are responsible for activity under your account.
-
-## 4. Ordering Process
-You select a template, package, add-ons, and provide event details. Orders progress through preview, checkout, and production. You confirm details before payment.
-
-## 5. Prices and Payment
-Prices are displayed in GHS with optional USD/GBP reference rates. Paystack processes payments in GHS. Taxes and processor fees may apply. Prices are confirmed at checkout.
-
-## 6. Delivery
-Digital invitations are delivered electronically via share link or published invite page. Delivery timelines depend on your package. We are not liable for delays caused by incomplete information from you.
-
-## 7. Revisions
-Included revisions depend on your package. Additional revisions may be billable. See our Revision Policy. Information-only changes may be accommodated at no design cost where stated.
-
-## 8. Your Obligations
-You must: provide lawful, accurate content; obtain rights to photos and media you upload; not upload harmful, defamatory, or infringing material; comply with guest data laws; and use the platform responsibly.
-
-## 9. Intellectual Property
-Celeventic retains rights in platform code, base templates, and design systems. You retain rights in your personal content. See our Intellectual Property Policy. Portfolio showcase requires your explicit opt-in at checkout.
-
-## 10. Acceptable Use
-No spam, fraud, unauthorised access, scraping, or misuse of guest data. We may suspend accounts for violations.
-
-## 11. Limitation of Liability
-To the fullest extent permitted by Ghanaian law, Celeventic is not liable for indirect, consequential, or special damages. Our aggregate liability for a single order is limited to fees paid for that order in the preceding twelve months, except where liability cannot be limited by law.
-
-## 12. Data Protection
-We process personal data per our Privacy Policy and Act 843. You are responsible for lawful guest data collection as an event organiser.
-
-## 13. Modifications
-We may update these Terms. Material changes may require re-acceptance. Continued use after notice constitutes acceptance where permitted.
-
-## 14. Applicable Law
-These Terms are governed by the laws of ${jurisdiction}. Disputes shall first be addressed through good-faith support contact.
-
-## 15. Contact
-${email} | ${phone}`,
-    contentFr: `## Identification
-Contrat entre vous et Celeventic (${jurisdiction}). Contact : ${email}
-
-## Description du service
-Invitations numériques, microsites événementiels, gestion des invités et services premium associés.
-
-## Commandes et paiement
-Prix en GHS, paiement via Paystack. Détails confirmés au moment du paiement.
-
-## Livraison et révisions
-Livraison électronique selon le forfait. Révisions incluses selon package — voir Politique de révision.
-
-## Propriété intellectuelle
-Celeventic conserve les droits sur la plateforme et les modèles de base. Vous conservez vos contenus personnels.
-
-## Droit applicable
-Lois de la ${jurisdiction}. Contact : ${email} | ${phone}`,
-  },
-
-  refund: {
-    titleEn: "Refund Policy",
-    titleFr: "Politique de remboursement",
-    descriptionEn: "Refund rules for Celeventic custom digital invitation services.",
-    descriptionFr: "Règles de remboursement pour les services d'invitation numérique.",
-    contentEn: `## Nature of Service
-Celeventic provides custom digital invitation and design services. Once creative production begins, resources are allocated to your project and deliverables are prepared specifically for you.
-
-## Refund Eligibility — Before Work Starts
-You may request a full refund if: payment was made in error; you cancel before any design or production work has commenced; and you contact us within 48 hours of payment. Refunds are processed to the original payment method where possible.
-
-## No Refund After Production Begins
-Once a designer is assigned, drafts are created, or production status moves beyond "Not Started", fees are generally non-refundable because custom work has begun. This includes partial completion and revision rounds.
-
-## Payment Processor Fees
-Third-party payment fees charged by Paystack or other processors may be non-refundable and deducted from any approved refund.
-
-## Revisions Instead of Refunds
-Where you are dissatisfied with a design direction, we encourage use of included revisions or paid extra revisions per our Revision Policy before requesting cancellation.
-
-## Satisfaction Workflow
-Contact ${email} or ${phone} with your order reference. We will review production status, revision history, and package terms. Approved refunds are processed within 14 business days.
-
-## Chargebacks
-Unauthorised chargebacks without contacting us first may result in account suspension and recovery of costs.
+## Consentement
+Bannière au premier visit. Gérez vos choix dans le [Centre de confidentialité](/dashboard/privacy-center).
 
 ## Contact
-${email} | ${phone}`,
-    contentFr: `## Nature du service
-Service numérique personnalisé. Une fois la production commencée, les frais ne sont généralement pas remboursables.
-
-## Avant le début du travail
-Remboursement possible si annulation avant toute production et dans les 48 heures suivant le paiement.
-
-## Après le début de la production
-Pas de remboursement une fois le design commencé. Frais de processeur de paiement peuvent être déduits.
-
-## Contact
-${email} | ${phone}`,
+${email}`,
   },
 
   "revision-policy": {
     titleEn: "Revision Policy",
     titleFr: "Politique de révision",
-    descriptionEn: "How revisions work across Celeventic invitation packages.",
+    descriptionEn: "How invitation revisions work across Celeventic packages and production workflow.",
     descriptionFr: "Fonctionnement des révisions selon les forfaits Celeventic.",
-    contentEn: `## Included Revisions
-Each package includes a defined number of design revisions (see package details at checkout). A revision round covers feedback on layout, colours, typography, and content placement within the selected template style.
+    contentEn: `## Overview
+Every Celeventic invitation package includes a defined number of design revision rounds. Revisions are managed through your dashboard production workflow and tracked in the admin revision system.
+
+## Included Revisions by Package
+
+| Package | Included Revisions | Delivery |
+|---------|-------------------|----------|
+| Starter | 1 | 1 day |
+| Celebration | 2 | 2 days |
+| Signature | 3 | 3 days |
+| Prestige | 5 | 5 days |
+| Bespoke | 10 | Custom |
+
+A revision round covers consolidated feedback on layout, colours, typography, and content placement within your selected template style.
+
+## Minor vs Major Changes
+Celeventic classifies revision requests to keep production fair and efficient:
+
+### Minor (often no revision credit used)
+- Date, time, or venue changes
+- Phone number updates
+- Spelling corrections
+- Factual text updates without layout changes
+
+### Major (counts as a revision round)
+- Theme or colour overhaul
+- Layout structure changes
+- New animation or motion sections
+- New design sections beyond the original scope
 
 ## Extra Revisions
-Revisions beyond your package allowance may be purchased at published rates. Extra revisions are billed before work continues.
+Beyond your package allowance, extra revisions may be purchased (default GHS 79 per round). Extra revisions are billed before work continues.
 
-## Information Changes (Often Free)
-Changes to factual event information — date, time, venue name, contact details, RSVP wording — that do not require redesign may be updated at no charge until your event date, provided the overall design structure remains unchanged.
+## Production Workflow Stages
+Your order progresses through stages including: Payment Successful → Information Pending → Production Started → Design Ready → Customer Reviewing → Revision Requested → Revision In Progress → Approved → Delivered → Published.
 
-## Major Design Changes
-Requests that alter template style, layout structure, colour scheme, or add new design sections may count as a revision or require a paid upgrade depending on scope.
+Delays in providing consolidated feedback may extend delivery timelines.
 
-## Approval Process
-After revisions, we may request your approval before publishing. Delays in feedback may affect delivery timelines.
+## How to Submit Revisions
+1. Open your invitation order in the dashboard
+2. Submit clear, consolidated feedback in one request where possible
+3. Or email ${email} with your order reference
 
-## Revision Requests
-Submit clear, consolidated feedback via your dashboard or ${email}. Multiple small messages may be grouped into one revision round.
+Multiple small messages may be grouped into one revision round.
+
+## Approval
+After revisions, we may request your explicit approval before publishing your guest link.
+
+## Related Policies
+[Terms and Conditions](/legal/terms) · [Refund Policy](/legal/refund)
 
 ## Contact
 ${email} | ${phone}`,
     contentFr: `## Révisions incluses
-Chaque forfait inclut un nombre défini de révisions de design.
+De 1 (Starter) à 10 (Bespoke) selon le forfait.
+
+## Changements mineurs vs majeurs
+Date, heure, lieu — souvent sans utiliser une révision. Changements de thème ou mise en page — comptent comme révision.
 
 ## Révisions supplémentaires
-Facturées au-delà du forfait inclus.
-
-## Changements d'information
-Date, heure, lieu — gratuits si aucun changement de design n'est requis, jusqu'à la date de l'événement.
-
-## Changements majeurs
-Modifications structurelles ou de style pouvant compter comme révision payante.
+GHS 79 par tour au-delà du forfait inclus.
 
 ## Contact
 ${email} | ${phone}`,
@@ -288,39 +374,63 @@ ${email} | ${phone}`,
   "intellectual-property": {
     titleEn: "Intellectual Property Policy",
     titleFr: "Politique de propriété intellectuelle",
-    descriptionEn: "Ownership of platform assets, templates, and your content.",
+    descriptionEn: "Ownership of Celeventic platform assets, templates, AGI Engine outputs, and your content.",
     descriptionFr: "Propriété des actifs de la plateforme, modèles et de vos contenus.",
     contentEn: `## Celeventic Ownership
-Celeventic owns and retains all rights in: platform source code and software; base invitation templates and layout systems; design systems, UI components, and brand assets; stock graphic elements created by Celeventic; and documentation unless expressly transferred.
+${company} owns and retains all rights in:
+
+- Platform source code, APIs, and software architecture
+- Base invitation templates, layout systems, and design components
+- Celeventic brand assets, UI systems, and documentation
+- Stock graphic elements created by Celeventic
+- AGI Engine / Celeventic Intelligence tooling and generated design frameworks (excluding your personal content inputs)
 
 ## Your Ownership
-You retain ownership of: personal photographs and videos you upload; personal names and event details you provide; messages and stories you write; and other original content you lawfully supply.
+You retain ownership of:
+
+- Personal photographs and videos you upload
+- Personal names, event details, and messages you write
+- Your original creative content lawfully supplied
 
 ## Licence to Celeventic
-By uploading content, you grant Celeventic a limited licence to host, display, process, and reproduce your content solely to deliver your invitation and related services.
+By uploading content, you grant Celeventic a limited licence to host, display, process, and reproduce your content solely to deliver your invitation, guest portal, QR admission, and related services.
 
-## Portfolio Consent
-At checkout, you may opt in to allow Celeventic to showcase your completed invitation in our portfolio, website, or marketing materials. If you select "Keep my invitation private", we will not use your invitation for promotional purposes without separate written consent.
+## Portfolio Consent at Checkout
+At checkout you choose whether Celeventic may showcase your completed invitation in our portfolio, website, or marketing:
 
-## Bespoke Ownership
+- **Allow portfolio showcase** — Celeventic may display your invitation as a sample
+- **Keep private** — we will not use your invitation for promotional purposes without separate written consent
+
+This choice is recorded with your order and consent history.
+
+## Template & Catalogue
+Templates in the invitation catalogue and admin template library are licensed for use through Celeventic only. You may not extract, resell, or redistribute template files or design systems.
+
+## VendorOS Content
+Vendors retain rights in their uploaded portfolio media. By publishing a vendor profile, vendors grant Celeventic a licence to display their content in the marketplace directory.
+
+## Bespoke Engagements
 Custom bespoke design ownership may be negotiated separately in writing for premium engagements. Default terms apply unless otherwise agreed.
 
 ## Restrictions
-You may not copy, resell, or redistribute Celeventic templates, code, or design systems. You may share your published invitation link with intended guests.
+You may not copy, resell, scrape, or redistribute Celeventic templates, code, or design systems. You may share your published invitation link (\`/invite/[link]\`) with intended guests.
 
-## Infringement
+## Infringement Reports
 Report IP concerns to ${email}. We respond to valid notices and may remove infringing content.
+
+## Related Policies
+[Terms and Conditions](/legal/terms) · [Privacy Policy](/legal/privacy)
 
 ## Contact
 ${email} | ${phone}`,
     contentFr: `## Propriété Celeventic
-Code, modèles de base, systèmes de design et éléments graphiques créés par Celeventic.
+Code, modèles, systèmes de design et outils Celeventic Intelligence.
 
 ## Votre propriété
-Photos, noms, détails d'événement et médias personnels que vous fournissez.
+Photos, noms, détails d'événement et médias personnels.
 
 ## Consentement portfolio
-À la caisse, choisissez de autoriser ou non la présentation de votre invitation dans notre portfolio.
+Choix explicite à la caisse : autoriser ou garder privé.
 
 ## Contact
 ${email} | ${phone}`,
@@ -329,19 +439,25 @@ ${email} | ${phone}`,
   "data-rights": {
     titleEn: "Data Rights",
     titleFr: "Droits sur les données",
-    descriptionEn: "Exercise your data protection rights on Celeventic.",
+    descriptionEn: "Exercise your data protection rights on Celeventic under Act 843.",
     descriptionFr: "Exercez vos droits de protection des données sur Celeventic.",
-    contentEn: `## Your Data Rights
-Under the Ghana Data Protection Act, 2012 (Act 843) and applicable international standards, you have rights over your personal data.
+    contentEn: `## Your Rights
+Under the Ghana Data Protection Act, 2012 (Act 843) and applicable international standards, you have rights over your personal data processed by Celeventic.
 
 ## Right of Access
-Request a copy of personal data we hold about you. Signed-in users can export data from Privacy Center.
+Request a copy of personal data we hold about you. Signed-in users can export a JSON bundle from Privacy Center including:
+
+- Profile (name, email, phone, role)
+- Invitation orders and portfolio consent choices
+- Payment references and amounts
+- Events you organise
+- Full consent history (terms, privacy, cookies, data export/deletion requests)
 
 ## Right to Rectification
-Update inaccurate account or event information via your dashboard or by contacting us.
+Update inaccurate account or event information via your dashboard or by contacting ${email}.
 
 ## Right to Erasure
-Request deletion of your account and associated data, subject to legal retention requirements (e.g. payment records).
+Request deletion of your account and associated data, subject to legal retention requirements (e.g. payment records for accounting).
 
 ## Right to Restrict Processing
 Ask us to limit how we use your data in certain circumstances.
@@ -350,14 +466,19 @@ Ask us to limit how we use your data in certain circumstances.
 Object to processing based on legitimate interests, including direct marketing.
 
 ## Cookie & Consent Management
-Manage cookie preferences and view consent history in Privacy Center.
+View and update cookie preferences in [Privacy Center](/dashboard/privacy-center). Consent history shows terms version, privacy version, and cookie choices with timestamps.
 
 ## How to Exercise Rights
-1. Sign in and visit Dashboard → Privacy Center
-2. Use Export Data or Request Deletion
-3. Or email ${email} with subject "Data Rights Request"
 
-We respond within 30 days unless extension is required by law.
+1. **Sign in** to your Celeventic account
+2. Go to **Dashboard → Privacy Center**
+3. Use **Export Data (JSON)** or **Request Data Deletion**
+4. Or email ${email} with subject "Data Rights Request"
+
+We respond within 30 days unless an extension is required by law.
+
+## Guest Data
+If you are a guest (not an account holder) whose data was uploaded by an organiser, contact the organiser first. You may also email ${email} and we will assist within our legal obligations.
 
 ## Identity Verification
 We may verify your identity before fulfilling requests to protect your data.
@@ -365,15 +486,15 @@ We may verify your identity before fulfilling requests to protect your data.
 ## Complaints
 You may contact the Ghana Data Protection Commission if you believe your rights have been violated.
 
-## Contact
-${email} | ${phone}`,
-    contentFr: `## Vos droits
-Accès, rectification, suppression, limitation et opposition conformément à l'Act 843.
-
-## Comment exercer vos droits
-Centre de confidentialité du tableau de bord ou ${email}.
+## Related Policies
+[Privacy Policy](/legal/privacy) · [Cookie Policy](/legal/cookie) · [Terms and Conditions](/legal/terms)
 
 ## Contact
 ${email} | ${phone}`,
+    contentFr: "",
   },
 };
+
+for (const slug of LEGAL_POLICY_SLUGS) {
+  DEFAULT_LEGAL_DOCUMENTS[slug].contentFr = FRENCH_LEGAL_CONTENT[slug];
+}

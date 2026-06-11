@@ -1,5 +1,5 @@
-import { AuthLoader } from "@/components/ui/page-loader";
+import { AuthLoading } from "@/components/ui/app-loading";
 
 export default function Loading() {
-  return <AuthLoader />;
+  return <AuthLoading />;
 }

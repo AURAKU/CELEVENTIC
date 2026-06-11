@@ -1,5 +1,5 @@
-import { PageLoader } from "@/components/ui/page-loader";
+import { AppLoading } from "@/components/ui/app-loading";
 
 export default function Loading() {
-  return <PageLoader label="Loading Celeventic..." className="min-h-screen" />;
+  return <AppLoading />;
 }

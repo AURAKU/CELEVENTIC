@@ -5,8 +5,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Play, Calendar, Ticket, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { APP_TAGLINE } from "@/lib/constants";
 import { BrandMotto } from "@/components/brand/brand-motto";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 const HeroScene = dynamic(() => import("@/components/landing/hero-scene").then((m) => m.HeroScene), {
   ssr: false,
@@ -14,6 +14,21 @@ const HeroScene = dynamic(() => import("@/components/landing/hero-scene").then((
 });
 
 export function Hero() {
+  const { t } = useLocale();
+
+  const stats = [
+    { icon: Calendar, label: t("landing.stat_events") },
+    { icon: Ticket, label: t("landing.stat_tickets") },
+    { icon: QrCode, label: t("landing.stat_qr") },
+  ];
+
+  const dashItems = [
+    t("landing.dash_events"),
+    t("landing.dash_invitations"),
+    t("landing.dash_tickets"),
+    t("landing.dash_revenue"),
+  ];
+
   return (
     <section className="relative overflow-hidden bg-gradient-hero text-white">
       <HeroScene />
@@ -33,17 +48,17 @@ export function Hero() {
           >
             <BrandMotto size="lg" variant="hero" className="mb-4 sm:mb-6" />
             <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight">
-              The Intelligent{" "}
-              <span className="text-gradient-gold">Event</span>{" "}
-              Operating System
+              {t("landing.hero_title_1")}{" "}
+              <span className="text-gradient-gold">{t("landing.hero_title_event")}</span>{" "}
+              {t("landing.hero_title_2")}
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-slate-300 max-w-lg leading-relaxed">
-              {APP_TAGLINE}. Plan events, create stunning invitations, sell tickets, manage guests, scan QR codes, and preserve memories — all in one premium platform.
+              {t("landing.hero_subtitle")}
             </p>
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
               <Button size="lg" variant="secondary" asChild>
                 <Link href="/auth/register">
-                  Start Free <ArrowRight className="h-4 w-4" />
+                  {t("common.get_started")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button
@@ -53,16 +68,12 @@ export function Hero() {
                 asChild
               >
                 <Link href="#how-it-works">
-                  <Play className="h-4 w-4" /> See How It Works
+                  <Play className="h-4 w-4" /> {t("landing.see_how")}
                 </Link>
               </Button>
             </div>
             <div className="mt-10 sm:mt-14 flex flex-wrap gap-4 sm:gap-8">
-              {[
-                { icon: Calendar, label: "10K+ Events" },
-                { icon: Ticket, label: "50K+ Tickets" },
-                { icon: QrCode, label: "1M+ QR Scans" },
-              ].map((stat) => (
+              {stats.map((stat) => (
                 <div key={stat.label} className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 border border-white/10">
                     <stat.icon className="h-5 w-5 text-gold-400" />
@@ -84,14 +95,14 @@ export function Hero() {
               <div className="relative rounded-2xl glass-dark border border-white/15 p-6 shadow-2xl animate-float">
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-200">Live Dashboard</span>
+                    <span className="text-sm font-semibold text-slate-200">{t("landing.live_dashboard")}</span>
                     <span className="badge-pill bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Live
+                      {t("landing.live")}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    {["Events", "Invitations", "Tickets", "Revenue"].map((item, i) => (
+                    {dashItems.map((item, i) => (
                       <div
                         key={item}
                         className="rounded-xl bg-white/8 border border-white/10 p-4 hover:bg-white/12 transition-colors"

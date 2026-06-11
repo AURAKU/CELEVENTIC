@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, Trash2, Cookie, Shield, FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 interface ConsentRecord {
   id: string;
@@ -25,6 +26,7 @@ interface PrivacyData {
 }
 
 export function PrivacyCenterClient() {
+  const { t } = useLocale();
   const [data, setData] = useState<PrivacyData | null>(null);
   const [loading, setLoading] = useState("");
   const [message, setMessage] = useState("");
@@ -35,7 +37,9 @@ export function PrivacyCenterClient() {
     if (d.success) setData(d.data);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function handleExport() {
     setLoading("export");
@@ -52,14 +56,14 @@ export function PrivacyCenterClient() {
       a.href = url;
       a.download = `celeventic-data-export-${Date.now()}.json`;
       a.click();
-      setMessage("Data exported successfully.");
+      setMessage(t("privacy.export_success"));
     }
     setLoading("");
     load();
   }
 
   async function handleDeletion() {
-    if (!confirm("Request account and data deletion? Our team will review within 30 days.")) return;
+    if (!confirm(t("privacy.deletion_confirm"))) return;
     setLoading("deletion");
     const res = await fetch("/api/privacy-center", {
       method: "POST",
@@ -67,7 +71,7 @@ export function PrivacyCenterClient() {
       body: JSON.stringify({ action: "deletion" }),
     });
     const d = await res.json();
-    if (d.success) setMessage(d.data.message);
+    if (d.success) setMessage(t("privacy.deletion_requested"));
     setLoading("");
     load();
   }
@@ -84,15 +88,15 @@ export function PrivacyCenterClient() {
     load();
   }
 
-  if (!data) return <p className="text-slate-500">Loading Privacy Center...</p>;
+  if (!data) return <p className="text-slate-500">{t("privacy.loading")}</p>;
 
   return (
     <div className="max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Shield className="h-6 w-6 text-[#0B8A83]" /> Privacy Center
+          <Shield className="h-6 w-6 text-[#0B8A83]" /> {t("privacy.title")}
         </h1>
-        <p className="text-slate-500 mt-1">Manage your data rights, cookie preferences, and consent history.</p>
+        <p className="text-slate-500 mt-1">{t("privacy.subtitle")}</p>
       </div>
 
       {message && (
@@ -102,59 +106,79 @@ export function PrivacyCenterClient() {
       <div className="grid sm:grid-cols-2 gap-4">
         <Card>
           <CardContent className="pt-5">
-            <p className="text-xs text-slate-500">Terms accepted</p>
-            <p className="font-semibold">{data.acceptedTermsVersion ?? "Not yet"}</p>
+            <p className="text-xs text-slate-500">{t("privacy.terms_accepted")}</p>
+            <p className="font-semibold">{data.acceptedTermsVersion ?? t("privacy.not_yet")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-xs text-slate-500">Privacy accepted</p>
-            <p className="font-semibold">{data.acceptedPrivacyVersion ?? "Not yet"}</p>
+            <p className="text-xs text-slate-500">{t("privacy.privacy_accepted")}</p>
+            <p className="font-semibold">{data.acceptedPrivacyVersion ?? t("privacy.not_yet")}</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Download className="h-4 w-4" /> Export Your Data</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Download className="h-4 w-4" /> {t("privacy.export_title")}
+          </CardTitle>
+        </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600 mb-4">Download a copy of your profile, orders, payments, and consent records.</p>
+          <p className="text-sm text-slate-600 mb-4">{t("privacy.export_desc")}</p>
           <Button onClick={handleExport} disabled={loading === "export"}>
-            {loading === "export" ? "Preparing..." : "Export Data (JSON)"}
+            {loading === "export" ? t("privacy.preparing") : t("privacy.export_btn")}
           </Button>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Trash2 className="h-4 w-4" /> Request Deletion</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Trash2 className="h-4 w-4" /> {t("privacy.deletion_title")}
+          </CardTitle>
+        </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-600 mb-4">Request deletion of your account and personal data, subject to legal retention requirements.</p>
+          <p className="text-sm text-slate-600 mb-4">{t("privacy.deletion_desc")}</p>
           <Button variant="destructive" onClick={handleDeletion} disabled={loading === "deletion"}>
-            Request Data Deletion
+            {t("privacy.deletion_btn")}
           </Button>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Cookie className="h-4 w-4" /> Cookie Preferences</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Cookie className="h-4 w-4" /> {t("privacy.cookie_title")}
+          </CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-slate-600">Current: <Badge>{data.cookieConsent ?? "Not set"}</Badge></p>
+          <p className="text-sm text-slate-600">
+            {t("privacy.cookie_current")} <Badge>{data.cookieConsent ?? t("privacy.not_yet")}</Badge>
+          </p>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => setCookie("essential")} disabled={loading === "cookie"}>
-              Essential Only
+              {t("privacy.cookie_essential")}
             </Button>
             <Button size="sm" onClick={() => setCookie("all")} disabled={loading === "cookie"}>
-              Accept All Cookies
+              {t("privacy.cookie_all")}
             </Button>
           </div>
-          <Link href="/legal/cookie" className="text-sm text-[#0B8A83] hover:underline">Read Cookie Policy</Link>
+          <Link href="/legal/cookie" className="text-sm text-[#0B8A83] hover:underline">
+            {t("privacy.read_cookie")}
+          </Link>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" /> Consent History</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4" /> {t("privacy.history_title")}
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           {data.history.length === 0 ? (
-            <p className="text-sm text-slate-500">No consent records yet.</p>
+            <p className="text-sm text-slate-500">{t("privacy.history_empty")}</p>
           ) : (
             <div className="space-y-2">
               {data.history.map((r) => (
@@ -173,9 +197,15 @@ export function PrivacyCenterClient() {
       </Card>
 
       <div className="flex flex-wrap gap-4 text-sm">
-        <Link href="/legal/privacy" className="text-[#0B8A83] hover:underline">Privacy Policy</Link>
-        <Link href="/legal/data-rights" className="text-[#0B8A83] hover:underline">Data Rights</Link>
-        <Link href="/legal/terms" className="text-[#0B8A83] hover:underline">Terms</Link>
+        <Link href="/legal/privacy" className="text-[#0B8A83] hover:underline">
+          {t("privacy.link_privacy")}
+        </Link>
+        <Link href="/legal/data-rights" className="text-[#0B8A83] hover:underline">
+          {t("privacy.link_data_rights")}
+        </Link>
+        <Link href="/legal/terms" className="text-[#0B8A83] hover:underline">
+          {t("privacy.link_terms")}
+        </Link>
       </div>
     </div>
   );

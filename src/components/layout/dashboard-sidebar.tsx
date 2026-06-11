@@ -12,63 +12,64 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { isAdminRole } from "@/lib/roles";
+import { useLocale } from "@/components/i18n/locale-provider";
 import type { UserRole } from "@prisma/client";
 
 const navSections = [
   {
-    label: "Core",
+    labelKey: "dashboard.nav_section_core",
     items: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-      { href: "/dashboard/events", label: "Events", icon: Calendar },
-      { href: "/dashboard/ai-planner", label: "AI Planner", icon: Sparkles },
+      { href: "/dashboard", labelKey: "dashboard.nav_overview", icon: LayoutDashboard },
+      { href: "/dashboard/events", labelKey: "dashboard.nav_events", icon: Calendar },
+      { href: "/dashboard/ai-planner", labelKey: "dashboard.nav_ai_planner", icon: Sparkles },
     ],
   },
   {
-    label: "Design",
+    labelKey: "dashboard.nav_section_design",
     items: [
-      { href: "/dashboard/design-studio", label: "Design Studio", icon: Palette },
-      { href: "/dashboard/design-studio/assets", label: "Asset Library", icon: Layers },
-      { href: "/dashboard/invitations", label: "Invitations", icon: Mail },
-      { href: "/dashboard/my-invitations", label: "My Invitations", icon: Mail },
-      { href: "/dashboard/invitation-analytics", label: "Invitation Analytics", icon: Sparkles },
-      { href: "/dashboard/flyers", label: "Flyer Studio", icon: Image },
-      { href: "/dashboard/inspiration", label: "Inspiration", icon: Upload },
+      { href: "/dashboard/design-studio", labelKey: "dashboard.nav_design_studio", icon: Palette },
+      { href: "/dashboard/design-studio/assets", labelKey: "dashboard.nav_asset_library", icon: Layers },
+      { href: "/dashboard/invitations", labelKey: "dashboard.nav_invitations", icon: Mail },
+      { href: "/dashboard/my-invitations", labelKey: "dashboard.nav_my_invitations", icon: Mail },
+      { href: "/dashboard/invitation-analytics", labelKey: "dashboard.nav_invitation_analytics", icon: Sparkles },
+      { href: "/dashboard/flyers", labelKey: "dashboard.nav_flyer_studio", icon: Image },
+      { href: "/dashboard/inspiration", labelKey: "dashboard.nav_inspiration", icon: Upload },
     ],
   },
   {
-    label: "Guests & Access",
+    labelKey: "dashboard.nav_section_guests",
     items: [
-      { href: "/dashboard/guests", label: "Guest CRM", icon: Users },
-      { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
-      { href: "/dashboard/qr", label: "QR Admission", icon: QrCode },
+      { href: "/dashboard/guests", labelKey: "dashboard.nav_guest_crm", icon: Users },
+      { href: "/dashboard/tickets", labelKey: "dashboard.nav_tickets", icon: Ticket },
+      { href: "/dashboard/qr", labelKey: "dashboard.nav_qr", icon: QrCode },
     ],
   },
   {
-    label: "Growth",
+    labelKey: "dashboard.nav_section_growth",
     items: [
-      { href: "/dashboard/campaigns", label: "Communications", icon: MessageSquare },
-      { href: "/dashboard/discovery", label: "Discovery", icon: Compass },
-      { href: "/marketplace", label: "Vendor Marketplace", icon: Store },
-      { href: "/dashboard/vendors", label: "Find Vendors", icon: Store },
-      { href: "/dashboard/my-collection", label: "My Collection", icon: Heart },
-      { href: "/dashboard/vendor-portal", label: "Vendor Portal", icon: Store },
-      { href: "/dashboard/venues", label: "Venues", icon: MapPin },
+      { href: "/dashboard/campaigns", labelKey: "dashboard.nav_communications", icon: MessageSquare },
+      { href: "/dashboard/discovery", labelKey: "dashboard.nav_discovery", icon: Compass },
+      { href: "/marketplace", labelKey: "dashboard.nav_marketplace", icon: Store },
+      { href: "/dashboard/vendors", labelKey: "dashboard.nav_find_vendors", icon: Store },
+      { href: "/dashboard/my-collection", labelKey: "dashboard.nav_my_collection", icon: Heart },
+      { href: "/dashboard/vendor-portal", labelKey: "dashboard.nav_vendor_portal", icon: Store },
+      { href: "/dashboard/venues", labelKey: "dashboard.nav_venues", icon: MapPin },
     ],
   },
   {
-    label: "Finance",
+    labelKey: "dashboard.nav_section_finance",
     items: [
-      { href: "/dashboard/wallet", label: "Event Wallet", icon: Wallet },
-      { href: "/dashboard/contributions", label: "Contributions", icon: Heart },
-      { href: "/dashboard/funeral", label: "FuneralOS", icon: Flower2 },
+      { href: "/dashboard/wallet", labelKey: "dashboard.nav_wallet", icon: Wallet },
+      { href: "/dashboard/contributions", labelKey: "dashboard.nav_contributions", icon: Heart },
+      { href: "/dashboard/funeral", labelKey: "dashboard.nav_funeral", icon: Flower2 },
     ],
   },
   {
-    label: "Archive",
+    labelKey: "dashboard.nav_section_archive",
     items: [
-      { href: "/dashboard/memory", label: "Memory Vault", icon: Archive },
-      { href: "/dashboard/settings", label: "Settings", icon: Settings },
-      { href: "/dashboard/privacy-center", label: "Privacy Center", icon: Shield },
+      { href: "/dashboard/memory", labelKey: "dashboard.nav_memory", icon: Archive },
+      { href: "/dashboard/settings", labelKey: "dashboard.nav_settings", icon: Settings },
+      { href: "/dashboard/privacy-center", labelKey: "dashboard.nav_privacy", icon: Shield },
     ],
   },
 ];
@@ -81,6 +82,7 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { t } = useLocale();
   const isAdmin = session?.user?.role && isAdminRole(session.user.role as UserRole);
 
   return (
@@ -96,7 +98,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
           type="button"
           onClick={onClose}
           className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
-          aria-label="Close menu"
+          aria-label={t("dashboard.close_menu")}
         >
           <X className="h-5 w-5" />
         </button>
@@ -104,9 +106,9 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
 
       <nav className="flex-1 p-4 space-y-5 overflow-y-auto">
         {navSections.map((section) => (
-          <div key={section.label}>
+          <div key={section.labelKey}>
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] px-3 mb-2">
-              {section.label}
+              {t(section.labelKey)}
             </p>
             <div className="space-y-1">
               {section.items.map((item) => {
@@ -118,13 +120,11 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
                     onClick={onClose}
                     className={cn(
                       "nav-item",
-                      active
-                        ? "nav-active"
-                        : "text-slate-400 hover:text-white hover:bg-white/8"
+                      active ? "nav-active" : "text-slate-400 hover:text-white hover:bg-white/8"
                     )}
                   >
                     <item.icon className={cn("h-4 w-4 shrink-0", active && "text-white")} />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 );
               })}
@@ -138,7 +138,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
           <form action="/api/admin/return-to-admin" method="POST">
             <Button type="submit" variant="secondary" className="w-full">
               <Shield className="h-4 w-4" />
-              Return to Admin Panel
+              {t("dashboard.return_admin")}
             </Button>
           </form>
         </div>

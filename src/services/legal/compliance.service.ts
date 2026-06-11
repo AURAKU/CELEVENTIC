@@ -8,17 +8,31 @@ import {
 import { DEFAULT_LEGAL_DOCUMENTS } from "@/lib/legal/default-legal-content";
 import type { ConsentType, Prisma } from "@prisma/client";
 
+let legalSeedPromise: Promise<void> | null = null;
+
 export class ComplianceService {
   async ensureLegalDocumentsSeeded() {
-    for (const slug of LEGAL_POLICY_SLUGS) {
-      const existing = await prisma.legalDocumentVersion.findUnique({
-        where: { slug_version: { slug, version: CURRENT_LEGAL_VERSION } },
-      });
-      if (existing) continue;
+    if (!legalSeedPromise) {
+      legalSeedPromise = this.seedLegalDocuments();
+    }
+    await legalSeedPromise;
+  }
 
+  private async seedLegalDocuments() {
+    for (const slug of LEGAL_POLICY_SLUGS) {
       const doc = DEFAULT_LEGAL_DOCUMENTS[slug];
-      await prisma.legalDocumentVersion.create({
-        data: {
+      await prisma.legalDocumentVersion.upsert({
+        where: { slug_version: { slug, version: CURRENT_LEGAL_VERSION } },
+        update: {
+          titleEn: doc.titleEn,
+          titleFr: doc.titleFr,
+          descriptionEn: doc.descriptionEn,
+          descriptionFr: doc.descriptionFr,
+          contentEn: doc.contentEn,
+          contentFr: doc.contentFr,
+          isPublished: true,
+        },
+        create: {
           slug,
           version: CURRENT_LEGAL_VERSION,
           titleEn: doc.titleEn,

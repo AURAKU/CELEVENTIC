@@ -6,42 +6,45 @@ import {
   Store, MapPin, Megaphone, Heart, Gem, Building2, Archive,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useLocale } from "@/components/i18n/locale-provider";
 
-const features = [
-  { icon: Calendar, title: "Event Creation Wizard", desc: "Step-by-step event setup with themes, packages, and media uploads." },
-  { icon: Mail, title: "Invitation Studio", desc: "Beautiful digital invitations with unique links and per-guest QR codes." },
-  { icon: Ticket, title: "Ticketing Engine", desc: "Free, paid, VIP, VVIP, group tickets with promo codes and payments." },
-  { icon: QrCode, title: "QR Admission", desc: "Online and offline QR verification with gate assignment and scan logs." },
-  { icon: MessageSquare, title: "Communication Hub", desc: "Bulk WhatsApp, SMS, and email campaigns with delivery tracking." },
-  { icon: Sparkles, title: "AI Event Planner", desc: "Budget, timeline, vendor recommendations, and marketing plans." },
-  { icon: Store, title: "Vendor Marketplace", desc: "Book caterers, DJs, photographers, and more for your event." },
-  { icon: MapPin, title: "Venue Marketplace", desc: "Discover and book venues with capacity, pricing, and availability." },
-  { icon: Megaphone, title: "Advertising", desc: "Promote events with sponsored placements and featured listings." },
-  { icon: Heart, title: "FuneralOS", desc: "Obituary pages, tribute walls, burial directions, and memorial archives." },
-  { icon: Gem, title: "WeddingOS", desc: "Couple profiles, seating plans, gift registries, and vendor suggestions." },
-  { icon: Building2, title: "CorporateOS", desc: "Conference registration, attendance tracking, and certificates." },
-  { icon: Archive, title: "Memory Vault", desc: "Preserve photos, videos, guestbook messages, and event highlights." },
-];
+const FEATURE_KEYS = [
+  { icon: Calendar, title: "landing.f01_title", desc: "landing.f01_desc" },
+  { icon: Mail, title: "landing.f02_title", desc: "landing.f02_desc" },
+  { icon: Ticket, title: "landing.f03_title", desc: "landing.f03_desc" },
+  { icon: QrCode, title: "landing.f04_title", desc: "landing.f04_desc" },
+  { icon: MessageSquare, title: "landing.f05_title", desc: "landing.f05_desc" },
+  { icon: Sparkles, title: "landing.f06_title", desc: "landing.f06_desc" },
+  { icon: Store, title: "landing.f07_title", desc: "landing.f07_desc" },
+  { icon: MapPin, title: "landing.f08_title", desc: "landing.f08_desc" },
+  { icon: Megaphone, title: "landing.f09_title", desc: "landing.f09_desc" },
+  { icon: Heart, title: "landing.f10_title", desc: "landing.f10_desc" },
+  { icon: Gem, title: "landing.f11_title", desc: "landing.f11_desc" },
+  { icon: Building2, title: "landing.f12_title", desc: "landing.f12_desc" },
+  { icon: Archive, title: "landing.f13_title", desc: "landing.f13_desc" },
+] as const;
 
 export function Features() {
+  const { t } = useLocale();
+
   return (
     <section id="features" className="py-28 bg-mesh relative">
       <div className="absolute inset-0 grid-pattern opacity-50" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <span className="badge-pill bg-brand-100 text-brand-700 border border-brand-200 mb-6">
-            Full-Stack Event Platform
+            {t("landing.features_badge")}
           </span>
           <h2 className="section-heading">
-            Everything You Need to Run{" "}
-            <span className="text-gradient">World-Class Events</span>
+            {t("landing.features_title")}{" "}
+            <span className="text-gradient">{t("landing.features_title_highlight")}</span>
           </h2>
           <p className="section-subheading mx-auto">
-            From intimate gatherings to stadium concerts — Celeventic powers every event type with intelligent, premium tools.
+            {t("landing.features_subtitle")}
           </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map((feature, i) => (
+          {FEATURE_KEYS.map((feature, i) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 24 }}
@@ -54,8 +57,8 @@ export function Features() {
                   <div className="icon-box mb-5 group-hover:scale-105 transition-transform">
                     <feature.icon className="h-6 w-6" />
                   </div>
-                  <h3 className="font-display font-semibold text-slate-900 text-lg">{feature.title}</h3>
-                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">{feature.desc}</p>
+                  <h3 className="font-display font-semibold text-slate-900 text-lg">{t(feature.title)}</h3>
+                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">{t(feature.desc)}</p>
                 </CardContent>
               </Card>
             </motion.div>

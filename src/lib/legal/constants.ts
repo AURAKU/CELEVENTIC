@@ -17,4 +17,4 @@ export const LEGAL_POLICY_SLUGS = [
 
 export type LegalPolicySlug = (typeof LEGAL_POLICY_SLUGS)[number];
 
-export const CURRENT_LEGAL_VERSION = "1.0.0";
+export const CURRENT_LEGAL_VERSION = "1.2.0";

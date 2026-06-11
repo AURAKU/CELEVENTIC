@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { LegalPageLayout } from "@/components/legal/legal-page-layout";
-import { getCmsPage, isCmsPageSlug } from "@/lib/cms-pages";
+import { getCmsPage, isCmsPageSlug, CMS_PAGES } from "@/lib/cms-pages";
+
+export function generateStaticParams() {
+  return Object.keys(CMS_PAGES).map((slug) => ({ slug }));
+}
 
 export async function generateMetadata({
   params,
@@ -19,6 +23,7 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
   if (!isCmsPageSlug(slug)) notFound();
 
   const page = await getCmsPage(slug, "en");
+  const legalMeta = page as { version?: string; effectiveDate?: string };
 
   return (
     <LegalPageLayout
@@ -26,6 +31,8 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
       initialTitle={page.title}
       initialDescription={page.description}
       initialContent={page.content}
+      initialVersion={legalMeta.version}
+      initialEffectiveDate={legalMeta.effectiveDate}
     />
   );
 }

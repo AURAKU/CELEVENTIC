@@ -4,6 +4,8 @@ import { useSession, signOut } from "next-auth/react";
 import { Bell, Search, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
 interface DashboardTopbarProps {
   onMenuClick?: () => void;
@@ -12,6 +14,7 @@ interface DashboardTopbarProps {
 
 export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const initials = session?.user?.name
     ?.split(" ")
     .map((n) => n[0])
@@ -31,7 +34,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
           type="button"
           onClick={onMenuClick}
           className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors"
-          aria-label="Open menu"
+          aria-label={t("dashboard.open_menu")}
         >
           <Menu className="h-5 w-5 text-slate-600" />
         </button>
@@ -40,7 +43,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="search"
-              placeholder="Search events, guests, tickets..."
+              placeholder={t("dashboard.search_placeholder")}
               className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200/80 bg-slate-50/80 text-sm placeholder:text-slate-400 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-500/15 transition-all"
             />
           </div>
@@ -48,6 +51,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        <LanguageSwitcher compact />
         <Button variant="ghost" size="icon" className="relative rounded-xl">
           <Bell className="h-4 w-4" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-gold-400 ring-2 ring-white" />
@@ -66,6 +70,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
             size="icon"
             className="rounded-xl text-slate-500 hover:text-red-600"
             onClick={() => signOut({ callbackUrl: "/" })}
+            aria-label={t("common.sign_out")}
           >
             <LogOut className="h-4 w-4" />
           </Button>

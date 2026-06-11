@@ -1,3 +1,5 @@
+import { EXTRA_TRANSLATIONS } from "./extra-translations";
+
 export interface TranslationSeed {
   namespace: string;
   key: string;
@@ -18,6 +20,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "common", key: "learn_more", enValue: "Learn more", frValue: "En savoir plus" },
   { namespace: "common", key: "get_started", enValue: "Get Started", frValue: "Commencer" },
   { namespace: "common", key: "sign_in", enValue: "Sign In", frValue: "Se connecter" },
+  { namespace: "common", key: "sign_out", enValue: "Sign out", frValue: "Se déconnecter" },
   { namespace: "common", key: "dashboard", enValue: "Dashboard", frValue: "Tableau de bord" },
   { namespace: "common", key: "free", enValue: "Free", frValue: "Gratuit" },
   { namespace: "common", key: "choose", enValue: "Choose", frValue: "Choisir" },
@@ -43,6 +46,11 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "footer", key: "terms", enValue: "Terms", frValue: "Conditions" },
   { namespace: "footer", key: "privacy", enValue: "Privacy", frValue: "Confidentialité" },
   { namespace: "footer", key: "refund", enValue: "Refund Policy", frValue: "Politique de remboursement" },
+  { namespace: "footer", key: "legal_center", enValue: "Legal Center", frValue: "Centre juridique" },
+  { namespace: "footer", key: "cookie_policy", enValue: "Cookie Policy", frValue: "Politique des cookies" },
+  { namespace: "footer", key: "revision_policy", enValue: "Revision Policy", frValue: "Politique de révision" },
+  { namespace: "footer", key: "ip_policy", enValue: "IP Policy", frValue: "Politique PI" },
+  { namespace: "footer", key: "data_rights", enValue: "Data Rights", frValue: "Droits sur les données" },
   { namespace: "footer", key: "rights", enValue: "All rights reserved.", frValue: "Tous droits réservés." },
 
   // ── Cookie consent ──
@@ -54,6 +62,12 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "legal", key: "cookie_policy", enValue: "Cookie Policy", frValue: "Politique des cookies" },
   { namespace: "legal", key: "legal_center", enValue: "Celeventic Legal Center", frValue: "Centre juridique Celeventic" },
   { namespace: "legal", key: "back_home", enValue: "Back to Celeventic", frValue: "Retour à Celeventic" },
+  { namespace: "legal", key: "hub_title", enValue: "Celeventic Legal Center", frValue: "Centre juridique Celeventic" },
+  { namespace: "legal", key: "hub_subtitle", enValue: "Official policies for InvitationOS, VendorOS, Paystack payments, data protection, and your rights on the Celeventic platform.", frValue: "Politiques officielles pour InvitationOS, VendorOS, les paiements Paystack, la protection des données et vos droits sur la plateforme." },
+  { namespace: "legal", key: "manage_data", enValue: "Manage your data", frValue: "Gérez vos données" },
+  { namespace: "legal", key: "manage_data_desc", enValue: "Export your data, manage cookies, and view consent history in Privacy Center.", frValue: "Exportez vos données, gérez les cookies et consultez l'historique de consentement dans le Centre de confidentialité." },
+  { namespace: "legal", key: "privacy_center", enValue: "Privacy Center", frValue: "Centre de confidentialité" },
+  { namespace: "legal", key: "legal_questions", enValue: "Legal questions", frValue: "Questions juridiques" },
 
   // ── Invitations landing ──
   { namespace: "invitations", key: "badge", enValue: "Celeventic Invitations", frValue: "Invitations Celeventic" },
@@ -246,4 +260,6 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "admin", key: "french", enValue: "French", frValue: "Français" },
   { namespace: "admin", key: "namespace", enValue: "Namespace", frValue: "Espace de noms" },
   { namespace: "admin", key: "key", enValue: "Key", frValue: "Clé" },
+
+  ...EXTRA_TRANSLATIONS,
 ];
