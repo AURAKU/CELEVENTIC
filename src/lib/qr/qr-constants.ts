@@ -18,4 +18,4 @@ export type QrAdmissionDisplayStatus =
   | "revoked"
   | "unauthorized";
 
-export const CELEVENTIC_OFFICIAL_LOGO = "/brand/logo-mark.png";
+export const CELEVENTIC_OFFICIAL_LOGO = "/brand/logo-full.png";

@@ -43,14 +43,14 @@ export function HeaderPreferencesDropdowns({
             aria-label="Language"
           >
             <Globe className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-            <SelectValue>{locale.toUpperCase()}</SelectValue>
+            <SelectValue placeholder={locale.toUpperCase()} />
           </SelectTrigger>
           <SelectContent align="end">
             {availableLocales.map((code) => (
               <SelectItem key={code} value={code}>
                 <span className="inline-flex items-center gap-2">
                   <span>{LOCALE_FLAGS[code]}</span>
-                  <span>{labels[code]}</span>
+                  <span>{compact ? code.toUpperCase() : labels[code]}</span>
                 </span>
               </SelectItem>
             ))}
@@ -72,7 +72,7 @@ export function HeaderPreferencesDropdowns({
           aria-label="Currency"
         >
           <Coins className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-          <SelectValue>{ratesLoading ? "…" : currency}</SelectValue>
+          <SelectValue placeholder={currency} />
         </SelectTrigger>
         <SelectContent align="end">
           {CURRENCIES.map((c) => (

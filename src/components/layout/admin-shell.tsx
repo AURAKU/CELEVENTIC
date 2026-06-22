@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { HeaderPreferencesDropdowns } from "@/components/layout/header-preferences-dropdowns";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ export function AdminShell({ children }: AdminShellProps) {
             </svg>
           </button>
           <span className="text-sm font-semibold text-slate-900 flex-1 min-w-0 truncate">Admin Command Center</span>
+          <NotificationBell />
           <HeaderPreferencesDropdowns compact />
         </header>
 

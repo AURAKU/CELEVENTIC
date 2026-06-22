@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/utils";
+import { getProviderSecret, isProviderEnabled } from "@/lib/integrations/integration-runtime";
 import type { PaymentInitRequest, PaymentInitResponse } from "@/types";
 import type { PaymentProvider, PaymentPurpose, PaymentStatus, Prisma } from "@prisma/client";
 
@@ -11,8 +12,13 @@ export interface PaymentProviderAdapter {
 }
 
 class PaystackAdapter implements PaymentProviderAdapter {
+  private async secretKey(): Promise<string | null> {
+    if (!(await isProviderEnabled("PAYSTACK"))) return null;
+    return getProviderSecret("PAYSTACK");
+  }
+
   async initializePayment(params: PaymentInitRequest & { reference: string }): Promise<PaymentInitResponse> {
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    const secretKey = await this.secretKey();
     if (!secretKey) {
       return { reference: params.reference, provider: "PAYSTACK" };
     }
@@ -41,7 +47,7 @@ class PaystackAdapter implements PaymentProviderAdapter {
   }
 
   async verifyWebhook(payload: unknown, signature: string): Promise<boolean> {
-    const secret = process.env.PAYSTACK_SECRET_KEY;
+    const secret = await this.secretKey();
     if (!secret || !signature) return false;
     const raw = typeof payload === "string" ? payload : JSON.stringify(payload);
     const hash = crypto.createHmac("sha512", secret).update(raw).digest("hex");
@@ -49,7 +55,7 @@ class PaystackAdapter implements PaymentProviderAdapter {
   }
 
   async verifyTransaction(reference: string): Promise<{ status: PaymentStatus; amount: number }> {
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+    const secretKey = await this.secretKey();
     if (!secretKey) return { status: "PENDING", amount: 0 };
 
     const res = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {

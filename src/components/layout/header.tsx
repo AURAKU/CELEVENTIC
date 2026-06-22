@@ -37,10 +37,10 @@ export function Header({ initialSession }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/50 bg-white/85 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
-      <div className="mx-auto flex h-14 sm:h-16 max-w-7xl items-center gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="shrink-0">
-        <Logo size="sm" useFullImage className="hidden sm:flex" />
-        <Logo iconOnly size="sm" className="flex sm:hidden" />
+      <div className="mx-auto flex min-h-[4.5rem] sm:min-h-[5rem] max-w-7xl items-center gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8 py-1">
+        <div className="shrink-0 min-w-0">
+          <Logo size="lg" className="hidden sm:flex" />
+          <Logo size="md" className="flex sm:hidden" />
         </div>
 
         <nav className="hidden md:flex flex-1 items-center justify-center gap-1 min-w-0">

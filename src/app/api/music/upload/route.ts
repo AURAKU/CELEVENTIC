@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-import { MUSIC_ALLOWED_TYPES } from "@/lib/music/music-constants";
+import { resolveMusicUpload } from "@/lib/music/music-constants";
 
 /** User upload for custom invitation music (trim on client, validate on order save) */
 export async function POST(req: Request) {
@@ -24,16 +24,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No audio file provided" }, { status: 400 });
     }
 
-    const config = MUSIC_ALLOWED_TYPES[file.type];
+    const config = resolveMusicUpload(file);
     if (!config) {
       return NextResponse.json(
-        { error: "Unsupported format. Use MP3, WAV, M4A, OGG, or WebM audio." },
+        { error: "Unsupported audio format. Use MP3, WAV, M4A, AAC, OGG, FLAC, WebM, or other common audio files." },
         { status: 400 }
       );
     }
 
     if (file.size > config.max) {
-      return NextResponse.json({ error: "File too large. Maximum 15MB." }, { status: 400 });
+      return NextResponse.json({ error: "File too large. Maximum 25MB." }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();

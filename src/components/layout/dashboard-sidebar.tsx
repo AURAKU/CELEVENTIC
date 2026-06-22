@@ -50,6 +50,7 @@ const navSections = [
   {
     labelKey: "dashboard.nav_section_growth",
     items: [
+      { href: "/dashboard/messages", labelKey: "dashboard.nav_messages", icon: MessageSquare },
       { href: "/dashboard/campaigns", labelKey: "dashboard.nav_communications", icon: MessageSquare },
       { href: "/dashboard/discovery", labelKey: "dashboard.nav_discovery", icon: Compass },
       { href: "/marketplace", labelKey: "dashboard.nav_marketplace", icon: Store },
@@ -119,7 +120,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
     >
       <div className="shrink-0 p-4 sm:p-5 pt-[max(1rem,env(safe-area-inset-top))] border-b border-white/10 flex items-center justify-between gap-2">
         <Link href="/dashboard" onClick={onClose} className="min-w-0 flex items-center gap-2">
-          <Logo variant="light" iconOnly size="sm" />
+          <Logo variant="light" size="xs" />
           <span className="font-display font-bold text-white text-base leading-none hidden sm:inline">Celeventic</span>
         </Link>
         <button

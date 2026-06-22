@@ -59,6 +59,8 @@ model User {
   vendors          Vendor[]
   auditLogs        AuditLog[]
   notifications    Notification[]
+  messagesSent     UserMessage[]  @relation("MessagesSent")
+  messagesReceived UserMessage[]  @relation("MessagesReceived")
   contributions    Contribution[]
   vendorBookings   VendorBooking[]
   venueBookings    VenueBooking[]
@@ -1001,6 +1003,7 @@ model VendorLead {
 
   vendor    Vendor @relation(fields: [vendorId], references: [id])
   organizer User   @relation(fields: [organizerId], references: [id])
+  messages  UserMessage[]
 
   @@index([vendorId, status])
   @@map("vendor_leads")
@@ -1334,9 +1337,15 @@ model AdminSetting {
 model ApiSetting {
   id           String   @id @default(cuid())
   provider     String   @unique
+  label        String?
+  category     String   @default("custom")
+  description  String?
   config       Json
   isEnabled    Boolean  @default(false)
   encryptedKey String?
+  publicKey    String?
+  webhookUrl   String?
+  createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@map("api_settings")
@@ -1390,7 +1399,29 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id])
 
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
   @@map("notifications")
+}
+
+model UserMessage {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  subject     String?
+  body        String
+  threadId    String
+  leadId      String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sender    User        @relation("MessagesSent", fields: [senderId], references: [id])
+  recipient User        @relation("MessagesReceived", fields: [recipientId], references: [id])
+  lead      VendorLead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([recipientId, isRead])
+  @@index([threadId, createdAt])
+  @@map("user_messages")
 }
 
 // ─── Multi-Tenant ───────────────────────────────────────────────

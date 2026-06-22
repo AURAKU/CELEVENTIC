@@ -93,7 +93,7 @@ function AdmissionShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0F172A] via-[#1a3a38] to-[#0B8A83] px-4 py-10">
       <Card className="w-full max-w-md shadow-2xl border-[#D4A63A]/20">
         <CardContent className="p-8 sm:p-10 text-center">
-          <Logo className="justify-center mb-6" useFullImage size="sm" />
+          <Logo className="justify-center mb-6" size="lg" />
           <h1 className="font-display text-lg font-bold text-[#0F172A] mb-2">Admission Pass</h1>
           {children}
           <div className="mt-8"><AgiFooter /></div>

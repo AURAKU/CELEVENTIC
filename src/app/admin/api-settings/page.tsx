@@ -1,5 +1,5 @@
-import { AdminApiSettingsClient } from "./admin-api-settings-client";
+import { redirect } from "next/navigation";
 
 export default function ApiSettingsPage() {
-  return <AdminApiSettingsClient />;
+  redirect("/admin/integrations");
 }

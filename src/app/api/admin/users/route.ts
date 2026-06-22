@@ -17,6 +17,7 @@ export async function GET(req: Request) {
     success: true,
     data: {
       ...data,
+      pages: Math.ceil(data.total / limit),
       users: data.users.map((u) => ({
         ...u,
         createdAt: u.createdAt.toISOString(),

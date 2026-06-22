@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { vendorProfileService } from "@/services/vendor-os/vendor-profile.service";
+import { notificationService } from "@/services/notifications/notification.service";
+import { messageService } from "@/services/messages/message.service";
 
 export interface CreateLeadInput {
   vendorId: string;
@@ -39,6 +41,34 @@ export class VendorLeadService {
     });
 
     await vendorProfileService.trackEvent(input.vendorId, "LEAD_SUBMIT", { leadId: lead.id });
+
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: input.vendorId },
+      select: { userId: true, businessName: true },
+    });
+
+    if (vendor) {
+      if (input.message?.trim()) {
+        await messageService.send({
+          senderId: input.organizerId,
+          recipientId: vendor.userId,
+          body: input.message.trim(),
+          leadId: lead.id,
+          threadId: `lead:${lead.id}`,
+          subject: `Enquiry for ${vendor.businessName}`,
+        });
+      } else {
+        await notificationService.notify(vendor.userId, {
+          title: "New vendor enquiry",
+          message: input.contactName
+            ? `${input.contactName} sent an enquiry about your services`
+            : "A new organizer enquiry was received",
+          type: "vendor_lead",
+          link: `/dashboard/vendor-portal?lead=${lead.id}`,
+        });
+      }
+    }
+
     return lead;
   }
 

@@ -4,18 +4,24 @@
   "description": "Celebrate • Event • Ticket — The Intelligent Event Operating System",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAF8F4",
+  "background_color": "#FFFFFF",
   "theme_color": "#0B8A83",
   "icons": [
     {
       "src": "/brand/icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/brand/apple-icon.png",
-      "sizes": "180x180",
+      "sizes": "192x192",
       "type": "image/png"
     }
   ]

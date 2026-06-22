@@ -145,6 +145,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "dashboard", key: "nav_guest_crm", enValue: "Guest CRM", frValue: "CRM invités" },
   { namespace: "dashboard", key: "nav_tickets", enValue: "Tickets", frValue: "Billets" },
   { namespace: "dashboard", key: "nav_qr", enValue: "QR Admission", frValue: "Admission QR" },
+  { namespace: "dashboard", key: "nav_messages", enValue: "Messages", frValue: "Messages" },
   { namespace: "dashboard", key: "nav_communications", enValue: "Communications", frValue: "Communications" },
   { namespace: "dashboard", key: "nav_discovery", enValue: "Discovery", frValue: "Découverte" },
   { namespace: "dashboard", key: "nav_marketplace", enValue: "Vendor Marketplace", frValue: "Marketplace prestataires" },

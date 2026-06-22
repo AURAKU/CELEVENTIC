@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, FileText, Shield } from "lucide-react";
-import { HeaderShell } from "@/components/layout/header-shell";
+import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { LegalNav } from "@/components/legal/legal-nav";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -14,7 +14,7 @@ export function LegalHubLayout() {
 
   return (
     <>
-      <HeaderShell />
+      <Header />
       <main className="min-h-screen bg-mesh">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <Link

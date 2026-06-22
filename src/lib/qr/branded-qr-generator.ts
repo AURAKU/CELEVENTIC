@@ -46,7 +46,7 @@ async function fetchRemoteImage(url: string): Promise<Buffer | null> {
 
 /** Built-in Celeventic mark when no logo file exists on disk */
 async function celeventicFallbackLogo(): Promise<Buffer> {
-  const candidates = ["/brand/logo-mark.png", "/brand/logo-full.png"];
+  const candidates = ["/brand/logo-full.png", "/brand/logo-mark.png"];
   for (const c of candidates) {
     const buf = await readLocalImage(c);
     if (buf) return buf;

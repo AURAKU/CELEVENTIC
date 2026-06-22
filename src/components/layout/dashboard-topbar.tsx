@@ -1,9 +1,10 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { Bell, Search, LogOut, Menu } from "lucide-react";
+import { Search, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeaderPreferencesDropdowns } from "@/components/layout/header-preferences-dropdowns";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
 
@@ -53,10 +54,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <HeaderPreferencesDropdowns compact />
 
-        <Button variant="ghost" size="icon" className="relative rounded-xl hidden sm:inline-flex">
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-gold-400 ring-2 ring-white" />
-        </Button>
+        <NotificationBell />
 
         <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-slate-200/80">
           <div className="hidden lg:block text-right">

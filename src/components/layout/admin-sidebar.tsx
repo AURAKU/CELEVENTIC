@@ -43,7 +43,7 @@ const adminSections: NavSection[] = [
     title: "Payments & Commerce",
     items: [
       { href: "/admin/payments", label: "Payments", icon: CreditCard },
-      { href: "/admin/api-settings", label: "Payment Providers", icon: Key },
+      { href: "/admin/integrations", label: "Integrations & API", icon: Key },
     ],
   },
   {
@@ -85,7 +85,7 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
     >
       <div className="p-5 border-b border-white/10 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <Logo variant="light" showTagline size="sm" />
+          <Logo variant="light" size="sm" />
           <p className="text-[10px] text-gold-400 mt-2 font-semibold tracking-wide uppercase">
             Invitation Command Center
           </p>

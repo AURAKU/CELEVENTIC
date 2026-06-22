@@ -6,7 +6,15 @@ function createRedisClient(): Redis | null {
   const url = process.env.REDIS_URL;
   if (!url) return null;
   try {
-    return new Redis(url, { maxRetriesPerRequest: 3, lazyConnect: true });
+    const client = new Redis(url, {
+      maxRetriesPerRequest: 3,
+      lazyConnect: true,
+      enableOfflineQueue: false,
+    });
+    client.on("error", () => {
+      // Redis is optional locally — avoid crashing the Node process on connection failures.
+    });
+    return client;
   } catch {
     return null;
   }

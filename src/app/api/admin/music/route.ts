@@ -4,7 +4,7 @@ import { getSession, isAdminRole } from "@/lib/auth";
 import { musicLibraryService } from "@/services/music/music-library.service";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-import { MUSIC_ALLOWED_TYPES } from "@/lib/music/music-constants";
+import { resolveMusicUpload } from "@/lib/music/music-constants";
 
 const patchSchema = z.object({
   title: z.string().min(1).optional(),
@@ -45,12 +45,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Title and audio file are required" }, { status: 400 });
     }
 
-    const config = MUSIC_ALLOWED_TYPES[file.type];
+    const config = resolveMusicUpload(file);
     if (!config) {
       return NextResponse.json({ error: "Unsupported audio format" }, { status: 400 });
     }
     if (file.size > config.max) {
-      return NextResponse.json({ error: "File too large (max 15MB)" }, { status: 400 });
+      return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 400 });
     }
 
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${config.ext}`;

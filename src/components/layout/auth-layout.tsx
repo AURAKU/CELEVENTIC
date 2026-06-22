@@ -23,7 +23,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         <div className="absolute bottom-20 left-10 w-96 h-96 bg-accent-500/15 rounded-full blur-3xl" />
 
         <div className="relative">
-          <Logo variant="light" showTagline size="md" />
+          <Logo variant="light" size="lg" />
         </div>
 
         <div className="relative space-y-8">
@@ -59,7 +59,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       <div className="flex-1 flex items-center justify-center bg-mesh p-4 sm:p-6 lg:p-8 min-h-0">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex justify-center mb-6 sm:mb-8">
-            <Logo useFullImage size="md" />
+            <Logo size="lg" />
           </div>
           <div className="text-center mb-8">
             <h2 className="font-display text-2xl font-bold text-slate-900">{title}</h2>
