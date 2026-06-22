@@ -1,0 +1,71 @@
+"use client";
+
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
+import { MediaUploadVideo } from "@/components/media/media-upload-video";
+import { uploadFormDataWithProgress } from "@/lib/media/upload-with-progress";
+import { CROP_PRESETS } from "@/lib/image/crop-utils";
+
+interface TemplateMediaUploadProps {
+  label: string;
+  category: string;
+  accept?: string;
+  onUploaded: (url: string) => void;
+}
+
+export function TemplateMediaUpload({
+  label,
+  category,
+  accept = "video/*",
+  onUploaded,
+}: TemplateMediaUploadProps) {
+  const [error, setError] = useState("");
+  const isImage = accept.includes("image");
+
+  async function uploadBlob(blob: Blob, fileName: string) {
+    const fd = new FormData();
+    fd.append("file", new File([blob], fileName, { type: blob.type || "image/jpeg" }));
+    fd.append("category", category);
+    const { ok, json } = await uploadFormDataWithProgress("/api/admin/invitation-templates/upload", fd);
+    if (!ok) throw new Error((json.error as string) || "Upload failed");
+    const data = json.data as { url: string };
+    onUploaded(data.url);
+    return { url: data.url, name: fileName };
+  }
+
+  if (isImage) {
+    return (
+      <div>
+        <Label className="text-xs">{label}</Label>
+        <ImageUploadCropper
+          className="mt-1"
+          defaultAspect="5:7"
+          allowedAspects={CROP_PRESETS.cover}
+          onCustomUpload={uploadBlob}
+          onUploaded={(r) => onUploaded(r.url)}
+          onError={setError}
+          buttonLabel="Upload image"
+          hint="Upload and crop template artwork."
+        />
+        {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <MediaUploadVideo
+        className="mt-1"
+        uploadEndpoint="/api/admin/invitation-templates/upload"
+        extraFormFields={{ category }}
+        onUploaded={(r) => onUploaded(r.url)}
+        onError={setError}
+        buttonLabel="Upload video"
+        hint="Upload template preview or background video."
+      />
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
+  );
+}

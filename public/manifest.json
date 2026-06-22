@@ -1,0 +1,22 @@
+{
+  "name": "Celeventic",
+  "short_name": "Celeventic",
+  "description": "Celebrate • Event • Ticket — The Intelligent Event Operating System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF8F4",
+  "theme_color": "#0B8A83",
+  "icons": [
+    {
+      "src": "/brand/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/brand/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

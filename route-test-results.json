@@ -1,0 +1,112 @@
+[
+  {
+    "Route": "/",
+    "Status": 200,
+    "Body500": ""
+  },
+  {
+    "Route": "/auth/login",
+    "Status": 200,
+    "Body500": ""
+  },
+  {
+    "Route": "/auth/register",
+    "Status": 200,
+    "Body500": ""
+  },
+  {
+    "Route": "/login",
+    "Status": 404,
+    "Body500": ""
+  },
+  {
+    "Route": "/signup",
+    "Status": 404,
+    "Body500": ""
+  },
+  {
+    "Route": "/register",
+    "Status": 404,
+    "Body500": ""
+  },
+  {
+    "Route": "/discover",
+    "Status": 200,
+    "Body500": ""
+  },
+  {
+    "Route": "/marketplace",
+    "Status": 200,
+    "Body500": ""
+  },
+  {
+    "Route": "/dashboard",
+    "Status": 307,
+    "Body500": ""
+  },
+  {
+    "Route": "/admin",
+    "Status": 307,
+    "Body500": ""
+  },
+  {
+    "Route": "/verify/test",
+    "Status": 200,
+    "Body500": ""
+  },
+  {
+    "Route": "/about",
+    "Status": 404,
+    "Body500": ""
+  },
+  {
+    "Route": "/contact",
+    "Status": 404,
+    "Body500": ""
+  },
+  {
+    "Route": "/pricing",
+    "Status": 404,
+    "Body500": ""
+  },
+  {
+    "Route": "/legal/privacy",
+    "Status": 200,
+    "Body500": ""
+  },
+  {
+    "Route": "/legal/terms",
+    "Status": 200,
+    "Body500": ""
+  },
+  {
+    "Route": "/dashboard/qr-admission",
+    "Status": 307,
+    "Body500": ""
+  },
+  {
+    "Route": "/dashboard/qr",
+    "Status": 307,
+    "Body500": ""
+  },
+  {
+    "Route": "/dashboard/events",
+    "Status": 307,
+    "Body500": ""
+  },
+  {
+    "Route": "/dashboard/guests",
+    "Status": 307,
+    "Body500": ""
+  },
+  {
+    "Route": "/dashboard/tickets",
+    "Status": 307,
+    "Body500": ""
+  },
+  {
+    "Route": "/api/health",
+    "Status": 404,
+    "Body500": ""
+  }
+]

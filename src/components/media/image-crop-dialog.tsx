@@ -1,0 +1,275 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { X, ZoomIn, Check, Move, RotateCcw, FlipHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import {
+  CROP_ASPECT_OPTIONS,
+  type CropAspectPreset,
+  cropFrameSize,
+  computePixelCrop,
+  cropImageToBlob,
+  getCropShape,
+  rotateImage90,
+  flipImageHorizontal,
+} from "@/lib/image/crop-utils";
+
+interface ImageCropDialogProps {
+  open: boolean;
+  imageSrc: string;
+  fileName?: string;
+  defaultAspect?: CropAspectPreset;
+  allowedAspects?: CropAspectPreset[];
+  onClose: () => void;
+  onConfirm: (blob: Blob, fileName: string) => void | Promise<void>;
+}
+
+const CONTAINER_W = 360;
+const CONTAINER_H = 320;
+
+export function ImageCropDialog({
+  open,
+  imageSrc,
+  fileName = "image.jpg",
+  defaultAspect = "4:5",
+  allowedAspects,
+  onClose,
+  onConfirm,
+}: ImageCropDialogProps) {
+  const [aspect, setAspect] = useState<CropAspectPreset>(defaultAspect);
+  const [workingSrc, setWorkingSrc] = useState(imageSrc);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [natural, setNatural] = useState({ w: 0, h: 0 });
+  const [applying, setApplying] = useState(false);
+  const [transforming, setTransforming] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
+  const ownedUrls = useRef<string[]>([]);
+
+  const aspects = allowedAspects
+    ? CROP_ASPECT_OPTIONS.filter((a) => allowedAspects.includes(a.id))
+    : CROP_ASPECT_OPTIONS;
+
+  useEffect(() => {
+    if (!open) return;
+    setAspect(defaultAspect);
+    setWorkingSrc(imageSrc);
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
+    ownedUrls.current = [];
+    const img = new Image();
+    img.onload = () => setNatural({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = imageSrc;
+  }, [open, imageSrc, defaultAspect]);
+
+  useEffect(() => {
+    if (!open) return;
+    const img = new Image();
+    img.onload = () => setNatural({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = workingSrc;
+  }, [workingSrc, open]);
+
+  const frame = cropFrameSize(CONTAINER_W, CONTAINER_H, aspect);
+  const shape = getCropShape(aspect);
+  const baseScale = natural.w > 0 ? CONTAINER_W / natural.w : 1;
+  const renderedW = natural.w * baseScale * zoom;
+  const renderedH = natural.h * baseScale * zoom;
+
+  const frameRadius =
+    shape === "circle" ? "9999px" : shape === "rounded" ? "18px" : "2px";
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      dragRef.current = { startX: e.clientX, startY: e.clientY, ox: offset.x, oy: offset.y };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [offset]
+  );
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    setOffset({
+      x: dragRef.current.ox + (e.clientX - dragRef.current.startX),
+      y: dragRef.current.oy + (e.clientY - dragRef.current.startY),
+    });
+  }, []);
+
+  const onPointerUp = useCallback(() => {
+    dragRef.current = null;
+  }, []);
+
+  async function applyTransform(fn: (src: string) => Promise<string>) {
+    setTransforming(true);
+    try {
+      const next = await fn(workingSrc);
+      ownedUrls.current.push(next);
+      setWorkingSrc(next);
+      setZoom(1);
+      setOffset({ x: 0, y: 0 });
+    } finally {
+      setTransforming(false);
+    }
+  }
+
+  async function handleApply() {
+    if (!natural.w) return;
+    setApplying(true);
+    try {
+      const crop = computePixelCrop(
+        natural.w,
+        natural.h,
+        CONTAINER_W,
+        CONTAINER_H,
+        frame.width,
+        frame.height,
+        zoom,
+        offset.x,
+        offset.y
+      );
+      const blob = await cropImageToBlob(workingSrc, crop, { shape });
+      const ext = shape !== "rect" ? "png" : fileName.includes(".") ? fileName.split(".").pop() : "jpg";
+      await onConfirm(blob, `cropped-${Date.now()}.${ext === "png" ? "png" : "jpg"}`);
+      ownedUrls.current.forEach((u) => URL.revokeObjectURL(u));
+      onClose();
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  function handleClose() {
+    ownedUrls.current.forEach((u) => URL.revokeObjectURL(u));
+    onClose();
+  }
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div>
+            <p className="font-semibold text-slate-900">Crop & frame</p>
+            <p className="text-xs text-slate-500 flex items-center gap-1">
+              <Move className="h-3 w-3" /> Drag to reposition · choose frame · rotate or flip
+            </p>
+          </div>
+          <button type="button" onClick={handleClose} className="p-2 rounded-lg hover:bg-slate-100" aria-label="Close">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="flex flex-wrap gap-1.5">
+            {aspects.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setAspect(a.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors touch-manipulation",
+                  aspect === a.id
+                    ? "bg-brand-600 text-white border-brand-600"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-brand-300"
+                )}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+
+          <div
+            className="relative mx-auto bg-slate-900 rounded-xl overflow-hidden select-none touch-none"
+            style={{ width: CONTAINER_W, height: CONTAINER_H }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={onPointerUp}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={workingSrc}
+              alt=""
+              draggable={false}
+              className="absolute max-w-none pointer-events-none"
+              style={{
+                width: renderedW,
+                height: renderedH,
+                left: (CONTAINER_W - renderedW) / 2 + offset.x,
+                top: (CONTAINER_H - renderedH) / 2 + offset.y,
+              }}
+            />
+            <div className="absolute inset-0 pointer-events-none">
+              <div
+                className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"
+                style={{
+                  width: frame.width,
+                  height: frame.height,
+                  left: (CONTAINER_W - frame.width) / 2,
+                  top: (CONTAINER_H - frame.height) / 2,
+                  borderRadius: frameRadius,
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={transforming}
+              onClick={() => void applyTransform((s) => rotateImage90(s, "ccw"))}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Rotate
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={transforming}
+              onClick={() => void applyTransform(flipImageHorizontal)}
+            >
+              <FlipHorizontal className="h-4 w-4" />
+              Flip
+            </Button>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1">
+              <ZoomIn className="h-3.5 w-3.5" /> Zoom
+            </Label>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.02}
+              value={zoom}
+              onChange={(e) => setZoom(parseFloat(e.target.value))}
+              className="w-full accent-brand-600"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="flex-1 gap-2"
+              disabled={applying || transforming || !natural.w}
+              onClick={() => void handleApply()}
+            >
+              <Check className="h-4 w-4" />
+              {applying ? "Saving…" : "Use this crop"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
