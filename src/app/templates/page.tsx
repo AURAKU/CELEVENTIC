@@ -59,7 +59,7 @@ export default async function PublicTemplatesPage({
               Premium Invitation Templates
             </h1>
             <p className="mt-4 text-slate-600">
-              Curated for weddings, funerals, corporate events, and celebrations across Ghana and beyond.
+              Curated for weddings, funerals, corporate events, and celebrations worldwide.
             </p>
           </div>
 

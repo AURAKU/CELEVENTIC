@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ import { Wallet, TrendingUp, TrendingDown, DollarSign, Download } from "lucide-r
 import { formatCurrency } from "@/lib/utils";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
+import { PaginationBar } from "@/components/ui/pagination";
+import { paginateList } from "@/lib/pagination-client";
 
 interface WalletData {
   wallet: {
@@ -28,6 +30,8 @@ export default function WalletPage() {
   const [expense, setExpense] = useState({ category: "", amount: "", description: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [txPage, setTxPage] = useState(1);
+  const TX_PER_PAGE = 10;
 
   async function loadWallet() {
     if (!eventId) return;
@@ -61,17 +65,27 @@ export default function WalletPage() {
   }
 
   const pl = data?.profitLoss;
+  const txSlice = useMemo(
+    () => paginateList(data?.wallet?.transactions ?? [], txPage, TX_PER_PAGE),
+    [data?.wallet?.transactions, txPage]
+  );
+
+  useEffect(() => {
+    setTxPage(1);
+  }, [eventId]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Event Wallet</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Event Wallet</h1>
           <p className="page-subtitle">Track revenue, expenses, contributions, and profit/loss.</p>
         </div>
         {eventId && (
-          <a href={`/api/wallet/export?eventId=${eventId}`} download>
-            <Button variant="outline" size="sm"><Download className="h-4 w-4" /> Export CSV</Button>
+          <a href={`/api/wallet/export?eventId=${eventId}`} download className="inline-flex">
+            <Button variant="outline" size="sm" type="button" className="min-h-[44px] touch-manipulation">
+              <Download className="h-4 w-4" /> Export CSV
+            </Button>
           </a>
         )}
       </div>
@@ -113,15 +127,27 @@ export default function WalletPage() {
               <CardContent className="space-y-2">
                 {data.wallet.transactions.length === 0 ? (
                   <p className="text-center text-slate-500 py-4">No transactions yet.</p>
-                ) : data.wallet.transactions.map((t, i) => (
+                ) : (
+                  <>
+                    {txSlice.items.map((t, i) => (
                   <div key={i} className="flex justify-between text-sm py-2 border-b gap-2">
-                    <div>
-                      <span>{t.description ?? t.type}</span>
+                    <div className="min-w-0">
+                      <span className="break-words">{t.description ?? t.type}</span>
                       <p className="text-xs text-slate-400">{t.source}{t.creator?.name ? ` · ${t.creator.name}` : ""}{t.isLocked ? " · locked" : ""}</p>
                     </div>
-                    <span className={Number(t.amount) < 0 ? "text-red-600" : "text-green-600"}>{formatCurrency(t.amount)}</span>
+                    <span className={`shrink-0 ${Number(t.amount) < 0 ? "text-red-600" : "text-green-600"}`}>{formatCurrency(t.amount)}</span>
                   </div>
-                ))}
+                    ))}
+                    <PaginationBar
+                      page={txSlice.page}
+                      pages={txSlice.pages}
+                      total={txSlice.total}
+                      limit={TX_PER_PAGE}
+                      onPageChange={setTxPage}
+                      showSummary={txSlice.pages > 1}
+                    />
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

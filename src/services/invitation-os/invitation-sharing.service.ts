@@ -29,7 +29,7 @@ export class InvitationSharingService {
       `📅 ${dateLine}\n` +
       `${options.venue ? `📍 ${options.venue}\n` : ""}` +
       `\nOpen your Celeventic invitation:\n${link}\n\n` +
-      `_Powered by Celeventic — Ghana's premium EventOS_`;
+      `_Powered by Celeventic — Global Event Operating System_`;
 
     const generalTextFr =
       `✨ *${options.eventTitle}*\n\n` +

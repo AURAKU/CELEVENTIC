@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/layout/logo";
 import { PreferencesToolbar } from "@/components/layout/preferences-toolbar";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { performLogout } from "@/lib/auth/logout";
 
 interface HeaderProps {
   initialSession?: Session | null;
@@ -29,6 +30,7 @@ export function Header({ initialSession }: HeaderProps) {
   const { data: clientSession } = useSession();
   const session = clientSession ?? initialSession;
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const dashboardHref =
     session?.user?.role && isAdminRole(session.user.role as UserRole) && !session.user.isAdminView
@@ -60,9 +62,24 @@ export function Header({ initialSession }: HeaderProps) {
 
           <div className="hidden md:flex items-center gap-3">
             {session ? (
-              <Button asChild>
-                <Link href={dashboardHref}>{t("common.dashboard")}</Link>
-              </Button>
+              <>
+                <Button asChild>
+                  <Link href={dashboardHref}>{t("common.dashboard")}</Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={loggingOut}
+                  onClick={() => {
+                    setLoggingOut(true);
+                    void performLogout("/");
+                  }}
+                  className="text-slate-600 hover:text-red-600"
+                >
+                  <LogOut className="h-4 w-4 mr-1.5" />
+                  {loggingOut ? t("common.signing_out") : t("common.sign_out")}
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="ghost" asChild>
@@ -101,9 +118,24 @@ export function Header({ initialSession }: HeaderProps) {
           ))}
           <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
             {session ? (
-              <Button asChild>
-                <Link href={dashboardHref}>{t("common.dashboard")}</Link>
-              </Button>
+              <>
+                <Button asChild>
+                  <Link href={dashboardHref}>{t("common.dashboard")}</Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loggingOut}
+                  onClick={() => {
+                    setLoggingOut(true);
+                    void performLogout("/");
+                  }}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  {loggingOut ? t("common.signing_out") : t("common.sign_out")}
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="outline" asChild>

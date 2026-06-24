@@ -28,7 +28,7 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-4 w-4 text-gold-400" />
-              <span className="text-sm font-medium text-white/80">Event Command Center</span>
+              <span className="text-sm font-medium text-white/80">Dashboard</span>
             </div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
               Welcome back, {session?.user?.name?.split(" ")[0]}

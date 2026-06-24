@@ -26,8 +26,8 @@ export default function MyCollectionPage() {
 
   return (
     <DashboardPageShell
-      title="My Event Collection"
-      description="Shortlist vendors before you book. Your saved favorites in one place."
+      title="Saved Vendors"
+      description="Your shortlisted vendors in one place — ready when you need them."
       loading={loading}
       error={error}
       empty={!loading && !error && favorites.length === 0}

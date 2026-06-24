@@ -52,7 +52,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         </div>
 
         <p className="relative text-xs text-slate-600">
-          Trusted by organizers across Ghana and beyond
+          Trusted by organizers worldwide
         </p>
       </div>
 

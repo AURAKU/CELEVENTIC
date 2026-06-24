@@ -133,14 +133,10 @@ export class ComplianceService {
     };
   }
 
-  async recordLegalAcceptance(
-    userId: string,
-    termsVersion?: string,
-    privacyVersion?: string
-  ) {
+  async recordLegalAcceptance(userId: string) {
     const versions = await this.getCurrentVersions();
-    const tVer = termsVersion ?? versions.terms?.version ?? CURRENT_LEGAL_VERSION;
-    const pVer = privacyVersion ?? versions.privacy?.version ?? CURRENT_LEGAL_VERSION;
+    const tVer = versions.terms?.version ?? CURRENT_LEGAL_VERSION;
+    const pVer = versions.privacy?.version ?? CURRENT_LEGAL_VERSION;
 
     const now = new Date();
     await prisma.$transaction([

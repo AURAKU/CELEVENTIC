@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import { TermsAcceptanceGate } from "@/components/legal/terms-acceptance-gate";
@@ -22,7 +22,9 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
         />
       )}
 
-      <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <Suspense fallback={null}>
+        <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      </Suspense>
 
       <div className="flex-1 flex flex-col min-w-0">
         {adminBanner}

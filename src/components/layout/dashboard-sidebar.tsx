@@ -1,82 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  LayoutDashboard, Calendar, Mail, Users, Ticket, QrCode, MessageSquare,
-  Sparkles, Settings, Shield, Palette, Upload, Wallet, Heart,
-  Store, MapPin, Compass, Archive, Image, Layers, X, Flower2, Search, Home, Armchair,
+  Plus, QrCode, MessageSquare, Shield, X, ChevronDown, ChevronRight, LogOut,
 } from "lucide-react";
+import { performLogout } from "@/lib/auth/logout";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { GlobalSearch } from "@/components/layout/global-search";
 import { isAdminRole } from "@/lib/roles";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { getNavSections, type WorkspaceId } from "@/lib/navigation/dashboard-nav";
+import { getStoredWorkspace } from "@/components/layout/workspace-switcher";
 import type { UserRole } from "@prisma/client";
-
-const navSections = [
-  {
-    labelKey: "dashboard.nav_section_core",
-    items: [
-      { href: "/dashboard", labelKey: "dashboard.nav_overview", icon: LayoutDashboard, exact: true },
-      { href: "/dashboard/events", labelKey: "dashboard.nav_events", icon: Calendar },
-      { href: "/dashboard/ai-planner", labelKey: "dashboard.nav_ai_planner", icon: Sparkles },
-    ],
-  },
-  {
-    labelKey: "dashboard.nav_section_design",
-    items: [
-      { href: "/dashboard/design-studio", labelKey: "dashboard.nav_design_studio", icon: Palette },
-      { href: "/dashboard/design-studio/assets", labelKey: "dashboard.nav_asset_library", icon: Layers },
-      { href: "/dashboard/invitations", labelKey: "dashboard.nav_invitations", icon: Mail },
-      { href: "/dashboard/my-invitations", labelKey: "dashboard.nav_my_invitations", icon: Mail },
-      { href: "/dashboard/seating", labelKey: "dashboard.nav_seating", icon: Armchair, exact: false },
-      { href: "/dashboard/invitation-analytics", labelKey: "dashboard.nav_invitation_analytics", icon: Sparkles },
-      { href: "/dashboard/flyers", labelKey: "dashboard.nav_flyer_studio", icon: Image },
-      { href: "/dashboard/inspiration", labelKey: "dashboard.nav_inspiration", icon: Upload },
-    ],
-  },
-  {
-    labelKey: "dashboard.nav_section_guests",
-    items: [
-      { href: "/dashboard/guests", labelKey: "dashboard.nav_guest_crm", icon: Users },
-      { href: "/dashboard/tickets", labelKey: "dashboard.nav_tickets", icon: Ticket },
-      { href: "/dashboard/qr-admission", labelKey: "dashboard.nav_qr", icon: QrCode },
-    ],
-  },
-  {
-    labelKey: "dashboard.nav_section_growth",
-    items: [
-      { href: "/dashboard/messages", labelKey: "dashboard.nav_messages", icon: MessageSquare },
-      { href: "/dashboard/campaigns", labelKey: "dashboard.nav_communications", icon: MessageSquare },
-      { href: "/dashboard/discovery", labelKey: "dashboard.nav_discovery", icon: Compass },
-      { href: "/marketplace", labelKey: "dashboard.nav_marketplace", icon: Store },
-      { href: "/dashboard/vendors", labelKey: "dashboard.nav_find_vendors", icon: Store },
-      { href: "/dashboard/my-collection", labelKey: "dashboard.nav_my_collection", icon: Heart },
-      { href: "/dashboard/vendor-portal", labelKey: "dashboard.nav_vendor_portal", icon: Store },
-      { href: "/dashboard/venues", labelKey: "dashboard.nav_venues", icon: MapPin },
-    ],
-  },
-  {
-    labelKey: "dashboard.nav_section_finance",
-    items: [
-      { href: "/dashboard/wallet", labelKey: "dashboard.nav_wallet", icon: Wallet },
-      { href: "/dashboard/contributions", labelKey: "dashboard.nav_contributions", icon: Heart },
-      { href: "/dashboard/funeral", labelKey: "dashboard.nav_funeral", icon: Flower2 },
-    ],
-  },
-  {
-    labelKey: "dashboard.nav_section_archive",
-    items: [
-      { href: "/dashboard/memory", labelKey: "dashboard.nav_memory", icon: Archive },
-      { href: "/dashboard/settings", labelKey: "dashboard.nav_settings", icon: Settings },
-      { href: "/dashboard/privacy-center", labelKey: "dashboard.nav_privacy", icon: Shield },
-    ],
-  },
-];
 
 interface DashboardSidebarProps {
   mobileOpen?: boolean;
@@ -85,29 +25,59 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { t } = useLocale();
-  const [query, setQuery] = useState("");
+  const [workspace, setWorkspace] = useState<WorkspaceId>("organizer");
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [loggingOut, setLoggingOut] = useState(false);
+
   const isAdmin = session?.user?.role && isAdminRole(session.user.role as UserRole);
 
-  const filteredSections = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return navSections;
+  useEffect(() => {
+    setWorkspace(getStoredWorkspace());
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<WorkspaceId>).detail;
+      if (detail) setWorkspace(detail);
+    };
+    window.addEventListener("celeventic:workspace", handler);
+    return () => window.removeEventListener("celeventic:workspace", handler);
+  }, []);
 
-    return navSections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => {
-          const label = t(item.labelKey).toLowerCase();
-          return label.includes(q) || item.href.toLowerCase().includes(q);
-        }),
-      }))
-      .filter((section) => section.items.length > 0);
-  }, [query, t]);
+  const sections = useMemo(() => getNavSections(workspace), [workspace]);
 
   function isActive(href: string, exact?: boolean) {
-    if (exact) return pathname === href;
-    return pathname === href || pathname.startsWith(href + "/");
+    const [path, queryString] = href.split("?");
+    const pathMatch = exact
+      ? pathname === path
+      : pathname === path || pathname.startsWith(path + "/");
+
+    if (queryString) {
+      if (pathname !== path) return false;
+      const expected = new URLSearchParams(queryString);
+      for (const [key, value] of expected.entries()) {
+        if (searchParams.get(key) !== value) return false;
+      }
+      return true;
+    }
+
+    if (path === "/dashboard/invitations" && exact && pathname === path) {
+      const tab = searchParams.get("tab");
+      return !tab || tab === "studio";
+    }
+
+    if (exact) return pathname === path;
+    return pathMatch;
+  }
+
+  function toggleSection(id: string) {
+    setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    onClose?.();
+    await performLogout("/");
   }
 
   return (
@@ -134,40 +104,69 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
       </div>
 
       <div className="shrink-0 px-4 pt-3 pb-2 space-y-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("dashboard.sidebar_search")}
-            className="h-10 pl-9 bg-white/10 border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-brand-400/30"
-          />
-        </div>
-        <Link
-          href="/dashboard"
-          onClick={onClose}
-          className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/8 transition-colors touch-manipulation"
-        >
-          <Home className="h-4 w-4 shrink-0" />
-          {t("dashboard.go_to_overview")}
+        <Link href="/dashboard/events/create" onClick={onClose}>
+          <Button
+            className="w-full min-h-[44px] bg-gradient-to-r from-[#D4A63A] to-[#C4952E] hover:from-[#E0B44A] hover:to-[#D4A63A] text-slate-900 font-semibold shadow-md border-0 touch-manipulation"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            {t("dashboard.create_event")}
+          </Button>
         </Link>
+
+        <div className="flex gap-2 lg:hidden">
+          <Link
+            href="/dashboard/qr-admission"
+            onClick={onClose}
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white/10 px-2 py-2.5 text-xs font-medium text-white touch-manipulation"
+          >
+            <QrCode className="h-3.5 w-3.5" />
+            {t("dashboard.quick_scan")}
+          </Link>
+          <Link
+            href="/dashboard/messages"
+            onClick={onClose}
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white/10 px-2 py-2.5 text-xs font-medium text-white touch-manipulation"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            {t("dashboard.nav_messages")}
+          </Link>
+        </div>
+
+        <div className="md:hidden">
+          <GlobalSearch />
+        </div>
       </div>
 
-      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-2 space-y-4 scrollbar-thin">
-        {filteredSections.length === 0 ? (
-          <p className="px-3 py-6 text-sm text-slate-500 text-center">{t("dashboard.sidebar_no_results")}</p>
-        ) : (
-          filteredSections.map((section) => (
-            <div key={section.labelKey}>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] px-3 mb-1.5">
-                {t(section.labelKey)}
-              </p>
-              <div className="space-y-0.5">
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-2 space-y-3 scrollbar-thin">
+        {sections.map((section) => {
+          const isCollapsed = collapsed[section.id] === true;
+          const hasActive = section.items.some((item) => isActive(item.href, item.exact));
+
+          return (
+            <div key={section.id}>
+              <button
+                type="button"
+                onClick={() => toggleSection(section.id)}
+                className="w-full flex items-center justify-between px-3 mb-1 lg:cursor-default"
+              >
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">
+                  {t(section.labelKey)}
+                </p>
+                <span className="lg:hidden text-slate-500">
+                  {isCollapsed && !hasActive ? (
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  )}
+                </span>
+              </button>
+              <div className={cn("space-y-0.5", isCollapsed && !hasActive && "hidden lg:block")}>
                 {section.items.map((item) => {
                   const active = isActive(item.href, item.exact);
+                  const key = `${section.id}-${item.labelKey}`;
                   return (
                     <Link
-                      key={item.href}
+                      key={key}
                       href={item.href}
                       onClick={onClose}
                       className={cn(
@@ -184,20 +183,33 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
                 })}
               </div>
             </div>
-          ))
-        )}
+          );
+        })}
       </nav>
 
       {isAdmin && (
-        <div className="shrink-0 p-4 border-t border-white/10 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <form action="/api/admin/return-to-admin" method="POST">
-            <Button type="submit" variant="secondary" className="w-full min-h-[44px]">
+        <div className="shrink-0 p-4 border-t border-white/10 space-y-2">
+          <Button variant="secondary" className="w-full min-h-[44px]" asChild>
+            <Link href="/admin" onClick={onClose}>
               <Shield className="h-4 w-4" />
-              {t("dashboard.return_admin")}
-            </Button>
-          </form>
+              {t("dashboard.admin_control_center")}
+            </Link>
+          </Button>
         </div>
       )}
+
+      <div className="shrink-0 p-4 border-t border-white/10 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={loggingOut}
+          onClick={() => void handleLogout()}
+          className="w-full min-h-[44px] justify-start text-slate-300 hover:text-red-300 hover:bg-red-500/10 touch-manipulation"
+        >
+          <LogOut className="h-4 w-4" />
+          {loggingOut ? t("common.signing_out") : t("common.sign_out")}
+        </Button>
+      </div>
     </aside>
   );
 }

@@ -1,5 +1,5 @@
-import { InvitationAnalyticsClient } from "./invitation-analytics-client";
+import { redirect } from "next/navigation";
 
 export default function InvitationAnalyticsPage() {
-  return <InvitationAnalyticsClient />;
+  redirect("/dashboard/invitations?tab=analytics");
 }

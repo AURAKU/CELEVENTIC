@@ -2,68 +2,68 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard, Users, CreditCard, Settings, Shield,
-  BarChart3, Package, Palette, Globe, Key, ScrollText, Eye, Calendar, X,
-  Mail, Layers, Star, FileText, Phone, RefreshCw, ShoppingBag, Store, Music,
+  BarChart3, Palette, Globe, Key, ScrollText, Eye, Calendar, X,
+  Mail, Layers, Star, FileText, Phone, RefreshCw, Store, Music, Sparkles, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
+import { performLogout } from "@/lib/auth/logout";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 type NavSection = { title: string; items: NavItem[] };
 
 const adminSections: NavSection[] = [
   {
-    title: "Overview",
+    title: "Control Center",
     items: [
-      { href: "/admin", label: "Command Center", icon: LayoutDashboard },
-      { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/admin", label: "Admin Control Center", icon: LayoutDashboard },
+      { href: "/admin/analytics", label: "Analytics & Reports", icon: BarChart3 },
     ],
   },
   {
-    title: "VendorOS",
+    title: "People & Events",
     items: [
-      { href: "/admin/vendors", label: "Vendor Command Center", icon: Store },
+      { href: "/admin/users", label: "Users", icon: Users },
+      { href: "/admin/vendors", label: "Vendors", icon: Store },
+      { href: "/admin/events", label: "Events", icon: Calendar },
     ],
   },
   {
-    title: "Invitation Business",
+    title: "Templates & Content",
+    items: [
+      { href: "/admin/invitation-templates", label: "Templates", icon: Palette },
+      { href: "/admin/templates", label: "Event Templates", icon: Layers },
+      { href: "/admin/inspiration", label: "Inspiration Engine", icon: Sparkles },
+      { href: "/admin/pages", label: "CMS Pages", icon: Eye },
+      { href: "/admin/translations", label: "Languages", icon: Globe },
+      { href: "/admin/legal", label: "Legal Center", icon: FileText },
+    ],
+  },
+  {
+    title: "Commerce",
     items: [
       { href: "/admin/invitation-orders", label: "Orders", icon: Mail },
-      { href: "/admin/invitation-templates", label: "Templates", icon: Palette },
-      { href: "/admin/commerce", label: "Packages & Add-ons", icon: Package },
+      { href: "/admin/commerce", label: "Packages & Add-ons", icon: Settings },
+      { href: "/admin/payments", label: "Payments", icon: CreditCard },
       { href: "/admin/music", label: "Music Library", icon: Music },
       { href: "/admin/revisions", label: "Revisions", icon: RefreshCw },
       { href: "/admin/reviews", label: "Reviews", icon: Star },
     ],
   },
   {
-    title: "Payments & Commerce",
+    title: "System",
     items: [
-      { href: "/admin/payments", label: "Payments", icon: CreditCard },
       { href: "/admin/integrations", label: "Integrations & API", icon: Key },
-    ],
-  },
-  {
-    title: "Content & Settings",
-    items: [
-      { href: "/admin/translations", label: "Languages", icon: Globe },
-      { href: "/admin/legal", label: "Legal Center", icon: FileText },
-      { href: "/admin/contact", label: "Contact", icon: Phone },
-    ],
-  },
-  {
-    title: "Platform",
-    items: [
-      { href: "/admin/users", label: "Users", icon: Users },
-      { href: "/admin/events", label: "Events", icon: Calendar },
       { href: "/admin/modules", label: "EventOS Modules", icon: Layers },
       { href: "/admin/services", label: "Services", icon: Settings },
-      { href: "/admin/templates", label: "Event Templates", icon: ShoppingBag },
       { href: "/admin/security", label: "Security", icon: Shield },
       { href: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
+      { href: "/admin/contact", label: "Contact", icon: Phone },
     ],
   },
 ];
@@ -75,6 +75,14 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { t } = useLocale();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    onClose?.();
+    await performLogout("/");
+  }
 
   return (
     <aside
@@ -87,7 +95,7 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
         <div className="min-w-0">
           <Logo variant="light" size="sm" />
           <p className="text-[10px] text-gold-400 mt-2 font-semibold tracking-wide uppercase">
-            Invitation Command Center
+            Global Event Operating System
           </p>
         </div>
         <button
@@ -111,7 +119,7 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
                 const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
                 return (
                   <Link
-                    key={item.href}
+                    key={item.href + item.label}
                     href={item.href}
                     onClick={onClose}
                     className={cn(
@@ -129,13 +137,23 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
         ))}
       </nav>
 
-      <div className="p-4 border-t border-white/10 space-y-3">
+      <div className="p-4 border-t border-white/10 space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <form action="/api/admin/switch-view" method="POST">
-          <Button type="submit" variant="secondary" className="w-full">
+          <Button type="submit" variant="secondary" className="w-full min-h-[44px]">
             <Eye className="h-4 w-4" />
-            Switch to User View
+            Return to Organizer View
           </Button>
         </form>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={loggingOut}
+          onClick={() => void handleLogout()}
+          className="w-full min-h-[44px] justify-start text-slate-300 hover:text-red-300 hover:bg-red-500/10 touch-manipulation"
+        >
+          <LogOut className="h-4 w-4" />
+          {loggingOut ? t("common.signing_out") : t("common.sign_out")}
+        </Button>
       </div>
     </aside>
   );

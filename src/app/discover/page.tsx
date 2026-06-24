@@ -25,7 +25,7 @@ export default async function PublicDiscoverPage() {
             </div>
             <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">Discover Events</h1>
             <p className="text-slate-300 mt-4 max-w-lg mx-auto text-lg">
-              Find weddings, concerts, conferences, and celebrations happening across Ghana.
+              Find weddings, concerts, conferences, and celebrations happening around the world.
             </p>
           </div>
         </section>

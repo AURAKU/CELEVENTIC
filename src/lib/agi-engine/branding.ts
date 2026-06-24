@@ -2,7 +2,7 @@
 
 export const AGI_ENGINE = {
   name: "AGI Engine",
-  tagline: "Powered by AGI Engine",
+  tagline: "Powered by AGI",
   intelligence: "Celeventic Intelligence",
   smartDesign: "Smart Design Engine",
   experience: "Experience Engine",

@@ -1,10 +1,13 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
-import { Search, LogOut, Menu } from "lucide-react";
+import Link from "next/link";
+import { Menu, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeaderPreferencesDropdowns } from "@/components/layout/header-preferences-dropdowns";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
+import { GlobalSearch } from "@/components/layout/global-search";
+import { UserAccountMenu, LogoutButton } from "@/components/layout/user-account-menu";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
 
@@ -14,14 +17,7 @@ interface DashboardTopbarProps {
 }
 
 export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps) {
-  const { data: session } = useSession();
   const { t } = useLocale();
-  const initials = session?.user?.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() ?? "CE";
 
   return (
     <header
@@ -39,42 +35,30 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
         >
           <Menu className="h-5 w-5 text-slate-600" />
         </button>
-        <div className="hidden md:flex items-center gap-2 flex-1 max-w-md min-w-0">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="search"
-              placeholder={t("dashboard.search_placeholder")}
-              className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200/80 bg-slate-50/80 text-sm placeholder:text-slate-400 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-500/15 transition-all"
-            />
-          </div>
+        <div className="hidden sm:flex flex-1 min-w-0 max-w-md">
+          <GlobalSearch />
         </div>
+        <Link href="/dashboard/events/create" className="sm:hidden shrink-0" aria-label={t("dashboard.create_event")}>
+          <Button
+            size="icon"
+            className="min-h-[44px] min-w-[44px] bg-gradient-to-r from-[#D4A63A] to-[#C4952E] text-slate-900 font-semibold border-0"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </Link>
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="hidden md:block">
+          <WorkspaceSwitcher compact />
+        </div>
         <HeaderPreferencesDropdowns compact />
-
         <NotificationBell />
-
-        <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-slate-200/80">
-          <div className="hidden lg:block text-right">
-            <p className="text-sm font-semibold text-slate-900 leading-tight truncate max-w-[140px]">
-              {session?.user?.name}
-            </p>
-            <p className="text-xs text-slate-500 truncate max-w-[140px]">{session?.user?.email}</p>
-          </div>
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-bold text-white shadow-md shrink-0">
-            {initials}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-xl text-slate-500 hover:text-red-600 min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 touch-manipulation"
-            onClick={() => signOut({ callbackUrl: "/" })}
-            aria-label={t("common.sign_out")}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+        <div className="hidden sm:flex items-center pl-1 sm:pl-2 border-l border-slate-200/80">
+          <UserAccountMenu compact />
+        </div>
+        <div className="sm:hidden pl-1 border-l border-slate-200/80">
+          <LogoutButton showLabel={false} />
         </div>
       </div>
     </header>

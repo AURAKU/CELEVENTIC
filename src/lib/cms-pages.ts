@@ -14,9 +14,9 @@ const INFO_PAGE_DEFAULTS: Record<
 > = {
   about: {
     contentEn:
-      "Celeventic is Ghana's premium EventOS — Celebrate • Event • Ticket. We help organizers create luxury digital invitations, manage guests, sell tickets, and preserve memories through InvitationOS, VendorOS, and Celeventic Intelligence.",
+      "Celeventic is a global Event Operating System — Celebrate • Event • Ticket. We help organizers create luxury digital invitations, manage guests, sell tickets, and preserve memories through InvitationOS, VendorOS, and Celeventic Intelligence.",
     contentFr:
-      "Celeventic est l'EventOS premium du Ghana — Célébrer • Événement • Billet. Nous aidons les organisateurs à créer des invitations numériques de luxe, gérer les invités, vendre des billets et préserver les souvenirs via InvitationOS, VendorOS et Celeventic Intelligence.",
+      "Celeventic est un Event Operating System mondial — Célébrer • Événement • Billet. Nous aidons les organisateurs à créer des invitations numériques de luxe, gérer les invités, vendre des billets et préserver les souvenirs via InvitationOS, VendorOS et Celeventic Intelligence.",
   },
   faq: {
     contentEn:

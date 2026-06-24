@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { PageLoader } from "@/components/ui/page-loader";
@@ -33,6 +34,7 @@ export default function SeatingDashboardPage() {
   const [guests, setGuests] = useState<GuestRow[]>([]);
   const [planName, setPlanName] = useState("Main reception");
   const [assignments, setAssignments] = useState<Record<string, AssignmentRow>>({});
+  const [tables, setTables] = useState<{ id: string; label: string; zone?: string }[]>([]);
   const [search, setSearch] = useState("");
   const [newTable, setNewTable] = useState("");
 
@@ -45,6 +47,8 @@ export default function SeatingDashboardPage() {
       setGuests(d.data.guests ?? []);
       if (d.data.plan) {
         setPlanName(d.data.plan.name);
+        const layoutTables = (d.data.plan.layout as { tables?: { id: string; label: string; zone?: string }[] })?.tables ?? [];
+        setTables(layoutTables);
         const map: Record<string, AssignmentRow> = {};
         for (const a of d.data.plan.assignments ?? []) {
           map[a.guestId] = {
@@ -55,6 +59,8 @@ export default function SeatingDashboardPage() {
           };
         }
         setAssignments(map);
+      } else {
+        setTables([]);
       }
     }
     setLoading(false);
@@ -65,17 +71,22 @@ export default function SeatingDashboardPage() {
   async function savePlan() {
     if (!eventId) return;
     setSaving(true);
-    const tables = Object.values(assignments).reduce((acc, a) => {
-      if (!acc.find((t) => t.label === a.tableNumber)) {
+    const assignmentTables = Object.values(assignments).reduce((acc, a) => {
+      if (a.tableNumber && !acc.find((t) => t.label === a.tableNumber)) {
         acc.push({ id: `t-${a.tableNumber}`, label: a.tableNumber, zone: a.zone });
       }
       return acc;
     }, [] as { id: string; label: string; zone?: string }[]);
 
+    const mergedTables = [...tables];
+    for (const t of assignmentTables) {
+      if (!mergedTables.find((m) => m.label === t.label)) mergedTables.push(t);
+    }
+
     await fetch(`/api/events/${eventId}/seating`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: planName, layout: { tables } }),
+      body: JSON.stringify({ name: planName, layout: { tables: mergedTables } }),
     });
 
     await fetch(`/api/events/${eventId}/seating/assignments`, {
@@ -85,6 +96,17 @@ export default function SeatingDashboardPage() {
     });
     setSaving(false);
     void load();
+  }
+
+  function quickAddTable() {
+    const label = newTable.trim();
+    if (!label) return;
+    if (tables.some((t) => t.label.toLowerCase() === label.toLowerCase())) {
+      setNewTable("");
+      return;
+    }
+    setTables((prev) => [...prev, { id: `t-${label}`, label }]);
+    setNewTable("");
   }
 
   function assignGuest(guestId: string, tableNumber: string) {
@@ -128,8 +150,13 @@ export default function SeatingDashboardPage() {
               <div className="space-y-1">
                 <Label>Quick add table</Label>
                 <div className="flex gap-2">
-                  <Input placeholder="Table 12" value={newTable} onChange={(e) => setNewTable(e.target.value)} />
-                  <Button variant="outline" onClick={() => setNewTable("")} disabled={!newTable}>
+                  <Input
+                    placeholder="Table 12"
+                    value={newTable}
+                    onChange={(e) => setNewTable(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), quickAddTable())}
+                  />
+                  <Button variant="outline" onClick={quickAddTable} disabled={!newTable.trim()}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -139,6 +166,19 @@ export default function SeatingDashboardPage() {
               </Button>
             </CardContent>
           </Card>
+
+          {tables.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Tables ({tables.length})</CardTitle></CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {tables.map((t) => (
+                  <Badge key={t.id} variant="outline" className="px-3 py-1.5 text-sm">
+                    {t.label}
+                  </Badge>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">

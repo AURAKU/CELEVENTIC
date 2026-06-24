@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Compass } from "lucide-react";
@@ -11,6 +12,7 @@ import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 interface Event {
   id: string;
+  slug: string;
   title: string;
   eventType: string;
   city: string | null;
@@ -51,7 +53,7 @@ export default function DiscoveryPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Event Discovery</h1>
-        <p className="page-subtitle">Location-based event recommendations across Ghana.</p>
+        <p className="page-subtitle">Location-based event recommendations for your region.</p>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -79,17 +81,19 @@ export default function DiscoveryPage() {
         <>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {events.map((e) => (
-              <Card key={e.id} className="hover:shadow-md transition-shadow">
-                <div className="h-32 bg-gradient-to-br from-teal-100 to-gold-100 rounded-t-xl" />
-                <CardContent className="p-4">
-                  <div className="flex gap-2 mb-2">
-                    <Badge variant="outline">{e.eventType.replace(/_/g, " ")}</Badge>
-                    {e.isFeatured && <Badge variant="secondary">Featured</Badge>}
-                  </div>
-                  <p className="font-semibold">{e.title}</p>
-                  <p className="text-sm page-subtitle">{formatDate(e.startDate)} · {e.city}</p>
-                </CardContent>
-              </Card>
+              <Link key={e.id} href={`/e/${e.slug}`} className="block group">
+                <Card className="hover:shadow-md transition-shadow h-full group-hover:border-brand-300">
+                  <div className="h-32 bg-gradient-to-br from-teal-100 to-gold-100 rounded-t-xl" />
+                  <CardContent className="p-4">
+                    <div className="flex gap-2 mb-2">
+                      <Badge variant="outline">{e.eventType.replace(/_/g, " ")}</Badge>
+                      {e.isFeatured && <Badge variant="secondary">Featured</Badge>}
+                    </div>
+                    <p className="font-semibold group-hover:text-brand-700">{e.title}</p>
+                    <p className="text-sm page-subtitle">{formatDate(e.startDate)} · {e.city}</p>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
           <PaginationBar page={page} pages={pages} total={total} limit={PUBLIC_GRID_LIMIT} onPageChange={setPage} />

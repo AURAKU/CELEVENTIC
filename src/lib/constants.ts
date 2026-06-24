@@ -4,6 +4,8 @@ export const BRAND_TAGLINE = "THE INTELLIGENT EVENT OPERATING SYSTEM";
 export const BRAND_MOTTO = "Celebrate Event Ticket";
 export const BRAND_MESSAGE = "Celebrate every moment. Manage every event. Sell every ticket.";
 export const COMPANY_NAME = "AGI";
+export const COMPANY_FULL_NAME = "Aura Group Innovations";
+export const FOOTER_POWERED_BY = `Powered by ${COMPANY_NAME}`;
 
 export const BRAND = {
   primary: "#0B8A83",

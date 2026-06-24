@@ -96,6 +96,8 @@ model User {
   revisionComments         RevisionComment[]
   productionAssignments    ProductionAssignment[] @relation("ProductionDesigner")
   funeralFamilyMemberships FuneralFamilyMember[]
+  inspirationSources       InspirationSource[]
+  inspirationAuditLogs     InspirationAuditLog[]
 
   @@index([role])
   @@index([status])
@@ -223,6 +225,7 @@ model Event {
   offlineDevices OfflineDevice[]
   flyerDesigns   FlyerDesign[]
   inspirationUploads InspirationUpload[]
+  inspirationSources InspirationSource[]
   gates          EventGate[]
   staff          EventStaff[]
   seatingPlans   SeatingPlan[]
@@ -3205,4 +3208,199 @@ model InvitationAnalyticsEvent {
   @@index([invitationId])
   @@index([userId])
   @@map("invitation_analytics_events")
+}
+
+// ─── Celeventic Inspiration Engine (AGI Engine) ─────────────────
+
+enum InspirationSourceType {
+  URL
+  UPLOAD_IMAGE
+  UPLOAD_VIDEO
+  UPLOAD_AUDIO
+}
+
+enum InspirationPlatform {
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+  PINTEREST
+  WEBSITE
+  IMAGE_LINK
+  VIDEO_LINK
+  UPLOAD
+  UNKNOWN
+}
+
+enum InspirationEngineStatus {
+  PENDING
+  ANALYZING
+  EXTRACTING_COLORS
+  STUDYING_FLOW
+  GENERATING_CONCEPT
+  READY
+  GENERATED
+  FAILED
+  BLOCKED
+  PENDING_REVIEW
+}
+
+enum InspirationReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum InspirationOutputType {
+  INVITATION
+  TICKET
+  FLYER
+  THANK_YOU
+  FUNERAL_MEMORIAL
+  WEDDING
+  BIRTHDAY
+  CORPORATE
+  CONCERT
+}
+
+enum InspirationDomainPolicyType {
+  ALLOWED
+  BANNED
+}
+
+model InspirationSource {
+  id               String                  @id @default(cuid())
+  userId           String
+  eventId          String?
+  sourceType       InspirationSourceType
+  sourceUrl        String?
+  platform         InspirationPlatform     @default(UNKNOWN)
+  title            String?
+  consentConfirmed Boolean                 @default(false)
+  status           InspirationEngineStatus @default(PENDING)
+  reviewStatus     InspirationReviewStatus @default(PENDING)
+  blockedReason    String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  user               User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event              Event?                        @relation(fields: [eventId], references: [id])
+  analysis           InspirationAnalysis?
+  media              InspirationMedia[]
+  generatedTemplates InspirationGeneratedTemplate[]
+  studioProjects     StudioProject[]
+  auditLogs          InspirationAuditLog[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("inspiration_sources")
+}
+
+model InspirationAnalysis {
+  id                 String    @id @default(cuid())
+  sourceId           String    @unique
+  thumbnailUrl       String?
+  colorPalette       Json
+  typographyMood     String?
+  layoutStructure    Json?
+  sectionFlow        Json?
+  animationStyle     String?
+  revealType         String?
+  invitationCategory String?
+  audioMood          String?
+  ctaStructure       Json?
+  rsvpFlow           Json?
+  qrPlacement        String?
+  seatingConcept     String?
+  features           Json?
+  conceptSummary     String?
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+
+  source InspirationSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@map("inspiration_analysis")
+}
+
+model InspirationGeneratedTemplate {
+  id               String                @id @default(cuid())
+  sourceId         String
+  userId           String
+  outputType       InspirationOutputType
+  name             String
+  slug             String                @unique
+  schema           Json
+  thumbnailUrl     String?
+  designTemplateId String?
+  studioProjectId  String?
+  createdAt        DateTime              @default(now())
+
+  source        InspirationSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  studioProject StudioProject?    @relation(fields: [studioProjectId], references: [id])
+
+  @@index([userId])
+  @@index([sourceId])
+  @@map("generated_templates")
+}
+
+model StudioProject {
+  id                   String   @id @default(cuid())
+  userId               String
+  sourceId             String?
+  name                 String
+  productType          String
+  config               Json
+  audioConfig          Json?
+  designTemplateId     String?
+  status               String   @default("DRAFT")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  source             InspirationSource?           @relation(fields: [sourceId], references: [id])
+  generatedTemplates InspirationGeneratedTemplate[]
+
+  @@index([userId])
+  @@map("studio_projects")
+}
+
+model InspirationMedia {
+  id          String   @id @default(cuid())
+  sourceId    String
+  mediaType   String
+  url         String
+  mimeType    String?
+  durationSec Float?
+  sizeBytes   Int?
+  createdAt   DateTime @default(now())
+
+  source InspirationSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@map("inspiration_media")
+}
+
+model InspirationAuditLog {
+  id        String   @id @default(cuid())
+  sourceId  String?
+  userId    String?
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  source InspirationSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  user   User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([sourceId])
+  @@map("inspiration_audit_logs")
+}
+
+model InspirationDomainPolicy {
+  id          String                      @id @default(cuid())
+  domain      String                      @unique
+  policyType  InspirationDomainPolicyType
+  reason      String?
+  createdById String?
+  createdAt   DateTime                    @default(now())
+
+  @@map("inspiration_domain_policies")
 }

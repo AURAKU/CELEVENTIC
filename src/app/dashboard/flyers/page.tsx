@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Image, Plus } from "lucide-react";
+import { Image, Plus, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
@@ -20,6 +21,7 @@ export default function FlyerStudioPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [form, setForm] = useState({ name: "", type: "FLYER" });
   const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     fetch("/api/flyers").then((r) => r.json()).then((d) => {
@@ -30,21 +32,36 @@ export default function FlyerStudioPage() {
     });
   }, []);
 
-  async function createDesign(e: React.FormEvent) {
-    e.preventDefault();
+  async function createDesign(payload: { name: string; type: string; config?: Record<string, unknown> }) {
+    setCreating(true);
     setError("");
     const res = await fetch("/api/flyers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, eventId: eventId || undefined }),
+      body: JSON.stringify({ ...payload, eventId: eventId || undefined }),
     });
     const d = await res.json();
+    setCreating(false);
     if (res.ok) {
-      setDesigns([d.data, ...designs]);
+      setDesigns((prev) => [d.data, ...prev]);
       setForm({ name: "", type: "FLYER" });
-    } else {
-      setError(d.error || "Failed to create design");
+      return d.data as Design;
     }
+    setError(d.error || "Failed to create design");
+    return null;
+  }
+
+  async function createDesignFromForm(e: React.FormEvent) {
+    e.preventDefault();
+    await createDesign(form);
+  }
+
+  async function createFromTemplate(template: Template) {
+    await createDesign({
+      name: `${template.name} Flyer`,
+      type: template.type,
+      config: { templateId: template.id },
+    });
   }
 
   return (
@@ -66,7 +83,7 @@ export default function FlyerStudioPage() {
         <Card>
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Plus className="h-4 w-4" /> New Design</CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={createDesign} className="space-y-3">
+            <form onSubmit={createDesignFromForm} className="space-y-3">
               <div className="space-y-1"><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
               <div className="space-y-1">
                 <Label>Type</Label>
@@ -79,7 +96,9 @@ export default function FlyerStudioPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full">Create Design</Button>
+              <Button type="submit" className="w-full" disabled={creating}>
+                {creating ? "Creating…" : "Create Design"}
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -98,6 +117,11 @@ export default function FlyerStudioPage() {
                       <Badge variant="outline">{d.type}</Badge>
                       <Badge variant={d.status === "PUBLISHED" ? "success" : "warning"}>{d.status}</Badge>
                     </div>
+                    <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
+                      <Link href="/dashboard/design-studio/generated">
+                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Open in Design Studio
+                      </Link>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -111,10 +135,17 @@ export default function FlyerStudioPage() {
         <CardContent>
           <div className="grid sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {templates.map((t) => (
-              <div key={t.id} className="p-4 rounded-lg border text-center hover:border-brand-400 cursor-pointer transition-colors">
+              <button
+                key={t.id}
+                type="button"
+                disabled={creating}
+                onClick={() => void createFromTemplate(t)}
+                className="p-4 rounded-lg border text-center hover:border-brand-400 hover:bg-brand-50/50 cursor-pointer transition-colors disabled:opacity-50"
+              >
                 <div className="h-16 rounded bg-gradient-to-br from-teal-100 to-gold-100 mb-2" />
                 <p className="text-sm font-medium">{t.name}</p>
-              </div>
+                <p className="text-xs text-slate-500 mt-1">Click to use</p>
+              </button>
             ))}
           </div>
         </CardContent>

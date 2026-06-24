@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
-import { Mail, Users, Ticket, QrCode, MessageSquare } from "lucide-react";
+import { Mail, Users, Ticket, QrCode, MessageSquare, Armchair, Heart, Sparkles } from "lucide-react";
 import { EventQrBranding } from "@/components/events/event-qr-branding";
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,8 +20,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     { href: `/dashboard/invitations?eventId=${event.id}`, label: "Invitations", icon: Mail },
     { href: `/dashboard/guests?eventId=${event.id}`, label: "Guests", icon: Users },
     { href: `/dashboard/tickets?eventId=${event.id}`, label: "Tickets", icon: Ticket },
+    { href: `/dashboard/seating?eventId=${event.id}`, label: "Seating", icon: Armchair },
     { href: `/dashboard/qr-admission?eventId=${event.id}`, label: "QR Scan", icon: QrCode },
     { href: `/dashboard/campaigns?eventId=${event.id}`, label: "Send Invites", icon: MessageSquare },
+    { href: `/dashboard/events/${event.id}/memories`, label: "Memory Vault", icon: Heart },
+    { href: `/dashboard/events/${event.id}/thank-you`, label: "Thank You", icon: Sparkles },
   ];
 
   return (

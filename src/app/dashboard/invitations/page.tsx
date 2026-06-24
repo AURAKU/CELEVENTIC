@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { InvitationsTabs, type InvitationsTab } from "@/components/dashboard/invitations-tabs";
+import { MyInvitationsPanel } from "@/components/dashboard/my-invitations-panel";
+import { InvitationAnalyticsClient } from "@/app/dashboard/invitation-analytics/invitation-analytics-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail, Copy, Check, Users, ExternalLink, Sparkles, Palette } from "lucide-react";
+import { Mail, Copy, Check, Users, ExternalLink, Palette } from "lucide-react";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { TemplatePicker } from "@/components/invitation/template-picker";
@@ -45,7 +49,53 @@ const BUILD_MODES = [
   { value: "improved", label: "Improved & Enhanced" },
 ] as const;
 
+function InvitationsHubContent() {
+  const searchParams = useSearchParams();
+  const tab = (searchParams.get("tab") ?? "studio") as InvitationsTab;
+  const activeTab: InvitationsTab = tab === "store" || tab === "analytics" ? tab : "studio";
+
+  if (activeTab === "store") {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <InvitationsHubHeader active={activeTab} />
+        <MyInvitationsPanel />
+      </div>
+    );
+  }
+
+  if (activeTab === "analytics") {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <InvitationsHubHeader active={activeTab} />
+        <InvitationAnalyticsClient />
+      </div>
+    );
+  }
+
+  return <InvitationStudioContent />;
+}
+
+function InvitationsHubHeader({ active }: { active: InvitationsTab }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold">Invitations</h1>
+        <p className="page-subtitle">Design, distribute, and measure your event invitations.</p>
+      </div>
+      <InvitationsTabs active={active} />
+    </div>
+  );
+}
+
 export default function InvitationsPage() {
+  return (
+    <Suspense fallback={<p className="text-slate-500 py-12 text-center">Loading...</p>}>
+      <InvitationsHubContent />
+    </Suspense>
+  );
+}
+
+function InvitationStudioContent() {
   const { events, eventId, setEventId, selectedEvent, loading: eventsLoading } = useEventContext();
   const [form, setForm] = useState({ name: "", message: "", introText: "" });
   const [layoutSlug, setLayoutSlug] = useState("classic-gold");
@@ -155,14 +205,7 @@ export default function InvitationsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-brand-600" /> Invitation Studio
-        </h1>
-        <p className="page-subtitle">
-          Design premium wedding invitations — pick a template, upload your sample image, PDF, or video, and build upon it.
-        </p>
-      </div>
+      <InvitationsHubHeader active="studio" />
 
       <Card>
         <CardContent className="p-4">

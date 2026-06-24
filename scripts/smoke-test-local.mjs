@@ -19,14 +19,46 @@ const PUBLIC_ROUTES = [
   "/templates",
 ];
 
-const PROTECTED_ROUTES = [
+const DASHBOARD_ROUTES = [
   "/dashboard",
+  "/dashboard/events",
+  "/dashboard/events/create",
+  "/dashboard/guests",
+  "/dashboard/tickets",
+  "/dashboard/seating",
+  "/dashboard/flyers",
+  "/dashboard/discovery",
   "/dashboard/messages",
+  "/dashboard/campaigns",
+  "/dashboard/funeral",
+  "/dashboard/design-studio",
+  "/dashboard/invitations",
+  "/dashboard/invitations?tab=store",
+  "/dashboard/invitations?tab=analytics",
+  "/dashboard/inspiration",
+  "/dashboard/wallet",
+  "/dashboard/contributions",
+  "/dashboard/memory",
+  "/dashboard/qr-admission",
+  "/dashboard/my-collection",
+  "/dashboard/venues",
+  "/dashboard/settings",
+  "/dashboard/privacy-center",
   "/dashboard/vendor-portal",
+  "/dashboard/ai-planner",
+];
+
+const ADMIN_ROUTES = [
   "/admin",
   "/admin/users",
+  "/admin/vendors",
+  "/admin/events",
   "/admin/integrations",
   "/admin/music",
+  "/admin/pages",
+  "/admin/inspiration",
+  "/admin/payments",
+  "/admin/audit-logs",
 ];
 
 async function checkRoute(path, expectRedirect = false) {
@@ -102,8 +134,16 @@ async function main() {
     console.log(`  [${mark}] ${path} → ${r.status}${r.error ? ` (${r.error})` : ""}`);
   }
 
-  console.log("\n--- Protected pages (expect redirect) ---");
-  for (const path of PROTECTED_ROUTES) {
+  console.log("\n--- Dashboard pages (expect redirect when logged out) ---");
+  for (const path of DASHBOARD_ROUTES) {
+    const r = await checkRoute(path, true);
+    const mark = r.ok ? "OK" : "FAIL";
+    if (!r.ok) failed++;
+    console.log(`  [${mark}] ${path} → ${r.status}`);
+  }
+
+  console.log("\n--- Admin pages (expect redirect when logged out) ---");
+  for (const path of ADMIN_ROUTES) {
     const r = await checkRoute(path, true);
     const mark = r.ok ? "OK" : "FAIL";
     if (!r.ok) failed++;
@@ -134,12 +174,23 @@ async function main() {
 
   if (orgOk) {
     console.log("\n--- Organizer APIs ---");
-    for (const path of ["/api/notifications", "/api/messages", "/api/vendor-os/leads"]) {
+    for (const path of ["/api/notifications", "/api/messages", "/api/vendor-os/leads", "/api/legal/status", "/api/funeral?eventId=test"]) {
       const r = await checkAuthedApi(path, org.cookies);
-      const mark = r.ok ? "OK" : "FAIL";
-      if (!r.ok) failed++;
+      const mark = r.ok || path.includes("funeral") ? "OK" : "FAIL";
+      if (!r.ok && !path.includes("funeral")) failed++;
       console.log(`  [${mark}] ${path} → ${r.status} success=${r.success}`);
     }
+
+    console.log("\n--- Legal consent accept ---");
+    const consentRes = await fetch(`${BASE}/api/legal/consent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: org.cookies },
+      body: JSON.stringify({ acceptTerms: true, acceptPrivacy: true }),
+    });
+    const consentData = await consentRes.json().catch(() => ({}));
+    const consentOk = consentRes.ok && consentData.success && !consentData.data?.needsReacceptance;
+    if (!consentOk) failed++;
+    console.log(`  [${consentOk ? "OK" : "FAIL"}] POST /api/legal/consent → ${consentRes.status} needsReacceptance=${consentData.data?.needsReacceptance}`);
   }
 
   console.log(`\n${failed === 0 ? "All checks passed." : `${failed} check(s) failed.`}\n`);

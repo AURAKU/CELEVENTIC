@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Send, MessageSquare } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { paginateList } from "@/lib/pagination-client";
 
 interface ThreadRow {
   threadId: string;
@@ -36,6 +38,8 @@ export function MessagesClient() {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [threadPage, setThreadPage] = useState(1);
+  const THREADS_PER_PAGE = 12;
 
   const loadThreads = useCallback(async () => {
     const res = await fetch("/api/messages");
@@ -87,30 +91,33 @@ export function MessagesClient() {
     return <p className="text-slate-500 py-12 text-center">Loading messages…</p>;
   }
 
+  const threadSlice = paginateList(threads, threadPage, THREADS_PER_PAGE);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <MessageSquare className="h-6 w-6 text-brand-600" /> Messages
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <MessageSquare className="h-6 w-6 text-brand-600 shrink-0" /> Messages
         </h1>
         <p className="page-subtitle">Vendor enquiries, admin notices, and replies</p>
       </div>
 
-      <div className="grid lg:grid-cols-5 gap-4 min-h-[28rem]">
-        <Card className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-0 lg:min-h-[28rem]">
+        <Card className="lg:col-span-2 flex flex-col min-h-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Inbox</CardTitle>
           </CardHeader>
-          <CardContent className="p-0 divide-y max-h-[32rem] overflow-y-auto">
+          <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+            <div className="divide-y max-h-[40vh] lg:max-h-[32rem] overflow-y-auto flex-1">
             {threads.length === 0 ? (
               <p className="p-4 text-sm text-slate-500">No conversations yet.</p>
             ) : (
-              threads.map((t) => (
+              threadSlice.items.map((t) => (
                 <button
                   key={t.threadId}
                   type="button"
                   onClick={() => setActiveThread(t.threadId)}
-                  className={`w-full text-left p-4 hover:bg-slate-50 transition-colors ${
+                  className={`w-full text-left p-4 hover:bg-slate-50 transition-colors touch-manipulation min-h-[44px] ${
                     activeThread === t.threadId ? "bg-brand-50/50" : ""
                   }`}
                 >
@@ -124,10 +131,22 @@ export function MessagesClient() {
                 </button>
               ))
             )}
+            </div>
+            {threadSlice.pages > 1 && (
+              <PaginationBar
+                page={threadSlice.page}
+                pages={threadSlice.pages}
+                total={threadSlice.total}
+                limit={THREADS_PER_PAGE}
+                onPageChange={setThreadPage}
+                className="px-3 pb-3"
+                showSummary={false}
+              />
+            )}
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-3 flex flex-col">
+        <Card className="lg:col-span-3 flex flex-col min-h-[50vh] lg:min-h-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">
               {activeThread
@@ -155,16 +174,22 @@ export function MessagesClient() {
               )}
             </div>
             {activeThread && (
-              <div className="flex gap-2 pt-2 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
                 <Textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                   placeholder="Type your reply…"
                   rows={2}
-                  className="resize-none"
+                  className="resize-none flex-1 min-h-[44px]"
                 />
-                <Button onClick={sendReply} disabled={sending || !reply.trim()} className="shrink-0">
+                <Button
+                  type="button"
+                  onClick={() => void sendReply()}
+                  disabled={sending || !reply.trim()}
+                  className="shrink-0 min-h-[44px] w-full sm:w-auto"
+                >
                   <Send className="h-4 w-4" />
+                  <span className="sm:hidden ml-2">Send</span>
                 </Button>
               </div>
             )}

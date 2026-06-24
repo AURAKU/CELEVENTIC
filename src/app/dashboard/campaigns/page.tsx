@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,16 @@ import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 
 export default function CampaignsPage() {
+  return (
+    <Suspense fallback={<p className="text-slate-500 py-12 text-center">Loading campaigns…</p>}>
+      <CampaignsContent />
+    </Suspense>
+  );
+}
+
+function CampaignsContent() {
+  const searchParams = useSearchParams();
+  const channelParam = searchParams.get("channel");
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
   const [form, setForm] = useState({
     name: "",
@@ -24,6 +35,12 @@ export default function CampaignsPage() {
   const [preview, setPreview] = useState<{ estimatedCost: number; recipientCount: number } | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    if (channelParam === "EMAIL" || channelParam === "SMS" || channelParam === "WHATSAPP") {
+      setForm((f) => ({ ...f, channel: channelParam }));
+    }
+  }, [channelParam]);
 
   async function handlePreview() {
     const recipientList = form.recipients.split("\n").filter(Boolean);
@@ -80,7 +97,7 @@ export default function CampaignsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Communication Hub</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Communication Hub</h1>
         <p className="page-subtitle">Send bulk invitations via WhatsApp, SMS, or Email.</p>
       </div>
 
@@ -129,9 +146,11 @@ export default function CampaignsPage() {
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             {success && <p className="text-sm text-green-600">{success}</p>}
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={handlePreview} disabled={!eventId}>Preview Cost</Button>
-              <Button type="submit" disabled={!eventId}>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button type="button" variant="outline" onClick={handlePreview} disabled={!eventId} className="min-h-[44px] touch-manipulation">
+                Preview Cost
+              </Button>
+              <Button type="submit" disabled={!eventId} className="min-h-[44px] touch-manipulation">
                 <Send className="h-4 w-4" /> Create Campaign
               </Button>
             </div>

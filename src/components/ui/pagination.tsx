@@ -44,9 +44,15 @@ export function PaginationBar({
           Showing {from}–{to} of {total.toLocaleString()}
         </p>
       )}
-      <nav className="flex items-center gap-1" aria-label="Pagination">
-        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-          <ChevronLeft className="h-4 w-4" /> Prev
+      <nav className="flex flex-wrap items-center justify-center sm:justify-end gap-1" aria-label="Pagination">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="min-h-[44px] sm:min-h-9 touch-manipulation"
+        >
+          <ChevronLeft className="h-4 w-4" /> <span className="hidden xs:inline">Prev</span>
         </Button>
         {windowPages.map((p, i) =>
           p === "..." ? (
@@ -58,7 +64,7 @@ export function PaginationBar({
               key={p}
               variant={p === page ? "default" : "outline"}
               size="sm"
-              className="min-w-9"
+              className="min-w-10 min-h-[44px] sm:min-h-9 touch-manipulation"
               onClick={() => onPageChange(p)}
               aria-current={p === page ? "page" : undefined}
             >
@@ -66,8 +72,14 @@ export function PaginationBar({
             </Button>
           )
         )}
-        <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => onPageChange(page + 1)}>
-          Next <ChevronRight className="h-4 w-4" />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={page >= pages}
+          onClick={() => onPageChange(page + 1)}
+          className="min-h-[44px] sm:min-h-9 touch-manipulation"
+        >
+          <span className="hidden xs:inline">Next</span> <ChevronRight className="h-4 w-4" />
         </Button>
       </nav>
     </div>

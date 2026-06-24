@@ -157,7 +157,7 @@ export default function MemoryVaultPage() {
       )}
 
       {photos.length > 0 && (
-        <Card>
+        <Card id="gallery">
           <CardHeader><CardTitle className="text-base">Media Album</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {photos.map((m) => (
@@ -180,7 +180,7 @@ export default function MemoryVaultPage() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
+        <Card id="upload">
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Archive className="h-4 w-4" /> Add Memory</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={addMemory} className="space-y-3">
@@ -229,7 +229,7 @@ export default function MemoryVaultPage() {
         </Card>
 
         <div className="space-y-6">
-          <Card>
+          <Card id="guestbook">
             <CardHeader><CardTitle className="text-base">Guestbook</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {guestbook.length === 0 ? (

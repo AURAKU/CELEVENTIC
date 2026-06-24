@@ -26,7 +26,9 @@ export function AgiBadge({ variant = "subtle", label }: AgiBadgeProps) {
 
 export function AgiFooter() {
   return (
-    <p className="text-center text-[10px] text-slate-400 tracking-wide">
+    <p className="text-center text-[10px] text-slate-400 tracking-wide leading-relaxed">
+      © {new Date().getFullYear()} Celeventic. All rights reserved.
+      <br />
       {AGI_ENGINE.tagline}
     </p>
   );

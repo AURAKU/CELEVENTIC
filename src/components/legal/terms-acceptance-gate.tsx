@@ -1,23 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 const LEGAL_ACCEPT_KEY = "celeventic_legal_accepted";
 
-function cacheLegalAcceptance(termsVersion?: string, privacyVersion?: string) {
-  if (typeof window === "undefined" || !termsVersion || !privacyVersion) return;
+function cacheLegalAcceptance(termsVersion: string, privacyVersion: string) {
+  if (typeof window === "undefined") return;
   localStorage.setItem(
     LEGAL_ACCEPT_KEY,
     JSON.stringify({ termsVersion, privacyVersion, at: new Date().toISOString() })
   );
 }
 
-function hasCachedLegalAcceptance(termsVersion?: string, privacyVersion?: string) {
-  if (typeof window === "undefined" || !termsVersion || !privacyVersion) return false;
+function clearLegalAcceptanceCache() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(LEGAL_ACCEPT_KEY);
+}
+
+function hasCachedLegalAcceptance(termsVersion: string, privacyVersion: string) {
+  if (typeof window === "undefined") return false;
   try {
     const raw = localStorage.getItem(LEGAL_ACCEPT_KEY);
     if (!raw) return false;
@@ -30,36 +36,37 @@ function hasCachedLegalAcceptance(termsVersion?: string, privacyVersion?: string
 
 export function TermsAcceptanceGate() {
   const { t } = useLocale();
+  const { status: sessionStatus } = useSession();
   const [needsReacceptance, setNeedsReacceptance] = useState(false);
-  const [versions, setVersions] = useState<{ terms?: string; privacy?: string }>({});
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetch("/api/legal/status")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!d.success || !d.data.authenticated) return;
+  const loadStatus = useCallback(async () => {
+    const res = await fetch("/api/legal/status", { cache: "no-store" });
+    const d = await res.json();
+    if (!d.success || !d.data.authenticated) return;
 
-        const termsVer = d.data.currentTermsVersion as string | undefined;
-        const privacyVer = d.data.currentPrivacyVersion as string | undefined;
+    const termsVer = d.data.currentTermsVersion as string;
+    const privacyVer = d.data.currentPrivacyVersion as string;
 
-        if (hasCachedLegalAcceptance(termsVer, privacyVer) && !d.data.needsReacceptance) {
-          return;
-        }
+    if (!d.data.needsReacceptance) {
+      if (hasCachedLegalAcceptance(termsVer, privacyVer)) {
+        setNeedsReacceptance(false);
+        return;
+      }
+      cacheLegalAcceptance(termsVer, privacyVer);
+      setNeedsReacceptance(false);
+      return;
+    }
 
-        if (d.data.needsReacceptance) {
-          setNeedsReacceptance(true);
-          setVersions({
-            terms: termsVer ?? d.data.acceptedTermsVersion,
-            privacy: privacyVer ?? d.data.acceptedPrivacyVersion,
-          });
-        } else if (termsVer && privacyVer) {
-          cacheLegalAcceptance(termsVer, privacyVer);
-        }
-      })
-      .catch(() => null);
+    clearLegalAcceptanceCache();
+    setNeedsReacceptance(true);
   }, []);
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") return;
+    loadStatus().catch(() => null);
+  }, [sessionStatus, loadStatus]);
 
   async function accept() {
     setAccepting(true);
@@ -68,12 +75,7 @@ export function TermsAcceptanceGate() {
       const res = await fetch("/api/legal/consent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          acceptTerms: true,
-          acceptPrivacy: true,
-          termsVersion: versions.terms,
-          privacyVersion: versions.privacy,
-        }),
+        body: JSON.stringify({ acceptTerms: true, acceptPrivacy: true }),
       });
       const d = await res.json();
       if (!res.ok || !d.success) {
@@ -84,11 +86,9 @@ export function TermsAcceptanceGate() {
         setError("Acceptance was not recorded. Please try again.");
         return;
       }
-      const termsVer = d.data.currentTermsVersion ?? versions.terms;
-      const privacyVer = d.data.currentPrivacyVersion ?? versions.privacy;
-      cacheLegalAcceptance(termsVer, privacyVer);
+      cacheLegalAcceptance(d.data.currentTermsVersion, d.data.currentPrivacyVersion);
       setNeedsReacceptance(false);
-      setVersions({});
+      await loadStatus();
     } catch {
       setError("Network error. Please try again.");
     } finally {

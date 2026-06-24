@@ -51,7 +51,7 @@ export default function VendorSignupPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Store className="h-6 w-6 text-[#0B8A83]" /> Join VendorOS</h1>
-        <p className="page-subtitle">List your business free. Reach event organizers across Ghana and beyond.</p>
+        <p className="page-subtitle">List your business free. Reach event organizers on the global Celeventic platform.</p>
       </div>
 
       <Card>

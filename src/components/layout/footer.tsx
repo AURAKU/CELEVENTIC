@@ -65,8 +65,9 @@ export function Footer() {
             </div>
           ))}
         </div>
-        <div className="mt-12 pt-8 border-t border-slate-800/60 text-center text-sm text-slate-500">
-          © {new Date().getFullYear()} Celeventic. {t("footer.rights")}
+        <div className="mt-12 pt-8 border-t border-slate-800/60 text-center text-sm text-slate-500 space-y-1.5">
+          <p>© {new Date().getFullYear()} Celeventic. {t("footer.rights")}</p>
+          <p className="text-xs text-slate-600 tracking-wide">{t("footer.powered_by")}</p>
         </div>
       </div>
     </footer>

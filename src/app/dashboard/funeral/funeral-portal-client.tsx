@@ -103,6 +103,24 @@ export function FuneralPortalClient() {
 
   useEffect(() => { if (eventId) load(); }, [eventId]);
 
+  async function saveVenueFields() {
+    if (!eventId) return;
+    setSaving(true);
+    setError("");
+    const res = await fetch("/api/funeral", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventId,
+        burialVenue: form.burialVenue,
+        burialDirections: form.burialDirections,
+      }),
+    });
+    if (res.ok) await load();
+    else setError((await res.json()).error);
+    setSaving(false);
+  }
+
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -261,7 +279,9 @@ export function FuneralPortalClient() {
                   <Input value={form.burialVenue} onChange={(e) => setForm({ ...form, burialVenue: e.target.value })} />
                   <Label>Directions</Label>
                   <Textarea value={form.burialDirections} onChange={(e) => setForm({ ...form, burialDirections: e.target.value })} rows={2} />
-                  <Button type="button" size="sm" onClick={() => saveProfile({ preventDefault: () => {} } as React.FormEvent)}>Save Venue</Button>
+                  <Button type="button" size="sm" disabled={saving} onClick={() => void saveVenueFields()}>
+                    {saving ? "Saving…" : "Save Venue"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

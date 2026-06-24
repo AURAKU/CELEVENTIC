@@ -15,7 +15,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: { default: APP_NAME, template: `%s | ${APP_NAME}` },
   description: `${BRAND_MOTTO}. ${APP_TAGLINE}`,
-  keywords: ["events", "tickets", "invitations", "QR", "Ghana", "event management"],
+  keywords: ["events", "tickets", "invitations", "QR", "event management", "global event platform"],
   icons: {
     icon: [
       { url: "/brand/favicon.png", sizes: "48x48", type: "image/png" },

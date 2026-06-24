@@ -21,6 +21,8 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "common", key: "get_started", enValue: "Get Started", frValue: "Commencer" },
   { namespace: "common", key: "sign_in", enValue: "Sign In", frValue: "Se connecter" },
   { namespace: "common", key: "sign_out", enValue: "Sign out", frValue: "Se déconnecter" },
+  { namespace: "common", key: "signing_out", enValue: "Signing out…", frValue: "Déconnexion…" },
+  { namespace: "common", key: "account_menu", enValue: "Account menu", frValue: "Menu compte" },
   { namespace: "common", key: "dashboard", enValue: "Dashboard", frValue: "Tableau de bord" },
   { namespace: "common", key: "free", enValue: "Free", frValue: "Gratuit" },
   { namespace: "common", key: "choose", enValue: "Choose", frValue: "Choisir" },
@@ -52,6 +54,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "footer", key: "ip_policy", enValue: "IP Policy", frValue: "Politique PI" },
   { namespace: "footer", key: "data_rights", enValue: "Data Rights", frValue: "Droits sur les données" },
   { namespace: "footer", key: "rights", enValue: "All rights reserved.", frValue: "Tous droits réservés." },
+  { namespace: "footer", key: "powered_by", enValue: "Powered by AGI", frValue: "Propulsé par AGI" },
 
   // ── Cookie consent ──
   { namespace: "legal", key: "cookie_title", enValue: "Privacy & Cookies", frValue: "Confidentialité et cookies" },
@@ -252,6 +255,27 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "legal", key: "revision-policy_title", enValue: "Revision Policy", frValue: "Politique de révision" },
   { namespace: "legal", key: "intellectual-property_title", enValue: "Intellectual Property Policy", frValue: "Politique de propriété intellectuelle" },
   { namespace: "legal", key: "data-rights_title", enValue: "Data Rights", frValue: "Droits sur les données" },
+
+  // ── Inspiration Engine ──
+  { namespace: "inspiration", key: "title", enValue: "Celeventic Inspiration Engine", frValue: "Moteur d'inspiration Celeventic" },
+  { namespace: "inspiration", key: "subtitle", enValue: "Paste a link or upload your own design. AGI Engine analyzes mood, layout, and flow, then generates an original editable Celeventic template.", frValue: "Collez un lien ou importez votre design. Le moteur AGI analyse l'ambiance, la mise en page et le flux, puis génère un modèle Celeventic original et modifiable." },
+  { namespace: "inspiration", key: "legal_notice", enValue: "Celeventic never copies copyrighted templates or third-party assets. Only use links you own, public inspiration, your uploads, or licensed samples. We generate original Celeventic designs inspired by concept only.", frValue: "Celeventic ne copie jamais de modèles protégés ni d'actifs tiers. Utilisez uniquement vos liens, une inspiration publique, vos fichiers ou des échantillons autorisés." },
+  { namespace: "inspiration", key: "link_event", enValue: "Link to Event (optional)", frValue: "Lier à un événement (optionnel)" },
+  { namespace: "inspiration", key: "consent_label", enValue: "I confirm I own this content or have permission to use it as inspiration.", frValue: "Je confirme être propriétaire de ce contenu ou avoir l'autorisation de l'utiliser comme inspiration." },
+  { namespace: "inspiration", key: "consent_required", enValue: "Please confirm ownership or permission before continuing.", frValue: "Veuillez confirmer la propriété ou l'autorisation avant de continuer." },
+  { namespace: "inspiration", key: "paste_url", enValue: "Paste Inspiration URL", frValue: "Coller l'URL d'inspiration" },
+  { namespace: "inspiration", key: "url_hint", enValue: "Instagram, TikTok, YouTube Shorts, Pinterest, website, image, or video links.", frValue: "Liens Instagram, TikTok, YouTube Shorts, Pinterest, site web, image ou vidéo." },
+  { namespace: "inspiration", key: "analyze_btn", enValue: "Analyze with Smart Design Engine", frValue: "Analyser avec le moteur de design intelligent" },
+  { namespace: "inspiration", key: "upload_title", enValue: "Upload Inspiration", frValue: "Importer une inspiration" },
+  { namespace: "inspiration", key: "upload_image", enValue: "Upload Image", frValue: "Importer une image" },
+  { namespace: "inspiration", key: "upload_image_hint", enValue: "Crop and preview before analysis. No URL paste for uploads.", frValue: "Recadrez et prévisualisez avant l'analyse." },
+  { namespace: "inspiration", key: "upload_video", enValue: "Upload Video", frValue: "Importer une vidéo" },
+  { namespace: "inspiration", key: "upload_audio", enValue: "Upload Audio", frValue: "Importer un audio" },
+  { namespace: "inspiration", key: "audio_trim", enValue: "Audio trim & preview", frValue: "Découpe et aperçu audio" },
+  { namespace: "inspiration", key: "output_type", enValue: "Template type", frValue: "Type de modèle" },
+  { namespace: "inspiration", key: "generate_btn", enValue: "Generate Celeventic Template", frValue: "Générer un modèle Celeventic" },
+  { namespace: "inspiration", key: "history_title", enValue: "Inspiration History", frValue: "Historique d'inspiration" },
+  { namespace: "inspiration", key: "history_empty", enValue: "No inspiration analyzed yet. Paste a link or upload to begin.", frValue: "Aucune inspiration analysée. Collez un lien ou importez pour commencer." },
 
   // ── Admin ──
   { namespace: "admin", key: "translations_title", enValue: "Translations", frValue: "Traductions" },
