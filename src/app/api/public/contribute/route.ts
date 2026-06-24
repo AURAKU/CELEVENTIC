@@ -10,6 +10,17 @@ const schema = z.object({
   amount: z.number().positive(),
   message: z.string().optional(),
   isAnonymous: z.boolean().optional(),
+  purpose: z
+    .enum([
+      "FAMILY_SUPPORT",
+      "BURIAL_SUPPORT",
+      "MEMORIAL_FUND",
+      "CHARITY_DONATION",
+      "CHURCH_SUPPORT",
+      "GENERAL",
+    ])
+    .optional(),
+  paymentMethod: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -47,6 +58,8 @@ export async function POST(req: Request) {
           contributor: data.contributor,
           message: data.message,
           isAnonymous: data.isAnonymous ?? false,
+          purpose: data.purpose ?? "FAMILY_SUPPORT",
+          paymentMethod: data.paymentMethod ?? "PAYSTACK",
         },
       }
     );

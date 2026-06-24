@@ -41,7 +41,7 @@ export function PreferencesToolbar({
         <LanguageSwitcher
           compact
           showFlags
-          flagsOnDesktopOnly={inline}
+          flagsOnDesktopOnly={false}
           touchFriendly={inline}
           allowedLocales={allowedLocales}
         />
@@ -50,7 +50,7 @@ export function PreferencesToolbar({
         <span className={cn("bg-slate-200", vertical ? "h-px w-full" : "w-px h-5")} aria-hidden />
       )}
       {showCurrency && (
-        <CurrencySwitcher compact showFlags flagsOnDesktopOnly={inline} touchFriendly={inline} />
+        <CurrencySwitcher compact showFlags flagsOnDesktopOnly={false} touchFriendly={inline} />
       )}
     </div>
   );

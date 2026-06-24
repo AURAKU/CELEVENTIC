@@ -1,6 +1,5 @@
 "use client";
 
-import { Globe, Coins } from "lucide-react";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { useCurrency } from "@/components/commerce/currency-provider";
 import type { DisplayCurrency } from "@/lib/commerce/constants";
@@ -37,12 +36,14 @@ export function HeaderPreferencesDropdowns({
         <Select value={locale} onValueChange={(v) => setLocale(v as AppLocale)}>
           <SelectTrigger
             className={cn(
-              "h-9 w-auto min-w-[4.5rem] gap-1.5 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
+              "h-9 w-auto min-w-[5rem] gap-1.5 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
               compact && "h-10 min-h-[44px] sm:min-h-9"
             )}
             aria-label="Language"
           >
-            <Globe className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+            <span className="text-base leading-none shrink-0" aria-hidden>
+              {LOCALE_FLAGS[locale]}
+            </span>
             <SelectValue placeholder={locale.toUpperCase()} />
           </SelectTrigger>
           <SelectContent align="end">
@@ -65,13 +66,15 @@ export function HeaderPreferencesDropdowns({
       >
         <SelectTrigger
           className={cn(
-            "h-9 w-auto min-w-[4.5rem] gap-1.5 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
+            "h-9 w-auto min-w-[5rem] gap-1.5 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
             compact && "h-10 min-h-[44px] sm:min-h-9",
             ratesLoading && "opacity-70"
           )}
           aria-label="Currency"
         >
-          <Coins className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+          <span className="text-base leading-none shrink-0" aria-hidden>
+            {CURRENCY_FLAGS[currency]}
+          </span>
           <SelectValue placeholder={currency} />
         </SelectTrigger>
         <SelectContent align="end">

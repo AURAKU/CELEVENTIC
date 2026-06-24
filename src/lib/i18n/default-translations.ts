@@ -33,7 +33,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "header", key: "discover", enValue: "Discover", frValue: "Découvrir" },
 
   // ── Footer ──
-  { namespace: "footer", key: "tagline", enValue: "The Intelligent Event Operating System. Plan, invite, sell tickets, and manage guests — all in one premium platform.", frValue: "Le système d'exploitation événementiel intelligent. Planifiez, invitez, vendez des billets et gérez vos invités — sur une plateforme premium." },
+  { namespace: "footer", key: "tagline", enValue: "The Intelligent Event Operating System. Plan, invite, sell tickets, and manage guests. all in one premium platform.", frValue: "Le système d'exploitation événementiel intelligent. Planifiez, invitez, vendez des billets et gérez vos invités. sur une plateforme premium." },
   { namespace: "footer", key: "product", enValue: "Product", frValue: "Produit" },
   { namespace: "footer", key: "solutions", enValue: "Solutions", frValue: "Solutions" },
   { namespace: "footer", key: "company", enValue: "Company", frValue: "Entreprise" },
@@ -76,7 +76,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "invitations", key: "explore_catalogue", enValue: "Explore Catalogue", frValue: "Explorer le catalogue" },
   { namespace: "invitations", key: "start_free", enValue: "Start Free", frValue: "Commencer gratuitement" },
   { namespace: "invitations", key: "every_celebration", enValue: "Every celebration deserves a digital experience", frValue: "Chaque célébration mérite une expérience numérique" },
-  { namespace: "invitations", key: "every_celebration_desc", enValue: "Celeventic turns your event into a premium mini-site — emotional, elegant, and intelligent.", frValue: "Celeventic transforme votre événement en mini-site premium — émotionnel, élégant et intelligent." },
+  { namespace: "invitations", key: "every_celebration_desc", enValue: "Celeventic turns your event into a premium mini-site. emotional, elegant, and intelligent.", frValue: "Celeventic transforme votre événement en mini-site premium. émotionnel, élégant et intelligent." },
   { namespace: "invitations", key: "how_it_works", enValue: "How It Works", frValue: "Comment ça marche" },
   { namespace: "invitations", key: "catalogue_preview", enValue: "Catalogue Preview", frValue: "Aperçu du catalogue" },
   { namespace: "invitations", key: "view_all", enValue: "View All", frValue: "Voir tout" },
@@ -85,7 +85,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "invitations", key: "loved_by", enValue: "Loved by Organizers", frValue: "Adoré par les organisateurs" },
   { namespace: "invitations", key: "faq_title", enValue: "FAQ", frValue: "Questions fréquentes" },
   { namespace: "invitations", key: "ready_title", enValue: "Ready to create your invitation?", frValue: "Prêt à créer votre invitation ?" },
-  { namespace: "invitations", key: "ready_subtitle", enValue: "Start free or choose a premium package — your guests will feel the difference.", frValue: "Commencez gratuitement ou choisissez un forfait premium — vos invités sentiront la différence." },
+  { namespace: "invitations", key: "ready_subtitle", enValue: "Start free or choose a premium package. your guests will feel the difference.", frValue: "Commencez gratuitement ou choisissez un forfait premium. vos invités sentiront la différence." },
   { namespace: "invitations", key: "start_invitation", enValue: "Start My Invitation", frValue: "Créer mon invitation" },
   { namespace: "invitations", key: "choose_package", enValue: "Choose Your Package", frValue: "Choisissez votre forfait" },
   { namespace: "invitations", key: "start_my_invitation", enValue: "Start My Invitation", frValue: "Créer mon invitation" },
@@ -105,7 +105,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
 
   // FAQ
   { namespace: "invitations", key: "faq_q1", enValue: "Can I start for free?", frValue: "Puis-je commencer gratuitement ?" },
-  { namespace: "invitations", key: "faq_a1", enValue: "Yes — the Starter package lets you publish a digital invitation at no cost.", frValue: "Oui — le forfait Starter vous permet de publier une invitation numérique gratuitement." },
+  { namespace: "invitations", key: "faq_a1", enValue: "Yes. the Starter package lets you publish a digital invitation at no cost.", frValue: "Oui. le forfait Starter vous permet de publier une invitation numérique gratuitement." },
   { namespace: "invitations", key: "faq_q2", enValue: "Do guests need an account?", frValue: "Les invités ont-ils besoin d'un compte ?" },
   { namespace: "invitations", key: "faq_a2", enValue: "No. Guests open your link, RSVP, and interact without signing up.", frValue: "Non. Les invités ouvrent votre lien, confirment et interagissent sans inscription." },
   { namespace: "invitations", key: "faq_q3", enValue: "Which payments are supported?", frValue: "Quels paiements sont acceptés ?" },
@@ -134,7 +134,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "forms", key: "event_details_title", enValue: "Event Details", frValue: "Détails de l'événement" },
   { namespace: "forms", key: "event_details_subtitle", enValue: "Tell your guests everything they need to know", frValue: "Dites à vos invités tout ce qu'ils doivent savoir" },
   { namespace: "forms", key: "addons_title", enValue: "Optional Add-ons", frValue: "Options supplémentaires" },
-  { namespace: "forms", key: "addons_subtitle", enValue: "Enhance your invitation — all prices in GHS", frValue: "Améliorez votre invitation — tous les prix en GHS" },
+  { namespace: "forms", key: "addons_subtitle", enValue: "Enhance your invitation. all prices in GHS", frValue: "Améliorez votre invitation. tous les prix en GHS" },
   { namespace: "forms", key: "preview_invitation", enValue: "Preview Invitation", frValue: "Aperçu de l'invitation" },
   { namespace: "forms", key: "loading_addons", enValue: "Loading add-ons...", frValue: "Chargement des options..." },
   { namespace: "forms", key: "saving", enValue: "Saving...", frValue: "Enregistrement..." },
@@ -155,7 +155,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
 
   // ── Checkout ──
   { namespace: "checkout", key: "title", enValue: "Review & Pay", frValue: "Vérifier et payer" },
-  { namespace: "checkout", key: "subtitle", enValue: "Free preview completed — pay to publish or start production", frValue: "Aperçu gratuit terminé — payez pour publier ou démarrer la production" },
+  { namespace: "checkout", key: "subtitle", enValue: "Free preview completed. pay to publish or start production", frValue: "Aperçu gratuit terminé. payez pour publier ou démarrer la production" },
   { namespace: "checkout", key: "loading", enValue: "Loading checkout...", frValue: "Chargement du paiement..." },
   { namespace: "checkout", key: "order_summary", enValue: "Order Summary", frValue: "Récapitulatif" },
   { namespace: "checkout", key: "total", enValue: "Total", frValue: "Total" },
@@ -184,7 +184,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "forms", key: "save_failed", enValue: "Save failed", frValue: "Échec de l'enregistrement" },
   { namespace: "invite", key: "contact_host", enValue: "Contact Host", frValue: "Contacter l'hôte" },
   { namespace: "invite", key: "admission_qr", enValue: "Your admission QR", frValue: "Votre QR d'admission" },
-  { namespace: "invite", key: "tagline", enValue: "Celebrate • Event • Ticket", frValue: "Célébrer • Événement • Billet" },
+  { namespace: "invite", key: "tagline", enValue: "Celebrate Event Ticket", frValue: "Célébrer Événement Billet" },
 
   // ── Published invitation ──
   { namespace: "invite", key: "welcome", enValue: "Welcome, {name}", frValue: "Bienvenue, {name}" },
@@ -230,7 +230,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "empty", key: "no_addons", enValue: "No add-ons available", frValue: "Aucune option disponible" },
 
   // ── Email templates ──
-  { namespace: "email", key: "payment_confirmation_subject", enValue: "Payment confirmed — Celeventic", frValue: "Paiement confirmé — Celeventic" },
+  { namespace: "email", key: "payment_confirmation_subject", enValue: "Payment confirmed. Celeventic", frValue: "Paiement confirmé. Celeventic" },
   { namespace: "email", key: "payment_confirmation_body", enValue: "Hi {name}, your payment of {amount} has been received. Your invitation order is now being processed.", frValue: "Bonjour {name}, votre paiement de {amount} a été reçu. Votre commande d'invitation est en cours de traitement." },
   { namespace: "email", key: "invitation_ready_subject", enValue: "Your invitation is ready!", frValue: "Votre invitation est prête !" },
   { namespace: "email", key: "invitation_ready_body", enValue: "Hi {name}, your invitation is live. Share it with your guests: {url}", frValue: "Bonjour {name}, votre invitation est en ligne. Partagez-la avec vos invités : {url}" },

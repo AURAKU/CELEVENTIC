@@ -9,6 +9,8 @@ export interface CreateContributionInput {
   message?: string;
   isAnonymous?: boolean;
   currency?: string;
+  purpose?: import("@prisma/client").ContributionPurpose;
+  paymentMethod?: string;
 }
 
 export interface ContributionPaymentMetadata {
@@ -16,6 +18,8 @@ export interface ContributionPaymentMetadata {
   contributor: string;
   message?: string;
   isAnonymous?: boolean;
+  purpose?: import("@prisma/client").ContributionPurpose;
+  paymentMethod?: string;
 }
 
 export class ContributionService {
@@ -29,6 +33,8 @@ export class ContributionService {
         currency: input.currency ?? "GHS",
         message: input.message,
         isAnonymous: input.isAnonymous ?? false,
+        purpose: input.purpose ?? "FAMILY_SUPPORT",
+        paymentMethod: input.paymentMethod ?? "PAYSTACK",
       },
     });
 
@@ -71,6 +77,8 @@ export class ContributionService {
         message: metadata.message,
         isAnonymous: metadata.isAnonymous ?? false,
         currency,
+        purpose: metadata.purpose ?? "FAMILY_SUPPORT",
+        paymentMethod: metadata.paymentMethod ?? "PAYSTACK",
       },
       { paymentId, source: "payment" }
     );

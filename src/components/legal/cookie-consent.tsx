@@ -10,14 +10,45 @@ const CONSENT_KEY = "celeventic_cookie_consent";
 
 export function CookieConsent() {
   const { t } = useLocale();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [visible, setVisible] = useState(false);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const stored = localStorage.getItem(CONSENT_KEY);
-    if (!stored) setVisible(true);
-  }, []);
+    if (stored) {
+      setVisible(false);
+      setChecked(true);
+      return;
+    }
+
+    if (status === "loading") return;
+
+    if (session?.user) {
+      fetch("/api/legal/consent")
+        .then((r) => r.json())
+        .then((d) => {
+          const level = d.success ? d.data?.cookieConsent : null;
+          if (level) {
+            localStorage.setItem(CONSENT_KEY, level);
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          setChecked(true);
+        })
+        .catch(() => {
+          setVisible(true);
+          setChecked(true);
+        });
+      return;
+    }
+
+    setVisible(true);
+    setChecked(true);
+  }, [session?.user, status]);
 
   async function accept(level: "essential" | "all") {
     localStorage.setItem(CONSENT_KEY, level);
@@ -32,7 +63,7 @@ export function CookieConsent() {
     }
   }
 
-  if (!visible) return null;
+  if (!checked || !visible) return null;
 
   return (
     <div role="dialog" aria-label={t("legal.cookie_title")} className="fixed bottom-0 inset-x-0 z-[100] p-4 sm:p-6 pointer-events-none">

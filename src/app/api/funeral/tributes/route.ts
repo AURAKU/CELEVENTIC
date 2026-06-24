@@ -15,8 +15,10 @@ const tributeSchema = z.object({
 });
 
 const moderateSchema = z.object({
+  action: z.literal("moderate"),
   tributeId: z.string(),
   status: z.enum(["APPROVED", "REJECTED", "PENDING"]),
+  featured: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
       const tribute = await getTributeMeta(data.tributeId);
       if (!tribute) return NextResponse.json({ error: "Tribute not found" }, { status: 404 });
       await verifyEventAccess(tribute.eventId, session.user.id, session.user.role);
-      const updated = await funeralService.moderateTribute(data.tributeId, data.status);
+      const updated = await funeralService.moderateTribute(data.tributeId, data.status, data.featured);
       return NextResponse.json({ success: true, data: updated });
     }
 

@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { complianceService } from "@/services/legal/compliance.service";
+import { CURRENT_LEGAL_VERSION } from "@/lib/legal/constants";
+
 const schema = z.object({
-  type: z.enum(["TERMS", "PRIVACY", "COOKIE", "PORTFOLIO"]),
+  type: z.enum(["TERMS", "PRIVACY", "COOKIE", "PORTFOLIO"]).optional(),
   version: z.string().optional(),
+  termsVersion: z.string().optional(),
+  privacyVersion: z.string().optional(),
   value: z.string().optional(),
   acceptTerms: z.boolean().optional(),
   acceptPrivacy: z.boolean().optional(),
@@ -19,18 +23,30 @@ export async function POST(req: Request) {
   try {
     const body = schema.parse(await req.json());
 
-    if (body.acceptTerms || body.type === "TERMS") {
-      const versions = await complianceService.getCurrentVersions();
-      await complianceService.recordConsent(session.user.id, "TERMS", {
-        version: body.version ?? versions.terms?.version,
-      });
-    }
+    const versions = await complianceService.getCurrentVersions();
+    const termsVersion =
+      body.termsVersion ?? body.version ?? versions.terms?.version ?? CURRENT_LEGAL_VERSION;
+    const privacyVersion =
+      body.privacyVersion ?? versions.privacy?.version ?? CURRENT_LEGAL_VERSION;
 
-    if (body.acceptPrivacy || body.type === "PRIVACY") {
-      const versions = await complianceService.getCurrentVersions();
-      await complianceService.recordConsent(session.user.id, "PRIVACY", {
-        version: body.version ?? versions.privacy?.version,
-      });
+    if (body.acceptTerms && body.acceptPrivacy) {
+      await complianceService.recordLegalAcceptance(
+        session.user.id,
+        termsVersion,
+        privacyVersion
+      );
+    } else {
+      if (body.acceptTerms || body.type === "TERMS") {
+        await complianceService.recordConsent(session.user.id, "TERMS", {
+          version: termsVersion,
+        });
+      }
+
+      if (body.acceptPrivacy || body.type === "PRIVACY") {
+        await complianceService.recordConsent(session.user.id, "PRIVACY", {
+          version: privacyVersion,
+        });
+      }
     }
 
     if (body.type === "COOKIE" && body.value) {
@@ -43,8 +59,12 @@ export async function POST(req: Request) {
 
     const status = await complianceService.getComplianceStatus(session.user.id);
     return NextResponse.json({ success: true, data: status });
-  } catch {
-    return NextResponse.json({ error: "Invalid consent data" }, { status: 400 });
+  } catch (err) {
+    const message =
+      err instanceof Error && err.message.includes("versions unavailable")
+        ? "Legal policy versions are not available. Please refresh and try again."
+        : "Invalid consent data";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
 

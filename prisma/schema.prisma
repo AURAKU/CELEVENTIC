@@ -95,6 +95,7 @@ model User {
   consentRecords           UserConsentRecord[]
   revisionComments         RevisionComment[]
   productionAssignments    ProductionAssignment[] @relation("ProductionDesigner")
+  funeralFamilyMemberships FuneralFamilyMember[]
 
   @@index([role])
   @@index([status])
@@ -233,6 +234,13 @@ model Event {
   funeralProfile FuneralProfile?
   tributeMessages TributeMessage[]
   funeralPrograms FuneralProgram[]
+  virtualCandles VirtualCandle[]
+  memorialTimeline MemorialTimelineEntry[]
+  memorialGuestbook MemorialGuestbookEntry[]
+  memorialLivestreams MemorialLivestream[]
+  memorialMediaItems MemorialMediaItem[]
+  funeralFamilyMembers FuneralFamilyMember[]
+  legacyArchive LegacyArchive?
   memoryVault    MemoryVault?
   thankYouPage   ThankYouPage?
   memorySettings EventMemorySettings?
@@ -1249,6 +1257,15 @@ model AdPlacement {
 
 // ─── Contributions & Wallets ────────────────────────────────────
 
+enum ContributionPurpose {
+  FAMILY_SUPPORT
+  BURIAL_SUPPORT
+  MEMORIAL_FUND
+  CHARITY_DONATION
+  CHURCH_SUPPORT
+  GENERAL
+}
+
 model Wallet {
   id        String   @id @default(cuid())
   eventId   String?  @unique
@@ -1290,19 +1307,22 @@ model WalletTransaction {
 }
 
 model Contribution {
-  id          String   @id @default(cuid())
-  eventId     String
-  userId      String?
-  contributor String
-  amount      Decimal 
-  currency    String   @default("GHS")
-  message     String?
-  isAnonymous Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id            String               @id @default(cuid())
+  eventId       String
+  userId        String?
+  contributor   String
+  amount        Decimal
+  currency      String               @default("GHS")
+  message       String?
+  purpose       ContributionPurpose  @default(FAMILY_SUPPORT)
+  paymentMethod String               @default("PAYSTACK")
+  isAnonymous   Boolean              @default(false)
+  createdAt     DateTime             @default(now())
 
   event Event @relation(fields: [eventId], references: [id])
   user  User? @relation(fields: [userId], references: [id])
 
+  @@index([eventId])
   @@map("contributions")
 }
 
@@ -2148,6 +2168,73 @@ enum ApprovalStatus {
   REJECTED
 }
 
+enum FuneralRevealStyle {
+  MEMORIAL_BOOK
+  CANDLELIGHT
+  PHOTO_FRAME
+  DOVE_RELEASE
+  FLORAL
+  LEGACY_TIMELINE
+  INSTANT
+}
+
+enum FuneralTemplateCollection {
+  CLASSIC_MEMORIAL
+  CELEBRATION_OF_LIFE
+  TRADITIONAL_GHANAIAN
+  CHRISTIAN
+  CATHOLIC
+  METHODIST
+  PENTECOSTAL
+  ISLAMIC_JANAZAH
+  ROYAL_FAMILY
+  MILITARY_TRIBUTE
+  STATESMAN
+  MODERN
+  MINIMAL
+}
+
+enum TributeType {
+  TEXT
+  AUDIO
+  VIDEO
+  CANDLE
+}
+
+enum FuneralFamilyRole {
+  ADMIN
+  MEMBER
+  EDITOR
+  VIEWER
+}
+
+enum LivestreamProvider {
+  YOUTUBE
+  VIMEO
+  FACEBOOK
+  RTMP
+  OTHER
+}
+
+enum GuestbookEntryType {
+  MESSAGE
+  CONDOLENCE
+  PRAYER
+  SCRIPTURE
+}
+
+enum MemorialMediaKind {
+  PHOTO
+  VIDEO
+  AUDIO
+}
+
+enum LegacyArchiveVisibility {
+  PUBLIC
+  PRIVATE
+  FAMILY_ONLY
+}
+
 model FuneralProfile {
   id               String        @id @default(cuid())
   eventId          String        @unique
@@ -2157,12 +2244,25 @@ model FuneralProfile {
   age              Int?
   biography        String?
   familyName       String?
+  familyInformation String?
+  lifeJourney      String?
+  achievements     String?
+  education        String?
+  career           String?
+  faithJourney     String?
+  legacyMessage    String?
   photoUrl         String?
   theme            String        @default("midnight-ivory")
+  templateSlug     String?
+  revealStyle      String?
+  invitationAudioCategory String?
   privacyStatus    PrivacyStatus @default(PUBLIC)
   burialVenue      String?
   burialDirections String?
   livestreamUrl    String?
+  familyContacts   Json?
+  preferredLanguages Json?
+  legacyVisibility LegacyArchiveVisibility @default(FAMILY_ONLY)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -2176,14 +2276,115 @@ model TributeMessage {
   eventId        String
   userName       String
   message        String
+  tributeType    TributeType    @default(TEXT)
   mediaUrl       String?
+  country        String?
+  isFeatured     Boolean        @default(false)
   approvalStatus ApprovalStatus @default(PENDING)
   createdAt      DateTime       @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
+  @@index([eventId, approvalStatus])
   @@map("tribute_messages")
+}
+
+model VirtualCandle {
+  id        String   @id @default(cuid())
+  eventId   String
+  userName  String
+  message   String?
+  country   String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("virtual_candles")
+}
+
+model MemorialTimelineEntry {
+  id          String   @id @default(cuid())
+  eventId     String
+  year        Int
+  title       String
+  description String?
+  mediaUrl    String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("memorial_timeline_entries")
+}
+
+model MemorialGuestbookEntry {
+  id             String             @id @default(cuid())
+  eventId        String
+  userName       String
+  message        String
+  entryType      GuestbookEntryType @default(CONDOLENCE)
+  scriptureRef   String?
+  approvalStatus ApprovalStatus     @default(PENDING)
+  createdAt      DateTime           @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([eventId, approvalStatus])
+  @@map("memorial_guestbook_entries")
+}
+
+model MemorialLivestream {
+  id          String             @id @default(cuid())
+  eventId     String
+  title       String
+  provider    LivestreamProvider @default(YOUTUBE)
+  streamUrl   String
+  scheduledAt DateTime?
+  isLive      Boolean            @default(false)
+  sortOrder   Int                @default(0)
+  createdAt   DateTime           @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("memorial_livestreams")
+}
+
+model FuneralFamilyMember {
+  id        String            @id @default(cuid())
+  eventId   String
+  userId    String
+  role      FuneralFamilyRole @default(MEMBER)
+  createdAt DateTime          @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@map("funeral_family_members")
+}
+
+model MemorialMediaItem {
+  id             String              @id @default(cuid())
+  eventId        String
+  kind           MemorialMediaKind
+  url            String
+  caption        String?
+  author         String?
+  approvalStatus ApprovalStatus      @default(PENDING)
+  sortOrder      Int                 @default(0)
+  createdAt      DateTime            @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([eventId, approvalStatus])
+  @@map("memorial_media_items")
 }
 
 model FuneralProgram {
@@ -2199,6 +2400,20 @@ model FuneralProgram {
 
   @@index([eventId])
   @@map("funeral_programs")
+}
+
+model LegacyArchive {
+  id           String                  @id @default(cuid())
+  eventId      String                  @unique
+  visibility   LegacyArchiveVisibility @default(FAMILY_ONLY)
+  snapshotJson Json?
+  publishedAt  DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("legacy_archives")
 }
 
 // ─── Memory Vault ───────────────────────────────────────────────

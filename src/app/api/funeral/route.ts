@@ -13,12 +13,25 @@ const profileSchema = z.object({
   age: z.number().optional(),
   biography: z.string().optional(),
   familyName: z.string().optional(),
+  familyInformation: z.string().optional(),
+  lifeJourney: z.string().optional(),
+  achievements: z.string().optional(),
+  education: z.string().optional(),
+  career: z.string().optional(),
+  faithJourney: z.string().optional(),
+  legacyMessage: z.string().optional(),
   photoUrl: z.string().optional(),
   theme: z.string().optional(),
+  templateSlug: z.string().optional(),
+  revealStyle: z.string().optional(),
+  invitationAudioCategory: z.string().optional(),
   privacyStatus: z.enum(["PUBLIC", "PRIVATE", "UNLISTED"]).optional(),
   burialVenue: z.string().optional(),
   burialDirections: z.string().optional(),
   livestreamUrl: z.string().optional(),
+  familyContacts: z.unknown().optional(),
+  preferredLanguages: z.unknown().optional(),
+  legacyVisibility: z.enum(["PUBLIC", "PRIVATE", "FAMILY_ONLY"]).optional(),
 });
 
 export async function GET(req: Request) {
@@ -30,12 +43,8 @@ export async function GET(req: Request) {
 
   try {
     await verifyEventAccess(eventId, session.user.id, session.user.role);
-    const [profile, program, tributes] = await Promise.all([
-      funeralService.getOrCreateProfile(eventId),
-      funeralService.getProgram(eventId),
-      funeralService.getTributes(eventId, true),
-    ]);
-    return NextResponse.json({ success: true, data: { profile, program, tributes } });
+    const data = await funeralService.getDashboardData(eventId);
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Access denied" },

@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { ArrowRight, Play, Calendar, Ticket, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandMotto } from "@/components/brand/brand-motto";
-import { Logo } from "@/components/layout/logo";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
@@ -50,8 +49,7 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <Logo variant="light" size="xl" className="mb-5 sm:mb-6" />
-            <BrandMotto size="lg" variant="hero" className="mb-4 sm:mb-6" />
+            <BrandMotto size="xl" variant="hero" className="mb-5 sm:mb-7" />
             <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight">
               {t("landing.hero_title_1")}{" "}
               <span className="text-gradient-gold">{t("landing.hero_title_event")}</span>{" "}

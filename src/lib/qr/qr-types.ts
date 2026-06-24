@@ -7,6 +7,12 @@ export const QR_TYPES = {
   TICKET: "ticket",
   VIP: "vip",
   HOUSEHOLD: "household",
+  MEMORIAL: "memorial",
+  MEMORIAL_TRIBUTE: "memorial_tribute",
+  MEMORIAL_CONTRIBUTION: "memorial_contribution",
+  MEMORIAL_LIVESTREAM: "memorial_livestream",
+  MEMORIAL_MEMORY: "memorial_memory",
+  MEMORIAL_SEATING: "memorial_seating",
 } as const;
 
 export type QrIntentType = (typeof QR_TYPES)[keyof typeof QR_TYPES];

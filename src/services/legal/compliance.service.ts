@@ -113,8 +113,8 @@ export class ComplianceService {
 
     if (!user) return { needsTerms: true, needsPrivacy: true };
 
-    const currentTerms = versions.terms?.version;
-    const currentPrivacy = versions.privacy?.version;
+    const currentTerms = versions.terms?.version ?? CURRENT_LEGAL_VERSION;
+    const currentPrivacy = versions.privacy?.version ?? CURRENT_LEGAL_VERSION;
     const needsTerms =
       !user.acceptedTermsVersion || user.acceptedTermsVersion !== currentTerms;
     const needsPrivacy =
@@ -131,6 +131,34 @@ export class ComplianceService {
       cookieConsent: user.cookieConsent,
       consentTimestamp: user.consentTimestamp?.toISOString() ?? null,
     };
+  }
+
+  async recordLegalAcceptance(
+    userId: string,
+    termsVersion?: string,
+    privacyVersion?: string
+  ) {
+    const versions = await this.getCurrentVersions();
+    const tVer = termsVersion ?? versions.terms?.version ?? CURRENT_LEGAL_VERSION;
+    const pVer = privacyVersion ?? versions.privacy?.version ?? CURRENT_LEGAL_VERSION;
+
+    const now = new Date();
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          consentTimestamp: now,
+          acceptedTermsVersion: tVer,
+          acceptedPrivacyVersion: pVer,
+        },
+      }),
+      prisma.userConsentRecord.create({
+        data: { userId, type: "TERMS", version: tVer },
+      }),
+      prisma.userConsentRecord.create({
+        data: { userId, type: "PRIVACY", version: pVer },
+      }),
+    ]);
   }
 
   async recordConsent(
