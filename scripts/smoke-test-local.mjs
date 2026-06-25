@@ -72,6 +72,10 @@ const ADMIN_ROUTES = [
   "/admin/audit-logs",
   "/admin/templates",
   "/admin/qr-branding",
+  "/admin/invitation-templates",
+  "/admin/packages",
+  "/admin/contact",
+  "/admin/legal",
 ];
 
 async function checkRoute(path, expectRedirect = false) {
