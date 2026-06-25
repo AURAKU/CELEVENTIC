@@ -49,6 +49,7 @@ const adminSections: NavSection[] = [
     items: [
       { href: "/admin/invitation-orders", label: "Orders", icon: Mail },
       { href: "/admin/commerce", label: "Packages & Add-ons", icon: Settings },
+      { href: "/admin/packages", label: "Event Packages", icon: Layers },
       { href: "/admin/payments", label: "Payments", icon: CreditCard },
       { href: "/admin/music", label: "Music Library", icon: Music },
       { href: "/admin/revisions", label: "Revisions", icon: RefreshCw },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { thankYouService } from "@/services/thank-you/thank-you.service";
 import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
+import { getServerAppUrl } from "@/lib/app-url";
 
 export async function GET(
   _req: Request,
@@ -13,7 +14,7 @@ export async function GET(
   }
 
   const uploadToken = await eventMemoryTokenService.getOrCreateUploadToken(page.eventId);
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://celeventic.com";
+  const baseUrl = await getServerAppUrl();
 
   return NextResponse.json({
     success: true,

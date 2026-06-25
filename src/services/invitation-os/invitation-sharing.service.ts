@@ -1,4 +1,4 @@
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+import { getAppUrlFromEnv } from "@/lib/app-url";
 
 export interface WhatsAppSharePack {
   generalText: string;
@@ -18,7 +18,8 @@ export class InvitationSharingService {
     hostName?: string;
     language?: "en" | "fr" | "both";
   }): WhatsAppSharePack {
-    const link = `${APP_URL}${options.sharePath.startsWith("/") ? "" : "/"}${options.sharePath}`;
+    const appUrl = getAppUrlFromEnv();
+    const link = `${appUrl}${options.sharePath.startsWith("/") ? "" : "/"}${options.sharePath}`;
     const dateLine = options.eventDate
       ? new Date(options.eventDate).toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", year: "numeric" })
       : "Date TBA";

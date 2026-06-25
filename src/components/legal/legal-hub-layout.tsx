@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ArrowLeft, FileText, Shield } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -11,6 +12,16 @@ import { LEGAL_CONTACT } from "@/lib/legal/constants";
 
 export function LegalHubLayout() {
   const { t } = useLocale();
+  const [contact, setContact] = useState(LEGAL_CONTACT);
+
+  useEffect(() => {
+    fetch("/api/public/contact")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setContact(d.data);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <>
@@ -84,10 +95,10 @@ export function LegalHubLayout() {
 
               <p className="text-sm text-slate-500 text-center">
                 {t("legal.legal_questions")}:{" "}
-                <a href={`mailto:${LEGAL_CONTACT.email}`} className="text-brand-600 hover:underline">
-                  {LEGAL_CONTACT.email}
+                <a href={`mailto:${contact.email}`} className="text-brand-600 hover:underline">
+                  {contact.email}
                 </a>{" "}
-                · {LEGAL_CONTACT.phone}
+                · {contact.phone}
               </p>
             </div>
           </div>

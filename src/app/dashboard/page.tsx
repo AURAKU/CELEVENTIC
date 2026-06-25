@@ -104,7 +104,7 @@ export default async function DashboardPage() {
               { href: "/dashboard/tickets", label: "Manage Tickets", icon: Ticket },
               { href: "/dashboard/qr-admission", label: "QR Scanner", icon: QrCode },
               { href: "/dashboard/campaigns", label: "Send Invitations", icon: Mail },
-              { href: "/dashboard/ai-planner", label: "AI Event Planner", icon: Sparkles },
+              { href: "/dashboard/ai-planner", label: "Event Intelligence", icon: Sparkles },
             ].map((action) => (
               <Button key={action.href} variant="outline" className="w-full justify-start" asChild>
                 <Link href={action.href}>

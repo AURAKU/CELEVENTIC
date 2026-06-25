@@ -34,6 +34,8 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   backgroundVideoUrl?: string | null;
   rsvpRequired?: boolean;
   admissionQrDataUrl?: string | null;
+  admissionQrToken?: string | null;
+  guestQrToken?: string | null;
   seatLookupUrl?: string | null;
   seatQrDataUrl?: string | null;
   fullScreen?: boolean;

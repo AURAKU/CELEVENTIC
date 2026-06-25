@@ -14,6 +14,7 @@ import { invitationBlockService } from "@/services/invitations/invitation-block.
 import type { AppLocale } from "@/lib/i18n/constants";
 import { parseMusicSelection } from "@/lib/music/validate-selection";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
+import { getServerAppUrl } from "@/lib/app-url";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -28,12 +29,6 @@ function resolveDesign(invitation: {
   return mergeDesignConfig(base, templateConfig as Partial<InvitationDesignConfig> | undefined);
 }
 
-function appBaseUrl() {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
-}
-
 export const revalidate = 60;
 
 export default async function InvitePage({
@@ -45,6 +40,7 @@ export default async function InvitePage({
 }) {
   const { link } = await params;
   const { guest: guestToken } = await searchParams;
+  const appBaseUrl = await getServerAppUrl();
   const invitation = await invitationService.getInvitationByLink(link);
 
   if (!invitation) notFound();
@@ -56,14 +52,20 @@ export default async function InvitePage({
   const sampleGuest = personalizedGuest ?? invitation.guests[0];
   let qrDataUrl = "";
   let admissionQrDataUrl = "";
+  let admissionQrToken = "";
+  let guestQrToken = "";
   let seatQrDataUrl = "";
   let seatLookupUrl: string | null = null;
 
   if (sampleGuest) {
+    guestQrToken = sampleGuest.qrToken;
     qrDataUrl = await qrService.generateBrandedVerifyQr(event.id, sampleGuest.qrToken);
     const admission = await qrService.getGuestAdmissionQr(sampleGuest.id);
-    if (admission) admissionQrDataUrl = admission.dataUrl;
-    seatLookupUrl = `${appBaseUrl()}/seat/${sampleGuest.qrToken}`;
+    if (admission) {
+      admissionQrDataUrl = admission.dataUrl;
+      admissionQrToken = admission.token;
+    }
+    seatLookupUrl = `${appBaseUrl}/seat/${sampleGuest.qrToken}`;
   }
 
   const rawDesign = resolveDesign(invitation);
@@ -157,6 +159,8 @@ export default async function InvitePage({
       guestName={sampleGuest?.name}
       qrDataUrl={qrDataUrl}
       admissionQrDataUrl={qrCheckin ? admissionQrDataUrl : null}
+      admissionQrToken={qrCheckin ? admissionQrToken : null}
+      guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       seatQrDataUrl={seatQrDataUrl || null}
       backgroundImageUrl={catalogTemplate?.backgroundImageUrl ?? event.coverImageUrl}

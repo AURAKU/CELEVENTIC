@@ -63,12 +63,12 @@ export default function AdminModulesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">EventOS Modules</h1>
-        <p className="page-subtitle">Monitor and manage AI Planner, Wallet, Offline QR, FuneralOS, and Memory Vault.</p>
+        <p className="page-subtitle">Monitor and manage Event Intelligence, Wallet, Offline QR, FuneralOS, and Memory Vault.</p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" /> AI Planner</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold-400" /> Event Intelligence</CardTitle></CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{data.aiPlanner.totalRequests}</p>
             <p className="text-xs text-slate-500 mb-3">requests · provider: {data.aiPlanner.activeProvider}</p>
@@ -174,7 +174,7 @@ export default function AdminModulesPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Recent AI Requests</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Recent Intelligence Requests</CardTitle></CardHeader>
           <CardContent className="space-y-1 max-h-64 overflow-y-auto">
             {data.aiPlanner.recent.map((r, i) => (
               <div key={i} className="flex justify-between text-sm py-1 border-b">

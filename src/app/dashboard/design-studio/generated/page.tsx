@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +20,14 @@ interface GeneratedDesign {
 }
 
 export default function GeneratedDesignsPage() {
+  return (
+    <Suspense fallback={<p className="text-slate-500 py-12 text-center">Loading designs…</p>}>
+      <GeneratedDesignsPageInner />
+    </Suspense>
+  );
+}
+
+function GeneratedDesignsPageInner() {
   const eventId = useSearchParams().get("eventId");
   const [designs, setDesigns] = useState<GeneratedDesign[]>([]);
   const [loading, setLoading] = useState(true);

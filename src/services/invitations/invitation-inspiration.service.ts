@@ -7,6 +7,7 @@ import {
   getTemplatePreset,
   mergeDesignConfig,
 } from "@/lib/invitation-templates";
+import { CINEMATIC_THEMES, isCinematicLayout } from "@/lib/invitation/cinematic-themes";
 
 export interface ColorSample {
   hex: string;
@@ -127,7 +128,7 @@ function buildPalette(colors: string[], layout: InvitationLayoutSlug, brightness
   const accent = colors.find(isGold) ?? colors[1] ?? "#B89E67";
   const secondary = colors[2] ?? accent;
 
-  const presets: Record<InvitationLayoutSlug, InvitationDesignConfig["colors"]> = {
+  const presets: Partial<Record<InvitationLayoutSlug, InvitationDesignConfig["colors"]>> = {
     "classic-gold": { primary: "#1a1a1a", secondary: accent, accent: "#D4AF37", background: "#FFFFFF", text: "#333333" },
     "arch-green": { primary: "#F5F0E6", secondary: "#1B3022", accent: accent, background: "#1B3022", text: "#F5F0E6" },
     "rustic-lace": { primary: "#FFFFFF", secondary: "#3D2314", accent: "#F8F4EF", background: "#3D2314", text: "#FFFFFF" },
@@ -139,10 +140,14 @@ function buildPalette(colors: string[], layout: InvitationLayoutSlug, brightness
     "floral-garden": { primary: "#881337", secondary: "#be185d", accent: "#fda4af", background: "#fff1f2", text: "#4c0519" },
   };
 
-  if (brightness < 0.35 && layout !== "arch-green") {
-    return presets["luxury-rings"];
+  if (isCinematicLayout(layout)) {
+    return CINEMATIC_THEMES[layout].config.colors ?? presets["classic-gold"]!;
   }
-  return presets[layout];
+
+  if (brightness < 0.35 && layout !== "arch-green") {
+    return presets["luxury-rings"]!;
+  }
+  return presets[layout] ?? presets["classic-gold"]!;
 }
 
 function applyBuildMode(
@@ -214,7 +219,7 @@ export class InvitationInspirationService {
 
     designConfig = applyBuildMode(designConfig, input.buildMode ?? "inspired", input.type);
 
-    const moodMap: Record<InvitationLayoutSlug, string> = {
+    const moodMap: Partial<Record<InvitationLayoutSlug, string>> = {
       "classic-gold": "timeless & elegant",
       "arch-green": "botanical & refined",
       "rustic-lace": "warm & heritage",
@@ -226,9 +231,13 @@ export class InvitationInspirationService {
       "floral-garden": "romantic garden",
     };
 
+    const mood = isCinematicLayout(layout)
+      ? CINEMATIC_THEMES[layout].tagline
+      : moodMap[layout] ?? "celebratory & refined";
+
     const concept: InspirationConcept = {
       style: preset.name,
-      mood: moodMap[layout],
+      mood,
       layoutReason: reason,
       colorStory: `Extracted palette: ${colors.slice(0, 3).join(", ")}`,
       typography: `${designConfig.fonts?.heading ?? "Playfair"} + ${designConfig.fonts?.script ?? "Great Vibes"}`,

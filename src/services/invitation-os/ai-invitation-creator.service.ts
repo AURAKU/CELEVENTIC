@@ -59,7 +59,7 @@ export class AiInvitationCreatorService {
         messages: [
           {
             role: "system",
-            content: `You are Celeventic AI Invitation Creator. Voice: ${CELEVENTIC_BRAND.voice}. Ghana-first, globally refined. Return JSON matching AiCreatorOutput schema. Never copy competitor wording.`,
+            content: `You are Celeventic Invitation Intelligence. Voice: ${CELEVENTIC_BRAND.voice}. Global-first, premium refined. Return JSON matching AiCreatorOutput schema. Never copy competitor wording.`,
           },
           { role: "user", content: JSON.stringify(input) },
         ],

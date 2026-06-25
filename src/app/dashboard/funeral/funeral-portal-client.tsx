@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,28 @@ import {
   FUNERAL_AUDIO_CATEGORIES,
   MEMORIAL_LOCALES,
 } from "@/lib/funeral/funeral-constants";
+
+const SECTION_TO_TAB: Record<string, string> = {
+  invitations: "obituary",
+  obituaries: "obituary",
+  obituary: "obituary",
+  program: "program",
+  timeline: "timeline",
+  tributes: "tributes",
+  guestbook: "guestbook",
+  livestream: "livestream",
+  legacy: "legacy",
+};
+
+const TAB_TO_SECTION: Record<string, string> = {
+  obituary: "obituaries",
+  program: "program",
+  timeline: "timeline",
+  tributes: "tributes",
+  guestbook: "guestbook",
+  livestream: "livestream",
+  legacy: "legacy",
+};
 
 interface FuneralProfile {
   deceasedName: string;
@@ -44,6 +67,12 @@ interface FuneralProfile {
 }
 
 export function FuneralPortalClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const sectionParam = searchParams.get("section");
+  const initialTab = SECTION_TO_TAB[sectionParam ?? ""] ?? "obituary";
+  const [activeTab, setActiveTab] = useState(initialTab);
+
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
   const selectedEvent = events.find((e) => e.id === eventId);
   const [profile, setProfile] = useState<FuneralProfile | null>(null);
@@ -102,6 +131,18 @@ export function FuneralPortalClient() {
   }
 
   useEffect(() => { if (eventId) load(); }, [eventId]);
+
+  useEffect(() => {
+    if (sectionParam && SECTION_TO_TAB[sectionParam]) {
+      setActiveTab(SECTION_TO_TAB[sectionParam]);
+    }
+  }, [sectionParam]);
+
+  function handleTabChange(tab: string) {
+    setActiveTab(tab);
+    const section = TAB_TO_SECTION[tab] ?? tab;
+    router.replace(`/dashboard/funeral?section=${section}`, { scroll: false });
+  }
 
   async function saveVenueFields() {
     if (!eventId) return;
@@ -193,7 +234,7 @@ export function FuneralPortalClient() {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {eventId && (
-        <Tabs defaultValue="obituary">
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="flex flex-wrap h-auto gap-1">
             <TabsTrigger value="obituary">Obituary</TabsTrigger>
             <TabsTrigger value="program">Program</TabsTrigger>

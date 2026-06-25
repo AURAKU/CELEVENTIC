@@ -36,7 +36,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             <span className="text-gradient-gold">intelligent</span> tools
           </h1>
           <p className="text-slate-400 text-lg max-w-md leading-relaxed">
-            Invitations, ticketing, QR admission, AI planning, and memory vault — all in one premium platform.
+            Invitations, ticketing, QR admission, Event Intelligence, and memory vault — all in one premium platform.
           </p>
           <div className="flex flex-wrap gap-4 pt-2">
             {highlights.map((item) => (

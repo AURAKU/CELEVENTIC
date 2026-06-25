@@ -8,10 +8,17 @@ import { cn } from "@/lib/utils";
 interface InvitationAudioControlsProps {
   manager: InvitationAudioManager;
   trackTitle?: string;
+  /** Position inside a preview frame instead of the full guest viewport */
+  embedded?: boolean;
   className?: string;
 }
 
-export function InvitationAudioControls({ manager, trackTitle, className }: InvitationAudioControlsProps) {
+export function InvitationAudioControls({
+  manager,
+  trackTitle,
+  embedded,
+  className,
+}: InvitationAudioControlsProps) {
   const [playing, setPlaying] = useState(manager.isPlaying());
   const [muted, setMuted] = useState(manager.isMuted());
   const [expanded, setExpanded] = useState(false);
@@ -64,7 +71,9 @@ export function InvitationAudioControls({ manager, trackTitle, className }: Invi
   return (
     <div
       className={cn(
-        "fixed bottom-20 left-4 z-[80] flex flex-col items-start gap-2",
+        embedded
+          ? "absolute bottom-3 left-3 z-30 flex flex-col items-start gap-2"
+          : "fixed bottom-20 left-4 z-[80] flex flex-col items-start gap-2",
         className
       )}
     >

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { APP_NAME, APP_TAGLINE, BRAND, BRAND_MOTTO } from "@/lib/constants";
+import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
 import { getServerI18nState } from "@/lib/i18n/server-locale";
 import "./globals.css";
 
@@ -13,6 +14,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(DEFAULT_PRODUCTION_URL),
   title: { default: APP_NAME, template: `%s | ${APP_NAME}` },
   description: `${BRAND_MOTTO}. ${APP_TAGLINE}`,
   keywords: ["events", "tickets", "invitations", "QR", "event management", "global event platform"],

@@ -16,7 +16,7 @@ export function InspirationInsights({ analysis }: InspirationInsightsProps) {
     <div className="rounded-xl border border-brand-200 bg-gradient-to-br from-teal-50 to-white p-4 space-y-3 text-sm">
       <div className="flex items-center gap-2 font-semibold text-brand-800">
         <Sparkles className="h-4 w-4" />
-        AI Design Insights ({Math.round(confidence * 100)}% match)
+        Celeventic Design Insights ({Math.round(confidence * 100)}% match)
       </div>
       <div className="grid gap-2 text-xs text-slate-700">
         <p><span className="font-medium">Style:</span> {concept.style} — {concept.mood}</p>

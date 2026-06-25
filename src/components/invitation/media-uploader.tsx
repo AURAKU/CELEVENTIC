@@ -190,7 +190,7 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
           {analyzing ? "Analyzing colors & style..." : uploading ? "Uploading..." : "Upload from device"}
         </p>
         <p className="text-xs page-subtitle">
-          Import image, PDF, or video — crop images before upload · AI extracts inspiration
+          Import image, PDF, or video — crop images before upload · Celeventic extracts inspiration
         </p>
       </div>
 

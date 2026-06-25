@@ -104,6 +104,8 @@ export interface EventExperienceConfig {
   scheduleItems?: EventScheduleItem[];
   themePresetId?: string;
   thankYouMessage?: string;
+  /** Gallery / media display style in guest invitation */
+  slideshowStyle?: string;
 }
 
 export const DEFAULT_HUB_TABS: HubTabId[] = [

@@ -1,6 +1,18 @@
 export type RevealMode = "envelope" | "scratch" | "passport" | "glass" | "curtain" | "scroll-unroll" | "none";
 
-export type ButtonStyle = "rounded" | "pill" | "sharp" | "glass" | "outline" | "gold";
+export type ButtonStyle =
+  | "rounded"
+  | "pill"
+  | "sharp"
+  | "glass"
+  | "outline"
+  | "gold"
+  | "wax-seal"
+  | "neon"
+  | "kente"
+  | "floral-edge"
+  | "solemn"
+  | "passport-stamp";
 
 export type ButtonPosition = "bottom" | "center" | "floating";
 
@@ -32,6 +44,12 @@ export const BUTTON_STYLE_OPTIONS: { id: ButtonStyle; label: string }[] = [
   { id: "glass", label: "Glass" },
   { id: "outline", label: "Outline" },
   { id: "gold", label: "Gold luxury" },
+  { id: "wax-seal", label: "Wax seal" },
+  { id: "neon", label: "Neon glow" },
+  { id: "kente", label: "Kente pattern" },
+  { id: "floral-edge", label: "Floral edge" },
+  { id: "solemn", label: "Solemn outline" },
+  { id: "passport-stamp", label: "Passport stamp" },
 ];
 
 export const BUTTON_POSITION_OPTIONS: { id: ButtonPosition; label: string }[] = [

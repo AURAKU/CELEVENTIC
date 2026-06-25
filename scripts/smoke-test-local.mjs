@@ -16,7 +16,10 @@ const PUBLIC_ROUTES = [
   "/marketplace",
   "/discover",
   "/invitations",
+  "/invitations/catalogue",
   "/templates",
+  "/qr/demo-token",
+  "/memory-upload/demo-token",
 ];
 
 const DASHBOARD_ROUTES = [
@@ -43,6 +46,14 @@ const DASHBOARD_ROUTES = [
   "/dashboard/my-collection",
   "/dashboard/venues",
   "/dashboard/settings",
+  "/dashboard/settings?tab=organization",
+  "/dashboard/settings?tab=team",
+  "/dashboard/settings?tab=billing",
+  "/dashboard/settings?tab=security",
+  "/dashboard/memory?tab=guestbook",
+  "/dashboard/memory?tab=gallery",
+  "/dashboard/memory?tab=uploads",
+  "/dashboard/memory?tab=legacy",
   "/dashboard/privacy-center",
   "/dashboard/vendor-portal",
   "/dashboard/ai-planner",
@@ -59,6 +70,8 @@ const ADMIN_ROUTES = [
   "/admin/inspiration",
   "/admin/payments",
   "/admin/audit-logs",
+  "/admin/templates",
+  "/admin/qr-branding",
 ];
 
 async function checkRoute(path, expectRedirect = false) {

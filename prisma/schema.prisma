@@ -2697,6 +2697,7 @@ model InvitationMusicTrack {
   category    String   @default("general")
   url         String
   durationSec Float?
+  isPremium   Boolean  @default(false)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdById String?

@@ -11,6 +11,7 @@ const patchSchema = z.object({
   artist: z.string().nullable().optional(),
   category: z.string().optional(),
   isActive: z.boolean().optional(),
+  isPremium: z.boolean().optional(),
   sortOrder: z.number().optional(),
   durationSec: z.number().optional(),
 });

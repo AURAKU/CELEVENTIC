@@ -11,6 +11,7 @@ export default function MemoryUploadPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
     event: { title: string; hostName: string; slug: string };
+    invitationLink: string | null;
     settings: {
       maxPhotosPerGuest: number;
       maxVideosPerGuest: number;
@@ -36,7 +37,9 @@ export default function MemoryUploadPage() {
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const memoriesUrl = `${baseUrl}/events/${data.event.slug}/memories`;
-  const invitationUrl = `${baseUrl}/invite/${data.event.slug}`;
+  const invitationUrl = data.invitationLink
+    ? `${baseUrl}/invite/${data.invitationLink}`
+    : `${baseUrl}/events/${data.event.slug}`;
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] py-10 px-4">

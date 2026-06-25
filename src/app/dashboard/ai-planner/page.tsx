@@ -106,7 +106,7 @@ export default function AIPlannerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">AI Event Planner</h1>
+        <h1 className="text-2xl font-bold">Event Intelligence</h1>
         <p className="page-subtitle">Your personal event consultant — budget, timeline, risks, and recommendations.</p>
       </div>
 
@@ -158,7 +158,7 @@ export default function AIPlannerPage() {
             <div className="sm:col-span-2 flex gap-3">
               <Button type="submit" disabled={loading}>
                 <Sparkles className="h-4 w-4" />
-                {loading ? "Generating..." : savedPlan ? "Regenerate Plan" : "Generate AI Plan"}
+                {loading ? "Generating..." : savedPlan ? "Regenerate Plan" : "Generate Intelligence Plan"}
               </Button>
               {savedPlan && (
                 <Button type="button" variant="outline" onClick={() => generatePlan(true)} disabled={loading}>

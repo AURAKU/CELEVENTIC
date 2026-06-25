@@ -19,6 +19,9 @@ import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { OPENING_EXPERIENCES, mapLegacyRevealMode, mapOpeningToLegacyRevealMode } from "@/lib/experience/opening-experiences";
 import { ENVIRONMENT_PRESETS } from "@/lib/experience/environment-presets";
 import { INTRO_DURATION_OPTIONS } from "@/lib/experience/celeventic-palette";
+import { SLIDESHOW_STYLE_OPTIONS } from "@/lib/invitation/slideshow-styles";
+import type { SlideshowStyleId } from "@/lib/invitation/slideshow-styles";
+import { EXTENDED_BUTTON_STYLES } from "@/lib/invitation/invitation-button-styles";
 import { HUB_TAB_LABELS } from "@/components/experience/event-experience-hub";
 import { EXPERIENCE_THEME_PRESETS } from "@/lib/experience/theme-presets";
 const FONT_OPTIONS = ["Inter", "Playfair Display", "Cinzel", "Cormorant Garamond", "Great Vibes"];
@@ -253,7 +256,7 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
                   <SelectItem value="scroll">Scroll with tabs</SelectItem>
                   <SelectItem value="tabs">Tab sections</SelectItem>
                   <SelectItem value="journey">Chapter journey</SelectItem>
-                  <SelectItem value="storybook">AI storybook</SelectItem>
+                  <SelectItem value="storybook">Celeventic storybook</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -348,7 +351,7 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
               <Select value={studio.buttonStyle ?? "gold"} onValueChange={(v) => patchStudio({ buttonStyle: v as typeof studio.buttonStyle })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {BUTTON_STYLE_OPTIONS.map((o) => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
+                  {EXTENDED_BUTTON_STYLES.map((o) => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -369,6 +372,20 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
           <div className="space-y-1">
             <Label>Intro line</Label>
             <Input value={design.introText ?? ""} onChange={(e) => patchDesign({ introText: e.target.value })} placeholder="Together with their families" />
+          </div>
+          <div className="space-y-1">
+            <Label>Gallery slideshow style</Label>
+            <Select
+              value={(experience.slideshowStyle as SlideshowStyleId) ?? "fade-carousel"}
+              onValueChange={(v) => patchExperience({ slideshowStyle: v as SlideshowStyleId })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SLIDESHOW_STYLE_OPTIONS.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </section>
 

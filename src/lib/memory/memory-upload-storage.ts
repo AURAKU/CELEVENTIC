@@ -1,6 +1,5 @@
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import sharp from "sharp";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 
 const ALLOWED_IMAGE = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/jfif", "image/pjpeg"]);
 const ALLOWED_VIDEO = new Set(["video/mp4", "video/webm", "video/quicktime"]);
@@ -41,14 +40,9 @@ export async function storeMemoryFile(
 ): Promise<{ url: string; thumbnailUrl: string | null; mediaType: "image" | "video"; sizeBytes: number }> {
   const ext = EXT_MAP[file.type] ?? ".bin";
   const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", "memories", eventId);
-  await mkdir(dir, { recursive: true });
-
   const buffer = Buffer.from(await file.arrayBuffer());
-  const filePath = path.join(dir, safeName);
-  await writeFile(filePath, buffer);
 
-  const url = `/uploads/memories/${eventId}/${safeName}`;
+  const stored = await storeUploadFile("memories", eventId, safeName, buffer);
   let thumbnailUrl: string | null = null;
 
   if (ALLOWED_IMAGE.has(file.type)) {
@@ -58,15 +52,15 @@ export async function storeMemoryFile(
         .resize(400, 400, { fit: "inside", withoutEnlargement: true })
         .jpeg({ quality: 80, mozjpeg: true })
         .toBuffer();
-      await writeFile(path.join(dir, thumbName), thumbBuffer);
-      thumbnailUrl = `/uploads/memories/${eventId}/${thumbName}`;
+      const thumb = await storeUploadFile("memories", eventId, thumbName, thumbBuffer);
+      thumbnailUrl = thumb.url;
     } catch {
-      thumbnailUrl = url;
+      thumbnailUrl = stored.url;
     }
   }
 
   return {
-    url,
+    url: stored.url,
     thumbnailUrl,
     mediaType: ALLOWED_IMAGE.has(file.type) ? "image" : "video",
     sizeBytes: file.size,

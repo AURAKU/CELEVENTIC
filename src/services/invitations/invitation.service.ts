@@ -4,6 +4,7 @@ import { qrService } from "@/services/qr/qr.service";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import type { GuestStatus, Prisma } from "@prisma/client";
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
+import { getAppUrlFromEnv } from "@/lib/app-url";
 
 export interface CreateInvitationInput {
   eventId: string;
@@ -41,7 +42,7 @@ export class InvitationService {
     const templateId = await this.resolveTemplateId(input.templateId);
     const slug = `${slugify(input.name) || "invitation"}-${generateToken(6)}`;
     const uniqueLink = generateToken(32);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const appUrl = getAppUrlFromEnv();
 
     const invitation = await prisma.invitation.create({
       data: {

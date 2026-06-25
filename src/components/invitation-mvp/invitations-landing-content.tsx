@@ -16,7 +16,7 @@ interface Props {
 
 export function InvitationsLandingContent({ packages }: Props) {
   const { t } = useLocale();
-  const featured = CATALOG_TEMPLATES.slice(0, 6);
+  const featured = CATALOG_TEMPLATES;
 
   const steps = [
     { step: "01", title: t("invitations.step1_title"), desc: t("invitations.step1_desc") },
@@ -94,9 +94,12 @@ export function InvitationsLandingContent({ packages }: Props) {
       <section className="py-20 bg-mesh">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex items-center justify-between mb-10">
-            <h2 className="font-display text-3xl font-bold text-[#0F172A]">{t("invitations.catalogue_preview")}</h2>
+            <h2 className="font-display text-3xl font-bold text-[#0F172A]">
+              {t("invitations.catalogue_preview")} ({featured.length})
+            </h2>
             <Button variant="outline" asChild><Link href="/invitations/catalogue">{t("invitations.view_all")}</Link></Button>
           </div>
+          <p className="text-sm text-slate-500 mb-6 -mt-6">Live scrolling previews — see exactly how each invitation flows for guests.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {featured.map((tpl) => <TemplateCard key={tpl.slug} template={tpl} />)}
           </div>

@@ -36,9 +36,13 @@ interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   backgroundVideoUrl?: string | null;
   rsvpRequired?: boolean;
   admissionQrDataUrl?: string | null;
+  admissionQrToken?: string | null;
+  guestQrToken?: string | null;
   seatLookupUrl?: string | null;
   seatQrDataUrl?: string | null;
   fullScreen?: boolean;
+  /** Embedded inside a preview frame — no min-h-screen */
+  embedded?: boolean;
   experienceConfig?: EventExperienceConfig;
   enabledHubTabs?: HubTabId[];
   openingComplete?: boolean;
@@ -126,7 +130,16 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   const galleryCount = props.galleryUrls?.length ?? 0;
 
   return (
-    <div className={`${props.fullScreen ? "fixed inset-0 overflow-y-auto" : "min-h-screen"} bg-[#FAF8F4] relative`} style={{ backgroundColor: props.design?.colors?.background ?? "#FAF8F4" }}>
+    <div
+      className={`${
+        props.fullScreen !== false
+          ? "fixed inset-0 overflow-y-auto min-h-[100dvh] w-full"
+          : props.embedded
+            ? "relative min-h-0 w-full"
+            : "min-h-[100dvh] w-full"
+      } bg-[#FAF8F4] relative overflow-x-hidden`}
+      style={{ backgroundColor: props.design?.colors?.background ?? "#FAF8F4" }}
+    >
       <ParticleEnvironment presetId={environmentId} intensity={environmentIntensity} />
       {(props.backgroundVideoUrl || props.backgroundImageUrl) && (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
@@ -326,18 +339,28 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 )}
                 {props.admissionQrDataUrl && (
                   <div className="mb-6">
-                    <p className="text-xs text-slate-500 mb-3">Admission QR — show at the gate</p>
+                    <p className="text-xs text-slate-500 mb-3">Admission pass — show at the gate</p>
                     <BrandedQrImage
                       src={props.admissionQrDataUrl}
-                      size={180}
-                      caption="Download and save for offline entry"
+                      token={props.admissionQrToken ?? undefined}
+                      size={280}
+                      mode="pass"
+                      allowFullscreen
+                      guestName={props.guestName ?? undefined}
+                      caption="Tap to enlarge · turn brightness up for scanning"
+                      showDownload
                     />
                   </div>
                 )}
                 {props.qrDataUrl && (
                   <div>
                     <p className="text-xs text-slate-500 mb-3">Invitation QR</p>
-                    <BrandedQrImage src={props.qrDataUrl} size={160} showDownload={false} />
+                    <BrandedQrImage
+                      src={props.qrDataUrl}
+                      token={props.guestQrToken ?? undefined}
+                      size={160}
+                      showDownload={false}
+                    />
                   </div>
                 )}
               </div>

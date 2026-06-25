@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
     { href: "/admin/commerce", label: "Packages & Add-ons", icon: Package, desc: "Pricing, currencies, exchange rates" },
     { href: "/admin/music", label: "Music Library", icon: Music, desc: "Invitation audio tracks for organizers" },
     { href: "/admin/payments", label: "Payments", icon: CreditCard, desc: "Logs, webhooks, export reports" },
-    { href: "/admin/integrations", label: "Integrations & API", icon: Key, desc: "Connect Paystack, email, AI, maps, and custom APIs" },
+    { href: "/admin/integrations", label: "Integrations & API", icon: Key, desc: "Connect Paystack, email, intelligence services, maps, and custom APIs" },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart3, desc: "Revenue, funnel, best sellers" },
     { href: "/admin/revisions", label: "Revisions", icon: RefreshCw, desc: "Track and approve revisions" },
     { href: "/admin/reviews", label: "Reviews", icon: Star, desc: "Moderate and feature reviews" },

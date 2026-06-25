@@ -3,6 +3,7 @@ import { generateToken } from "@/lib/utils";
 import { createAuditLog } from "@/lib/audit";
 import type { QrScanResult } from "@prisma/client";
 import { QR_TYPES, ADMISSION_QR_TYPES, type QrIntentType } from "@/lib/qr/qr-types";
+import { QR_DEFAULT_SIZE } from "@/lib/qr/qr-constants";
 import { parseQrToken } from "@/lib/qr/parse-qr-payload";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 
@@ -132,8 +133,8 @@ export class QrService {
       const created = await this.createGuestAdmissionQr(guest.eventId, guestId);
       qr = created.qrCode;
     }
-    const dataUrl = await this.generateBrandedVerifyQr(qr.eventId, qr.token);
-    return { qr, dataUrl };
+    const dataUrl = await qrBrandingService.generateForEvent(qr.eventId, qr.token, QR_DEFAULT_SIZE, "pass");
+    return { qr, dataUrl, token: qr.token };
   }
 
   private async resolveQrRecord(rawToken: string) {

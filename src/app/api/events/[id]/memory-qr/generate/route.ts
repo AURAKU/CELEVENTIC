@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { verifyEventAccess } from "@/lib/event-access";
 import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
+import { getServerAppUrl } from "@/lib/app-url";
 import { z } from "zod";
 
 const schema = z.object({
@@ -27,7 +28,7 @@ export async function POST(
       ? await eventMemoryTokenService.regenerateUploadToken(eventId, expiresAt)
       : await eventMemoryTokenService.getOrCreateUploadToken(eventId, expiresAt);
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://celeventic.com";
+    const baseUrl = await getServerAppUrl();
     const uploadUrl = `${baseUrl}/memory-upload/${tokenRecord.token}`;
     const qrImageUrl = `/api/qr/image?data=${encodeURIComponent(uploadUrl)}&eventId=${eventId}&size=512`;
 
@@ -60,7 +61,7 @@ export async function GET(
     await verifyEventAccess(eventId, session.user.id, session.user.role);
     const tokens = await eventMemoryTokenService.listTokens(eventId, "UPLOAD");
     const active = tokens.find((t) => !t.isRevoked);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://celeventic.com";
+    const baseUrl = await getServerAppUrl();
     return NextResponse.json({
       success: true,
       data: active

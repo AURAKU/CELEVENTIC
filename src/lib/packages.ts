@@ -16,7 +16,7 @@ export type PricingPlan = {
 const FALLBACK_PLANS: PricingPlan[] = [
   { name: "Starter", price: "Free", priceGhs: 0, desc: "Perfect for intimate gatherings", guests: 50, features: ["Digital Invitations", "RSVP Tracking", "QR Admission", "Basic Templates"], popular: false, slug: "starter" },
   { name: "Growth", price: "₵199", priceGhs: 199, desc: "For growing celebrations", guests: 200, features: ["Everything in Starter", "Ticketing", "Bulk Messaging", "Custom Themes"], popular: true, slug: "growth" },
-  { name: "Premium", price: "₵499", priceGhs: 499, desc: "Full event operating system", guests: 1000, features: ["Everything in Growth", "AI Planner", "Vendor Marketplace", "Offline QR"], popular: false, slug: "premium" },
+  { name: "Premium", price: "₵499", priceGhs: 499, desc: "Full event operating system", guests: 1000, features: ["Everything in Growth", "Event Intelligence", "Vendor Marketplace", "Offline QR"], popular: false, slug: "premium" },
   { name: "Enterprise", price: "₵1,499", priceGhs: 1499, desc: "Unlimited scale", guests: 5000, features: ["Everything in Premium", "White Label", "API Access", "Dedicated Manager"], popular: false, slug: "enterprise" },
 ];
 

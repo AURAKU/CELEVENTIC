@@ -4,20 +4,19 @@ import { authOptions } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { invitationInspirationService } from "@/services/invitations/invitation-inspiration.service";
+import { getInvitationMediaLimits } from "@/lib/invitation/media-limits";
 
-const MAX_IMAGE = 10 * 1024 * 1024;
-const MAX_VIDEO = 50 * 1024 * 1024;
 const MAX_PDF = 15 * 1024 * 1024;
 
 const ALLOWED_TYPES: Record<string, { ext: string; max: number; mediaType: "image" | "video" | "pdf" }> = {
-  "image/jpeg": { ext: ".jpg", max: MAX_IMAGE, mediaType: "image" },
-  "image/png": { ext: ".png", max: MAX_IMAGE, mediaType: "image" },
-  "image/webp": { ext: ".webp", max: MAX_IMAGE, mediaType: "image" },
-  "image/gif": { ext: ".gif", max: MAX_IMAGE, mediaType: "image" },
-  "image/jfif": { ext: ".jfif", max: MAX_IMAGE, mediaType: "image" },
-  "image/pjpeg": { ext: ".jpg", max: MAX_IMAGE, mediaType: "image" },
-  "video/mp4": { ext: ".mp4", max: MAX_VIDEO, mediaType: "video" },
-  "video/webm": { ext: ".webm", max: MAX_VIDEO, mediaType: "video" },
+  "image/jpeg": { ext: ".jpg", max: 0, mediaType: "image" },
+  "image/png": { ext: ".png", max: 0, mediaType: "image" },
+  "image/webp": { ext: ".webp", max: 0, mediaType: "image" },
+  "image/gif": { ext: ".gif", max: 0, mediaType: "image" },
+  "image/jfif": { ext: ".jfif", max: 0, mediaType: "image" },
+  "image/pjpeg": { ext: ".jpg", max: 0, mediaType: "image" },
+  "video/mp4": { ext: ".mp4", max: 0, mediaType: "video" },
+  "video/webm": { ext: ".webm", max: 0, mediaType: "video" },
   "application/pdf": { ext: ".pdf", max: MAX_PDF, mediaType: "pdf" },
 };
 
@@ -28,6 +27,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    const limits = await getInvitationMediaLimits();
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const role = (formData.get("role") as string) || "hero";
@@ -41,8 +41,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unsupported file type. Use JPG, PNG, WebP, MP4, WebM, or PDF." }, { status: 400 });
     }
 
-    if (file.size > config.max) {
-      return NextResponse.json({ error: `File too large. Max ${Math.round(config.max / 1024 / 1024)}MB.` }, { status: 400 });
+    const maxBytes =
+      config.mediaType === "video"
+        ? limits.maxVideoBytes
+        : config.mediaType === "image"
+          ? limits.maxImageBytes
+          : MAX_PDF;
+
+    if (config.mediaType === "video" && role === "background" && !limits.allowVideoBackground) {
+      return NextResponse.json({ error: "Video backgrounds are disabled for invitations." }, { status: 403 });
+    }
+
+    if (file.size > maxBytes) {
+      return NextResponse.json({ error: `File too large. Max ${Math.round(maxBytes / 1024 / 1024)}MB.` }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();

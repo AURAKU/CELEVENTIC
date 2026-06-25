@@ -4,6 +4,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import {
   QR_DEFAULT_SIZE,
+  type QrDisplayMode,
   type QrExportSize,
 } from "@/lib/qr/qr-constants";
 
@@ -18,6 +19,18 @@ const FRAME_PAD_RATIO = 0.12;
 
 const BRAND_DARK = "#0B8A83";
 const BRAND_LIGHT = "#FFFFFF";
+
+/** Pass mode — pure black/white, wider quiet zone, smaller logo for screen scanning */
+const PASS_DARK = "#000000";
+const PASS_LIGHT = "#FFFFFF";
+const PASS_MARGIN = 8;
+const PASS_LOGO_RATIO = 0.14;
+
+function colorsForMode(mode: QrDisplayMode) {
+  return mode === "pass"
+    ? { dark: PASS_DARK, light: PASS_LIGHT, margin: PASS_MARGIN, logoRatio: PASS_LOGO_RATIO }
+    : { dark: BRAND_DARK, light: BRAND_LIGHT, margin: QR_MARGIN, logoRatio: LOGO_RATIO };
+}
 
 async function readLocalImage(relativeOrAbsolute: string): Promise<Buffer | null> {
   try {
@@ -83,9 +96,14 @@ export async function loadCenterImageBuffer(imageUrl?: string | null): Promise<B
   return celeventicFallbackLogo();
 }
 
-async function buildLogoOverlay(size: QrExportSize, centerImageUrl?: string | null) {
+async function buildLogoOverlay(
+  size: QrExportSize,
+  centerImageUrl?: string | null,
+  mode: QrDisplayMode = "brand"
+) {
+  const { logoRatio } = colorsForMode(mode);
   const logoSource = await loadCenterImageBuffer(centerImageUrl);
-  const logoSize = Math.round(size * LOGO_RATIO);
+  const logoSize = Math.round(size * logoRatio);
   const frameSize = Math.round(logoSize * (1 + FRAME_PAD_RATIO * 2));
   const innerLogo = Math.round(logoSize * 0.88);
   const radius = Math.round(frameSize * 0.18);
@@ -133,17 +151,19 @@ async function buildLogoOverlay(size: QrExportSize, centerImageUrl?: string | nu
 export async function generateBrandedQrPng(
   targetUrl: string,
   centerImageUrl?: string | null,
-  size: QrExportSize = QR_DEFAULT_SIZE
+  size: QrExportSize = QR_DEFAULT_SIZE,
+  mode: QrDisplayMode = "brand"
 ): Promise<Buffer> {
+  const { dark, light, margin } = colorsForMode(mode);
   const qrBuffer = await QRCode.toBuffer(targetUrl, {
     type: "png",
     width: size,
-    margin: QR_MARGIN,
+    margin,
     errorCorrectionLevel: ERROR_LEVEL,
-    color: { dark: BRAND_DARK, light: BRAND_LIGHT },
+    color: { dark, light },
   });
 
-  const { logoOnFrame, offset } = await buildLogoOverlay(size, centerImageUrl);
+  const { logoOnFrame, offset } = await buildLogoOverlay(size, centerImageUrl, mode);
 
   return sharp(qrBuffer)
     .composite([{ input: logoOnFrame, top: offset, left: offset }])
@@ -155,18 +175,20 @@ export async function generateBrandedQrPng(
 export async function generateBrandedQrSvg(
   targetUrl: string,
   centerImageUrl?: string | null,
-  size: QrExportSize = QR_DEFAULT_SIZE
+  size: QrExportSize = QR_DEFAULT_SIZE,
+  mode: QrDisplayMode = "brand"
 ): Promise<string> {
+  const { dark, light, margin, logoRatio } = colorsForMode(mode);
   const qrSvg = await QRCode.toString(targetUrl, {
     type: "svg",
     width: size,
-    margin: QR_MARGIN,
+    margin,
     errorCorrectionLevel: ERROR_LEVEL,
-    color: { dark: BRAND_DARK, light: BRAND_LIGHT },
+    color: { dark, light },
   });
 
   const logoSource = await loadCenterImageBuffer(centerImageUrl);
-  const logoSize = Math.round(size * LOGO_RATIO);
+  const logoSize = Math.round(size * logoRatio);
   const frameSize = Math.round(logoSize * (1 + FRAME_PAD_RATIO * 2));
   const innerLogo = Math.round(logoSize * 0.88);
   const radius = Math.round(frameSize * 0.18);
@@ -188,9 +210,10 @@ export async function generateBrandedQrSvg(
 export async function generateBrandedQrDataUrl(
   targetUrl: string,
   centerImageUrl?: string | null,
-  size: QrExportSize = QR_DEFAULT_SIZE
+  size: QrExportSize = QR_DEFAULT_SIZE,
+  mode: QrDisplayMode = "brand"
 ): Promise<string> {
-  const png = await generateBrandedQrPng(targetUrl, centerImageUrl, size);
+  const png = await generateBrandedQrPng(targetUrl, centerImageUrl, size, mode);
   return `data:image/png;base64,${png.toString("base64")}`;
 }
 

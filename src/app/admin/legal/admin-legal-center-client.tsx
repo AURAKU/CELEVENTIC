@@ -52,7 +52,7 @@ export function AdminLegalCenterClient() {
     const frData = await frRes.json();
     setContentEn(enData?.success ? enData.data.content : "");
     setContentFr(frData?.success ? frData.data.content : "");
-    if (enData?.success?.data?.version) setVersion(enData.data.version);
+    if (enData?.success && enData.data?.version) setVersion(enData.data.version);
   }
 
   async function loadMeta() {

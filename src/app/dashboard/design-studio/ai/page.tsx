@@ -47,8 +47,8 @@ export default function AiGeneratorPage() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild><Link href="/dashboard/design-studio"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Wand2 className="h-6 w-6 text-purple-600" /> AI Template Generator</h1>
-          <p className="text-slate-500 text-sm">Describe your design — AI builds layout JSON, colors, fonts & elements</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Wand2 className="h-6 w-6 text-purple-600" /> Celeventic Template Intelligence</h1>
+          <p className="text-slate-500 text-sm">Describe your design — Celeventic Intelligence builds layout JSON, colors, fonts & elements</p>
         </div>
       </div>
 

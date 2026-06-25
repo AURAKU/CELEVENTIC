@@ -10,8 +10,12 @@ import { CustomMediaTemplate } from "./templates/custom-media";
 import { PassportLuxeTemplate } from "./templates/passport-luxe";
 import { GlassAcrylicTemplate } from "./templates/glass-acrylic";
 import { FloralGardenTemplate } from "./templates/floral-garden";
+import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
 
 export function InvitationRenderer(props: InvitationRenderProps) {
+  if (isCinematicLayout(props.design.layout)) {
+    return <CinematicTemplate {...props} />;
+  }
   switch (props.design.layout) {
     case "passport-luxe":
       return <PassportLuxeTemplate {...props} />;

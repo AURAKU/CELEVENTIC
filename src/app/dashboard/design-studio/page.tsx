@@ -9,7 +9,7 @@ import { useEventContext } from "@/hooks/use-event-context";
 
 const paths = [
   { id: "template", title: "Use Template", desc: "Pick from curated wedding, funeral, corporate & ticket designs", icon: Layout, href: "/dashboard/design-studio/templates", color: "bg-brand-50 text-brand-700" },
-  { id: "ai", title: "Generate with AI", desc: "Describe your vision — AI builds layout, colors, fonts & wording", icon: Wand2, href: "/dashboard/design-studio/ai", color: "bg-purple-50 text-purple-700" },
+  { id: "ai", title: "Celeventic Template Intelligence", desc: "Describe your vision — Celeventic builds layout, colors, fonts & wording", icon: Wand2, href: "/dashboard/design-studio/ai", color: "bg-purple-50 text-purple-700" },
   { id: "inspiration", title: "Upload Inspiration", desc: "Upload image, PDF or video — build inspired, similar or upgraded designs", icon: Upload, href: "/dashboard/inspiration", color: "bg-amber-50 text-amber-700" },
   { id: "blank", title: "Start Blank", desc: "Open the drag-and-drop builder with an empty canvas", icon: Palette, href: "/dashboard/design-studio/builder/new", color: "bg-slate-100 text-slate-700" },
 ];

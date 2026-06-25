@@ -1,0 +1,149 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
+import type { SlideshowSettings, SlideshowStyleId } from "@/lib/invitation/slideshow-styles";
+import { DEFAULT_SLIDESHOW_SETTINGS } from "@/lib/invitation/slideshow-styles";
+
+export interface GalleryItem {
+  id?: string;
+  url: string;
+  caption?: string | null;
+  type?: "image" | "video";
+}
+
+interface InvitationGalleryDisplayProps {
+  items: GalleryItem[];
+  settings?: Partial<SlideshowSettings>;
+  className?: string;
+}
+
+export function InvitationGalleryDisplay({ items, settings, className }: InvitationGalleryDisplayProps) {
+  const cfg = { ...DEFAULT_SLIDESHOW_SETTINGS, ...settings };
+  const [index, setIndex] = useState(0);
+
+  const slides = useMemo(() => items.filter((i) => i.url), [items]);
+  const current = slides[index];
+
+  useEffect(() => {
+    if (!cfg.autoplay || slides.length <= 1) return;
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % slides.length);
+    }, cfg.slideDurationSec * 1000);
+    return () => clearInterval(id);
+  }, [cfg.autoplay, cfg.slideDurationSec, slides.length]);
+
+  if (!slides.length) return null;
+
+  if (cfg.style === "magazine-collage" || cfg.style === "timeline-gallery") {
+    return (
+      <div className={cn("grid grid-cols-2 sm:grid-cols-3 gap-2", className)}>
+        {slides.map((item, i) => (
+          <div
+            key={item.id ?? i}
+            className={cn(
+              "overflow-hidden rounded-xl bg-slate-100 inv-gallery-item",
+              cfg.style === "magazine-collage" && i % 5 === 0 && "col-span-2 row-span-2 aspect-[4/3]",
+              cfg.style !== "magazine-collage" && "aspect-square"
+            )}
+            style={{ animationDelay: `${i * 80}ms` }}
+          >
+            <GalleryMedia item={item} className="w-full h-full object-cover" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (cfg.style === "polaroid-stack") {
+    return (
+      <div className={cn("relative h-72 sm:h-80", className)}>
+        {slides.slice(0, 4).map((item, i) => (
+          <div
+            key={item.id ?? i}
+            className="absolute left-1/2 top-1/2 w-44 sm:w-52 bg-white p-2 pb-8 shadow-xl rounded-sm"
+            style={{
+              transform: `translate(-50%, -50%) rotate(${(i - 1.5) * 7}deg) translateY(${i * -4}px)`,
+              zIndex: i,
+            }}
+          >
+            <GalleryMedia item={item} className="w-full aspect-[4/5] object-cover" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (cfg.style === "swipe-story") {
+    return (
+      <div className={cn("flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1", className)}>
+        {slides.map((item, i) => (
+          <div key={item.id ?? i} className="snap-center shrink-0 w-[72%] sm:w-[45%] aspect-[9/16] rounded-2xl overflow-hidden shadow-lg">
+            <GalleryMedia item={item} className="w-full h-full object-cover" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("relative", className)}>
+      <div
+        className={cn(
+          "relative aspect-[4/5] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-slate-900 shadow-inner",
+          cfg.style === "luxury-frame" && "border-4 border-amber-500/70 p-1 bg-gradient-to-br from-amber-900/40 to-black/40"
+        )}
+      >
+        {slides.map((item, i) => (
+          <div
+            key={item.id ?? i}
+            className={cn(
+              "absolute inset-0 transition-opacity duration-700",
+              i === index ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
+          >
+            <GalleryMedia item={item} className="w-full h-full object-cover" />
+            {cfg.showCaptions && item.caption && (
+              <p className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent text-white text-sm p-4">
+                {item.caption}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+      {slides.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-3">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`Slide ${i + 1}`}
+              className={cn("h-2 rounded-full transition-all", i === index ? "w-6 bg-brand-600" : "w-2 bg-slate-300")}
+              onClick={() => setIndex(i)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GalleryMedia({ item, className }: { item: GalleryItem; className?: string }) {
+  const isVideo = item.type === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(item.url);
+  if (isVideo) {
+    return <video src={item.url} className={className} muted loop playsInline autoPlay />;
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={item.url} alt={item.caption ?? "Gallery"} className={className} loading="lazy" />;
+}
+
+export function slideshowStyleFromVariant(variant?: string): SlideshowStyleId {
+  const map: Record<string, SlideshowStyleId> = {
+    carousel: "fade-carousel",
+    grid: "magazine-collage",
+    polaroid: "polaroid-stack",
+    story: "swipe-story",
+    luxury: "luxury-frame",
+  };
+  return map[variant ?? ""] ?? "fade-carousel";
+}

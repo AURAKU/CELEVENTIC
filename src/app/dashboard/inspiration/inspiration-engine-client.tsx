@@ -263,38 +263,17 @@ export function InspirationEngineClient() {
         </Card>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Link2 className="h-4 w-4" /> {t("inspiration.paste_url")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={analyzeUrl} className="space-y-3">
-              <Input
-                placeholder="https://instagram.com/reel/…"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                type="url"
-                required
-              />
-              <p className="text-xs text-slate-500">{t("inspiration.url_hint")}</p>
-              <Button type="submit" className="w-full bg-[#0B8A83]" disabled={busy || !consent}>
-                {busy ? AGI_COPY.analyzing : t("inspiration.analyze_btn")}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Upload className="h-4 w-4" /> {t("inspiration.upload_title")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ImageUploadCropper
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Upload className="h-4 w-4" /> {t("inspiration.upload_title")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Upload photos, videos, or audio from your device. The Celeventic Experience Engine analyzes your media — no URL paste required.
+          </p>
+          <ImageUploadCropper
               buttonLabel={t("inspiration.upload_image")}
               hint={t("inspiration.upload_image_hint")}
               defaultAspect="3:4"
@@ -365,7 +344,6 @@ export function InspirationEngineClient() {
             )}
           </CardContent>
         </Card>
-      </div>
 
       {activeStatus === "READY" && activeSourceId && (
         <Card className="border-[#D4A63A]/40 bg-[#D4A63A]/5">

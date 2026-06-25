@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
-import { QrCameraScanner, scanQrFromFile, playScanFeedback } from "@/components/qr/qr-camera-scanner";
+import { QrCameraScanner, QrFileReaderHost, scanQrFromFile, playScanFeedback } from "@/components/qr/qr-camera-scanner";
 import { PaginationBar } from "@/components/ui/pagination";
 import { useEventContext } from "@/hooks/use-event-context";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -94,6 +94,7 @@ export function QrAdmissionClient() {
   const [isOnline, setIsOnline] = useState(true);
   const [loadingScans, setLoadingScans] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [screenScanMode, setScreenScanMode] = useState(true);
 
   const isAdmin = session?.user?.role && isAdminRole(session.user.role as UserRole);
 
@@ -349,6 +350,7 @@ export function QrAdmissionClient() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-6">
+        <QrFileReaderHost />
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
@@ -407,6 +409,8 @@ export function QrAdmissionClient() {
 
           <QrCameraScanner
             active={cameraOpen && !!eventId}
+            screenScanMode={screenScanMode}
+            onScreenScanModeChange={setScreenScanMode}
             onScan={(text) => void performCheckIn(text)}
             onError={(msg) => {
               setCameraError(msg);

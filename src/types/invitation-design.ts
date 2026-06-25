@@ -7,7 +7,17 @@ export type InvitationLayoutSlug =
   | "custom-media"
   | "passport-luxe"
   | "glass-acrylic"
-  | "floral-garden";
+  | "floral-garden"
+  | "royal-emerald-wedding"
+  | "midnight-velvet-reception"
+  | "kente-heritage-union"
+  | "floral-garden-romance"
+  | "passport-destination-wedding"
+  | "crystal-acrylic-luxury"
+  | "golden-islamic-nikkah"
+  | "memorial-candle-tribute"
+  | "neon-celebration-party"
+  | "corporate-prestige-summit";
 
 export type MediaType = "image" | "video" | "pdf";
 

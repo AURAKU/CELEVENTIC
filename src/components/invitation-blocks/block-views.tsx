@@ -8,6 +8,7 @@ import { BlockShell } from "@/components/invitation-blocks/block-shell";
 import type { InvitationBlockDto, BlockRenderContext } from "@/lib/invitation-blocks/block-types";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
+import { InvitationGalleryDisplay, slideshowStyleFromVariant } from "@/components/invitation/invitation-gallery-display";
 
 function BlockHeader({ block, locale }: { block: InvitationBlockDto; locale: string }) {
   const localized = block.contents?.find((c) => c.language === locale);
@@ -131,21 +132,19 @@ export function BlockView({ block, ctx }: BlockViewProps) {
         ? block.galleryItems
         : (cj.items ?? []).map((i, idx) => ({ id: String(idx), url: i.value ?? i.label, caption: null, sortOrder: idx }));
       if (!items.length) return null;
+      const styleVariant = block.styleVariant ?? "carousel";
       return (
         <BlockShell variant={block.styleVariant}>
           <BlockHeader block={block} locale={locale} />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {items.map((item, i) => (
-              <div
-                key={item.id ?? i}
-                className="aspect-square rounded-xl overflow-hidden bg-slate-100 inv-gallery-item"
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.url} alt={item.caption ?? "Gallery"} className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
+          <InvitationGalleryDisplay
+            items={items.map((item) => ({
+              id: item.id,
+              url: item.url,
+              caption: item.caption,
+              type: /\.(mp4|webm|mov)(\?|$)/i.test(item.url) ? "video" as const : "image" as const,
+            }))}
+            settings={{ style: slideshowStyleFromVariant(styleVariant) }}
+          />
         </BlockShell>
       );
     }

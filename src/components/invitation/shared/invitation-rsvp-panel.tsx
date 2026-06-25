@@ -5,6 +5,8 @@ import { Check, X, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "@/components/i18n/locale-provider";
+import type { ButtonStyle } from "@/lib/invitation-studio/studio-types";
+import { styledInvitationButton } from "@/lib/invitation/invitation-button-styles";
 
 interface InvitationRsvpPanelProps {
   invitationId: string;
@@ -13,6 +15,7 @@ interface InvitationRsvpPanelProps {
   accentColor?: string;
   textColor?: string;
   variant?: "light" | "dark";
+  buttonStyle?: ButtonStyle | string;
   label?: string;
 }
 
@@ -22,6 +25,7 @@ export function InvitationRsvpPanel({
   guestName: initialGuestName,
   accentColor = "#0D9488",
   variant = "light",
+  buttonStyle,
   label,
 }: InvitationRsvpPanelProps) {
   const { t } = useLocale();
@@ -55,7 +59,11 @@ export function InvitationRsvpPanel({
     setLoading(false);
   }
 
-  const btnClass = variant === "dark" ? "border-white/30 text-white hover:bg-white/10" : "";
+  const btnClass = buttonStyle
+    ? styledInvitationButton(buttonStyle, variant, "px-4")
+    : variant === "dark"
+      ? "border-white/30 text-white hover:bg-white/10"
+      : "";
 
   if (rsvpStatus) {
     return (

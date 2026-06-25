@@ -18,6 +18,7 @@ export class MusicLibraryService {
         category: true,
         url: true,
         durationSec: true,
+        isPremium: true,
       },
     });
   }
@@ -43,6 +44,7 @@ export class MusicLibraryService {
     url: string;
     durationSec?: number;
     createdById?: string;
+    isPremium?: boolean;
   }) {
     const maxSort = await prisma.invitationMusicTrack.aggregate({ _max: { sortOrder: true } });
     return prisma.invitationMusicTrack.create({
@@ -53,6 +55,7 @@ export class MusicLibraryService {
         url: data.url,
         durationSec: data.durationSec,
         createdById: data.createdById,
+        isPremium: data.isPremium ?? false,
         sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
       },
     });
@@ -65,6 +68,7 @@ export class MusicLibraryService {
       artist: string | null;
       category: string;
       isActive: boolean;
+      isPremium: boolean;
       sortOrder: number;
       durationSec: number;
     }>

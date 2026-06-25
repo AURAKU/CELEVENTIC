@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -8,6 +8,14 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { Button } from "@/components/ui/button";
 
 export default function CreateStartPage() {
+  return (
+    <Suspense fallback={<PageLoader label="Setting up your invitation..." className="min-h-screen" />}>
+      <CreateStartPageInner />
+    </Suspense>
+  );
+}
+
+function CreateStartPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();

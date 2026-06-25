@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, Eye, EyeOff } from "lucide-react";
 import { TemplateMediaUpload } from "@/components/admin/template-media-upload";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
+import { AdminInvitationExperienceControls } from "./admin-invitation-experience-controls";
 
 interface TemplateRow {
   id: string;
@@ -208,6 +209,8 @@ export function AdminCatalogTemplatesClient() {
           </Card>
         ))}
       </div>
+
+      <AdminInvitationExperienceControls />
     </div>
   );
 }

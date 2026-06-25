@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Check, Smartphone, Monitor } from "lucide-react";
+import { Check } from "lucide-react";
+import { TemplateDetailLivePreview } from "@/components/invitation-mvp/template-detail-live-preview";
 import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
 import { PackageCard } from "@/components/invitation-mvp/package-card";
@@ -33,11 +34,7 @@ export default async function TemplateDetailPage({
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid lg:grid-cols-2 gap-10 mb-16">
             <div>
-              <div className={`rounded-2xl h-80 sm:h-96 bg-gradient-to-br ${template.previewGradient} border border-slate-200/80`} />
-              <div className="mt-4 flex gap-4 justify-center text-sm text-slate-500">
-                <span className="flex items-center gap-1"><Monitor className="h-4 w-4" /> Desktop</span>
-                <span className="flex items-center gap-1"><Smartphone className="h-4 w-4" /> Mobile</span>
-              </div>
+              <TemplateDetailLivePreview template={template} />
             </div>
             <div>
               <Badge className="mb-3">{template.category}</Badge>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ZoomIn, Check, Move, RotateCcw, FlipHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,7 @@ export function ImageCropDialog({
   onClose,
   onConfirm,
 }: ImageCropDialogProps) {
+  const [mounted, setMounted] = useState(false);
   const [aspect, setAspect] = useState<CropAspectPreset>(defaultAspect);
   const [workingSrc, setWorkingSrc] = useState(imageSrc);
   const [zoom, setZoom] = useState(1);
@@ -51,6 +53,19 @@ export function ImageCropDialog({
   const aspects = allowedAspects
     ? CROP_ASPECT_OPTIONS.filter((a) => allowedAspects.includes(a.id))
     : CROP_ASPECT_OPTIONS;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -143,24 +158,40 @@ export function ImageCropDialog({
     onClose();
   }
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <div>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[250] flex items-end sm:items-center justify-center bg-black/70 p-3 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Crop image"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
+      <div
+        className="flex w-full max-w-md max-h-[min(92dvh,720px)] flex-col rounded-2xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
+          <div className="min-w-0 pr-2">
             <p className="font-semibold text-slate-900">Crop & frame</p>
             <p className="text-xs text-slate-500 flex items-center gap-1">
-              <Move className="h-3 w-3" /> Drag to reposition · choose frame · rotate or flip
+              <Move className="h-3 w-3 shrink-0" /> Drag to reposition · choose frame · rotate or flip
             </p>
           </div>
-          <button type="button" onClick={handleClose} className="p-2 rounded-lg hover:bg-slate-100" aria-label="Close">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="shrink-0 rounded-lg p-2 hover:bg-slate-100 touch-manipulation"
+            aria-label="Close"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4">
           <div className="flex flex-wrap gap-1.5">
             {aspects.map((a) => (
               <button
@@ -181,7 +212,7 @@ export function ImageCropDialog({
 
           <div
             className="relative mx-auto bg-slate-900 rounded-xl overflow-hidden select-none touch-none"
-            style={{ width: CONTAINER_W, height: CONTAINER_H }}
+            style={{ width: CONTAINER_W, height: CONTAINER_H, maxWidth: "100%" }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -219,7 +250,7 @@ export function ImageCropDialog({
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 flex-1 sm:flex-none"
               disabled={transforming}
               onClick={() => void applyTransform((s) => rotateImage90(s, "ccw"))}
             >
@@ -230,7 +261,7 @@ export function ImageCropDialog({
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 flex-1 sm:flex-none"
               disabled={transforming}
               onClick={() => void applyTransform(flipImageHorizontal)}
             >
@@ -253,23 +284,24 @@ export function ImageCropDialog({
               className="w-full accent-brand-600"
             />
           </div>
+        </div>
 
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              className="flex-1 gap-2"
-              disabled={applying || transforming || !natural.w}
-              onClick={() => void handleApply()}
-            >
-              <Check className="h-4 w-4" />
-              {applying ? "Saving…" : "Use this crop"}
-            </Button>
-          </div>
+        <div className="shrink-0 border-t bg-white px-4 py-3 flex gap-2 safe-area-pb">
+          <Button type="button" variant="outline" className="flex-1 min-h-[44px]" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            className="flex-1 gap-2 min-h-[44px]"
+            disabled={applying || transforming || !natural.w}
+            onClick={() => void handleApply()}
+          >
+            <Check className="h-4 w-4" />
+            {applying ? "Saving…" : "Use this crop"}
+          </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

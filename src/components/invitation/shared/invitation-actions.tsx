@@ -2,6 +2,8 @@
 
 import { MapPin, Calendar, Phone, Share2, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { ButtonStyle } from "@/lib/invitation-studio/studio-types";
+import { styledInvitationButton } from "@/lib/invitation/invitation-button-styles";
 
 interface InvitationActionsProps {
   event: {
@@ -12,10 +14,15 @@ interface InvitationActionsProps {
   };
   pdfUrl?: string;
   variant?: "light" | "dark";
+  buttonStyle?: ButtonStyle | string;
 }
 
-export function InvitationActions({ event, pdfUrl, variant = "light" }: InvitationActionsProps) {
-  const btnClass = variant === "dark" ? "border-white/30 text-white hover:bg-white/10" : "";
+export function InvitationActions({ event, pdfUrl, variant = "light", buttonStyle }: InvitationActionsProps) {
+  const btnClass = buttonStyle
+    ? styledInvitationButton(buttonStyle, variant, "text-xs")
+    : variant === "dark"
+      ? "border-white/30 text-white hover:bg-white/10"
+      : "";
 
   function addToCalendar() {
     const start = event.startDate.replace(/[^0-9TZ:-]/g, "");

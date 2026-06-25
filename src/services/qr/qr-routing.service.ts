@@ -1,8 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { invitationAnalyticsService } from "@/services/invitation-os/invitation-analytics.service";
-import { ADMISSION_QR_TYPES, INVITE_QR_TYPES, QR_TYPES, type QrIntentType } from "@/lib/qr/qr-types";
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+import {
+  ADMISSION_QR_TYPES,
+  INVITE_QR_TYPES,
+  MEMORIAL_QR_TYPES,
+  QR_TYPES,
+  type QrIntentType,
+} from "@/lib/qr/qr-types";
+import { getAppUrlFromEnv } from "@/lib/app-url";
+import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
 
 export interface QrResolveResult {
   action: "redirect" | "invalid" | "expired";
@@ -16,16 +22,29 @@ export interface QrResolveResult {
 
 export class QrRoutingService {
   qrScanUrl(token: string) {
-    return `${APP_URL}/qr/${token}`;
+    return `${getAppUrlFromEnv()}/qr/${token}`;
   }
 
   inviteUrl(uniqueLink: string, guestToken?: string) {
-    const base = `${APP_URL}/invite/${uniqueLink}`;
+    const base = `${getAppUrlFromEnv()}/invite/${uniqueLink}`;
     return guestToken ? `${base}?guest=${guestToken}` : base;
   }
 
   admissionUrl(token: string) {
-    return `${APP_URL}/admission/${token}`;
+    return `${getAppUrlFromEnv()}/admission/${token}`;
+  }
+
+  memorialUrl(slug: string, hash?: string) {
+    const base = `${getAppUrlFromEnv()}/memorial/${slug}`;
+    return hash ? `${base}${hash}` : base;
+  }
+
+  memoryUploadUrl(token: string) {
+    return `${getAppUrlFromEnv()}/memory-upload/${token}`;
+  }
+
+  memoryGalleryUrl(token: string) {
+    return `${getAppUrlFromEnv()}/memory/${token}`;
   }
 
   async resolveScan(token: string): Promise<QrResolveResult> {
@@ -74,6 +93,37 @@ export class QrRoutingService {
           eventId: qrCode.eventId,
           qrType: type,
         };
+      }
+
+      if (MEMORIAL_QR_TYPES.includes(type)) {
+        const slug = qrCode.event?.slug;
+        if (!slug) return { action: "invalid", reason: "Memorial page not found." };
+
+        const hashMap: Partial<Record<QrIntentType, string>> = {
+          [QR_TYPES.MEMORIAL_TRIBUTE]: "#tributes",
+          [QR_TYPES.MEMORIAL_CONTRIBUTION]: "#contributions",
+          [QR_TYPES.MEMORIAL_LIVESTREAM]: "#livestream",
+          [QR_TYPES.MEMORIAL_MEMORY]: "#memories",
+          [QR_TYPES.MEMORIAL_SEATING]: "#seating",
+        };
+
+        await this.logScan(token, qrCode, "memorial");
+        return {
+          action: "redirect",
+          url: this.memorialUrl(slug, hashMap[type]),
+          eventId: qrCode.eventId,
+          qrType: type,
+        };
+      }
+    }
+
+    const memoryToken = await eventMemoryTokenService.resolveToken(token);
+    if (memoryToken) {
+      if (memoryToken.type === "UPLOAD") {
+        return { action: "redirect", url: this.memoryUploadUrl(token), eventId: memoryToken.eventId };
+      }
+      if (memoryToken.type === "VIEW") {
+        return { action: "redirect", url: this.memoryGalleryUrl(token), eventId: memoryToken.eventId };
       }
     }
 

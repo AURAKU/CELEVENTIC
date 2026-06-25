@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Image, Plus, ExternalLink } from "lucide-react";
+import { Image, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
@@ -117,10 +117,8 @@ export default function FlyerStudioPage() {
                       <Badge variant="outline">{d.type}</Badge>
                       <Badge variant={d.status === "PUBLISHED" ? "success" : "warning"}>{d.status}</Badge>
                     </div>
-                    <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
-                      <Link href="/dashboard/design-studio/generated">
-                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Open in Design Studio
-                      </Link>
+                    <Button variant="outline" size="sm" className="mt-3 w-full" disabled>
+                      Saved in Flyer Studio
                     </Button>
                   </div>
                 ))}

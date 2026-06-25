@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { verifyEventAccess } from "@/lib/event-access";
 import { thankYouService } from "@/services/thank-you/thank-you.service";
+import { getServerAppUrl } from "@/lib/app-url";
 import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
 
 export async function POST(
@@ -16,7 +17,7 @@ export async function POST(
   try {
     await verifyEventAccess(eventId, session.user.id, session.user.role);
     const page = await thankYouService.ensureShareToken(eventId);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://celeventic.com";
+    const baseUrl = await getServerAppUrl();
     const uploadToken = await eventMemoryTokenService.getOrCreateUploadToken(eventId);
 
     return NextResponse.json({

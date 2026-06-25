@@ -24,14 +24,22 @@ export function AdminContactClient() {
     });
   }, []);
 
+  const [message, setMessage] = useState("");
+
   async function save() {
     setSaving(true);
-    await fetch("/api/admin/contact-settings", {
+    setMessage("");
+    const res = await fetch("/api/admin/contact-settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, email, hours }),
     });
     setSaving(false);
+    if (res.ok) {
+      setMessage("Contact settings saved. Public site and contact page will reflect these details.");
+    } else {
+      setMessage("Save failed. Please try again.");
+    }
   }
 
   return (
@@ -53,6 +61,7 @@ export function AdminContactClient() {
             <Input className="mt-1" value={hours} onChange={(e) => setHours(e.target.value)} />
           </div>
           <Button onClick={save} disabled={saving}>{saving ? "Saving..." : "Save Contact Settings"}</Button>
+          {message && <p className="text-sm text-brand-700">{message}</p>}
         </CardContent>
       </Card>
     </div>

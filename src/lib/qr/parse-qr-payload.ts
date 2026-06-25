@@ -3,12 +3,16 @@
  * Never parses or returns PII — token only.
  */
 
+import { DEFAULT_PRODUCTION_URL, getAppUrlFromEnv } from "@/lib/app-url";
+
 const TOKEN_PATTERN = /^[a-zA-Z0-9_-]{16,64}$/;
 
 const URL_PATTERNS = [
   /\/verify\/([a-zA-Z0-9_-]+)/i,
   /\/admission\/([a-zA-Z0-9_-]+)/i,
   /\/qr\/([a-zA-Z0-9_-]+)/i,
+  /\/memory-upload\/([a-zA-Z0-9_-]+)/i,
+  /\/memory\/([a-zA-Z0-9_-]+)/i,
 ];
 
 /** Strip query params and trailing slashes from raw scan text */
@@ -27,7 +31,7 @@ export function parseQrToken(raw: string): string | null {
   if (TOKEN_PATTERN.test(text)) return text;
 
   try {
-    const url = text.startsWith("http") ? new URL(text) : new URL(text, "https://celeventic.com");
+    const url = text.startsWith("http") ? new URL(text) : new URL(text, DEFAULT_PRODUCTION_URL);
     for (const pattern of URL_PATTERNS) {
       const match = url.pathname.match(pattern);
       if (match?.[1] && TOKEN_PATTERN.test(match[1])) return match[1];
@@ -44,6 +48,6 @@ export function parseQrToken(raw: string): string | null {
 }
 
 export function buildVerifyUrl(token: string): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://celeventic.com";
-  return `${appUrl.replace(/\/$/, "")}/verify/${token}`;
+  const appUrl = getAppUrlFromEnv();
+  return `${appUrl}/verify/${token}`;
 }

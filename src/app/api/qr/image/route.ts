@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { buildVerifyUrl, parseQrToken } from "@/lib/qr/parse-qr-payload";
 import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
-import { QR_EXPORT_SIZES, QR_DEFAULT_SIZE, type QrExportSize } from "@/lib/qr/qr-constants";
+import { QR_EXPORT_SIZES, QR_DEFAULT_SIZE, type QrDisplayMode, type QrExportSize } from "@/lib/qr/qr-constants";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -22,13 +22,14 @@ export async function GET(req: Request) {
   const download = searchParams.get("download") === "1";
   const format = searchParams.get("format") ?? "png";
   const size = parseSize(searchParams.get("size"));
+  const mode = (searchParams.get("mode") === "pass" ? "pass" : "brand") as QrDisplayMode;
 
   try {
     let filename = "celeventic-qr.png";
 
     if (token) {
       const parsed = parseQrToken(token) ?? token;
-      const result = await qrBrandingService.generateForToken(parsed, size, format === "svg" ? "svg" : "png");
+      const result = await qrBrandingService.generateForToken(parsed, size, format === "svg" ? "svg" : "png", mode);
 
       if (format === "svg") {
         filename = `celeventic-pass-${parsed.slice(0, 8)}.svg`;
@@ -58,13 +59,13 @@ export async function GET(req: Request) {
 
       if (format === "svg") {
         const { generateBrandedQrSvg } = await import("@/lib/qr/branded-qr-generator");
-        const svg = await generateBrandedQrSvg(url, center, size);
+        const svg = await generateBrandedQrSvg(url, center, size, mode);
         return new NextResponse(svg, {
           headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=300" },
         });
       }
 
-      const png = await generateBrandedQrPng(url, center, size);
+      const png = await generateBrandedQrPng(url, center, size, mode);
       return new NextResponse(new Uint8Array(png), {
         headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=300" },
       });

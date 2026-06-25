@@ -4,7 +4,7 @@ import {
   generateBrandedQrPng,
   generateBrandedQrSvg,
 } from "@/lib/qr/branded-qr-generator";
-import { CELEVENTIC_OFFICIAL_LOGO, type QrExportSize, QR_DEFAULT_SIZE } from "@/lib/qr/qr-constants";
+import { CELEVENTIC_OFFICIAL_LOGO, type QrDisplayMode, type QrExportSize, QR_DEFAULT_SIZE } from "@/lib/qr/qr-constants";
 import { getCachedQrPng, setCachedQrPng } from "@/lib/qr/qr-cache";
 import { buildVerifyUrl } from "@/lib/qr/parse-qr-payload";
 
@@ -65,7 +65,8 @@ export class QrBrandingService {
   async generateForToken(
     token: string,
     size: QrExportSize = QR_DEFAULT_SIZE,
-    format: "png" | "svg" = "png"
+    format: "png" | "svg" = "png",
+    mode: QrDisplayMode = "brand"
   ): Promise<{ dataUrl: string; png: Buffer; svg: string; url: string; centerImage: string }> {
     const qr = await prisma.qrCode.findUnique({
       where: { token },
@@ -74,10 +75,10 @@ export class QrBrandingService {
     const targetUrl = buildVerifyUrl(token);
     const centerImage = qr ? await this.resolveCenterImageUrl(qr.eventId) : await this.getAdminDefaultLogoUrl();
 
-    if (format === "png") {
+    if (format === "png" && mode === "brand") {
       const cached = await getCachedQrPng(token, size, centerImage);
       if (cached) {
-        const svg = await generateBrandedQrSvg(targetUrl, centerImage, size);
+        const svg = await generateBrandedQrSvg(targetUrl, centerImage, size, mode);
         return {
           dataUrl: `data:image/png;base64,${cached.toString("base64")}`,
           png: cached,
@@ -89,19 +90,26 @@ export class QrBrandingService {
     }
 
     const [dataUrl, png, svg] = await Promise.all([
-      generateBrandedQrDataUrl(targetUrl, centerImage, size),
-      generateBrandedQrPng(targetUrl, centerImage, size),
-      generateBrandedQrSvg(targetUrl, centerImage, size),
+      generateBrandedQrDataUrl(targetUrl, centerImage, size, mode),
+      generateBrandedQrPng(targetUrl, centerImage, size, mode),
+      generateBrandedQrSvg(targetUrl, centerImage, size, mode),
     ]);
 
-    await setCachedQrPng(token, size, centerImage, png);
+    if (mode === "brand") {
+      await setCachedQrPng(token, size, centerImage, png);
+    }
 
     return { dataUrl, png, svg, url: targetUrl, centerImage };
   }
 
-  async generateForEvent(eventId: string, token: string, size: QrExportSize = QR_DEFAULT_SIZE): Promise<string> {
+  async generateForEvent(
+    eventId: string,
+    token: string,
+    size: QrExportSize = QR_DEFAULT_SIZE,
+    mode: QrDisplayMode = "brand"
+  ): Promise<string> {
     const centerImage = await this.resolveCenterImageUrl(eventId);
-    return generateBrandedQrDataUrl(buildVerifyUrl(token), centerImage, size);
+    return generateBrandedQrDataUrl(buildVerifyUrl(token), centerImage, size, mode);
   }
 
   validateUpload(file: File): string | null {

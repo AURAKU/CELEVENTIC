@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "AI planner failed" }, { status: 500 });
+    return NextResponse.json({ error: "Event intelligence failed" }, { status: 500 });
   }
 }
 

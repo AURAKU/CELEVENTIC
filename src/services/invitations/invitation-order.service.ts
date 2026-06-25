@@ -13,6 +13,7 @@ import { productionNotificationService } from "@/services/invitations/production
 import type { InvitationLanguageMode } from "@prisma/client";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
 import type { Prisma } from "@prisma/client";
+import { getAppUrlFromEnv } from "@/lib/app-url";
 import { Prisma as PrismaClient } from "@prisma/client";
 import { paginatedResult } from "@/lib/pagination";
 import type { MusicSelection } from "@/lib/music/music-types";
@@ -273,7 +274,7 @@ export class InvitationOrderService {
         : `Celebration of ${hostName}`);
 
     const eventSlug = `${slugify(title) || "event"}-${generateToken(6)}`;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const appUrl = getAppUrlFromEnv();
 
     const event = await prisma.event.create({
       data: {

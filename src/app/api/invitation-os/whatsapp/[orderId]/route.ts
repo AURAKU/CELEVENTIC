@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { invitationSharingService } from "@/services/invitation-os/invitation-sharing.service";
+import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
 
 export async function GET(
   _req: Request,
@@ -18,8 +19,9 @@ export async function GET(
   });
   if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const appUrl = getAppUrlFromEnv();
   const sharePath = order.shareUrl
-    ? order.shareUrl.replace(process.env.NEXT_PUBLIC_APP_URL ?? "", "")
+    ? sanitizePublicUrl(order.shareUrl, appUrl).replace(appUrl, "")
     : `/invitations/create/${orderId}/preview`;
 
   const pack = invitationSharingService.buildWhatsAppPack({

@@ -26,7 +26,7 @@ export class OpenAiPlannerProvider implements AiPlannerProvider {
             {
               role: "system",
               content:
-                "You are Celeventic AI Event Planner. Return valid JSON matching the AIPlannerResponse schema for event planning in Ghana/Africa and globally.",
+                "You are Celeventic Event Intelligence. Return valid JSON matching the AIPlannerResponse schema for global event planning.",
             },
             {
               role: "user",

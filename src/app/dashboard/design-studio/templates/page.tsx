@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +28,14 @@ interface DesignTemplate {
 }
 
 export default function TemplateLibraryPage() {
+  return (
+    <Suspense fallback={<p className="text-slate-500 py-12 text-center">Loading templates…</p>}>
+      <TemplateLibraryPageInner />
+    </Suspense>
+  );
+}
+
+function TemplateLibraryPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const eventId = searchParams.get("eventId");

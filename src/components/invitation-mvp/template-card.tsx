@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
 import type { CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 
 interface TemplateCardProps {
@@ -11,12 +12,17 @@ interface TemplateCardProps {
 export function TemplateCard({ template, showActions = true }: TemplateCardProps) {
   return (
     <div className="group rounded-2xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-[0_16px_48px_rgba(11,138,131,0.12)] transition-all">
-      <div className={`h-44 bg-gradient-to-br ${template.previewGradient} relative`}>
+      <LiveTemplatePreview
+        layoutSlug={template.layoutSlug}
+        category={template.category}
+        features={template.features}
+        variant="card"
+        lazy
+      />
+      <div className="p-5 relative">
         {template.isPremium && (
-          <Badge className="absolute top-3 right-3 bg-[#D4A63A] text-[#0F172A]">Premium</Badge>
+          <Badge className="absolute -top-3 right-4 bg-[#D4A63A] text-[#0F172A]">Premium</Badge>
         )}
-      </div>
-      <div className="p-5">
         <p className="text-xs font-semibold uppercase tracking-wider text-[#0B8A83]">{template.category}</p>
         <p className="font-semibold text-[#0F172A] mt-1">{template.name}</p>
         <p className="text-sm text-slate-500 mt-1 line-clamp-2">{template.description}</p>

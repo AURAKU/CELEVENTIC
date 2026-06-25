@@ -1,13 +1,21 @@
 "use client";
 
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Copy, ExternalLink } from "lucide-react";
-import { useState } from "react";
 import { MvpShell } from "@/components/invitation-mvp/mvp-shell";
 import { Button } from "@/components/ui/button";
 
 export default function SuccessPage() {
+  return (
+    <Suspense fallback={<MvpShell title="Invitation Published!" subtitle="Loading…"><p className="text-center text-slate-500">Loading…</p></MvpShell>}>
+      <SuccessPageInner />
+    </Suspense>
+  );
+}
+
+function SuccessPageInner() {
   const searchParams = useSearchParams();
   const shareUrl = searchParams.get("url") ?? "";
   const [copied, setCopied] = useState(false);

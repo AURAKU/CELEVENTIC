@@ -26,6 +26,7 @@ import {
 import type { InvitationDesignConfig, InvitationMediaAsset } from "@/types/invitation-design";
 import type { UploadAnalysisResult } from "@/services/invitations/invitation-inspiration.service";
 import { InspirationInsights } from "@/components/invitation/inspiration-insights";
+import { getClientAppUrl } from "@/lib/app-url";
 
 interface InvitationResult {
   id: string;
@@ -201,7 +202,7 @@ function InvitationStudioContent() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const appUrl = getClientAppUrl();
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

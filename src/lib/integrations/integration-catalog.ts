@@ -24,7 +24,7 @@ export interface IntegrationCatalogEntry {
 export const INTEGRATION_CATEGORIES: { id: IntegrationCategory; label: string }[] = [
   { id: "payments", label: "Payments" },
   { id: "communications", label: "Communications" },
-  { id: "ai", label: "AI" },
+  { id: "ai", label: "Intelligence" },
   { id: "maps", label: "Maps" },
   { id: "storage", label: "Storage" },
   { id: "auth", label: "Authentication" },
@@ -97,7 +97,7 @@ export const INTEGRATION_CATALOG: IntegrationCatalogEntry[] = [
     provider: "OPENAI",
     label: "OpenAI",
     category: "ai",
-    description: "AI event planner and invitation copy generation.",
+    description: "Celeventic Event Intelligence and invitation copy generation.",
     envKeys: ["OPENAI_API_KEY"],
     secretFieldLabel: "API Key",
     docsUrl: "https://platform.openai.com/docs",

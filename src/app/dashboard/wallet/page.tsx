@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,16 @@ interface WalletData {
 }
 
 export default function WalletPage() {
+  return (
+    <Suspense fallback={<p className="text-slate-500 py-12 text-center">Loading wallet…</p>}>
+      <WalletPageInner />
+    </Suspense>
+  );
+}
+
+function WalletPageInner() {
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view") ?? "overview";
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
   const [data, setData] = useState<WalletData | null>(null);
   const [expense, setExpense] = useState({ category: "", amount: "", description: "" });
@@ -74,6 +85,21 @@ export default function WalletPage() {
     setTxPage(1);
   }, [eventId]);
 
+  useEffect(() => {
+    if (!data?.wallet || view === "overview") return;
+    const targetId =
+      view === "revenue"
+        ? "wallet-revenue"
+        : view === "transactions" || view === "payouts"
+          ? "wallet-transactions"
+          : null;
+    if (targetId) {
+      requestAnimationFrame(() => {
+        document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [view, data?.wallet]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -102,7 +128,7 @@ export default function WalletPage() {
 
       {data?.wallet && (
         <>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div id="wallet-revenue" className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 scroll-mt-24">
             <Card><CardContent className="p-6 text-center"><Wallet className="h-6 w-6 text-brand-600 mx-auto mb-2" /><p className="text-2xl font-bold">{formatCurrency(data.wallet.balance)}</p><p className="text-xs text-slate-500">Balance</p></CardContent></Card>
             <Card><CardContent className="p-6 text-center"><TrendingUp className="h-6 w-6 text-green-600 mx-auto mb-2" /><p className="text-2xl font-bold">{formatCurrency(data.wallet.revenue)}</p><p className="text-xs text-slate-500">Revenue</p></CardContent></Card>
             <Card><CardContent className="p-6 text-center"><TrendingDown className="h-6 w-6 text-red-500 mx-auto mb-2" /><p className="text-2xl font-bold">{formatCurrency(data.wallet.expenses)}</p><p className="text-xs text-slate-500">Expenses</p></CardContent></Card>
@@ -122,7 +148,7 @@ export default function WalletPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card id="wallet-transactions" className="scroll-mt-24">
               <CardHeader><CardTitle className="text-base">Recent Transactions</CardTitle></CardHeader>
               <CardContent className="space-y-2">
                 {data.wallet.transactions.length === 0 ? (

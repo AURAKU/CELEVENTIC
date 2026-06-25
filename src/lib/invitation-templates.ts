@@ -1,4 +1,5 @@
 import type { InvitationDesignConfig, InvitationLayoutSlug, MediaType } from "@/types/invitation-design";
+import { CINEMATIC_THEMES, CINEMATIC_LAYOUT_SLUGS } from "@/lib/invitation/cinematic-themes";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -152,6 +153,17 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       studio: { revealMode: "scratch", buttonStyle: "pill", fullScreen: true },
     },
   },
+  ...CINEMATIC_LAYOUT_SLUGS.map((slug) => {
+    const t = CINEMATIC_THEMES[slug];
+    return {
+      slug,
+      name: t.name,
+      description: t.tagline,
+      category: t.category.toLowerCase(),
+      preview: { gradient: t.previewGradient, accent: t.config.colors.secondary },
+      config: t.config,
+    } satisfies InvitationTemplatePreset;
+  }),
 ];
 
 export function getTemplatePreset(slug: string): InvitationTemplatePreset | undefined {
@@ -160,7 +172,17 @@ export function getTemplatePreset(slug: string): InvitationTemplatePreset | unde
 
 export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignConfig {
   const preset = templateSlug ? getTemplatePreset(templateSlug) : INVITATION_TEMPLATE_PRESETS[0];
-  return preset?.config ?? INVITATION_TEMPLATE_PRESETS[0].config;
+  const base = preset?.config ?? INVITATION_TEMPLATE_PRESETS[0].config;
+  return {
+    ...base,
+    experience: {
+      introEnabled: true,
+      introDurationSec: 2,
+      hubMode: "scroll",
+      ...base.experience,
+    },
+    studio: { fullScreen: true, ...base.studio },
+  };
 }
 
 export function mergeDesignConfig(

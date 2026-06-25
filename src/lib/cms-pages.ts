@@ -5,6 +5,7 @@ import { translationService } from "@/services/i18n/translation.service";
 import { complianceService } from "@/services/legal/compliance.service";
 import { LEGAL_POLICY_SLUGS, type LegalPolicySlug } from "@/lib/legal/constants";
 import { DEFAULT_LEGAL_DOCUMENTS } from "@/lib/legal/default-legal-content";
+import { formatContactPageContent, getPublicContactSettings } from "@/lib/contact/public-contact";
 
 export type CmsPageSlug = LegalPolicySlug | "about" | "faq" | "contact";
 
@@ -80,7 +81,12 @@ async function loadPageContent(slug: CmsPageSlug, locale: AppLocale): Promise<st
   const legacyVal = legacy?.value as { content?: string } | null;
   if (legacyVal?.content?.trim()) return legacyVal.content;
 
-  if (slug === "about" || slug === "faq" || slug === "contact") {
+  if (slug === "contact") {
+    const contact = await getPublicContactSettings();
+    return formatContactPageContent(contact, locale);
+  }
+
+  if (slug === "about" || slug === "faq") {
     return locale === "fr" ? INFO_PAGE_DEFAULTS[slug].contentFr : INFO_PAGE_DEFAULTS[slug].contentEn;
   }
 

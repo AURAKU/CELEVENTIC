@@ -80,7 +80,7 @@ export class AiTemplateGeneratorService {
       const colors = parsed.theme.colors;
 
       const schema: TemplateSchema = {
-        name: `AI: ${parsed.style} ${parsed.category}`,
+        name: `Celeventic: ${parsed.style} ${parsed.category}`,
         category: parsed.category,
         style: parsed.style,
         productType: parsed.productType,
