@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import { Trash2, QrCode } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { QrCode } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 
 interface EventQrBrandingProps {
@@ -56,7 +55,7 @@ export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
 
         {url && (
           <div className="relative h-20 w-20 rounded-xl border bg-white overflow-hidden">
-            <Image src={url} alt="QR center logo" fill className="object-contain p-1" unoptimized />
+            <UploadedMedia src={url} alt="QR center logo" fill className="object-contain p-1" />
           </div>
         )}
 

@@ -10,6 +10,8 @@ import { formatDate, formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BrandMotto } from "@/components/brand/brand-motto";
+import { BRAND_MOTTO } from "@/lib/constants";
+import { resolveMediaUrl, isUploadedMediaUrl } from "@/lib/uploads/media-url";
 
 export async function generateMetadata({
   params,
@@ -116,7 +118,13 @@ export default async function EventMiniSitePage({ params }: { params: Promise<{ 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {site.media.map((item) => (
                 <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
-                  <Image src={item.url} alt={item.caption ?? site.title} fill className="object-cover" />
+                  <Image
+                    src={resolveMediaUrl(item.url)}
+                    alt={item.caption ?? site.title}
+                    fill
+                    className="object-cover"
+                    unoptimized={isUploadedMediaUrl(item.url)}
+                  />
                 </div>
               ))}
             </div>
@@ -165,7 +173,7 @@ export default async function EventMiniSitePage({ params }: { params: Promise<{ 
         )}
 
         <p className="text-center text-xs text-slate-400 pb-8">
-          Powered by <Link href="/" className="text-brand-600 hover:underline">Celeventic</Link> — Celebrate • Event • Ticket
+          Powered by <Link href="/" className="text-brand-600 hover:underline">Celeventic</Link> — {BRAND_MOTTO}
         </p>
       </main>
     </div>

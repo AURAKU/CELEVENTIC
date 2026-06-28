@@ -9,6 +9,7 @@ import {
   INTRO_SKIP_AVAILABLE_MS,
   type IntroDurationSec,
 } from "@/lib/experience/celeventic-palette";
+import { BRAND_MOTTO } from "@/lib/constants";
 
 interface ThemeTransitionColors {
   accent?: string;
@@ -34,7 +35,7 @@ export function CeleventicIntroExperience({
   const [exiting, setExiting] = useState(false);
 
   const accent = themeColors?.accent ?? CELEVENTIC_PALETTE.teal;
-  const bgTarget = themeColors?.background ?? CELEVENTIC_PALETTE.ivory;
+  const bgTarget = themeColors?.background ?? CELEVENTIC_PALETTE.navy;
 
   useEffect(() => {
     if (reduceMotion) {
@@ -45,7 +46,7 @@ export function CeleventicIntroExperience({
     const skipTimer = setTimeout(() => setCanSkip(true), INTRO_SKIP_AVAILABLE_MS);
     const completeTimer = setTimeout(() => {
       setExiting(true);
-      setTimeout(onComplete, 480);
+      setTimeout(onComplete, 600);
     }, durationSec * 1000);
 
     return () => {
@@ -57,87 +58,119 @@ export function CeleventicIntroExperience({
   function handleSkip() {
     if (!canSkip) return;
     setExiting(true);
-    setTimeout(onComplete, 320);
+    setTimeout(onComplete, 400);
   }
 
   if (reduceMotion) return null;
 
   return (
     <motion.div
-      className="fixed inset-0 z-[190] flex items-center justify-center overflow-hidden celeventic-intro-root"
+      className="fixed inset-0 z-[190] flex items-center justify-center overflow-hidden celeventic-intro-root celeventic-intro-future"
       style={{
         background: exiting
-          ? `linear-gradient(165deg, ${bgTarget} 0%, ${bgTarget} 100%)`
-          : `radial-gradient(circle at 30% 20%, ${accent}33 0%, transparent 50%),
-          radial-gradient(circle at 70% 80%, ${CELEVENTIC_PALETTE.coral}22 0%, transparent 45%),
-          linear-gradient(165deg, ${CELEVENTIC_PALETTE.navy} 0%, #0a3d38 40%, ${accent} 100%)`,
+          ? bgTarget
+          : `linear-gradient(165deg, ${CELEVENTIC_PALETTE.navy} 0%, #061a18 35%, ${accent}22 100%)`,
       }}
       initial={{ opacity: 1 }}
       animate={{ opacity: exiting ? 0 : 1 }}
-      transition={{ duration: 0.55, ease: "easeInOut" }}
+      transition={{ duration: 0.65, ease: "easeInOut" }}
     >
+      {/* Futuristic grid */}
+      <div className="absolute inset-0 celeventic-intro-grid opacity-30 pointer-events-none" />
+      <div className="absolute inset-0 celeventic-intro-scanlines pointer-events-none" />
+
+      {/* Logo blended into background — built-in watermark */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
+        initial={{ opacity: 0, scale: 1.15 }}
+        animate={{
+          opacity: exiting ? 0 : [0.12, 0.22, 0.18],
+          scale: exiting ? 1.25 : [1.15, 1.08, 1.1],
+        }}
+        transition={{ duration: exiting ? 0.5 : durationSec, ease: "easeOut" }}
+      >
+        <Image
+          src={logoUrl}
+          alt=""
+          width={900}
+          height={600}
+          className="max-w-[140vw] max-h-[90vh] w-auto h-auto object-contain mix-blend-soft-light opacity-40 blur-[0.5px] celeventic-intro-watermark"
+          priority
+        />
+      </motion.div>
+
+      {/* Ambient particles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 36 }).map((_, i) => (
+        {Array.from({ length: 48 }).map((_, i) => (
           <span
             key={i}
             className="celeventic-intro-spark absolute"
             style={{
               left: `${(i * 13.7) % 100}%`,
               top: `${(i * 19.3) % 100}%`,
-              animationDelay: `${i * 0.12}s`,
-              background:
-                i % 4 === 0
-                  ? CELEVENTIC_PALETTE.gold
-                  : i % 4 === 1
-                    ? CELEVENTIC_PALETTE.coral
-                    : i % 4 === 2
-                      ? accent
-                      : CELEVENTIC_PALETTE.ivory,
+              animationDelay: `${i * 0.08}s`,
+              background: i % 3 === 0 ? CELEVENTIC_PALETTE.gold : i % 3 === 1 ? accent : CELEVENTIC_PALETTE.coral,
             }}
           />
         ))}
       </div>
 
+      {/* Foreground UI flow */}
       <motion.div
-        className="absolute w-[min(90vw,420px)] h-[min(90vw,420px)] rounded-full blur-3xl opacity-30"
-        style={{ background: `radial-gradient(circle, ${CELEVENTIC_PALETTE.gold} 0%, transparent 70%)` }}
-        initial={{ scale: 0.6, opacity: 0 }}
-        animate={{ scale: exiting ? 1.4 : [0.85, 1.05, 1], opacity: exiting ? 0 : [0.2, 0.35, 0.28] }}
-        transition={{ duration: exiting ? 0.4 : 2.8, ease: "easeOut" }}
-      />
-
-      <motion.div
-        className="relative z-10 flex flex-col items-center px-6"
-        initial={{ opacity: 0, y: 28, scale: 0.72 }}
-        animate={{
-          opacity: exiting ? 0 : 1,
-          y: exiting ? -24 : [28, -6, 0],
-          scale: exiting ? 0.92 : [0.72, 1.08, 1],
-        }}
-        transition={{
-          duration: exiting ? 0.35 : 1.1,
-          ease: [0.22, 1, 0.36, 1],
-          times: exiting ? undefined : [0, 0.65, 1],
-        }}
+        className="relative z-10 flex flex-col items-center px-6 text-center max-w-md"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: exiting ? 0 : 1, y: exiting ? -16 : 0 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
       >
-        <div className="relative celeventic-logo-glow">
-          <Image
-            src={logoUrl}
-            alt="Celeventic"
-            width={240}
-            height={280}
-            className="w-auto h-auto max-w-[min(72vw,240px)] drop-shadow-2xl"
-            priority
-          />
+        <div className="celeventic-intro-hud mb-8 px-6 py-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
+          <p className="text-[10px] uppercase tracking-[0.45em] text-white/50 font-medium mb-1">
+            Celeventic Experience Engine
+          </p>
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-white/30 to-transparent my-2" />
+          <p className="text-xs uppercase tracking-[0.35em] text-white/70 font-semibold">{BRAND_MOTTO}</p>
         </div>
+
+        <motion.div
+          className="relative w-16 h-16 mb-6"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+        >
+          <div
+            className="absolute inset-0 rounded-full border border-dashed opacity-40"
+            style={{ borderColor: accent }}
+          />
+          <div
+            className="absolute inset-2 rounded-full border opacity-60"
+            style={{ borderColor: CELEVENTIC_PALETTE.gold }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-2 w-2 rounded-full animate-pulse" style={{ background: accent }} />
+          </div>
+        </motion.div>
+
         <motion.p
-          className="mt-6 text-[10px] uppercase tracking-[0.35em] text-white/50 font-medium"
+          className="text-sm text-white/60 tracking-wide"
           initial={{ opacity: 0 }}
           animate={{ opacity: exiting ? 0 : 1 }}
-          transition={{ delay: 0.7, duration: 0.6 }}
+          transition={{ delay: 0.9, duration: 0.6 }}
         >
-          Celebrate • Event • Ticket
+          Preparing your cinematic invitation…
         </motion.p>
+
+        <motion.div
+          className="mt-8 h-1 w-48 rounded-full overflow-hidden bg-white/10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <motion.div
+            className="h-full rounded-full"
+            style={{ background: `linear-gradient(90deg, ${accent}, ${CELEVENTIC_PALETTE.gold})` }}
+            initial={{ width: "0%" }}
+            animate={{ width: exiting ? "100%" : "85%" }}
+            transition={{ duration: durationSec * 0.9, ease: "easeInOut" }}
+          />
+        </motion.div>
       </motion.div>
 
       {canSkip && !exiting && (

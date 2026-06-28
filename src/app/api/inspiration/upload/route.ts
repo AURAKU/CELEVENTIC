@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { inspirationEngineService } from "@/services/inspiration/inspiration-engine.service";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 
 const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_VIDEO = 50 * 1024 * 1024;
@@ -46,11 +45,7 @@ export async function POST(req: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${config.ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "inspiration", session.user.id);
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, safeName), buffer);
-
-    const url = `/uploads/inspiration/${session.user.id}/${safeName}`;
+    const { url } = await storeUploadFile("inspiration", session.user.id, safeName, buffer);
 
     let clientColors: { hex: string; weight: number }[] | undefined;
     const colorsRaw = formData.get("colors");

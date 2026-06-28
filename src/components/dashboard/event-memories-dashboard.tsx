@@ -13,6 +13,7 @@ import { PaginationBar } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Check, X, Star, Trash2, QrCode, Download } from "lucide-react";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 
 interface MemoryItem {
   id: string;
@@ -184,12 +185,15 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
               {items.map((item) => (
                 <Card key={item.id} className="overflow-hidden">
                   <div className="aspect-video bg-slate-100 relative">
-                    {item.mediaType === "video" ? (
-                      <video src={item.thumbnailUrl ?? item.mediaUrl} className="w-full h-full object-cover" muted />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.thumbnailUrl ?? item.mediaUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
-                    )}
+                    <UploadedMedia
+                      src={item.thumbnailUrl ?? item.mediaUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      video={item.mediaType === "video"}
+                      controls={false}
+                      autoPlay={false}
+                      muted
+                    />
                     {tab === "PENDING" && (
                       <input
                         type="checkbox"

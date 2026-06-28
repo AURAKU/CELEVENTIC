@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
@@ -314,12 +315,16 @@ function GalleryPanel({ eventId }: { eventId: string }) {
           <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {photos.map((m) => (
               <div key={m.id} className="rounded-lg border overflow-hidden aspect-square bg-slate-100">
-                {m.url && (m.type === "video" ? (
-                  <video src={m.url} className="w-full h-full object-cover" controls />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={m.url} alt={m.content ?? "Memory"} loading="lazy" className="w-full h-full object-cover" />
-                ))}
+                {m.url && (
+                  <UploadedMedia
+                    src={m.url}
+                    alt={m.content ?? "Memory"}
+                    className="w-full h-full object-cover"
+                    video={m.type === "video"}
+                    controls={m.type === "video"}
+                    autoPlay={false}
+                  />
+                )}
               </div>
             ))}
           </CardContent>

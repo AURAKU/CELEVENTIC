@@ -8,6 +8,7 @@ import { VerifiedBadge, FeaturedBadge } from "@/components/vendor-os/verified-ba
 import { RequestQuoteModal } from "@/components/vendor-os/request-quote-modal";
 import { formatCurrency } from "@/lib/utils";
 import { AgiFooter } from "@/components/agi-engine/agi-badge";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 
 interface VendorProfile {
   id: string;
@@ -139,12 +140,14 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {vendor.media.map((m) => (
                 <div key={m.id} className="aspect-square rounded-xl overflow-hidden bg-slate-100">
-                  {m.type === "video" ? (
-                    <video src={m.url} className="w-full h-full object-cover" controls preload="none" />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.url} alt={m.caption ?? ""} className="w-full h-full object-cover" loading="lazy" />
-                  )}
+                  <UploadedMedia
+                    src={m.url}
+                    alt={m.caption ?? ""}
+                    className="w-full h-full object-cover"
+                    video={m.type === "video"}
+                    controls={m.type === "video"}
+                    autoPlay={false}
+                  />
                 </div>
               ))}
             </div>

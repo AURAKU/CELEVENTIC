@@ -9,14 +9,17 @@ const createSchema = z.object({
   name: z.string().min(2),
   type: z.enum(["FLYER", "POSTER", "BANNER", "SOCIAL_MEDIA", "INVITATION_ANIMATED", "INVITATION_VIDEO"]),
   config: z.record(z.unknown()).optional(),
+  templateId: z.string().optional(),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const eventId = new URL(req.url).searchParams.get("eventId") ?? undefined;
+
   const [designs, templates] = await Promise.all([
-    flyerService.getUserDesigns(session.user.id),
+    flyerService.getUserDesigns(session.user.id, eventId),
     Promise.resolve(flyerService.getTemplates()),
   ]);
 
@@ -30,8 +33,24 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const data = createSchema.parse(body);
-    const design = await flyerService.create({ ...data, userId: session.user.id, type: data.type });
-    return NextResponse.json({ success: true, data: design }, { status: 201 });
+
+    if (data.templateId) {
+      const result = await flyerService.createFromTemplate({
+        userId: session.user.id,
+        templateId: data.templateId,
+        eventId: data.eventId,
+        name: data.name,
+      });
+      return NextResponse.json({ success: true, data: result }, { status: 201 });
+    }
+
+    const result = await flyerService.createBlank({
+      userId: session.user.id,
+      eventId: data.eventId,
+      name: data.name,
+      type: data.type,
+    });
+    return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });

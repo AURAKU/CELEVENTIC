@@ -60,7 +60,7 @@ export class InspirationEngineService {
 
   async checkDomainPolicy(url: string): Promise<{ allowed: boolean; reason?: string }> {
     await this.ensureDefaultPolicies();
-    if (url.startsWith("/uploads/")) return { allowed: true };
+    if (url.startsWith("/uploads/") || url.startsWith("/api/uploads/")) return { allowed: true };
 
     const domain = extractDomain(url);
     if (!domain) return { allowed: false, reason: "Invalid URL" };

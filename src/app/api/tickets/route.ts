@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       if (error instanceof z.ZodError) {
         return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
       }
-      return NextResponse.json({ error: "Purchase failed" }, { status: 500 });
+      return NextResponse.json({ error: error instanceof Error ? error.message : "Purchase failed" }, { status: 500 });
     }
   }
 
@@ -76,6 +76,7 @@ export async function POST(req: Request) {
     const ticket = await ticketService.createTicket({
       ...data,
       type: data.type as never,
+      description: data.description,
     });
     return NextResponse.json({ success: true, data: ticket }, { status: 201 });
   } catch (error) {

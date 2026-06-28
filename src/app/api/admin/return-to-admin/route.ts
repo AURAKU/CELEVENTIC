@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { createAuditLog } from "@/lib/audit";
-import { isAdminRole } from "@/lib/auth";
+import { canSwitchAdminView } from "@/lib/admin-permissions";
+import type { UserRole } from "@prisma/client";
 
 export async function POST(req: Request) {
   const token = await getToken({ req: req as never, secret: process.env.NEXTAUTH_SECRET });
 
-  if (!token?.id || !isAdminRole(token.role as never)) {
+  if (!token?.id || !canSwitchAdminView(token.role as UserRole)) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 

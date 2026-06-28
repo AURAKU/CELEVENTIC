@@ -8,6 +8,7 @@ import {
   uploadFormDataWithProgress,
   CLIENT_MAX_VIDEO_BYTES,
 } from "@/lib/media/upload-with-progress";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 
 interface MediaUploadVideoProps {
   label?: string;
@@ -86,7 +87,7 @@ export function MediaUploadVideo({
       {previewUrl ? (
         <div className="space-y-2">
           <div className="rounded-xl border bg-white p-3">
-            <video src={previewUrl} className="w-full max-h-40 rounded-lg object-cover" controls />
+            <UploadedMedia src={previewUrl} alt="" video controls className="w-full max-h-40 rounded-lg object-cover" autoPlay={false} />
             <div className="flex items-center justify-between mt-2">
               <p className="text-sm font-medium text-slate-800">Video ready</p>
               {onClear && (

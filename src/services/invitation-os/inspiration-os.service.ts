@@ -9,7 +9,7 @@ const MAX_URL_LENGTH = 2048;
 export class InspirationOsService {
   validateUploadUrl(url: string): { valid: boolean; error?: string } {
     if (!url || url.length > MAX_URL_LENGTH) return { valid: false, error: "Invalid URL" };
-    if (url.startsWith("/uploads/")) return { valid: true };
+    if (url.startsWith("/uploads/") || url.startsWith("/api/uploads/")) return { valid: true };
     try {
       const parsed = new URL(url);
       if (!["http:", "https:"].includes(parsed.protocol)) return { valid: false, error: "HTTPS required" };

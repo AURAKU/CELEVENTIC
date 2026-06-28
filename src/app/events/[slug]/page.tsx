@@ -41,7 +41,7 @@ export default function PublicEventPage() {
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [error, setError] = useState("");
   const [selectedTicket, setSelectedTicket] = useState("");
-  const [buyer, setBuyer] = useState({ name: "", email: "", phone: "", quantity: "1" });
+  const [buyer, setBuyer] = useState({ name: "", email: "", phone: "", quantity: "1", promoCode: "" });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -71,6 +71,7 @@ export default function PublicEventPage() {
         buyerEmail: buyer.email,
         buyerPhone: buyer.phone || undefined,
         quantity: parseInt(buyer.quantity),
+        promoCode: buyer.promoCode.trim() || undefined,
       }),
     });
     const purchaseData = await purchaseRes.json();
@@ -129,7 +130,12 @@ export default function PublicEventPage() {
     );
   }
 
-  const paidTickets = event.tickets.filter((t) => t.price > 0);
+  const saleTickets = event.tickets.filter((t) => {
+    const remaining = t.maxQuantity == null || t.soldCount < t.maxQuantity;
+    return remaining;
+  });
+  const selected = saleTickets.find((t) => t.id === selectedTicket);
+  const lineTotal = selected ? selected.price * (parseInt(buyer.quantity, 10) || 1) : 0;
 
   return (
     <>
@@ -170,7 +176,7 @@ export default function PublicEventPage() {
             </Link>
           )}
 
-          {paidTickets.length > 0 && (
+          {saleTickets.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Ticket className="h-5 w-5 text-[#0B8A83]" /> Get Tickets</CardTitle>
@@ -184,9 +190,9 @@ export default function PublicEventPage() {
                       value={selectedTicket}
                       onChange={(e) => setSelectedTicket(e.target.value)}
                     >
-                      {paidTickets.map((t) => (
+                      {saleTickets.map((t) => (
                         <option key={t.id} value={t.id}>
-                          {t.name} — {formatCurrency(t.price)} ({t.soldCount}{t.maxQuantity ? `/${t.maxQuantity}` : ""} sold)
+                          {t.name} — {t.price > 0 ? formatCurrency(t.price) : "Free"} ({t.soldCount}{t.maxQuantity ? `/${t.maxQuantity}` : ""} sold)
                         </option>
                       ))}
                     </select>
@@ -197,20 +203,33 @@ export default function PublicEventPage() {
                     <div className="space-y-1"><Label>Phone</Label><Input value={buyer.phone} onChange={(e) => setBuyer({ ...buyer, phone: e.target.value })} /></div>
                     <div className="space-y-1"><Label>Quantity</Label><Input type="number" min="1" value={buyer.quantity} onChange={(e) => setBuyer({ ...buyer, quantity: e.target.value })} /></div>
                   </div>
+                  <div className="space-y-1">
+                    <Label>Promo code (optional)</Label>
+                    <Input
+                      value={buyer.promoCode}
+                      onChange={(e) => setBuyer({ ...buyer, promoCode: e.target.value.toUpperCase() })}
+                      placeholder="SAVE10"
+                    />
+                  </div>
+                  {selected && (
+                    <p className="text-sm text-slate-600">
+                      Subtotal: <strong>{lineTotal > 0 ? formatCurrency(lineTotal) : "Free"}</strong>
+                      {buyer.promoCode && lineTotal > 0 && " · promo applied at checkout"}
+                    </p>
+                  )}
                   {error && <p className="text-sm text-red-600">{error}</p>}
                   <Button type="submit" className="w-full bg-[#0B8A83] hover:bg-[#0B8A83]/90" disabled={loading}>
-                    {loading ? "Processing..." : "Buy Tickets"}
+                    {loading ? "Processing..." : lineTotal > 0 ? "Buy Tickets" : "Get Free Tickets"}
                   </Button>
                 </form>
               </CardContent>
             </Card>
           )}
 
-          {event.tickets.some((t) => t.price === 0) && (
+          {saleTickets.length === 0 && event.tickets.length > 0 && (
             <Card>
-              <CardContent className="p-4 text-sm text-slate-600">
-                Free admission available.{" "}
-                <Link href={`/invite/${event.slug}`} className="text-[#0B8A83] font-medium">RSVP here</Link>
+              <CardContent className="p-4 text-sm text-slate-600 text-center">
+                All tickets are currently sold out.
               </CardContent>
             </Card>
           )}

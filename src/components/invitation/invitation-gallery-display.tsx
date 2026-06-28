@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 import type { SlideshowSettings, SlideshowStyleId } from "@/lib/invitation/slideshow-styles";
 import { DEFAULT_SLIDESHOW_SETTINGS } from "@/lib/invitation/slideshow-styles";
 
@@ -130,11 +131,14 @@ export function InvitationGalleryDisplay({ items, settings, className }: Invitat
 
 function GalleryMedia({ item, className }: { item: GalleryItem; className?: string }) {
   const isVideo = item.type === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(item.url);
-  if (isVideo) {
-    return <video src={item.url} className={className} muted loop playsInline autoPlay />;
-  }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={item.url} alt={item.caption ?? "Gallery"} className={className} loading="lazy" />;
+  return (
+    <UploadedMedia
+      src={item.url}
+      alt={item.caption ?? "Gallery"}
+      className={className}
+      video={isVideo}
+    />
+  );
 }
 
 export function slideshowStyleFromVariant(variant?: string): SlideshowStyleId {

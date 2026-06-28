@@ -7,6 +7,7 @@ import { extractImagePalette } from "@/lib/extract-image-palette";
 import type { InvitationMediaAsset, MediaType } from "@/types/invitation-design";
 import type { UploadAnalysisResult } from "@/services/invitations/invitation-inspiration.service";
 import { ImageCropDialog } from "@/components/media/image-crop-dialog";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 import { readImageDimensions, CROP_PRESETS } from "@/lib/image/crop-utils";
 
 type MediaRole = InvitationMediaAsset["role"];
@@ -208,8 +209,9 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
           {assets.map((a, i) => (
             <div key={i} className="flex items-center gap-3 p-2 rounded-lg border bg-mesh text-sm">
               {a.type === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={a.url} alt="" className="h-10 w-10 rounded object-cover" />
+                <UploadedMedia src={a.url} alt="" className="h-10 w-10 rounded object-cover" width={40} height={40} />
+              ) : a.type === "video" ? (
+                <UploadedMedia src={a.url} alt="" className="h-10 w-10 rounded object-cover" video width={40} height={40} />
               ) : (
                 <div className="h-10 w-10 rounded bg-brand-100 flex items-center justify-center text-brand-700">
                   {iconFor(a.type)}

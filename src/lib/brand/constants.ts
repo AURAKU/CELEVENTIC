@@ -7,4 +7,4 @@ export const BRAND_APPLE_ICON = "/brand/apple-icon.png";
 /** Source aspect ratio (1536×1024 official artwork) */
 export const BRAND_LOGO_ASPECT = 1.5;
 
-export const BRAND_LOGO_ALT = "Celeventic Celebrate Event Ticket";
+export const BRAND_LOGO_ALT = "Celeventic Celebrations Events Tickets";

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 import type { InvitationMediaAsset } from "@/types/invitation-design";
 
 interface HeroMediaProps {
@@ -33,12 +33,9 @@ export function HeroMedia({ coverImageUrl, media, animation, className = "", ove
   if (heroType === "video") {
     return (
       <div className={`relative overflow-hidden ${className}`}>
-        <video
+        <UploadedMedia
           src={heroUrl}
-          autoPlay
-          muted
-          loop
-          playsInline
+          video
           className={`absolute inset-0 h-full w-full object-cover ${animClass}`}
         />
         {overlay && <div className="absolute inset-0 bg-black/20" />}
@@ -48,13 +45,12 @@ export function HeroMedia({ coverImageUrl, media, animation, className = "", ove
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      <Image
+      <UploadedMedia
         src={heroUrl}
         alt="Invitation"
         fill
-        className={`object-cover ${animClass}`}
+        className={animClass}
         sizes="(max-width: 768px) 100vw, 480px"
-        unoptimized={heroUrl.startsWith("/uploads/")}
       />
       {overlay && <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />}
     </div>

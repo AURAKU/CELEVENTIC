@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 import {
   Heart,
   MapPin,
@@ -432,12 +433,14 @@ export function MemorialPageClient() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {data.gallery.items.map((m) => (
                   <div key={m.id} className="rounded-lg overflow-hidden border border-white/10 bg-white/5 aspect-square relative">
-                    {m.kind === "VIDEO" ? (
-                      <div className="flex items-center justify-center h-full"><Video className="h-8 w-8 text-slate-500" /></div>
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={m.url} alt={m.caption ?? "Memorial"} className="w-full h-full object-cover" loading="lazy" />
-                    )}
+                    <UploadedMedia
+                      src={m.url}
+                      alt={m.caption ?? "Memorial"}
+                      className="w-full h-full object-cover"
+                      video={m.kind === "VIDEO"}
+                      controls={m.kind === "VIDEO"}
+                      autoPlay={false}
+                    />
                   </div>
                 ))}
               </div>

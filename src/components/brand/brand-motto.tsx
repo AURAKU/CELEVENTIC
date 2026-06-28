@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { BRAND_MOTTO_PARTS } from "@/lib/constants";
 
 interface BrandMottoProps {
   className?: string;
@@ -8,22 +9,22 @@ interface BrandMottoProps {
 
 const variantStyles = {
   default: {
-    celebrate: "text-brand-500",
-    event: "text-gold-400",
-    ticket: "text-accent-500",
-    dot: "text-slate-900",
+    celebrations: "text-brand-500",
+    events: "text-gold-400",
+    tickets: "text-accent-500",
+    pipe: "text-slate-400",
   },
   light: {
-    celebrate: "text-brand-400",
-    event: "text-gold-400",
-    ticket: "text-accent-400",
-    dot: "text-slate-500",
+    celebrations: "text-brand-400",
+    events: "text-gold-400",
+    tickets: "text-accent-400",
+    pipe: "text-slate-500",
   },
   hero: {
-    celebrate: "text-brand-400",
-    event: "text-gold-400",
-    ticket: "text-accent-400",
-    dot: "text-slate-500",
+    celebrations: "text-brand-400",
+    events: "text-gold-400",
+    tickets: "text-accent-400",
+    pipe: "text-slate-500",
   },
 } as const;
 
@@ -39,11 +40,15 @@ export function BrandMotto({ className, size = "md", variant = "default" }: Bran
           ? "text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.16em] sm:tracking-[0.2em]"
           : "text-xs sm:text-sm tracking-[0.15em]";
 
+  const [celebrations, events, tickets] = BRAND_MOTTO_PARTS;
+
   return (
-    <p className={cn("font-semibold leading-tight inline-flex flex-wrap items-center gap-x-2 sm:gap-x-3", sizeClass, className)}>
-      <span className={colors.celebrate}>Celebrate</span>
-      <span className={colors.event}>Event</span>
-      <span className={colors.ticket}>Ticket</span>
+    <p className={cn("font-semibold leading-tight inline-flex flex-wrap items-center gap-x-2 sm:gap-x-2.5", sizeClass, className)}>
+      <span className={colors.celebrations}>{celebrations}</span>
+      <span className={cn("font-normal opacity-70", colors.pipe)} aria-hidden>|</span>
+      <span className={colors.events}>{events}</span>
+      <span className={cn("font-normal opacity-70", colors.pipe)} aria-hidden>|</span>
+      <span className={colors.tickets}>{tickets}</span>
     </p>
   );
 }

@@ -12,6 +12,7 @@ import {
   uploadFormDataWithProgress,
   validateClientImage,
 } from "@/lib/media/upload-with-progress";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 
 export interface UploadedImageResult {
   url: string;
@@ -131,13 +132,7 @@ export function ImageUploadCropper({
       {previewUrl ? (
         <div className="space-y-2">
           <div className="flex items-center gap-3 rounded-xl border bg-white p-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewUrl}
-              alt=""
-              loading="lazy"
-              className="h-16 w-16 rounded-lg object-cover border"
-            />
+            <UploadedMedia src={previewUrl} alt="" className="h-16 w-16 rounded-lg object-cover border" width={64} height={64} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-800 truncate">Image ready</p>
               <p className="text-xs text-slate-500">Cropped and saved</p>

@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminRole } from "@/lib/roles";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { qrBrandingService, QR_CENTER_ALLOWED_TYPES } from "@/services/qr/qr-branding.service";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 import type { UserRole } from "@prisma/client";
 
 export async function GET() {
@@ -31,11 +30,8 @@ export async function PUT(req: Request) {
     }
 
     const ext = file.type === "image/png" ? ".png" : file.type === "image/webp" ? ".webp" : ".jpg";
-    const dir = path.join(process.cwd(), "public", "uploads", "branding");
-    await mkdir(dir, { recursive: true });
     const name = `qr-default-logo${ext}`;
-    await writeFile(path.join(dir, name), Buffer.from(await file.arrayBuffer()));
-    const url = `/uploads/branding/${name}`;
+    const { url } = await storeUploadFile("branding", "", name, Buffer.from(await file.arrayBuffer()));
     await qrBrandingService.setAdminDefaultLogoUrl(url);
     return NextResponse.json({ success: true, data: { url } });
   }

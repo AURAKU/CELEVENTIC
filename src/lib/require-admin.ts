@@ -10,3 +10,9 @@ export async function requireAdminSession() {
   }
   return session;
 }
+
+export async function requireSuperAdminSession() {
+  const session = await requireAdminSession();
+  if (!session || session.user.role !== "SUPER_ADMIN") return null;
+  return session;
+}

@@ -13,6 +13,9 @@ import {
   computePixelCrop,
   cropImageToBlob,
   getCropShape,
+  getCropScales,
+  clampCropOffset,
+  imageToBlob,
   rotateImage90,
   flipImageHorizontal,
 } from "@/lib/image/crop-utils";
@@ -88,9 +91,11 @@ export function ImageCropDialog({
 
   const frame = cropFrameSize(CONTAINER_W, CONTAINER_H, aspect);
   const shape = getCropShape(aspect);
-  const baseScale = natural.w > 0 ? CONTAINER_W / natural.w : 1;
-  const renderedW = natural.w * baseScale * zoom;
-  const renderedH = natural.h * baseScale * zoom;
+  const { containScale, coverScale } = getCropScales(natural.w, natural.h, CONTAINER_W, CONTAINER_H);
+  const scale = containScale * Math.max(zoom, 0.25);
+  const renderedW = natural.w * scale;
+  const renderedH = natural.h * scale;
+  const maxZoom = Math.max(3, coverScale / containScale + 1);
 
   const frameRadius =
     shape === "circle" ? "9999px" : shape === "rounded" ? "18px" : "2px";
@@ -103,13 +108,28 @@ export function ImageCropDialog({
     [offset]
   );
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    setOffset({
-      x: dragRef.current.ox + (e.clientX - dragRef.current.startX),
-      y: dragRef.current.oy + (e.clientY - dragRef.current.startY),
-    });
-  }, []);
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragRef.current || !natural.w) return;
+      const raw = {
+        x: dragRef.current.ox + (e.clientX - dragRef.current.startX),
+        y: dragRef.current.oy + (e.clientY - dragRef.current.startY),
+      };
+      const clamped = clampCropOffset(
+        raw.x,
+        raw.y,
+        natural.w,
+        natural.h,
+        CONTAINER_W,
+        CONTAINER_H,
+        frame.width,
+        frame.height,
+        zoom
+      );
+      setOffset(clamped);
+    },
+    [natural.w, natural.h, frame.width, frame.height, zoom]
+  );
 
   const onPointerUp = useCallback(() => {
     dragRef.current = null;
@@ -125,6 +145,19 @@ export function ImageCropDialog({
       setOffset({ x: 0, y: 0 });
     } finally {
       setTransforming(false);
+    }
+  }
+
+  async function handleUseFullImage() {
+    if (!natural.w) return;
+    setApplying(true);
+    try {
+      const blob = await imageToBlob(workingSrc);
+      await onConfirm(blob, fileName.includes(".") ? fileName : `image-${Date.now()}.jpg`);
+      ownedUrls.current.forEach((u) => URL.revokeObjectURL(u));
+      onClose();
+    } finally {
+      setApplying(false);
     }
   }
 
@@ -178,7 +211,7 @@ export function ImageCropDialog({
           <div className="min-w-0 pr-2">
             <p className="font-semibold text-slate-900">Crop & frame</p>
             <p className="text-xs text-slate-500 flex items-center gap-1">
-              <Move className="h-3 w-3 shrink-0" /> Drag to reposition · choose frame · rotate or flip
+              <Move className="h-3 w-3 shrink-0" /> Drag to reposition · pinch or zoom slider · pick any area
             </p>
           </div>
           <button
@@ -276,17 +309,44 @@ export function ImageCropDialog({
             </Label>
             <input
               type="range"
-              min={1}
-              max={3}
+              min={0.25}
+              max={maxZoom}
               step={0.02}
               value={zoom}
-              onChange={(e) => setZoom(parseFloat(e.target.value))}
+              onChange={(e) => {
+                const nextZoom = parseFloat(e.target.value);
+                setZoom(nextZoom);
+                setOffset((prev) =>
+                  clampCropOffset(
+                    prev.x,
+                    prev.y,
+                    natural.w,
+                    natural.h,
+                    CONTAINER_W,
+                    CONTAINER_H,
+                    frame.width,
+                    frame.height,
+                    nextZoom
+                  )
+                );
+              }}
               className="w-full accent-brand-600"
             />
           </div>
         </div>
 
-        <div className="shrink-0 border-t bg-white px-4 py-3 flex gap-2 safe-area-pb">
+        <div className="shrink-0 border-t bg-white px-4 py-3 flex flex-col gap-2 safe-area-pb">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full text-slate-600"
+            disabled={applying || transforming || !natural.w}
+            onClick={() => void handleUseFullImage()}
+          >
+            Use full image (no crop)
+          </Button>
+          <div className="flex gap-2">
           <Button type="button" variant="outline" className="flex-1 min-h-[44px]" onClick={handleClose}>
             Cancel
           </Button>
@@ -299,6 +359,7 @@ export function ImageCropDialog({
             <Check className="h-4 w-4" />
             {applying ? "Saving…" : "Use this crop"}
           </Button>
+          </div>
         </div>
       </div>
     </div>,

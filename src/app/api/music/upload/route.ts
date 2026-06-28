@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { resolveMusicUpload } from "@/lib/music/music-constants";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 
 /** User upload for custom invitation music (trim on client, validate on order save) */
 export async function POST(req: Request) {
@@ -39,11 +38,7 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${config.ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "music", session.user.id);
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, safeName), buffer);
-
-    const url = `/uploads/music/${session.user.id}/${safeName}`;
+    const { url } = await storeUploadFile("music", session.user.id, safeName, buffer);
 
     return NextResponse.json({
       success: true,

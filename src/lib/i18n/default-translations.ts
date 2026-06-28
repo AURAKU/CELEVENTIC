@@ -187,7 +187,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "forms", key: "save_failed", enValue: "Save failed", frValue: "Échec de l'enregistrement" },
   { namespace: "invite", key: "contact_host", enValue: "Contact Host", frValue: "Contacter l'hôte" },
   { namespace: "invite", key: "admission_qr", enValue: "Your admission QR", frValue: "Votre QR d'admission" },
-  { namespace: "invite", key: "tagline", enValue: "Celebrate Event Ticket", frValue: "Célébrer Événement Billet" },
+  { namespace: "invite", key: "tagline", enValue: "Celebrations | Events | Tickets", frValue: "Célébrations | Événements | Billets" },
 
   // ── Published invitation ──
   { namespace: "invite", key: "welcome", enValue: "Welcome, {name}", frValue: "Bienvenue, {name}" },

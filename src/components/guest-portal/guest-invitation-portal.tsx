@@ -19,17 +19,17 @@ import type { BlockRenderContext } from "@/lib/invitation-blocks/block-types";
 import type { EventExperienceConfig, HubTabId } from "@/lib/experience/experience-types";
 import { DEFAULT_HUB_TABS, DEFAULT_JOURNEY } from "@/lib/experience/experience-types";
 import { ParticleEnvironment } from "@/components/experience/particle-environment";
-import { EventExperienceHubBar } from "@/components/experience/event-experience-hub";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 import { CountdownDisplay } from "@/components/experience/countdown-display";
 import { JourneyFlow } from "@/components/experience/journey-flow";
 import { EventScheduleSection } from "@/components/experience/event-schedule-section";
 import { StorybookJourney } from "@/components/experience/storybook-journey";
 import { DEFAULT_SCHEDULE_SAMPLES, STORYBOOK_JOURNEY } from "@/lib/experience/experience-types";
 import type { CountdownStyleId } from "@/lib/experience/experience-types";
-import { resolveEventLifecycle, getActiveLifecycleStep } from "@/lib/experience/lifecycle";
-import { ExperienceLifecycleRail } from "@/components/experience/experience-lifecycle-rail";
+import { resolveEventLifecycle } from "@/lib/experience/lifecycle";
 import { EventDayBanner } from "@/components/experience/event-day-banner";
 import { PostEventExperience } from "@/components/experience/post-event-experience";
+import { CinematicInvitationSpotlight } from "@/components/guest-portal/cinematic-invitation-spotlight";
 
 interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -43,6 +43,8 @@ interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   fullScreen?: boolean;
   /** Embedded inside a preview frame — no min-h-screen */
   embedded?: boolean;
+  /** Full-screen cinematic slideshow (default for live invitations) */
+  cinematicMode?: boolean;
   experienceConfig?: EventExperienceConfig;
   enabledHubTabs?: HubTabId[];
   openingComplete?: boolean;
@@ -126,8 +128,28 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   const thankYouMessage = experience?.thankYouMessage;
   const accent = props.design?.colors?.accent ?? "#0B8A83";
   const lifecyclePhase = resolveEventLifecycle(props.event.startDateRaw);
-  const activeLifecycleStep = getActiveLifecycleStep(lifecyclePhase, props.openingComplete ?? true);
   const galleryCount = props.galleryUrls?.length ?? 0;
+
+  const cinematicMode =
+    props.cinematicMode !== false && props.fullScreen !== false && !useBlocks;
+
+  if (cinematicMode) {
+    return (
+      <CinematicInvitationSpotlight
+        {...props}
+        embedded={props.embedded}
+        backgroundImageUrl={props.backgroundImageUrl}
+        backgroundVideoUrl={props.backgroundVideoUrl}
+        rsvpRequired={props.rsvpRequired}
+        admissionQrDataUrl={props.admissionQrDataUrl}
+        admissionQrToken={props.admissionQrToken}
+        guestQrToken={props.guestQrToken}
+        seatLookupUrl={props.seatLookupUrl}
+        seatQrDataUrl={props.seatQrDataUrl}
+        experienceConfig={experience}
+      />
+    );
+  }
 
   return (
     <div
@@ -144,28 +166,23 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
       {(props.backgroundVideoUrl || props.backgroundImageUrl) && (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
           {props.backgroundVideoUrl ? (
-            <video
-              autoPlay muted loop playsInline
-              className="w-full h-full object-cover opacity-20"
+            <UploadedMedia
               src={props.backgroundVideoUrl}
+              video
+              className="w-full h-full object-cover opacity-20"
             />
           ) : props.backgroundImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={props.backgroundImageUrl} alt="" className="w-full h-full object-cover opacity-15 animate-[ken-burns_20s_ease-in-out_infinite_alternate]" />
+            <UploadedMedia
+              src={props.backgroundImageUrl}
+              alt=""
+              className="w-full h-full object-cover opacity-15 animate-[ken-burns_20s_ease-in-out_infinite_alternate]"
+            />
           ) : null}
           <div className="absolute inset-0 bg-gradient-to-b from-[#FAF8F4]/80 via-[#FAF8F4]/90 to-[#FAF8F4]" />
         </div>
       )}
 
       <div className="relative z-10">
-        <ExperienceLifecycleRail
-          lifecyclePhase={lifecyclePhase}
-          activeStep={activeLifecycleStep}
-          accentColor={accent}
-        />
-
-        <EventExperienceHubBar enabledTabs={hubTabs} />
-
         <InvitationRenderer
           invitation={displayInvitation}
           event={displayEvent}
@@ -175,15 +192,17 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           qrDataUrl={props.qrDataUrl}
         />
 
-        <div className="mx-auto max-w-2xl px-4 py-4">
-          <InviteQuickChips
+        {!props.embedded && (
+          <div className="mx-auto max-w-2xl px-4 py-4">
+            <InviteQuickChips
             mapsLink={props.event.mapsLink}
             seatLookupUrl={props.seatLookupUrl}
             showRsvp={showRsvp}
             onRsvp={() => document.getElementById("rsvp")?.scrollIntoView({ behavior: "smooth", block: "center" })}
             onCalendar={() => document.getElementById("quick-actions")?.scrollIntoView({ behavior: "smooth", block: "center" })}
           />
-        </div>
+          </div>
+        )}
 
         <div className="mx-auto max-w-2xl px-4 py-10 space-y-8">
           {lifecyclePhase === "event-day" && (
@@ -283,8 +302,13 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                     <h2 className="font-display text-lg font-bold text-[#0F172A] flex items-center gap-2"><Images className="h-5 w-5 text-[#0B8A83]" /> Gallery</h2>
                     <div className="grid grid-cols-2 gap-2 mt-4">
                       {props.galleryUrls.map((url, i) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img key={url} src={url} alt="" className="rounded-xl aspect-square object-cover inv-gallery-item" style={{ animationDelay: `${i * 80}ms` }} />
+                        <UploadedMedia
+                          key={url}
+                          src={url}
+                          alt=""
+                          className="rounded-xl aspect-square object-cover inv-gallery-item"
+                          video={/\.(mp4|webm|mov)(\?|$)/i.test(url)}
+                        />
                       ))}
                     </div>
                   </div>
@@ -429,7 +453,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           </div>
         </div>
 
-        {props.event.startDateRaw && (
+        {!props.embedded && props.event.startDateRaw && (
           <FloatingCountdownPill
             targetIso={props.event.startDateRaw}
             label={t("invite.countdown")}

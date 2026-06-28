@@ -67,6 +67,63 @@ export function cropFrameSize(
   return { width: Math.round(width), height: Math.round(height) };
 }
 
+export function getCropScales(
+  naturalWidth: number,
+  naturalHeight: number,
+  containerW: number,
+  containerH: number
+): { containScale: number; coverScale: number } {
+  if (naturalWidth <= 0 || naturalHeight <= 0) {
+    return { containScale: 1, coverScale: 1 };
+  }
+  return {
+    containScale: Math.min(containerW / naturalWidth, containerH / naturalHeight),
+    coverScale: Math.max(containerW / naturalWidth, containerH / naturalHeight),
+  };
+}
+
+export function clampCropOffset(
+  offsetX: number,
+  offsetY: number,
+  naturalWidth: number,
+  naturalHeight: number,
+  containerW: number,
+  containerH: number,
+  frameW: number,
+  frameH: number,
+  zoom: number
+): { x: number; y: number } {
+  const { containScale } = getCropScales(naturalWidth, naturalHeight, containerW, containerH);
+  const scale = containScale * Math.max(zoom, 0.25);
+  const renderedW = naturalWidth * scale;
+  const renderedH = naturalHeight * scale;
+  const frameLeft = (containerW - frameW) / 2;
+  const frameTop = (containerH - frameH) / 2;
+  const centerX = (containerW - renderedW) / 2;
+  const centerY = (containerH - renderedH) / 2;
+
+  let minX = frameLeft + frameW - renderedW - centerX;
+  let maxX = frameLeft - centerX;
+  let minY = frameTop + frameH - renderedH - centerY;
+  let maxY = frameTop - centerY;
+
+  if (minX > maxX) {
+    const mid = (minX + maxX) / 2;
+    minX = mid;
+    maxX = mid;
+  }
+  if (minY > maxY) {
+    const mid = (minY + maxY) / 2;
+    minY = mid;
+    maxY = mid;
+  }
+
+  return {
+    x: Math.min(maxX, Math.max(minX, offsetX)),
+    y: Math.min(maxY, Math.max(minY, offsetY)),
+  };
+}
+
 export function computePixelCrop(
   naturalWidth: number,
   naturalHeight: number,
@@ -78,8 +135,8 @@ export function computePixelCrop(
   offsetX: number,
   offsetY: number
 ): PixelCrop {
-  const baseScale = containerW / naturalWidth;
-  const scale = baseScale * zoom;
+  const { containScale } = getCropScales(naturalWidth, naturalHeight, containerW, containerH);
+  const scale = containScale * Math.max(zoom, 0.25);
   const renderedW = naturalWidth * scale;
   const renderedH = naturalHeight * scale;
 
@@ -211,11 +268,38 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number):
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    if (!src.startsWith("blob:") && !src.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    }
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("Image load failed"));
     img.src = src;
   });
+}
+
+/** Export full image without cropping */
+export async function imageToBlob(
+  imageSrc: string,
+  options?: { mimeType?: string; quality?: number; maxEdge?: number }
+): Promise<Blob> {
+  const img = await loadImage(imageSrc);
+  let w = img.naturalWidth;
+  let h = img.naturalHeight;
+  const maxEdge = options?.maxEdge ?? 4096;
+  if (Math.max(w, h) > maxEdge) {
+    const r = maxEdge / Math.max(w, h);
+    w = Math.round(w * r);
+    h = Math.round(h * r);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  ctx.drawImage(img, 0, 0, w, h);
+  const mimeType = options?.mimeType ?? "image/jpeg";
+  const quality = options?.quality ?? 0.92;
+  return canvasToBlob(canvas, mimeType, quality);
 }
 
 export async function readImageDimensions(file: File): Promise<{ width: number; height: number; url: string }> {

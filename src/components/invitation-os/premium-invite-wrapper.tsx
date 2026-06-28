@@ -3,15 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuestInvitationPortal } from "@/components/guest-portal/guest-invitation-portal";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
-import { OpeningExperienceRouter } from "@/components/experience/opening-experience-router";
 import { CeleventicIntroExperience } from "@/components/invitations/CeleventicIntroExperience";
-import { ExperienceLoading } from "@/components/invitations/experience-loading";
 import { TapToBeginExperience } from "@/components/invitations/tap-to-begin-experience";
 import { InvitationAudioControls } from "@/components/invitations/invitation-audio-controls";
 import type { MusicSelection } from "@/lib/music/music-types";
 import { createInvitationAudioManager } from "@/lib/music/invitation-audio-manager";
-import { DEFAULT_STUDIO_CONFIG } from "@/lib/invitation-studio/studio-types";
-import { mapLegacyRevealMode } from "@/lib/experience/opening-experiences";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
@@ -19,9 +15,9 @@ import { DEFAULT_INTRO_DURATION_SEC } from "@/lib/experience/celeventic-palette"
 
 /**
  * Full opening pipeline:
- * Celeventic Intro → Experience Loading → Tap to Begin → Reveal → Invitation Journey
+ * Celeventic futuristic intro → Tap to Begin (audio) → Cinematic invitation spotlight
  */
-type ExperiencePhase = "intro" | "loading" | "tap-to-begin" | "opening" | "portal";
+type ExperiencePhase = "intro" | "tap-to-begin" | "portal";
 
 interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   revealEnabled?: boolean;
@@ -42,22 +38,15 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
 }
 
 export function PremiumInviteWrapper({
-  revealEnabled = true,
-  revealMode,
-  openingExperience,
+  revealEnabled: _revealEnabled = true,
+  revealMode: _revealMode,
+  openingExperience: _openingExperience,
   musicEnabled,
   musicUrl,
   musicSelection,
   fullScreen = true,
   ...props
 }: PremiumInviteWrapperProps) {
-  const legacyMode = revealMode ?? props.design?.studio?.revealMode ?? DEFAULT_STUDIO_CONFIG.revealMode ?? "envelope";
-  const experienceId =
-    openingExperience ??
-    props.design?.experience?.openingExperience ??
-    mapLegacyRevealMode(legacyMode);
-  const instantOpening = !revealEnabled || experienceId === "none";
-
   const experience = props.design?.experience;
   const introEnabled = experience?.introEnabled ?? true;
   const introDuration = experience?.introDurationSec ?? DEFAULT_INTRO_DURATION_SEC;
@@ -79,7 +68,8 @@ export function PremiumInviteWrapper({
 
   function initialPhase(): ExperiencePhase {
     if (introEnabled) return "intro";
-    return "loading";
+    if (needsTapGate) return "tap-to-begin";
+    return "portal";
   }
 
   const [phase, setPhase] = useState<ExperiencePhase>(initialPhase);
@@ -114,24 +104,16 @@ export function PremiumInviteWrapper({
   }, [audioManager, wantsAutoplay]);
 
   function afterIntro() {
-    setPhase("loading");
-  }
-
-  function afterLoading() {
     if (needsTapGate) {
       setPhase("tap-to-begin");
       return;
     }
     void startAudio();
-    setPhase(instantOpening ? "portal" : "opening");
+    setPhase("portal");
   }
 
   function handleTapBegin() {
     void startAudio();
-    setPhase(instantOpening ? "portal" : "opening");
-  }
-
-  function handleOpeningComplete() {
     setPhase("portal");
   }
 
@@ -142,7 +124,7 @@ export function PremiumInviteWrapper({
   }, [phase, hasMusic, wantsAutoplay, startAudio]);
 
   const showAudioControls = Boolean(
-    audioManager && hasMusic && phase !== "intro" && phase !== "loading" && phase !== "tap-to-begin"
+    audioManager && hasMusic && phase === "portal"
   );
 
   const portal = (
@@ -171,16 +153,6 @@ export function PremiumInviteWrapper({
     );
   }
 
-  if (phase === "loading") {
-    return (
-      <ExperienceLoading
-        onComplete={afterLoading}
-        eventTitle={props.event.title}
-        accentColor={themeColors?.accent}
-      />
-    );
-  }
-
   if (phase === "tap-to-begin") {
     return (
       <TapToBeginExperience
@@ -188,27 +160,6 @@ export function PremiumInviteWrapper({
         eventTitle={props.event.title}
         accentColor={themeColors?.accent}
       />
-    );
-  }
-
-  if (phase === "opening") {
-    return (
-      <>
-        <OpeningExperienceRouter
-          experienceId={experienceId}
-          guestName={props.guestName}
-          eventTitle={props.event.title}
-          hostName={props.event.hostName}
-          musicEnabled={Boolean(hasMusic)}
-          enableSounds={experience?.enableRevealSounds ?? true}
-          onComplete={handleOpeningComplete}
-        >
-          {portal}
-        </OpeningExperienceRouter>
-        {showAudioControls && audioManager && (
-          <InvitationAudioControls manager={audioManager} trackTitle={trackTitle} />
-        )}
-      </>
     );
   }
 

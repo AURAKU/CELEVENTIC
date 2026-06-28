@@ -3,10 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { verifyEventAccess } from "@/lib/event-access";
 import { isAdminRole } from "@/lib/roles";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { prisma } from "@/lib/prisma";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
+import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@prisma/client";
 
 const EXT_MAP: Record<string, string> = {
@@ -42,13 +41,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const ext = EXT_MAP[file.type] ?? ".png";
     const safeName = `qr-center-${Date.now()}${ext}`;
-    const dir = path.join(process.cwd(), "public", "uploads", "events", eventId);
-    await mkdir(dir, { recursive: true });
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(dir, safeName), buffer);
-
-    const url = `/uploads/events/${eventId}/${safeName}`;
+    const { url } = await storeUploadFile("events", eventId, safeName, buffer);
     await prisma.event.update({
       where: { id: eventId },
       data: { qrCenterImageUrl: url },

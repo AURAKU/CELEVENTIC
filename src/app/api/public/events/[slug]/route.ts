@@ -11,7 +11,7 @@ export async function GET(
     where: { slug },
     include: {
       tickets: {
-        where: { status: { in: ["PENDING", "PAID"] } },
+        where: { status: "PAID" },
         orderBy: { price: "asc" },
       },
       package: { select: { name: true } },

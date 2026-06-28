@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession, isAdminRole } from "@/lib/auth";
 import { musicLibraryService } from "@/services/music/music-library.service";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { resolveMusicUpload } from "@/lib/music/music-constants";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 
 const patchSchema = z.object({
   title: z.string().min(1).optional(),
@@ -55,15 +54,13 @@ export async function POST(req: Request) {
     }
 
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${config.ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "music", "library");
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, safeName), Buffer.from(await file.arrayBuffer()));
+    const { url } = await storeUploadFile("music", "library", safeName, Buffer.from(await file.arrayBuffer()));
 
     const track = await musicLibraryService.createTrack({
       title,
       artist,
       category,
-      url: `/uploads/music/library/${safeName}`,
+      url,
       durationSec: Number.isFinite(durationSec) ? durationSec : undefined,
       createdById: session.user.id,
     });

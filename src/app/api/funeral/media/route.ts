@@ -4,8 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { funeralService } from "@/services/funeral/funeral.service";
 import { verifyEventAccess } from "@/lib/event-access";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 
 const moderateSchema = z.object({
   action: z.literal("moderate"),
@@ -66,15 +65,14 @@ export async function POST(req: Request) {
 
     await verifyEventAccess(eventId, session.user.id, session.user.role);
 
-    const ext = path.extname(file.name) || ".jpg";
+    const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : ".jpg";
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "memorial", eventId);
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, safeName), Buffer.from(await file.arrayBuffer()));
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { url } = await storeUploadFile("memorial", eventId, safeName, buffer);
 
     const item = await funeralService.addMediaItem(eventId, {
       kind: kind as "PHOTO" | "VIDEO" | "AUDIO",
-      url: `/uploads/memorial/${eventId}/${safeName}`,
+      url,
       caption,
       author,
       autoApprove: true,

@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { invitationInspirationService } from "@/services/invitations/invitation-inspiration.service";
 import { getInvitationMediaLimits } from "@/lib/invitation/media-limits";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 
 const MAX_PDF = 15 * 1024 * 1024;
 
@@ -59,11 +58,7 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${config.ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "invitations", session.user.id);
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, safeName), buffer);
-
-    const url = `/uploads/invitations/${session.user.id}/${safeName}`;
+    const { url } = await storeUploadFile("invitations", session.user.id, safeName, buffer);
     const buildMode = (formData.get("buildMode") as string) || "inspired";
     const clientColors = formData.get("colors");
     const clientBrightness = formData.get("brightness");

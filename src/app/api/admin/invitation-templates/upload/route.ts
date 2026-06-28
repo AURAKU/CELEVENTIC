@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { getSession, isAdminRole } from "@/lib/auth";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 
 const MAX_SIZE = 25 * 1024 * 1024;
 const ALLOWED_TYPES = [
@@ -28,13 +27,8 @@ export async function POST(req: Request) {
 
     const ext = file.name.split(".").pop() ?? "bin";
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const dir = path.join(process.cwd(), "public", "uploads", "templates", category);
-    await mkdir(dir, { recursive: true });
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(dir, safeName), buffer);
-
-    const url = `/uploads/templates/${category}/${safeName}`;
+    const { url } = await storeUploadFile("templates", category, safeName, buffer);
     return NextResponse.json({ success: true, data: { url, type: file.type, size: file.size } });
   } catch (error) {
     return NextResponse.json(

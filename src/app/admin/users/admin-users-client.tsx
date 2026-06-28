@@ -13,7 +13,9 @@ import { PaginationBar } from "@/components/ui/pagination";
 import { formatDate } from "@/lib/utils";
 import { usePagination } from "@/hooks/use-pagination";
 import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
-import { Pencil, Trash2, Mail } from "lucide-react";
+import { assignableRolesFor, canAssignAdminRole, canModifyUser } from "@/lib/admin-permissions";
+import type { UserRole } from "@prisma/client";
+import { Pencil, Trash2, Mail, Shield } from "lucide-react";
 
 interface UserRow {
   id: string;
@@ -26,7 +28,15 @@ interface UserRow {
   _count: { events: number };
 }
 
-export function AdminUsersClient({ initial }: { initial: UserRow[] }) {
+export function AdminUsersClient({
+  initial,
+  actorRole,
+}: {
+  initial: UserRow[];
+  actorRole: UserRole;
+}) {
+  const assignableRoles = assignableRolesFor(actorRole);
+  const canPromoteToAdmin = canAssignAdminRole(actorRole);
   const { page, setPage, resetPage, appendToParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [users, setUsers] = useState(initial);
   const [search, setSearch] = useState("");
@@ -86,9 +96,12 @@ export function AdminUsersClient({ initial }: { initial: UserRow[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, ...data }),
     });
+    const d = await res.json();
     if (res.ok) {
       setEditing(null);
       load();
+    } else {
+      setError(d.error || "Update failed");
     }
   }
 
@@ -124,6 +137,10 @@ export function AdminUsersClient({ initial }: { initial: UserRow[] }) {
   }
 
   function openEdit(user: UserRow) {
+    if (!canModifyUser(actorRole, user.role as UserRole)) {
+      setError("Only Super Admins can edit platform administrator accounts");
+      return;
+    }
     setEditing(user);
     setShowForm(false);
     setEditForm({ name: user.name, email: user.email ?? "", phone: user.phone ?? "" });
@@ -138,7 +155,11 @@ export function AdminUsersClient({ initial }: { initial: UserRow[] }) {
     <div className="space-y-6">
       <AdminToolbar
         title="Users"
-        subtitle="Create, edit roles, suspend, or remove platform users."
+        subtitle={
+          canPromoteToAdmin
+            ? "Super Admin — create users, assign any role including Admin."
+            : "Admin — manage users and assign organizer, vendor, and staff roles. Only Super Admins can grant Admin access."
+        }
         count={total}
         search={search}
         onSearchChange={setSearch}
@@ -163,7 +184,7 @@ export function AdminUsersClient({ initial }: { initial: UserRow[] }) {
                   <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {["ORGANIZER", "ADMIN", "VENDOR", "STAFF", "GUEST"].map((r) => (
+                      {assignableRoles.map((r) => (
                         <SelectItem key={r} value={r}>{r}</SelectItem>
                       ))}
                     </SelectContent>
@@ -194,11 +215,14 @@ export function AdminUsersClient({ initial }: { initial: UserRow[] }) {
                     <Select value={editing.role} onValueChange={(v) => updateUser(editing.id, { role: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {["ORGANIZER", "ADMIN", "SUPER_ADMIN", "VENDOR", "STAFF", "GUEST"].map((r) => (
+                        {assignableRoles.map((r) => (
                           <SelectItem key={r} value={r}>{r}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {(editing.role === "ADMIN" || editing.role === "SUPER_ADMIN") && !canPromoteToAdmin && (
+                      <p className="text-xs text-amber-600 mt-1">Contact a Super Admin to change admin-level roles.</p>
+                    )}
                   </div>
                   <div>
                     <Label>Status</Label>
@@ -281,23 +305,61 @@ export function AdminUsersClient({ initial }: { initial: UserRow[] }) {
                   <td className="p-3 text-slate-500">{formatDate(user.createdAt)}</td>
                   <td className="p-3">
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(user)} title="Edit">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => {
-                          setMessaging(user);
-                          setMessageForm({ subject: "Message from Celeventic", body: "" });
-                        }}
-                        title="Send message"
+                        onClick={() => openEdit(user)}
+                        title="Edit"
+                        disabled={!canModifyUser(actorRole, user.role as UserRole)}
                       >
-                        <Mail className="h-3.5 w-3.5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="text-red-600" onClick={() => deleteUser(user.id, user.name)} title="Delete">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {canPromoteToAdmin && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Make platform admin (Super Admin only)"
+                          onClick={() => {
+                            if (confirm(`Grant Admin access to ${user.name}?`)) {
+                              void updateUser(user.id, { role: "ADMIN" });
+                            }
+                          }}
+                        >
+                          <Shield className="h-3.5 w-3.5 text-[#0B8A83]" />
+                        </Button>
+                      )}
+                      {canPromoteToAdmin && user.role === "ADMIN" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Remove admin access"
+                          onClick={() => {
+                            if (confirm(`Remove Admin access from ${user.name}?`)) {
+                              void updateUser(user.id, { role: "ORGANIZER" });
+                            }
+                          }}
+                        >
+                          <Shield className="h-3.5 w-3.5 text-amber-600" />
+                        </Button>
+                      )}
+                      {canModifyUser(actorRole, user.role as UserRole) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setMessaging(user);
+                            setMessageForm({ subject: "Message from Celeventic", body: "" });
+                          }}
+                          title="Send message"
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {canModifyUser(actorRole, user.role as UserRole) && (
+                        <Button size="sm" variant="ghost" className="text-red-600" onClick={() => deleteUser(user.id, user.name)} title="Delete">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

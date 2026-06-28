@@ -4,6 +4,9 @@ import { adminService } from "@/services/admin/admin.service";
 import { requireAdminSession } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 import { parsePaginationFromUrl, ADMIN_TABLE_LIMIT } from "@/lib/pagination";
+import { assertRoleAssignmentAllowed, assertUserModificationAllowed } from "@/lib/admin-permissions";
+import type { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
   const session = await requireAdminSession();
@@ -31,7 +34,7 @@ const createSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
-  role: z.enum(["SUPER_ADMIN", "ADMIN", "ORGANIZER", "VENDOR", "STAFF", "GUEST"]),
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "ORGANIZER", "VENDOR", "VENUE_OWNER", "AGENCY", "STAFF", "GUEST"]),
   phone: z.string().optional(),
 });
 
@@ -40,7 +43,7 @@ const updateSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
-  role: z.enum(["SUPER_ADMIN", "ADMIN", "ORGANIZER", "VENDOR", "STAFF", "GUEST"]).optional(),
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "ORGANIZER", "VENDOR", "VENUE_OWNER", "AGENCY", "STAFF", "GUEST"]).optional(),
   status: z.enum(["ACTIVE", "SUSPENDED", "PENDING_VERIFICATION"]).optional(),
 });
 
@@ -51,6 +54,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const data = createSchema.parse(body);
+    assertRoleAssignmentAllowed(session.user.role as UserRole, data.role);
     const user = await adminService.createUser(data);
     await createAuditLog({
       userId: session.user.id,
@@ -78,6 +82,15 @@ export async function PATCH(req: Request) {
     if (id === session.user.id && rest.role && rest.role !== session.user.role) {
       return NextResponse.json({ error: "Cannot change your own role" }, { status: 400 });
     }
+
+    const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+    if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+    assertUserModificationAllowed(session.user.role as UserRole, target.role);
+    if (rest.role) {
+      assertRoleAssignmentAllowed(session.user.role as UserRole, rest.role);
+    }
+
     const user = await adminService.updateUser(id, rest);
     await createAuditLog({
       userId: session.user.id,
@@ -106,6 +119,10 @@ export async function DELETE(req: Request) {
   }
 
   try {
+    const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+    if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    assertUserModificationAllowed(session.user.role as UserRole, target.role);
+
     const result = await adminService.deleteUser(id);
     await createAuditLog({
       userId: session.user.id,

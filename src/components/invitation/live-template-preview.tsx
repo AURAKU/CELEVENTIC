@@ -131,8 +131,9 @@ function LivePreviewExperience({
           }}
           design={preview.design}
           guestName={preview.guestName}
-          fullScreen={false}
-          embedded
+          fullScreen={interactive}
+          embedded={!interactive}
+          cinematicMode={interactive}
           rsvpRequired={false}
           openingComplete
           eventId="preview-event"

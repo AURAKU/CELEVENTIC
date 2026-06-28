@@ -1,7 +1,8 @@
 export const APP_NAME = "Celeventic";
 export const APP_TAGLINE = "The Intelligent Event Operating System";
 export const BRAND_TAGLINE = "THE INTELLIGENT EVENT OPERATING SYSTEM";
-export const BRAND_MOTTO = "Celebrate Event Ticket";
+export const BRAND_MOTTO = "Celebrations | Events | Tickets";
+export const BRAND_MOTTO_PARTS = ["Celebrations", "Events", "Tickets"] as const;
 export const BRAND_MESSAGE = "Celebrate every moment. Manage every event. Sell every ticket.";
 export const COMPANY_NAME = "AGI";
 export const COMPANY_FULL_NAME = "Aura Group Innovations";

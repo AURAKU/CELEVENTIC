@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { getSession } from "@/lib/auth";
 import { vendorProfileService } from "@/services/vendor-os/vendor-profile.service";
 import { vendorMediaService } from "@/services/vendor-os/vendor-media.service";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -23,12 +22,8 @@ export async function POST(req: Request) {
 
     const ext = file.name.split(".").pop() ?? "bin";
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const dir = path.join(process.cwd(), "public", "uploads", "vendors", vendor.id);
-    await mkdir(dir, { recursive: true });
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(dir, safeName), buffer);
-
-    const url = `/uploads/vendors/${vendor.id}/${safeName}`;
+    const { url } = await storeUploadFile("vendors", vendor.id, safeName, buffer);
     const media = await vendorMediaService.addMedia(vendor.id, {
       url,
       type: validation.mediaType!,
