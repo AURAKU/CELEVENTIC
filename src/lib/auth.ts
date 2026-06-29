@@ -44,6 +44,11 @@ interface SessionUpdate {
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  ...(process.env.AUTH_TRUST_HOST === "true" ||
+  process.env.NODE_ENV === "production" ||
+  process.env.VERCEL === "1"
+    ? ({ trustHost: true } as Partial<NextAuthOptions>)
+    : {}),
   pages: {
     signIn: "/auth/login",
     error: "/auth/login",

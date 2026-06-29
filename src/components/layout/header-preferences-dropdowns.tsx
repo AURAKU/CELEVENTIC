@@ -36,15 +36,17 @@ export function HeaderPreferencesDropdowns({
         <Select value={locale} onValueChange={(v) => setLocale(v as AppLocale)}>
           <SelectTrigger
             className={cn(
-              "h-9 w-auto min-w-[5rem] gap-1.5 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
+              "h-9 w-auto min-w-[4.5rem] gap-1 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
               compact && "h-10 min-h-[44px] sm:min-h-9"
             )}
             aria-label="Language"
           >
-            <span className="text-base leading-none shrink-0" aria-hidden>
-              {LOCALE_FLAGS[locale]}
-            </span>
-            <SelectValue placeholder={locale.toUpperCase()} />
+            <SelectValue>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-base leading-none">{LOCALE_FLAGS[locale]}</span>
+                <span>{locale.toUpperCase()}</span>
+              </span>
+            </SelectValue>
           </SelectTrigger>
           <SelectContent align="end">
             {availableLocales.map((code) => (
@@ -66,16 +68,18 @@ export function HeaderPreferencesDropdowns({
       >
         <SelectTrigger
           className={cn(
-            "h-9 w-auto min-w-[5rem] gap-1.5 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
+            "h-9 w-auto min-w-[4.5rem] gap-1 border-slate-200/80 bg-white/90 px-2.5 text-xs font-semibold touch-manipulation",
             compact && "h-10 min-h-[44px] sm:min-h-9",
             ratesLoading && "opacity-70"
           )}
           aria-label="Currency"
         >
-          <span className="text-base leading-none shrink-0" aria-hidden>
-            {CURRENCY_FLAGS[currency]}
-          </span>
-          <SelectValue placeholder={currency} />
+          <SelectValue>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-base leading-none">{CURRENCY_FLAGS[currency]}</span>
+              <span>{currency}</span>
+            </span>
+          </SelectValue>
         </SelectTrigger>
         <SelectContent align="end">
           {CURRENCIES.map((c) => (

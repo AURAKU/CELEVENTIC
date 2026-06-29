@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
-import { HeaderPreferencesDropdowns } from "@/components/layout/header-preferences-dropdowns";
+import { PreferencesMenu } from "@/components/layout/preferences-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { UserAccountMenu, LogoutButton } from "@/components/layout/user-account-menu";
 import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
@@ -41,7 +41,7 @@ export function AdminShell({ children }: AdminShellProps) {
           <span className="text-sm font-semibold text-slate-900 flex-1 min-w-0 truncate">Admin Control Center</span>
           <WorkspaceSwitcher compact />
           <NotificationBell />
-          <HeaderPreferencesDropdowns compact />
+          <PreferencesMenu compact />
           <div className="hidden sm:block pl-2 border-l border-slate-200/80">
             <UserAccountMenu compact />
           </div>

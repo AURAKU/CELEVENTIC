@@ -9,6 +9,7 @@ import { RequestQuoteModal } from "@/components/vendor-os/request-quote-modal";
 import { formatCurrency } from "@/lib/utils";
 import { AgiFooter } from "@/components/agi-engine/agi-badge";
 import { UploadedMedia } from "@/components/media/uploaded-media";
+import { resolveMediaUrl } from "@/lib/uploads/media-url";
 
 interface VendorProfile {
   id: string;
@@ -40,6 +41,7 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
   const [saved, setSaved] = useState(false);
   const location = [vendor.city, vendor.region].filter(Boolean).join(", ");
   const about = vendor.bio ?? vendor.description;
+  const coverUrl = resolveMediaUrl(vendor.coverImage);
 
   async function toggleSave() {
     const res = await fetch("/api/vendor-os/favorites", {
@@ -58,15 +60,20 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
     <div className="min-h-screen bg-[#FAF8F4]">
       <div
         className="h-48 sm:h-64 bg-gradient-to-br from-[#0B8A83]/30 to-[#0F172A]/20 relative"
-        style={vendor.coverImage ? { backgroundImage: `url(${vendor.coverImage})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+        style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
       />
 
       <div className="max-w-4xl mx-auto px-4 -mt-16 relative z-10 pb-16">
         <div className="bg-white rounded-2xl shadow-lg border p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             {vendor.profileImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={vendor.profileImage} alt="" className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg object-cover -mt-16 sm:-mt-20" />
+              <UploadedMedia
+                src={vendor.profileImage}
+                alt=""
+                className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg object-cover -mt-16 sm:-mt-20"
+                width={96}
+                height={96}
+              />
             ) : (
               <div className="w-24 h-24 rounded-2xl bg-[#0B8A83]/10 flex items-center justify-center text-3xl font-bold text-[#0B8A83] -mt-16 sm:-mt-20 border-4 border-white shadow-lg">
                 {vendor.businessName[0]}

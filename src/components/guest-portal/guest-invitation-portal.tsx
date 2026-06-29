@@ -9,11 +9,16 @@ import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-r
 import { BlockRenderer } from "@/components/invitation-blocks/block-renderer";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { PortalSection } from "@/components/guest-portal/portal-section";
-import { AddToCalendarButton } from "@/components/guest-portal/add-to-calendar-button";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
 import { AgiFooter } from "@/components/agi-engine/agi-badge";
 import { FloatingCountdownPill } from "@/components/guest-portal/floating-countdown-pill";
 import { InviteQuickChips } from "@/components/guest-portal/invite-quick-chips";
+import { SaveDateCalendarCard } from "@/components/guest-portal/save-date-calendar-card";
+import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
+import { InvitationFeatureDock } from "@/components/guest-portal/invitation-feature-dock";
+import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
+import { GiftQrBox } from "@/components/guest-portal/gift-qr-box";
+import { CalendarActionsMenu } from "@/components/guest-portal/calendar-actions-menu";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
 import type { BlockRenderContext } from "@/lib/invitation-blocks/block-types";
 import type { EventExperienceConfig, HubTabId } from "@/lib/experience/experience-types";
@@ -127,6 +132,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   const displaySchedule = scheduleItems?.length ? scheduleItems : (hubTabs.includes("timeline") ? DEFAULT_SCHEDULE_SAMPLES : []);
   const thankYouMessage = experience?.thankYouMessage;
   const accent = props.design?.colors?.accent ?? "#0B8A83";
+  const secondary = props.design?.colors?.secondary ?? "#D4A63A";
   const lifecyclePhase = resolveEventLifecycle(props.event.startDateRaw);
   const galleryCount = props.galleryUrls?.length ?? 0;
 
@@ -199,7 +205,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             seatLookupUrl={props.seatLookupUrl}
             showRsvp={showRsvp}
             onRsvp={() => document.getElementById("rsvp")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-            onCalendar={() => document.getElementById("quick-actions")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            onCalendar={() => document.getElementById("save-date")?.scrollIntoView({ behavior: "smooth", block: "center" })}
           />
           </div>
         )}
@@ -230,6 +236,42 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               <p className="text-slate-500 text-sm">Hosted by {displayEvent.hostName}</p>
             </div>
           </PortalSection>
+
+          {!useBlocks && !props.embedded && (
+            <PortalSection delay={50} id="feature-dock">
+              <InvitationFeatureDock
+                calendarEvent={{
+                  title: displayEvent.title,
+                  startDateRaw: props.event.startDateRaw ?? props.event.startDate,
+                  venue: [displayEvent.venueName, displayEvent.landmark].filter(Boolean).join(" · ") || undefined,
+                  description: displayEvent.description ?? undefined,
+                }}
+                mapsLink={props.event.mapsLink}
+                venueName={displayEvent.venueName}
+                accentColor={accent}
+                showRsvp={showRsvp}
+                seatLookupUrl={props.seatLookupUrl}
+                onRsvp={() => document.getElementById("rsvp")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                onCalendar={() => document.getElementById("save-date")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                onCountdown={() => document.getElementById("countdown")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                onMap={() => document.getElementById("venue-map")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+              />
+            </PortalSection>
+          )}
+
+          {!useBlocks && props.event.startDateRaw && (
+            <PortalSection delay={75} id="save-date">
+              <SaveDateCalendarCard
+                accentColor={accent}
+                event={{
+                  title: displayEvent.title,
+                  startDateRaw: props.event.startDateRaw,
+                  venue: [displayEvent.venueName, displayEvent.landmark].filter(Boolean).join(" · ") || undefined,
+                  description: displayEvent.description ?? undefined,
+                }}
+              />
+            </PortalSection>
+          )}
 
           {hubMode === "storybook" ? (
             <StorybookJourney chapters={experience?.journeyChapters ?? STORYBOOK_JOURNEY} accentColor={accent} />
@@ -286,15 +328,19 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                       <p className="flex items-start gap-2"><Shirt className="h-4 w-4 text-[#D4A63A] mt-0.5 shrink-0" />{displayEvent.dressCode}</p>
                     )}
                   </div>
-                  {props.event.mapsLink && (
-                    <Button variant="outline" size="sm" asChild className="mt-2">
-                      <a href={props.event.mapsLink} target="_blank" rel="noopener noreferrer">
-                        <MapPin className="h-4 w-4" /> Get Directions
-                      </a>
-                    </Button>
-                  )}
                 </div>
               </PortalSection>
+
+              {(props.event.mapsLink || displayEvent.venueName) && (
+                <PortalSection delay={210} id="venue-map">
+                  <VenueMapEmbed
+                    mapsLink={props.event.mapsLink}
+                    venueName={displayEvent.venueName}
+                    landmark={displayEvent.landmark}
+                    accentColor={accent}
+                  />
+                </PortalSection>
+              )}
 
               {props.galleryUrls && props.galleryUrls.length > 0 && (
                 <PortalSection delay={250} id="gallery">
@@ -391,11 +437,22 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
+          <PortalSection delay={415} id="wishes">
+            <GuestWishesCard accentColor={accent} memoryVaultEnabled={props.memoryVaultEnabled} />
+          </PortalSection>
+
           <PortalSection delay={420} id="gifts">
-            <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 text-center shadow-sm">
-              <h2 className="font-display text-lg font-bold text-[#0F172A] mb-2">Gifts & Contributions</h2>
-              <p className="text-sm text-slate-600">Your presence is the greatest gift. Contact the host for registry details.</p>
-            </div>
+            <GiftQrBox
+              qrDataUrl={props.qrDataUrl}
+              qrToken={props.guestQrToken}
+              accentColor={secondary}
+            />
+            {!props.qrDataUrl && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 text-center shadow-sm mt-4">
+                <h2 className="font-display text-lg font-bold text-[#0F172A] mb-2">Gifts & Contributions</h2>
+                <p className="text-sm text-slate-600">Your presence is the greatest gift. Contact the host for registry details.</p>
+              </div>
+            )}
           </PortalSection>
 
           <PortalSection delay={430} id="memory">
@@ -432,11 +489,14 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
           <PortalSection delay={450} id="quick-actions">
             <div className="flex flex-wrap gap-3 justify-center">
-              <AddToCalendarButton
-                title={displayEvent.title}
-                startDateRaw={props.event.startDateRaw}
-                venue={displayEvent.venueName ?? undefined}
-                description={displayEvent.description ?? undefined}
+              <CalendarActionsMenu
+                event={{
+                  title: displayEvent.title,
+                  startDateRaw: props.event.startDateRaw ?? props.event.startDate,
+                  venue: [displayEvent.venueName, displayEvent.landmark].filter(Boolean).join(" · ") || undefined,
+                  description: displayEvent.description ?? undefined,
+                }}
+                accentColor={accent}
               />
               <Button variant="outline" onClick={handleShare}>
                 {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}

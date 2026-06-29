@@ -104,7 +104,7 @@ export async function PATCH(req: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Update failed" }, { status: 400 });
   }
 }
 

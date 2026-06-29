@@ -5,7 +5,7 @@ import { Clock } from "lucide-react";
 
 interface CountdownDisplayProps {
   targetIso: string;
-  style?: "classic" | "flip" | "luxury" | "ring" | "minimal" | "glass" | "gold-royal" | "circular";
+  style?: "classic" | "flip" | "luxury" | "ring" | "minimal" | "glass" | "gold-royal" | "circular" | "card-3d";
   label?: string;
   begunLabel?: string;
 }
@@ -151,6 +151,27 @@ export function CountdownDisplay({
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (style === "card-3d") {
+    return (
+      <div className="inv-3d-scene max-w-md mx-auto">
+        <div className="inv-3d-countdown-grid grid grid-cols-4 gap-2 sm:gap-3">
+          {[
+            { v: d, l: "Days" },
+            { v: h, l: "Hours" },
+            { v: m, l: "Min" },
+            { v: s, l: "Sec" },
+          ].map(({ v, l }) => (
+            <div key={l} className="inv-3d-countdown-unit rounded-xl bg-gradient-to-br from-[#0F172A] to-[#1e293b] p-3 sm:p-4 text-center border border-[#D4A63A]/25 shadow-xl">
+              <p className="font-display text-2xl sm:text-3xl font-bold text-[#F5E6B8] tabular-nums">{String(v).padStart(2, "0")}</p>
+              <p className="text-[9px] uppercase tracking-widest text-[#D4A63A]/70 mt-1">{l}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-xs uppercase tracking-[0.35em] text-slate-500 mt-4">{label}</p>
       </div>
     );
   }

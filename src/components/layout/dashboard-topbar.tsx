@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Menu, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HeaderPreferencesDropdowns } from "@/components/layout/header-preferences-dropdowns";
+import { PreferencesMenu } from "@/components/layout/preferences-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
 import { GlobalSearch } from "@/components/layout/global-search";
@@ -52,7 +52,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
         <div className="hidden md:block">
           <WorkspaceSwitcher compact />
         </div>
-        <HeaderPreferencesDropdowns compact />
+        <PreferencesMenu compact />
         <NotificationBell />
         <div className="hidden sm:flex items-center pl-1 sm:pl-2 border-l border-slate-200/80">
           <UserAccountMenu compact />

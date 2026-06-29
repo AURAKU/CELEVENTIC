@@ -1,5 +1,7 @@
 import { getDefaultDesignConfig, getTemplatePreset } from "@/lib/invitation-templates";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
+import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
+import { resolveDefaultMusicForLayout } from "@/lib/music/audio-experience-catalog";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { InvitationDesignConfig, InvitationEventData } from "@/types/invitation-design";
 
@@ -137,8 +139,11 @@ const DEFAULT_DEMO_MUSIC = {
 };
 
 export function templateSupportsMusicPreview(features?: string[], musicEnabled?: boolean): boolean {
+  if (musicEnabled === false) return false;
   if (musicEnabled) return true;
-  return Boolean(features?.some((f) => f.toLowerCase() === "music"));
+  if (features?.some((f) => f.toLowerCase() === "music")) return true;
+  /** Template previews always include default DNA music unless explicitly disabled */
+  return true;
 }
 
 export function buildDemoMusicSelection(category?: string): MusicSelection {
@@ -150,7 +155,7 @@ export function buildDemoMusicSelection(category?: string): MusicSelection {
     startSec: 0,
     endSec: 60,
     originalDurationSec: 60,
-    autoPlay: false,
+    autoPlay: true,
     loop: true,
     volume: 0.45,
     fadeInSec: 1,
@@ -166,22 +171,28 @@ export function getDemoContentForCategory(category?: string): DemoContent {
 export function buildLivePreviewProps(
   layoutSlug: string,
   category?: string,
-  options?: { features?: string[]; musicEnabled?: boolean }
+  options?: {
+    features?: string[];
+    musicEnabled?: boolean;
+    skipIntro?: boolean;
+    skipTapGate?: boolean;
+  }
 ) {
   const preset = getTemplatePreset(layoutSlug);
   const baseDesign: InvitationDesignConfig = preset?.config ?? getDefaultDesignConfig(layoutSlug);
   const demo = getDemoContentForCategory(category);
+  const enriched = enrichDesignWithExperienceDNA(baseDesign);
 
   const design: InvitationDesignConfig = {
-    ...baseDesign,
+    ...enriched,
     experience: {
-      ...baseDesign.experience,
-      introEnabled: false,
-      hubMode: baseDesign.experience?.hubMode ?? "scroll",
-      enabledTabs: baseDesign.experience?.enabledTabs ?? DEFAULT_HUB_TABS,
+      ...enriched.experience,
+      introEnabled: options?.skipIntro ? false : enriched.experience?.introEnabled ?? true,
+      hubMode: enriched.experience?.hubMode ?? "scroll",
+      enabledTabs: enriched.experience?.enabledTabs ?? DEFAULT_HUB_TABS,
     },
     studio: {
-      ...baseDesign.studio,
+      ...enriched.studio,
       fullScreen: false,
     },
   };
@@ -201,6 +212,11 @@ export function buildLivePreviewProps(
   };
 
   const withMusic = templateSupportsMusicPreview(options?.features, options?.musicEnabled);
+  const dnaMusic = resolveDefaultMusicForLayout(
+    layoutSlug,
+    design.experience?.defaultAudioTrackId,
+    design.experience?.defaultAudioCategory
+  );
 
   return {
     design,
@@ -208,6 +224,7 @@ export function buildLivePreviewProps(
     message: demo.message,
     invitationName: demo.invitationName,
     guestName: "Alex Mensah",
-    musicSelection: withMusic ? buildDemoMusicSelection(category) : null,
+    musicSelection: withMusic ? (dnaMusic ?? buildDemoMusicSelection(category)) : null,
+    skipTapGate: options?.skipTapGate ?? false,
   };
 }

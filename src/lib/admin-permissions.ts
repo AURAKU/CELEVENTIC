@@ -13,14 +13,14 @@ export function canSwitchAdminView(role: UserRole): boolean {
   return canAccessAdminPanel(role);
 }
 
-/** Only platform admins may assign or change user roles. */
+/** Platform admins may assign and change user roles. */
 export function canAssignUserRoles(actorRole: UserRole): boolean {
   return canAccessAdminPanel(actorRole);
 }
 
-/** Only SUPER_ADMIN may grant ADMIN or SUPER_ADMIN roles. */
+/** Platform admins may grant the Admin role; only Super Admin may grant Super Admin. */
 export function canAssignAdminRole(actorRole: UserRole): boolean {
-  return actorRole === "SUPER_ADMIN";
+  return canAccessAdminPanel(actorRole);
 }
 
 const NON_ADMIN_ASSIGNABLE_ROLES: UserRole[] = [
@@ -38,34 +38,41 @@ const ALL_ASSIGNABLE_ROLES: UserRole[] = [
   ...NON_ADMIN_ASSIGNABLE_ROLES,
 ];
 
+const ADMIN_ASSIGNABLE_ROLES: UserRole[] = ["ADMIN", ...NON_ADMIN_ASSIGNABLE_ROLES];
+
 export function assignableRolesFor(actorRole: UserRole): UserRole[] {
   if (!canAssignUserRoles(actorRole)) return [];
-  if (canAssignAdminRole(actorRole)) return ALL_ASSIGNABLE_ROLES;
-  return NON_ADMIN_ASSIGNABLE_ROLES;
+  if (actorRole === "SUPER_ADMIN") return ALL_ASSIGNABLE_ROLES;
+  if (actorRole === "ADMIN") return ADMIN_ASSIGNABLE_ROLES;
+  return [];
 }
 
 export function assertRoleAssignmentAllowed(actorRole: UserRole, targetRole: UserRole): void {
   if (!canAssignUserRoles(actorRole)) {
     throw new Error("Only platform administrators can assign roles");
   }
-  if ((targetRole === "ADMIN" || targetRole === "SUPER_ADMIN") && !canAssignAdminRole(actorRole)) {
-    throw new Error("Only Super Admins can assign Admin or Super Admin roles");
+  if (targetRole === "SUPER_ADMIN" && actorRole !== "SUPER_ADMIN") {
+    throw new Error("Only Super Admins can assign the Super Admin role");
+  }
+  const allowed = assignableRolesFor(actorRole);
+  if (!allowed.includes(targetRole)) {
+    throw new Error("You cannot assign this role");
   }
 }
 
-/** Only Super Admins may modify or remove other platform admin accounts. */
 export function isPlatformAdminRole(role: UserRole): boolean {
   return role === "ADMIN" || role === "SUPER_ADMIN";
 }
 
+/** Platform admins may modify most users; only Super Admin may modify Super Admin accounts. */
 export function canModifyUser(actorRole: UserRole, targetRole: UserRole): boolean {
   if (!canAssignUserRoles(actorRole)) return false;
-  if (isPlatformAdminRole(targetRole) && !canAssignAdminRole(actorRole)) return false;
+  if (targetRole === "SUPER_ADMIN" && actorRole !== "SUPER_ADMIN") return false;
   return true;
 }
 
 export function assertUserModificationAllowed(actorRole: UserRole, targetRole: UserRole): void {
   if (!canModifyUser(actorRole, targetRole)) {
-    throw new Error("Only Super Admins can modify platform administrator accounts");
+    throw new Error("Only Super Admins can modify Super Admin accounts");
   }
 }

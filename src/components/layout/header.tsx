@@ -6,7 +6,7 @@ import type { Session } from "next-auth";
 import { Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/layout/logo";
-import { PreferencesToolbar } from "@/components/layout/preferences-toolbar";
+import { PreferencesMenu } from "@/components/layout/preferences-menu";
 import { Button } from "@/components/ui/button";
 import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
@@ -58,9 +58,9 @@ export function Header({ initialSession }: HeaderProps) {
         </nav>
 
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
-          <PreferencesToolbar variant="inline" />
+          <PreferencesMenu compact />
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
             {session ? (
               <>
                 <Button asChild>

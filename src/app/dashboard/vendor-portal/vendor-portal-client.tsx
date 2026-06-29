@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VendorPortfolioUpload } from "@/components/media/vendor-portfolio-upload";
+import { VendorProfilePhotoUpload } from "@/components/vendor-os/vendor-profile-photo-upload";
+import { UploadedMedia } from "@/components/media/uploaded-media";
 import { Store, MessageSquare, ExternalLink, Send, Calendar, Users, Package, Clock, Star } from "lucide-react";
 
 const SECTION_TO_TAB: Record<string, string> = {
@@ -29,7 +31,7 @@ export default function VendorPortalClient() {
   const initialTab = SECTION_TO_TAB[sectionParam ?? ""] ?? "overview";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  const [vendor, setVendor] = useState<{ id: string; slug: string; businessName: string; plan?: { name: string } } | null>(null);
+  const [vendor, setVendor] = useState<{ id: string; slug: string; businessName: string; profileImage?: string | null; plan?: { name: string } } | null>(null);
   const [usage, setUsage] = useState<{ limits: Record<string, number>; usage: Record<string, number> } | null>(null);
   const [leads, setLeads] = useState<{ id: string; contactName?: string; status: string; eventType?: string; message?: string }[]>([]);
   const [replyLead, setReplyLead] = useState<string | null>(highlightLead);
@@ -147,9 +149,24 @@ export default function VendorPortalClient() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">{vendor.businessName}</h1>
-          <p className="page-subtitle">Vendor Portal · {vendor.plan?.name ?? "Free Plan"}</p>
+        <div className="flex items-center gap-4">
+          {vendor.profileImage ? (
+            <UploadedMedia
+              src={vendor.profileImage}
+              alt=""
+              className="h-14 w-14 rounded-xl border-2 border-white shadow-md object-cover shrink-0"
+              width={56}
+              height={56}
+            />
+          ) : (
+            <div className="h-14 w-14 rounded-xl bg-[#0B8A83]/10 flex items-center justify-center text-xl font-bold text-[#0B8A83] shrink-0 border border-[#0B8A83]/20">
+              {vendor.businessName[0]}
+            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold">{vendor.businessName}</h1>
+            <p className="page-subtitle">Vendor Portal · {vendor.plan?.name ?? "Free Plan"}</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -173,6 +190,16 @@ export default function VendorPortalClient() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Profile photo</CardTitle></CardHeader>
+            <CardContent>
+              <VendorProfilePhotoUpload
+                profileImage={vendor.profileImage}
+                onUpdated={(url) => setVendor((v) => (v ? { ...v, profileImage: url } : v))}
+              />
+              <p className="text-xs text-slate-500 mt-3">Shown on the vendor marketplace and your public profile page.</p>
+            </CardContent>
+          </Card>
           <div className="grid sm:grid-cols-2 gap-4">
             <Card>
               <CardContent className="pt-5 text-center">

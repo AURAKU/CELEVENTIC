@@ -179,6 +179,16 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   { id: "passport", label: "Passport open", description: "Luxury passport booklet", category: "interactive" },
   { id: "glass", label: "Glass swipe", description: "Frosted acrylic swipe", category: "interactive" },
   { id: "scroll-unroll", label: "Scroll unroll", description: "Royal parchment unfolds", category: "interactive" },
+  { id: "swipe-reveal", label: "Swipe reveal", description: "Swipe across to unveil the invitation", category: "interactive" },
+  { id: "pop-reveal", label: "Pop reveal", description: "Tap to pop and celebrate", category: "interactive" },
+  { id: "gift-box", label: "Gift box", description: "Open a wrapped gift box", category: "interactive" },
+  { id: "light-beam", label: "Light beam", description: "Luxury spotlight reveal", category: "interactive" },
+  { id: "film-countdown", label: "Film countdown", description: "Cinematic 3-2-1 countdown", category: "interactive" },
+  { id: "letter-unfold", label: "Letter unfold", description: "Vintage letter unfolds", category: "interactive" },
+  { id: "flower-bloom", label: "Flower bloom", description: "Tap a flower to bloom", category: "interactive" },
+  { id: "confetti-burst", label: "Confetti burst", description: "Instant confetti celebration", category: "interactive" },
+  { id: "flip-reveal", label: "Flip reveal", description: "3D card flip ceremony", category: "interactive" },
+  { id: "zoom-reveal", label: "Zoom reveal", description: "Camera zoom into the moment", category: "interactive" },
   { id: "none", label: "Instant", description: "Skip opening ceremony", category: "instant" },
 ];
 
@@ -199,14 +209,15 @@ export function mapLegacyRevealMode(mode: RevealMode): OpeningExperienceId {
   return map[mode] ?? "wax-seal-gold";
 }
 
-/** Keep legacy studio.revealMode in sync when hosts pick a full opening experience */
 export function mapOpeningToLegacyRevealMode(id: OpeningExperienceId): RevealMode {
   if (id.startsWith("curtain-")) return "curtain";
   if (id === "scratch") return "scratch";
   if (id === "passport") return "passport";
-  if (id === "glass") return "glass";
+  if (id === "glass" || id === "swipe-reveal") return "glass";
   if (id === "scroll-unroll") return "scroll-unroll";
-  if (id === "none") return "none";
+  if (id === "none" || id === "film-countdown") return "none";
+  if (id === "pop-reveal" || id === "confetti-burst") return "scratch";
+  if (id === "flip-reveal" || id === "zoom-reveal") return "passport";
   return "envelope";
 }
 

@@ -226,6 +226,97 @@
     animation: inv-fade-in 0.7s ease-out both;
   }
 
+  .inv-text-on-dark,
+  .cinematic-spotlight-root {
+    --inv-text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55), 0 0 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .inv-text-on-dark h1,
+  .inv-text-on-dark h2,
+  .inv-text-on-dark .inv-phrase-emphasis,
+  .cinematic-spotlight-root h1,
+  .cinematic-spotlight-root h2 {
+    text-shadow: var(--inv-text-shadow);
+  }
+
+  .inv-text-on-dark p,
+  .inv-text-on-light p,
+  .cinematic-spotlight-root p {
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  .inv-text-on-light {
+    --inv-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  .inv-text-on-light h1,
+  .inv-text-on-light h2 {
+    text-shadow: var(--inv-text-shadow);
+  }
+
+  .inv-phrase-emphasis p.uppercase,
+  .inv-phrase-emphasis .tracking-\[0\.4em\] {
+    letter-spacing: 0.35em !important;
+    font-weight: 500;
+    opacity: 0.92;
+  }
+
+  .inv-text-on-photo p,
+  .inv-text-on-photo h1 {
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.75), 0 0 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .inv-text-on-glass {
+    backdrop-filter: blur(8px);
+  }
+
+  .inv-text-on-glass h1,
+  .inv-text-on-glass p {
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
+  }
+
+  .cinematic-invite-root .inv-readable-panel {
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .inv-3d-scene {
+    perspective: 1200px;
+  }
+
+  .inv-3d-calendar-card,
+  .inv-3d-card,
+  .inv-3d-gift-box,
+  .inv-3d-countdown-unit {
+    transform-style: preserve-3d;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+  }
+
+  .inv-3d-calendar-card:hover,
+  .inv-3d-card:hover,
+  .inv-3d-gift-box:hover {
+    transform: rotateX(4deg) rotateY(-3deg) translateY(-4px);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+  }
+
+  .inv-3d-date-num {
+    text-shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
+  }
+
+  .inv-3d-countdown-unit {
+    animation: inv-3d-float 4s ease-in-out infinite;
+  }
+
+  .inv-3d-countdown-unit:nth-child(2) { animation-delay: 0.4s; }
+  .inv-3d-countdown-unit:nth-child(3) { animation-delay: 0.8s; }
+  .inv-3d-countdown-unit:nth-child(4) { animation-delay: 1.2s; }
+
+  @keyframes inv-3d-float {
+    0%, 100% { transform: translateY(0) rotateX(0deg); }
+    50% { transform: translateY(-4px) rotateX(6deg); }
+  }
+
   .inv-block-reveal {
     animation: inv-block-reveal 0.65s ease-out both;
   }
@@ -263,6 +354,11 @@
 @keyframes inv-countdown-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.85; }
+}
+
+@keyframes inv-3d-float {
+  0%, 100% { transform: translateY(0) rotateX(0deg); }
+  50% { transform: translateY(-4px) rotateX(6deg); }
 }
 
 @keyframes inv-portal-enter {

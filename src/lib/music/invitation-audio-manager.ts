@@ -17,6 +17,29 @@ export interface InvitationAudioManager {
   getAudio: () => HTMLAudioElement | null;
 }
 
+function waitForAudioReady(a: HTMLAudioElement): Promise<void> {
+  if (a.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const onReady = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error("Audio failed to load"));
+    };
+    const cleanup = () => {
+      a.removeEventListener("canplaythrough", onReady);
+      a.removeEventListener("loadeddata", onReady);
+      a.removeEventListener("error", onError);
+    };
+    a.addEventListener("canplaythrough", onReady, { once: true });
+    a.addEventListener("loadeddata", onReady, { once: true });
+    a.addEventListener("error", onError, { once: true });
+    a.load();
+  });
+}
+
 export function createInvitationAudioManager(
   musicSelection: MusicSelection | null | undefined,
   musicUrl: string | null | undefined
@@ -30,8 +53,9 @@ export function createInvitationAudioManager(
 
   let audio: HTMLAudioElement | null = null;
   let muted = false;
-  let savedVolume = musicSelection?.volume ?? 0.5;
+  let savedVolume = musicSelection?.volume ?? 0.55;
   let trimHandler: (() => void) | null = null;
+  let loadPromise: Promise<void> | null = null;
 
   function wireTrimLoop(a: HTMLAudioElement) {
     if (!musicSelection) return;
@@ -57,6 +81,9 @@ export function createInvitationAudioManager(
 
     audio = new Audio(resolveMusicUrl(resolvedUrl));
     audio.preload = "auto";
+    if (resolvedUrl.startsWith("http")) {
+      audio.crossOrigin = "anonymous";
+    }
 
     if (musicSelection) {
       audio.loop = false;
@@ -69,6 +96,7 @@ export function createInvitationAudioManager(
     }
 
     audio.volume = 0;
+    loadPromise = waitForAudioReady(audio).catch(() => undefined);
     return audio;
   }
 
@@ -99,7 +127,8 @@ export function createInvitationAudioManager(
     const fadeIn = musicSelection?.fadeInSec ?? 1.5;
 
     try {
-      if (musicSelection && a.readyState >= 1) {
+      if (loadPromise) await loadPromise;
+      if (musicSelection) {
         a.currentTime = musicSelection.startSec;
       }
       await a.play();
@@ -134,6 +163,7 @@ export function createInvitationAudioManager(
     },
     async restart() {
       const a = ensureAudio();
+      if (loadPromise) await loadPromise;
       if (musicSelection) {
         a.currentTime = musicSelection.startSec;
       } else {
@@ -151,6 +181,7 @@ export function createInvitationAudioManager(
       }
       audio = null;
       trimHandler = null;
+      loadPromise = null;
     },
     isPlaying() {
       return audio ? !audio.paused : false;

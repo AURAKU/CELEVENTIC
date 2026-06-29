@@ -70,5 +70,10 @@ export function parseMusicSelection(raw: unknown): MusicSelection | null {
     startSec: typeof o.startSec === "number" ? o.startSec : 0,
     endSec: typeof o.endSec === "number" ? o.endSec : MUSIC_CLIP_MAX_SEC,
     originalDurationSec: typeof o.originalDurationSec === "number" ? o.originalDurationSec : undefined,
+    autoPlay: typeof o.autoPlay === "boolean" ? o.autoPlay : true,
+    loop: typeof o.loop === "boolean" ? o.loop : true,
+    volume: typeof o.volume === "number" ? Math.max(0, Math.min(1, o.volume)) : 0.5,
+    fadeInSec: typeof o.fadeInSec === "number" ? o.fadeInSec : 1.5,
+    fadeOutSec: typeof o.fadeOutSec === "number" ? o.fadeOutSec : 1,
   };
 }

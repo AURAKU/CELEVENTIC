@@ -23,16 +23,21 @@ export function InvitationAudioControls({
   const [muted, setMuted] = useState(manager.isMuted());
   const [expanded, setExpanded] = useState(false);
   const [volume, setVolume] = useState(manager.getVolume());
+  const [needsTap, setNeedsTap] = useState(false);
 
   useEffect(() => {
     const audio = manager.getAudio();
-    if (!audio) return;
+    if (!audio) {
+      setNeedsTap(true);
+      return;
+    }
 
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
 
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
+    if (audio.paused) setNeedsTap(true);
     return () => {
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
@@ -42,6 +47,7 @@ export function InvitationAudioControls({
   async function handleToggle() {
     const nowPlaying = await manager.toggle();
     setPlaying(nowPlaying);
+    if (nowPlaying) setNeedsTap(false);
   }
 
   function handleMute() {
@@ -94,6 +100,11 @@ export function InvitationAudioControls({
       )}
 
       <div className="flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/95 backdrop-blur-xl shadow-lg p-1 max-w-[min(100vw-2rem,320px)]">
+        {needsTap && !playing && (
+          <span className="pl-2 pr-1 text-[10px] font-semibold uppercase tracking-wide text-[#0B8A83] animate-pulse">
+            Tap play
+          </span>
+        )}
         {trackTitle && (
           <span className="hidden sm:block pl-3 pr-1 text-xs text-slate-500 truncate max-w-[120px]" title={trackTitle}>
             {trackTitle}

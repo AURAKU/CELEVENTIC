@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Star, MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { VerifiedBadge, FeaturedBadge } from "@/components/vendor-os/verified-badge";
+import { UploadedMedia } from "@/components/media/uploaded-media";
+import { resolveMediaUrl } from "@/lib/uploads/media-url";
 import { formatCurrency } from "@/lib/utils";
 
 export interface VendorCardData {
@@ -25,17 +27,23 @@ export interface VendorCardData {
 export function VendorCard({ vendor }: { vendor: VendorCardData }) {
   const priceFrom = vendor.rateCards?.[0]?.priceMin ?? vendor.services?.[0]?.priceFrom;
   const location = [vendor.city, vendor.region].filter(Boolean).join(", ");
+  const coverUrl = resolveMediaUrl(vendor.coverImage);
 
   return (
     <Link href={`/vendors/${vendor.slug}`}>
       <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-slate-200/80 h-full">
         <div
           className="h-32 bg-gradient-to-br from-[#0B8A83]/20 to-[#0F172A]/10 relative"
-          style={vendor.coverImage ? { backgroundImage: `url(${vendor.coverImage})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+          style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
         >
           {vendor.profileImage && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={vendor.profileImage} alt="" className="absolute -bottom-6 left-4 w-14 h-14 rounded-xl border-2 border-white shadow-md object-cover" />
+            <UploadedMedia
+              src={vendor.profileImage}
+              alt=""
+              className="absolute -bottom-6 left-4 w-14 h-14 rounded-xl border-2 border-white shadow-md object-cover"
+              width={56}
+              height={56}
+            />
           )}
         </div>
         <CardContent className="pt-8 pb-4 px-4">

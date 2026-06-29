@@ -36,6 +36,7 @@ const adminSections: NavSection[] = [
   {
     title: "Templates & Content",
     items: [
+      { href: "/admin/experience", label: "Experience Engine", icon: Sparkles },
       { href: "/admin/invitation-templates", label: "Templates", icon: Palette },
       { href: "/admin/templates", label: "Event Templates", icon: Layers },
       { href: "/admin/inspiration", label: "Inspiration Engine", icon: Sparkles },

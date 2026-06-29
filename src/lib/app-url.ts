@@ -10,6 +10,27 @@ export const CELEVENTIC_DOMAINS = [
 
 export const DEFAULT_PRODUCTION_URL = "https://www.celeventic.com";
 
+export function isCeleventicDomain(hostOrUrl: string): boolean {
+  try {
+    const hostname = hostOrUrl.includes("://")
+      ? new URL(hostOrUrl).hostname
+      : hostOrUrl.split(":")[0].toLowerCase();
+    return CELEVENTIC_DOMAINS.some((d) => hostname === d || hostname.endsWith(`.${d.replace(/^www\./, "")}`));
+  } catch {
+    return false;
+  }
+}
+
+function isProductionDeployment(nodeEnv?: string): boolean {
+  const env = nodeEnv ?? process.env.NODE_ENV ?? "development";
+  return (
+    env === "production" ||
+    process.env.VERCEL === "1" ||
+    process.env.VERCEL_ENV === "production" ||
+    process.env.VERCEL_ENV === "preview"
+  );
+}
+
 export function isLocalHost(hostOrUrl: string): boolean {
   try {
     const hostname = hostOrUrl.includes("://")
@@ -60,7 +81,7 @@ export function resolveAppUrl(options: ResolveOptions = {}): string {
     return normalizeUrl(`https://${vercel}`);
   }
 
-  if (nodeEnv === "production") {
+  if (isProductionDeployment(nodeEnv)) {
     return DEFAULT_PRODUCTION_URL;
   }
 
@@ -93,7 +114,10 @@ export function getClientAppUrl(): string {
     const origin = window.location.origin;
     if (!isLocalHost(origin)) return normalizeUrl(origin);
   }
-  return getAppUrlFromEnv();
+  const fromEnv = getAppUrlFromEnv();
+  if (!isLocalHost(fromEnv)) return fromEnv;
+  if (isProductionDeployment()) return DEFAULT_PRODUCTION_URL;
+  return fromEnv;
 }
 
 /** Rewrite stored share links that incorrectly contain localhost. */

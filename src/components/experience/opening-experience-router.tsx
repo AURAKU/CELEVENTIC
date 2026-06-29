@@ -12,6 +12,16 @@ import { PassportReveal } from "@/components/invitation-os/reveal/passport-revea
 import { GlassReveal } from "@/components/invitation-os/reveal/glass-reveal";
 import { CurtainReveal } from "@/components/invitation-os/reveal/curtain-reveal";
 import { ScrollUnrollReveal } from "@/components/invitation-os/reveal/scroll-unroll-reveal";
+import { SwipeReveal } from "@/components/invitation-os/reveal/swipe-reveal";
+import { PopReveal } from "@/components/invitation-os/reveal/pop-reveal";
+import { GiftBoxReveal } from "@/components/invitation-os/reveal/gift-box-reveal";
+import { LightBeamReveal } from "@/components/invitation-os/reveal/light-beam-reveal";
+import { FilmCountdownReveal } from "@/components/invitation-os/reveal/film-countdown-reveal";
+import { LetterUnfoldReveal } from "@/components/invitation-os/reveal/letter-unfold-reveal";
+import { FlowerBloomReveal } from "@/components/invitation-os/reveal/flower-bloom-reveal";
+import { ConfettiBurstReveal } from "@/components/invitation-os/reveal/confetti-burst-reveal";
+import { FlipReveal } from "@/components/invitation-os/reveal/flip-reveal";
+import { ZoomReveal } from "@/components/invitation-os/reveal/zoom-reveal";
 import { useState } from "react";
 
 interface OpeningExperienceRouterProps {
@@ -103,6 +113,26 @@ export function OpeningExperienceRouter({
       return (
         <ScrollUnrollReveal guestName={guestName} eventTitle={eventTitle} hostName={hostName} onComplete={complete} />
       );
+    case "swipe-reveal":
+      return <SwipeReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+    case "pop-reveal":
+      return <PopReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+    case "gift-box":
+      return <GiftBoxReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+    case "light-beam":
+      return <LightBeamReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+    case "film-countdown":
+      return <FilmCountdownReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+    case "letter-unfold":
+      return <LetterUnfoldReveal guestName={guestName} eventTitle={eventTitle} hostName={hostName} onComplete={complete} />;
+    case "flower-bloom":
+      return <FlowerBloomReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+    case "confetti-burst":
+      return <ConfettiBurstReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+    case "flip-reveal":
+      return <FlipReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+    case "zoom-reveal":
+      return <ZoomReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     default:
       return null;
   }

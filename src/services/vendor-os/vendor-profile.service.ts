@@ -127,6 +127,16 @@ export class VendorProfileService {
     });
   }
 
+  async updateProfileImage(vendorId: string, userId: string, profileImage: string | null) {
+    const vendor = await prisma.vendor.findFirst({ where: { id: vendorId, userId } });
+    if (!vendor) throw new Error("Vendor not found");
+
+    return prisma.vendor.update({
+      where: { id: vendorId },
+      data: { profileImage },
+    });
+  }
+
   async updateProfile(vendorId: string, userId: string, data: Partial<VendorSignupInput>) {
     const vendor = await prisma.vendor.findFirst({ where: { id: vendorId, userId } });
     if (!vendor) throw new Error("Vendor not found");

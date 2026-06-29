@@ -2,10 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { GuestInvitationPortal } from "@/components/guest-portal/guest-invitation-portal";
-import { InvitationAudioControls } from "@/components/invitations/invitation-audio-controls";
+import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
 import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
-import { createInvitationAudioManager } from "@/lib/music/invitation-audio-manager";
 import { Play, Smartphone, Monitor, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -85,34 +83,24 @@ function LivePreviewExperience({
   preview,
   device,
   interactive,
-  showMusicControls,
+  skipReveal,
 }: {
   preview: ReturnType<typeof buildLivePreviewProps>;
   device: PreviewDevice;
   interactive: boolean;
-  showMusicControls: boolean;
+  skipReveal: boolean;
 }) {
-  const audioManager = useMemo(
-    () =>
-      preview.musicSelection
-        ? createInvitationAudioManager(preview.musicSelection, null)
-        : null,
-    [preview.musicSelection]
-  );
-
-  useEffect(() => {
-    return () => {
-      audioManager?.destroy();
-    };
-  }, [audioManager]);
-
   return (
     <PreviewDeviceChrome device={device}>
       <div
         className="relative"
         style={{ pointerEvents: interactive ? "auto" : "none" }}
       >
-        <GuestInvitationPortal
+        <PremiumInviteWrapper
+          skipReveal={skipReveal}
+          skipTapGate={preview.skipTapGate ?? !interactive}
+          musicEnabled={Boolean(preview.musicSelection)}
+          musicSelection={preview.musicSelection}
           invitation={{
             id: `preview-${preview.design.layout}`,
             name: preview.invitationName,
@@ -133,18 +121,9 @@ function LivePreviewExperience({
           guestName={preview.guestName}
           fullScreen={interactive}
           embedded={!interactive}
-          cinematicMode={interactive}
           rsvpRequired={false}
-          openingComplete
           eventId="preview-event"
         />
-        {showMusicControls && audioManager && (
-          <InvitationAudioControls
-            manager={audioManager}
-            trackTitle={preview.musicSelection?.title}
-            embedded
-          />
-        )}
       </div>
     </PreviewDeviceChrome>
   );
@@ -170,8 +149,14 @@ export function LiveTemplatePreview({
   const cfg = VARIANT_CONFIG[variant];
 
   const preview = useMemo(
-    () => buildLivePreviewProps(layoutSlug, category, { features, musicEnabled }),
-    [layoutSlug, category, features, musicEnabled]
+    () =>
+      buildLivePreviewProps(layoutSlug, category, {
+        features,
+        musicEnabled: musicEnabled ?? true,
+        skipIntro: !cfg.interactive,
+        skipTapGate: !cfg.interactive,
+      }),
+    [layoutSlug, category, features, musicEnabled, cfg.interactive]
   );
 
   const hasMusic = Boolean(preview.musicSelection);
@@ -349,7 +334,7 @@ export function LiveTemplatePreview({
                 preview={preview}
                 device={isInteractive ? device : "mobile"}
                 interactive={isInteractive}
-                showMusicControls={hasMusic && isInteractive}
+                skipReveal={!isInteractive}
               />
             </div>
           </div>

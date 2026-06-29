@@ -138,7 +138,7 @@ export function AdminUsersClient({
 
   function openEdit(user: UserRow) {
     if (!canModifyUser(actorRole, user.role as UserRole)) {
-      setError("Only Super Admins can edit platform administrator accounts");
+      setError("Only Super Admins can edit Super Admin accounts");
       return;
     }
     setEditing(user);
@@ -157,8 +157,10 @@ export function AdminUsersClient({
         title="Users"
         subtitle={
           canPromoteToAdmin
-            ? "Super Admin — create users, assign any role including Admin."
-            : "Admin — manage users and assign organizer, vendor, and staff roles. Only Super Admins can grant Admin access."
+            ? actorRole === "SUPER_ADMIN"
+              ? "Super Admin — create users, assign any role including Super Admin."
+              : "Admin — create users, assign roles, promote to Admin, and manage all non–Super Admin accounts."
+            : "Manage users on the platform."
         }
         count={total}
         search={search}
@@ -220,8 +222,8 @@ export function AdminUsersClient({
                         ))}
                       </SelectContent>
                     </Select>
-                    {(editing.role === "ADMIN" || editing.role === "SUPER_ADMIN") && !canPromoteToAdmin && (
-                      <p className="text-xs text-amber-600 mt-1">Contact a Super Admin to change admin-level roles.</p>
+                    {editing.role === "SUPER_ADMIN" && actorRole !== "SUPER_ADMIN" && (
+                      <p className="text-xs text-amber-600 mt-1">Contact a Super Admin to change Super Admin roles.</p>
                     )}
                   </div>
                   <div>
@@ -318,7 +320,7 @@ export function AdminUsersClient({
                         <Button
                           size="sm"
                           variant="ghost"
-                          title="Make platform admin (Super Admin only)"
+                          title="Make platform admin"
                           onClick={() => {
                             if (confirm(`Grant Admin access to ${user.name}?`)) {
                               void updateUser(user.id, { role: "ADMIN" });

@@ -15,12 +15,33 @@ export const INVITATION_STYLES = [
   "Royal",
   "Minimal",
   "Floral",
+  "Traditional",
   "Traditional Ghanaian",
   "Kente-inspired",
-  "Modern",
+  "European",
+  "Boho",
+  "Romantic",
+  "Cute",
+  "Artistic",
+  "Nature",
   "Classic",
+  "Modern",
   "Premium Dark",
   "Clean White",
+  "Cinematic",
+] as const;
+
+export const INVITATION_MOODS = [
+  "European",
+  "Traditional",
+  "Romantic",
+  "Cinematic",
+  "Boho",
+  "Nature",
+  "Luxury",
+  "Classic",
+  "Cute",
+  "Artistic",
 ] as const;
 
 export type InvitationCategory = (typeof INVITATION_CATEGORIES)[number];
@@ -36,6 +57,8 @@ export interface CatalogTemplate {
   previewGradient: string;
   isPremium: boolean;
   features: string[];
+  isNew?: boolean;
+  mood?: string;
 }
 
 export const CATALOG_TEMPLATES: CatalogTemplate[] = [
@@ -67,13 +90,13 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
   { slug: "ghanaian-traditional", name: "Traditional Ghanaian", description: "Cultural elegance for traditional ceremonies", category: "Private Event", style: "Traditional Ghanaian", layoutSlug: "rustic-lace", previewGradient: "from-orange-800 to-emerald-900", isPremium: true, features: ["RSVP", "Gallery", "Directions"] },
   { slug: "private-minimal", name: "Private Minimal", description: "Understated private event invitation", category: "Private Event", style: "Minimal", layoutSlug: "arch-green", previewGradient: "from-gray-100 to-gray-200", isPremium: false, features: ["RSVP", "Maps"] },
   { slug: "custom-upload", name: "Build From Your Design", description: "Upload your artwork — we frame it beautifully", category: "Private Event", style: "Modern", layoutSlug: "custom-media", previewGradient: "from-teal-600 to-teal-800", isPremium: false, features: ["RSVP", "Media", "Designer assist"] },
-  { slug: "royal-emerald-wedding", name: "Royal Emerald Wedding", description: "Emerald green, gold, ivory — palace wax seal reveal", category: "Wedding", style: "Royal", layoutSlug: "royal-emerald-wedding", previewGradient: "from-emerald-900 via-emerald-950 to-amber-950", isPremium: true, features: ["RSVP", "QR", "Music", "Gallery", "Countdown"] },
-  { slug: "midnight-velvet-reception", name: "Midnight Velvet Reception", description: "Black, navy, silver — velvet curtain cinematic reveal", category: "Wedding", style: "Luxury", layoutSlug: "midnight-velvet-reception", previewGradient: "from-slate-950 via-indigo-950 to-black", isPremium: true, features: ["RSVP", "QR", "Music", "Gallery"] },
-  { slug: "kente-heritage-union", name: "Kente Heritage Union", description: "Kente gold, red, green — traditional cloth unfold", category: "Wedding", style: "Kente-inspired", layoutSlug: "kente-heritage-union", previewGradient: "from-amber-700 via-red-900 to-emerald-900", isPremium: true, features: ["RSVP", "Seating", "Music", "Gallery"] },
-  { slug: "floral-garden-romance", name: "Floral Garden Romance", description: "Soft pink, cream, sage — floating petal envelope", category: "Wedding", style: "Floral", layoutSlug: "floral-garden-romance", previewGradient: "from-rose-100 via-pink-50 to-emerald-50", isPremium: false, features: ["RSVP", "Story", "Music", "Gallery"] },
-  { slug: "passport-destination-wedding", name: "Passport Destination Wedding", description: "Travel paper, navy stamps — passport boarding pass", category: "Wedding", style: "Luxury", layoutSlug: "passport-destination-wedding", previewGradient: "from-slate-100 via-amber-50 to-teal-900", isPremium: true, features: ["RSVP", "QR", "Maps", "Music"] },
-  { slug: "crystal-acrylic-luxury", name: "Crystal Acrylic Luxury", description: "Glass shimmer, white, gold champagne acrylic reveal", category: "Wedding", style: "Luxury", layoutSlug: "crystal-acrylic-luxury", previewGradient: "from-sky-100 via-white to-amber-100", isPremium: true, features: ["RSVP", "Gallery", "Music"] },
-  { slug: "golden-islamic-nikkah", name: "Golden Islamic Nikkah", description: "Gold, ivory, emerald ornamental palace entrance", category: "Wedding", style: "Royal", layoutSlug: "golden-islamic-nikkah", previewGradient: "from-amber-100 via-emerald-50 to-emerald-900", isPremium: false, features: ["RSVP", "Schedule", "Maps", "Music"] },
+  { slug: "royal-emerald-wedding", name: "Royal Emerald Wedding", description: "Emerald green, gold, ivory — palace wax seal reveal", category: "Wedding", style: "Royal", layoutSlug: "royal-emerald-wedding", previewGradient: "from-emerald-900 via-emerald-950 to-amber-950", isPremium: true, isNew: true, mood: "European", features: ["RSVP", "QR", "Music", "Gallery", "Countdown", "Maps", "Calendar"] },
+  { slug: "midnight-velvet-reception", name: "Midnight Velvet Reception", description: "Black, navy, silver — velvet curtain cinematic reveal", category: "Wedding", style: "Luxury", layoutSlug: "midnight-velvet-reception", previewGradient: "from-slate-950 via-indigo-950 to-black", isPremium: true, isNew: true, mood: "Cinematic", features: ["RSVP", "QR", "Music", "Gallery", "Calendar"] },
+  { slug: "kente-heritage-union", name: "Kente Heritage Union", description: "Kente gold, red, green — traditional cloth unfold", category: "Wedding", style: "Kente-inspired", layoutSlug: "kente-heritage-union", previewGradient: "from-amber-700 via-red-900 to-emerald-900", isPremium: true, isNew: true, mood: "Traditional", features: ["RSVP", "Seating", "Music", "Gallery", "Guest Wishes"] },
+  { slug: "floral-garden-romance", name: "Floral Garden Romance", description: "Soft pink, cream, sage — floating petal envelope", category: "Wedding", style: "Floral", layoutSlug: "floral-garden-romance", previewGradient: "from-rose-100 via-pink-50 to-emerald-50", isPremium: false, mood: "Romantic", features: ["RSVP", "Story", "Music", "Gallery", "Calendar", "Countdown"] },
+  { slug: "passport-destination-wedding", name: "Passport Destination Wedding", description: "Travel paper, navy stamps — passport boarding pass", category: "Wedding", style: "Luxury", layoutSlug: "passport-destination-wedding", previewGradient: "from-slate-100 via-amber-50 to-teal-900", isPremium: true, isNew: true, mood: "European", features: ["RSVP", "QR", "Maps", "Music", "Calendar"] },
+  { slug: "crystal-acrylic-luxury", name: "Crystal Acrylic Luxury", description: "Glass shimmer, white, gold champagne acrylic reveal", category: "Wedding", style: "Luxury", layoutSlug: "crystal-acrylic-luxury", previewGradient: "from-sky-100 via-white to-amber-100", isPremium: true, isNew: true, mood: "Luxury", features: ["RSVP", "Gallery", "Music", "Countdown", "Calendar", "Maps"] },
+  { slug: "golden-islamic-nikkah", name: "Golden Islamic Nikkah", description: "Gold, ivory, emerald ornamental palace entrance", category: "Wedding", style: "Royal", layoutSlug: "golden-islamic-nikkah", previewGradient: "from-amber-100 via-emerald-50 to-emerald-900", isPremium: false, mood: "Traditional", features: ["RSVP", "Schedule", "Maps", "Music", "Calendar"] },
   { slug: "memorial-candle-tribute", name: "Memorial Candle Tribute", description: "Black, ivory, candle gold — solemn tribute wall", category: "Funeral", style: "Classic", layoutSlug: "memorial-candle-tribute", previewGradient: "from-slate-900 via-stone-900 to-red-950", isPremium: false, features: ["Tributes", "Contributions", "Music", "Gallery"] },
   { slug: "neon-celebration-party", name: "Neon Celebration Party", description: "Purple, electric blue, hot pink — neon scratch reveal", category: "Birthday", style: "Modern", layoutSlug: "neon-celebration-party", previewGradient: "from-fuchsia-600 via-purple-900 to-black", isPremium: false, features: ["RSVP", "Tickets", "QR", "Music"] },
   { slug: "corporate-prestige-summit", name: "Corporate Prestige Summit", description: "Navy, white, platinum — professional summit motion", category: "Corporate", style: "Premium Dark", layoutSlug: "corporate-prestige-summit", previewGradient: "from-slate-900 via-slate-800 to-teal-900", isPremium: true, features: ["RSVP", "QR", "Agenda", "Music"] },

@@ -20,6 +20,30 @@ export type OpeningExperienceId =
   | "passport"
   | "glass"
   | "scroll-unroll"
+  | "swipe-reveal"
+  | "pop-reveal"
+  | "gift-box"
+  | "light-beam"
+  | "film-countdown"
+  | "letter-unfold"
+  | "flower-bloom"
+  | "confetti-burst"
+  | "flip-reveal"
+  | "zoom-reveal"
+  | "none";
+
+export type OutroExperienceId =
+  | "thank-you-fade"
+  | "fireworks"
+  | "lanterns"
+  | "butterflies"
+  | "rose-petals"
+  | "golden-sparkles"
+  | "closing-curtain"
+  | "memory-slideshow"
+  | "final-quote"
+  | "see-you-soon"
+  | "upload-memories"
   | "none";
 
 export type EnvironmentPresetId =
@@ -62,7 +86,44 @@ export type CountdownStyleId =
   | "minimal"
   | "glass"
   | "gold-royal"
-  | "circular";
+  | "circular"
+  | "card-3d";
+
+export type SlideshowStyleId =
+  | "fade-carousel"
+  | "magazine"
+  | "polaroid"
+  | "film-strip"
+  | "floating-cards"
+  | "grid-reveal"
+  | "ken-burns"
+  | "stacked-cards";
+
+export type HeroLayoutId =
+  | "classic-centered"
+  | "editorial-split"
+  | "magazine-stack"
+  | "fullscreen-type"
+  | "passport-stamp"
+  | "neon-pulse"
+  | "vine-arch"
+  | "lace-frame"
+  | "hexagon-stack"
+  | "rings-spotlight"
+  | "media-canvas"
+  | "glass-frost"
+  | "garden-card"
+  | "royal-palace"
+  | "velvet-stage"
+  | "kente-weave"
+  | "garden-bloom"
+  | "boarding-pass"
+  | "crystal-prism"
+  | "islamic-arch"
+  | "memorial-candle"
+  | "corporate-grid";
+
+export type ExperiencePacing = "slow" | "medium" | "fast";
 
 export type SceneTransitionId =
   | "fade"
@@ -91,6 +152,7 @@ export interface EventScheduleItem {
 
 export interface EventExperienceConfig {
   openingExperience?: OpeningExperienceId;
+  outroExperience?: OutroExperienceId;
   environment?: EnvironmentPresetId;
   environmentIntensity?: EnvironmentIntensity;
   hubMode?: ExperienceHubMode;
@@ -98,14 +160,19 @@ export interface EventExperienceConfig {
   journeyChapters?: JourneyChapter[];
   countdownStyle?: CountdownStyleId;
   sceneTransition?: SceneTransitionId;
+  heroLayout?: HeroLayoutId;
+  pacing?: ExperiencePacing;
   enableRevealSounds?: boolean;
   introEnabled?: boolean;
   introDurationSec?: 1.5 | 2 | 3 | 5;
   scheduleItems?: EventScheduleItem[];
   themePresetId?: string;
+  collectionId?: string;
+  defaultAudioCategory?: string;
+  defaultAudioTrackId?: string;
   thankYouMessage?: string;
   /** Gallery / media display style in guest invitation */
-  slideshowStyle?: string;
+  slideshowStyle?: SlideshowStyleId | string;
 }
 
 export const DEFAULT_HUB_TABS: HubTabId[] = [

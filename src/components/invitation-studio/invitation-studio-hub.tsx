@@ -14,7 +14,7 @@ import {
   BUTTON_POSITION_OPTIONS,
   DEFAULT_STUDIO_CONFIG,
 } from "@/lib/invitation-studio/studio-types";
-import type { EventExperienceConfig, HubTabId, OpeningExperienceId } from "@/lib/experience/experience-types";
+import type { EventExperienceConfig, HubTabId, OpeningExperienceId, OutroExperienceId, SceneTransitionId } from "@/lib/experience/experience-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { OPENING_EXPERIENCES, mapLegacyRevealMode, mapOpeningToLegacyRevealMode } from "@/lib/experience/opening-experiences";
 import { ENVIRONMENT_PRESETS } from "@/lib/experience/environment-presets";
@@ -27,6 +27,37 @@ import { EXPERIENCE_THEME_PRESETS } from "@/lib/experience/theme-presets";
 const FONT_OPTIONS = ["Inter", "Playfair Display", "Cinzel", "Cormorant Garamond", "Great Vibes"];
 const ALL_HUB_TABS = Object.keys(HUB_TAB_LABELS) as HubTabId[];
 const OPENING_CATEGORIES = ["envelope", "curtain", "palace", "interactive", "instant"] as const;
+
+const OUTRO_OPTIONS: { id: OutroExperienceId; label: string }[] = [
+  { id: "thank-you-fade", label: "Thank you fade" },
+  { id: "fireworks", label: "Fireworks" },
+  { id: "lanterns", label: "Floating lanterns" },
+  { id: "butterflies", label: "Butterflies" },
+  { id: "rose-petals", label: "Rose petals" },
+  { id: "golden-sparkles", label: "Golden sparkles" },
+  { id: "closing-curtain", label: "Closing curtain" },
+  { id: "memory-slideshow", label: "Memory slideshow" },
+  { id: "final-quote", label: "Final quote" },
+  { id: "see-you-soon", label: "See you soon" },
+  { id: "upload-memories", label: "Upload memories" },
+  { id: "none", label: "None" },
+];
+
+const SCENE_TRANSITIONS: { id: SceneTransitionId; label: string }[] = [
+  { id: "fade", label: "Fade" },
+  { id: "slide", label: "Slide" },
+  { id: "curtain", label: "Curtain" },
+  { id: "door", label: "Door" },
+  { id: "book", label: "Book page" },
+  { id: "sparkle", label: "Sparkle" },
+];
+
+const ANIMATION_OPTIONS = [
+  { id: "fade", label: "Gentle fade" },
+  { id: "ken-burns", label: "Ken Burns zoom" },
+  { id: "parallax", label: "Parallax drift" },
+  { id: "none", label: "Static" },
+] as const;
 
 interface InvitationStudioHubProps {
   design: InvitationDesignConfig;
@@ -276,6 +307,7 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
                   <SelectItem value="minimal">Minimal</SelectItem>
                   <SelectItem value="glass">Glass</SelectItem>
                   <SelectItem value="gold-royal">Gold royal</SelectItem>
+                  <SelectItem value="card-3d">3D cards</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -387,6 +419,82 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
               </SelectContent>
             </Select>
           </div>
+          <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={studio.fullScreen ?? true}
+              onChange={(e) => patchStudio({ fullScreen: e.target.checked })}
+              className="rounded border-slate-300"
+            />
+            Full-screen immersive (100dvh guest view)
+          </label>
+        </section>
+
+        <section className="rounded-2xl border bg-white p-5 space-y-4">
+          <h3 className="font-semibold flex items-center gap-2 text-[#0F172A]">
+            <Sparkles className="h-4 w-4 text-[#D4A63A]" /> Motion & outro
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Photo animation</Label>
+              <Select
+                value={design.animation ?? "fade"}
+                onValueChange={(v) => patchDesign({ animation: v as typeof design.animation })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ANIMATION_OPTIONS.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Scene transitions</Label>
+              <Select
+                value={experience.sceneTransition ?? "fade"}
+                onValueChange={(v) => patchExperience({ sceneTransition: v as SceneTransitionId })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SCENE_TRANSITIONS.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Outro experience</Label>
+            <Select
+              value={experience.outroExperience ?? "thank-you-fade"}
+              onValueChange={(v) => patchExperience({ outroExperience: v as OutroExperienceId })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {OUTRO_OPTIONS.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Thank you message</Label>
+            <Input
+              value={experience.thankYouMessage ?? ""}
+              onChange={(e) => patchExperience({ thankYouMessage: e.target.value })}
+              placeholder="Thank you for being part of our celebration…"
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={experience.enableRevealSounds ?? false}
+              onChange={(e) => patchExperience({ enableRevealSounds: e.target.checked })}
+              className="rounded border-slate-300"
+            />
+            Enable sound effects during reveal ceremony
+          </label>
         </section>
 
         {onSave && (
@@ -405,7 +513,7 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
           <InvitationStudioPreview design={previewDesign} event={event} message={message ?? ""} invitationName={event.title} />
         </div>
         <p className="text-xs text-center text-slate-500 flex items-center justify-center gap-1">
-          <Music className="h-3 w-3" /> Audio plays after the reveal ceremony on the live invite
+          <Music className="h-3 w-3" /> Tap the preview, then play — music starts after your tap (browser policy). Customize colors, copy, motion, tabs, and audio in the panels.
         </p>
       </div>
     </div>

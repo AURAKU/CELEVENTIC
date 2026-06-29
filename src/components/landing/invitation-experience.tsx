@@ -5,8 +5,6 @@ import { ArrowRight, Heart, Sparkles, Palette, Globe2, Shield } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { INVITATION_TEMPLATE_PRESETS } from "@/lib/invitation-templates";
-import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
-import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 const HIGHLIGHT_KEYS = [
@@ -18,7 +16,7 @@ const HIGHLIGHT_KEYS = [
 
 export function InvitationExperience() {
   const { t } = useLocale();
-  const featured = INVITATION_TEMPLATE_PRESETS;
+  const featured = INVITATION_TEMPLATE_PRESETS.slice(0, 6);
 
   return (
     <section id="invitations" className="py-28 bg-white relative overflow-hidden">
@@ -54,16 +52,21 @@ export function InvitationExperience() {
           {featured.map((template) => (
             <Link
               key={template.slug}
-              href="/templates"
-              className="group rounded-2xl overflow-hidden border border-slate-200/70 hover:border-brand-300 hover:shadow-[0_16px_48px_rgba(11,138,131,0.12)] transition-all bg-white"
+              href="/auth/register"
+              className="group rounded-2xl overflow-hidden border border-slate-200/70 hover:border-brand-300 hover:shadow-[0_16px_48px_rgba(11,138,131,0.12)] transition-all"
             >
-              <LiveTemplatePreview
-                layoutSlug={template.slug}
-                category={template.category}
-                variant="card"
-                lazy
-              />
-              <div className="p-5">
+              <div
+                className={`h-44 bg-gradient-to-br ${template.preview.gradient} flex items-center justify-center relative`}
+              >
+                <div
+                  className="absolute inset-6 rounded-xl border-2 opacity-60"
+                  style={{ borderColor: template.preview.accent }}
+                />
+                <span className="font-display text-lg font-semibold text-slate-800/80 px-4 text-center">
+                  {template.name}
+                </span>
+              </div>
+              <div className="p-5 bg-white">
                 <p className="text-xs font-medium uppercase tracking-wider text-brand-600">
                   {template.category}
                 </p>
@@ -76,8 +79,8 @@ export function InvitationExperience() {
 
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button size="lg" asChild>
-            <Link href="/invitations/catalogue">
-              {t("landing.invite_browse")} ({CATALOG_TEMPLATES.length} templates) <ArrowRight className="h-4 w-4" />
+            <Link href="/templates">
+              {t("landing.invite_browse")} <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
           <Button size="lg" variant="outline" asChild>

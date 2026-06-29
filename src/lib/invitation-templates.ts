@@ -1,5 +1,6 @@
 import type { InvitationDesignConfig, InvitationLayoutSlug, MediaType } from "@/types/invitation-design";
 import { CINEMATIC_THEMES, CINEMATIC_LAYOUT_SLUGS } from "@/lib/invitation/cinematic-themes";
+import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -173,7 +174,7 @@ export function getTemplatePreset(slug: string): InvitationTemplatePreset | unde
 export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignConfig {
   const preset = templateSlug ? getTemplatePreset(templateSlug) : INVITATION_TEMPLATE_PRESETS[0];
   const base = preset?.config ?? INVITATION_TEMPLATE_PRESETS[0].config;
-  return {
+  const enriched = enrichDesignWithExperienceDNA({
     ...base,
     experience: {
       introEnabled: true,
@@ -182,7 +183,8 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
       ...base.experience,
     },
     studio: { fullScreen: true, ...base.studio },
-  };
+  });
+  return enriched;
 }
 
 export function mergeDesignConfig(

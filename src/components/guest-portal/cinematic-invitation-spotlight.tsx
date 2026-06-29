@@ -2,14 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Check, MapPin, Clock, Shirt, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { motion, AnimatePresence, type Transition } from "framer-motion";
+import { Share2, Check, Clock, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { CountdownDisplay } from "@/components/experience/countdown-display";
 import { InvitationGalleryDisplay } from "@/components/invitation/invitation-gallery-display";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
-import { AddToCalendarButton } from "@/components/guest-portal/add-to-calendar-button";
+import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
+import { SaveDateCalendarCard } from "@/components/guest-portal/save-date-calendar-card";
+import { CalendarActionsMenu } from "@/components/guest-portal/calendar-actions-menu";
+import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
+import { GiftQrBox } from "@/components/guest-portal/gift-qr-box";
 import { AgiFooter } from "@/components/agi-engine/agi-badge";
 import { ParticleEnvironment } from "@/components/experience/particle-environment";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -18,6 +22,11 @@ import type { EventExperienceConfig } from "@/lib/experience/experience-types";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
 import { cn } from "@/lib/utils";
 import { UploadedMedia } from "@/components/media/uploaded-media";
+import { OutroExperienceOverlay } from "@/components/experience/outro-experience-overlay";
+import { HeroLayoutView } from "@/components/guest-portal/hero-layout-views";
+import { getSceneTransitionMotion } from "@/lib/experience/scene-transition-motion";
+import { getSlideDurationForLayout, mapExperienceSlideshowStyle } from "@/lib/experience/experience-engine-v2";
+import type { SlideshowStyleId as GallerySlideshowStyleId } from "@/lib/invitation/slideshow-styles";
 
 interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -38,7 +47,7 @@ type SceneDef = {
   content: React.ReactNode;
 };
 
-const SLIDE_MS = 7200;
+const DEFAULT_SLIDE_MS = 7200;
 
 export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlightProps) {
   const { t, locale } = useLocale();
@@ -66,6 +75,15 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
   const dateParts = formatInvitationDateParts(props.event.startDateRaw ?? props.event.startDate);
   const environmentId = props.experienceConfig?.environment ?? "none";
   const countdownStyle = props.experienceConfig?.countdownStyle ?? "classic";
+  const sceneTransition = props.experienceConfig?.sceneTransition ?? "fade";
+  const transitionMotion = getSceneTransitionMotion(sceneTransition);
+  const heroLayout = props.experienceConfig?.heroLayout ?? "classic-centered";
+  const outroId = props.experienceConfig?.outroExperience ?? "none";
+  const gallerySlideshowStyle: GallerySlideshowStyleId = mapExperienceSlideshowStyle(
+    props.experienceConfig?.slideshowStyle
+  );
+  const slideMs = getSlideDurationForLayout(props.design.layout ?? "classic-gold") ?? DEFAULT_SLIDE_MS;
+  const buttonStyle = props.design.studio?.buttonStyle;
   const showRsvp = props.rsvpRequired !== false;
 
   const galleryItems = useMemo(
@@ -90,47 +108,32 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     }
   }, [displayEvent.title, shareUrl]);
 
+  const renderHeroContent = () => (
+    <HeroLayoutView
+      layoutId={heroLayout}
+      name1={name1}
+      name2={name2}
+      intro={props.design.introText ?? "You are invited"}
+      dateLine={`${String(dateParts.day).padStart(2, "0")} · ${dateParts.monthShort.toUpperCase()} · ${dateParts.year}`}
+      time={dateParts.time}
+      colors={colors}
+      fonts={fonts}
+    />
+  );
+
   const scenes = useMemo(() => {
     const list: SceneDef[] = [];
 
     list.push({
       id: "hero",
-      durationMs: SLIDE_MS,
-      content: (
-        <div className="flex flex-col items-center justify-center text-center px-8 max-w-lg mx-auto">
-          <p
-            className="uppercase tracking-[0.4em] text-xs opacity-70 mb-6"
-            style={{ color: secondary, fontFamily: fonts?.body }}
-          >
-            {props.design.introText ?? "You are invited"}
-          </p>
-          <h1
-            className="font-[family-name:var(--font-cinzel)] text-3xl sm:text-4xl md:text-5xl uppercase tracking-[0.08em] leading-tight"
-            style={{ color: colors?.primary ?? textColor }}
-          >
-            {name1}
-            {name2 && (
-              <>
-                <span className="block my-3 text-lg opacity-50">&</span>
-                {name2}
-              </>
-            )}
-          </h1>
-          <p
-            className="mt-8 font-[family-name:var(--font-cinzel)] tracking-[0.3em] text-sm sm:text-base"
-            style={{ color: secondary }}
-          >
-            {String(dateParts.day).padStart(2, "0")} · {dateParts.monthShort.toUpperCase()} · {dateParts.year}
-          </p>
-          <p className="mt-2 text-sm opacity-60">{dateParts.time}</p>
-        </div>
-      ),
+      durationMs: slideMs,
+      content: renderHeroContent(),
     });
 
     if (props.guestName) {
       list.push({
         id: "welcome",
-        durationMs: SLIDE_MS,
+        durationMs: slideMs,
         content: (
           <div className="text-center px-8 max-w-md mx-auto">
             <p className="text-xs uppercase tracking-[0.35em] mb-4" style={{ color: accent }}>
@@ -147,9 +150,9 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
 
     list.push({
       id: "countdown",
-      durationMs: SLIDE_MS,
+      durationMs: slideMs,
       content: (
-        <div className="px-6">
+        <div className="px-6 inv-3d-scene">
           <CountdownDisplay
             targetIso={props.event.startDateRaw ?? props.event.startDate}
             label={t("invite.countdown")}
@@ -160,10 +163,28 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       ),
     });
 
+    if (props.event.startDateRaw) {
+      list.push({
+        id: "save-date",
+        durationMs: slideMs + 1500,
+        content: (
+          <SaveDateCalendarCard
+            accentColor={accent}
+            event={{
+              title: displayEvent.title,
+              startDateRaw: props.event.startDateRaw,
+              venue: [displayEvent.venueName, displayEvent.landmark].filter(Boolean).join(" · ") || undefined,
+              description: displayEvent.description ?? undefined,
+            }}
+          />
+        ),
+      });
+    }
+
     if (displayEvent.description) {
       list.push({
         id: "story",
-        durationMs: SLIDE_MS + 2000,
+        durationMs: slideMs + 2000,
         content: (
           <div className="max-w-md mx-auto px-8 text-center">
             <p className="text-xs uppercase tracking-[0.35em] mb-4" style={{ color: accent }}>
@@ -180,33 +201,28 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     if (displayEvent.venueName || displayEvent.landmark) {
       list.push({
         id: "venue",
-        durationMs: SLIDE_MS,
+        durationMs: slideMs + 2000,
         content: (
-          <div className="max-w-md mx-auto px-8 text-center space-y-5">
-            <p className="text-xs uppercase tracking-[0.35em]" style={{ color: accent }}>
-              Venue
-            </p>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold" style={{ color: colors?.primary ?? textColor }}>
-              {displayEvent.venueName}
-            </h2>
-            {displayEvent.landmark && <p className="text-sm opacity-70">{displayEvent.landmark}</p>}
-            <p className="flex items-center justify-center gap-2 text-sm opacity-80">
-              <Clock className="h-4 w-4" style={{ color: secondary }} />
-              {displayEvent.startDate}
-            </p>
-            {displayEvent.dressCode && (
-              <p className="flex items-center justify-center gap-2 text-sm opacity-80">
-                <Shirt className="h-4 w-4" style={{ color: secondary }} />
-                {displayEvent.dressCode}
+          <div className="max-w-md mx-auto px-4 space-y-5 w-full">
+            <div className="text-center space-y-5">
+              <p className="text-xs uppercase tracking-[0.35em]" style={{ color: accent }}>
+                Venue
               </p>
-            )}
-            {props.event.mapsLink && (
-              <Button variant="outline" size="sm" asChild className="border-white/30 text-white hover:bg-white/10 mt-4">
-                <a href={props.event.mapsLink} target="_blank" rel="noopener noreferrer">
-                  <MapPin className="h-4 w-4" /> Get Directions
-                </a>
-              </Button>
-            )}
+              <h2 className="font-display text-2xl sm:text-3xl font-bold" style={{ color: colors?.primary ?? textColor }}>
+                {displayEvent.venueName}
+              </h2>
+              {displayEvent.landmark && <p className="text-sm opacity-70">{displayEvent.landmark}</p>}
+              <p className="flex items-center justify-center gap-2 text-sm opacity-80">
+                <Clock className="h-4 w-4" style={{ color: secondary }} />
+                {displayEvent.startDate}
+              </p>
+            </div>
+            <VenueMapEmbed
+              mapsLink={props.event.mapsLink}
+              venueName={displayEvent.venueName}
+              landmark={displayEvent.landmark}
+              accentColor={accent}
+            />
           </div>
         ),
       });
@@ -215,14 +231,36 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     if (galleryItems.length > 0) {
       list.push({
         id: "gallery",
-        durationMs: SLIDE_MS + 4000,
+        durationMs: slideMs + 4000,
         content: (
           <div className="w-full max-w-lg mx-auto px-6">
             <InvitationGalleryDisplay
               items={galleryItems}
-              settings={{ style: "fade-carousel", autoplay: true, slideDurationSec: 4 }}
+              settings={{ style: gallerySlideshowStyle, autoplay: true, slideDurationSec: 4 }}
               className="rounded-2xl overflow-hidden shadow-2xl"
             />
+          </div>
+        ),
+      });
+    }
+
+    list.push({
+      id: "wishes",
+      durationMs: slideMs,
+      content: (
+        <div className="max-w-md mx-auto px-6 w-full">
+          <GuestWishesCard accentColor={accent} memoryVaultEnabled={props.memoryVaultEnabled} variant="dark" />
+        </div>
+      ),
+    });
+
+    if (props.qrDataUrl) {
+      list.push({
+        id: "gifts",
+        durationMs: slideMs,
+        content: (
+          <div className="max-w-sm mx-auto px-6 w-full">
+            <GiftQrBox qrDataUrl={props.qrDataUrl} qrToken={props.guestQrToken} accentColor={secondary} variant="dark" />
           </div>
         ),
       });
@@ -231,7 +269,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     if (showRsvp) {
       list.push({
         id: "rsvp",
-        durationMs: SLIDE_MS + 3000,
+        durationMs: slideMs + 3000,
         content: (
           <div className="w-full max-w-md mx-auto px-6">
             <p className="text-center text-xs uppercase tracking-[0.35em] mb-6" style={{ color: accent }}>
@@ -255,7 +293,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     if (props.admissionQrDataUrl || props.qrDataUrl || props.seatQrDataUrl) {
       list.push({
         id: "pass",
-        durationMs: SLIDE_MS + 2000,
+        durationMs: slideMs + 2000,
         content: (
           <div className="max-w-sm mx-auto px-6 text-center space-y-6">
             <p className="text-xs uppercase tracking-[0.35em]" style={{ color: accent }}>
@@ -286,7 +324,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
 
     list.push({
       id: "thanks",
-      durationMs: SLIDE_MS,
+      durationMs: slideMs,
       content: (
         <div className="max-w-md mx-auto px-8 text-center space-y-6">
           <p className="text-xs uppercase tracking-[0.35em]" style={{ color: secondary }}>
@@ -297,11 +335,14 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
               "Thank you for being part of our celebration. We cannot wait to share this moment with you."}
           </p>
           <div className="flex flex-wrap gap-3 justify-center pt-4">
-            <AddToCalendarButton
-              title={displayEvent.title}
-              startDateRaw={props.event.startDateRaw}
-              venue={displayEvent.venueName ?? undefined}
-              description={displayEvent.description ?? undefined}
+            <CalendarActionsMenu
+              event={{
+                title: displayEvent.title,
+                startDateRaw: props.event.startDateRaw ?? props.event.startDate,
+                venue: displayEvent.venueName ?? undefined,
+                description: displayEvent.description ?? undefined,
+              }}
+              variant="dark"
             />
             <Button variant="outline" size="sm" onClick={handleShare} className="border-white/30 text-white hover:bg-white/10">
               {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
@@ -351,7 +392,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
 
   useEffect(() => {
     if (paused || total <= 1) return;
-    const id = setTimeout(next, current?.durationMs ?? SLIDE_MS);
+    const id = setTimeout(next, current?.durationMs ?? slideMs);
     return () => clearTimeout(id);
   }, [index, paused, total, next, current?.durationMs]);
 
@@ -366,6 +407,11 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       style={{ background: typeof bg === "string" && (bg.startsWith("rgba") || bg.startsWith("linear")) ? bg : bg }}
     >
       <ParticleEnvironment presetId={environmentId} intensity="medium" />
+      <OutroExperienceOverlay
+        outroId={outroId}
+        message={props.experienceConfig?.thankYouMessage}
+        accentColor={secondary}
+      />
 
       <div className="absolute inset-0 z-0">
         {props.backgroundVideoUrl ? (
@@ -396,10 +442,10 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           <AnimatePresence mode="wait">
             <motion.div
               key={current?.id}
-              initial={{ opacity: 0, scale: 0.96, filter: "blur(8px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 1.03, filter: "blur(6px)" }}
-              transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+              initial={transitionMotion.initial}
+              animate={transitionMotion.animate}
+              exit={transitionMotion.exit}
+              transition={transitionMotion.transition as Transition}
               className="w-full"
               style={{ color: textColor }}
             >
