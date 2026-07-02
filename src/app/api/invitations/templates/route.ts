@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { INVITATION_TEMPLATE_PRESETS } from "@/lib/invitation-templates";
+import { getUniqueTemplatePresets } from "@/lib/invitation-templates";
 import { paginatedResult, parsePaginationFromUrl } from "@/lib/pagination";
 
 export async function GET(req: Request) {
   const { page, limit, skip } = parsePaginationFromUrl(req.url);
-  const all = INVITATION_TEMPLATE_PRESETS.map((t) => ({
+  const all = getUniqueTemplatePresets().map((t) => ({
     slug: t.slug,
     name: t.name,
     description: t.description,

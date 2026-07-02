@@ -1,18 +1,11 @@
-/** Funeral invitation template collections */
+/** Funeral invitation template collections — each maps to a unique layout */
 export const FUNERAL_TEMPLATE_COLLECTIONS = [
-  { slug: "classic-memorial", name: "Classic Memorial", layoutSlug: "arch-green", revealStyle: "MEMORIAL_BOOK" },
-  { slug: "celebration-of-life", name: "Celebration of Life", layoutSlug: "boho-hexagon", revealStyle: "FLORAL" },
-  { slug: "traditional-ghanaian", name: "Traditional Ghanaian Funeral", layoutSlug: "rustic-lace", revealStyle: "LEGACY_TIMELINE" },
-  { slug: "christian-funeral", name: "Christian Funeral", layoutSlug: "classic-gold", revealStyle: "CANDLELIGHT" },
-  { slug: "catholic-funeral", name: "Catholic Funeral", layoutSlug: "classic-gold", revealStyle: "MEMORIAL_BOOK" },
-  { slug: "methodist-funeral", name: "Methodist Funeral", layoutSlug: "arch-green", revealStyle: "CANDLELIGHT" },
-  { slug: "pentecostal-funeral", name: "Pentecostal Funeral", layoutSlug: "luxury-rings", revealStyle: "DOVE_RELEASE" },
-  { slug: "islamic-janazah", name: "Islamic Janazah", layoutSlug: "arch-green", revealStyle: "INSTANT" },
-  { slug: "royal-family", name: "Royal Family Memorial", layoutSlug: "luxury-rings", revealStyle: "PHOTO_FRAME" },
-  { slug: "military-tribute", name: "Military Tribute", layoutSlug: "classic-gold", revealStyle: "MEMORIAL_BOOK" },
-  { slug: "statesman-tribute", name: "Statesman Tribute", layoutSlug: "luxury-rings", revealStyle: "LEGACY_TIMELINE" },
-  { slug: "modern-memorial", name: "Modern Memorial", layoutSlug: "boho-hexagon", revealStyle: "PHOTO_FRAME" },
-  { slug: "minimal-memorial", name: "Minimal Memorial", layoutSlug: "arch-green", revealStyle: "INSTANT" },
+  { slug: "memorial-candle-tribute", name: "Candlelight Elegy", layoutSlug: "memorial-candle-tribute", revealStyle: "CANDLELIGHT" },
+  { slug: "arch-green", name: "Forest Vigil", layoutSlug: "arch-green", revealStyle: "MEMORIAL_BOOK" },
+  { slug: "classic-gold", name: "Ivory Remembrance", layoutSlug: "classic-gold", revealStyle: "MEMORIAL_BOOK" },
+  { slug: "rustic-lace", name: "Heritage Timber Tribute", layoutSlug: "rustic-lace", revealStyle: "LEGACY_TIMELINE" },
+  { slug: "golden-islamic-nikkah", name: "Janazah Ornamental", layoutSlug: "golden-islamic-nikkah", revealStyle: "INSTANT" },
+  { slug: "corporate-prestige-summit", name: "Statesman Legacy", layoutSlug: "corporate-prestige-summit", revealStyle: "LEGACY_TIMELINE" },
 ] as const;
 
 export const FUNERAL_REVEAL_STYLES = [

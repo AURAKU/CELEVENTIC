@@ -10,6 +10,8 @@ const schema = z.object({
   consentConfirmed: z.literal(true, {
     errorMap: () => ({ message: "You must confirm ownership or permission." }),
   }),
+  canvaShareConfirmed: z.boolean().optional(),
+  categoryId: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -23,6 +25,8 @@ export async function POST(req: Request) {
       eventId: body.eventId,
       url: body.url,
       consentConfirmed: true,
+      canvaShareConfirmed: body.canvaShareConfirmed,
+      categoryId: body.categoryId,
     });
     return NextResponse.json({ success: true, data: source }, { status: 201 });
   } catch (err) {

@@ -16,6 +16,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-music": "tsx scripts/seed-music-library.ts",
+    "music:sync": "tsx scripts/sync-music-assets.ts",
     "db:ensure-admin": "tsx scripts/ensure-admin.ts",
     "smoke-test": "node scripts/smoke-test-local.mjs",
     "smoke-test:pages": "node scripts/smoke-test-local.mjs && node scripts/smoke-test-authed-pages.mjs",

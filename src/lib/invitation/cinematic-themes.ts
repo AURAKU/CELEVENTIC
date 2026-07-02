@@ -1,7 +1,6 @@
 import type { InvitationDesignConfig, InvitationLayoutSlug } from "@/types/invitation-design";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { ButtonStyle } from "@/lib/invitation-studio/studio-types";
-import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 
 export type CinematicLayoutSlug =
   | "royal-emerald-wedding"
@@ -49,19 +48,10 @@ export interface CinematicTheme {
   config: InvitationDesignConfig;
 }
 
-const CINEMATIC_EXPERIENCE_BASE = {
-  introEnabled: true,
-  introDurationSec: 2 as const,
-  hubMode: "scroll" as const,
-  enabledTabs: DEFAULT_HUB_TABS,
-  countdownStyle: "classic" as const,
-  environment: "royal-wedding" as const,
-};
-
 export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
   "royal-emerald-wedding": {
     slug: "royal-emerald-wedding",
-    name: "Royal Emerald Wedding",
+    name: "Palace Emerald Reign",
     category: "Wedding",
     tagline: "Emerald green, gold, ivory — palace elegance",
     previewGradient: "from-emerald-900 via-emerald-950 to-amber-950",
@@ -69,7 +59,7 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
     particleColor: "#D4AF37",
     accentGlow: "rgba(212,175,55,0.45)",
     defaultAudioCategory: "violin",
-    openingExperience: "wax-seal-gold",
+    openingExperience: "palace-entrance",
     buttonStyle: "gold",
     ornament: "gold-frame",
     isPremium: true,
@@ -81,12 +71,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       ornament: "gold-frame",
       introText: "Together with their families",
       studio: { revealMode: "envelope", buttonStyle: "gold", buttonPosition: "center", fullScreen: true, headingSize: 32, bodySize: 15, scriptSize: 26 },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "wax-seal-gold", environment: "royal-wedding" },
     },
   },
   "midnight-velvet-reception": {
     slug: "midnight-velvet-reception",
-    name: "Midnight Velvet Reception",
+    name: "Velvet Midnight Soirée",
     category: "Wedding",
     tagline: "Black, navy, silver, champagne — velvet curtain reveal",
     previewGradient: "from-slate-950 via-indigo-950 to-black",
@@ -105,12 +94,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "fade",
       introText: "An evening of celebration awaits",
       studio: { revealMode: "curtain", buttonStyle: "glass", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "curtain-wedding", environment: "none" },
     },
   },
   "kente-heritage-union": {
     slug: "kente-heritage-union",
-    name: "Kente Heritage Union",
+    name: "Kente Covenant",
     category: "Wedding",
     tagline: "Kente gold, red, green — cloth unfold reveal",
     previewGradient: "from-amber-700 via-red-900 to-emerald-900",
@@ -129,12 +117,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "parallax",
       introText: "The families invite you to witness",
       studio: { revealMode: "scroll-unroll", buttonStyle: "gold", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "envelope-kente", environment: "kente-gold" },
     },
   },
   "floral-garden-romance": {
     slug: "floral-garden-romance",
-    name: "Floral Garden Romance",
+    name: "Petal Promise",
     category: "Wedding",
     tagline: "Soft pink, cream, sage — floating petals",
     previewGradient: "from-rose-100 via-pink-50 to-emerald-50",
@@ -142,7 +129,7 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
     particleColor: "#FDA4AF",
     accentGlow: "rgba(253,164,175,0.35)",
     defaultAudioCategory: "piano",
-    openingExperience: "envelope-floral",
+    openingExperience: "flower-bloom",
     buttonStyle: "pill",
     ornament: "floral",
     isPremium: false,
@@ -154,12 +141,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       ornament: "floral",
       introText: "Join us in the garden",
       studio: { revealMode: "envelope", buttonStyle: "pill", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "envelope-floral", environment: "floating-petals" },
     },
   },
   "passport-destination-wedding": {
     slug: "passport-destination-wedding",
-    name: "Passport Destination Wedding",
+    name: "Horizon Boarding Pass",
     category: "Wedding",
     tagline: "Travel paper, navy stamps — passport opens",
     previewGradient: "from-slate-100 via-amber-50 to-teal-900",
@@ -178,12 +164,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "fade",
       introText: "Boarding pass to forever",
       studio: { revealMode: "passport", buttonStyle: "outline", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "flip-reveal" },
     },
   },
   "crystal-acrylic-luxury": {
     slug: "crystal-acrylic-luxury",
-    name: "Crystal Acrylic Luxury",
+    name: "Champagne Crystal",
     category: "Wedding",
     tagline: "Glass shimmer, white, gold champagne",
     previewGradient: "from-sky-100 via-white to-amber-100",
@@ -202,12 +187,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "ken-burns",
       introText: "You are cordially invited",
       studio: { revealMode: "glass", buttonStyle: "glass", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "gift-box", environment: "royal-wedding" },
     },
   },
   "golden-islamic-nikkah": {
     slug: "golden-islamic-nikkah",
-    name: "Golden Islamic Nikkah",
+    name: "Nikkah Gold Geometry",
     category: "Wedding",
     tagline: "Gold, ivory, emerald ornamental patterns",
     previewGradient: "from-amber-100 via-emerald-50 to-emerald-900",
@@ -226,12 +210,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "fade",
       introText: "With blessings and joy",
       studio: { revealMode: "envelope", buttonStyle: "gold", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "envelope-islamic", environment: "islamic-gold" },
     },
   },
   "memorial-candle-tribute": {
     slug: "memorial-candle-tribute",
-    name: "Memorial Candle Tribute",
+    name: "Candlelight Elegy",
     category: "Funeral",
     tagline: "Black, ivory, candle gold — solemn tribute",
     previewGradient: "from-slate-900 via-stone-900 to-red-950",
@@ -250,12 +233,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "fade",
       introText: "In loving memory",
       studio: { revealMode: "curtain", buttonStyle: "outline", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "zoom-reveal", environment: "none", introDurationSec: 3 },
     },
   },
   "neon-celebration-party": {
     slug: "neon-celebration-party",
-    name: "Neon Celebration Party",
+    name: "Electric Pulse",
     category: "Birthday",
     tagline: "Purple, electric blue, hot pink — neon pulse",
     previewGradient: "from-fuchsia-600 via-purple-900 to-black",
@@ -263,7 +245,7 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
     particleColor: "#E879F9",
     accentGlow: "rgba(232,121,249,0.5)",
     defaultAudioCategory: "celebration",
-    openingExperience: "scratch",
+    openingExperience: "confetti-burst",
     buttonStyle: "pill",
     ornament: "none",
     isPremium: false,
@@ -274,12 +256,11 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "ken-burns",
       introText: "You're invited to celebrate",
       studio: { revealMode: "scratch", buttonStyle: "pill", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "scratch", environment: "confetti" },
     },
   },
   "corporate-prestige-summit": {
     slug: "corporate-prestige-summit",
-    name: "Corporate Prestige Summit",
+    name: "Platinum Summit",
     category: "Corporate",
     tagline: "Navy, white, platinum, teal — professional motion",
     previewGradient: "from-slate-900 via-slate-800 to-teal-900",
@@ -287,7 +268,7 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
     particleColor: "#14B8A6",
     accentGlow: "rgba(20,184,166,0.35)",
     defaultAudioCategory: "corporate",
-    openingExperience: "none",
+    openingExperience: "film-countdown",
     buttonStyle: "sharp",
     ornament: "none",
     isPremium: true,
@@ -298,7 +279,6 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "fade",
       introText: "Official invitation",
       studio: { revealMode: "none", buttonStyle: "sharp", fullScreen: true },
-      experience: { ...CINEMATIC_EXPERIENCE_BASE, openingExperience: "none", introDurationSec: 2, environment: "none" },
     },
   },
 };

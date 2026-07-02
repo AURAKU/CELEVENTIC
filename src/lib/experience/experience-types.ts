@@ -173,6 +173,10 @@ export interface EventExperienceConfig {
   thankYouMessage?: string;
   /** Gallery / media display style in guest invitation */
   slideshowStyle?: SlideshowStyleId | string;
+  typographyPackId?: string;
+  backgroundPackId?: string;
+  /** When true, studio edits to experience fields are preserved on re-enrich */
+  experienceCustomized?: boolean;
 }
 
 export const DEFAULT_HUB_TABS: HubTabId[] = [

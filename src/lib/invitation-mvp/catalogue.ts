@@ -48,6 +48,7 @@ export type InvitationCategory = (typeof INVITATION_CATEGORIES)[number];
 export type InvitationStyle = (typeof INVITATION_STYLES)[number];
 
 export interface CatalogTemplate {
+  /** Unique id — matches layoutSlug (one visual identity per template) */
   slug: string;
   name: string;
   description: string;
@@ -61,49 +62,285 @@ export interface CatalogTemplate {
   mood?: string;
 }
 
+/**
+ * One catalogue entry per layout — no recycled visuals.
+ * slug === layoutSlug for clarity.
+ */
 export const CATALOG_TEMPLATES: CatalogTemplate[] = [
-  { slug: "wedding-classic-gold", name: "Classic Gold Frame", description: "Timeless wedding elegance with gold ornament frame", category: "Wedding", style: "Classic", layoutSlug: "classic-gold", previewGradient: "from-stone-100 to-amber-50", isPremium: false, features: ["RSVP", "Gallery", "Countdown", "Maps"] },
-  { slug: "wedding-luxury-rings", name: "Luxury Rings", description: "High-contrast luxury with interlocking rings motif", category: "Wedding", style: "Luxury", layoutSlug: "luxury-rings", previewGradient: "from-neutral-900 to-black", isPremium: true, features: ["RSVP", "QR", "Music", "Gallery"] },
-  { slug: "wedding-arch-vine", name: "Arch & Vine", description: "Forest green arched card with vine illustrations", category: "Wedding", style: "Floral", layoutSlug: "arch-green", previewGradient: "from-emerald-900 to-emerald-950", isPremium: false, features: ["RSVP", "Story", "Directions"] },
-  { slug: "wedding-boho-hex", name: "Boho Hexagon", description: "Soft florals with gold hexagonal frame", category: "Wedding", style: "Modern", layoutSlug: "boho-hexagon", previewGradient: "from-rose-50 to-amber-50", isPremium: false, features: ["RSVP", "Gallery", "Share"] },
-  { slug: "engagement-royal-gold", name: "Royal Engagement", description: "Regal announcement for your engagement celebration", category: "Engagement", style: "Royal", layoutSlug: "luxury-rings", previewGradient: "from-amber-900 to-yellow-950", isPremium: true, features: ["RSVP", "Countdown", "Gallery"] },
-  { slug: "birthday-modern-pop", name: "Birthday Celebration", description: "Vibrant modern birthday invitation", category: "Birthday", style: "Modern", layoutSlug: "boho-hexagon", previewGradient: "from-teal-100 to-coral-100", isPremium: false, features: ["RSVP", "Share", "Calendar"] },
-  { slug: "funeral-dignity", name: "Funeral Dignity", description: "Respectful memorial invitation with calm tones", category: "Funeral", style: "Minimal", layoutSlug: "arch-green", previewGradient: "from-slate-700 to-slate-900", isPremium: false, features: ["RSVP", "Directions", "Tributes"] },
-  { slug: "classic-memorial", name: "Classic Memorial", description: "Timeless memorial book opening experience", category: "Funeral", style: "Classic", layoutSlug: "classic-gold", previewGradient: "from-slate-800 to-slate-950", isPremium: false, features: ["Obituary", "Tributes", "Candles", "RSVP"] },
-  { slug: "celebration-of-life", name: "Celebration of Life", description: "Floral reveal honoring a life well lived", category: "Funeral", style: "Floral", layoutSlug: "boho-hexagon", previewGradient: "from-emerald-900 to-teal-950", isPremium: false, features: ["Timeline", "Gallery", "Tributes"] },
-  { slug: "traditional-ghanaian-funeral", name: "Traditional Ghanaian Funeral", description: "Cultural heritage memorial with kente accents", category: "Funeral", style: "Traditional Ghanaian", layoutSlug: "rustic-lace", previewGradient: "from-amber-800 to-emerald-950", isPremium: true, features: ["Program", "Contributions", "Guestbook"] },
-  { slug: "christian-funeral", name: "Christian Funeral", description: "Candlelight reveal with hymns and scripture", category: "Funeral", style: "Classic", layoutSlug: "classic-gold", previewGradient: "from-indigo-950 to-slate-900", isPremium: false, features: ["Prayers", "Livestream", "RSVP"] },
-  { slug: "catholic-funeral", name: "Catholic Funeral", description: "Reverent memorial book with mass program", category: "Funeral", style: "Royal", layoutSlug: "luxury-rings", previewGradient: "from-purple-950 to-black", isPremium: false, features: ["Program", "Candles", "Contributions"] },
-  { slug: "methodist-funeral", name: "Methodist Funeral", description: "Warm candlelight memorial invitation", category: "Funeral", style: "Classic", layoutSlug: "arch-green", previewGradient: "from-slate-700 to-blue-950", isPremium: false, features: ["Hymns", "Guestbook", "Directions"] },
-  { slug: "pentecostal-funeral", name: "Pentecostal Funeral", description: "Dove release animation with celebration tone", category: "Funeral", style: "Modern", layoutSlug: "boho-hexagon", previewGradient: "from-violet-900 to-indigo-950", isPremium: false, features: ["Tributes", "Livestream", "Gallery"] },
-  { slug: "islamic-janazah", name: "Islamic Janazah", description: "Respectful janazah announcement", category: "Funeral", style: "Minimal", layoutSlug: "arch-green", previewGradient: "from-emerald-950 to-teal-950", isPremium: false, features: ["Program", "Directions", "Prayers"] },
-  { slug: "royal-family-memorial", name: "Royal Family Memorial", description: "Regal photo frame reveal for distinguished lives", category: "Funeral", style: "Royal", layoutSlug: "luxury-rings", previewGradient: "from-amber-900 to-black", isPremium: true, features: ["Timeline", "VIP Seating", "Livestream"] },
-  { slug: "military-tribute", name: "Military Tribute", description: "Honour guard memorial with service record", category: "Funeral", style: "Premium Dark", layoutSlug: "classic-gold", previewGradient: "from-slate-900 to-green-950", isPremium: true, features: ["Timeline", "Tributes", "Seating"] },
-  { slug: "statesman-tribute", name: "Statesman Tribute", description: "Legacy timeline for public figures", category: "Funeral", style: "Luxury", layoutSlug: "luxury-rings", previewGradient: "from-neutral-900 to-slate-950", isPremium: true, features: ["Timeline", "Contributions", "Archive"] },
-  { slug: "modern-memorial", name: "Modern Memorial", description: "Clean photo frame reveal with gallery", category: "Funeral", style: "Modern", layoutSlug: "boho-hexagon", previewGradient: "from-slate-800 to-zinc-900", isPremium: false, features: ["Gallery", "Tributes", "Memory Vault"] },
-  { slug: "minimal-memorial", name: "Minimal Memorial", description: "Understated instant view memorial", category: "Funeral", style: "Minimal", layoutSlug: "arch-green", previewGradient: "from-gray-800 to-gray-950", isPremium: false, features: ["Obituary", "Candles", "Guestbook"] },
-  { slug: "church-purple-gold", name: "Church Royal", description: "Church programme invitation with royal accents", category: "Church", style: "Royal", layoutSlug: "classic-gold", previewGradient: "from-purple-900 to-indigo-950", isPremium: false, features: ["RSVP", "Programme", "Maps"] },
-  { slug: "corporate-clean", name: "Corporate Clean", description: "Professional clean white corporate invite", category: "Corporate", style: "Clean White", layoutSlug: "classic-gold", previewGradient: "from-slate-50 to-white", isPremium: false, features: ["RSVP", "Calendar", "Contact"] },
-  { slug: "conference-navy", name: "Conference Navy", description: "Premium dark conference invitation", category: "Conference", style: "Premium Dark", layoutSlug: "luxury-rings", previewGradient: "from-slate-900 to-blue-950", isPremium: true, features: ["RSVP", "Tickets", "Agenda"] },
-  { slug: "concert-vibe", name: "Concert Vibe", description: "Bold concert announcement layout", category: "Concert", style: "Modern", layoutSlug: "custom-media", previewGradient: "from-fuchsia-900 to-purple-950", isPremium: false, features: ["RSVP", "Tickets", "Share"] },
-  { slug: "kente-heritage", name: "Kente Heritage", description: "Traditional Ghanaian kente-inspired celebration", category: "Wedding", style: "Kente-inspired", layoutSlug: "rustic-lace", previewGradient: "from-amber-600 to-teal-800", isPremium: true, features: ["RSVP", "Gallery", "Story", "QR"] },
-  { slug: "ghanaian-traditional", name: "Traditional Ghanaian", description: "Cultural elegance for traditional ceremonies", category: "Private Event", style: "Traditional Ghanaian", layoutSlug: "rustic-lace", previewGradient: "from-orange-800 to-emerald-900", isPremium: true, features: ["RSVP", "Gallery", "Directions"] },
-  { slug: "private-minimal", name: "Private Minimal", description: "Understated private event invitation", category: "Private Event", style: "Minimal", layoutSlug: "arch-green", previewGradient: "from-gray-100 to-gray-200", isPremium: false, features: ["RSVP", "Maps"] },
-  { slug: "custom-upload", name: "Build From Your Design", description: "Upload your artwork — we frame it beautifully", category: "Private Event", style: "Modern", layoutSlug: "custom-media", previewGradient: "from-teal-600 to-teal-800", isPremium: false, features: ["RSVP", "Media", "Designer assist"] },
-  { slug: "royal-emerald-wedding", name: "Royal Emerald Wedding", description: "Emerald green, gold, ivory — palace wax seal reveal", category: "Wedding", style: "Royal", layoutSlug: "royal-emerald-wedding", previewGradient: "from-emerald-900 via-emerald-950 to-amber-950", isPremium: true, isNew: true, mood: "European", features: ["RSVP", "QR", "Music", "Gallery", "Countdown", "Maps", "Calendar"] },
-  { slug: "midnight-velvet-reception", name: "Midnight Velvet Reception", description: "Black, navy, silver — velvet curtain cinematic reveal", category: "Wedding", style: "Luxury", layoutSlug: "midnight-velvet-reception", previewGradient: "from-slate-950 via-indigo-950 to-black", isPremium: true, isNew: true, mood: "Cinematic", features: ["RSVP", "QR", "Music", "Gallery", "Calendar"] },
-  { slug: "kente-heritage-union", name: "Kente Heritage Union", description: "Kente gold, red, green — traditional cloth unfold", category: "Wedding", style: "Kente-inspired", layoutSlug: "kente-heritage-union", previewGradient: "from-amber-700 via-red-900 to-emerald-900", isPremium: true, isNew: true, mood: "Traditional", features: ["RSVP", "Seating", "Music", "Gallery", "Guest Wishes"] },
-  { slug: "floral-garden-romance", name: "Floral Garden Romance", description: "Soft pink, cream, sage — floating petal envelope", category: "Wedding", style: "Floral", layoutSlug: "floral-garden-romance", previewGradient: "from-rose-100 via-pink-50 to-emerald-50", isPremium: false, mood: "Romantic", features: ["RSVP", "Story", "Music", "Gallery", "Calendar", "Countdown"] },
-  { slug: "passport-destination-wedding", name: "Passport Destination Wedding", description: "Travel paper, navy stamps — passport boarding pass", category: "Wedding", style: "Luxury", layoutSlug: "passport-destination-wedding", previewGradient: "from-slate-100 via-amber-50 to-teal-900", isPremium: true, isNew: true, mood: "European", features: ["RSVP", "QR", "Maps", "Music", "Calendar"] },
-  { slug: "crystal-acrylic-luxury", name: "Crystal Acrylic Luxury", description: "Glass shimmer, white, gold champagne acrylic reveal", category: "Wedding", style: "Luxury", layoutSlug: "crystal-acrylic-luxury", previewGradient: "from-sky-100 via-white to-amber-100", isPremium: true, isNew: true, mood: "Luxury", features: ["RSVP", "Gallery", "Music", "Countdown", "Calendar", "Maps"] },
-  { slug: "golden-islamic-nikkah", name: "Golden Islamic Nikkah", description: "Gold, ivory, emerald ornamental palace entrance", category: "Wedding", style: "Royal", layoutSlug: "golden-islamic-nikkah", previewGradient: "from-amber-100 via-emerald-50 to-emerald-900", isPremium: false, mood: "Traditional", features: ["RSVP", "Schedule", "Maps", "Music", "Calendar"] },
-  { slug: "memorial-candle-tribute", name: "Memorial Candle Tribute", description: "Black, ivory, candle gold — solemn tribute wall", category: "Funeral", style: "Classic", layoutSlug: "memorial-candle-tribute", previewGradient: "from-slate-900 via-stone-900 to-red-950", isPremium: false, features: ["Tributes", "Contributions", "Music", "Gallery"] },
-  { slug: "neon-celebration-party", name: "Neon Celebration Party", description: "Purple, electric blue, hot pink — neon scratch reveal", category: "Birthday", style: "Modern", layoutSlug: "neon-celebration-party", previewGradient: "from-fuchsia-600 via-purple-900 to-black", isPremium: false, features: ["RSVP", "Tickets", "QR", "Music"] },
-  { slug: "corporate-prestige-summit", name: "Corporate Prestige Summit", description: "Navy, white, platinum — professional summit motion", category: "Corporate", style: "Premium Dark", layoutSlug: "corporate-prestige-summit", previewGradient: "from-slate-900 via-slate-800 to-teal-900", isPremium: true, features: ["RSVP", "QR", "Agenda", "Music"] },
+  {
+    slug: "classic-gold",
+    name: "Gilded Opulence",
+    description: "Ivory card with hand-finished gold frame and serif vows",
+    category: "Wedding",
+    style: "Classic",
+    layoutSlug: "classic-gold",
+    previewGradient: "from-stone-100 to-amber-50",
+    isPremium: false,
+    mood: "Classic",
+    features: ["RSVP", "Gallery", "Countdown", "Maps", "Music"],
+  },
+  {
+    slug: "luxury-rings",
+    name: "Onyx & Gold Vows",
+    description: "High-contrast black stage with interlocking rings spotlight",
+    category: "Wedding",
+    style: "Luxury",
+    layoutSlug: "luxury-rings",
+    previewGradient: "from-neutral-900 to-black",
+    isPremium: true,
+    mood: "Luxury",
+    features: ["RSVP", "QR", "Music", "Gallery", "Countdown"],
+  },
+  {
+    slug: "arch-green",
+    name: "Vine Cathedral",
+    description: "Forest arch illustration with cream calligraphy on emerald",
+    category: "Wedding",
+    style: "Floral",
+    layoutSlug: "arch-green",
+    previewGradient: "from-emerald-900 to-emerald-950",
+    isPremium: false,
+    mood: "Nature",
+    features: ["RSVP", "Story", "Directions", "Calendar"],
+  },
+  {
+    slug: "rustic-lace",
+    name: "Timber & Lace",
+    description: "Full-bleed photo under ornate lace with warm wood tones",
+    category: "Wedding",
+    style: "Traditional",
+    layoutSlug: "rustic-lace",
+    previewGradient: "from-amber-900 to-amber-950",
+    isPremium: true,
+    mood: "Traditional",
+    features: ["RSVP", "Gallery", "Story", "QR"],
+  },
+  {
+    slug: "boho-hexagon",
+    name: "Hexagon Reverie",
+    description: "Soft florals inside a floating gold hexagon frame",
+    category: "Engagement",
+    style: "Boho",
+    layoutSlug: "boho-hexagon",
+    previewGradient: "from-rose-50 to-amber-50",
+    isPremium: false,
+    mood: "Boho",
+    features: ["RSVP", "Gallery", "Share", "Countdown"],
+  },
+  {
+    slug: "floral-garden",
+    name: "Secret Garden",
+    description: "Botanical borders with blush typography and petal motion",
+    category: "Wedding",
+    style: "Floral",
+    layoutSlug: "floral-garden",
+    previewGradient: "from-rose-100 to-pink-50",
+    isPremium: false,
+    mood: "Romantic",
+    features: ["RSVP", "Gallery", "Music", "Calendar"],
+  },
+  {
+    slug: "passport-luxe",
+    name: "Stamped Romance",
+    description: "Booklet passport reveal with visa stamps and travel motifs",
+    category: "Wedding",
+    style: "Luxury",
+    layoutSlug: "passport-luxe",
+    previewGradient: "from-teal-900 to-slate-900",
+    isPremium: true,
+    mood: "European",
+    features: ["RSVP", "Maps", "Music", "QR"],
+  },
+  {
+    slug: "glass-acrylic",
+    name: "Frostlight Dreamscape",
+    description: "Frosted acrylic layers with luminous depth and glass buttons",
+    category: "Wedding",
+    style: "Modern",
+    layoutSlug: "glass-acrylic",
+    previewGradient: "from-sky-900 to-teal-800",
+    isPremium: true,
+    mood: "Luxury",
+    features: ["RSVP", "Gallery", "Music", "Countdown"],
+  },
+  {
+    slug: "royal-emerald-wedding",
+    name: "Palace Emerald Reign",
+    description: "Palace entrance, wax seal, emerald velvet and gold crown",
+    category: "Wedding",
+    style: "Royal",
+    layoutSlug: "royal-emerald-wedding",
+    previewGradient: "from-emerald-900 via-emerald-950 to-amber-950",
+    isPremium: true,
+    isNew: true,
+    mood: "European",
+    features: ["RSVP", "QR", "Music", "Gallery", "Countdown", "Maps"],
+  },
+  {
+    slug: "midnight-velvet-reception",
+    name: "Velvet Midnight Soirée",
+    description: "Curtain reveal on navy velvet with silver champagne accents",
+    category: "Wedding",
+    style: "Cinematic",
+    layoutSlug: "midnight-velvet-reception",
+    previewGradient: "from-slate-950 via-indigo-950 to-black",
+    isPremium: true,
+    isNew: true,
+    mood: "Cinematic",
+    features: ["RSVP", "QR", "Music", "Gallery", "Calendar"],
+  },
+  {
+    slug: "kente-heritage-union",
+    name: "Kente Covenant",
+    description: "Kente cloth unfold with drum pulse and heritage typography",
+    category: "Wedding",
+    style: "Kente-inspired",
+    layoutSlug: "kente-heritage-union",
+    previewGradient: "from-amber-700 via-red-900 to-emerald-900",
+    isPremium: true,
+    isNew: true,
+    mood: "Traditional",
+    features: ["RSVP", "Seating", "Music", "Gallery", "Guest Wishes"],
+  },
+  {
+    slug: "floral-garden-romance",
+    name: "Petal Promise",
+    description: "Cinematic garden romance — floating petals and bloom reveal",
+    category: "Engagement",
+    style: "Romantic",
+    layoutSlug: "floral-garden-romance",
+    previewGradient: "from-rose-100 via-pink-50 to-emerald-50",
+    isPremium: false,
+    mood: "Romantic",
+    features: ["RSVP", "Story", "Music", "Gallery", "Countdown"],
+  },
+  {
+    slug: "passport-destination-wedding",
+    name: "Horizon Boarding Pass",
+    description: "Flip boarding-pass reveal for destination celebrations",
+    category: "Wedding",
+    style: "Luxury",
+    layoutSlug: "passport-destination-wedding",
+    previewGradient: "from-slate-100 via-amber-50 to-teal-900",
+    isPremium: true,
+    isNew: true,
+    mood: "European",
+    features: ["RSVP", "QR", "Maps", "Music", "Calendar"],
+  },
+  {
+    slug: "crystal-acrylic-luxury",
+    name: "Champagne Crystal",
+    description: "Glass shimmer acrylic reveal with champagne gold highlights",
+    category: "Wedding",
+    style: "Luxury",
+    layoutSlug: "crystal-acrylic-luxury",
+    previewGradient: "from-sky-100 via-white to-amber-100",
+    isPremium: true,
+    isNew: true,
+    mood: "Luxury",
+    features: ["RSVP", "Gallery", "Music", "Countdown", "Maps"],
+  },
+  {
+    slug: "golden-islamic-nikkah",
+    name: "Nikkah Gold Geometry",
+    description: "Ornamental palace geometry with soft instrumental score",
+    category: "Wedding",
+    style: "Royal",
+    layoutSlug: "golden-islamic-nikkah",
+    previewGradient: "from-amber-100 via-emerald-50 to-emerald-900",
+    isPremium: false,
+    mood: "Traditional",
+    features: ["RSVP", "Schedule", "Maps", "Music", "Calendar"],
+  },
+  {
+    slug: "memorial-candle-tribute",
+    name: "Candlelight Elegy",
+    description: "Solemn candle wall reveal with tribute gallery and hymns",
+    category: "Funeral",
+    style: "Classic",
+    layoutSlug: "memorial-candle-tribute",
+    previewGradient: "from-slate-900 via-stone-900 to-red-950",
+    isPremium: false,
+    mood: "Classic",
+    features: ["Tributes", "Contributions", "Music", "Gallery", "RSVP"],
+  },
+  {
+    slug: "neon-celebration-party",
+    name: "Electric Pulse",
+    description: "Neon scratch reveal with party energy and ticket QR",
+    category: "Birthday",
+    style: "Modern",
+    layoutSlug: "neon-celebration-party",
+    previewGradient: "from-fuchsia-600 via-purple-900 to-black",
+    isPremium: false,
+    mood: "Cute",
+    features: ["RSVP", "Tickets", "QR", "Music", "Share"],
+  },
+  {
+    slug: "corporate-prestige-summit",
+    name: "Platinum Summit",
+    description: "Navy motion graphics with agenda hub and check-in QR",
+    category: "Corporate",
+    style: "Premium Dark",
+    layoutSlug: "corporate-prestige-summit",
+    previewGradient: "from-slate-900 via-slate-800 to-teal-900",
+    isPremium: true,
+    mood: "Luxury",
+    features: ["RSVP", "QR", "Agenda", "Music", "Calendar"],
+  },
+  {
+    slug: "custom-media",
+    name: "Your Canvas",
+    description: "Upload your artwork, video, or PDF — we frame it cinematically",
+    category: "Private Event",
+    style: "Modern",
+    layoutSlug: "custom-media",
+    previewGradient: "from-teal-600 to-teal-800",
+    isPremium: false,
+    mood: "Artistic",
+    features: ["RSVP", "Media", "Gallery", "Music"],
+  },
 ];
 
+/** Maps retired duplicate catalogue slugs → canonical layout slug */
+export const LEGACY_CATALOG_SLUG_MAP: Record<string, string> = {
+  "wedding-classic-gold": "classic-gold",
+  "wedding-luxury-rings": "luxury-rings",
+  "wedding-arch-vine": "arch-green",
+  "wedding-boho-hex": "boho-hexagon",
+  "engagement-royal-gold": "luxury-rings",
+  "birthday-modern-pop": "neon-celebration-party",
+  "funeral-dignity": "arch-green",
+  "classic-memorial": "memorial-candle-tribute",
+  "celebration-of-life": "floral-garden-romance",
+  "traditional-ghanaian-funeral": "kente-heritage-union",
+  "christian-funeral": "memorial-candle-tribute",
+  "catholic-funeral": "memorial-candle-tribute",
+  "methodist-funeral": "arch-green",
+  "pentecostal-funeral": "luxury-rings",
+  "islamic-janazah": "golden-islamic-nikkah",
+  "royal-family-memorial": "memorial-candle-tribute",
+  "military-tribute": "classic-gold",
+  "statesman-tribute": "corporate-prestige-summit",
+  "modern-memorial": "memorial-candle-tribute",
+  "minimal-memorial": "arch-green",
+  "church-purple-gold": "royal-emerald-wedding",
+  "corporate-clean": "corporate-prestige-summit",
+  "conference-navy": "corporate-prestige-summit",
+  "concert-vibe": "neon-celebration-party",
+  "kente-heritage": "kente-heritage-union",
+  "ghanaian-traditional": "kente-heritage-union",
+  "private-minimal": "arch-green",
+  "custom-upload": "custom-media",
+};
+
+export function resolveCatalogSlug(slug: string): string {
+  return LEGACY_CATALOG_SLUG_MAP[slug] ?? slug;
+}
+
 export function getCatalogTemplate(slug: string) {
-  return CATALOG_TEMPLATES.find((t) => t.slug === slug);
+  const resolved = resolveCatalogSlug(slug);
+  return CATALOG_TEMPLATES.find((t) => t.slug === resolved || t.layoutSlug === resolved);
 }
 
 export function filterCatalogTemplates(filters: {
@@ -116,8 +353,19 @@ export function filterCatalogTemplates(filters: {
     if (filters.style && filters.style !== "all" && t.style !== filters.style) return false;
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      if (!t.name.toLowerCase().includes(q) && !t.description.toLowerCase().includes(q)) return false;
+      if (
+        !t.name.toLowerCase().includes(q) &&
+        !t.description.toLowerCase().includes(q) &&
+        !t.slug.toLowerCase().includes(q)
+      ) {
+        return false;
+      }
     }
     return true;
   });
+}
+
+/** One template per layout — for admin / analytics */
+export function getUniqueLayoutCount(): number {
+  return new Set(CATALOG_TEMPLATES.map((t) => t.layoutSlug)).size;
 }

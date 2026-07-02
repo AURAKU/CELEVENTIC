@@ -13,8 +13,7 @@ import { BACKGROUND_PACKS } from "@/lib/experience/background-engine";
 import { BUTTON_STYLE_OPTIONS } from "@/lib/invitation-studio/studio-types";
 import { SLIDESHOW_STYLE_OPTIONS } from "@/lib/invitation/slideshow-styles";
 import { EXPERIENCE_COLLECTIONS } from "@/lib/experience/experience-engine-v2";
-import { INVITATION_TEMPLATE_PRESETS } from "@/lib/invitation-templates";
-import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
+import { CATALOG_TEMPLATES, getUniqueLayoutCount } from "@/lib/invitation-mvp/catalogue";
 import { formatCurrency } from "@/lib/utils";
 import {
   Sparkles, Music, Palette, Layers, Type, ImageIcon, Wand2, Users, Mail, BarChart3,
@@ -30,7 +29,7 @@ interface AdminExperienceCommandCenterProps {
 }
 
 export function AdminExperienceCommandCenter({ stats }: AdminExperienceCommandCenterProps) {
-  const templateCount = INVITATION_TEMPLATE_PRESETS.length + CATALOG_TEMPLATES.length;
+  const templateCount = getUniqueLayoutCount();
 
   return (
     <div className="space-y-8">

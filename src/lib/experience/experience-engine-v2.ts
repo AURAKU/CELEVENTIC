@@ -5,6 +5,10 @@
 import type { InvitationDesignConfig, InvitationLayoutSlug } from "@/types/invitation-design";
 import type { ButtonStyle } from "@/lib/invitation-studio/studio-types";
 import type { SlideshowStyleId as GallerySlideshowStyleId } from "@/lib/invitation/slideshow-styles";
+import type { TypographyCategoryId } from "@/lib/experience/typography-engine";
+import { getTypographyPack } from "@/lib/experience/typography-engine";
+import type { BackgroundTypeId } from "@/lib/experience/background-engine";
+import { getBackgroundPack } from "@/lib/experience/background-engine";
 import type {
   CountdownStyleId,
   ExperienceHubMode,
@@ -62,7 +66,32 @@ export interface TemplateExperienceDNA {
   slideshowStyle: SlideshowStyleId;
   pacing: ExperiencePacing;
   slideDurationMs: number;
+  typographyPackId?: TypographyCategoryId;
+  backgroundPackId?: BackgroundTypeId;
 }
+
+/** Maps each collection to its default typography + atmosphere */
+const COLLECTION_VISUAL_DNA: Partial<
+  Record<ExperienceCollectionId, { typography: TypographyCategoryId; background: BackgroundTypeId }>
+> = {
+  "luxury-gold": { typography: "luxury", background: "gold-foil" },
+  garden: { typography: "romantic", background: "floating-flowers" },
+  vintage: { typography: "elegant", background: "paper" },
+  modern: { typography: "modern", background: "animated-gradient" },
+  "luxury-black": { typography: "luxury", background: "velvet" },
+  custom: { typography: "modern", background: "video" },
+  passport: { typography: "classic", background: "paper" },
+  glass: { typography: "minimal", background: "glass" },
+  floral: { typography: "romantic", background: "floating-flowers" },
+  royal: { typography: "luxury", background: "marble" },
+  night: { typography: "elegant", background: "stars" },
+  "african-heritage": { typography: "traditional", background: "kente" },
+  destination: { typography: "editorial", background: "parallax" },
+  islamic: { typography: "traditional", background: "luxury-texture" },
+  funeral: { typography: "funeral", background: "stone" },
+  neon: { typography: "bold", background: "galaxy" },
+  corporate: { typography: "corporate", background: "static" },
+};
 
 export const EXPERIENCE_COLLECTIONS: Record<
   ExperienceCollectionId,
@@ -163,7 +192,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
   "luxury-rings": {
     collectionId: "luxury-black",
     openingExperience: "light-beam",
-    outroExperience: "golden-sparkles",
+    outroExperience: "fireworks",
     defaultAudioCategory: "violin",
     defaultAudioTrackId: "violin-elegance",
     buttonStyle: "gold",
@@ -198,7 +227,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     defaultAudioTrackId: "travel-wanderlust",
     buttonStyle: "passport-stamp",
     hubMode: "journey",
-    countdownStyle: "minimal",
+    countdownStyle: "flip",
     sceneTransition: "slide",
     heroLayout: "passport-stamp",
     slideshowStyle: "magazine",
@@ -208,7 +237,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
   "glass-acrylic": {
     collectionId: "glass",
     openingExperience: "glass",
-    outroExperience: "golden-sparkles",
+    outroExperience: "closing-curtain",
     defaultAudioCategory: "strings",
     defaultAudioTrackId: "strings-crystal",
     buttonStyle: "glass",
@@ -228,7 +257,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     defaultAudioTrackId: "piano-garden",
     buttonStyle: "floral-edge",
     hubMode: "scroll",
-    countdownStyle: "classic",
+    countdownStyle: "card-3d",
     sceneTransition: "sparkle",
     heroLayout: "garden-card",
     slideshowStyle: "polaroid",
@@ -258,7 +287,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     defaultAudioTrackId: "jazz-midnight",
     buttonStyle: "glass",
     hubMode: "scroll",
-    countdownStyle: "luxury",
+    countdownStyle: "flip",
     sceneTransition: "curtain",
     heroLayout: "velvet-stage",
     slideshowStyle: "film-strip",
@@ -303,7 +332,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     defaultAudioTrackId: "travel-wanderlust",
     buttonStyle: "passport-stamp",
     hubMode: "journey",
-    countdownStyle: "minimal",
+    countdownStyle: "circular",
     sceneTransition: "slide",
     heroLayout: "boarding-pass",
     slideshowStyle: "magazine",
@@ -348,7 +377,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     defaultAudioTrackId: "memorial-piano",
     buttonStyle: "solemn",
     hubMode: "scroll",
-    countdownStyle: "minimal",
+    countdownStyle: "ring",
     sceneTransition: "fade",
     heroLayout: "memorial-candle",
     slideshowStyle: "ken-burns",
@@ -363,7 +392,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     defaultAudioTrackId: "party-edm-energy",
     buttonStyle: "neon",
     hubMode: "scroll",
-    countdownStyle: "card-3d",
+    countdownStyle: "flip",
     sceneTransition: "sparkle",
     heroLayout: "neon-pulse",
     slideshowStyle: "grid-reveal",
@@ -378,7 +407,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     defaultAudioTrackId: "corporate-summit",
     buttonStyle: "sharp",
     hubMode: "tabs",
-    countdownStyle: "minimal",
+    countdownStyle: "glass",
     sceneTransition: "slide",
     heroLayout: "corporate-grid",
     slideshowStyle: "magazine",
@@ -410,10 +439,24 @@ export function buildExperienceConfigFromDNA(dna: TemplateExperienceDNA): EventE
   };
 }
 
-/** Merge V2 DNA into a design config without overwriting explicit user choices. */
+/** Merge V2 DNA into a design config — DNA is authoritative for template identity fields. */
 export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): InvitationDesignConfig {
   const dna = getTemplateExperienceDNA(design.layout);
   const dnaExperience = buildExperienceConfigFromDNA(dna);
+  const visual = COLLECTION_VISUAL_DNA[dna.collectionId];
+  const typographyPack = getTypographyPack(
+    (design.experience?.typographyPackId as TypographyCategoryId | undefined) ??
+      dna.typographyPackId ??
+      visual?.typography ??
+      "classic"
+  );
+  const backgroundPack = getBackgroundPack(
+    (design.experience?.backgroundPackId as BackgroundTypeId | undefined) ??
+      dna.backgroundPackId ??
+      visual?.background ??
+      "static"
+  );
+
   const studio = {
     ...design.studio,
     buttonStyle: design.studio?.buttonStyle ?? dna.buttonStyle,
@@ -421,25 +464,55 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
     fullScreen: design.studio?.fullScreen ?? true,
   };
 
+  const userExp = design.experience ?? {};
+
   return {
     ...design,
+    fonts: typographyPack
+      ? {
+          heading: typographyPack.heading,
+          script: typographyPack.script,
+          body: typographyPack.body,
+        }
+      : design.fonts,
+    colors: backgroundPack
+      ? { ...design.colors, background: backgroundPack.preview }
+      : design.colors,
     studio,
     experience: {
       ...dnaExperience,
-      ...design.experience,
-      openingExperience: design.experience?.openingExperience ?? dnaExperience.openingExperience,
-      outroExperience: design.experience?.outroExperience ?? dnaExperience.outroExperience,
-      countdownStyle: design.experience?.countdownStyle ?? dna.countdownStyle,
-      sceneTransition: design.experience?.sceneTransition ?? dna.sceneTransition,
-      heroLayout: design.experience?.heroLayout ?? dna.heroLayout,
-      slideshowStyle: design.experience?.slideshowStyle ?? dna.slideshowStyle,
-      hubMode: design.experience?.hubMode ?? dna.hubMode,
-      pacing: design.experience?.pacing ?? dna.pacing,
-      defaultAudioCategory: design.experience?.defaultAudioCategory ?? dna.defaultAudioCategory,
-      defaultAudioTrackId: design.experience?.defaultAudioTrackId ?? dna.defaultAudioTrackId,
-      collectionId: design.experience?.collectionId ?? dna.collectionId,
+      introEnabled: userExp.introEnabled ?? dnaExperience.introEnabled,
+      introDurationSec: userExp.introDurationSec ?? dnaExperience.introDurationSec,
+      enabledTabs: userExp.enabledTabs ?? dnaExperience.enabledTabs,
+      environment: userExp.environment,
+      environmentIntensity: userExp.environmentIntensity,
+      scheduleItems: userExp.scheduleItems,
+      journeyChapters: userExp.journeyChapters,
+      themePresetId: userExp.themePresetId,
+      thankYouMessage: userExp.thankYouMessage,
+      typographyPackId: userExp.typographyPackId ?? typographyPack?.id,
+      backgroundPackId: userExp.backgroundPackId ?? backgroundPack?.id,
+      openingExperience: userExp.openingExperience ?? dnaExperience.openingExperience,
+      outroExperience: userExp.outroExperience ?? dnaExperience.outroExperience,
+      countdownStyle: userExp.countdownStyle ?? dnaExperience.countdownStyle,
+      sceneTransition: userExp.sceneTransition ?? dnaExperience.sceneTransition,
+      heroLayout: userExp.heroLayout ?? dnaExperience.heroLayout,
+      slideshowStyle: userExp.slideshowStyle ?? dnaExperience.slideshowStyle,
+      hubMode: userExp.hubMode ?? dnaExperience.hubMode,
+      pacing: userExp.pacing ?? dnaExperience.pacing,
+      defaultAudioCategory: userExp.defaultAudioCategory ?? dnaExperience.defaultAudioCategory,
+      defaultAudioTrackId: userExp.defaultAudioTrackId ?? dnaExperience.defaultAudioTrackId,
+      collectionId: userExp.collectionId ?? dnaExperience.collectionId,
+      enableRevealSounds: userExp.enableRevealSounds ?? dnaExperience.enableRevealSounds,
     },
   };
+}
+
+export function getExperienceCollectionsList() {
+  return Object.entries(EXPERIENCE_COLLECTIONS).map(([id, meta]) => ({
+    id: id as ExperienceCollectionId,
+    ...meta,
+  }));
 }
 
 /** Map experience-engine slideshow ids to gallery component styles */

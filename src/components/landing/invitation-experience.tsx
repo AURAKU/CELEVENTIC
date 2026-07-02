@@ -4,7 +4,8 @@ import Link from "next/link";
 import { ArrowRight, Heart, Sparkles, Palette, Globe2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { INVITATION_TEMPLATE_PRESETS } from "@/lib/invitation-templates";
+import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
+import { getTemplatePreset } from "@/lib/invitation-templates";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 const HIGHLIGHT_KEYS = [
@@ -16,7 +17,16 @@ const HIGHLIGHT_KEYS = [
 
 export function InvitationExperience() {
   const { t } = useLocale();
-  const featured = INVITATION_TEMPLATE_PRESETS.slice(0, 6);
+  const featured = CATALOG_TEMPLATES.slice(0, 6).map((t) => {
+    const preset = getTemplatePreset(t.layoutSlug);
+    return {
+      slug: t.layoutSlug,
+      name: t.name,
+      description: t.description,
+      category: t.category,
+      preview: preset?.preview ?? { gradient: t.previewGradient, accent: "#0B8A83" },
+    };
+  });
 
   return (
     <section id="invitations" className="py-28 bg-white relative overflow-hidden">

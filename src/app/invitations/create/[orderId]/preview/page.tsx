@@ -8,6 +8,7 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { InvitationStudioPreview } from "@/components/invitation/invitation-studio-preview";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { getDefaultDesignConfig } from "@/lib/invitation-templates";
+import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 
 export default function PreviewPage() {
@@ -27,6 +28,11 @@ export default function PreviewPage() {
 
   const template = getCatalogTemplate(order.templateSlug as string);
   const design = (order.designConfig as InvitationDesignConfig) ?? getDefaultDesignConfig(template?.layoutSlug);
+  const { musicSelection } = resolveInvitationMusic({
+    orderSelection: order.musicSelection,
+    legacyMusicUrl: order.musicPreference as string | null,
+    design,
+  });
   const hostName =
     order.coupleName1 && order.coupleName2
       ? `${order.coupleName1} & ${order.coupleName2}`
@@ -37,6 +43,7 @@ export default function PreviewPage() {
     hostName,
     description: (order.story as string) ?? null,
     startDate: order.eventDate ? new Date(order.eventDate as string).toLocaleDateString() : "TBD",
+    startDateRaw: order.eventDate ? new Date(order.eventDate as string).toISOString() : undefined,
     venueName: (order.venueName as string) ?? null,
     landmark: (order.landmark as string) ?? null,
     mapsLink: (order.mapsLink as string) ?? null,
@@ -56,6 +63,8 @@ export default function PreviewPage() {
           event={previewEvent}
           message={(order.story as string) ?? ""}
           invitationName={(order.eventTitle as string) ?? "Preview"}
+          musicSelection={musicSelection}
+          galleryUrls={(order.galleryUrls as string[]) ?? []}
         />
       </div>
       <div className="max-w-md mx-auto mt-8">

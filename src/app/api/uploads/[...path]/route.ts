@@ -12,7 +12,19 @@ const MIME: Record<string, string> = {
   ".webm": "video/webm",
   ".mov": "video/quicktime",
   ".pdf": "application/pdf",
+  ".mp3": "audio/mpeg",
+  ".mpeg": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+  ".ogg": "audio/ogg",
+  ".opus": "audio/opus",
 };
+
+function resolveMime(relative: string, ext: string): string {
+  if (ext === ".webm" && relative.startsWith("music/")) return "audio/webm";
+  return MIME[ext] ?? "application/octet-stream";
+}
 
 export async function GET(
   _req: Request,
@@ -28,7 +40,7 @@ export async function GET(
   const ext = path.extname(relative).toLowerCase();
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      "Content-Type": MIME[ext] ?? "application/octet-stream",
+      "Content-Type": resolveMime(relative, ext),
       "Cache-Control": "public, max-age=86400",
     },
   });

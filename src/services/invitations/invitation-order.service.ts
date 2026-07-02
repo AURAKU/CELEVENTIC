@@ -84,6 +84,11 @@ export class InvitationOrderService {
         },
       });
     }
+    const activeSlugs = CATALOG_TEMPLATES.map((t) => t.slug);
+    await prisma.invitationCatalogTemplate.updateMany({
+      where: { slug: { notIn: activeSlugs } },
+      data: { isActive: false },
+    });
     await seedCommerceEngine();
   }
 
@@ -101,7 +106,7 @@ export class InvitationOrderService {
     return prisma.invitationOrder.create({
       data: {
         userId: input.userId,
-        templateSlug: input.templateSlug,
+        templateSlug: template.slug,
         packageSlug: input.packageSlug,
         eventType: mapEventType(input.eventType),
         status: "DRAFT",

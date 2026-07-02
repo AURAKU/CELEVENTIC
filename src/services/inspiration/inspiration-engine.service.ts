@@ -8,6 +8,7 @@ import type {
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 import { slugify } from "@/lib/utils";
 import { detectPlatform, extractDomain, inferTitleFromUrl } from "@/lib/inspiration/platform-detector";
+import { isCanvaShareUrl } from "@/lib/inspiration/canva-inspiration";
 import { generateOriginalTemplate } from "@/lib/inspiration/template-generator";
 import { DEFAULT_BANNED_DOMAINS, DAILY_ANALYSIS_LIMIT } from "@/lib/inspiration/inspiration-constants";
 import { templateEngineService } from "@/services/template-engine/template-engine.service";
@@ -19,6 +20,9 @@ export interface AnalyzeUrlInput {
   eventId?: string;
   url: string;
   consentConfirmed: boolean;
+  /** User confirmed rights for Canva share-link concept analysis */
+  canvaShareConfirmed?: boolean;
+  categoryId?: string;
 }
 
 export interface AnalyzeUploadInput {
@@ -58,12 +62,26 @@ export class InspirationEngineService {
     }
   }
 
-  async checkDomainPolicy(url: string): Promise<{ allowed: boolean; reason?: string }> {
+  async checkDomainPolicy(
+    url: string,
+    options?: { canvaShareConfirmed?: boolean }
+  ): Promise<{ allowed: boolean; reason?: string }> {
     await this.ensureDefaultPolicies();
     if (url.startsWith("/uploads/") || url.startsWith("/api/uploads/")) return { allowed: true };
 
     const domain = extractDomain(url);
     if (!domain) return { allowed: false, reason: "Invalid URL" };
+
+    if (isCanvaShareUrl(url)) {
+      if (!options?.canvaShareConfirmed) {
+        return {
+          allowed: false,
+          reason:
+            "Canva share links require ownership confirmation. Upload your Canva export (PNG/PDF) or confirm you have rights to use this design as inspiration.",
+        };
+      }
+      return { allowed: true };
+    }
 
     const policies = await prisma.inspirationDomainPolicy.findMany({
       where: { policyType: "BANNED" },
@@ -90,7 +108,9 @@ export class InspirationEngineService {
     if (!input.consentConfirmed) throw new Error("You must confirm ownership or permission to use this inspiration.");
     await this.checkRateLimit(input.userId);
 
-    const policy = await this.checkDomainPolicy(input.url);
+    const policy = await this.checkDomainPolicy(input.url, {
+      canvaShareConfirmed: Boolean(input.canvaShareConfirmed),
+    });
     if (!policy.allowed) {
       const blocked = await prisma.inspirationSource.create({
         data: {
@@ -109,6 +129,7 @@ export class InspirationEngineService {
     }
 
     const platform = detectPlatform(input.url);
+    const isCanva = isCanvaShareUrl(input.url);
     const source = await prisma.inspirationSource.create({
       data: {
         userId: input.userId,
@@ -116,7 +137,9 @@ export class InspirationEngineService {
         sourceType: "URL",
         sourceUrl: input.url,
         platform,
-        title: inferTitleFromUrl(input.url, platform),
+        title: isCanva
+          ? `Canva inspiration concept${input.categoryId ? ` · ${input.categoryId}` : ""}`
+          : inferTitleFromUrl(input.url, platform),
         consentConfirmed: true,
         status: "PENDING",
       },

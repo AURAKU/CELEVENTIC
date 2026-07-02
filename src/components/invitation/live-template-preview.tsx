@@ -98,9 +98,11 @@ function LivePreviewExperience({
       >
         <PremiumInviteWrapper
           skipReveal={skipReveal}
+          skipIntro={preview.skipIntro ?? !interactive}
           skipTapGate={preview.skipTapGate ?? !interactive}
           musicEnabled={Boolean(preview.musicSelection)}
           musicSelection={preview.musicSelection}
+          galleryUrls={preview.galleryUrls}
           invitation={{
             id: `preview-${preview.design.layout}`,
             name: preview.invitationName,

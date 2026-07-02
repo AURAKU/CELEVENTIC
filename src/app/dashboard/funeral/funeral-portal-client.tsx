@@ -267,7 +267,7 @@ export function FuneralPortalClient() {
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Invitation Template</Label>
-                      <Select value={form.templateSlug || "classic-memorial"} onValueChange={(v) => setForm({ ...form, templateSlug: v })}>
+                      <Select value={form.templateSlug || "memorial-candle-tribute"} onValueChange={(v) => setForm({ ...form, templateSlug: v })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>{FUNERAL_TEMPLATE_COLLECTIONS.map((t) => <SelectItem key={t.slug} value={t.slug}>{t.name}</SelectItem>)}</SelectContent>
                       </Select>

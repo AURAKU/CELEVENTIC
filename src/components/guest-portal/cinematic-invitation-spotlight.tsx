@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence, type Transition } from "framer-motion";
 import { Share2, Check, Clock, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { SaveDateCalendarCard } from "@/components/guest-portal/save-date-calend
 import { CalendarActionsMenu } from "@/components/guest-portal/calendar-actions-menu";
 import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
 import { GiftQrBox } from "@/components/guest-portal/gift-qr-box";
-import { AgiFooter } from "@/components/agi-engine/agi-badge";
 import { ParticleEnvironment } from "@/components/experience/particle-environment";
 import { useLocale } from "@/components/i18n/locale-provider";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
@@ -23,10 +21,13 @@ import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-te
 import { cn } from "@/lib/utils";
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import { OutroExperienceOverlay } from "@/components/experience/outro-experience-overlay";
+import { ExperienceBackgroundLayer } from "@/components/experience/experience-background-layer";
 import { HeroLayoutView } from "@/components/guest-portal/hero-layout-views";
 import { getSceneTransitionMotion } from "@/lib/experience/scene-transition-motion";
 import { getSlideDurationForLayout, mapExperienceSlideshowStyle } from "@/lib/experience/experience-engine-v2";
 import type { SlideshowStyleId as GallerySlideshowStyleId } from "@/lib/invitation/slideshow-styles";
+import type { ResolvedGuestAction, InvitationActionKey } from "@/lib/invitation/guest-portal-actions";
+import { GuestPortalQuickActions } from "@/components/guest-portal/guest-portal-action-button";
 
 interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -39,6 +40,12 @@ interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps
   seatQrDataUrl?: string | null;
   experienceConfig?: EventExperienceConfig;
   embedded?: boolean;
+  portalActions?: ResolvedGuestAction[];
+  onPortalAction?: (action: ResolvedGuestAction) => void;
+  portalActionLoadingKey?: InvitationActionKey | null;
+  portalActionError?: string | null;
+  onShare?: () => void | Promise<void>;
+  shareCopied?: boolean;
 }
 
 type SceneDef = {
@@ -99,6 +106,10 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
   const handleShare = useCallback(async () => {
+    if (props.onShare) {
+      await props.onShare();
+      return;
+    }
     if (navigator.share) {
       await navigator.share({ title: displayEvent.title, url: shareUrl });
     } else {
@@ -106,7 +117,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  }, [displayEvent.title, shareUrl]);
+  }, [displayEvent.title, shareUrl, props.onShare]);
 
   const renderHeroContent = () => (
     <HeroLayoutView
@@ -170,6 +181,9 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
         content: (
           <SaveDateCalendarCard
             accentColor={accent}
+            secondaryColor={secondary}
+            layout={props.design.layout}
+            collectionId={props.experienceConfig?.collectionId}
             event={{
               title: displayEvent.title,
               startDateRaw: props.event.startDateRaw,
@@ -312,7 +326,12 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
               />
             )}
             {props.seatQrDataUrl && props.seatLookupUrl && (
-              <BrandedQrImage src={props.seatQrDataUrl} size={140} showDownload caption="Your seat" />
+              <>
+                <BrandedQrImage src={props.seatQrDataUrl} size={140} showDownload caption="Your seat" />
+                <Button variant="outline" size="sm" asChild className="border-white/30 text-white hover:bg-white/10">
+                  <a href={props.seatLookupUrl} target="_blank" rel="noopener noreferrer">Find my seat</a>
+                </Button>
+              </>
             )}
             {props.qrDataUrl && !props.admissionQrDataUrl && (
               <BrandedQrImage src={props.qrDataUrl} token={props.guestQrToken ?? undefined} size={160} showDownload={false} />
@@ -336,27 +355,20 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           </p>
           <div className="flex flex-wrap gap-3 justify-center pt-4">
             <CalendarActionsMenu
+              variant="dark"
+              accentColor={accent}
+              secondaryColor={secondary}
               event={{
                 title: displayEvent.title,
                 startDateRaw: props.event.startDateRaw ?? props.event.startDate,
                 venue: displayEvent.venueName ?? undefined,
                 description: displayEvent.description ?? undefined,
               }}
-              variant="dark"
             />
             <Button variant="outline" size="sm" onClick={handleShare} className="border-white/30 text-white hover:bg-white/10">
               {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
               {copied ? t("invite.copied") : t("invite.share")}
             </Button>
-          </div>
-          <div className="pt-8 opacity-60">
-            <p className="text-xs">
-              <Link href="/" className="hover:underline" style={{ color: accent }}>
-                Celeventic
-              </Link>{" "}
-              — {t("invite.tagline")}
-            </p>
-            <AgiFooter />
           </div>
         </div>
       ),
@@ -423,11 +435,10 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
         ) : bgMedia ? (
           <UploadedMedia src={bgMedia} alt="" className="h-full w-full object-cover cinematic-ken-burns" />
         ) : (
-          <div
-            className="h-full w-full"
-            style={{
-              background: `radial-gradient(ellipse at 50% 30%, ${accent}44 0%, transparent 55%), linear-gradient(180deg, ${bg} 0%, #000 100%)`,
-            }}
+          <ExperienceBackgroundLayer
+            packId={props.experienceConfig?.backgroundPackId}
+            fallbackColor={bg}
+            overlayClassName="bg-gradient-to-b from-black/20 via-transparent to-black/40"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/35 to-black/75" />
@@ -463,7 +474,19 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           </button>
         </div>
 
-        <div className="px-6 pb-6 pt-2 space-y-3">
+        <div className="px-4 pb-5 pt-1 space-y-3">
+          {props.portalActions && props.portalActions.length > 0 && props.onPortalAction && (
+            <div className="rounded-2xl border border-white/15 bg-black/25 backdrop-blur-md px-3 py-2.5">
+              <GuestPortalQuickActions
+                actions={props.portalActions.slice(0, 6)}
+                variant="dark-chips"
+                compact
+                loadingKey={props.portalActionLoadingKey}
+                onRun={props.onPortalAction}
+                error={props.portalActionError}
+              />
+            </div>
+          )}
           <div className="h-0.5 w-full rounded-full bg-white/10 overflow-hidden">
             <motion.div
               className="h-full rounded-full"

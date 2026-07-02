@@ -1,48 +1,43 @@
 import type { MusicLibraryTrack, MusicSelection } from "@/lib/music/music-types";
 
-/** Premium audio catalog — diverse moods per category (Mixkit royalty-free previews). */
+/** Public URL for a bundled catalog track file. */
+export function catalogMusicUrl(trackId: string): string {
+  return `/music/${trackId}.mp3`;
+}
+
+/** Premium audio catalog — each template DNA track maps to a local file in public/music. */
 export const AUDIO_EXPERIENCE_CATALOG: MusicLibraryTrack[] = [
-  // Luxury Piano
-  { id: "luxury-piano-romance", title: "Romantic Whispers", category: "piano", url: "https://assets.mixkit.co/music/preview/mixkit-romantic-whispers-34.mp3", durationSec: 120 },
-  { id: "piano-garden", title: "Garden Serenade", category: "piano", url: "https://assets.mixkit.co/music/preview/mixkit-piano-reflections-22.mp3", durationSec: 120 },
-  { id: "piano-elegance", title: "Evening Elegance", category: "piano", url: "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3", durationSec: 120 },
+  { id: "luxury-piano-romance", title: "Romantic Whispers", category: "piano", url: catalogMusicUrl("luxury-piano-romance"), durationSec: 120 },
+  { id: "piano-garden", title: "Garden Serenade", category: "piano", url: catalogMusicUrl("piano-garden"), durationSec: 120 },
+  { id: "piano-elegance", title: "Evening Elegance", category: "piano", url: catalogMusicUrl("piano-elegance"), durationSec: 120 },
 
-  // Violin & Strings
-  { id: "violin-elegance", title: "Solo Violin Elegance", category: "violin", url: "https://assets.mixkit.co/music/preview/mixkit-silent-descent-ambient-442.mp3", durationSec: 120 },
-  { id: "strings-garden", title: "String Quartet Garden", category: "strings", url: "https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3", durationSec: 120 },
-  { id: "strings-crystal", title: "Crystal Strings", category: "strings", url: "https://assets.mixkit.co/music/preview/mixkit-spirit-in-the-woods-138.mp3", durationSec: 120 },
-  { id: "orchestra-royal", title: "Royal Orchestra", category: "strings", url: "https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3", durationSec: 120 },
+  { id: "violin-elegance", title: "Solo Violin Elegance", category: "violin", url: catalogMusicUrl("violin-elegance"), durationSec: 120 },
+  { id: "strings-garden", title: "String Quartet Garden", category: "strings", url: catalogMusicUrl("strings-garden"), durationSec: 120 },
+  { id: "strings-crystal", title: "Crystal Strings", category: "strings", url: catalogMusicUrl("strings-crystal"), durationSec: 120 },
+  { id: "orchestra-royal", title: "Royal Orchestra", category: "strings", url: catalogMusicUrl("orchestra-royal"), durationSec: 120 },
 
-  // Jazz & Guitar
-  { id: "jazz-soft-lounge", title: "Soft Jazz Lounge", category: "jazz", url: "https://assets.mixkit.co/music/preview/mixkit-jazz-comedy-434.mp3", durationSec: 120 },
-  { id: "jazz-midnight", title: "Midnight Jazz", category: "jazz", url: "https://assets.mixkit.co/music/preview/mixkit-jazz-comedy-434.mp3", durationSec: 120 },
-  { id: "acoustic-warm", title: "Warm Acoustic Guitar", category: "guitar", url: "https://assets.mixkit.co/music/preview/mixkit-guitar-vibes-37.mp3", durationSec: 120 },
+  { id: "jazz-soft-lounge", title: "Soft Jazz Lounge", category: "jazz", url: catalogMusicUrl("jazz-soft-lounge"), durationSec: 120 },
+  { id: "jazz-midnight", title: "Midnight Jazz", category: "jazz", url: catalogMusicUrl("jazz-midnight"), durationSec: 120 },
+  { id: "acoustic-warm", title: "Warm Acoustic Guitar", category: "guitar", url: catalogMusicUrl("acoustic-warm"), durationSec: 120 },
 
-  // Celebration & Party
-  { id: "party-edm-energy", title: "EDM Party Energy", category: "celebration", url: "https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3", durationSec: 120 },
-  { id: "happy-celebration", title: "Happy Celebration", category: "celebration", url: "https://assets.mixkit.co/music/preview/mixkit-happy-celebration-438.mp3", durationSec: 120 },
+  { id: "party-edm-energy", title: "EDM Party Energy", category: "celebration", url: catalogMusicUrl("party-edm-energy"), durationSec: 120 },
+  { id: "happy-celebration", title: "Happy Celebration", category: "celebration", url: catalogMusicUrl("happy-celebration"), durationSec: 120 },
 
-  // African & Traditional
-  { id: "african-drums-celebration", title: "African Drums", category: "african", url: "https://assets.mixkit.co/music/preview/mixkit-tribal-festival-419.mp3", durationSec: 120 },
+  { id: "african-drums-celebration", title: "African Drums", category: "african", url: catalogMusicUrl("african-drums-celebration"), durationSec: 120 },
 
-  // Corporate & Ambient
-  { id: "corporate-summit", title: "Summit Presentation", category: "corporate", url: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3", durationSec: 120 },
-  { id: "ambient-cinematic", title: "Cinematic Ambient", category: "instrumentals", url: "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3", durationSec: 120 },
-  { id: "travel-wanderlust", title: "Wanderlust Journey", category: "instrumentals", url: "https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3", durationSec: 120 },
+  { id: "corporate-summit", title: "Summit Presentation", category: "corporate", url: catalogMusicUrl("corporate-summit"), durationSec: 120 },
+  { id: "ambient-cinematic", title: "Cinematic Ambient", category: "instrumentals", url: catalogMusicUrl("ambient-cinematic"), durationSec: 120 },
+  { id: "travel-wanderlust", title: "Wanderlust Journey", category: "instrumentals", url: catalogMusicUrl("travel-wanderlust"), durationSec: 120 },
 
-  // Funeral & Memorial
-  { id: "memorial-piano", title: "Memorial Piano", category: "funeral", url: "https://assets.mixkit.co/music/preview/mixkit-silent-descent-ambient-442.mp3", durationSec: 120 },
-  { id: "memorial-violin", title: "Memorial Violin", category: "funeral", url: "https://assets.mixkit.co/music/preview/mixkit-silent-descent-ambient-442.mp3", durationSec: 120 },
+  { id: "memorial-piano", title: "Memorial Piano", category: "funeral", url: catalogMusicUrl("memorial-piano"), durationSec: 120 },
+  { id: "memorial-violin", title: "Memorial Violin", category: "funeral", url: catalogMusicUrl("memorial-violin"), durationSec: 120 },
 
-  // Islamic
-  { id: "islamic-soft-instrumental", title: "Soft Instrumental", category: "muslim", url: "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3", durationSec: 120 },
+  { id: "islamic-soft-instrumental", title: "Soft Instrumental", category: "muslim", url: catalogMusicUrl("islamic-soft-instrumental"), durationSec: 120 },
 
-  // Nature
-  { id: "nature-forest", title: "Forest Ambience", category: "nature", url: "https://assets.mixkit.co/music/preview/mixkit-spirit-in-the-woods-138.mp3", durationSec: 120 },
-  { id: "nature-ocean", title: "Ocean Waves", category: "nature", url: "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3", durationSec: 120 },
+  { id: "nature-forest", title: "Forest Ambience", category: "nature", url: catalogMusicUrl("nature-forest"), durationSec: 120 },
+  { id: "nature-ocean", title: "Ocean Waves", category: "nature", url: catalogMusicUrl("nature-ocean"), durationSec: 120 },
 
-  // Wedding general
-  { id: "wedding-romantic", title: "Romantic Wedding", category: "wedding", url: "https://assets.mixkit.co/music/preview/mixkit-romantic-whispers-34.mp3", durationSec: 120 },
+  { id: "wedding-romantic", title: "Romantic Wedding", category: "wedding", url: catalogMusicUrl("wedding-romantic"), durationSec: 120 },
 ];
 
 export const AUDIO_CATEGORY_GROUPS = [
@@ -69,13 +64,18 @@ export function getAudioTracksByCategory(category: string): MusicLibraryTrack[] 
   return AUDIO_EXPERIENCE_CATALOG.filter((t) => t.category === category);
 }
 
+/** All catalog tracks for library UI (static + DB merge). */
+export function getCatalogLibraryTracks(): MusicLibraryTrack[] {
+  return AUDIO_EXPERIENCE_CATALOG.map((t) => ({ ...t, artist: "Celeventic Library" }));
+}
+
 export function buildMusicSelectionFromTrack(
   trackId: string,
   options?: Partial<MusicSelection>
 ): MusicSelection | null {
   const track = getAudioTrackById(trackId);
   if (!track) return null;
-  const duration = track.durationSec ?? 60;
+  const duration = track.durationSec ?? 120;
   return {
     source: "library",
     libraryTrackId: track.id,

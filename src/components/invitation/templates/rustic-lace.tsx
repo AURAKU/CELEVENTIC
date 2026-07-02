@@ -23,8 +23,15 @@ export function RusticLaceTemplate({ invitation, event, design, guestId, guestNa
             : "linear-gradient(180deg, #4a3020 0%, #3d2314 30%, #2a1810 100%)",
         }}
       >
-        {hero ? (
-          <HeroMedia media={design.media} animation={design.animation} className="absolute inset-0" overlay />
+        {hero || event.coverImageUrl ? (
+          <HeroMedia
+            coverImageUrl={event.coverImageUrl}
+            media={design.media}
+            animation={design.animation}
+            layout={design.layout}
+            className="absolute inset-0"
+            overlay
+          />
         ) : (
           <div
             className="absolute inset-0 opacity-30"
@@ -35,7 +42,7 @@ export function RusticLaceTemplate({ invitation, event, design, guestId, guestNa
         )}
         <LaceBorder position="top" />
         <LaceBorder position="bottom" />
-        <div className="relative z-10 px-8 py-24 text-center text-white space-y-5 font-[family-name:var(--font-cormorant)]">
+        <div className="relative z-10 px-8 py-24 text-center text-white space-y-5 font-[family-name:var(--font-cormorant)] inv-text-on-photo inv-readable-panel mx-4 my-8">
           <p className="text-xs leading-relaxed opacity-90 max-w-xs mx-auto">
             {design.introText ?? invitation.message ?? "It is with great joy that we invite you to celebrate with us"}
           </p>

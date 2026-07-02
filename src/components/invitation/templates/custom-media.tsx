@@ -60,7 +60,6 @@ export function CustomMediaTemplate({ invitation, event, design, guestId, guestN
           </div>
         </div>
       </div>
-      <p className="relative z-10 text-center text-xs text-white/40 pb-6">Powered by Celeventic</p>
     </div>
   );
 }

@@ -43,6 +43,13 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   skipReveal?: boolean;
   /** Skip tap-to-begin gate (non-interactive thumbnails) */
   skipTapGate?: boolean;
+  /** Skip Celeventic logo intro (studio/catalog previews) */
+  skipIntro?: boolean;
+  contactEmail?: string | null;
+  seatingEnabled?: boolean;
+  menuUrl?: string | null;
+  menuBody?: string | null;
+  registryUrl?: string | null;
 }
 
 export function PremiumInviteWrapper({
@@ -56,6 +63,7 @@ export function PremiumInviteWrapper({
   embedded,
   skipReveal = false,
   skipTapGate = false,
+  skipIntro = false,
   ...props
 }: PremiumInviteWrapperProps) {
   const enrichedDesign = useMemo(
@@ -90,10 +98,9 @@ export function PremiumInviteWrapper({
 
   const wantsAutoplay = musicSelection?.autoPlay ?? true;
   const needsTapGate = Boolean(hasMusic && wantsAutoplay && !skipTapGate);
-  const trackTitle = musicSelection?.title ?? "Event music";
 
   function initialPhase(): ExperiencePhase {
-    if (introEnabled) return "intro";
+    if (!skipIntro && introEnabled) return "intro";
     if (needsTapGate) return "tap-to-begin";
     if (showReveal) return "reveal";
     return "portal";
@@ -122,6 +129,12 @@ export function PremiumInviteWrapper({
       audioManager?.destroy();
     };
   }, [audioManager]);
+
+  useEffect(() => {
+    if (audioManager && hasMusic) {
+      audioManager.getAudio();
+    }
+  }, [audioManager, hasMusic]);
 
   const startAudio = useCallback(async () => {
     if (!audioManager || audioStarted.current) return;
@@ -163,7 +176,9 @@ export function PremiumInviteWrapper({
     }
   }, [phase, hasMusic, wantsAutoplay, startAudio]);
 
-  const showAudioControls = Boolean(audioManager && hasMusic && (phase === "portal" || phase === "reveal"));
+  const showAudioControls = Boolean(
+    audioManager && hasMusic && (phase === "portal" || phase === "reveal" || phase === "tap-to-begin")
+  );
 
   const portal = (
     <GuestInvitationPortal
@@ -218,7 +233,7 @@ export function PremiumInviteWrapper({
           {portal}
         </OpeningExperienceRouter>
         {showAudioControls && audioManager && (
-          <InvitationAudioControls manager={audioManager} trackTitle={trackTitle} />
+          <InvitationAudioControls manager={audioManager} embedded={embedded} />
         )}
       </>
     );
@@ -228,7 +243,7 @@ export function PremiumInviteWrapper({
     <>
       {portal}
       {showAudioControls && audioManager && (
-        <InvitationAudioControls manager={audioManager} trackTitle={trackTitle} />
+        <InvitationAudioControls manager={audioManager} embedded={embedded} />
       )}
     </>
   );

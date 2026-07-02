@@ -3,6 +3,7 @@
 import { MapPin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
+import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 
 interface VenueMapEmbedProps {
   mapsLink?: string | null;
@@ -15,14 +16,13 @@ interface VenueMapEmbedProps {
 export function VenueMapEmbed({ mapsLink, venueName, landmark, accentColor = "#0B8A83", compact }: VenueMapEmbedProps) {
   const label = [venueName, landmark].filter(Boolean).join(" · ");
   const embedUrl = toMapsEmbedUrl(mapsLink, label);
-  if (!embedUrl && !mapsLink) return null;
-
-  const directionsUrl = mapsLink ?? `https://maps.google.com/maps?q=${encodeURIComponent(label)}`;
+  const directionsUrl = buildDirectionsUrl({ mapsLink, venueName, landmark });
+  if (!embedUrl && !directionsUrl) return null;
 
   if (compact) {
     return (
       <a
-        href={directionsUrl}
+        href={directionsUrl ?? "#"}
         target="_blank"
         rel="noopener noreferrer"
         className="inv-3d-card flex items-center gap-3 p-4 rounded-2xl border border-white/20 bg-white/95 shadow-lg hover:shadow-xl transition-all touch-manipulation"
@@ -53,7 +53,7 @@ export function VenueMapEmbed({ mapsLink, venueName, landmark, accentColor = "#0
           </div>
         </div>
         <Button variant="outline" size="sm" asChild className="shrink-0">
-          <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
+          <a href={directionsUrl ?? undefined} target="_blank" rel="noopener noreferrer">
             Directions <ExternalLink className="h-3 w-3 ml-1" />
           </a>
         </Button>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AgiFooter } from "@/components/agi-engine/agi-badge";
 import { RevealConfetti } from "@/components/invitation-os/reveal/reveal-confetti";
 import { triggerHapticLight } from "@/lib/haptics";
 import { playRevealSounds } from "@/lib/experience/reveal-sounds";
@@ -124,7 +123,6 @@ export function EnvelopeCollectionReveal({
           </p>
         )}
         {musicEnabled && !isOpening && <p className="mt-2 text-white/30 text-xs">Music plays after opening</p>}
-        <div className="mt-10"><AgiFooter /></div>
       </button>
     </div>
   );

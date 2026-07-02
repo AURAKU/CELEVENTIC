@@ -81,9 +81,7 @@ export function createInvitationAudioManager(
 
     audio = new Audio(resolveMusicUrl(resolvedUrl));
     audio.preload = "auto";
-    if (resolvedUrl.startsWith("http")) {
-      audio.crossOrigin = "anonymous";
-    }
+    // Do not set crossOrigin — external CDNs often omit CORS headers and break playback.
 
     if (musicSelection) {
       audio.loop = false;

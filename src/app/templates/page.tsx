@@ -5,9 +5,7 @@ import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PaginationLinks } from "@/components/ui/pagination";
-import { INVITATION_TEMPLATE_PRESETS } from "@/lib/invitation-templates";
 import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
-import { LivePresetTemplateGrid } from "@/components/invitation/live-template-catalog-grid";
 import { LiveCatalogTemplateGrid } from "@/components/invitation/live-template-catalog-grid";
 import { prisma } from "@/lib/prisma";
 import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
@@ -62,25 +60,11 @@ export default async function PublicTemplatesPage({
               Premium Invitation Templates
             </h1>
             <p className="mt-4 text-slate-600">
-              Every preview is a live invitation — scroll and explore exactly how your guests will experience it.
+              {CATALOG_TEMPLATES.length} unique cinematic experiences — each with its own layout, motion, and soundtrack.
+              Scroll live previews exactly as your guests will see them.
             </p>
           </div>
 
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">
-            Classic Invitation Layouts ({INVITATION_TEMPLATE_PRESETS.length})
-          </h2>
-          <p className="text-sm text-slate-500 mb-6">Core Celeventic layouts with auto-scrolling live previews.</p>
-          <LivePresetTemplateGrid
-            presets={INVITATION_TEMPLATE_PRESETS}
-            linkHref="/dashboard/invitations"
-          />
-
-          <h2 className="text-lg font-semibold text-slate-900 mt-16 mb-2">
-            Full Template Catalogue ({CATALOG_TEMPLATES.length})
-          </h2>
-          <p className="text-sm text-slate-500 mb-6">
-            Wedding, funeral, corporate, and celebration templates — all with live guest-flow previews.
-          </p>
           <LiveCatalogTemplateGrid templates={CATALOG_TEMPLATES} />
 
           {total > 0 && (

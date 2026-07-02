@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InvitationStudioPreview } from "@/components/invitation/invitation-studio-preview";
-import { INVITATION_TEMPLATE_PRESETS } from "@/lib/invitation-templates";
+import { getUniqueTemplatePresets } from "@/lib/invitation-templates";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import {
   BUTTON_STYLE_OPTIONS,
@@ -24,6 +24,14 @@ import type { SlideshowStyleId } from "@/lib/invitation/slideshow-styles";
 import { EXTENDED_BUTTON_STYLES } from "@/lib/invitation/invitation-button-styles";
 import { HUB_TAB_LABELS } from "@/components/experience/event-experience-hub";
 import { EXPERIENCE_THEME_PRESETS } from "@/lib/experience/theme-presets";
+import { enrichDesignWithExperienceDNA, getExperienceCollectionsList, getTemplateExperienceDNA } from "@/lib/experience/experience-engine-v2";
+import { TemplateStudioMediaPanel } from "@/components/invitation-studio/template-studio-media-panel";
+import { CanvaInspirationPanel } from "@/components/invitation-studio/canva-inspiration-panel";
+import { MusicPreferenceEditor } from "@/components/music/music-preference-editor";
+import type { MusicSelection } from "@/lib/music/music-types";
+import { TYPOGRAPHY_PACKS, getTypographyPack, type TypographyCategoryId } from "@/lib/experience/typography-engine";
+import { BACKGROUND_PACKS, getBackgroundPack, type BackgroundTypeId } from "@/lib/experience/background-engine";
+import type { HeroLayoutId, ExperiencePacing } from "@/lib/experience/experience-types";
 const FONT_OPTIONS = ["Inter", "Playfair Display", "Cinzel", "Cormorant Garamond", "Great Vibes"];
 const ALL_HUB_TABS = Object.keys(HUB_TAB_LABELS) as HubTabId[];
 const OPENING_CATEGORIES = ["envelope", "curtain", "palace", "interactive", "instant"] as const;
@@ -52,6 +60,19 @@ const SCENE_TRANSITIONS: { id: SceneTransitionId; label: string }[] = [
   { id: "sparkle", label: "Sparkle" },
 ];
 
+const PACING_OPTIONS: { id: ExperiencePacing; label: string }[] = [
+  { id: "slow", label: "Slow · cinematic" },
+  { id: "medium", label: "Medium · balanced" },
+  { id: "fast", label: "Fast · energetic" },
+];
+
+function formatHeroLayoutLabel(id: HeroLayoutId): string {
+  return id
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 const ANIMATION_OPTIONS = [
   { id: "fade", label: "Gentle fade" },
   { id: "ken-burns", label: "Ken Burns zoom" },
@@ -73,12 +94,17 @@ interface InvitationStudioHubProps {
     dressCode?: string | null;
   };
   message?: string;
+  eventType?: string;
+  musicSelection?: MusicSelection | null;
+  onMusicChange?: (selection: MusicSelection | null) => void;
+  galleryUrls?: string[];
+  onGalleryChange?: (urls: string[]) => void;
   onChange: (design: InvitationDesignConfig) => void;
   onSave?: () => Promise<void>;
   saving?: boolean;
 }
 
-export function InvitationStudioHub({ design, event, message, onChange, onSave, saving }: InvitationStudioHubProps) {
+export function InvitationStudioHub({ design, event, message, eventType, musicSelection, onMusicChange, galleryUrls = [], onGalleryChange, onChange, onSave, saving }: InvitationStudioHubProps) {
   const [view, setView] = useState<"mobile" | "desktop">("mobile");
   const studio = design.studio ?? DEFAULT_STUDIO_CONFIG;
   const experience = design.experience ?? {};
@@ -119,12 +145,53 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
     onChange({ ...design, colors: { ...design.colors, [key]: value } });
   }
 
+  const templatePresets = useMemo(() => getUniqueTemplatePresets(), []);
+
   function applyPreset(slug: string) {
-    const preset = INVITATION_TEMPLATE_PRESETS.find((p) => p.slug === slug);
-    if (preset) onChange({ ...preset.config, media: design.media, studio: { ...DEFAULT_STUDIO_CONFIG, ...preset.config.studio, ...design.studio } });
+    const preset = templatePresets.find((p) => p.slug === slug);
+    if (!preset) return;
+    const { experience: _e, ...configWithoutExperience } = preset.config;
+    const merged = enrichDesignWithExperienceDNA({
+      ...configWithoutExperience,
+      media: design.media,
+      studio: { ...DEFAULT_STUDIO_CONFIG, ...preset.config.studio, ...design.studio },
+    });
+    onChange(merged);
   }
 
-  const previewDesign = useMemo(() => design, [design]);
+  const previewDesign = useMemo(() => enrichDesignWithExperienceDNA(design), [design]);
+  const dna = getTemplateExperienceDNA(design.layout);
+  const collections = getExperienceCollectionsList();
+  const HERO_LAYOUTS: HeroLayoutId[] = [
+    "classic-centered", "vine-arch", "lace-frame", "hexagon-stack", "rings-spotlight", "media-canvas",
+    "glass-frost", "garden-card", "royal-palace", "velvet-stage", "kente-weave", "garden-bloom",
+    "boarding-pass", "crystal-prism", "islamic-arch", "memorial-candle", "neon-pulse", "corporate-grid",
+    "editorial-split", "passport-stamp", "fullscreen-type", "magazine-stack",
+  ];
+
+  function applyTypographyPack(id: TypographyCategoryId) {
+    const pack = getTypographyPack(id);
+    if (!pack) return;
+    onChange({
+      ...design,
+      fonts: { heading: pack.heading, script: pack.script, body: pack.body },
+      experience: { ...experience, typographyPackId: pack.id, experienceCustomized: true },
+    });
+  }
+
+  function applyBackgroundPack(id: BackgroundTypeId) {
+    const pack = getBackgroundPack(id);
+    if (!pack) return;
+    onChange({
+      ...design,
+      colors: { ...design.colors, background: pack.preview },
+      experience: { ...experience, backgroundPackId: pack.id, experienceCustomized: true },
+    });
+  }
+
+  function applyExperienceDNAFromTemplate() {
+    onChange(enrichDesignWithExperienceDNA({ ...design, experience: { ...experience, experienceCustomized: false } }));
+  }
 
   return (
     <div className="grid lg:grid-cols-2 gap-8">
@@ -134,7 +201,7 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
             <Layout className="h-4 w-4 text-[#0B8A83]" /> Template & reveal
           </h3>
           <div className="grid sm:grid-cols-2 gap-3">
-            {INVITATION_TEMPLATE_PRESETS.map((p) => (
+            {templatePresets.map((p) => (
               <button
                 key={p.slug}
                 type="button"
@@ -176,6 +243,95 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
           </div>
         </section>
 
+        <section className="rounded-2xl border bg-gradient-to-br from-[#0B8A83]/5 to-[#D4A63A]/5 p-5 space-y-4">
+          <h3 className="font-semibold flex items-center gap-2 text-[#0F172A]">
+            <Layers className="h-4 w-4 text-[#0B8A83]" /> Experience DNA V2
+          </h3>
+          <p className="text-xs text-slate-600">
+            Each template ships with unique creative DNA — collection, hero layout, typography, atmosphere, and pacing.
+            {dna ? (
+              <span className="block mt-1 text-[#0B8A83] font-medium">
+                Active: {collections.find((c) => c.id === dna.collectionId)?.label ?? dna.collectionId} · {formatHeroLayoutLabel(dna.heroLayout)}
+              </span>
+            ) : null}
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Collection</Label>
+              <Select
+                value={experience.collectionId ?? dna.collectionId ?? ""}
+                onValueChange={(v) => patchExperience({ collectionId: v as typeof experience.collectionId })}
+              >
+                <SelectTrigger><SelectValue placeholder="Collection" /></SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {collections.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Hero layout</Label>
+              <Select
+                value={experience.heroLayout ?? dna.heroLayout ?? "classic-centered"}
+                onValueChange={(v) => patchExperience({ heroLayout: v as HeroLayoutId })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {HERO_LAYOUTS.map((id) => (
+                    <SelectItem key={id} value={id}>{formatHeroLayoutLabel(id)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Typography pack</Label>
+              <Select
+                value={(experience.typographyPackId as TypographyCategoryId) ?? dna.typographyPackId ?? "classic"}
+                onValueChange={(v) => applyTypographyPack(v as TypographyCategoryId)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {TYPOGRAPHY_PACKS.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Background atmosphere</Label>
+              <Select
+                value={(experience.backgroundPackId as BackgroundTypeId) ?? dna.backgroundPackId ?? "static"}
+                onValueChange={(v) => applyBackgroundPack(v as BackgroundTypeId)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {BACKGROUND_PACKS.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label>Emotional pacing</Label>
+              <Select
+                value={experience.pacing ?? dna.pacing ?? "medium"}
+                onValueChange={(v) => patchExperience({ pacing: v as ExperiencePacing })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PACING_OPTIONS.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={applyExperienceDNAFromTemplate}>
+            Reset to template DNA
+          </Button>
+        </section>
+
         <section className="rounded-2xl border bg-white p-5 space-y-4">
           <h3 className="font-semibold flex items-center gap-2 text-[#0F172A]">
             <Sparkles className="h-4 w-4 text-[#D4A63A]" /> Experience theme
@@ -187,17 +343,19 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
               onValueChange={(v) => {
                 const preset = EXPERIENCE_THEME_PRESETS.find((p) => p.id === v);
                 if (!preset) return;
-                onChange({
-                  ...design,
-                  colors: preset.colors,
-                  experience: {
-                    ...experience,
-                    ...preset.experience,
-                    themePresetId: preset.id,
-                    openingExperience: preset.openingExperience,
-                  },
-                  studio: { ...studio, revealMode: mapOpeningToLegacyRevealMode(preset.openingExperience) },
-                });
+                onChange(
+                  enrichDesignWithExperienceDNA({
+                    ...design,
+                    colors: preset.colors,
+                    experience: {
+                      ...experience,
+                      ...preset.experience,
+                      themePresetId: preset.id,
+                      openingExperience: preset.openingExperience,
+                    },
+                    studio: { ...studio, revealMode: mapOpeningToLegacyRevealMode(preset.openingExperience) },
+                  })
+                );
               }}
             >
               <SelectTrigger><SelectValue placeholder="Choose a theme…" /></SelectTrigger>
@@ -497,6 +655,33 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
           </label>
         </section>
 
+        <section className="rounded-2xl border bg-white p-5 space-y-4">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Music className="h-4 w-4 text-[#0B8A83]" /> Background music
+          </h3>
+          <p className="text-xs text-slate-500">
+            Pick a track from the library or upload your own. Guests hear this after opening the invite — tap the preview to test.
+          </p>
+          {onMusicChange && (
+            <MusicPreferenceEditor
+              value={musicSelection ?? null}
+              onChange={onMusicChange}
+              eventType={eventType}
+            />
+          )}
+        </section>
+
+        {onGalleryChange && (
+          <TemplateStudioMediaPanel
+            design={design}
+            galleryUrls={galleryUrls}
+            onDesignChange={onChange}
+            onGalleryChange={onGalleryChange}
+          />
+        )}
+
+        <CanvaInspirationPanel />
+
         {onSave && (
           <Button className="w-full bg-[#0B8A83] hover:bg-[#097068]" size="lg" onClick={() => void onSave()} disabled={saving}>
             <Sparkles className="h-4 w-4" /> {saving ? "Saving…" : "Save studio design"}
@@ -510,10 +695,17 @@ export function InvitationStudioHub({ design, event, message, onChange, onSave, 
           <Button size="sm" variant={view === "desktop" ? "default" : "outline"} onClick={() => setView("desktop")}>Desktop</Button>
         </div>
         <div className={`mx-auto transition-all rounded-2xl border shadow-xl overflow-hidden ${view === "mobile" ? "max-w-sm" : "max-w-2xl"}`}>
-          <InvitationStudioPreview design={previewDesign} event={event} message={message ?? ""} invitationName={event.title} />
+          <InvitationStudioPreview
+            design={previewDesign}
+            event={event}
+            message={message ?? ""}
+            invitationName={event.title}
+            musicSelection={musicSelection}
+            galleryUrls={galleryUrls}
+          />
         </div>
         <p className="text-xs text-center text-slate-500 flex items-center justify-center gap-1">
-          <Music className="h-3 w-3" /> Tap the preview, then play — music starts after your tap (browser policy). Customize colors, copy, motion, tabs, and audio in the panels.
+          <Music className="h-3 w-3" /> Tap &quot;Tap to Begin&quot; in the preview — music starts automatically. Use the music panel to swap tracks or upload your own.
         </p>
       </div>
     </div>

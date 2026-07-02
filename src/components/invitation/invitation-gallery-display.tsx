@@ -79,10 +79,57 @@ export function InvitationGalleryDisplay({ items, settings, className }: Invitat
     return (
       <div className={cn("flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1", className)}>
         {slides.map((item, i) => (
-          <div key={item.id ?? i} className="snap-center shrink-0 w-[72%] sm:w-[45%] aspect-[9/16] rounded-2xl overflow-hidden shadow-lg">
+          <div key={item.id ?? i} className="snap-center shrink-0 w-[72%] sm:w-[45%] aspect-[9/16] rounded-2xl overflow-hidden shadow-lg inv-gallery-item">
             <GalleryMedia item={item} className="w-full h-full object-cover" />
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (cfg.style === "floating-memories") {
+    return (
+      <div className={cn("relative h-80 sm:h-96", className)}>
+        {slides.slice(0, 5).map((item, i) => (
+          <div
+            key={item.id ?? i}
+            className="absolute w-36 sm:w-44 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/80 inv-gallery-item inv-media-entrance-pop-in"
+            style={{
+              left: `${8 + i * 14}%`,
+              top: `${10 + (i % 3) * 12}%`,
+              transform: `rotate(${(i - 2) * 6}deg)`,
+              zIndex: i,
+              animationDelay: `${i * 120}ms`,
+            }}
+          >
+            <GalleryMedia item={item} className="w-full aspect-[4/5] object-cover" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (cfg.style === "split-media" && slides.length >= 2) {
+    const left = slides[index];
+    const right = slides[(index + 1) % slides.length];
+    return (
+      <div className={cn("grid grid-cols-2 gap-2 rounded-2xl overflow-hidden", className)}>
+        <div className="aspect-[3/4] inv-gallery-item">
+          <GalleryMedia item={left} className="w-full h-full object-cover" />
+        </div>
+        <div className="aspect-[3/4] inv-gallery-item">
+          <GalleryMedia item={right} className="w-full h-full object-cover" />
+        </div>
+      </div>
+    );
+  }
+
+  if (cfg.style === "fullscreen-video") {
+    const videoSlide = slides.find((s) => s.type === "video" || /\.(mp4|webm|mov)/i.test(s.url)) ?? slides[0];
+    return (
+      <div className={cn("relative aspect-video rounded-2xl overflow-hidden bg-black shadow-inner", className)}>
+        <GalleryMedia item={videoSlide} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
       </div>
     );
   }
@@ -91,7 +138,7 @@ export function InvitationGalleryDisplay({ items, settings, className }: Invitat
     <div className={cn("relative", className)}>
       <div
         className={cn(
-          "relative aspect-[4/5] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-slate-900 shadow-inner",
+          "relative aspect-[4/5] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-slate-900 shadow-inner inv-gallery-item",
           cfg.style === "luxury-frame" && "border-4 border-amber-500/70 p-1 bg-gradient-to-br from-amber-900/40 to-black/40"
         )}
       >

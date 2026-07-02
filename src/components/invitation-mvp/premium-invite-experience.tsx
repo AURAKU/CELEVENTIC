@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
 import { Share2, Clock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvitationRenderer } from "@/components/invitation/invitation-renderer";
@@ -172,9 +171,6 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
           </>
         )}
 
-        <p className="text-center text-xs text-slate-400 pb-8">
-          <Link href="/" className="text-[#0B8A83] hover:underline">Celeventic</Link> — {t("invite.tagline")}
-        </p>
       </section>
     </div>
   );

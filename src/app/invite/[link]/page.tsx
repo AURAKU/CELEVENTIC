@@ -12,7 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { invitationLanguageService } from "@/services/i18n/invitation-language.service";
 import { invitationBlockService } from "@/services/invitations/invitation-block.service";
 import type { AppLocale } from "@/lib/i18n/constants";
-import { parseMusicSelection } from "@/lib/music/validate-selection";
+import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 
@@ -109,12 +109,13 @@ export default async function InvitePage({
   const memoryVault = order ? addonFulfillmentService.hasFeature(order, "memory_vault") : false;
   const qrCheckin = order ? addonFulfillmentService.hasFeature(order, "qr_checkin") : false;
   const seatingPlan = order ? addonFulfillmentService.hasFeature(order, "seating_plan") : false;
-  const musicSelection = order ? parseMusicSelection(order.musicSelection) : null;
-  const legacyMusicUrl =
-    !musicSelection && order?.musicPreference?.match(/^(\/|https?:)/)
-      ? order.musicPreference
-      : null;
-  const hasMusic = Boolean(musicSelection?.url || legacyMusicUrl || musicAddon);
+  const { musicSelection, hasMusic } = resolveInvitationMusic({
+    orderSelection: order?.musicSelection,
+    legacyMusicUrl: order?.musicPreference,
+    design,
+    allowDnaFallback: true,
+  });
+  const musicEnabled = hasMusic || musicAddon;
 
   if (sampleGuest && seatingPlan && seatLookupUrl) {
     const assignment = await seatingService.lookupByGuestId(sampleGuest.id);
@@ -131,9 +132,8 @@ export default async function InvitePage({
     <PremiumInviteWrapper
       revealEnabled={revealMode !== "none"}
       revealMode={revealMode}
-      musicEnabled={hasMusic}
+      musicEnabled={musicEnabled}
       musicSelection={musicSelection}
-      musicUrl={legacyMusicUrl}
       fullScreen={design.studio?.fullScreen ?? true}
       invitation={{
         id: invitation.id,
@@ -172,6 +172,8 @@ export default async function InvitePage({
       blocks={blocks}
       memoryVaultEnabled={memoryVault}
       eventId={event.id}
+      contactEmail={order?.contactEmail ?? null}
+      seatingEnabled={seatingPlan && Boolean(seatQrDataUrl && seatLookupUrl)}
     />
   );
 }

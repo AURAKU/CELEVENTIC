@@ -19,10 +19,7 @@ import { useEventContext } from "@/hooks/use-event-context";
 import { TemplatePicker } from "@/components/invitation/template-picker";
 import { MediaUploader } from "@/components/invitation/media-uploader";
 import { InvitationStudioPreview } from "@/components/invitation/invitation-studio-preview";
-import {
-  INVITATION_TEMPLATE_PRESETS,
-  getTemplatePreset,
-} from "@/lib/invitation-templates";
+import { getUniqueTemplatePresets, getTemplatePreset } from "@/lib/invitation-templates";
 import type { InvitationDesignConfig, InvitationMediaAsset } from "@/types/invitation-design";
 import type { UploadAnalysisResult } from "@/services/invitations/invitation-inspiration.service";
 import { InspirationInsights } from "@/components/invitation/inspiration-insights";
@@ -144,7 +141,7 @@ function InvitationStudioContent() {
       };
     }
 
-    const preset = getTemplatePreset(layoutSlug) ?? INVITATION_TEMPLATE_PRESETS[0];
+    const preset = getTemplatePreset(layoutSlug) ?? getUniqueTemplatePresets()[0];
     let config = { ...preset.config, introText: form.introText || preset.config.introText, media, buildMode };
 
     if (media.length > 0 && buildMode === "template") {
@@ -228,7 +225,7 @@ function InvitationStudioContent() {
             </CardHeader>
             <CardContent>
               <TemplatePicker
-                templates={INVITATION_TEMPLATE_PRESETS}
+                templates={getUniqueTemplatePresets()}
                 selected={layoutSlug}
                 onSelect={setLayoutSlug}
                 disabled={!eventId}

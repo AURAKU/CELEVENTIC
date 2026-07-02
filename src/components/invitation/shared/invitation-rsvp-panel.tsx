@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "@/components/i18n/locale-provider";
 import type { ButtonStyle } from "@/lib/invitation-studio/studio-types";
+import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import { styledInvitationButton } from "@/lib/invitation/invitation-button-styles";
 
 interface InvitationRsvpPanelProps {
@@ -36,6 +37,10 @@ export function InvitationRsvpPanel({
   const [email, setEmail] = useState("");
 
   async function handleRsvp(response: "ACCEPTED" | "DECLINED" | "MAYBE") {
+    if (isPreviewInvitationId(invitationId)) {
+      setError("Preview mode — RSVP works on your published invitation link.");
+      return;
+    }
     setError("");
     setLoading(true);
     const payload = guestId

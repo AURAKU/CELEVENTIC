@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { INVITATION_TEMPLATE_PRESETS } from "@/lib/invitation-templates";
+import { getUniqueTemplatePresets } from "@/lib/invitation-templates";
 import { paginatedResult, parsePaginationFromUrl } from "@/lib/pagination";
 
 /** Paginated template library for studio and marketplace consumers */
@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category")?.toLowerCase();
 
-  let items = INVITATION_TEMPLATE_PRESETS.map((t) => ({
+  let items = getUniqueTemplatePresets().map((t) => ({
     slug: t.slug,
     name: t.name,
     description: t.description,

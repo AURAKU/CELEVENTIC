@@ -24,10 +24,11 @@ export function ClassicGoldTemplate({ invitation, event, design, guestId, guestN
           coverImageUrl={event.coverImageUrl}
           media={design.media}
           animation={design.animation}
+          layout={design.layout}
           className="h-56 sm:h-64"
           overlay={false}
         />
-        <div className="px-8 py-10 text-center space-y-5 font-[family-name:var(--font-cormorant)]">
+        <div className="px-8 py-10 text-center space-y-5 font-[family-name:var(--font-cormorant)] inv-text-on-light">
           <p className="text-xs tracking-[0.25em] uppercase text-stone-500">
             {design.introText ?? "together with their families"}
           </p>

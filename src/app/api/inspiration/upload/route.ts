@@ -13,6 +13,8 @@ const ALLOWED: Record<string, { ext: string; max: number; sourceType: "UPLOAD_IM
   "image/png": { ext: ".png", max: MAX_IMAGE, sourceType: "UPLOAD_IMAGE" },
   "image/webp": { ext: ".webp", max: MAX_IMAGE, sourceType: "UPLOAD_IMAGE" },
   "image/gif": { ext: ".gif", max: MAX_IMAGE, sourceType: "UPLOAD_IMAGE" },
+  "image/svg+xml": { ext: ".svg", max: MAX_IMAGE, sourceType: "UPLOAD_IMAGE" },
+  "application/pdf": { ext: ".pdf", max: MAX_IMAGE, sourceType: "UPLOAD_IMAGE" },
   "video/mp4": { ext: ".mp4", max: MAX_VIDEO, sourceType: "UPLOAD_VIDEO" },
   "video/webm": { ext: ".webm", max: MAX_VIDEO, sourceType: "UPLOAD_VIDEO" },
   "audio/mpeg": { ext: ".mp3", max: MAX_AUDIO, sourceType: "UPLOAD_AUDIO" },

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { CELEVENTIC_BRAND } from "@/lib/invitation-os/brand";
 import { AGI_COPY } from "@/lib/agi-engine/branding";
-import { AgiFooter } from "@/components/agi-engine/agi-badge";
 import { RevealConfetti } from "@/components/invitation-os/reveal/reveal-confetti";
 
 interface InvitationRevealCeremonyProps {
@@ -127,7 +126,6 @@ export function InvitationRevealCeremony({
           {musicEnabled && !isOpening && (
             <p className="mt-2 text-white/30 text-xs">Music plays after opening</p>
           )}
-          <div className="mt-10"><AgiFooter /></div>
         </button>
       )}
     </div>
