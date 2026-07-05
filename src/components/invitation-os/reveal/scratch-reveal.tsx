@@ -1,19 +1,20 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
-import { CELEVENTIC_BRAND } from "@/lib/invitation-os/brand";
 import { RevealConfetti } from "@/components/invitation-os/reveal/reveal-confetti";
 
 interface ScratchRevealProps {
   guestName?: string;
   eventTitle: string;
   onComplete: () => void;
+  /** Full invitation template rendered beneath the scratch foil */
+  children?: ReactNode;
 }
 
 const BRUSH = 42;
 
-export function ScratchReveal({ guestName, eventTitle, onComplete }: ScratchRevealProps) {
+export function ScratchReveal({ guestName, eventTitle, onComplete, children }: ScratchRevealProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
@@ -83,37 +84,44 @@ export function ScratchReveal({ guestName, eventTitle, onComplete }: ScratchReve
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="fixed inset-0 z-[100] flex items-center justify-center"
-      style={{ background: CELEVENTIC_BRAND.palette.midnight }}
-    >
+    <div ref={containerRef} className="fixed inset-0 z-[100] overflow-hidden">
       <RevealConfetti active={revealed} />
-      <div className="absolute inset-0 flex items-center justify-center p-8 text-center pointer-events-none">
-        <div className="max-w-sm space-y-4 animate-pulse">
-          <Sparkles className="h-10 w-10 mx-auto text-[#D4A63A]" />
-          {guestName && <p className="text-white/70 text-sm tracking-widest uppercase">For {guestName}</p>}
-          <h2 className="font-display text-2xl text-[#D4A63A]">{eventTitle}</h2>
-          <p className="text-white/50 text-sm">Scratch the gold foil to reveal your invitation</p>
-        </div>
+
+      {/* Live invitation template underneath — revealed as foil is scratched away */}
+      <div className="absolute inset-0 overflow-y-auto overscroll-contain inv-portal-enter">
+        {children}
       </div>
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 touch-none cursor-crosshair"
-        style={{ opacity: revealed ? 0 : 1, transition: "opacity 0.8s" }}
-        onPointerDown={(e) => {
-          drawing.current = true;
-          const { x, y } = pointerPos(e);
-          scratch(x, y);
-        }}
-        onPointerMove={(e) => {
-          if (!drawing.current) return;
-          const { x, y } = pointerPos(e);
-          scratch(x, y);
-        }}
-        onPointerUp={() => { drawing.current = false; }}
-        onPointerLeave={() => { drawing.current = false; }}
-      />
+
+      {!revealed && (
+        <>
+          <div className="absolute inset-x-0 top-0 z-[102] flex justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pointer-events-none">
+            <div className="max-w-sm rounded-2xl bg-black/55 backdrop-blur-md px-5 py-4 text-center space-y-2 shadow-xl border border-white/10">
+              <Sparkles className="h-7 w-7 mx-auto text-[#D4A63A]" />
+              {guestName && <p className="text-white/80 text-xs tracking-widest uppercase">For {guestName}</p>}
+              <p className="font-display text-lg text-[#D4A63A]">{eventTitle}</p>
+              <p className="text-white/60 text-xs">Scratch the gold foil to reveal your invitation</p>
+            </div>
+          </div>
+
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 z-[101] touch-none cursor-crosshair"
+            style={{ transition: "opacity 0.8s" }}
+            onPointerDown={(e) => {
+              drawing.current = true;
+              const { x, y } = pointerPos(e);
+              scratch(x, y);
+            }}
+            onPointerMove={(e) => {
+              if (!drawing.current) return;
+              const { x, y } = pointerPos(e);
+              scratch(x, y);
+            }}
+            onPointerUp={() => { drawing.current = false; }}
+            onPointerLeave={() => { drawing.current = false; }}
+          />
+        </>
+      )}
     </div>
   );
 }

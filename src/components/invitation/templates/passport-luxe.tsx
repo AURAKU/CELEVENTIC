@@ -15,20 +15,20 @@ export function PassportLuxeTemplate({ invitation, event, design, guestId, guest
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#0a1628" }}>
       <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-[#D4A63A]/30 inv-fade-in">
-        <div className="bg-gradient-to-br from-[#0B3D3A] to-[#062A28] px-6 py-4 flex items-center justify-between border-b border-[#D4A63A]/20">
-          <span className="text-[10px] tracking-[0.35em] uppercase text-[#D4A63A]/80">Passport</span>
-          <span className="text-[10px] text-white/40">INV-{invitation.uniqueLink.slice(0, 6).toUpperCase()}</span>
+        <div className="bg-gradient-to-br from-[#0B3D3A] to-[#062A28] px-6 py-4 flex items-center justify-between border-b border-[#D4A63A]/20 inv-text-on-dark">
+          <span className="text-[10px] tracking-[0.35em] uppercase text-[#D4A63A]">Passport</span>
+          <span className="text-[10px] inv-muted-on-dark">INV-{invitation.uniqueLink.slice(0, 6).toUpperCase()}</span>
         </div>
         <HeroMedia coverImageUrl={event.coverImageUrl} media={design.media} animation={design.animation} className="h-48" />
-        <div className="px-8 py-8 space-y-5 text-center" style={{ color: colors.text, background: colors.background }}>
-          <p className="text-[10px] tracking-[0.3em] uppercase text-[#D4A63A]">{design.introText ?? "Official invitation"}</p>
+        <div className="px-8 py-8 space-y-5 text-center inv-text-on-light" style={{ color: colors.text, background: colors.background }}>
+          <p className="text-[10px] tracking-[0.3em] uppercase text-[#9a7b2e]">{design.introText ?? "Official invitation"}</p>
           <h1 className="font-display text-2xl tracking-wide" style={{ color: colors.primary, fontSize: studio?.headingSize }}>
             {name1}{name2 && ` & ${name2}`}
           </h1>
-          {invitation.message && <p className="text-sm opacity-70 italic" style={{ fontSize: studio?.bodySize }}>{invitation.message}</p>}
+          {invitation.message && <p className="text-sm inv-caption-on-light italic" style={{ fontSize: studio?.bodySize }}>{invitation.message}</p>}
           <div className="flex justify-center gap-4 text-sm">
             <span>{date.day} {date.monthShort} {date.year}</span>
-            <span className="opacity-40">|</span>
+            <span className="inv-muted-on-light">|</span>
             <span>{date.time}</span>
           </div>
           {(event.venueName || event.landmark) && (

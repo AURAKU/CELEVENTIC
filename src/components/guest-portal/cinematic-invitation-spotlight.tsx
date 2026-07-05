@@ -19,6 +19,7 @@ import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/p
 import type { EventExperienceConfig } from "@/lib/experience/experience-types";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
 import { cn } from "@/lib/utils";
+import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import { OutroExperienceOverlay } from "@/components/experience/outro-experience-overlay";
 import { ExperienceBackgroundLayer } from "@/components/experience/experience-background-layer";
@@ -153,7 +154,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
             <h2 className="font-display text-3xl sm:text-4xl font-bold" style={{ color: colors?.primary ?? textColor }}>
               {t("invite.welcome", { name: props.guestName })}
             </h2>
-            <p className="mt-4 text-sm opacity-70">Hosted by {displayEvent.hostName}</p>
+            <p className="mt-4 text-sm inv-muted-on-dark">Hosted by {displayEvent.hostName}</p>
           </div>
         ),
       });
@@ -204,7 +205,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
             <p className="text-xs uppercase tracking-[0.35em] mb-4" style={{ color: accent }}>
               {t("invite.our_story")}
             </p>
-            <p className="text-base sm:text-lg leading-relaxed opacity-90 whitespace-pre-line font-[family-name:var(--font-cormorant)] italic">
+            <p className="text-base sm:text-lg leading-relaxed inv-caption-on-dark whitespace-pre-line font-[family-name:var(--font-cormorant)] italic">
               {displayEvent.description}
             </p>
           </div>
@@ -225,8 +226,8 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
               <h2 className="font-display text-2xl sm:text-3xl font-bold" style={{ color: colors?.primary ?? textColor }}>
                 {displayEvent.venueName}
               </h2>
-              {displayEvent.landmark && <p className="text-sm opacity-70">{displayEvent.landmark}</p>}
-              <p className="flex items-center justify-center gap-2 text-sm opacity-80">
+              {displayEvent.landmark && <p className="text-sm inv-muted-on-dark">{displayEvent.landmark}</p>}
+              <p className="flex items-center justify-center gap-2 text-sm inv-caption-on-dark">
                 <Clock className="h-4 w-4" style={{ color: secondary }} />
                 {displayEvent.startDate}
               </p>
@@ -250,7 +251,8 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           <div className="w-full max-w-lg mx-auto px-6">
             <InvitationGalleryDisplay
               items={galleryItems}
-              settings={{ style: gallerySlideshowStyle, autoplay: true, slideDurationSec: 4 }}
+              interactive
+              settings={{ style: gallerySlideshowStyle, autoplay: false, slideDurationSec: 4 }}
               className="rounded-2xl overflow-hidden shadow-2xl"
             />
           </div>
@@ -411,12 +413,22 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
   const bgMedia = props.backgroundVideoUrl || props.backgroundImageUrl || props.event.coverImageUrl;
 
   return (
-    <div
-      className={cn(
-        "w-full overflow-hidden cinematic-spotlight-root",
-        props.embedded ? "relative min-h-[520px]" : "fixed inset-0 z-[50] min-h-[100dvh]"
-      )}
-      style={{ background: typeof bg === "string" && (bg.startsWith("rgba") || bg.startsWith("linear")) ? bg : bg }}
+    <InviteViewportShell
+      mode={props.embedded ? "embedded" : "live"}
+      scrollable={false}
+      className="overflow-hidden cinematic-spotlight-root inv-text-on-dark"
+      style={{
+        background: typeof bg === "string" && (bg.startsWith("rgba") || bg.startsWith("linear")) ? bg : bg,
+        ...(props.design?.studio?.headingSize
+          ? { ["--inv-heading-size" as string]: `${props.design.studio.headingSize}px` }
+          : {}),
+        ...(props.design?.studio?.bodySize
+          ? { ["--inv-body-size" as string]: `${props.design.studio.bodySize}px` }
+          : {}),
+        ...(props.design?.studio?.scriptSize
+          ? { ["--inv-script-size" as string]: `${props.design.studio.scriptSize}px` }
+          : {}),
+      }}
     >
       <ParticleEnvironment presetId={environmentId} intensity="medium" />
       <OutroExperienceOverlay
@@ -445,8 +457,8 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
         <div className="absolute inset-0 cinematic-vignette pointer-events-none" />
       </div>
 
-      <div className={cn("relative z-10 flex flex-col safe-area-pb", props.embedded ? "min-h-[520px]" : "min-h-[100dvh]")}>
-        <div className="flex-1 flex items-center justify-center relative">
+      <div className={cn("relative z-10 flex flex-col min-h-0 h-full safe-area-pb", props.embedded ? "min-h-[min(100dvh,640px)]" : "flex-1")}>
+        <div className="flex-1 flex items-center justify-center relative min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4">
           <button type="button" aria-label="Previous" className="absolute left-0 top-0 bottom-0 w-1/4 z-20 touch-manipulation" onClick={prev} />
           <button type="button" aria-label="Next" className="absolute right-0 top-0 bottom-0 w-1/4 z-20 touch-manipulation" onClick={next} />
 
@@ -467,7 +479,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           <button
             type="button"
             onClick={() => setPaused((p) => !p)}
-            className="absolute bottom-24 right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur-md touch-manipulation"
+            className="absolute safe-area-inset-bottom right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white backdrop-blur-md touch-manipulation"
             aria-label={paused ? "Play" : "Pause"}
           >
             {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -509,16 +521,16 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
               />
             ))}
           </div>
-          <div className="flex justify-center gap-4 text-white/40">
-            <button type="button" onClick={prev} className="p-2 touch-manipulation hover:text-white/70" aria-label="Previous scene">
+          <div className="flex justify-center gap-4 text-white/70">
+            <button type="button" onClick={prev} className="p-2 touch-manipulation hover:text-white" aria-label="Previous scene">
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <button type="button" onClick={next} className="p-2 touch-manipulation hover:text-white/70" aria-label="Next scene">
+            <button type="button" onClick={next} className="p-2 touch-manipulation hover:text-white" aria-label="Next scene">
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </InviteViewportShell>
   );
 }

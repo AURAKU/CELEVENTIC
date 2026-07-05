@@ -104,7 +104,11 @@ export function OpeningExperienceRouter({
 
   switch (experienceId) {
     case "scratch":
-      return <ScratchReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
+      return (
+        <ScratchReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete}>
+          {children}
+        </ScratchReveal>
+      );
     case "passport":
       return <PassportReveal guestName={guestName} eventTitle={eventTitle} hostName={hostName} onComplete={complete} />;
     case "glass":

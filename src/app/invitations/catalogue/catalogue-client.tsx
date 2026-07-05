@@ -13,6 +13,15 @@ import {
   INVITATION_MOODS,
 } from "@/lib/invitation-mvp/catalogue";
 
+const EVENT_TYPE_TO_CATEGORY: Record<string, string> = {
+  WEDDING: "Wedding",
+  FUNERAL: "Funeral",
+  BIRTHDAY: "Birthday",
+  CORPORATE_EVENT: "Corporate",
+  CHURCH_PROGRAM: "Church",
+  PRIVATE_EVENT: "Private Event",
+};
+
 export function CatalogueClient() {
   const [category, setCategory] = useState("all");
   const [style, setStyle] = useState("all");
@@ -29,7 +38,9 @@ export function CatalogueClient() {
   }, []);
 
   const filtered = useMemo(() => {
+    const eventCategory = EVENT_TYPE_TO_CATEGORY[eventType];
     return CATALOG_TEMPLATES.filter((t) => {
+      if (eventCategory && t.category !== eventCategory) return false;
       if (category !== "all" && t.category !== category) return false;
       if (style !== "all" && t.style !== style) return false;
       if (mood !== "all" && t.mood !== mood) return false;
@@ -45,7 +56,7 @@ export function CatalogueClient() {
       }
       return true;
     });
-  }, [category, style, mood, search]);
+  }, [category, style, mood, search, eventType]);
 
   return (
     <div>
@@ -91,7 +102,12 @@ export function CatalogueClient() {
       <div className="mb-6 space-y-4">
         <select
           value={eventType}
-          onChange={(e) => setEventType(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setEventType(next);
+            const mapped = EVENT_TYPE_TO_CATEGORY[next];
+            if (mapped) setCategory(mapped);
+          }}
           className="h-10 rounded-xl border border-slate-200 px-3 text-sm"
         >
           <option value="WEDDING">Wedding</option>

@@ -65,7 +65,7 @@ export function CeleventicIntroExperience({
 
   return (
     <motion.div
-      className="fixed inset-0 z-[190] flex items-center justify-center overflow-hidden celeventic-intro-root celeventic-intro-future"
+      className="fixed inset-0 z-[190] flex items-center justify-center overflow-hidden celeventic-intro-root celeventic-intro-future invite-viewport-live"
       style={{
         background: exiting
           ? bgTarget
@@ -117,7 +117,7 @@ export function CeleventicIntroExperience({
 
       {/* Foreground UI flow */}
       <motion.div
-        className="relative z-10 flex flex-col items-center px-6 text-center max-w-md"
+        className="relative z-10 flex flex-col items-center px-6 text-center max-w-md safe-area-pb safe-area-pt"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: exiting ? 0 : 1, y: exiting ? -16 : 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
@@ -177,7 +177,7 @@ export function CeleventicIntroExperience({
         <motion.button
           type="button"
           onClick={handleSkip}
-          className="absolute bottom-8 right-6 z-20 px-4 py-2 rounded-full text-xs font-medium text-white/70 border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:text-white transition-colors touch-manipulation"
+          className="absolute safe-area-inset-bottom safe-area-inset-right z-20 px-4 py-2 rounded-full text-xs font-medium text-white/70 border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:text-white transition-colors touch-manipulation"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}

@@ -2,7 +2,10 @@ import { getDefaultDesignConfig, getTemplatePreset } from "@/lib/invitation-temp
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import { resolveDefaultMusicForLayout, catalogMusicUrl } from "@/lib/music/audio-experience-catalog";
-import { getDemoGalleryUrls, getDemoHeroUrl } from "@/lib/invitation/demo-gallery-assets";
+import { getDemoGalleryUrls, getDemoHeroUrl, getDemoBackgroundUrl, resolveEventTheme } from "@/lib/invitation/demo-gallery-assets";
+import { syncDesignPageBackground } from "@/lib/invitation/studio-media-utils";
+import { getLayoutVisualProfile } from "@/lib/experience/layout-visual-profiles";
+import { getLayoutEnabledTabs } from "@/lib/invitation/layout-template-signatures";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { InvitationDesignConfig, InvitationEventData } from "@/types/invitation-design";
 
@@ -234,15 +237,19 @@ const LAYOUT_DEMO_OVERRIDES: Partial<Record<string, Partial<DemoContent>>> = {
 
 /** Bundled local clips for catalogue previews. */
 const CATEGORY_DEMO_MUSIC: Record<string, { url: string; title: string }> = {
-  Wedding: { url: catalogMusicUrl("wedding-romantic"), title: "Romantic ambience" },
-  Engagement: { url: catalogMusicUrl("wedding-romantic"), title: "Celebration melody" },
-  Funeral: { url: catalogMusicUrl("memorial-piano"), title: "Peaceful reflection" },
-  Concert: { url: catalogMusicUrl("party-edm-energy"), title: "Live energy" },
-  Birthday: { url: catalogMusicUrl("happy-celebration"), title: "Party vibes" },
+  Wedding: { url: catalogMusicUrl("wedding-romantic", "wedding"), title: "Romantic ambience" },
+  Engagement: { url: catalogMusicUrl("luxury-piano-romance", "wedding"), title: "Celebration melody" },
+  Funeral: { url: catalogMusicUrl("memorial-piano", "funeral"), title: "Peaceful reflection" },
+  Concert: { url: catalogMusicUrl("party-edm-energy", "celebration"), title: "Live energy" },
+  Birthday: { url: catalogMusicUrl("happy-celebration", "celebration"), title: "Party vibes" },
+  Corporate: { url: catalogMusicUrl("corporate-summit", "corporate"), title: "Summit presentation" },
+  Conference: { url: catalogMusicUrl("corporate-summit", "corporate"), title: "Conference ambience" },
+  Church: { url: catalogMusicUrl("piano-elegance", "piano"), title: "Worship instrumental" },
+  "Private Event": { url: catalogMusicUrl("piano-garden", "piano"), title: "Elegant evening" },
 };
 
 const DEFAULT_DEMO_MUSIC = {
-  url: catalogMusicUrl("piano-elegance"),
+  url: catalogMusicUrl("piano-elegance", "piano"),
   title: "Event soundtrack",
 };
 
@@ -256,6 +263,8 @@ export function templateSupportsMusicPreview(features?: string[], musicEnabled?:
 
 export function buildDemoMusicSelection(category?: string): MusicSelection {
   const track = (category && CATEGORY_DEMO_MUSIC[category]) || DEFAULT_DEMO_MUSIC;
+  const isFuneral = category === "Funeral";
+  const isCelebration = category === "Birthday" || category === "Concert";
   return {
     source: "library",
     url: track.url,
@@ -265,8 +274,8 @@ export function buildDemoMusicSelection(category?: string): MusicSelection {
     originalDurationSec: 60,
     autoPlay: true,
     loop: true,
-    volume: 0.45,
-    fadeInSec: 1,
+    volume: isFuneral ? 0.3 : isCelebration ? 0.5 : 0.45,
+    fadeInSec: isFuneral ? 2 : 1,
     fadeOutSec: 1,
   };
 }
@@ -283,14 +292,18 @@ export function buildLivePreviewProps(
   options?: {
     features?: string[];
     musicEnabled?: boolean;
+    musicAutoplay?: boolean;
     skipIntro?: boolean;
     skipTapGate?: boolean;
   }
 ) {
+  const theme = resolveEventTheme(layoutSlug, category);
   const preset = getTemplatePreset(layoutSlug);
   const baseDesign: InvitationDesignConfig = preset?.config ?? getDefaultDesignConfig(layoutSlug);
-  const demo = getDemoContentForCategory(category, layoutSlug);
+  const demo = getDemoContentForCategory(theme, layoutSlug);
   const enriched = enrichDesignWithExperienceDNA(baseDesign);
+  const visual = getLayoutVisualProfile(layoutSlug);
+  const layoutTabs = getLayoutEnabledTabs(layoutSlug);
 
   const design: InvitationDesignConfig = {
     ...enriched,
@@ -298,11 +311,20 @@ export function buildLivePreviewProps(
       ...enriched.experience,
       introEnabled: options?.skipIntro ? false : enriched.experience?.introEnabled ?? true,
       hubMode: enriched.experience?.hubMode ?? "scroll",
-      enabledTabs: enriched.experience?.enabledTabs ?? DEFAULT_HUB_TABS,
+      enabledTabs: layoutTabs ?? enriched.experience?.enabledTabs ?? DEFAULT_HUB_TABS,
+      ...(theme === "Funeral"
+        ? { environment: "none" as const, environmentIntensity: "none" as const }
+        : {
+            environment: enriched.experience?.environment ?? visual.environment,
+            environmentIntensity:
+              visual.environment === "none"
+                ? ("none" as const)
+                : (enriched.experience?.environmentIntensity ?? "medium"),
+          }),
     },
     studio: {
       ...enriched.studio,
-      fullScreen: false,
+      fullScreen: enriched.studio?.fullScreen ?? true,
     },
   };
 
@@ -317,10 +339,13 @@ export function buildLivePreviewProps(
     mapsLink: "https://maps.google.com",
     contactPhone: "+233 25 766 0734",
     dressCode: demo.dressCode ?? null,
-    coverImageUrl: getDemoHeroUrl(layoutSlug),
+    coverImageUrl: getDemoHeroUrl(layoutSlug, theme),
   };
 
-  const demoGallery = getDemoGalleryUrls(layoutSlug);
+  const demoGallery = getDemoGalleryUrls(layoutSlug, theme, 6);
+  const themeBg = getDemoBackgroundUrl(layoutSlug, theme);
+
+  const designWithMedia = syncDesignPageBackground(design, themeBg, "image");
 
   const withMusic = templateSupportsMusicPreview(options?.features, options?.musicEnabled);
   const dnaMusic = resolveDefaultMusicForLayout(
@@ -329,13 +354,28 @@ export function buildLivePreviewProps(
     design.experience?.defaultAudioCategory
   );
 
+  let resolvedMusic = withMusic ? (dnaMusic ?? buildDemoMusicSelection(theme)) : null;
+  if (resolvedMusic && theme === "Funeral") {
+    const funeral = buildDemoMusicSelection("Funeral");
+    resolvedMusic = {
+      ...resolvedMusic,
+      url: funeral.url,
+      title: funeral.title,
+      volume: 0.3,
+      fadeInSec: 2,
+    };
+  }
+  if (resolvedMusic && options?.musicAutoplay === false) {
+    resolvedMusic = { ...resolvedMusic, autoPlay: false };
+  }
+
   return {
-    design,
+    design: designWithMedia,
     event,
     message: demo.message,
     invitationName: demo.invitationName,
     guestName: "Alex Mensah",
-    musicSelection: withMusic ? (dnaMusic ?? buildDemoMusicSelection(category)) : null,
+    musicSelection: resolvedMusic,
     galleryUrls: demoGallery,
     skipTapGate: options?.skipTapGate ?? false,
     skipIntro: options?.skipIntro ?? false,

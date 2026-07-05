@@ -108,8 +108,25 @@ export class EventMemoryUploadService {
     return paginatedResult(items, total, page, limit);
   }
 
-  async listApprovedPublic(eventId: string, page = 1, limit = 20) {
-    return this.listForEvent(eventId, { status: "APPROVED", page, limit });
+  async listApprovedPublic(eventId: string, page = 1, limit = 20, mediaType?: "image" | "video") {
+    const { page: p, limit: l, skip } = parsePaginationInput({ page, limit });
+    const where = {
+      eventId,
+      status: "APPROVED" as const,
+      ...(mediaType ? { mediaType } : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.eventMemoryUpload.findMany({
+        where,
+        orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
+        skip,
+        take: l,
+      }),
+      prisma.eventMemoryUpload.count({ where }),
+    ]);
+
+    return paginatedResult(items, total, p, l);
   }
 
   async approve(id: string, approvedById: string) {
@@ -129,6 +146,13 @@ export class EventMemoryUploadService {
   async bulkApprove(ids: string[], approvedById: string) {
     return prisma.eventMemoryUpload.updateMany({
       where: { id: { in: ids } },
+      data: { status: "APPROVED", approvedById, approvedAt: new Date(), rejectionReason: null },
+    });
+  }
+
+  async approveAllPending(eventId: string, approvedById: string) {
+    return prisma.eventMemoryUpload.updateMany({
+      where: { eventId, status: "PENDING" },
       data: { status: "APPROVED", approvedById, approvedAt: new Date(), rejectionReason: null },
     });
   }

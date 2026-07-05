@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { seatingService } from "@/services/seating/seating.service";
+import { verifyEventAccess } from "@/lib/event-access";
 import { z } from "zod";
 
 const assignSchema = z.object({
@@ -23,11 +23,11 @@ export async function POST(
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: eventId } = await params;
-  const event = await prisma.event.findFirst({
-    where: { id: eventId, organizerId: session.user.id },
-    select: { id: true },
-  });
-  if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    await verifyEventAccess(eventId, session.user.id, session.user.role);
+  } catch {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const plan = await seatingService.getPlanForEvent(eventId);
   if (!plan) return NextResponse.json({ error: "Create a seating plan first" }, { status: 400 });
@@ -49,11 +49,11 @@ export async function DELETE(
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: eventId } = await params;
-  const event = await prisma.event.findFirst({
-    where: { id: eventId, organizerId: session.user.id },
-    select: { id: true },
-  });
-  if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    await verifyEventAccess(eventId, session.user.id, session.user.role);
+  } catch {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const { guestId } = (await req.json()) as { guestId?: string };
   if (!guestId) return NextResponse.json({ error: "guestId required" }, { status: 400 });

@@ -28,7 +28,9 @@ export class SeatingService {
       include: {
         assignments: {
           include: {
-            guest: { select: { id: true, name: true, email: true, phone: true, qrToken: true } },
+            guest: {
+              select: { id: true, name: true, email: true, phone: true, qrToken: true, status: true },
+            },
           },
           orderBy: { tableNumber: "asc" },
         },
@@ -93,16 +95,22 @@ export class SeatingService {
     if (!guest) return null;
 
     const assignment = guest.seatingAssignment;
+    const layout = assignment?.seatingPlan?.layout as { tables?: Array<{ label: string; shape?: string; seatCount?: number; zone?: string }> } | null;
+    const tableConfig = layout?.tables?.find(
+      (t) => t.label.trim().toLowerCase() === assignment?.tableNumber.trim().toLowerCase()
+    );
+
     if (!assignment) {
       return {
-        guest: { id: guest.id, name: guest.name },
+        guest: { id: guest.id, name: guest.name, status: guest.status },
         event: guest.event,
         assignment: null,
+        table: null,
       };
     }
 
     return {
-      guest: { id: guest.id, name: guest.name },
+      guest: { id: guest.id, name: guest.name, status: guest.status },
       event: guest.event,
       assignment: {
         tableNumber: assignment.tableNumber,
@@ -110,7 +118,17 @@ export class SeatingService {
         zone: assignment.zone,
         notes: assignment.notes,
         planName: assignment.seatingPlan.name,
+        admitted: guest.status === "CHECKED_IN",
       },
+      table: tableConfig
+        ? {
+            label: tableConfig.label,
+            shape: tableConfig.shape ?? "round",
+            seatCount: tableConfig.seatCount ?? 8,
+            zone: tableConfig.zone,
+          }
+        : null,
+      layout: layout ?? null,
     };
   }
 

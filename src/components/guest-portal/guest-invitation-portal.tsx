@@ -38,6 +38,7 @@ import { resolveEventLifecycle } from "@/lib/experience/lifecycle";
 import { EventDayBanner } from "@/components/experience/event-day-banner";
 import { PostEventExperience } from "@/components/experience/post-event-experience";
 import { CinematicInvitationSpotlight } from "@/components/guest-portal/cinematic-invitation-spotlight";
+import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
 
 interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -51,6 +52,8 @@ interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   fullScreen?: boolean;
   /** Embedded inside a preview frame — no min-h-screen */
   embedded?: boolean;
+  /** Swipe/arrow gallery navigation (defaults to !embedded) */
+  galleryInteractive?: boolean;
   /** Full-screen cinematic slideshow (default for live invitations) */
   cinematicMode?: boolean;
   experienceConfig?: EventExperienceConfig;
@@ -207,15 +210,26 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   }
 
   return (
-    <div
-      className={`${
-        props.fullScreen !== false
-          ? "fixed inset-0 overflow-y-auto min-h-[100dvh] w-full"
-          : props.embedded
-            ? "relative min-h-0 w-full"
-            : "min-h-[100dvh] w-full"
-      } bg-[#FAF8F4] relative overflow-x-hidden`}
-      style={{ backgroundColor: props.design?.colors?.background?.startsWith("linear") || props.design?.colors?.background?.startsWith("radial") ? undefined : (props.design?.colors?.background ?? "#FAF8F4") }}
+    <InviteViewportShell
+      mode={props.embedded ? "embedded" : "live"}
+      scrollable
+      className="bg-[#FAF8F4] relative overflow-x-hidden"
+      style={{
+        backgroundColor:
+          props.design?.colors?.background?.startsWith("linear") ||
+          props.design?.colors?.background?.startsWith("radial")
+            ? undefined
+            : (props.design?.colors?.background ?? "#FAF8F4"),
+        ...(props.design?.studio?.headingSize
+          ? { ["--inv-heading-size" as string]: `${props.design.studio.headingSize}px` }
+          : {}),
+        ...(props.design?.studio?.bodySize
+          ? { ["--inv-body-size" as string]: `${props.design.studio.bodySize}px` }
+          : {}),
+        ...(props.design?.studio?.scriptSize
+          ? { ["--inv-script-size" as string]: `${props.design.studio.scriptSize}px` }
+          : {}),
+      }}
     >
       <ParticleEnvironment presetId={environmentId} intensity={environmentIntensity} />
       {!props.backgroundVideoUrl && !props.backgroundImageUrl && (
@@ -269,7 +283,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           </div>
         )}
 
-        <div className="mx-auto max-w-2xl px-4 py-6 pb-28 space-y-8">
+        <div className="mx-auto max-w-2xl px-4 py-6 invite-content-pad space-y-8">
           {lifecyclePhase === "event-day" && (
             <PortalSection id="event-day">
               <EventDayBanner
@@ -292,7 +306,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               ) : (
                 <h2 className="font-display text-2xl font-bold text-[#0F172A]">{displayEvent.title}</h2>
               )}
-              <p className="text-slate-500 text-sm">Hosted by {displayEvent.hostName}</p>
+              <p className="text-slate-700 text-sm">Hosted by {displayEvent.hostName}</p>
             </div>
           </PortalSection>
 
@@ -319,7 +333,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             <JourneyFlow chapters={journeyChapters}>
               {(chapter) => (
                 <div className="rounded-2xl border bg-white/90 p-6 text-center">
-                  <p className="text-sm text-slate-500 mb-2">{chapter.title}</p>
+                  <p className="text-sm text-slate-600 mb-2">{chapter.title}</p>
                   <p className="text-xs text-[#0B8A83]">Continue through your invitation journey</p>
                 </div>
               )}
@@ -409,10 +423,11 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                     </h2>
                     <InvitationGalleryDisplay
                       items={galleryItemsFromUrls(props.galleryUrls)}
+                      interactive={props.galleryInteractive ?? !props.embedded}
                       settings={{
                         style: (experience?.slideshowStyle ?? "fade-carousel") as SlideshowStyleId,
                         slideDurationSec: 4,
-                        autoplay: true,
+                        autoplay: props.galleryInteractive ? false : Boolean(props.embedded),
                         showCaptions: false,
                         transition: "fade",
                       }}
@@ -477,7 +492,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 <h2 className="font-display text-lg font-bold text-[#0F172A] mb-4">Your Pass</h2>
                 {props.seatQrDataUrl && props.seatLookupUrl && (
                   <div className="mb-6 rounded-xl bg-[#0B8A83]/5 border border-[#0B8A83]/20 p-4">
-                    <p className="text-xs text-slate-500 mb-2 flex items-center justify-center gap-1">
+                    <p className="text-xs text-slate-600 mb-2 flex items-center justify-center gap-1">
                       <Armchair className="h-3.5 w-3.5" /> Your table & seat
                     </p>
                     <BrandedQrImage src={props.seatQrDataUrl} size={160} showDownload caption="Scan to find your seat" />
@@ -488,7 +503,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 )}
                 {props.admissionQrDataUrl && (
                   <div className="mb-6">
-                    <p className="text-xs text-slate-500 mb-3">Admission pass — show at the gate</p>
+                    <p className="text-xs text-slate-600 mb-3">Admission pass — show at the gate</p>
                     <BrandedQrImage
                       src={props.admissionQrDataUrl}
                       token={props.admissionQrToken ?? undefined}
@@ -503,7 +518,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 )}
                 {props.qrDataUrl && (
                   <div>
-                    <p className="text-xs text-slate-500 mb-3">Invitation QR</p>
+                    <p className="text-xs text-slate-600 mb-3">Invitation QR</p>
                     <BrandedQrImage
                       src={props.qrDataUrl}
                       token={props.guestQrToken ?? undefined}
@@ -576,6 +591,6 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           />
         )}
       </div>
-    </div>
+    </InviteViewportShell>
   );
 }

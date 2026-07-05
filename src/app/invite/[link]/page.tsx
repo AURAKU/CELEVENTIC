@@ -13,6 +13,7 @@ import { invitationLanguageService } from "@/services/i18n/invitation-language.s
 import { invitationBlockService } from "@/services/invitations/invitation-block.service";
 import type { AppLocale } from "@/lib/i18n/constants";
 import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
+import { resolveBackgroundMedia } from "@/lib/invitation/studio-media-utils";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 
@@ -49,7 +50,7 @@ export default async function InvitePage({
   const personalizedGuest = guestToken
     ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
     : null;
-  const sampleGuest = personalizedGuest ?? invitation.guests[0];
+
   let qrDataUrl = "";
   let admissionQrDataUrl = "";
   let admissionQrToken = "";
@@ -57,15 +58,15 @@ export default async function InvitePage({
   let seatQrDataUrl = "";
   let seatLookupUrl: string | null = null;
 
-  if (sampleGuest) {
-    guestQrToken = sampleGuest.qrToken;
-    qrDataUrl = await qrService.generateBrandedVerifyQr(event.id, sampleGuest.qrToken);
-    const admission = await qrService.getGuestAdmissionQr(sampleGuest.id);
+  if (personalizedGuest) {
+    guestQrToken = personalizedGuest.qrToken;
+    qrDataUrl = await qrService.generateBrandedVerifyQr(event.id, personalizedGuest.qrToken);
+    const admission = await qrService.getGuestAdmissionQr(personalizedGuest.id);
     if (admission) {
       admissionQrDataUrl = admission.dataUrl;
       admissionQrToken = admission.token;
     }
-    seatLookupUrl = `${appBaseUrl}/seat/${sampleGuest.qrToken}`;
+    seatLookupUrl = `${appBaseUrl}/seat/${personalizedGuest.qrToken}`;
   }
 
   const rawDesign = resolveDesign(invitation);
@@ -117,8 +118,8 @@ export default async function InvitePage({
   });
   const musicEnabled = hasMusic || musicAddon;
 
-  if (sampleGuest && seatingPlan && seatLookupUrl) {
-    const assignment = await seatingService.lookupByGuestId(sampleGuest.id);
+  if (personalizedGuest && seatingPlan && seatLookupUrl) {
+    const assignment = await seatingService.lookupByGuestId(personalizedGuest.id);
     if (assignment?.assignment) {
       const center = await qrBrandingService.resolveCenterImageUrl(event.id);
       seatQrDataUrl = await generateBrandedQrDataUrl(seatLookupUrl, center);
@@ -127,6 +128,7 @@ export default async function InvitePage({
 
   const catalogTemplate = order?.template;
   const revealMode = design.studio?.revealMode;
+  const resolvedBackground = resolveBackgroundMedia(design, catalogTemplate);
 
   return (
     <PremiumInviteWrapper
@@ -134,6 +136,7 @@ export default async function InvitePage({
       revealMode={revealMode}
       musicEnabled={musicEnabled}
       musicSelection={musicSelection}
+      musicAutoplay
       fullScreen={design.studio?.fullScreen ?? true}
       invitation={{
         id: invitation.id,
@@ -155,16 +158,16 @@ export default async function InvitePage({
         coverImageUrl: event.coverImageUrl,
       }}
       design={design}
-      guestId={sampleGuest?.id}
-      guestName={sampleGuest?.name}
+      guestId={personalizedGuest?.id}
+      guestName={personalizedGuest?.name}
       qrDataUrl={qrDataUrl}
       admissionQrDataUrl={qrCheckin ? admissionQrDataUrl : null}
       admissionQrToken={qrCheckin ? admissionQrToken : null}
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       seatQrDataUrl={seatQrDataUrl || null}
-      backgroundImageUrl={catalogTemplate?.backgroundImageUrl ?? event.coverImageUrl}
-      backgroundVideoUrl={catalogTemplate?.backgroundVideoUrl ?? null}
+      backgroundImageUrl={resolvedBackground.backgroundImageUrl ?? event.coverImageUrl}
+      backgroundVideoUrl={resolvedBackground.backgroundVideoUrl}
       rsvpRequired={order?.rsvpRequired ?? true}
       galleryUrls={galleryUrls}
       allowedLocales={allowedLocales}

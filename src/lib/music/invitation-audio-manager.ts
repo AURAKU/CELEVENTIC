@@ -2,6 +2,13 @@ import type { MusicSelection } from "@/lib/music/music-types";
 import { formatAudioTime } from "@/lib/music/trimmed-audio-playback";
 import { resolveMusicUrl } from "@/lib/music/validate-selection";
 
+let activeInvitationAudioManager: InvitationAudioManager | null = null;
+
+/** Stops any invitation audio currently playing (e.g. when leaving a preview). */
+export function pauseAllInvitationAudio(): void {
+  activeInvitationAudioManager?.pause();
+}
+
 export interface InvitationAudioManager {
   play: () => Promise<boolean>;
   pause: () => void;
@@ -119,12 +126,17 @@ export function createInvitationAudioManager(
     }, (fadeSec * 1000) / steps);
   }
 
-  async function play(): Promise<boolean> {
+  const manager: InvitationAudioManager = {
+    play: async (): Promise<boolean> => {
     const a = ensureAudio();
     const targetVol = musicSelection?.volume ?? savedVolume;
     const fadeIn = musicSelection?.fadeInSec ?? 1.5;
 
     try {
+      if (activeInvitationAudioManager && activeInvitationAudioManager !== manager) {
+        activeInvitationAudioManager.pause();
+      }
+      activeInvitationAudioManager = manager;
       if (loadPromise) await loadPromise;
       if (musicSelection) {
         a.currentTime = musicSelection.startSec;
@@ -135,15 +147,12 @@ export function createInvitationAudioManager(
     } catch {
       return false;
     }
-  }
-
-  return {
-    play,
+  },
     pause() {
       audio?.pause();
     },
     async toggle() {
-      if (!audio || audio.paused) return play();
+      if (!audio || audio.paused) return manager.play();
       audio.pause();
       return false;
     },
@@ -167,7 +176,7 @@ export function createInvitationAudioManager(
       } else {
         a.currentTime = 0;
       }
-      return play();
+      return manager.play();
     },
     destroy() {
       if (audio && trimHandler) {
@@ -176,6 +185,9 @@ export function createInvitationAudioManager(
       if (audio) {
         audio.pause();
         audio.src = "";
+      }
+      if (activeInvitationAudioManager === manager) {
+        activeInvitationAudioManager = null;
       }
       audio = null;
       trimHandler = null;
@@ -194,6 +206,8 @@ export function createInvitationAudioManager(
       return audio;
     },
   };
+
+  return manager;
 }
 
 export { formatAudioTime };

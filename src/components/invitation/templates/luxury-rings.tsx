@@ -26,8 +26,8 @@ export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestN
             className="h-48"
             overlay
           />
-          <div className="px-8 py-10 text-center space-y-5">
-            <p className="text-[10px] tracking-[0.35em] uppercase opacity-60">{design.introText}</p>
+          <div className="px-8 py-10 text-center space-y-5 inv-text-on-dark inv-phrase-emphasis">
+            <p className="text-[10px] tracking-[0.35em] uppercase inv-muted-on-dark">{design.introText}</p>
             <h1 className="font-[family-name:var(--font-cinzel)] text-lg sm:text-xl tracking-[0.2em] uppercase leading-loose">
               {name1}
               {name2 && (
@@ -37,14 +37,14 @@ export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestN
                 </>
               )}
             </h1>
-            {invitation.message && <p className="text-sm italic opacity-70 font-[family-name:var(--font-cormorant)]">{invitation.message}</p>}
+            {invitation.message && <p className="text-sm italic inv-caption-on-dark font-[family-name:var(--font-cormorant)]">{invitation.message}</p>}
             <div className="h-px w-16 mx-auto bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
             <p className="font-[family-name:var(--font-cinzel)] text-sm tracking-[0.3em]">
               {String(date.day).padStart(2, "0")} · {date.monthShort.toUpperCase()} · {date.year}
             </p>
-            <p className="text-xs opacity-60">{date.time}</p>
+            <p className="text-xs inv-muted-on-dark">{date.time}</p>
             {event.venueName && <p className="text-sm tracking-wider">{event.venueName}</p>}
-            {event.contactPhone && <p className="text-xs opacity-50">RSVP {event.contactPhone}</p>}
+            {event.contactPhone && <p className="text-xs inv-muted-on-dark">RSVP {event.contactPhone}</p>}
             {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded" />}
             <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} textColor={colors.text} variant="dark" />
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} variant="dark" />

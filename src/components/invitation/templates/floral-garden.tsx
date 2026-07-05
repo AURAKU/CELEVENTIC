@@ -19,19 +19,19 @@ export function FloralGardenTemplate({ invitation, event, design, guestId, guest
         <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-rose-200/40 blur-2xl" />
         <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-2xl" />
         <HeroMedia coverImageUrl={event.coverImageUrl} media={design.media} animation={design.animation} className="h-52" overlay={false} />
-        <div className="relative px-8 py-8 text-center space-y-4" style={{ color: colors.text }}>
-          <div className="flex justify-center gap-2 text-rose-400 text-lg">✿ ✿ ✿</div>
-          <p className="text-xs tracking-[0.2em] uppercase text-rose-400/80">{design.introText ?? "Together with their families"}</p>
+        <div className="relative px-8 py-8 text-center space-y-4 inv-text-on-light" style={{ color: colors.text }}>
+          <div className="flex justify-center gap-2 text-rose-600 text-lg">✿ ✿ ✿</div>
+          <p className="text-xs tracking-[0.2em] uppercase text-rose-800">{design.introText ?? "Together with their families"}</p>
           <h1 className="font-[family-name:var(--font-great-vibes)] text-4xl text-rose-900" style={{ fontSize: studio?.scriptSize ?? studio?.headingSize }}>
             {name1}{name2 && ` & ${name2}`}
           </h1>
-          {invitation.message && <p className="text-sm text-rose-700/70 italic" style={{ fontSize: studio?.bodySize }}>{invitation.message}</p>}
+          {invitation.message && <p className="text-sm text-rose-900 italic" style={{ fontSize: studio?.bodySize }}>{invitation.message}</p>}
           <div className="py-3 border-y border-rose-100 space-y-1">
-            <p className="font-display text-lg text-rose-900">{date.day} {date.monthShort} {date.year}</p>
-            <p className="text-sm text-rose-600/70">{date.time}</p>
+            <p className="font-display text-lg text-rose-950">{date.day} {date.monthShort} {date.year}</p>
+            <p className="text-sm text-rose-800">{date.time}</p>
           </div>
           {(event.venueName || event.landmark) && (
-            <p className="text-sm text-rose-800/80">{event.venueName}{event.landmark ? ` · ${event.landmark}` : ""}</p>
+            <p className="text-sm text-rose-950">{event.venueName}{event.landmark ? ` · ${event.landmark}` : ""}</p>
           )}
           <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} label={studio?.rsvpLabel} />
           <StudioButton studio={studio} accent={colors.secondary}>

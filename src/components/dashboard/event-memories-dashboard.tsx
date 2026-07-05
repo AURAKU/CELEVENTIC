@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaginationBar } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { PageLoader } from "@/components/ui/page-loader";
-import { Check, X, Star, Trash2, QrCode, Download } from "lucide-react";
+import { Check, X, Star, Trash2, QrCode, Download, ExternalLink, ShieldCheck } from "lucide-react";
 import { UploadedMedia } from "@/components/media/uploaded-media";
+import { EventQrBranding } from "@/components/events/event-qr-branding";
 
 interface MemoryItem {
   id: string;
@@ -47,6 +48,15 @@ interface Analytics {
   totalVideos: number;
 }
 
+interface MemoryQrData {
+  upload?: { qrImageUrl: string; url: string };
+  view?: { qrImageUrl: string; url: string };
+  qrImageUrl?: string;
+  uploadUrl?: string;
+  galleryUrl?: string;
+  viewQrImageUrl?: string;
+}
+
 export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
   const { page, setPage, appendToParams } = usePagination(20);
   const [tab, setTab] = useState<"PENDING" | "APPROVED" | "REJECTED">("PENDING");
@@ -55,9 +65,10 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
   const [pages, setPages] = useState(1);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [settings, setSettings] = useState<MemorySettings | null>(null);
-  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrData, setQrData] = useState<MemoryQrData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [approvingAll, setApprovingAll] = useState(false);
 
   const loadMemories = useCallback(async () => {
     const params = appendToParams(new URLSearchParams({ status: tab }));
@@ -79,7 +90,7 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
     const s = await sRes.json();
     const q = await qRes.json();
     if (s.success) setSettings(s.data);
-    if (q.success && q.data?.qrImageUrl) setQrImageUrl(q.data.qrImageUrl);
+    if (q.success && q.data) setQrData(q.data);
     setLoading(false);
   }, [eventId]);
 
@@ -117,6 +128,18 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
     void loadMemories();
   }
 
+  async function approveAllPending() {
+    setApprovingAll(true);
+    await fetch(`/api/events/${eventId}/memories`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approveAllPending: true }),
+    });
+    setSelected(new Set());
+    setApprovingAll(false);
+    void loadMemories();
+  }
+
   async function saveSettings() {
     if (!settings) return;
     await fetch(`/api/events/${eventId}/memory-settings`, {
@@ -126,6 +149,36 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
     });
   }
 
+  async function regenerateQr(purpose: "UPLOAD" | "VIEW") {
+    const res = await fetch(`/api/events/${eventId}/memory-qr/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ regenerate: true, purpose }),
+    });
+    const d = await res.json();
+    if (d.success) {
+      setQrData((prev) => ({
+        ...prev,
+        ...(purpose === "UPLOAD"
+          ? {
+              upload: { qrImageUrl: d.data.qrImageUrl, url: d.data.uploadUrl },
+              qrImageUrl: d.data.qrImageUrl,
+              uploadUrl: d.data.uploadUrl,
+            }
+          : {
+              view: { qrImageUrl: d.data.qrImageUrl, url: d.data.galleryUrl },
+              viewQrImageUrl: d.data.qrImageUrl,
+              galleryUrl: d.data.galleryUrl,
+            }),
+      }));
+    }
+  }
+
+  const uploadQrUrl = qrData?.upload?.qrImageUrl ?? qrData?.qrImageUrl;
+  const viewQrUrl = qrData?.view?.qrImageUrl ?? qrData?.viewQrImageUrl;
+  const uploadPageUrl = qrData?.upload?.url ?? qrData?.uploadUrl;
+  const galleryPageUrl = qrData?.view?.url ?? qrData?.galleryUrl;
+
   if (loading) return <PageLoader />;
 
   return (
@@ -133,7 +186,7 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Event Memory Guestbook</h1>
-          <p className="page-subtitle">Approve guest uploads, manage limits, and share the memory QR.</p>
+          <p className="page-subtitle">Moderate uploads, control publishing, and share memory QR codes.</p>
         </div>
         <Button variant="outline" asChild>
           <Link href={`/dashboard/events/${eventId}/thank-you`}>Thank-you page</Link>
@@ -160,7 +213,7 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
       <Tabs defaultValue="moderation">
         <TabsList>
           <TabsTrigger value="moderation">Moderation</TabsTrigger>
-          <TabsTrigger value="settings">Upload limits</TabsTrigger>
+          <TabsTrigger value="settings">Publishing & limits</TabsTrigger>
           <TabsTrigger value="qr">Memory QR</TabsTrigger>
         </TabsList>
 
@@ -171,9 +224,15 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
                 {s}
               </Button>
             ))}
+            {tab === "PENDING" && analytics && analytics.pending > 0 && (
+              <Button size="sm" className="gap-1 ml-auto" disabled={approvingAll} onClick={() => void approveAllPending()}>
+                <ShieldCheck className="h-4 w-4" />
+                {approvingAll ? "Approving…" : `Approve all (${analytics.pending})`}
+              </Button>
+            )}
             {tab === "PENDING" && selected.size > 0 && (
-              <Button size="sm" className="gap-1" onClick={() => void bulkApprove()}>
-                <Check className="h-4 w-4" /> Approve {selected.size}
+              <Button size="sm" variant="outline" className="gap-1" onClick={() => void bulkApprove()}>
+                <Check className="h-4 w-4" /> Approve selected ({selected.size})
               </Button>
             )}
           </div>
@@ -184,7 +243,7 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map((item) => (
                 <Card key={item.id} className="overflow-hidden">
-                  <div className="aspect-video bg-slate-100 relative">
+                  <div className="aspect-[4/5] bg-slate-100 relative">
                     <UploadedMedia
                       src={item.thumbnailUrl ?? item.mediaUrl}
                       alt=""
@@ -240,80 +299,153 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
           <PaginationBar page={page} pages={pages} total={total} limit={20} onPageChange={setPage} />
         </TabsContent>
 
-        <TabsContent value="settings" className="mt-4">
+        <TabsContent value="settings" className="mt-4 space-y-4">
           {settings && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Upload limits</CardTitle></CardHeader>
-              <CardContent className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label>Max photos per guest</Label>
-                  <Input type="number" value={settings.maxPhotosPerGuest} onChange={(e) => setSettings({ ...settings, maxPhotosPerGuest: Number(e.target.value) })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Max videos per guest</Label>
-                  <Input type="number" value={settings.maxVideosPerGuest} onChange={(e) => setSettings({ ...settings, maxVideosPerGuest: Number(e.target.value) })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Max image size (MB)</Label>
-                  <Input type="number" value={settings.maxImageSizeMb} onChange={(e) => setSettings({ ...settings, maxImageSizeMb: Number(e.target.value) })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Max video size (MB)</Label>
-                  <Input type="number" value={settings.maxVideoSizeMb} onChange={(e) => setSettings({ ...settings, maxVideoSizeMb: Number(e.target.value) })} />
-                </div>
-                {[
-                  { key: "approvalRequired" as const, label: "Require approval" },
-                  { key: "guestOnlyMode" as const, label: "Guest-only uploads" },
-                  { key: "allowAnonymousUploads" as const, label: "Allow anonymous uploads" },
-                  { key: "allowDownloads" as const, label: "Allow downloads" },
-                  { key: "isEnabled" as const, label: "Memory uploads enabled" },
-                ].map(({ key, label }) => (
-                  <div key={key} className="flex items-center justify-between rounded-lg border p-3">
-                    <Label>{label}</Label>
-                    <Switch checked={settings[key]} onCheckedChange={(v) => setSettings({ ...settings, [key]: v })} />
+            <>
+              <Card className="border-brand-200/60 bg-brand-50/30">
+                <CardHeader>
+                  <CardTitle className="text-base">Upload publishing mode</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start justify-between gap-4 rounded-xl border bg-white p-4">
+                    <div className="space-y-1">
+                      <Label className="text-base">Require approval before publishing</Label>
+                      <p className="text-sm text-slate-500">
+                        {settings.approvalRequired
+                          ? "Uploads stay pending until you approve them in Moderation."
+                          : "Uploads are published automatically — no review step."}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.approvalRequired}
+                      onCheckedChange={(v) => setSettings({ ...settings, approvalRequired: v })}
+                    />
                   </div>
-                ))}
-                <div className="sm:col-span-2">
-                  <Button onClick={() => void saveSettings()}>Save settings</Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Upload limits</CardTitle></CardHeader>
+                <CardContent className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label>Max photos per guest</Label>
+                    <Input type="number" value={settings.maxPhotosPerGuest} onChange={(e) => setSettings({ ...settings, maxPhotosPerGuest: Number(e.target.value) })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Max videos per guest</Label>
+                    <Input type="number" value={settings.maxVideosPerGuest} onChange={(e) => setSettings({ ...settings, maxVideosPerGuest: Number(e.target.value) })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Max image size (MB)</Label>
+                    <Input type="number" value={settings.maxImageSizeMb} onChange={(e) => setSettings({ ...settings, maxImageSizeMb: Number(e.target.value) })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Max video size (MB)</Label>
+                    <Input type="number" value={settings.maxVideoSizeMb} onChange={(e) => setSettings({ ...settings, maxVideoSizeMb: Number(e.target.value) })} />
+                  </div>
+                  {[
+                    { key: "guestOnlyMode" as const, label: "Guest-only uploads", hint: "Require guest verification to upload" },
+                    { key: "allowAnonymousUploads" as const, label: "Allow anonymous uploads", hint: "Let guests upload without signing in" },
+                    { key: "allowDownloads" as const, label: "Allow downloads on gallery", hint: "Guests can download approved media" },
+                    { key: "isEnabled" as const, label: "Memory guestbook enabled", hint: "Turn off to pause all uploads" },
+                  ].map(({ key, label, hint }) => (
+                    <div key={key} className="sm:col-span-2 flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <Label>{label}</Label>
+                        <p className="text-xs text-slate-500">{hint}</p>
+                      </div>
+                      <Switch checked={settings[key]} onCheckedChange={(v) => setSettings({ ...settings, [key]: v })} />
+                    </div>
+                  ))}
+                  <div className="sm:col-span-2">
+                    <Button onClick={() => void saveSettings()}>Save settings</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           )}
         </TabsContent>
 
-        <TabsContent value="qr" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base flex items-center gap-2"><QrCode className="h-4 w-4" /> Memory upload QR</CardTitle></CardHeader>
-            <CardContent className="text-center space-y-4">
-              {qrImageUrl ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrImageUrl} alt="Memory upload QR" className="w-56 h-56 mx-auto rounded-xl border bg-white p-3" />
-                  <Button variant="outline" className="gap-2" asChild>
-                    <a href={`${qrImageUrl}&download=1`} download>
-                      <Download className="h-4 w-4" /> Download for print
-                    </a>
-                  </Button>
-                </>
-              ) : (
-                <p className="text-slate-500 text-sm">QR will appear after settings load.</p>
-              )}
-              <Button
-                variant="secondary"
-                onClick={async () => {
-                  const res = await fetch(`/api/events/${eventId}/memory-qr/generate`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ regenerate: true }),
-                  });
-                  const d = await res.json();
-                  if (d.success) setQrImageUrl(d.data.qrImageUrl);
-                }}
-              >
-                Regenerate QR
-              </Button>
-            </CardContent>
-          </Card>
+        <TabsContent value="qr" className="mt-4 space-y-4">
+          <EventQrBranding eventId={eventId} />
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <QrCode className="h-4 w-4" /> Upload QR
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-sm text-slate-600">Guests scan to upload photos & videos to this event.</p>
+                {uploadQrUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={uploadQrUrl} alt="Memory upload QR" className="w-52 h-52 mx-auto rounded-xl border bg-white p-3" />
+                    {uploadPageUrl && (
+                      <Button variant="ghost" size="sm" className="gap-1 text-xs" asChild>
+                        <a href={uploadPageUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3 w-3" /> Open upload page
+                        </a>
+                      </Button>
+                    )}
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button variant="outline" size="sm" className="gap-2" asChild>
+                        <a href={`${uploadQrUrl}&download=1`} download>
+                          <Download className="h-4 w-4" /> Download
+                        </a>
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => void regenerateQr("UPLOAD")}>
+                        Regenerate
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-slate-500 text-sm">Loading QR…</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <QrCode className="h-4 w-4" /> Gallery view QR
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-sm text-slate-600">Scan to view approved memories — photos & videos for this event only.</p>
+                {viewQrUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={viewQrUrl} alt="Memory gallery QR" className="w-52 h-52 mx-auto rounded-xl border bg-white p-3" />
+                    {galleryPageUrl && (
+                      <Button variant="ghost" size="sm" className="gap-1 text-xs" asChild>
+                        <a href={galleryPageUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3 w-3" /> Open gallery
+                        </a>
+                      </Button>
+                    )}
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button variant="outline" size="sm" className="gap-2" asChild>
+                        <a href={`${viewQrUrl}&download=1`} download>
+                          <Download className="h-4 w-4" /> Download
+                        </a>
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => void regenerateQr("VIEW")}>
+                        Regenerate
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-slate-500 text-sm">Loading QR…</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <p className="text-xs text-slate-500 text-center">
+            Upload a custom center logo above — both QR codes will regenerate with your image in the center.
+          </p>
         </TabsContent>
       </Tabs>
     </div>

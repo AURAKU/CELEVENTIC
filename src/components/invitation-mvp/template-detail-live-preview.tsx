@@ -11,12 +11,11 @@ export function TemplateDetailLivePreview({ template }: { template: CatalogTempl
         category={template.category}
         features={template.features}
         variant="detail"
-        lazy={false}
         showDeviceToggle
         className="rounded-2xl border border-slate-200/80 shadow-inner"
       />
       <p className="text-center text-xs text-slate-500">
-        Scroll inside the preview to explore the full guest experience with sample event details
+        Tap the preview above to open the full guest experience with sample event details
         {template.features.includes("Music") ? " and music controls" : ""}.
       </p>
     </div>

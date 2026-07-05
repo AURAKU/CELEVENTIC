@@ -158,7 +158,9 @@ function VaultPanel({ eventId }: { eventId: string }) {
           <p className="text-sm text-slate-600">Generate a public gallery link for approved guest uploads.</p>
           <Button size="sm" variant="outline" onClick={createGalleryLink}>Generate gallery link</Button>
           {viewTokenUrl && (
-            <p className="text-xs break-all text-brand-700">{getClientAppUrl()}{viewTokenUrl.startsWith("http") ? new URL(viewTokenUrl).pathname : viewTokenUrl}</p>
+            <p className="text-xs break-all text-brand-700">
+              {viewTokenUrl.startsWith("http") ? viewTokenUrl : `${getClientAppUrl()}${viewTokenUrl}`}
+            </p>
           )}
         </CardContent>
       </Card>

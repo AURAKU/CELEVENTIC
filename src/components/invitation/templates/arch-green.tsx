@@ -19,8 +19,8 @@ export function ArchGreenTemplate({ invitation, event, design, guestId, guestNam
         style={{ backgroundColor: colors.background, color: colors.text, minHeight: "580px" }}
       >
         <VineBorder color={colors.text} />
-        <div className="relative px-8 pt-20 pb-10 text-center space-y-4">
-          <p className="text-[10px] tracking-[0.3em] uppercase opacity-70 font-[family-name:var(--font-cormorant)]">
+        <div className="relative px-8 pt-20 pb-10 text-center space-y-4 inv-text-on-dark inv-phrase-emphasis">
+          <p className="text-[10px] tracking-[0.3em] uppercase inv-muted-on-dark font-[family-name:var(--font-cormorant)]">
             {design.introText}
           </p>
           <div className="space-y-1">
@@ -28,34 +28,34 @@ export function ArchGreenTemplate({ invitation, event, design, guestId, guestNam
               {name1.split(" ")[0]}
             </h1>
             {name1.includes(" ") && (
-              <p className="text-[10px] tracking-[0.2em] uppercase opacity-60">{name1.split(" ").slice(1).join(" ")}</p>
+              <p className="text-[10px] tracking-[0.2em] uppercase inv-muted-on-dark">{name1.split(" ").slice(1).join(" ")}</p>
             )}
           </div>
-          <p className="font-[family-name:var(--font-great-vibes)] text-3xl opacity-90">and</p>
+          <p className="font-[family-name:var(--font-great-vibes)] text-3xl">and</p>
           {name2 && (
             <div className="space-y-1">
               <h1 className="font-[family-name:var(--font-cinzel)] text-2xl tracking-[0.35em] uppercase">
                 {name2.split(" ")[0]}
               </h1>
               {name2.includes(" ") && (
-                <p className="text-[10px] tracking-[0.2em] uppercase opacity-60">{name2.split(" ").slice(1).join(" ")}</p>
+                <p className="text-[10px] tracking-[0.2em] uppercase inv-muted-on-dark">{name2.split(" ").slice(1).join(" ")}</p>
               )}
             </div>
           )}
           {invitation.message && (
-            <p className="text-sm italic opacity-80 font-[family-name:var(--font-cormorant)] leading-relaxed px-2">
+            <p className="text-sm italic inv-caption-on-dark font-[family-name:var(--font-cormorant)] leading-relaxed px-2">
               {invitation.message}
             </p>
           )}
           <div className="pt-4 space-y-2 font-[family-name:var(--font-cormorant)]">
-            <p className="text-xs tracking-[0.2em] uppercase opacity-70">{date.weekday}</p>
+            <p className="text-xs tracking-[0.2em] uppercase inv-muted-on-dark">{date.weekday}</p>
             <p className="text-lg tracking-wider">{date.month} {date.day}, {date.year}</p>
-            <p className="text-sm opacity-80">{date.time}</p>
+            <p className="text-sm inv-caption-on-dark">{date.time}</p>
           </div>
           {event.venueName && (
             <div className="pt-2">
               <p className="text-xs tracking-[0.25em] uppercase font-[family-name:var(--font-cinzel)]">{event.venueName}</p>
-              {event.landmark && <p className="text-xs opacity-70 mt-1">{event.landmark}</p>}
+              {event.landmark && <p className="text-xs inv-muted-on-dark mt-1">{event.landmark}</p>}
             </div>
           )}
           {qrDataUrl && (

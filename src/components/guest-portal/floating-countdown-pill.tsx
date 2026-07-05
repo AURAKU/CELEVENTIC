@@ -39,7 +39,7 @@ export function FloatingCountdownPill({
 
   return (
     <div
-      className={`fixed top-16 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-full shadow-md border backdrop-blur-xl max-w-[min(200px,calc(100vw-5rem))] ${
+      className={`fixed safe-area-inset-top safe-area-inset-right z-40 flex items-center gap-2 px-3 py-2 rounded-full shadow-md border backdrop-blur-xl max-w-[min(220px,calc(100vw-5rem))] ${
         begun
           ? "bg-[#0B8A83]/90 border-[#0B8A83] text-white"
           : "bg-white/92 border-[#D4A63A]/25 text-[#0F172A]"
@@ -47,8 +47,8 @@ export function FloatingCountdownPill({
     >
       <Clock className={`h-3.5 w-3.5 shrink-0 ${begun ? "text-white" : "text-[#D4A63A]"}`} />
       <div className="text-left min-w-0">
-        <p className="text-[8px] uppercase tracking-widest opacity-70 leading-none truncate">{label}</p>
-        <p className="text-xs font-semibold tabular-nums leading-tight truncate">{left}</p>
+        <p className="text-[10px] uppercase tracking-widest opacity-70 leading-none truncate">{label}</p>
+        <p className="text-sm font-semibold tabular-nums leading-tight truncate">{left}</p>
       </div>
     </div>
   );

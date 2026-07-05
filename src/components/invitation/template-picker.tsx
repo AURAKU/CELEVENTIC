@@ -30,7 +30,6 @@ export function TemplatePicker({ templates, selected, onSelect, disabled }: Temp
             layoutSlug={t.slug}
             category={t.category}
             variant="picker"
-            lazy={false}
             showBadge={false}
             className="border-b border-slate-100"
           />

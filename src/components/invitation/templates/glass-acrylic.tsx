@@ -20,17 +20,17 @@ export function GlassAcrylicTemplate({ invitation, event, design, guestId, guest
       >
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
         <HeroMedia coverImageUrl={event.coverImageUrl} media={design.media} animation={design.animation} className="h-56 opacity-90" overlay />
-        <div className="relative px-8 py-10 text-center space-y-5" style={{ color: "#f8fafc" }}>
-          <p className="text-xs tracking-[0.25em] uppercase text-white/50">{design.introText ?? "You are invited"}</p>
+        <div className="relative px-8 py-10 text-center space-y-5 inv-text-on-glass">
+          <p className="text-xs tracking-[0.25em] uppercase inv-muted-on-dark">{design.introText ?? "You are invited"}</p>
           <h1 className="font-display text-3xl font-light" style={{ fontSize: studio?.headingSize }}>
             {name1}{name2 && <span className="block mt-1 text-[#7dd3fc]">& {name2}</span>}
           </h1>
-          {invitation.message && <p className="text-sm text-white/60 italic" style={{ fontSize: studio?.bodySize }}>{invitation.message}</p>}
-          <div className="rounded-2xl bg-white/10 border border-white/15 px-6 py-4 space-y-1">
+          {invitation.message && <p className="text-sm inv-caption-on-dark italic" style={{ fontSize: studio?.bodySize }}>{invitation.message}</p>}
+          <div className="rounded-2xl bg-white/15 border border-white/20 px-6 py-4 space-y-1 inv-readable-panel">
             <p className="text-lg font-light">{date.day} {date.monthShort} {date.year}</p>
-            <p className="text-sm text-white/60">{date.time}</p>
+            <p className="text-sm inv-muted-on-dark">{date.time}</p>
             {(event.venueName || event.landmark) && (
-              <p className="text-sm text-white/80 pt-2">{event.venueName}{event.landmark ? `, ${event.landmark}` : ""}</p>
+              <p className="text-sm inv-caption-on-dark pt-2">{event.venueName}{event.landmark ? `, ${event.landmark}` : ""}</p>
             )}
           </div>
           <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor="#7dd3fc" label={studio?.rsvpLabel} />

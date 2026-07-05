@@ -28,8 +28,8 @@ export function ClassicGoldTemplate({ invitation, event, design, guestId, guestN
           className="h-56 sm:h-64"
           overlay={false}
         />
-        <div className="px-8 py-10 text-center space-y-5 font-[family-name:var(--font-cormorant)] inv-text-on-light">
-          <p className="text-xs tracking-[0.25em] uppercase text-stone-500">
+        <div className="relative px-8 py-10 text-center space-y-5 font-[family-name:var(--font-cormorant)] inv-text-on-light">
+          <p className="text-xs tracking-[0.25em] uppercase inv-muted-on-light">
             {design.introText ?? "together with their families"}
           </p>
           <h1 className="font-[family-name:var(--font-playfair)] text-xl sm:text-2xl tracking-[0.15em] uppercase leading-relaxed" style={{ color: colors.primary }}>
@@ -42,28 +42,28 @@ export function ClassicGoldTemplate({ invitation, event, design, guestId, guestN
             )}
           </h1>
           {invitation.message && (
-            <p className="text-sm italic text-stone-500 leading-relaxed">{invitation.message}</p>
+            <p className="text-sm italic inv-caption-on-light leading-relaxed">{invitation.message}</p>
           )}
-          <p className="text-xs tracking-widest text-stone-400 uppercase">
+          <p className="text-xs tracking-widest inv-muted-on-light uppercase">
             invite you to share this magical moment
           </p>
           <div className="flex items-center justify-center gap-3 font-[family-name:var(--font-playfair)]">
             <span className="text-2xl font-light">{String(date.day).padStart(2, "0")}</span>
-            <span className="text-stone-300">|</span>
+            <span className="text-stone-500">|</span>
             <span className="text-sm uppercase tracking-wider">{date.monthShort}</span>
-            <span className="text-stone-300">|</span>
+            <span className="text-stone-500">|</span>
             <span className="text-2xl font-light">{date.year}</span>
           </div>
-          <p className="text-sm text-stone-500">at {date.time}</p>
+          <p className="text-sm inv-caption-on-light">at {date.time}</p>
           {(event.venueName || event.landmark) && (
             <p className="text-sm font-medium" style={{ color: colors.primary }}>
               {event.venueName}{event.landmark ? `, ${event.landmark}` : ""}
             </p>
           )}
           {event.contactPhone && (
-            <p className="text-xs text-stone-400">RSVP: {event.contactPhone}</p>
+            <p className="text-xs inv-muted-on-light">RSVP: {event.contactPhone}</p>
           )}
-          {event.dressCode && <p className="text-xs text-stone-400">Dress Code: {event.dressCode}</p>}
+          {event.dressCode && <p className="text-xs inv-muted-on-light">Dress Code: {event.dressCode}</p>}
           {qrDataUrl && (
             <div className="flex justify-center pt-2">
               <Image src={qrDataUrl} alt="QR Code" width={120} height={120} className="rounded" />

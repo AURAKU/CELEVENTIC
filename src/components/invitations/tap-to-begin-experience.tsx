@@ -16,7 +16,7 @@ export function TapToBeginExperience({ onBegin, eventTitle, accentColor }: TapTo
     <motion.button
       type="button"
       onClick={onBegin}
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center cursor-pointer touch-manipulation celeventic-tap-begin celeventic-intro-future"
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center cursor-pointer touch-manipulation celeventic-tap-begin celeventic-intro-future invite-viewport-live safe-area-pt safe-area-pb safe-area-pl safe-area-pr"
       style={{ background: `linear-gradient(165deg, ${CELEVENTIC_PALETTE.navy} 0%, #061a18 40%, ${accent}33 100%)` }}
       aria-label="Tap to begin experience"
       initial={{ opacity: 0 }}

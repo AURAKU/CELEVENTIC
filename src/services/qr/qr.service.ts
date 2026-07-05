@@ -38,6 +38,7 @@ interface QrLookupResult {
   status: QrAdmissionStatus;
   result: QrScanResult;
   scan: { id: string; createdAt: Date };
+  admittedAt?: Date | null;
   guest?: { id: string; name: string; email?: string | null } | null;
   ticket?: { id: string; name: string } | null;
   event?: { id: string; title: string } | null;
@@ -373,12 +374,15 @@ export class QrService {
       guest: { id: string; name: string; email: string | null } | null;
       ticket: { id: string; name: string } | null;
       event: { id: string; title: string };
+      scans?: { createdAt: Date }[];
     }
   ): QrLookupResult {
+    const firstValidScan = qrCode.scans?.[0]?.createdAt ?? null;
     return {
       status,
       result: logged.result,
       scan: { id: logged.scan.id, createdAt: logged.scan.createdAt },
+      admittedAt: status === "already_checked_in" ? firstValidScan : status === "valid" ? logged.scan.createdAt : null,
       guest: qrCode.guest ? { id: qrCode.guest.id, name: qrCode.guest.name, email: qrCode.guest.email } : null,
       ticket: qrCode.ticket ? { id: qrCode.ticket.id, name: qrCode.ticket.name } : null,
       event: { id: qrCode.event.id, title: qrCode.event.title },

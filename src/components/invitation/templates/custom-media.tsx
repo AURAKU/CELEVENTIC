@@ -36,18 +36,18 @@ export function CustomMediaTemplate({ invitation, event, design, guestId, guestN
                 className="h-64 sm:h-72"
               />
             )}
-            <div className="px-8 py-10 text-center space-y-4" style={{ color: colors.text }}>
-              <p className="text-xs tracking-[0.25em] uppercase opacity-50">{design.introText}</p>
+            <div className="px-8 py-10 text-center space-y-4 inv-text-on-light" style={{ color: colors.text }}>
+              <p className="text-xs tracking-[0.25em] uppercase inv-muted-on-light">{design.introText}</p>
               <h1 className="font-[family-name:var(--font-great-vibes)] text-4xl sm:text-5xl" style={{ color: colors.primary }}>
                 {name2 ? `${name1} & ${name2}` : name1}
               </h1>
               {invitation.message && (
-                <p className="text-sm italic opacity-70 font-[family-name:var(--font-cormorant)] leading-relaxed">{invitation.message}</p>
+                <p className="text-sm italic inv-caption-on-light font-[family-name:var(--font-cormorant)] leading-relaxed">{invitation.message}</p>
               )}
               <div className="py-2">
                 <p className="font-[family-name:var(--font-playfair)] text-lg tracking-wider">{date.formatted}</p>
                 {(event.venueName || event.landmark) && (
-                  <p className="text-sm mt-2 opacity-80">{event.venueName}{event.landmark ? `, ${event.landmark}` : ""}</p>
+                  <p className="text-sm mt-2 inv-caption-on-light">{event.venueName}{event.landmark ? `, ${event.landmark}` : ""}</p>
                 )}
               </div>
               {pdfAsset && (

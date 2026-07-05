@@ -142,6 +142,7 @@ export class InvitationService {
     });
 
     const { dataUrl, token } = await qrService.createGuestQr(input.eventId, guest.id);
+    await qrService.createGuestAdmissionQr(input.eventId, guest.id);
 
     return { guest, qrDataUrl: dataUrl, qrToken: token };
   }

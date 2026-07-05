@@ -2,5 +2,11 @@ import { invitationFontVars } from "@/lib/invitation-fonts";
 import "../globals.css";
 
 export default function InviteLayout({ children }: { children: React.ReactNode }) {
-  return <div className={`${invitationFontVars} scroll-smooth`}>{children}</div>;
+  return (
+    <div
+      className={`${invitationFontVars} scroll-smooth invite-route-shell w-full min-h-[100dvh] min-h-[100svh]`}
+    >
+      {children}
+    </div>
+  );
 }

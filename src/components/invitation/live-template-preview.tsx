@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
 import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
-import { Play, Smartphone, Monitor, Music2 } from "lucide-react";
+import { pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
+import { pageBackgroundFromDesign } from "@/lib/invitation/studio-media-utils";
+import { TemplatePreviewGlimpse } from "@/components/invitation/template-preview-glimpse";
+import { Play, Smartphone, Monitor, Music2, X, Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type LivePreviewVariant = "picker" | "card" | "hero" | "detail";
@@ -18,14 +21,13 @@ const VARIANT_CONFIG: Record<
   {
     height: number;
     thumbScale: number;
-    autoScroll: boolean;
     interactive: boolean;
   }
 > = {
-  picker: { height: 132, thumbScale: 0.32, autoScroll: true, interactive: false },
-  card: { height: 248, thumbScale: 0.36, autoScroll: true, interactive: false },
-  hero: { height: 580, thumbScale: 1, autoScroll: false, interactive: true },
-  detail: { height: 700, thumbScale: 1, autoScroll: false, interactive: true },
+  picker: { height: 132, thumbScale: 0.32, interactive: false },
+  card: { height: 248, thumbScale: 0.36, interactive: false },
+  hero: { height: 580, thumbScale: 1, interactive: true },
+  detail: { height: 700, thumbScale: 1, interactive: true },
 };
 
 interface LiveTemplatePreviewProps {
@@ -34,10 +36,11 @@ interface LiveTemplatePreviewProps {
   features?: string[];
   musicEnabled?: boolean;
   variant?: LivePreviewVariant;
-  lazy?: boolean;
   className?: string;
   showBadge?: boolean;
   showDeviceToggle?: boolean;
+  /** When true (default), live invite only mounts after explicit user tap */
+  tapToOpen?: boolean;
 }
 
 function PreviewDeviceChrome({
@@ -79,29 +82,82 @@ function PreviewDeviceChrome({
   );
 }
 
+function PreviewPoster({
+  compact,
+  hasMusic,
+  onOpen,
+}: {
+  compact?: boolean;
+  hasMusic?: boolean;
+  onOpen: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={cn(
+        "absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 w-full h-full",
+        "bg-gradient-to-t from-black/80 via-black/45 to-black/25",
+        "transition-all hover:from-black/85 hover:via-black/55 active:scale-[0.995]"
+      )}
+      aria-label="Tap to open live template preview"
+    >
+      <div className="rounded-full bg-black/45 backdrop-blur-sm p-3 shadow-lg border border-white/20">
+        <Play className={cn("text-white fill-white", compact ? "h-5 w-5" : "h-7 w-7")} />
+      </div>
+      <span
+        className={cn(
+          "font-medium text-white drop-shadow-md flex items-center gap-1.5",
+          compact ? "text-[10px]" : "text-xs sm:text-sm"
+        )}
+      >
+        <Hand className={cn(compact ? "h-3 w-3" : "h-3.5 w-3.5")} />
+        Tap to view invitation
+      </span>
+      {hasMusic && (
+        <span className="text-[10px] text-white/80 flex items-center gap-1">
+          <Music2 className="h-3 w-3" /> Includes music
+        </span>
+      )}
+    </button>
+  );
+}
+
 function LivePreviewExperience({
   preview,
   device,
-  interactive,
+  fullScreen,
+  compactFrame,
   skipReveal,
+  musicEnabled,
+  musicAutoplay,
 }: {
   preview: ReturnType<typeof buildLivePreviewProps>;
   device: PreviewDevice;
-  interactive: boolean;
+  fullScreen: boolean;
+  compactFrame: boolean;
   skipReveal: boolean;
+  musicEnabled: boolean;
+  musicAutoplay: boolean;
 }) {
+  const bg = pageBackgroundFromDesign(preview.design);
   return (
     <PreviewDeviceChrome device={device}>
       <div
         className="relative"
-        style={{ pointerEvents: interactive ? "auto" : "none" }}
+        style={{ pointerEvents: "auto" }}
+        onClick={(e) => e.stopPropagation()}
       >
         <PremiumInviteWrapper
           skipReveal={skipReveal}
-          skipIntro={preview.skipIntro ?? !interactive}
-          skipTapGate={preview.skipTapGate ?? !interactive}
-          musicEnabled={Boolean(preview.musicSelection)}
+          skipIntro
+          skipTapGate
+          skipAnalytics
+          musicEnabled={musicEnabled}
+          musicAutoplay={musicAutoplay}
           musicSelection={preview.musicSelection}
+          backgroundImageUrl={bg.backgroundImageUrl}
+          backgroundVideoUrl={bg.backgroundVideoUrl}
           galleryUrls={preview.galleryUrls}
           invitation={{
             id: `preview-${preview.design.layout}`,
@@ -121,8 +177,9 @@ function LivePreviewExperience({
           }}
           design={preview.design}
           guestName={preview.guestName}
-          fullScreen={interactive}
-          embedded={!interactive}
+          fullScreen={fullScreen}
+          embedded={compactFrame}
+          galleryInteractive
           rsvpRequired={false}
           eventId="preview-event"
         />
@@ -131,50 +188,65 @@ function LivePreviewExperience({
   );
 }
 
-/** Renders the full guest invitation experience with dummy event data — not a static gradient. */
+/** Renders invitation preview only after user taps — never auto-launches on scroll or load. */
 export function LiveTemplatePreview({
   layoutSlug,
   category,
   features,
   musicEnabled,
   variant = "card",
-  lazy = true,
   className,
   showBadge = true,
   showDeviceToggle = false,
+  tapToOpen = true,
 }: LiveTemplatePreviewProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(!lazy);
+  const [activated, setActivated] = useState(false);
+  const [inView, setInView] = useState(true);
+  const [glimpseVisible, setGlimpseVisible] = useState(false);
   const [device, setDevice] = useState<PreviewDevice>("mobile");
   const [containerWidth, setContainerWidth] = useState(360);
   const cfg = VARIANT_CONFIG[variant];
+
+  const showLive = !tapToOpen || activated;
 
   const preview = useMemo(
     () =>
       buildLivePreviewProps(layoutSlug, category, {
         features,
         musicEnabled: musicEnabled ?? true,
-        skipIntro: !cfg.interactive,
-        skipTapGate: !cfg.interactive,
+        musicAutoplay: true,
+        skipIntro: true,
+        skipTapGate: true,
       }),
-    [layoutSlug, category, features, musicEnabled, cfg.interactive]
+    [layoutSlug, category, features, musicEnabled]
   );
 
-  const hasMusic = Boolean(preview.musicSelection);
-  const isInteractive = cfg.interactive;
+  const hasMusic = Boolean(preview.musicSelection) && (musicEnabled ?? true);
+  const portalLive = showLive;
+  const isFullLayout = portalLive && cfg.interactive;
 
   const frameWidth = device === "mobile" ? MOBILE_FRAME_WIDTH : DESKTOP_FRAME_WIDTH;
 
   const displayScale = useMemo(() => {
-    if (isInteractive) {
+    if (isFullLayout) {
       const padding = 24;
       const available = Math.max(containerWidth - padding, 200);
       return Math.min(1, available / frameWidth);
     }
+    if (portalLive) {
+      const targetWidth = Math.max(containerWidth - 16, 200);
+      return Math.min(0.58, targetWidth / MOBILE_FRAME_WIDTH);
+    }
     const targetWidth = containerWidth > 0 ? containerWidth : 320;
     return Math.min(cfg.thumbScale, (targetWidth - 8) / MOBILE_FRAME_WIDTH);
-  }, [isInteractive, containerWidth, frameWidth, cfg.thumbScale]);
+  }, [isFullLayout, portalLive, containerWidth, frameWidth, cfg.thumbScale]);
+
+  useEffect(() => {
+    setActivated(false);
+    pauseAllInvitationAudio();
+  }, [layoutSlug]);
 
   useEffect(() => {
     if (!rootRef.current) return;
@@ -188,76 +260,49 @@ export function LiveTemplatePreview({
   }, []);
 
   useEffect(() => {
-    if (!lazy || !rootRef.current) return;
+    if (!rootRef.current) return;
+    const el = rootRef.current;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
+        const visible = entry.isIntersecting;
+        setGlimpseVisible(visible);
+        if (activated) {
+          setInView(visible);
+          if (!visible) pauseAllInvitationAudio();
         }
       },
-      { rootMargin: "120px", threshold: 0.05 }
+      { rootMargin: "80px", threshold: 0.05 }
     );
-    observer.observe(rootRef.current);
+    observer.observe(el);
     return () => observer.disconnect();
-  }, [lazy]);
+  }, [activated]);
+
+  useEffect(() => {
+    return () => pauseAllInvitationAudio();
+  }, [layoutSlug]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [device, layoutSlug]);
+  }, [device, layoutSlug, activated]);
 
-  useEffect(() => {
-    if (!visible || !cfg.autoScroll || !scrollRef.current) return;
-    const el = scrollRef.current;
-    let frame = 0;
-    let direction = 1;
-    let paused = false;
-    let pauseUntil = 0;
+  function openPreview(e: React.MouseEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    pauseAllInvitationAudio();
+    setActivated(true);
+  }
 
-    const tick = () => {
-      if (!el) return;
-      const max = el.scrollHeight - el.clientHeight;
-      if (max <= 4) return;
+  function closePreview(e: React.MouseEvent) {
+    e.stopPropagation();
+    pauseAllInvitationAudio();
+    setActivated(false);
+  }
 
-      const now = Date.now();
-      if (now < pauseUntil) {
-        frame = requestAnimationFrame(tick);
-        return;
-      }
-
-      if (!paused) {
-        el.scrollTop += direction * 0.4;
-        if (el.scrollTop >= max - 1) {
-          direction = -1;
-          pauseUntil = now + 1400;
-        } else if (el.scrollTop <= 0) {
-          direction = 1;
-          pauseUntil = now + 1400;
-        }
-      }
-      frame = requestAnimationFrame(tick);
-    };
-
-    frame = requestAnimationFrame(tick);
-    const pause = () => {
-      paused = true;
-    };
-    const resume = () => {
-      paused = false;
-    };
-    el.addEventListener("pointerenter", pause);
-    el.addEventListener("pointerleave", resume);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      el.removeEventListener("pointerenter", pause);
-      el.removeEventListener("pointerleave", resume);
-    };
-  }, [visible, cfg.autoScroll, layoutSlug, displayScale]);
-
-  const scaledFrameHeight = isInteractive
+  const scaledFrameHeight = isFullLayout
     ? undefined
     : Math.ceil(cfg.height / Math.max(displayScale, 0.01));
+
+  const compactPoster = variant === "picker";
 
   return (
     <div
@@ -269,8 +314,23 @@ export function LiveTemplatePreview({
       )}
       style={{ height: cfg.height }}
     >
-      {!visible ? (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-200/80 to-slate-100" />
+      {!showLive ? (
+        <>
+          {glimpseVisible && (
+            <TemplatePreviewGlimpse
+              layoutSlug={layoutSlug}
+              category={category}
+              features={features}
+              scale={cfg.thumbScale}
+              compact={compactPoster}
+            />
+          )}
+          <PreviewPoster
+            compact={compactPoster}
+            hasMusic={hasMusic}
+            onOpen={openPreview}
+          />
+        </>
       ) : (
         <>
           {showBadge && (
@@ -279,25 +339,43 @@ export function LiveTemplatePreview({
               Live preview
             </div>
           )}
-          {hasMusic && (
+          {tapToOpen && (
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              className={cn(
+                "absolute top-2 z-30 h-7 w-7 rounded-full bg-white/90 shadow-sm",
+                isFullLayout ? "right-2" : "right-11"
+              )}
+              onClick={closePreview}
+              aria-label="Close preview"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {hasMusic && inView && (
             <div
               className={cn(
-                "absolute z-20 flex items-center gap-1 rounded-full bg-[#0B8A83]/90 text-white text-[10px] font-medium px-2 py-0.5 backdrop-blur-sm",
+                "absolute z-20 flex items-center gap-1 rounded-full bg-black/55 text-white text-[10px] font-medium px-2 py-0.5 backdrop-blur-sm",
                 showBadge ? "top-2 left-[7.5rem]" : "top-2 left-2"
               )}
             >
               <Music2 className="h-2.5 w-2.5" />
-              {isInteractive ? "Music included" : "With music"}
+              Tap corner to mute
             </div>
           )}
-          {showDeviceToggle && isInteractive && (
-            <div className="absolute top-2 right-2 z-20 flex gap-1 rounded-full bg-white/90 p-0.5 shadow-sm border border-slate-200/80">
+          {showDeviceToggle && isFullLayout && (
+            <div className="absolute top-2 right-10 z-20 flex gap-1 rounded-full bg-white/90 p-0.5 shadow-sm border border-slate-200/80">
               <Button
                 type="button"
                 size="icon"
                 variant={device === "mobile" ? "default" : "ghost"}
                 className="h-7 w-7"
-                onClick={() => setDevice("mobile")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDevice("mobile");
+                }}
                 aria-label="Mobile view"
                 aria-pressed={device === "mobile"}
               >
@@ -308,7 +386,10 @@ export function LiveTemplatePreview({
                 size="icon"
                 variant={device === "desktop" ? "default" : "ghost"}
                 className="h-7 w-7"
-                onClick={() => setDevice("desktop")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDevice("desktop");
+                }}
                 aria-label="Desktop view"
                 aria-pressed={device === "desktop"}
               >
@@ -320,23 +401,27 @@ export function LiveTemplatePreview({
             ref={scrollRef}
             className={cn(
               "w-full h-full overflow-x-hidden px-2 pt-2 pb-3",
-              isInteractive ? "overflow-y-auto overscroll-contain" : "overflow-y-hidden"
+              portalLive ? "overflow-y-auto overscroll-contain" : "overflow-y-hidden"
             )}
+            onClick={(e) => e.stopPropagation()}
           >
             <div
               className="flex justify-center origin-top mx-auto"
               style={{
                 transform: displayScale < 1 ? `scale(${displayScale})` : undefined,
-                width: isInteractive ? frameWidth : MOBILE_FRAME_WIDTH,
+                width: isFullLayout ? frameWidth : MOBILE_FRAME_WIDTH,
                 maxWidth: "100%",
                 height: scaledFrameHeight,
               }}
             >
               <LivePreviewExperience
                 preview={preview}
-                device={isInteractive ? device : "mobile"}
-                interactive={isInteractive}
-                skipReveal={!isInteractive}
+                device={isFullLayout ? device : "mobile"}
+                fullScreen={isFullLayout}
+                compactFrame={!isFullLayout}
+                skipReveal
+                musicEnabled={hasMusic && inView}
+                musicAutoplay={hasMusic && inView}
               />
             </div>
           </div>

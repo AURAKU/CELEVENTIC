@@ -77,6 +77,14 @@ export class EventMemoryTokenService {
     return this.getOrCreateUploadToken(eventId, expiresAt);
   }
 
+  async regenerateViewToken(eventId: string) {
+    await prisma.eventMemoryToken.updateMany({
+      where: { eventId, type: "VIEW", isRevoked: false },
+      data: { isRevoked: true },
+    });
+    return this.getOrCreateViewToken(eventId);
+  }
+
   async listTokens(eventId: string, type?: EventMemoryTokenType) {
     return prisma.eventMemoryToken.findMany({
       where: { eventId, ...(type ? { type } : {}) },

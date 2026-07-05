@@ -20,7 +20,10 @@ export async function GET(
   }
 
   const { page, limit } = parsePaginationFromUrl(req.url);
-  const memories = await eventMemoryUploadService.listApprovedPublic(record.eventId, page, limit);
+  const url = new URL(req.url);
+  const mediaRaw = url.searchParams.get("mediaType");
+  const mediaType = mediaRaw === "image" || mediaRaw === "video" ? mediaRaw : undefined;
+  const memories = await eventMemoryUploadService.listApprovedPublic(record.eventId, page, limit, mediaType);
 
   return NextResponse.json({
     success: true,

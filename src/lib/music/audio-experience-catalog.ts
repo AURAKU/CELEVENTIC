@@ -1,8 +1,71 @@
 import type { MusicLibraryTrack, MusicSelection } from "@/lib/music/music-types";
 
+/** Tracks with bundled MP3 files in public/music/ */
+export const BUNDLED_MUSIC_IDS = new Set([
+  "luxury-piano-romance",
+  "piano-garden",
+  "piano-elegance",
+  "violin-elegance",
+  "strings-crystal",
+  "strings-garden",
+]);
+
+/** Map requested track IDs → nearest bundled file by theme mood */
+const TRACK_FILE_FALLBACK: Record<string, string> = {
+  "memorial-piano": "piano-elegance",
+  "memorial-violin": "violin-elegance",
+  "wedding-romantic": "luxury-piano-romance",
+  "luxury-piano-romance": "luxury-piano-romance",
+  "piano-garden": "piano-garden",
+  "piano-elegance": "piano-elegance",
+  "violin-elegance": "violin-elegance",
+  "strings-garden": "strings-garden",
+  "strings-crystal": "strings-crystal",
+  "orchestra-royal": "strings-crystal",
+  "jazz-soft-lounge": "piano-elegance",
+  "jazz-midnight": "piano-elegance",
+  "acoustic-warm": "piano-garden",
+  "party-edm-energy": "strings-garden",
+  "happy-celebration": "strings-garden",
+  "african-drums-celebration": "strings-garden",
+  "corporate-summit": "piano-elegance",
+  "ambient-cinematic": "piano-elegance",
+  "travel-wanderlust": "strings-crystal",
+  "islamic-soft-instrumental": "piano-elegance",
+  "nature-forest": "piano-elegance",
+  "nature-ocean": "piano-elegance",
+};
+
+const CATEGORY_FILE_FALLBACK: Record<string, string> = {
+  funeral: "piano-elegance",
+  wedding: "luxury-piano-romance",
+  piano: "piano-garden",
+  violin: "violin-elegance",
+  strings: "strings-garden",
+  jazz: "piano-elegance",
+  guitar: "piano-garden",
+  celebration: "strings-garden",
+  african: "strings-garden",
+  corporate: "piano-elegance",
+  muslim: "piano-elegance",
+  instrumentals: "piano-elegance",
+  nature: "piano-elegance",
+};
+
+/** Resolve to a bundled file that exists on disk */
+export function resolveBundledTrackId(trackId: string, category?: string): string {
+  if (BUNDLED_MUSIC_IDS.has(trackId)) return trackId;
+  const mapped = TRACK_FILE_FALLBACK[trackId];
+  if (mapped && BUNDLED_MUSIC_IDS.has(mapped)) return mapped;
+  const catFallback = category ? CATEGORY_FILE_FALLBACK[category] : undefined;
+  if (catFallback && BUNDLED_MUSIC_IDS.has(catFallback)) return catFallback;
+  return "piano-elegance";
+}
+
 /** Public URL for a bundled catalog track file. */
-export function catalogMusicUrl(trackId: string): string {
-  return `/music/${trackId}.mp3`;
+export function catalogMusicUrl(trackId: string, category?: string): string {
+  const resolved = resolveBundledTrackId(trackId, category);
+  return `/music/${resolved}.mp3`;
 }
 
 /** Premium audio catalog — each template DNA track maps to a local file in public/music. */
@@ -79,14 +142,14 @@ export function buildMusicSelectionFromTrack(
   return {
     source: "library",
     libraryTrackId: track.id,
-    url: track.url,
+    url: catalogMusicUrl(track.id, track.category),
     title: track.title,
     startSec: 0,
     endSec: Math.min(duration, 90),
     originalDurationSec: duration,
     autoPlay: true,
     loop: true,
-    volume: 0.45,
+    volume: track.category === "funeral" ? 0.35 : 0.45,
     fadeInSec: 1.5,
     fadeOutSec: 1,
     ...options,
@@ -104,5 +167,14 @@ export function resolveDefaultMusicForLayout(
     const catTrack = getAudioTracksByCategory(category)[0];
     if (catTrack) return buildMusicSelectionFromTrack(catTrack.id);
   }
-  return buildMusicSelectionFromTrack("wedding-romantic");
+  if (layout.includes("memorial") || category === "funeral") {
+    return buildMusicSelectionFromTrack("memorial-piano");
+  }
+  if (layout.includes("corporate") || category === "corporate" || category === "Conference") {
+    return buildMusicSelectionFromTrack("corporate-summit");
+  }
+  if (layout.includes("neon") || layout.includes("party") || category === "Birthday") {
+    return buildMusicSelectionFromTrack("happy-celebration");
+  }
+  return buildMusicSelectionFromTrack("luxury-piano-romance");
 }

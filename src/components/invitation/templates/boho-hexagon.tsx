@@ -34,15 +34,15 @@ export function BohoHexagonTemplate({ invitation, event, design, guestId, guestN
               className="h-40 mx-8 mt-8 rounded-lg"
             />
           )}
-          <div className="relative px-10 py-12 text-center space-y-5">
-            <p className="text-xs tracking-[0.2em] uppercase opacity-60 font-[family-name:var(--font-cormorant)]">
+          <div className="relative px-10 py-12 text-center space-y-5 inv-text-on-light">
+            <p className="text-xs tracking-[0.2em] uppercase inv-muted-on-light font-[family-name:var(--font-cormorant)]">
               {design.introText}
             </p>
             <h1 className="font-[family-name:var(--font-great-vibes)] text-4xl sm:text-5xl" style={{ color: colors.primary }}>
               {displayNames}
             </h1>
             {invitation.message && (
-              <p className="text-sm italic opacity-70 font-[family-name:var(--font-cormorant)]">{invitation.message}</p>
+              <p className="text-sm italic inv-caption-on-light font-[family-name:var(--font-cormorant)]">{invitation.message}</p>
             )}
             <div className="flex items-center justify-center gap-3 text-sm font-[family-name:var(--font-cormorant)] tracking-widest uppercase">
               <span>{date.monthShort}</span>
@@ -50,7 +50,7 @@ export function BohoHexagonTemplate({ invitation, event, design, guestId, guestN
               <span>{date.time}</span>
             </div>
             {(event.venueName || event.landmark) && (
-              <p className="text-xs tracking-[0.15em] uppercase opacity-70">
+              <p className="text-xs tracking-[0.15em] uppercase inv-muted-on-light">
                 {event.venueName}{event.landmark ? ` · ${event.landmark}` : ""}
               </p>
             )}

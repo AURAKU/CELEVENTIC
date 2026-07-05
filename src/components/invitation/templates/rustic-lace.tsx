@@ -43,29 +43,29 @@ export function RusticLaceTemplate({ invitation, event, design, guestId, guestNa
         <LaceBorder position="top" />
         <LaceBorder position="bottom" />
         <div className="relative z-10 px-8 py-24 text-center text-white space-y-5 font-[family-name:var(--font-cormorant)] inv-text-on-photo inv-readable-panel mx-4 my-8">
-          <p className="text-xs leading-relaxed opacity-90 max-w-xs mx-auto">
+          <p className="text-xs leading-relaxed inv-caption-on-dark max-w-xs mx-auto">
             {design.introText ?? invitation.message ?? "It is with great joy that we invite you to celebrate with us"}
           </p>
           <h1 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl tracking-[0.12em] uppercase">
             {name2 ? `${name1} & ${name2}` : name1}
           </h1>
           <div className="flex items-center justify-center gap-4 py-2">
-            <span className="text-xs lowercase tracking-wider opacity-80">{date.weekday}</span>
+            <span className="text-xs lowercase tracking-wider inv-muted-on-dark">{date.weekday}</span>
             <div className="flex items-center gap-3">
               <div className="h-12 w-px bg-white/40" />
               <div className="text-center">
                 <p className="font-[family-name:var(--font-playfair)] text-4xl font-light">{date.day}</p>
                 <p className="text-xs tracking-wider">{date.year}</p>
-                <p className="text-[10px] opacity-80">{date.time}</p>
+                <p className="text-[10px] inv-muted-on-dark">{date.time}</p>
               </div>
               <div className="h-12 w-px bg-white/40" />
             </div>
-            <span className="text-xs lowercase tracking-wider opacity-80">{date.month}</span>
+            <span className="text-xs lowercase tracking-wider inv-muted-on-dark">{date.month}</span>
           </div>
           {(event.venueName || event.landmark) && (
             <p className="text-sm font-[family-name:var(--font-playfair)] tracking-wide">
               {event.venueName}
-              {event.landmark && <><br /><span className="text-xs opacity-80">{event.landmark}</span></>}
+              {event.landmark && <><br /><span className="text-xs inv-muted-on-dark">{event.landmark}</span></>}
             </p>
           )}
           {qrDataUrl && (

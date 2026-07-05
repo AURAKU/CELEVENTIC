@@ -34,7 +34,7 @@ function InviteBody({
 
   return (
     <>
-      <p className="uppercase opacity-70 tracking-[0.35em] font-light" style={{ fontSize: bodySize - 2 }}>
+      <p className={cn("uppercase tracking-[0.35em] font-light inv-muted-on-dark", variant === "light" && "inv-muted-on-light", variant === "corporate" && "text-slate-600")} style={{ fontSize: bodySize - 2 }}>
         {design.introText}
       </p>
       <h1
@@ -50,7 +50,7 @@ function InviteBody({
         {name1}
         {name2 && (
           <>
-            <span className={cn("block my-2", variant === "light" ? "text-2xl opacity-90" : "opacity-60 text-lg")}>
+            <span className={cn("block my-2", variant === "light" ? "text-2xl" : "text-lg")}>
               {variant === "neon" ? "&" : variant === "light" ? "and" : "&"}
             </span>
             {name2}
@@ -58,7 +58,7 @@ function InviteBody({
         )}
       </h1>
       {invitation.message && (
-        <p className="italic opacity-80 font-[family-name:var(--font-cormorant)]" style={{ fontSize: scriptSize }}>
+        <p className={cn("italic font-[family-name:var(--font-cormorant)]", variant === "light" || variant === "corporate" ? "inv-caption-on-light" : "inv-caption-on-dark")} style={{ fontSize: scriptSize }}>
           {invitation.message}
         </p>
       )}
@@ -66,10 +66,10 @@ function InviteBody({
       <p className={cn(variant === "corporate" && "font-mono text-sm")} style={{ fontSize: bodySize + 2 }}>
         {String(date.day).padStart(2, "0")} · {date.monthShort.toUpperCase()} · {date.year}
       </p>
-      <p className="opacity-60" style={{ fontSize: bodySize }}>{date.time}</p>
+      <p className={cn("inv-muted-on-dark", variant === "light" && "inv-muted-on-light", variant === "corporate" && "text-slate-600")} style={{ fontSize: bodySize }}>{date.time}</p>
       {event.venueName && <p className="tracking-wide" style={{ fontSize: bodySize + 1 }}>{event.venueName}</p>}
-      {event.landmark && <p className="opacity-60" style={{ fontSize: bodySize - 1 }}>{event.landmark}</p>}
-      {event.dressCode && <p className="opacity-70" style={{ fontSize: bodySize - 1 }}>Dress code · {event.dressCode}</p>}
+      {event.landmark && <p className={cn("inv-muted-on-dark", variant === "light" && "inv-muted-on-light")} style={{ fontSize: bodySize - 1 }}>{event.landmark}</p>}
+      {event.dressCode && <p className={cn("inv-caption-on-dark", variant === "light" && "inv-caption-on-light")} style={{ fontSize: bodySize - 1 }}>Dress code · {event.dressCode}</p>}
       {qrDataUrl && <Image src={qrDataUrl} alt="Guest pass QR" width={112} height={112} className="mx-auto rounded-lg" />}
       <InvitationRsvpPanel
         invitationId={invitation.id}
@@ -107,7 +107,7 @@ function MidnightVelvetShell(props: ShellProps) {
     <div className="min-h-[100dvh] w-full flex flex-col" style={{ background: theme.background, color: props.design.colors.text }}>
       <div className="h-3 bg-gradient-to-r from-red-900 via-red-700 to-red-900" />
       <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md text-center space-y-6">
+        <div className="w-full max-w-md text-center space-y-6 inv-text-on-dark">
           <HeroMedia coverImageUrl={props.event.coverImageUrl} media={props.design.media} animation="fade" className="h-40 rounded-lg border border-white/10" overlay />
           <InviteBody {...props} variant="dark" />
         </div>
@@ -123,7 +123,7 @@ function KenteHeritageShell(props: ShellProps) {
     <div className="min-h-[100dvh] w-full flex items-center justify-center p-4" style={{ background: theme.background }}>
       <div className="w-full max-w-md rounded-xl overflow-hidden shadow-2xl border-4 border-amber-500/50">
         <div className="h-3 bg-gradient-to-r from-red-700 via-amber-400 to-emerald-700" />
-        <div className="px-6 py-10 text-center space-y-5" style={{ color: props.design.colors.text, background: "linear-gradient(180deg, #451a03 0%, #292524 100%)" }}>
+        <div className="px-6 py-10 text-center space-y-5 inv-text-on-dark" style={{ color: props.design.colors.text, background: "linear-gradient(180deg, #451a03 0%, #292524 100%)" }}>
           <InviteBody {...props} variant="dark" />
         </div>
         <div className="h-3 bg-gradient-to-r from-emerald-700 via-amber-400 to-red-700" />
@@ -137,7 +137,7 @@ function FloralGardenRomanceShell(props: ShellProps) {
     <div className="min-h-[100dvh] w-full flex items-center justify-center p-4 bg-gradient-to-b from-rose-50 to-emerald-50">
       <div className="w-full max-w-md rounded-[2rem] overflow-hidden shadow-xl border border-rose-200/80 bg-white/90">
         <HeroMedia coverImageUrl={props.event.coverImageUrl} media={props.design.media} animation="fade" className="h-52" />
-        <div className="px-8 py-10 text-center space-y-5 text-rose-950"><InviteBody {...props} variant="light" /></div>
+        <div className="px-8 py-10 text-center space-y-5 text-rose-950 inv-text-on-light"><InviteBody {...props} variant="light" /></div>
       </div>
     </div>
   );
@@ -165,7 +165,7 @@ function CrystalAcrylicShell(props: ShellProps) {
     <div className="min-h-[100dvh] w-full flex items-center justify-center p-4" style={{ background: theme.background }}>
       <div className="w-full max-w-lg rounded-3xl border border-white/30 bg-white/15 backdrop-blur-2xl shadow-[0_8px_60px_rgba(56,189,248,0.2)] overflow-hidden">
         <HeroMedia coverImageUrl={props.event.coverImageUrl} media={props.design.media} animation="ken-burns" className="h-44 opacity-90" overlay />
-        <div className="px-8 py-10 text-center space-y-5 text-slate-800"><InviteBody {...props} variant="light" /></div>
+        <div className="px-8 py-10 text-center space-y-5 inv-text-on-light inv-readable-panel-light"><InviteBody {...props} variant="light" /></div>
       </div>
     </div>
   );
@@ -178,7 +178,7 @@ function GoldenIslamicShell(props: ShellProps) {
       <div className="relative w-full max-w-md">
         <div className="absolute inset-x-8 top-0 h-20 border-t-2 border-x-2 border-amber-400/50 rounded-t-full pointer-events-none" />
         <div className="rounded-2xl border border-amber-500/30 bg-emerald-950/90 overflow-hidden shadow-2xl mt-10">
-          <div className="px-8 py-12 text-center space-y-5 text-emerald-50"><InviteBody {...props} variant="dark" /></div>
+          <div className="px-8 py-12 text-center space-y-5 text-emerald-50 inv-text-on-dark"><InviteBody {...props} variant="dark" /></div>
         </div>
       </div>
     </div>
@@ -189,7 +189,7 @@ function MemorialCandleShell(props: ShellProps) {
   const theme = getCinematicTheme(props.slug)!;
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center p-4" style={{ background: theme.background }}>
-      <div className="w-full max-w-md text-center space-y-8 px-8 py-12 border border-stone-700/50 rounded-lg bg-black/40">
+      <div className="w-full max-w-md text-center space-y-8 px-8 py-12 border border-stone-700/50 rounded-lg bg-black/40 inv-text-on-dark">
         <div className="mx-auto w-2 h-12 bg-gradient-to-t from-amber-700 to-amber-200 rounded-full shadow-[0_0_24px_rgba(251,191,36,0.35)]" />
         <InviteBody {...props} variant="dark" />
       </div>

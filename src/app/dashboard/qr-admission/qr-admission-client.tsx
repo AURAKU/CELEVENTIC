@@ -47,6 +47,7 @@ interface ScanResult {
   ticket?: { name: string } | null;
   event?: { title: string } | null;
   qrType?: string;
+  admittedAt?: string | null;
 }
 
 interface RecentScan {
@@ -196,9 +197,10 @@ export function QrAdmissionClient() {
           ticket: data.data?.ticket,
           event: data.data?.event,
           qrType: data.data?.qrType,
+          admittedAt: data.data?.admittedAt ?? null,
         };
         setResult(scanResult);
-        playScanFeedback(scanResult.status === "valid");
+        playScanFeedback(scanResult.status === "valid" || scanResult.status === "already_checked_in");
         if (!res.ok && data.error) setError(data.error);
         await loadEventData(historyPage);
       } catch {
@@ -229,19 +231,27 @@ export function QrAdmissionClient() {
     }
   }
 
-  function statusLabel(status: ScanStatus) {
-    const map: Record<ScanStatus, string> = {
-      valid: t("qr_admission.result_valid"),
+  function statusLabel(status: ScanStatus, result?: ScanResult | null) {
+    if (status === "valid") {
+      if (result?.ticket) return t("qr_admission.result_ticket_admitted");
+      if (result?.guest) return t("qr_admission.result_guest_admitted");
+      return t("qr_admission.result_valid");
+    }
+    if (status === "already_checked_in") {
+      if (result?.ticket) return t("qr_admission.result_already_ticket");
+      if (result?.guest) return t("qr_admission.result_already_guest");
+      return t("qr_admission.result_already");
+    }
+    const map: Record<Exclude<ScanStatus, "valid" | "already_checked_in">, string> = {
       invalid: t("qr_admission.result_invalid"),
       expired: t("qr_admission.result_expired"),
-      already_checked_in: t("qr_admission.result_already"),
       not_found: t("qr_admission.result_not_found"),
       wrong_event: t("qr_admission.result_wrong_event"),
       revoked: "Revoked",
       refunded: "Refunded",
       cancelled: "Cancelled",
     };
-    return map[status] ?? status;
+    return map[status as Exclude<ScanStatus, "valid" | "already_checked_in">] ?? status;
   }
 
   function resultStyles(status: ScanStatus) {
@@ -458,11 +468,19 @@ export function QrAdmissionClient() {
                   variant={result.status === "valid" ? "success" : result.status === "already_checked_in" ? "warning" : "destructive"}
                   className="text-base px-4 py-1"
                 >
-                  {statusLabel(result.status)}
+                  {statusLabel(result.status, result)}
                 </Badge>
                 {result.guest && <p className="text-lg font-semibold text-slate-900">{result.guest.name}</p>}
                 {result.ticket && <p className="text-sm text-slate-600">Ticket: {result.ticket.name}</p>}
                 {result.event && <p className="text-xs text-slate-500">{result.event.title}</p>}
+                {result.status === "already_checked_in" && result.admittedAt && (
+                  <p className="text-xs text-amber-800 bg-amber-100/80 rounded-lg px-3 py-2">
+                    {t("qr_admission.admitted_at")}: {new Date(result.admittedAt).toLocaleString()}
+                  </p>
+                )}
+                {result.status === "already_checked_in" && (
+                  <p className="text-xs text-slate-500">This scan was not counted again.</p>
+                )}
               </CardContent>
             </Card>
           )}

@@ -27,6 +27,8 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   revealMode?: RevealMode;
   openingExperience?: OpeningExperienceId;
   musicEnabled?: boolean;
+  /** When false, music only loads after tap-to-begin (catalog thumbnails). */
+  musicAutoplay?: boolean;
   musicUrl?: string | null;
   musicSelection?: MusicSelection | null;
   backgroundImageUrl?: string | null;
@@ -39,12 +41,16 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   seatQrDataUrl?: string | null;
   fullScreen?: boolean;
   embedded?: boolean;
+  /** Gallery swipe/arrows even when embedded in a compact preview frame */
+  galleryInteractive?: boolean;
   /** Skip reveal ceremony (e.g. thumbnail auto-scroll previews) */
   skipReveal?: boolean;
   /** Skip tap-to-begin gate (non-interactive thumbnails) */
   skipTapGate?: boolean;
   /** Skip Celeventic logo intro (studio/catalog previews) */
   skipIntro?: boolean;
+  /** Skip INVITE_OPEN analytics (catalog/studio previews) */
+  skipAnalytics?: boolean;
   contactEmail?: string | null;
   seatingEnabled?: boolean;
   menuUrl?: string | null;
@@ -59,11 +65,14 @@ export function PremiumInviteWrapper({
   musicEnabled,
   musicUrl,
   musicSelection,
+  musicAutoplay,
   fullScreen = true,
   embedded,
+  galleryInteractive,
   skipReveal = false,
   skipTapGate = false,
   skipIntro = false,
+  skipAnalytics = false,
   ...props
 }: PremiumInviteWrapperProps) {
   const enrichedDesign = useMemo(
@@ -96,7 +105,7 @@ export function PremiumInviteWrapper({
     [hasMusic, musicSelection, musicUrl]
   );
 
-  const wantsAutoplay = musicSelection?.autoPlay ?? true;
+  const wantsAutoplay = musicAutoplay ?? musicSelection?.autoPlay ?? true;
   const needsTapGate = Boolean(hasMusic && wantsAutoplay && !skipTapGate);
 
   function initialPhase(): ExperiencePhase {
@@ -111,7 +120,14 @@ export function PremiumInviteWrapper({
   const audioStarted = useRef(false);
 
   useEffect(() => {
-    if (tracked.current) return;
+    if (tracked.current || skipAnalytics) return;
+    if (
+      props.invitation.id.startsWith("preview-") ||
+      props.invitation.id === "studio-preview" ||
+      props.invitation.uniqueLink === "preview"
+    ) {
+      return;
+    }
     tracked.current = true;
     fetch("/api/invitation-os/track", {
       method: "POST",
@@ -122,7 +138,7 @@ export function PremiumInviteWrapper({
         guestId: props.guestId,
       }),
     }).catch(() => {});
-  }, [props.invitation.id, props.guestId]);
+  }, [props.invitation.id, props.invitation.uniqueLink, props.guestId, skipAnalytics]);
 
   useEffect(() => {
     return () => {
@@ -186,6 +202,7 @@ export function PremiumInviteWrapper({
       design={enrichedDesign}
       fullScreen={fullScreen || enrichedDesign.studio?.fullScreen}
       embedded={embedded}
+      galleryInteractive={galleryInteractive}
       seatLookupUrl={props.seatLookupUrl}
       seatQrDataUrl={props.seatQrDataUrl}
       experienceConfig={experience}

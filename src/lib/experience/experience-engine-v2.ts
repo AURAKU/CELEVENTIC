@@ -20,6 +20,8 @@ import type {
   SlideshowStyleId,
   EventExperienceConfig,
 } from "@/lib/experience/experience-types";
+import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
+import { getLayoutEnabledTabs } from "@/lib/invitation/layout-template-signatures";
 
 export type ExperienceCollectionId =
   | "luxury"
@@ -223,8 +225,8 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     collectionId: "passport",
     openingExperience: "passport",
     outroExperience: "see-you-soon",
-    defaultAudioCategory: "instrumentals",
-    defaultAudioTrackId: "travel-wanderlust",
+    defaultAudioCategory: "nature",
+    defaultAudioTrackId: "nature-ocean",
     buttonStyle: "passport-stamp",
     hubMode: "journey",
     countdownStyle: "flip",
@@ -313,8 +315,8 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     collectionId: "garden",
     openingExperience: "flower-bloom",
     outroExperience: "butterflies",
-    defaultAudioCategory: "piano",
-    defaultAudioTrackId: "piano-garden",
+    defaultAudioCategory: "wedding",
+    defaultAudioTrackId: "wedding-romantic",
     buttonStyle: "pill",
     hubMode: "scroll",
     countdownStyle: "card-3d",
@@ -344,7 +346,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     openingExperience: "gift-box",
     outroExperience: "golden-sparkles",
     defaultAudioCategory: "strings",
-    defaultAudioTrackId: "strings-crystal",
+    defaultAudioTrackId: "strings-garden",
     buttonStyle: "glass",
     hubMode: "scroll",
     countdownStyle: "card-3d",
@@ -420,7 +422,11 @@ export function getTemplateExperienceDNA(layout: InvitationLayoutSlug | string):
   return DNA[layout as InvitationLayoutSlug] ?? DNA["classic-gold"];
 }
 
-export function buildExperienceConfigFromDNA(dna: TemplateExperienceDNA): EventExperienceConfig {
+export function buildExperienceConfigFromDNA(
+  dna: TemplateExperienceDNA,
+  layout?: string
+): EventExperienceConfig {
+  const layoutTabs = layout ? getLayoutEnabledTabs(layout) : undefined;
   return {
     collectionId: dna.collectionId,
     openingExperience: dna.openingExperience,
@@ -436,13 +442,14 @@ export function buildExperienceConfigFromDNA(dna: TemplateExperienceDNA): EventE
     introEnabled: true,
     introDurationSec: dna.pacing === "fast" ? 1.5 : dna.pacing === "slow" ? 3 : 2,
     enableRevealSounds: true,
+    enabledTabs: layoutTabs ?? DEFAULT_HUB_TABS,
   };
 }
 
 /** Merge V2 DNA into a design config — DNA is authoritative for template identity fields. */
 export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): InvitationDesignConfig {
   const dna = getTemplateExperienceDNA(design.layout);
-  const dnaExperience = buildExperienceConfigFromDNA(dna);
+  const dnaExperience = buildExperienceConfigFromDNA(dna, design.layout);
   const visual = COLLECTION_VISUAL_DNA[dna.collectionId];
   const typographyPack = getTypographyPack(
     (design.experience?.typographyPackId as TypographyCategoryId | undefined) ??
@@ -465,17 +472,19 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
   };
 
   const userExp = design.experience ?? {};
+  const userPageBg = design.media?.some((m) => m.role === "background");
+  const preserveUserColors = userExp.experienceCustomized === true || userPageBg;
 
   return {
     ...design,
-    fonts: typographyPack
+    fonts: typographyPack && !userExp.experienceCustomized
       ? {
           heading: typographyPack.heading,
           script: typographyPack.script,
           body: typographyPack.body,
         }
       : design.fonts,
-    colors: backgroundPack
+    colors: backgroundPack && !preserveUserColors
       ? { ...design.colors, background: backgroundPack.preview }
       : design.colors,
     studio,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Palette, Sparkles, Type, MousePointer, Layout, Music, Layers, Wind } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,20 @@ import type { MusicSelection } from "@/lib/music/music-types";
 import { TYPOGRAPHY_PACKS, getTypographyPack, type TypographyCategoryId } from "@/lib/experience/typography-engine";
 import { BACKGROUND_PACKS, getBackgroundPack, type BackgroundTypeId } from "@/lib/experience/background-engine";
 import type { HeroLayoutId, ExperiencePacing } from "@/lib/experience/experience-types";
+import type { InvitationFeatureFlags } from "@/lib/invitation/admin-feature-flags";
+import { DEFAULT_INVITATION_FEATURE_FLAGS } from "@/lib/invitation/admin-feature-flags";
+import type { InvitationMediaLimits } from "@/lib/invitation/media-limits";
+import { DEFAULT_INVITATION_MEDIA_LIMITS } from "@/lib/invitation/media-limits";
+
+const ORNAMENT_OPTIONS = [
+  { id: "gold-frame", label: "Gold frame" },
+  { id: "vine", label: "Vine arch" },
+  { id: "lace", label: "Lace overlay" },
+  { id: "floral", label: "Floral border" },
+  { id: "hexagon", label: "Hexagon frame" },
+  { id: "none", label: "None" },
+] as const;
+
 const FONT_OPTIONS = ["Inter", "Playfair Display", "Cinzel", "Cormorant Garamond", "Great Vibes"];
 const ALL_HUB_TABS = Object.keys(HUB_TAB_LABELS) as HubTabId[];
 const OPENING_CATEGORIES = ["envelope", "curtain", "palace", "interactive", "instant"] as const;
@@ -106,6 +120,8 @@ interface InvitationStudioHubProps {
 
 export function InvitationStudioHub({ design, event, message, eventType, musicSelection, onMusicChange, galleryUrls = [], onGalleryChange, onChange, onSave, saving }: InvitationStudioHubProps) {
   const [view, setView] = useState<"mobile" | "desktop">("mobile");
+  const [featureFlags, setFeatureFlags] = useState<InvitationFeatureFlags>(DEFAULT_INVITATION_FEATURE_FLAGS);
+  const [mediaLimits, setMediaLimits] = useState<InvitationMediaLimits>(DEFAULT_INVITATION_MEDIA_LIMITS);
   const studio = design.studio ?? DEFAULT_STUDIO_CONFIG;
   const experience = design.experience ?? {};
 
@@ -142,8 +158,24 @@ export function InvitationStudioHub({ design, event, message, eventType, musicSe
     mapLegacyRevealMode(studio.revealMode ?? "envelope");
 
   function patchColors(key: keyof InvitationDesignConfig["colors"], value: string) {
-    onChange({ ...design, colors: { ...design.colors, [key]: value } });
+    onChange({
+      ...design,
+      colors: { ...design.colors, [key]: value },
+      experience: { ...experience, experienceCustomized: true },
+    });
   }
+
+  useEffect(() => {
+    fetch("/api/invitations/studio-settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          setFeatureFlags(d.data.flags);
+          setMediaLimits(d.data.limits);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const templatePresets = useMemo(() => getUniqueTemplatePresets(), []);
 
@@ -512,6 +544,30 @@ export function InvitationStudioHub({ design, event, message, eventType, musicSe
         </section>
 
         <section className="rounded-2xl border bg-white p-5 space-y-4">
+          <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-[#0B8A83]" /> Frame & ornament</h3>
+          <div className="space-y-1">
+            <Label>Decorative frame</Label>
+            <Select
+              value={design.ornament ?? "none"}
+              onValueChange={(v) =>
+                onChange({
+                  ...design,
+                  ornament: v as InvitationDesignConfig["ornament"],
+                  experience: { ...experience, experienceCustomized: true },
+                })
+              }
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ORNAMENT_OPTIONS.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border bg-white p-5 space-y-4">
           <h3 className="font-semibold flex items-center gap-2"><Type className="h-4 w-4 text-[#0B8A83]" /> Typography</h3>
           <div className="grid sm:grid-cols-3 gap-3">
             {(["heading", "script", "body"] as const).map((role) => (
@@ -655,6 +711,7 @@ export function InvitationStudioHub({ design, event, message, eventType, musicSe
           </label>
         </section>
 
+        {(featureFlags.audioLibrary || featureFlags.audioUpload) && (
         <section className="rounded-2xl border bg-white p-5 space-y-4">
           <h3 className="font-semibold flex items-center gap-2">
             <Music className="h-4 w-4 text-[#0B8A83]" /> Background music
@@ -670,13 +727,16 @@ export function InvitationStudioHub({ design, event, message, eventType, musicSe
             />
           )}
         </section>
+        )}
 
-        {onGalleryChange && (
+        {onGalleryChange && (featureFlags.slideshow || featureFlags.videoUpload) && (
           <TemplateStudioMediaPanel
             design={design}
             galleryUrls={galleryUrls}
             onDesignChange={onChange}
             onGalleryChange={onGalleryChange}
+            maxGalleryImages={mediaLimits.maxPhotos}
+            allowVideoBackground={mediaLimits.allowVideoBackground}
           />
         )}
 

@@ -13,28 +13,31 @@ import { FloralGardenTemplate } from "./templates/floral-garden";
 import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
 
 export function InvitationRenderer(props: InvitationRenderProps) {
-  if (isCinematicLayout(props.design.layout)) {
-    return <CinematicTemplate {...props} />;
-  }
-  switch (props.design.layout) {
-    case "passport-luxe":
-      return <PassportLuxeTemplate {...props} />;
-    case "glass-acrylic":
-      return <GlassAcrylicTemplate {...props} />;
-    case "floral-garden":
-      return <FloralGardenTemplate {...props} />;
-    case "arch-green":
-      return <ArchGreenTemplate {...props} />;
-    case "rustic-lace":
-      return <RusticLaceTemplate {...props} />;
-    case "boho-hexagon":
-      return <BohoHexagonTemplate {...props} />;
-    case "luxury-rings":
-      return <LuxuryRingsTemplate {...props} />;
-    case "custom-media":
-      return <CustomMediaTemplate {...props} />;
-    case "classic-gold":
-    default:
-      return <ClassicGoldTemplate {...props} />;
-  }
+  const content = isCinematicLayout(props.design.layout) ? (
+    <CinematicTemplate {...props} />
+  ) : (() => {
+    switch (props.design.layout) {
+      case "passport-luxe":
+        return <PassportLuxeTemplate {...props} />;
+      case "glass-acrylic":
+        return <GlassAcrylicTemplate {...props} />;
+      case "floral-garden":
+        return <FloralGardenTemplate {...props} />;
+      case "arch-green":
+        return <ArchGreenTemplate {...props} />;
+      case "rustic-lace":
+        return <RusticLaceTemplate {...props} />;
+      case "boho-hexagon":
+        return <BohoHexagonTemplate {...props} />;
+      case "luxury-rings":
+        return <LuxuryRingsTemplate {...props} />;
+      case "custom-media":
+        return <CustomMediaTemplate {...props} />;
+      case "classic-gold":
+      default:
+        return <ClassicGoldTemplate {...props} />;
+    }
+  })();
+
+  return <div className="invitation-copy-root">{content}</div>;
 }

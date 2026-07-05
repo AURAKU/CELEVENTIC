@@ -43,7 +43,7 @@ export function InvitationAudioControls({
       onClick={() => void handleToggleMute()}
       className={cn(
         "z-[80] flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white shadow-lg backdrop-blur-md transition-colors hover:bg-black/50 touch-manipulation",
-        embedded ? "absolute top-3 right-3" : "fixed top-4 right-4",
+        embedded ? "absolute top-3 right-3 safe-area-inset-top safe-area-inset-right" : "fixed safe-area-inset-top safe-area-inset-right",
         className
       )}
       aria-label={muted ? "Unmute music" : "Mute music"}

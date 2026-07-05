@@ -68,7 +68,7 @@ export function ExperienceShowcasePage() {
                 className="group rounded-2xl overflow-hidden border border-white/10 bg-white/5 hover:border-amber-500/40 hover:shadow-[0_0_40px_rgba(212,175,55,0.12)] transition-all"
               >
                 <div className="relative">
-                  <LiveTemplatePreview layoutSlug={item.slug} category={item.category} variant="card" lazy />
+                  <LiveTemplatePreview layoutSlug={item.slug} category={item.category} variant="card" />
                   <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 border border-amber-500/40 flex items-center justify-center text-xs font-bold text-amber-300">
                     {item.index}
                   </div>
