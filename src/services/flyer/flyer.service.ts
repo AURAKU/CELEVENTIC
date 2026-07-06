@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { paginatedResult } from "@/lib/pagination";
 import { templateEngineService } from "@/services/template-engine/template-engine.service";
 import { FLYER_TEMPLATE_DEFS, getFlyerTemplateDef } from "@/lib/flyer/flyer-template-schemas";
 import { createCorporateFlyerTemplate } from "@/lib/default-template-schemas";
@@ -33,11 +34,14 @@ export class FlyerService {
     return prisma.flyerDesign.findFirst({ where: { id, userId } });
   }
 
-  async getUserDesigns(userId: string, eventId?: string) {
-    return prisma.flyerDesign.findMany({
-      where: { userId, ...(eventId ? { eventId } : {}) },
-      orderBy: { createdAt: "desc" },
-    });
+  async getUserDesigns(userId: string, eventId?: string, page = 1, limit = 12) {
+    const where = { userId, ...(eventId ? { eventId } : {}) };
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.flyerDesign.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: limit }),
+      prisma.flyerDesign.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async update(id: string, userId: string, data: { name?: string; config?: Record<string, unknown>; status?: "DRAFT" | "PUBLISHED" | "ARCHIVED" }) {

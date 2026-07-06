@@ -232,8 +232,13 @@ export class InvitationAdminService {
     });
   }
 
-  async listCatalogTemplates() {
-    return prisma.invitationCatalogTemplate.findMany({ orderBy: { sortOrder: "asc" } });
+  async listCatalogTemplates(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.invitationCatalogTemplate.findMany({ orderBy: { sortOrder: "asc" }, skip, take: limit }),
+      prisma.invitationCatalogTemplate.count(),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async upsertCatalogTemplate(data: {
@@ -251,6 +256,7 @@ export class InvitationAdminService {
     backgroundVideoUrl?: string;
     motionReferenceUrl?: string;
     inspirationMediaUrl?: string;
+    defaultGalleryUrls?: string[];
     eventTypes?: string[];
     packageSlugs?: string[];
     priceGhs?: number;
@@ -273,6 +279,7 @@ export class InvitationAdminService {
       backgroundVideoUrl: data.backgroundVideoUrl,
       motionReferenceUrl: data.motionReferenceUrl,
       inspirationMediaUrl: data.inspirationMediaUrl,
+      defaultGalleryUrls: data.defaultGalleryUrls,
       eventTypes: data.eventTypes,
       packageSlugs: data.packageSlugs,
       priceGhs: data.priceGhs,
@@ -300,11 +307,19 @@ export class InvitationAdminService {
     });
   }
 
-  async listReviews(status?: string) {
-    return prisma.invitationReview.findMany({
-      where: status ? { status: status as never } : undefined,
-      orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
-    });
+  async listReviews(status?: string, page = 1, limit = 20) {
+    const where = status ? { status: status as never } : undefined;
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.invitationReview.findMany({
+        where,
+        orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
+        skip,
+        take: limit,
+      }),
+      prisma.invitationReview.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async updateReview(
@@ -322,23 +337,31 @@ export class InvitationAdminService {
     });
   }
 
-  async listRevisions(orderId?: string) {
-    return prisma.invitationRevision.findMany({
-      where: orderId ? { invitationOrderId: orderId } : undefined,
-      include: {
-        invitationOrder: {
-          select: {
-            id: true,
-            eventTitle: true,
-            packageSlug: true,
-            revisionsUsed: true,
-            package: { select: { revisions: true, name: true } },
-            user: { select: { name: true, email: true } },
+  async listRevisions(orderId?: string, page = 1, limit = 20) {
+    const where = orderId ? { invitationOrderId: orderId } : undefined;
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.invitationRevision.findMany({
+        where,
+        include: {
+          invitationOrder: {
+            select: {
+              id: true,
+              eventTitle: true,
+              packageSlug: true,
+              revisionsUsed: true,
+              package: { select: { revisions: true, name: true } },
+              user: { select: { name: true, email: true } },
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { requestedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.invitationRevision.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async createRevision(data: {

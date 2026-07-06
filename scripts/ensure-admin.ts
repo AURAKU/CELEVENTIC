@@ -2,40 +2,20 @@
  * Ensures demo admin/organizer accounts exist with known passwords on production.
  * Run: npm run db:ensure-admin
  */
-import { PrismaClient, UserRole, UserStatus } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { PrismaClient } from "@prisma/client";
+import { ensurePlatformAccounts } from "../src/lib/auth/ensure-platform-accounts";
 
 const prisma = new PrismaClient();
 
-const ACCOUNTS = [
-  { email: "admin@celeventic.com", password: "Admin@123", name: "Super Admin", role: UserRole.SUPER_ADMIN },
-  { email: "organizer@celeventic.com", password: "Organizer@123", name: "Demo Organizer", role: UserRole.ORGANIZER },
-  { email: "vendor@celeventic.com", password: "Vendor@123", name: "Demo Vendor", role: UserRole.VENDOR },
-] as const;
-
 async function main() {
-  for (const account of ACCOUNTS) {
-    const passwordHash = await bcrypt.hash(account.password, 12);
-    const user = await prisma.user.upsert({
-      where: { email: account.email },
-      update: {
-        passwordHash,
-        role: account.role,
-        status: UserStatus.ACTIVE,
-        isVerified: true,
-        emailVerified: new Date(),
-      },
-      create: {
-        email: account.email,
-        name: account.name,
-        passwordHash,
-        role: account.role,
-        status: UserStatus.ACTIVE,
-        isVerified: true,
-        emailVerified: new Date(),
-      },
-    });
-    console.log(`✓ ${user.email} (${user.role}) — password reset to default`);
+  const results = await ensurePlatformAccounts(prisma);
+  for (const result of results) {
+    const action = result.created
+      ? "created"
+      : result.passwordReset
+        ? "updated (password reset)"
+        : "updated (role/status only)";
+    console.log(`✓ ${result.email} (${result.role}) — ${action}`);
   }
 }
 

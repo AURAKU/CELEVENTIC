@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AdminToolbar } from "@/components/admin/admin-toolbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 interface TranslationRow {
@@ -23,19 +26,33 @@ const NAMESPACES = ["common", "header", "footer", "invitations", "flow", "forms"
 
 export function AdminTranslationsClient() {
   const { t } = useLocale();
+  const { page, setPage, resetPage, appendToParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [rows, setRows] = useState<TranslationRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [namespace, setNamespace] = useState("invitations");
   const [filter, setFilter] = useState("");
 
-  useEffect(() => {
-    load();
-  }, [namespace]);
-
-  async function load() {
-    const res = await fetch(`/api/admin/i18n/translations?namespace=${namespace}`);
+  const load = useCallback(async () => {
+    const params = appendToParams(new URLSearchParams({ namespace }));
+    if (filter) params.set("search", filter);
+    const res = await fetch(`/api/admin/i18n/translations?${params}`);
     const data = await res.json();
-    if (data.success) setRows(data.data);
-  }
+    if (data.success) {
+      setRows(data.data.items ?? []);
+      setTotal(data.data.total ?? 0);
+      setPages(data.data.pages ?? 1);
+    }
+  }, [namespace, filter, appendToParams]);
+
+  useEffect(() => {
+    resetPage();
+  }, [namespace, filter, resetPage]);
+
+  useEffect(() => {
+    const timer = setTimeout(load, 300);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   async function save(row: TranslationRow) {
     await fetch("/api/admin/i18n/translations", {
@@ -46,11 +63,7 @@ export function AdminTranslationsClient() {
     load();
   }
 
-  const filtered = rows.filter((r) => {
-    if (!filter) return true;
-    const q = filter.toLowerCase();
-    return r.key.toLowerCase().includes(q) || r.enValue.toLowerCase().includes(q) || (r.frValue ?? "").toLowerCase().includes(q);
-  });
+  const filtered = rows;
 
   return (
     <div className="space-y-6">
@@ -111,6 +124,7 @@ export function AdminTranslationsClient() {
           </Card>
         ))}
       </div>
+      <PaginationBar page={page} pages={pages} total={total} limit={ADMIN_TABLE_LIMIT} onPageChange={setPage} />
     </div>
   );
 }

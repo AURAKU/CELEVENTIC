@@ -5,7 +5,7 @@ import type { UserRole } from "@prisma/client";
 
 export default async function AdminUsersPage() {
   const session = await getSession();
-  const { users, total } = await adminService.getUsers(1, 50);
+  const { users } = await adminService.getUsers(1, 50);
   return (
     <AdminUsersClient
       actorRole={(session?.user?.role ?? "GUEST") as UserRole}

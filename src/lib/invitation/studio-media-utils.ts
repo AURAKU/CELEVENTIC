@@ -78,9 +78,12 @@ export function resolvePreviewCoverImage(
 
 export function resolvePreviewGalleryUrls(
   design: InvitationDesignConfig,
-  galleryUrls?: string[] | null
+  galleryUrls?: string[] | null,
+  catalog?: { defaultGalleryUrls?: string[] | null } | null
 ): string[] {
   if (galleryUrls?.length) return galleryUrls;
+  const catalogGallery = catalog?.defaultGalleryUrls;
+  if (Array.isArray(catalogGallery) && catalogGallery.length) return catalogGallery;
   const layout = design.layout ?? "classic-gold";
   const theme = resolveEventTheme(layout);
   const fromMedia = (design.media ?? [])

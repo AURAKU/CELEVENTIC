@@ -6,7 +6,12 @@ export function usePagination(initialLimit = 20) {
   const [page, setPage] = useState(1);
   const [limit] = useState(initialLimit);
 
-  const goToPage = useCallback((p: number) => setPage(Math.max(1, p)), []);
+  const goToPage = useCallback((p: number) => {
+    setPage(Math.max(1, p));
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
   const resetPage = useCallback(() => setPage(1), []);
 
   const appendToParams = useCallback(

@@ -1,9 +1,7 @@
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
-import {
-  buildMusicSelectionFromTrack,
-  resolveDefaultMusicForLayout,
-} from "@/lib/music/audio-experience-catalog";
+import { buildMusicSelectionForLayout, getLayoutMusicProfile } from "@/lib/invitation/layout-music-identity";
+import { resolveDefaultMusicForLayout } from "@/lib/music/audio-experience-catalog";
 import type { MusicSelection } from "@/lib/music/music-types";
 import { parseMusicSelection } from "@/lib/music/validate-selection";
 
@@ -65,6 +63,6 @@ export function resolveInvitationMusic(input: ResolveInvitationMusicInput): Reso
     return { musicSelection: dnaMusic, hasMusic: true };
   }
 
-  const fallback = buildMusicSelectionFromTrack("wedding-romantic");
-  return { musicSelection: fallback, hasMusic: Boolean(fallback) };
+  const fallback = buildMusicSelectionForLayout("classic-gold");
+  return { musicSelection: fallback, hasMusic: true };
 }

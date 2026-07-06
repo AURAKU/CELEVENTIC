@@ -1,15 +1,21 @@
 import { prisma } from "@/lib/prisma";
+import { paginatedResult } from "@/lib/pagination";
 
 export class VenueService {
-  async list(filters?: { capacity?: number; location?: string }) {
-    return prisma.venue.findMany({
-      where: {
-        isActive: true,
-        ...(filters?.capacity ? { capacity: { gte: filters.capacity } } : {}),
-        ...(filters?.location ? { location: { contains: filters.location } } : {}),
-      },
-      orderBy: { name: "asc" },
-    });
+  async list(filters?: { capacity?: number; location?: string; page?: number; limit?: number }) {
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 12;
+    const skip = (page - 1) * limit;
+    const where = {
+      isActive: true,
+      ...(filters?.capacity ? { capacity: { gte: filters.capacity } } : {}),
+      ...(filters?.location ? { location: { contains: filters.location } } : {}),
+    };
+    const [items, total] = await Promise.all([
+      prisma.venue.findMany({ where, orderBy: { name: "asc" }, skip, take: limit }),
+      prisma.venue.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async getById(id: string) {

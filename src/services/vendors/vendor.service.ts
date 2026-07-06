@@ -26,14 +26,14 @@ export class VendorService {
     });
   }
 
-  async list(filters?: { category?: string; location?: string; verified?: boolean }) {
-    const result = await vendorDirectoryService.search({
+  async list(filters?: { category?: string; location?: string; verified?: boolean; page?: number; limit?: number }) {
+    return vendorDirectoryService.search({
       category: filters?.category,
       city: filters?.location,
       verified: filters?.verified,
-      limit: 50,
+      page: filters?.page ?? 1,
+      limit: filters?.limit ?? 12,
     });
-    return result.vendors;
   }
 
   async getById(id: string) {

@@ -9,6 +9,7 @@ import type { TypographyCategoryId } from "@/lib/experience/typography-engine";
 import { getTypographyPack } from "@/lib/experience/typography-engine";
 import type { BackgroundTypeId } from "@/lib/experience/background-engine";
 import { getBackgroundPack } from "@/lib/experience/background-engine";
+import { getLayoutMusicProfile } from "@/lib/invitation/layout-music-identity";
 import type {
   CountdownStyleId,
   ExperienceHubMode,
@@ -419,7 +420,13 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
 };
 
 export function getTemplateExperienceDNA(layout: InvitationLayoutSlug | string): TemplateExperienceDNA {
-  return DNA[layout as InvitationLayoutSlug] ?? DNA["classic-gold"];
+  const base = DNA[layout as InvitationLayoutSlug] ?? DNA["classic-gold"];
+  const music = getLayoutMusicProfile(layout);
+  return {
+    ...base,
+    defaultAudioTrackId: music.trackId,
+    defaultAudioCategory: music.category,
+  };
 }
 
 export function buildExperienceConfigFromDNA(

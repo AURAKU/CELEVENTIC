@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { templateEngineService } from "@/services/template-engine/template-engine.service";
+import { parsePaginationFromUrl, PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 const createSchema = z.object({
   schema: z.object({
@@ -22,6 +23,7 @@ const createSchema = z.object({
 
 export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: PUBLIC_GRID_LIMIT });
   const templates = await templateEngineService.list({
     category: params.get("category") ?? undefined,
     style: params.get("style") ?? undefined,
@@ -29,6 +31,8 @@ export async function GET(req: Request) {
     isPremium: params.get("premium") === "true" ? true : params.get("free") === "true" ? false : undefined,
     isFeatured: params.get("featured") === "true",
     search: params.get("search") ?? undefined,
+    page,
+    limit,
   });
   return NextResponse.json({ success: true, data: templates });
 }

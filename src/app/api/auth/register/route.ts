@@ -18,8 +18,10 @@ export async function POST(req: Request) {
     const data = registerSchema.parse(body);
 
     if (data.email) {
-      const existing = await prisma.user.findUnique({ where: { email: data.email } });
+      const email = data.email.toLowerCase();
+      const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+      data.email = email;
     }
 
     if (data.phone) {

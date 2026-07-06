@@ -2631,6 +2631,7 @@ model InvitationCatalogTemplate {
   backgroundVideoUrl  String?
   motionReferenceUrl  String?
   inspirationMediaUrl String?
+  defaultGalleryUrls Json?
   priceGhs            Decimal?
   languages           Json?
   isPremium           Boolean  @default(false)

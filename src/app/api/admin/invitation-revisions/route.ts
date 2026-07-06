@@ -2,14 +2,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession, isAdminRole } from "@/lib/auth";
 import { invitationAdminService } from "@/services/admin/invitation-admin.service";
+import { parsePaginationFromUrl, ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session?.user?.id || !isAdminRole(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const orderId = new URL(req.url).searchParams.get("orderId") ?? undefined;
-  const revisions = await invitationAdminService.listRevisions(orderId);
+  const url = new URL(req.url);
+  const orderId = url.searchParams.get("orderId") ?? undefined;
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: ADMIN_TABLE_LIMIT });
+  const revisions = await invitationAdminService.listRevisions(orderId, page, limit);
   return NextResponse.json({ success: true, data: revisions });
 }
 

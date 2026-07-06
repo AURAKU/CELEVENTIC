@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { Maximize2 } from "lucide-react";
 import { UploadedMedia } from "@/components/media/uploaded-media";
+import { InvitationMediaLightbox } from "@/components/invitation/invitation-media-lightbox";
+import { useInvitationMediaInteractive } from "@/components/invitation/invitation-media-context";
 import type { InvitationMediaAsset } from "@/types/invitation-design";
 import {
   getMediaEntranceClass,
@@ -15,6 +19,8 @@ interface HeroMediaProps {
   layout?: string;
   className?: string;
   overlay?: boolean;
+  /** Tap hero to open fullscreen viewer — defaults to InvitationMediaProvider context */
+  interactive?: boolean;
 }
 
 export function HeroMedia({
@@ -24,7 +30,11 @@ export function HeroMedia({
   layout,
   className = "",
   overlay = true,
+  interactive: interactiveProp,
 }: HeroMediaProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const ctxInteractive = useInvitationMediaInteractive();
+  const interactive = interactiveProp ?? ctxInteractive;
   const hero = media?.find((m) => m.role === "hero" || m.role === "background");
   const heroUrl = hero?.url || coverImageUrl;
   const heroType = hero?.type ?? "image";
@@ -47,25 +57,23 @@ export function HeroMedia({
         ? "animate-parallax-slow"
         : "";
 
-  const mediaNode =
-    heroType === "video" ? (
-      <UploadedMedia
-        src={heroUrl}
-        video
-        className={cn("absolute inset-0 h-full w-full object-cover", animClass)}
-      />
-    ) : (
-      <UploadedMedia
-        src={heroUrl}
-        alt="Invitation"
-        fill
-        className={animClass}
-        sizes="(max-width: 768px) 100vw, 480px"
-      />
-    );
+  const isVideo = heroType === "video";
 
-  return (
-    <div className={cn("relative overflow-hidden", entranceClass, className)}>
+  const mediaNode = (
+    <UploadedMedia
+      src={heroUrl}
+      alt="Invitation"
+      className={cn("absolute inset-0 h-full w-full object-cover object-center", animClass)}
+      video={isVideo}
+      fill={!isVideo}
+      sizes={!isVideo ? "(max-width: 768px) 100vw, 480px" : undefined}
+      controls={false}
+      muted={isVideo}
+    />
+  );
+
+  const inner = (
+    <>
       {mediaNode}
       {overlay && (
         <div
@@ -73,6 +81,36 @@ export function HeroMedia({
           aria-hidden
         />
       )}
-    </div>
+      {interactive && (
+        <span className="absolute bottom-2 right-2 rounded-full bg-black/50 p-2 text-white opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+          <Maximize2 className="h-4 w-4" />
+        </span>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      <div className={cn("relative overflow-hidden inv-hero-media-frame", entranceClass, className)}>
+        {interactive ? (
+          <button
+            type="button"
+            className="relative block w-full h-full min-h-[inherit] group touch-manipulation"
+            onClick={() => setLightboxOpen(true)}
+            aria-label="Open hero media fullscreen"
+          >
+            {inner}
+          </button>
+        ) : (
+          <div className="relative w-full h-full min-h-[inherit]">{inner}</div>
+        )}
+      </div>
+      {lightboxOpen && (
+        <InvitationMediaLightbox
+          items={[{ id: "hero", url: heroUrl, type: isVideo ? "video" : "image" }]}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+    </>
   );
 }

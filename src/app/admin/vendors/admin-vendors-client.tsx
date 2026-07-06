@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AdminToolbar } from "@/components/admin/admin-toolbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 import { VerifiedBadge } from "@/components/vendor-os/verified-badge";
 
 interface VendorRow {
@@ -32,21 +35,28 @@ interface Stats {
 }
 
 export function AdminVendorsClient() {
+  const { page, setPage, resetPage, appendToParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [vendors, setVendors] = useState<VendorRow[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [search, setSearch] = useState("");
 
-  async function load() {
-    const params = search ? `?search=${encodeURIComponent(search)}` : "";
-    const res = await fetch(`/api/admin/vendor-os/vendors${params}`);
+  const load = useCallback(async () => {
+    const params = appendToParams(new URLSearchParams());
+    if (search) params.set("search", search);
+    const res = await fetch(`/api/admin/vendor-os/vendors?${params}`);
     const d = await res.json();
     if (d.success) {
-      setVendors(d.data.vendors);
+      setVendors(d.data.vendors.items ?? []);
+      setTotal(d.data.vendors.total ?? 0);
+      setPages(d.data.vendors.pages ?? 1);
       setStats(d.data.stats);
     }
-  }
+  }, [search, appendToParams]);
 
-  useEffect(() => { load(); }, [search]);
+  useEffect(() => { resetPage(); }, [search, resetPage]);
+  useEffect(() => { load(); }, [load]);
 
   async function action(vendorId: string, act: string) {
     await fetch("/api/admin/vendor-os/vendors", {
@@ -59,7 +69,7 @@ export function AdminVendorsClient() {
 
   return (
     <div className="space-y-6">
-      <AdminToolbar title="Vendor Command Center" subtitle="Approve, verify, feature, and moderate VendorOS profiles" onRefresh={load} />
+      <AdminToolbar title="Vendor Command Center" subtitle="Approve, verify, feature, and moderate VendorOS profiles" count={total} onRefresh={load} />
 
       {stats && (
         <div className="grid sm:grid-cols-5 gap-3">
@@ -101,6 +111,7 @@ export function AdminVendorsClient() {
           </Card>
         ))}
       </div>
+      <PaginationBar page={page} pages={pages} total={total} limit={ADMIN_TABLE_LIMIT} onPageChange={setPage} />
     </div>
   );
 }

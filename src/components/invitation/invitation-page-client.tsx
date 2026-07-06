@@ -50,6 +50,7 @@ export function InvitationPageClient({
       guestId={guestId}
       guestName={guestName}
       qrDataUrl={qrDataUrl}
+      interactiveMedia
     />
   );
 }

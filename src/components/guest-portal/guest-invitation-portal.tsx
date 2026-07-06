@@ -266,6 +266,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           guestId={props.guestId}
           guestName={props.guestName}
           qrDataUrl={props.qrDataUrl}
+          interactiveMedia
         />
 
         {!useBlocks && primaryActions.length > 0 && (

@@ -38,3 +38,32 @@ export const DEFAULT_SLIDESHOW_SETTINGS: SlideshowSettings = {
   showCaptions: true,
   autoplay: true,
 };
+
+/** Per-style frame chrome so each template gallery feels visually distinct. */
+export function getGalleryFrameClass(style: SlideshowStyleId): string {
+  const map: Record<SlideshowStyleId, string> = {
+    "classic-slideshow": "inv-gallery-frame-classic",
+    "fade-carousel": "inv-gallery-frame-carousel",
+    "swipe-story": "inv-gallery-frame-story",
+    "polaroid-stack": "inv-gallery-frame-polaroid",
+    "luxury-frame": "inv-gallery-frame-luxury",
+    "floating-memories": "inv-gallery-frame-floating",
+    "fullscreen-video": "inv-gallery-frame-cinema",
+    "magazine-collage": "inv-gallery-frame-magazine",
+    "split-media": "inv-gallery-frame-split",
+    "timeline-gallery": "inv-gallery-frame-timeline",
+  };
+  return map[style] ?? "inv-gallery-frame-carousel";
+}
+
+export function getGalleryTapHint(style: SlideshowStyleId): string {
+  const map: Partial<Record<SlideshowStyleId, string>> = {
+    "swipe-story": "Swipe stories · tap to open full",
+    "polaroid-stack": "Tap a polaroid · swipe to browse",
+    "magazine-collage": "Tap any tile for fullscreen",
+    "floating-memories": "Tap a memory · pinch-free fullscreen",
+    "luxury-frame": "Tap portrait for full view",
+    "fullscreen-video": "Tap video for immersive play",
+  };
+  return map[style] ?? "Tap to open · swipe to browse";
+}

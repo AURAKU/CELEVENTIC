@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { paginatedResult } from "@/lib/pagination";
 import type { Prisma, TemplateProductType, TemplateApprovalStatus } from "@prisma/client";
 import type { TemplateSchema } from "@/types/template-engine";
 
@@ -12,6 +13,8 @@ export interface ListTemplatesFilter {
   isFeatured?: boolean;
   search?: string;
   userId?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface CreateTemplateInput {
@@ -25,25 +28,35 @@ export interface CreateTemplateInput {
 
 export class TemplateEngineService {
   async list(filters: ListTemplatesFilter = {}) {
-    return prisma.designTemplate.findMany({
-      where: {
-        isActive: true,
-        approvalStatus: "APPROVED",
-        ...(filters.category ? { category: filters.category } : {}),
-        ...(filters.style ? { style: filters.style } : {}),
-        ...(filters.productType ? { productType: filters.productType } : {}),
-        ...(filters.eventType ? { eventType: filters.eventType } : {}),
-        ...(filters.isPremium !== undefined ? { isPremium: filters.isPremium } : {}),
-        ...(filters.isFeatured ? { isFeatured: true } : {}),
-        ...(filters.search ? { name: { contains: filters.search } } : {}),
-      },
-      orderBy: [{ isFeatured: "desc" }, { popularity: "desc" }, { createdAt: "desc" }],
-      include: {
-        createdBy: { select: { id: true, name: true } },
-        designer: { select: { id: true, name: true } },
-        _count: { select: { favorites: true, purchases: true } },
-      },
-    });
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 12;
+    const skip = (page - 1) * limit;
+    const where = {
+      isActive: true,
+      approvalStatus: "APPROVED" as const,
+      ...(filters.category ? { category: filters.category } : {}),
+      ...(filters.style ? { style: filters.style } : {}),
+      ...(filters.productType ? { productType: filters.productType } : {}),
+      ...(filters.eventType ? { eventType: filters.eventType } : {}),
+      ...(filters.isPremium !== undefined ? { isPremium: filters.isPremium } : {}),
+      ...(filters.isFeatured ? { isFeatured: true } : {}),
+      ...(filters.search ? { name: { contains: filters.search } } : {}),
+    };
+    const [items, total] = await Promise.all([
+      prisma.designTemplate.findMany({
+        where,
+        orderBy: [{ isFeatured: "desc" }, { popularity: "desc" }, { createdAt: "desc" }],
+        skip,
+        take: limit,
+        include: {
+          createdBy: { select: { id: true, name: true } },
+          designer: { select: { id: true, name: true } },
+          _count: { select: { favorites: true, purchases: true } },
+        },
+      }),
+      prisma.designTemplate.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async getById(id: string) {

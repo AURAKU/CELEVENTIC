@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { invitationService } from "@/services/invitations/invitation.service";
+import { parsePaginationFromUrl, DEFAULT_LIMIT } from "@/lib/pagination";
 import { verifyEventAccess } from "@/lib/event-access";
 
 const designConfigSchema = z.object({
@@ -46,7 +47,8 @@ export async function GET(req: Request) {
 
   try {
     await verifyEventAccess(eventId, session.user.id, session.user.role);
-    const invitations = await invitationService.getEventInvitations(eventId);
+    const { page, limit } = parsePaginationFromUrl(req.url, { limit: DEFAULT_LIMIT });
+    const invitations = await invitationService.getEventInvitations(eventId, page, limit);
     return NextResponse.json({ success: true, data: invitations });
   } catch (error) {
     return NextResponse.json(

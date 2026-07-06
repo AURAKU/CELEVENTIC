@@ -29,6 +29,9 @@ import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { TICKET_TYPES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 interface TicketItem {
   id: string;
@@ -78,8 +81,11 @@ interface TicketPromo {
 
 export function TicketingStudioClient() {
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
+  const { page: ordersPage, setPage: setOrdersPage, appendToParams: ordersPageParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [orders, setOrders] = useState<TicketOrder[]>([]);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersPages, setOrdersPages] = useState(1);
   const [stats, setStats] = useState<TicketStats | null>(null);
   const [promos, setPromos] = useState<TicketPromo[]>([]);
   const [error, setError] = useState("");
@@ -115,9 +121,10 @@ export function TicketingStudioClient() {
     setLoading(true);
     setError("");
     try {
+      const orderParams = ordersPageParams(new URLSearchParams({ eventId }));
       const [tRes, oRes, sRes, pRes] = await Promise.all([
         fetch(`/api/tickets?eventId=${eventId}`),
-        fetch(`/api/tickets/orders?eventId=${eventId}`),
+        fetch(`/api/tickets/orders?${orderParams}`),
         fetch(`/api/tickets/stats?eventId=${eventId}`),
         fetch(`/api/tickets/promos?eventId=${eventId}`),
       ]);
@@ -128,7 +135,11 @@ export function TicketingStudioClient() {
         pRes.json(),
       ]);
       if (tRes.ok) setTickets(tData.data);
-      if (oRes.ok) setOrders(oData.data);
+      if (oRes.ok) {
+        setOrders(oData.data.items ?? []);
+        setOrdersTotal(oData.data.total ?? 0);
+        setOrdersPages(oData.data.pages ?? 1);
+      }
       if (sRes.ok) setStats(sData.data);
       if (pRes.ok) setPromos(pData.data);
     } catch {
@@ -136,7 +147,7 @@ export function TicketingStudioClient() {
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, ordersPageParams]);
 
   useEffect(() => {
     if (eventId) void loadAll();
@@ -506,6 +517,7 @@ export function TicketingStudioClient() {
                       </tbody>
                     </table>
                   )}
+                  <PaginationBar page={ordersPage} pages={ordersPages} total={ordersTotal} limit={ADMIN_TABLE_LIMIT} onPageChange={setOrdersPage} className="px-4 pb-4" />
                 </CardContent>
               </Card>
             </TabsContent>

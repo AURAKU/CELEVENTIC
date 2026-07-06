@@ -76,7 +76,7 @@ export class AdminService {
     return prisma.user.create({
       data: {
         name: data.name,
-        email: data.email,
+        email: data.email.toLowerCase(),
         phone: data.phone,
         passwordHash,
         role: data.role,
@@ -91,9 +91,24 @@ export class AdminService {
     userId: string,
     data: Partial<{ name: string; email: string; phone: string; role: UserRole; status: UserStatus }>
   ) {
+    if (data.role && data.role !== "SUPER_ADMIN") {
+      const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (target?.role === "SUPER_ADMIN") {
+        const superAdmins = await prisma.user.count({ where: { role: "SUPER_ADMIN" } });
+        if (superAdmins <= 1) {
+          throw new Error("Cannot remove the last Super Admin");
+        }
+      }
+    }
+
+    const payload = {
+      ...data,
+      ...(data.email ? { email: data.email.toLowerCase() } : {}),
+    };
+
     return prisma.user.update({
       where: { id: userId },
-      data,
+      data: payload,
       select: { id: true, name: true, email: true, role: true, status: true },
     });
   }

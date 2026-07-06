@@ -24,6 +24,9 @@ import type { InvitationDesignConfig, InvitationMediaAsset } from "@/types/invit
 import type { UploadAnalysisResult } from "@/services/invitations/invitation-inspiration.service";
 import { InspirationInsights } from "@/components/invitation/inspiration-insights";
 import { getClientAppUrl } from "@/lib/app-url";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { DEFAULT_LIMIT } from "@/lib/pagination";
 
 interface InvitationResult {
   id: string;
@@ -95,6 +98,7 @@ export default function InvitationsPage() {
 
 function InvitationStudioContent() {
   const { events, eventId, setEventId, selectedEvent, loading: eventsLoading } = useEventContext();
+  const { page, setPage, appendToParams } = usePagination(DEFAULT_LIMIT);
   const [form, setForm] = useState({ name: "", message: "", introText: "" });
   const [layoutSlug, setLayoutSlug] = useState("classic-gold");
   const [buildMode, setBuildMode] = useState<InvitationDesignConfig["buildMode"]>("inspired");
@@ -102,6 +106,8 @@ function InvitationStudioContent() {
   const [aiAnalysis, setAiAnalysis] = useState<UploadAnalysisResult | null>(null);
   const [result, setResult] = useState<InvitationResult | null>(null);
   const [invitations, setInvitations] = useState<InvitationListItem[]>([]);
+  const [invitationsTotal, setInvitationsTotal] = useState(0);
+  const [invitationsPages, setInvitationsPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -109,10 +115,17 @@ function InvitationStudioContent() {
 
   useEffect(() => {
     if (!eventId) return;
-    fetch(`/api/invitations?eventId=${eventId}`)
+    const params = appendToParams(new URLSearchParams({ eventId }));
+    fetch(`/api/invitations?${params}`)
       .then((r) => r.json())
-      .then((d) => { if (d.success) setInvitations(d.data); });
-  }, [eventId, result]);
+      .then((d) => {
+        if (d.success) {
+          setInvitations(d.data.items ?? []);
+          setInvitationsTotal(d.data.total ?? 0);
+          setInvitationsPages(d.data.pages ?? 1);
+        }
+      });
+  }, [eventId, result, appendToParams]);
 
   useEffect(() => {
     if (!media.length || buildMode === "template") return;
@@ -388,6 +401,7 @@ function InvitationStudioContent() {
                 </div>
               );
             })}
+            <PaginationBar page={page} pages={invitationsPages} total={invitationsTotal} limit={DEFAULT_LIMIT} onPageChange={setPage} />
           </CardContent>
         </Card>
       )}

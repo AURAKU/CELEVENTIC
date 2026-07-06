@@ -1,17 +1,23 @@
 import type { MusicLibraryTrack, MusicSelection } from "@/lib/music/music-types";
+import {
+  BUNDLED_MUSIC_FILES,
+  buildMusicSelectionForLayout,
+  bundledMusicUrl,
+  getLayoutMusicCatalogTracks,
+  getLayoutMusicProfile,
+  getLayoutMusicProfileByTrackId,
+  getLayoutSlugByTrackId,
+  type BundledMusicFile,
+} from "@/lib/invitation/layout-music-identity";
 
 /** Tracks with bundled MP3 files in public/music/ */
-export const BUNDLED_MUSIC_IDS = new Set([
-  "luxury-piano-romance",
-  "piano-garden",
-  "piano-elegance",
-  "violin-elegance",
-  "strings-crystal",
-  "strings-garden",
+export const BUNDLED_MUSIC_IDS = new Set<string>([
+  ...BUNDLED_MUSIC_FILES,
+  ...getLayoutMusicCatalogTracks().map((t) => t.id),
 ]);
 
-/** Map requested track IDs → nearest bundled file by theme mood */
-const TRACK_FILE_FALLBACK: Record<string, string> = {
+/** Legacy semantic ids → bundled file (for backwards-compatible order selections) */
+const LEGACY_TRACK_FILE: Record<string, BundledMusicFile> = {
   "memorial-piano": "piano-elegance",
   "memorial-violin": "violin-elegance",
   "wedding-romantic": "luxury-piano-romance",
@@ -21,105 +27,91 @@ const TRACK_FILE_FALLBACK: Record<string, string> = {
   "violin-elegance": "violin-elegance",
   "strings-garden": "strings-garden",
   "strings-crystal": "strings-crystal",
-  "orchestra-royal": "strings-crystal",
-  "jazz-soft-lounge": "piano-elegance",
+  "orchestra-royal": "violin-elegance",
+  "jazz-soft-lounge": "soundhelix-ambient-1",
   "jazz-midnight": "piano-elegance",
   "acoustic-warm": "piano-garden",
-  "party-edm-energy": "strings-garden",
+  "party-edm-energy": "soundhelix-ambient-1",
   "happy-celebration": "strings-garden",
   "african-drums-celebration": "strings-garden",
-  "corporate-summit": "piano-elegance",
-  "ambient-cinematic": "piano-elegance",
+  "corporate-summit": "soundhelix-ambient-1",
+  "ambient-cinematic": "soundhelix-ambient-1",
   "travel-wanderlust": "strings-crystal",
   "islamic-soft-instrumental": "piano-elegance",
   "nature-forest": "piano-elegance",
-  "nature-ocean": "piano-elegance",
+  "nature-ocean": "strings-crystal",
 };
 
-const CATEGORY_FILE_FALLBACK: Record<string, string> = {
+const CATEGORY_FILE_FALLBACK: Record<string, BundledMusicFile> = {
   funeral: "piano-elegance",
   wedding: "luxury-piano-romance",
   piano: "piano-garden",
   violin: "violin-elegance",
   strings: "strings-garden",
-  jazz: "piano-elegance",
+  jazz: "soundhelix-ambient-1",
   guitar: "piano-garden",
   celebration: "strings-garden",
   african: "strings-garden",
-  corporate: "piano-elegance",
+  corporate: "soundhelix-ambient-1",
   muslim: "piano-elegance",
-  instrumentals: "piano-elegance",
-  nature: "piano-elegance",
+  instrumentals: "soundhelix-ambient-1",
+  nature: "strings-crystal",
 };
 
 /** Resolve to a bundled file that exists on disk */
 export function resolveBundledTrackId(trackId: string, category?: string): string {
-  if (BUNDLED_MUSIC_IDS.has(trackId)) return trackId;
-  const mapped = TRACK_FILE_FALLBACK[trackId];
-  if (mapped && BUNDLED_MUSIC_IDS.has(mapped)) return mapped;
+  const layoutProfile = getLayoutMusicProfileByTrackId(trackId);
+  if (layoutProfile) return layoutProfile.bundledFile;
+  if (BUNDLED_MUSIC_FILES.includes(trackId as BundledMusicFile)) return trackId;
+  const legacy = LEGACY_TRACK_FILE[trackId];
+  if (legacy) return legacy;
   const catFallback = category ? CATEGORY_FILE_FALLBACK[category] : undefined;
-  if (catFallback && BUNDLED_MUSIC_IDS.has(catFallback)) return catFallback;
-  return "piano-elegance";
+  if (catFallback) return catFallback;
+  return "luxury-piano-romance";
 }
 
 /** Public URL for a bundled catalog track file. */
 export function catalogMusicUrl(trackId: string, category?: string): string {
   const resolved = resolveBundledTrackId(trackId, category);
-  return `/music/${resolved}.mp3`;
+  return bundledMusicUrl(resolved as BundledMusicFile);
 }
 
-/** Premium audio catalog — each template DNA track maps to a local file in public/music. */
+/** Layout-first catalog + legacy aliases for music picker UI */
 export const AUDIO_EXPERIENCE_CATALOG: MusicLibraryTrack[] = [
-  { id: "luxury-piano-romance", title: "Romantic Whispers", category: "piano", url: catalogMusicUrl("luxury-piano-romance"), durationSec: 120 },
-  { id: "piano-garden", title: "Garden Serenade", category: "piano", url: catalogMusicUrl("piano-garden"), durationSec: 120 },
-  { id: "piano-elegance", title: "Evening Elegance", category: "piano", url: catalogMusicUrl("piano-elegance"), durationSec: 120 },
-
-  { id: "violin-elegance", title: "Solo Violin Elegance", category: "violin", url: catalogMusicUrl("violin-elegance"), durationSec: 120 },
-  { id: "strings-garden", title: "String Quartet Garden", category: "strings", url: catalogMusicUrl("strings-garden"), durationSec: 120 },
-  { id: "strings-crystal", title: "Crystal Strings", category: "strings", url: catalogMusicUrl("strings-crystal"), durationSec: 120 },
-  { id: "orchestra-royal", title: "Royal Orchestra", category: "strings", url: catalogMusicUrl("orchestra-royal"), durationSec: 120 },
-
-  { id: "jazz-soft-lounge", title: "Soft Jazz Lounge", category: "jazz", url: catalogMusicUrl("jazz-soft-lounge"), durationSec: 120 },
-  { id: "jazz-midnight", title: "Midnight Jazz", category: "jazz", url: catalogMusicUrl("jazz-midnight"), durationSec: 120 },
-  { id: "acoustic-warm", title: "Warm Acoustic Guitar", category: "guitar", url: catalogMusicUrl("acoustic-warm"), durationSec: 120 },
-
-  { id: "party-edm-energy", title: "EDM Party Energy", category: "celebration", url: catalogMusicUrl("party-edm-energy"), durationSec: 120 },
-  { id: "happy-celebration", title: "Happy Celebration", category: "celebration", url: catalogMusicUrl("happy-celebration"), durationSec: 120 },
-
-  { id: "african-drums-celebration", title: "African Drums", category: "african", url: catalogMusicUrl("african-drums-celebration"), durationSec: 120 },
-
-  { id: "corporate-summit", title: "Summit Presentation", category: "corporate", url: catalogMusicUrl("corporate-summit"), durationSec: 120 },
-  { id: "ambient-cinematic", title: "Cinematic Ambient", category: "instrumentals", url: catalogMusicUrl("ambient-cinematic"), durationSec: 120 },
-  { id: "travel-wanderlust", title: "Wanderlust Journey", category: "instrumentals", url: catalogMusicUrl("travel-wanderlust"), durationSec: 120 },
-
-  { id: "memorial-piano", title: "Memorial Piano", category: "funeral", url: catalogMusicUrl("memorial-piano"), durationSec: 120 },
-  { id: "memorial-violin", title: "Memorial Violin", category: "funeral", url: catalogMusicUrl("memorial-violin"), durationSec: 120 },
-
-  { id: "islamic-soft-instrumental", title: "Soft Instrumental", category: "muslim", url: catalogMusicUrl("islamic-soft-instrumental"), durationSec: 120 },
-
-  { id: "nature-forest", title: "Forest Ambience", category: "nature", url: catalogMusicUrl("nature-forest"), durationSec: 120 },
-  { id: "nature-ocean", title: "Ocean Waves", category: "nature", url: catalogMusicUrl("nature-ocean"), durationSec: 120 },
-
-  { id: "wedding-romantic", title: "Romantic Wedding", category: "wedding", url: catalogMusicUrl("wedding-romantic"), durationSec: 120 },
+  ...getLayoutMusicCatalogTracks(),
+  { id: "luxury-piano-romance", title: "Romantic Whispers (library)", category: "piano", url: catalogMusicUrl("luxury-piano-romance"), durationSec: 120 },
+  { id: "piano-garden", title: "Garden Serenade (library)", category: "piano", url: catalogMusicUrl("piano-garden"), durationSec: 120 },
+  { id: "piano-elegance", title: "Evening Elegance (library)", category: "piano", url: catalogMusicUrl("piano-elegance"), durationSec: 120 },
+  { id: "violin-elegance", title: "Solo Violin (library)", category: "violin", url: catalogMusicUrl("violin-elegance"), durationSec: 120 },
+  { id: "strings-garden", title: "String Quartet Garden (library)", category: "strings", url: catalogMusicUrl("strings-garden"), durationSec: 120 },
+  { id: "strings-crystal", title: "Crystal Strings (library)", category: "strings", url: catalogMusicUrl("strings-crystal"), durationSec: 120 },
+  { id: "soundhelix-ambient-1", title: "Ambient Journey (library)", category: "instrumentals", url: catalogMusicUrl("soundhelix-ambient-1"), durationSec: 260 },
 ];
 
 export const AUDIO_CATEGORY_GROUPS = [
-  { id: "wedding", label: "Wedding", moods: ["Romantic", "Orchestra", "Piano"] },
+  { id: "wedding", label: "Wedding & Love", moods: ["Romantic", "Piano", "Strings"] },
   { id: "piano", label: "Luxury Piano", moods: ["Romantic", "Elegant", "Garden"] },
-  { id: "violin", label: "Solo Violin", moods: ["Elegance", "Memorial"] },
-  { id: "strings", label: "Strings & Orchestra", moods: ["Quartet", "Royal", "Crystal"] },
-  { id: "jazz", label: "Jazz", moods: ["Lounge", "Midnight"] },
-  { id: "guitar", label: "Acoustic Guitar", moods: ["Warm", "Folk"] },
-  { id: "celebration", label: "Celebration", moods: ["Party", "EDM", "Festival"] },
-  { id: "african", label: "African Drums", moods: ["Heritage", "Festival"] },
-  { id: "corporate", label: "Corporate", moods: ["Summit", "Presentation"] },
-  { id: "funeral", label: "Funeral / Memorial", moods: ["Piano", "Violin", "Choir"] },
-  { id: "muslim", label: "Islamic", moods: ["Soft Instrumental"] },
-  { id: "instrumentals", label: "Instrumentals", moods: ["Ambient", "Cinematic", "Travel"] },
-  { id: "nature", label: "Nature", moods: ["Forest", "Ocean", "Rain"] },
+  { id: "violin", label: "Solo Violin", moods: ["Elegance", "Palace"] },
+  { id: "strings", label: "Strings & Orchestra", moods: ["Quartet", "Crystal", "Garden"] },
+  { id: "celebration", label: "Celebration & Party", moods: ["Neon", "Boho", "Festival"] },
+  { id: "african", label: "African Heritage", moods: ["Kente", "Drums"] },
+  { id: "corporate", label: "Corporate", moods: ["Summit", "Professional"] },
+  { id: "funeral", label: "Funeral / Memorial", moods: ["Solemn", "Candlelight"] },
+  { id: "muslim", label: "Islamic / Nikkah", moods: ["Soft Instrumental"] },
+  { id: "instrumentals", label: "Cinematic & Custom", moods: ["Ambient", "Story"] },
 ] as const;
 
 export function getAudioTrackById(id: string): MusicLibraryTrack | undefined {
+  const layoutProfile = getLayoutMusicProfileByTrackId(id);
+  if (layoutProfile) {
+    return {
+      id: layoutProfile.trackId,
+      title: layoutProfile.title,
+      category: layoutProfile.category,
+      url: bundledMusicUrl(layoutProfile.bundledFile),
+      durationSec: layoutProfile.endSec - layoutProfile.startSec + 30,
+    };
+  }
   return AUDIO_EXPERIENCE_CATALOG.find((t) => t.id === id);
 }
 
@@ -127,15 +119,22 @@ export function getAudioTracksByCategory(category: string): MusicLibraryTrack[] 
   return AUDIO_EXPERIENCE_CATALOG.filter((t) => t.category === category);
 }
 
-/** All catalog tracks for library UI (static + DB merge). */
 export function getCatalogLibraryTracks(): MusicLibraryTrack[] {
-  return AUDIO_EXPERIENCE_CATALOG.map((t) => ({ ...t, artist: "Celeventic Library" }));
+  return AUDIO_EXPERIENCE_CATALOG.map((t) => ({
+    ...t,
+    artist: t.artist ?? "Celeventic Library",
+  }));
 }
 
 export function buildMusicSelectionFromTrack(
   trackId: string,
   options?: Partial<MusicSelection>
 ): MusicSelection | null {
+  const layoutSlug = getLayoutSlugByTrackId(trackId);
+  if (layoutSlug) {
+    return buildMusicSelectionForLayout(layoutSlug, options);
+  }
+
   const track = getAudioTrackById(trackId);
   if (!track) return null;
   const duration = track.durationSec ?? 120;
@@ -161,20 +160,35 @@ export function resolveDefaultMusicForLayout(
   trackId?: string,
   category?: string
 ): MusicSelection | null {
-  const byId = trackId ? buildMusicSelectionFromTrack(trackId) : null;
-  if (byId) return byId;
-  if (category) {
+  const layoutProfile = getLayoutMusicProfile(layout);
+
+  if (trackId && trackId !== layoutProfile.trackId) {
+    const userTrack = buildMusicSelectionFromTrack(trackId);
+    if (userTrack) return userTrack;
+  }
+
+  if (trackId) {
+    const byLayoutTrack = buildMusicSelectionFromTrack(trackId);
+    if (byLayoutTrack) return byLayoutTrack;
+  }
+
+  const layoutMusic = buildMusicSelectionForLayout(layout);
+  if (layoutMusic) return layoutMusic;
+
+  if (category && category !== layoutProfile.category) {
     const catTrack = getAudioTracksByCategory(category)[0];
     if (catTrack) return buildMusicSelectionFromTrack(catTrack.id);
   }
+
   if (layout.includes("memorial") || category === "funeral") {
-    return buildMusicSelectionFromTrack("memorial-piano");
+    return buildMusicSelectionForLayout("memorial-candle-tribute");
   }
-  if (layout.includes("corporate") || category === "corporate" || category === "Conference") {
-    return buildMusicSelectionFromTrack("corporate-summit");
+  if (layout.includes("corporate") || category === "corporate") {
+    return buildMusicSelectionForLayout("corporate-prestige-summit");
   }
-  if (layout.includes("neon") || layout.includes("party") || category === "Birthday") {
-    return buildMusicSelectionFromTrack("happy-celebration");
+  if (layout.includes("neon") || category === "celebration") {
+    return buildMusicSelectionForLayout("neon-celebration-party");
   }
-  return buildMusicSelectionFromTrack("luxury-piano-romance");
+
+  return buildMusicSelectionForLayout("classic-gold");
 }

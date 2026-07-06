@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { vendorService } from "@/services/vendors/vendor.service";
+import { parsePaginationFromUrl, PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 import { verifyEventAccess } from "@/lib/event-access";
 
 const createSchema = z.object({
@@ -26,12 +27,15 @@ const reviewSchema = z.object({
 
 export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
-  const vendors = await vendorService.list({
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: PUBLIC_GRID_LIMIT });
+  const result = await vendorService.list({
     category: params.get("category") ?? undefined,
     location: params.get("location") ?? undefined,
     verified: params.get("verified") === "true",
+    page,
+    limit,
   });
-  return NextResponse.json({ success: true, data: vendors });
+  return NextResponse.json({ success: true, data: result });
 }
 
 export async function POST(req: Request) {

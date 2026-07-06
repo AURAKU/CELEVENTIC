@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
+import { paginatedResult } from "@/lib/pagination";
 import type { Prisma } from "@prisma/client";
 
 export class VendorAdminService {
@@ -8,7 +9,12 @@ export class VendorAdminService {
     status?: string;
     verification?: string;
     featured?: boolean;
+    page?: number;
+    limit?: number;
   }) {
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 20;
+    const skip = (page - 1) * limit;
     const where: Prisma.VendorWhereInput = {};
     if (filters?.search) {
       where.OR = [
@@ -21,16 +27,21 @@ export class VendorAdminService {
     if (filters?.verification) where.verificationStatus = filters.verification as never;
     if (filters?.featured !== undefined) where.isFeatured = filters.featured;
 
-    return prisma.vendor.findMany({
-      where,
-      include: {
-        user: { select: { name: true, email: true } },
-        plan: true,
-        _count: { select: { leads: true, reviews: true, media: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+    const [items, total] = await Promise.all([
+      prisma.vendor.findMany({
+        where,
+        include: {
+          user: { select: { name: true, email: true } },
+          plan: true,
+          _count: { select: { leads: true, reviews: true, media: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.vendor.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async moderateVendor(

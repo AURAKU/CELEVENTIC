@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession, isAdminRole } from "@/lib/auth";
 import { invitationAdminService } from "@/services/admin/invitation-admin.service";
+import { parsePaginationFromUrl, ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getSession();
   if (!session?.user?.id || !isAdminRole(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const templates = await invitationAdminService.listCatalogTemplates();
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: ADMIN_TABLE_LIMIT });
+  const templates = await invitationAdminService.listCatalogTemplates(page, limit);
   return NextResponse.json({ success: true, data: templates });
 }
 
@@ -27,6 +29,7 @@ const upsertSchema = z.object({
   backgroundVideoUrl: z.string().optional(),
   motionReferenceUrl: z.string().optional(),
   inspirationMediaUrl: z.string().optional(),
+  defaultGalleryUrls: z.array(z.string()).optional(),
   eventTypes: z.array(z.string()).optional(),
   packageSlugs: z.array(z.string()).optional(),
   priceGhs: z.number().optional(),

@@ -6,6 +6,10 @@ import { Sparkles, RefreshCw, Calendar, MapPin, Heart } from "lucide-react";
 import { TemplateCard } from "@/components/invitation-mvp/template-card";
 import { DesignAdvisorBanner } from "@/components/invitation-os/design-advisor-banner";
 import { Button } from "@/components/ui/button";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { paginateList } from "@/lib/pagination-client";
+import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 import {
   CATALOG_TEMPLATES,
   INVITATION_CATEGORIES,
@@ -23,6 +27,7 @@ const EVENT_TYPE_TO_CATEGORY: Record<string, string> = {
 };
 
 export function CatalogueClient() {
+  const { page, setPage, resetPage } = usePagination(PUBLIC_GRID_LIMIT);
   const [category, setCategory] = useState("all");
   const [style, setStyle] = useState("all");
   const [mood, setMood] = useState("all");
@@ -57,6 +62,12 @@ export function CatalogueClient() {
       return true;
     });
   }, [category, style, mood, search, eventType]);
+
+  useEffect(() => {
+    resetPage();
+  }, [category, style, mood, search, eventType, resetPage]);
+
+  const paged = useMemo(() => paginateList(filtered, page, PUBLIC_GRID_LIMIT), [filtered, page]);
 
   return (
     <div>
@@ -170,9 +181,17 @@ export function CatalogueClient() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((t) => <TemplateCard key={t.slug} template={t} />)}
+          {paged.items.map((t) => <TemplateCard key={t.slug} template={t} />)}
         </div>
       )}
+      <PaginationBar
+        page={paged.page}
+        pages={paged.pages}
+        total={paged.total}
+        limit={PUBLIC_GRID_LIMIT}
+        onPageChange={setPage}
+        className="mt-8"
+      />
     </div>
   );
 }

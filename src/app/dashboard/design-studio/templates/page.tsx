@@ -11,6 +11,9 @@ import { TemplateCanvas } from "@/components/template-engine/template-canvas";
 import { TEMPLATE_CATEGORIES } from "@/lib/template-constants";
 import type { TemplateBlock, TemplateCanvas as CanvasType } from "@/types/template-engine";
 import { Sparkles, ArrowLeft, Lock, Star } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 interface DesignTemplate {
   id: string;
@@ -39,7 +42,10 @@ function TemplateLibraryPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const eventId = searchParams.get("eventId");
+  const { page, setPage, resetPage, appendToParams } = usePagination(PUBLIC_GRID_LIMIT);
   const [templates, setTemplates] = useState<DesignTemplate[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [recommended, setRecommended] = useState<DesignTemplate[]>([]);
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
   const [category, setCategory] = useState("");
@@ -47,13 +53,24 @@ function TemplateLibraryPageInner() {
   const [generating, setGenerating] = useState("");
 
   useEffect(() => {
-    const url = new URL("/api/design-templates", window.location.origin);
-    if (category) url.searchParams.set("category", category);
-    fetch(url.toString())
+    setLoading(true);
+    const params = appendToParams(new URLSearchParams());
+    if (category) params.set("category", category);
+    fetch(`/api/design-templates?${params}`)
       .then((r) => r.json())
-      .then((d) => { if (d.success) setTemplates(d.data); })
+      .then((d) => {
+        if (d.success) {
+          setTemplates(d.data.items ?? []);
+          setTotal(d.data.total ?? 0);
+          setPages(d.data.pages ?? 1);
+        }
+      })
       .finally(() => setLoading(false));
-  }, [category]);
+  }, [category, appendToParams]);
+
+  useEffect(() => {
+    resetPage();
+  }, [category, resetPage]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -216,6 +233,7 @@ function TemplateLibraryPageInner() {
           {templates.map((t) => <TemplateCard key={t.id} t={t} />)}
         </div>
       )}
+      <PaginationBar page={page} pages={pages} total={total} limit={PUBLIC_GRID_LIMIT} onPageChange={setPage} />
     </div>
   );
 }

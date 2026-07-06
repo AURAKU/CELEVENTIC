@@ -17,11 +17,9 @@ export default withAuth(
     }
 
     if (path.startsWith("/admin")) {
-      const adminRoles = ["SUPER_ADMIN", "ADMIN"];
-      if (!token?.role || !adminRoles.includes(token.role as string)) {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
-      }
-      if (adminViewMode === "user" || token.isAdminView) {
+      // Role authorization is enforced in admin/layout.tsx with a fresh DB-backed session.
+      // Middleware only blocks authenticated admins who switched to organizer view.
+      if (adminViewMode === "user" || token?.isAdminView) {
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
     }

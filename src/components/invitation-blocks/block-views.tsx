@@ -144,6 +144,7 @@ export function BlockView({ block, ctx }: BlockViewProps) {
               type: /\.(mp4|webm|mov)(\?|$)/i.test(item.url) ? "video" as const : "image" as const,
             }))}
             settings={{ style: slideshowStyleFromVariant(styleVariant) }}
+            interactive
           />
         </BlockShell>
       );

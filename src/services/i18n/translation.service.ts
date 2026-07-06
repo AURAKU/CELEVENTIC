@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { paginatedResult } from "@/lib/pagination";
 import { DEFAULT_TRANSLATIONS } from "@/lib/i18n/default-translations";
 import { DEFAULT_LOCALE, type AppLocale } from "@/lib/i18n/constants";
 import {
@@ -104,11 +105,30 @@ export class TranslationService {
     return interpolate(raw, params);
   }
 
-  async listForAdmin(namespace?: string) {
-    return prisma.translation.findMany({
-      where: namespace ? { namespace } : undefined,
-      orderBy: [{ namespace: "asc" }, { key: "asc" }],
-    });
+  async listForAdmin(namespace?: string, page = 1, limit = 20, search?: string) {
+    const where = {
+      ...(namespace ? { namespace } : {}),
+      ...(search
+        ? {
+            OR: [
+              { key: { contains: search } },
+              { enValue: { contains: search } },
+              { frValue: { contains: search } },
+            ],
+          }
+        : {}),
+    };
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.translation.findMany({
+        where,
+        orderBy: [{ namespace: "asc" }, { key: "asc" }],
+        skip,
+        take: limit,
+      }),
+      prisma.translation.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async updateTranslation(id: string, data: { enValue?: string; frValue?: string }) {

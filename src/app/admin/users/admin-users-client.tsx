@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/utils";
 import { usePagination } from "@/hooks/use-pagination";
 import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 import { assignableRolesFor, canAssignAdminRole, canModifyUser } from "@/lib/admin-permissions";
+import { formatRoleLabel } from "@/lib/role-labels";
 import type { UserRole } from "@prisma/client";
 import { Pencil, Trash2, Mail, Shield } from "lucide-react";
 
@@ -46,6 +47,7 @@ export function AdminUsersClient({
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "ORGANIZER", phone: "" });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [messaging, setMessaging] = useState<UserRow | null>(null);
   const [messageForm, setMessageForm] = useState({ subject: "", body: "" });
@@ -91,6 +93,8 @@ export function AdminUsersClient({
   }
 
   async function updateUser(id: string, data: Record<string, string>) {
+    setError("");
+    setSuccess("");
     const res = await fetch("/api/admin/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -98,11 +102,24 @@ export function AdminUsersClient({
     });
     const d = await res.json();
     if (res.ok) {
-      setEditing(null);
+      setEditing((prev) => (prev?.id === id ? { ...prev, ...d.data, role: d.data.role, status: d.data.status } : prev));
+      if (data.role) {
+        setSuccess(`${d.data.name} is now ${formatRoleLabel(d.data.role)}. Changes apply on their next page load.`);
+      } else if (data.status) {
+        setSuccess(`${d.data.name} status updated to ${d.data.status}.`);
+      } else {
+        setSuccess("User profile updated.");
+      }
       load();
     } else {
       setError(d.error || "Update failed");
     }
+  }
+
+  async function setUserRole(user: UserRow, role: string) {
+    const label = formatRoleLabel(role);
+    if (!confirm(`Change ${user.name} to ${label}?`)) return;
+    await updateUser(user.id, { role });
   }
 
   async function deleteUser(id: string, name: string) {
@@ -171,6 +188,7 @@ export function AdminUsersClient({
       />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {success && <p className="text-sm text-emerald-700">{success}</p>}
 
       {(showForm || editing) && (
         <Card>
@@ -187,7 +205,7 @@ export function AdminUsersClient({
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {assignableRoles.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                        <SelectItem key={r} value={r}>{formatRoleLabel(r)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -218,7 +236,7 @@ export function AdminUsersClient({
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {assignableRoles.map((r) => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                          <SelectItem key={r} value={r}>{formatRoleLabel(r)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -299,7 +317,7 @@ export function AdminUsersClient({
                 <tr key={user.id} className="border-b last:border-0 hover:bg-slate-50/50">
                   <td className="p-3 font-medium">{user.name}</td>
                   <td className="p-3">{user.email ?? "—"}</td>
-                  <td className="p-3"><Badge variant="outline">{user.role}</Badge></td>
+                  <td className="p-3"><Badge variant="outline">{formatRoleLabel(user.role)}</Badge></td>
                   <td className="p-3">
                     <Badge variant={user.status === "ACTIVE" ? "success" : "destructive"}>{user.status}</Badge>
                   </td>
@@ -320,12 +338,8 @@ export function AdminUsersClient({
                         <Button
                           size="sm"
                           variant="ghost"
-                          title="Make platform admin"
-                          onClick={() => {
-                            if (confirm(`Grant Admin access to ${user.name}?`)) {
-                              void updateUser(user.id, { role: "ADMIN" });
-                            }
-                          }}
+                          title="Promote to Platform Admin"
+                          onClick={() => void setUserRole(user, "ADMIN")}
                         >
                           <Shield className="h-3.5 w-3.5 text-[#0B8A83]" />
                         </Button>
@@ -334,12 +348,18 @@ export function AdminUsersClient({
                         <Button
                           size="sm"
                           variant="ghost"
-                          title="Remove admin access"
-                          onClick={() => {
-                            if (confirm(`Remove Admin access from ${user.name}?`)) {
-                              void updateUser(user.id, { role: "ORGANIZER" });
-                            }
-                          }}
+                          title="Remove admin access (make regular user)"
+                          onClick={() => void setUserRole(user, "ORGANIZER")}
+                        >
+                          <Shield className="h-3.5 w-3.5 text-amber-600" />
+                        </Button>
+                      )}
+                      {actorRole === "SUPER_ADMIN" && user.role === "SUPER_ADMIN" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Demote Super Admin to regular user"
+                          onClick={() => void setUserRole(user, "ORGANIZER")}
                         >
                           <Shield className="h-3.5 w-3.5 text-amber-600" />
                         </Button>

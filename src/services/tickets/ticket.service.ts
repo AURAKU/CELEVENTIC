@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { paginatedResult } from "@/lib/pagination";
 import { qrService } from "@/services/qr/qr.service";
 import {
   applyPromoDiscount,
@@ -93,15 +94,23 @@ export class TicketService {
     });
   }
 
-  async getEventOrders(eventId: string) {
-    return prisma.ticketOrder.findMany({
-      where: { eventId },
-      include: {
-        ticket: { select: { id: true, name: true, type: true } },
-        payments: { select: { id: true, status: true, amount: true, provider: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  async getEventOrders(eventId: string, page = 1, limit = 20) {
+    const where = { eventId };
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.ticketOrder.findMany({
+        where,
+        include: {
+          ticket: { select: { id: true, name: true, type: true } },
+          payments: { select: { id: true, status: true, amount: true, provider: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.ticketOrder.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async getEventStats(eventId: string) {

@@ -6,6 +6,11 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { isAdminRole } from "@/lib/roles";
+import {
+  applySyncedUserToToken,
+  invalidateAuthToken,
+  syncUserTokenFromDb,
+} from "@/lib/auth/sync-user-token";
 import type { UserRole } from "@prisma/client";
 
 export { isAdminRole };
@@ -34,6 +39,7 @@ declare module "next-auth/jwt" {
     role: UserRole;
     phone?: string | null;
     isAdminView?: boolean;
+    invalid?: boolean;
   }
 }
 
@@ -71,9 +77,10 @@ export const authOptions: NextAuthOptions = {
 
         const identifier = credentials.identifier.trim();
         const isEmail = identifier.includes("@");
+        const normalizedIdentifier = isEmail ? identifier.toLowerCase() : identifier;
 
         const user = await prisma.user.findFirst({
-          where: isEmail ? { email: identifier } : { phone: identifier },
+          where: isEmail ? { email: normalizedIdentifier } : { phone: normalizedIdentifier },
         });
 
         if (!user || !user.passwordHash || user.status === "SUSPENDED") return null;
@@ -103,6 +110,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.phone = user.phone;
+        token.invalid = false;
       }
       if (trigger === "update" && session) {
         const update = session as SessionUpdate;
@@ -110,14 +118,29 @@ export const authOptions: NextAuthOptions = {
           token.isAdminView = update.isAdminView;
         }
       }
+
+      if (token.id && !token.invalid) {
+        const synced = await syncUserTokenFromDb(token.id);
+        if (!synced) {
+          return invalidateAuthToken(token);
+        }
+        return applySyncedUserToToken(token, synced);
+      }
+
       return token;
     },
     async session({ session, token }) {
+      if (token.invalid || !token.id) {
+        return { ...session, user: undefined };
+      }
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.phone = token.phone;
         session.user.isAdminView = token.isAdminView;
+        if (token.name) session.user.name = token.name as string;
+        if (token.email) session.user.email = token.email as string;
+        if (token.picture) session.user.image = token.picture as string;
       }
       return session;
     },

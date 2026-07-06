@@ -1,5 +1,5 @@
-import { Prisma, PrismaClient, UserRole, UserStatus } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { ensurePlatformAccounts } from "../src/lib/auth/ensure-platform-accounts";
 import { seedCommerceEngine } from "../src/services/commerce/commerce-seed.service";
 import { translationService } from "../src/services/i18n/translation.service";
 import { invitationBlockService } from "../src/services/invitations/invitation-block.service";
@@ -9,40 +9,17 @@ import { slugify } from "../src/lib/utils";
 const prisma = new PrismaClient();
 
 async function main() {
-  const demoAccounts = [
-    { email: "admin@celeventic.com", password: "Admin@123", name: "Super Admin", role: UserRole.SUPER_ADMIN },
-    { email: "organizer@celeventic.com", password: "Organizer@123", name: "Demo Organizer", role: UserRole.ORGANIZER },
-    { email: "vendor@celeventic.com", password: "Vendor@123", name: "Demo Vendor", role: UserRole.VENDOR },
-  ] as const;
+  const accountResults = await ensurePlatformAccounts(prisma);
 
-  let superAdmin!: { id: string; email: string | null };
-  let organizer!: { id: string; email: string | null };
-  let vendorUser!: { id: string; email: string | null };
-  for (const account of demoAccounts) {
-    const passwordHash = await bcrypt.hash(account.password, 12);
-    const user = await prisma.user.upsert({
-      where: { email: account.email },
-      update: {
-        passwordHash,
-        role: account.role,
-        status: UserStatus.ACTIVE,
-        isVerified: true,
-        emailVerified: new Date(),
-      },
-      create: {
-        email: account.email,
-        name: account.name,
-        passwordHash,
-        role: account.role,
-        isVerified: true,
-        emailVerified: new Date(),
-        status: UserStatus.ACTIVE,
-      },
-    });
-    if (account.role === UserRole.SUPER_ADMIN) superAdmin = user;
-    if (account.role === UserRole.ORGANIZER) organizer = user;
-    if (account.role === UserRole.VENDOR) vendorUser = user;
+  const superAdminUser = await prisma.user.findUnique({ where: { email: "admin@celeventic.com" } });
+  const organizerUser = await prisma.user.findUnique({ where: { email: "organizer@celeventic.com" } });
+  const vendorUserRecord = await prisma.user.findUnique({ where: { email: "vendor@celeventic.com" } });
+
+  if (!superAdminUser || !organizerUser || !vendorUserRecord) {
+    throw new Error("Failed to seed platform accounts");
   }
+
+  void accountResults;
 
   const packages = [
     {
@@ -169,7 +146,7 @@ async function main() {
     if (!existing) {
       await prisma.vendor.create({
         data: {
-          userId: organizer.id,
+          userId: organizerUser.id,
           slug: slugify(v.businessName),
           businessName: v.businessName,
           category: v.category,
@@ -237,7 +214,7 @@ async function main() {
         supportsQr: true,
         supportsRsvp: true,
         supportsPersonalization: true,
-        createdById: superAdmin.id,
+        createdById: superAdminUser.id,
         approvalStatus: "APPROVED",
       },
     });
@@ -282,8 +259,8 @@ async function main() {
   }
 
   console.log("Seed completed:");
-  console.log(`  Super Admin: ${superAdmin.email} / Admin@123`);
-  console.log(`  Organizer: ${organizer.email} / Organizer@123`);
+  console.log(`  Super Admin: ${superAdminUser.email} / Admin@123`);
+  console.log(`  Organizer: ${organizerUser.email} / Organizer@123`);
   console.log(`  Packages: ${packages.length}`);
   console.log(`  Templates: ${templates.length}`);
   console.log(`  Guest tiers: ${guestTiers.join(", ")}`);

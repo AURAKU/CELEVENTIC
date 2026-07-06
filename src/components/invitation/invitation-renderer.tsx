@@ -11,8 +11,13 @@ import { PassportLuxeTemplate } from "./templates/passport-luxe";
 import { GlassAcrylicTemplate } from "./templates/glass-acrylic";
 import { FloralGardenTemplate } from "./templates/floral-garden";
 import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
+import { InvitationMediaProvider } from "./invitation-media-context";
 
-export function InvitationRenderer(props: InvitationRenderProps) {
+export type InvitationRendererProps = InvitationRenderProps & {
+  interactiveMedia?: boolean;
+};
+
+export function InvitationRenderer({ interactiveMedia = false, ...props }: InvitationRendererProps) {
   const content = isCinematicLayout(props.design.layout) ? (
     <CinematicTemplate {...props} />
   ) : (() => {
@@ -39,5 +44,9 @@ export function InvitationRenderer(props: InvitationRenderProps) {
     }
   })();
 
-  return <div className="invitation-copy-root">{content}</div>;
+  return (
+    <div className="invitation-copy-root">
+      <InvitationMediaProvider interactive={interactiveMedia}>{content}</InvitationMediaProvider>
+    </div>
+  );
 }

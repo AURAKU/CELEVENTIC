@@ -12,6 +12,7 @@ import { productionWorkflowService } from "@/services/invitations/production-wor
 import { productionNotificationService } from "@/services/invitations/production-notification.service";
 import type { InvitationLanguageMode } from "@prisma/client";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
+import { isVideoUrl } from "@/lib/invitation/theme-media-assets";
 import type { Prisma } from "@prisma/client";
 import { getAppUrlFromEnv } from "@/lib/app-url";
 import { Prisma as PrismaClient } from "@prisma/client";
@@ -262,7 +263,7 @@ export class InvitationOrderService {
     if (gallery.length > 0) {
       designConfig.media = gallery.map((url, i) => ({
         url,
-        type: "image" as const,
+        type: isVideoUrl(url) ? ("video" as const) : ("image" as const),
         role: i === 0 ? "hero" as const : "reference" as const,
       }));
     }
@@ -307,7 +308,7 @@ export class InvitationOrderService {
         data: gallery.map((url, i) => ({
           eventId: event.id,
           url,
-          type: "image",
+          type: isVideoUrl(url) ? "video" : "image",
           sortOrder: i,
         })),
       });

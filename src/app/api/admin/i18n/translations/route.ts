@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession, isAdminRole } from "@/lib/auth";
 import { translationService } from "@/services/i18n/translation.service";
+import { parsePaginationFromUrl, ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -11,9 +12,11 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const namespace = searchParams.get("namespace") ?? undefined;
+  const search = searchParams.get("search") ?? undefined;
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: ADMIN_TABLE_LIMIT });
   await translationService.seedTranslations();
-  const rows = await translationService.listForAdmin(namespace);
-  return NextResponse.json({ success: true, data: rows });
+  const result = await translationService.listForAdmin(namespace, page, limit, search);
+  return NextResponse.json({ success: true, data: result });
 }
 
 const patchSchema = z.object({

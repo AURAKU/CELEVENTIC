@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ticketService } from "@/services/tickets/ticket.service";
+import { parsePaginationFromUrl, ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 import { verifyEventAccess } from "@/lib/event-access";
 
 export async function GET(req: Request) {
@@ -13,16 +14,20 @@ export async function GET(req: Request) {
 
   try {
     await verifyEventAccess(eventId, session.user.id, session.user.role);
-    const orders = await ticketService.getEventOrders(eventId);
+    const { page, limit } = parsePaginationFromUrl(req.url, { limit: ADMIN_TABLE_LIMIT });
+    const orders = await ticketService.getEventOrders(eventId, page, limit);
     return NextResponse.json({
       success: true,
-      data: orders.map((o) => ({
-        ...o,
-        totalAmount: Number(o.totalAmount),
-        createdAt: o.createdAt.toISOString(),
-        updatedAt: o.updatedAt.toISOString(),
-        payments: o.payments.map((p) => ({ ...p, amount: Number(p.amount) })),
-      })),
+      data: {
+        ...orders,
+        items: orders.items.map((o) => ({
+          ...o,
+          totalAmount: Number(o.totalAmount),
+          createdAt: o.createdAt.toISOString(),
+          updatedAt: o.updatedAt.toISOString(),
+          payments: o.payments.map((p) => ({ ...p, amount: Number(p.amount) })),
+        })),
+      },
     });
   } catch (error) {
     return NextResponse.json(

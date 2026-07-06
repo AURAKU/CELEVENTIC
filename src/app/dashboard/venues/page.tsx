@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPin, Users } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 interface Venue {
   id: string;
@@ -19,7 +22,10 @@ interface Venue {
 }
 
 export default function VenuesPage() {
+  const { page, setPage, appendToParams } = usePagination(PUBLIC_GRID_LIMIT);
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [bookingVenue, setBookingVenue] = useState<string | null>(null);
   const [eventDate, setEventDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -27,9 +33,20 @@ export default function VenuesPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/venues").then((r) => r.json()).then((d) => { if (d.success) setVenues(d.data); });
-  }, []);
+  const load = useCallback(() => {
+    const params = appendToParams(new URLSearchParams());
+    fetch(`/api/venues?${params}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          setVenues(d.data.items ?? []);
+          setTotal(d.data.total ?? 0);
+          setPages(d.data.pages ?? 1);
+        }
+      });
+  }, [appendToParams]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function requestBooking(venueId: string) {
     if (!eventDate) {
@@ -106,6 +123,7 @@ export default function VenuesPage() {
           ))}
         </div>
       )}
+      <PaginationBar page={page} pages={pages} total={total} limit={PUBLIC_GRID_LIMIT} onPageChange={setPage} />
     </div>
   );
 }

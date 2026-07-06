@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AdminToolbar } from "@/components/admin/admin-toolbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Star, Check, X, Shield } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 interface ReviewRow {
   id: string;
@@ -20,17 +23,26 @@ interface ReviewRow {
 }
 
 export function AdminReviewsClient() {
+  const { page, setPage, resetPage, appendToParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [filter, setFilter] = useState("");
 
-  async function load() {
-    const params = filter ? `?status=${filter}` : "";
-    const res = await fetch(`/api/admin/invitation-reviews${params}`);
+  const load = useCallback(async () => {
+    const params = appendToParams(new URLSearchParams());
+    if (filter) params.set("status", filter);
+    const res = await fetch(`/api/admin/invitation-reviews?${params}`);
     const d = await res.json();
-    if (d.success) setReviews(d.data);
-  }
+    if (d.success) {
+      setReviews(d.data.items ?? []);
+      setTotal(d.data.total ?? 0);
+      setPages(d.data.pages ?? 1);
+    }
+  }, [filter, appendToParams]);
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { resetPage(); }, [filter, resetPage]);
+  useEffect(() => { load(); }, [load]);
 
   async function patch(id: string, data: Record<string, unknown>) {
     await fetch("/api/admin/invitation-reviews", {
@@ -43,7 +55,7 @@ export function AdminReviewsClient() {
 
   return (
     <div className="space-y-6">
-      <AdminToolbar title="Reviews" subtitle="Approve, verify, and feature customer reviews" count={reviews.length} onRefresh={load}>
+      <AdminToolbar title="Reviews" subtitle="Approve, verify, and feature customer reviews" count={total} onRefresh={load}>
         <Select value={filter || "all"} onValueChange={(v) => setFilter(v === "all" ? "" : v)}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -90,6 +102,7 @@ export function AdminReviewsClient() {
           </Card>
         ))}
       </div>
+      <PaginationBar page={page} pages={pages} total={total} limit={ADMIN_TABLE_LIMIT} onPageChange={setPage} />
     </div>
   );
 }

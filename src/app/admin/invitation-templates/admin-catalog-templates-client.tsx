@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AdminToolbar } from "@/components/admin/admin-toolbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Star, Eye, EyeOff } from "lucide-react";
 import { TemplateMediaUpload } from "@/components/admin/template-media-upload";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
+import { GalleryUploadPanel } from "@/components/media/gallery-upload-panel";
 import { AdminInvitationExperienceControls } from "./admin-invitation-experience-controls";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 interface TemplateRow {
   id: string;
@@ -28,6 +32,7 @@ interface TemplateRow {
   backgroundVideoUrl?: string | null;
   motionReferenceUrl?: string | null;
   inspirationMediaUrl?: string | null;
+  defaultGalleryUrls?: string[] | null;
   eventTypes?: string[] | null;
   packageSlugs?: string[] | null;
   priceGhs: string | number | null;
@@ -41,23 +46,32 @@ const emptyForm = {
   slug: "", name: "", description: "", category: "Wedding", style: "Luxury",
   layoutSlug: "classic-gold", previewGradient: "", previewImageUrl: "", previewVideoUrl: "",
   backgroundImageUrl: "", backgroundVideoUrl: "", motionReferenceUrl: "", inspirationMediaUrl: "",
+  defaultGalleryUrls: [] as string[],
   eventTypes: "WEDDING,BIRTHDAY", packageSlugs: "starter,celebration,signature",
   priceGhs: 0, languages: "en,fr", isPremium: false, isFeatured: false, isActive: true,
 };
 
 export function AdminCatalogTemplatesClient() {
+  const { page, setPage, appendToParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  async function load() {
-    const res = await fetch("/api/admin/invitation-templates");
+  const load = useCallback(async () => {
+    const params = appendToParams(new URLSearchParams());
+    const res = await fetch(`/api/admin/invitation-templates?${params}`);
     const d = await res.json();
-    if (d.success) setTemplates(d.data);
-  }
+    if (d.success) {
+      setTemplates(d.data.items ?? []);
+      setTotal(d.data.total ?? 0);
+      setPages(d.data.pages ?? 1);
+    }
+  }, [appendToParams]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   function startEdit(t: TemplateRow) {
     setEditId(t.id);
@@ -68,6 +82,7 @@ export function AdminCatalogTemplatesClient() {
       previewVideoUrl: t.previewVideoUrl ?? "", backgroundImageUrl: t.backgroundImageUrl ?? "",
       backgroundVideoUrl: t.backgroundVideoUrl ?? "", motionReferenceUrl: t.motionReferenceUrl ?? "",
       inspirationMediaUrl: t.inspirationMediaUrl ?? "",
+      defaultGalleryUrls: Array.isArray(t.defaultGalleryUrls) ? (t.defaultGalleryUrls as string[]) : [],
       eventTypes: Array.isArray(t.eventTypes) ? (t.eventTypes as string[]).join(",") : "WEDDING",
       packageSlugs: Array.isArray(t.packageSlugs) ? (t.packageSlugs as string[]).join(",") : "",
       priceGhs: Number(t.priceGhs ?? 0),
@@ -88,6 +103,7 @@ export function AdminCatalogTemplatesClient() {
         languages: form.languages.split(",").map((l) => l.trim()).filter(Boolean),
         eventTypes: form.eventTypes.split(",").map((l) => l.trim()).filter(Boolean),
         packageSlugs: form.packageSlugs.split(",").map((l) => l.trim()).filter(Boolean),
+        defaultGalleryUrls: form.defaultGalleryUrls,
       }),
     });
     setShowForm(false);
@@ -172,6 +188,17 @@ export function AdminCatalogTemplatesClient() {
               <TemplateMediaUpload label="Upload background video" category="background" accept="video/*" onUploaded={(url) => setForm({ ...form, backgroundVideoUrl: url })} />
               <TemplateMediaUpload label="Upload motion reference" category="motion" accept="video/*" onUploaded={(url) => setForm({ ...form, motionReferenceUrl: url })} />
             </div>
+            <div className="sm:col-span-2 border-t pt-4">
+              <GalleryUploadPanel
+                title="Default gallery media"
+                description="Photos and videos shown when guests have not uploaded their own gallery yet. Each template can have a unique default set."
+                urls={form.defaultGalleryUrls}
+                onChange={(urls) => setForm({ ...form, defaultGalleryUrls: urls })}
+                maxImages={12}
+                uploadEndpoint="/api/admin/invitation-templates/upload"
+                extraFormFields={{ category: "gallery" }}
+              />
+            </div>
             <div className="sm:col-span-2 flex gap-4">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isPremium} onChange={(e) => setForm({ ...form, isPremium: e.target.checked })} /> Premium</label>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isFeatured} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} /> Featured</label>
@@ -209,6 +236,8 @@ export function AdminCatalogTemplatesClient() {
           </Card>
         ))}
       </div>
+
+      <PaginationBar page={page} pages={pages} total={total} limit={ADMIN_TABLE_LIMIT} onPageChange={setPage} />
 
       <AdminInvitationExperienceControls />
     </div>

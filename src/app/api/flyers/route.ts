@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { flyerService } from "@/services/flyer/flyer.service";
+import { parsePaginationFromUrl, PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 const createSchema = z.object({
   eventId: z.string().optional(),
@@ -17,9 +18,10 @@ export async function GET(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const eventId = new URL(req.url).searchParams.get("eventId") ?? undefined;
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: PUBLIC_GRID_LIMIT });
 
   const [designs, templates] = await Promise.all([
-    flyerService.getUserDesigns(session.user.id, eventId),
+    flyerService.getUserDesigns(session.user.id, eventId, page, limit),
     Promise.resolve(flyerService.getTemplates()),
   ]);
 

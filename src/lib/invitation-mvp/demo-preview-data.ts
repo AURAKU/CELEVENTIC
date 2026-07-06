@@ -356,11 +356,8 @@ export function buildLivePreviewProps(
 
   let resolvedMusic = withMusic ? (dnaMusic ?? buildDemoMusicSelection(theme)) : null;
   if (resolvedMusic && theme === "Funeral") {
-    const funeral = buildDemoMusicSelection("Funeral");
     resolvedMusic = {
       ...resolvedMusic,
-      url: funeral.url,
-      title: funeral.title,
       volume: 0.3,
       fadeInSec: 2,
     };

@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency } from "@/lib/utils";
 import { CHANGE_CATEGORY_LABELS } from "@/lib/invitation-production/constants";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 interface RevisionRow {
   id: string;
@@ -33,16 +36,24 @@ interface RevisionRow {
 }
 
 export function AdminRevisionsClient() {
+  const { page, setPage, appendToParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [revisions, setRevisions] = useState<RevisionRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [adminResponse, setAdminResponse] = useState("");
   const [chargeAmount, setChargeAmount] = useState(79);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/invitation-revisions");
+    const params = appendToParams(new URLSearchParams());
+    const res = await fetch(`/api/admin/invitation-revisions?${params}`);
     const d = await res.json();
-    if (d.success) setRevisions(d.data);
-  }, []);
+    if (d.success) {
+      setRevisions(d.data.items ?? []);
+      setTotal(d.data.total ?? 0);
+      setPages(d.data.pages ?? 1);
+    }
+  }, [appendToParams]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -57,7 +68,7 @@ export function AdminRevisionsClient() {
 
   return (
     <div className="space-y-6">
-      <AdminToolbar title="Revision Management" subtitle="Track revisions, charge extras, and manage approvals" count={revisions.length} onRefresh={load} />
+      <AdminToolbar title="Revision Management" subtitle="Track revisions, charge extras, and manage approvals" count={total} onRefresh={load} />
 
       <div className="space-y-3">
         {revisions.length === 0 ? (
@@ -124,6 +135,7 @@ export function AdminRevisionsClient() {
           </Card>
         ))}
       </div>
+      <PaginationBar page={page} pages={pages} total={total} limit={ADMIN_TABLE_LIMIT} onPageChange={setPage} />
     </div>
   );
 }

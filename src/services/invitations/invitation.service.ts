@@ -64,12 +64,20 @@ export class InvitationService {
     };
   }
 
-  async getEventInvitations(eventId: string) {
-    return prisma.invitation.findMany({
-      where: { eventId },
-      include: { _count: { select: { guests: true } }, template: true },
-      orderBy: { createdAt: "desc" },
-    });
+  async getEventInvitations(eventId: string, page = 1, limit = 20) {
+    const where = { eventId };
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.invitation.findMany({
+        where,
+        include: { _count: { select: { guests: true } }, template: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.invitation.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async getInvitationByLink(uniqueLink: string) {
