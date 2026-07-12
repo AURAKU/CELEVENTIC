@@ -72,4 +72,10 @@ export async function seedVendorOs() {
     const slug = slugify(venue.name);
     await prisma.venue.update({ where: { id: venue.id }, data: { slug } });
   }
+
+  await prisma.marketplaceCommissionRule.upsert({
+    where: { key: "global" },
+    update: { label: "Global marketplace commission", commissionPercent: 10, isActive: true },
+    create: { key: "global", label: "Global marketplace commission", commissionPercent: 10, isActive: true },
+  });
 }

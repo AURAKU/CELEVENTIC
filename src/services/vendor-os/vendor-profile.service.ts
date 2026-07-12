@@ -43,6 +43,9 @@ export class VendorProfileService {
     const freePlan = await prisma.vendorPlan.findUnique({ where: { slug: "free" } });
     const slug = await this.uniqueSlug(input.businessName);
 
+    const { getMarketplaceFeatureFlags } = await import("@/lib/marketplace/feature-flags");
+    const flags = await getMarketplaceFeatureFlags();
+
     const vendor = await prisma.vendor.create({
       data: {
         userId: input.userId,
@@ -66,7 +69,8 @@ export class VendorProfileService {
         profileImage: input.profileImage,
         coverImage: input.coverImage,
         planId: freePlan?.id,
-        status: "ACTIVE",
+        status: flags.vendorApprovalRequired ? "PENDING_APPROVAL" : "ACTIVE",
+        isActive: !flags.vendorApprovalRequired,
       },
     });
 

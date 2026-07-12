@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { invitationAdminService } from "@/services/admin/invitation-admin.service";
+import { SystemHealthCard } from "@/components/admin/system-health-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Shield, Mail, CreditCard, Palette, Package, BarChart3, Star, RefreshCw,
-  FileText, Phone, TrendingUp, Clock, Music, Key,
+  FileText, Phone, TrendingUp, Clock, Music, Key, Store, Sparkles,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -17,6 +18,10 @@ export default async function AdminDashboardPage() {
     { href: "/admin/invitation-templates", label: "Catalog Templates", icon: Palette, desc: "Create, feature, enable templates" },
     { href: "/admin/commerce", label: "Packages & Add-ons", icon: Package, desc: "Pricing, currencies, exchange rates" },
     { href: "/admin/music", label: "Music Library", icon: Music, desc: "Invitation audio tracks for organizers" },
+    { href: "/admin/vendors", label: "Vendor Marketplace", icon: Store, desc: "Approve, verify, and manage global vendors" },
+    { href: "/admin/marketplace/escrow", label: "Marketplace Escrow", icon: Shield, desc: "Held funds, payouts, and dispute freezes" },
+    { href: "/admin/security", label: "Workspace & Roles", icon: Shield, desc: "Collaboration permissions and role templates" },
+    { href: "/admin/experience", label: "Event Blueprints", icon: Sparkles, desc: "Event-type modules, entitlements, and navigation" },
     { href: "/admin/payments", label: "Payments", icon: CreditCard, desc: "Logs, webhooks, export reports" },
     { href: "/admin/integrations", label: "Integrations & API", icon: Key, desc: "Connect Paystack, email, intelligence services, maps, and custom APIs" },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart3, desc: "Revenue, funnel, best sellers" },
@@ -40,6 +45,8 @@ export default async function AdminDashboardPage() {
           <p className="text-white/60 mt-1">Welcome, {session?.user?.name}. Control orders, templates, commerce, and content — no code required.</p>
         </div>
       </div>
+
+      <SystemHealthCard />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold">{analytics.totalOrders}</p><p className="text-xs text-slate-500">Total Orders</p></CardContent></Card>

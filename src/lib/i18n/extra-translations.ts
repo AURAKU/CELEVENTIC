@@ -234,6 +234,18 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "dashboard", key: "sidebar_search", enValue: "Search modules...", frValue: "Rechercher des modules..." },
   { namespace: "dashboard", key: "sidebar_no_results", enValue: "No modules match your search", frValue: "Aucun module ne correspond" },
   { namespace: "dashboard", key: "go_to_overview", enValue: "Go to dashboard", frValue: "Aller au tableau de bord" },
+  { namespace: "dashboard", key: "nav_section_design", enValue: "Design", frValue: "Design" },
+  { namespace: "dashboard", key: "nav_section_guests", enValue: "Guests & Access", frValue: "Invités et accès" },
+  { namespace: "dashboard", key: "nav_create_event", enValue: "Create Event", frValue: "Créer un événement" },
+  { namespace: "dashboard", key: "nav_collaborations", enValue: "Collaborations", frValue: "Collaborations" },
+  { namespace: "dashboard", key: "nav_tasks", enValue: "Tasks", frValue: "Tâches" },
+  { namespace: "dashboard", key: "nav_calendar", enValue: "Calendar", frValue: "Calendrier" },
+  { namespace: "dashboard", key: "nav_help", enValue: "Help & Support", frValue: "Aide et support" },
+  { namespace: "dashboard", key: "mobile_nav_home", enValue: "Home", frValue: "Accueil" },
+  { namespace: "dashboard", key: "mobile_nav_events", enValue: "Events", frValue: "Événements" },
+  { namespace: "dashboard", key: "mobile_nav_marketplace", enValue: "Marketplace", frValue: "Marketplace" },
+  { namespace: "dashboard", key: "mobile_nav_messages", enValue: "Messages", frValue: "Messages" },
+  { namespace: "dashboard", key: "mobile_nav_profile", enValue: "Profile", frValue: "Profil" },
 
   // ── QR Admission ──
   { namespace: "qr_admission", key: "title", enValue: "QR Admission", frValue: "Admission QR" },

@@ -9,9 +9,11 @@ export interface SyncedUserToken {
   phone: string | null;
   picture: string | null;
   valid: boolean;
+  sessionInvalidatedAt: Date | null;
+  accountType: string | null;
+  onboardingCompletedAt: Date | null;
 }
 
-/** Load the latest user record so JWT/session reflect role changes without re-login. */
 export async function syncUserTokenFromDb(userId: string): Promise<SyncedUserToken | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -22,12 +24,13 @@ export async function syncUserTokenFromDb(userId: string): Promise<SyncedUserTok
       email: true,
       phone: true,
       avatarUrl: true,
+      sessionInvalidatedAt: true,
+      accountType: true,
+      onboardingCompletedAt: true,
     },
   });
 
-  if (!user || user.status === "SUSPENDED") {
-    return null;
-  }
+  if (!user || user.status === "SUSPENDED") return null;
 
   return {
     role: user.role,
@@ -36,7 +39,18 @@ export async function syncUserTokenFromDb(userId: string): Promise<SyncedUserTok
     phone: user.phone,
     picture: user.avatarUrl,
     valid: true,
+    sessionInvalidatedAt: user.sessionInvalidatedAt,
+    accountType: user.accountType,
+    onboardingCompletedAt: user.onboardingCompletedAt,
   };
+}
+
+export function isTokenIssuedBeforeInvalidation(
+  tokenIat: number | undefined,
+  sessionInvalidatedAt: Date | null
+): boolean {
+  if (!tokenIat || !sessionInvalidatedAt) return false;
+  return tokenIat * 1000 < sessionInvalidatedAt.getTime();
 }
 
 export function applySyncedUserToToken(token: JWT, synced: SyncedUserToken): JWT {
@@ -47,6 +61,8 @@ export function applySyncedUserToToken(token: JWT, synced: SyncedUserToken): JWT
     email: synced.email ?? token.email,
     phone: synced.phone ?? token.phone,
     picture: synced.picture ?? token.picture,
+    accountType: synced.accountType,
+    onboardingCompletedAt: synced.onboardingCompletedAt?.toISOString() ?? null,
     invalid: false,
   };
 }

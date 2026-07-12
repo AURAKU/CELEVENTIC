@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Plus } from "lucide-react";
+import { Menu, Plus, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreferencesMenu } from "@/components/layout/preferences-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
+import { EventSwitcher } from "@/components/layout/event-switcher";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { UserAccountMenu, LogoutButton } from "@/components/layout/user-account-menu";
 import { cn } from "@/lib/utils";
@@ -49,10 +50,18 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-2">
+          <EventSwitcher compact />
           <WorkspaceSwitcher compact />
         </div>
         <PreferencesMenu compact />
+        <Link
+          href="/dashboard/help"
+          className="hidden sm:inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl hover:bg-slate-100 transition-colors touch-manipulation"
+          aria-label={t("dashboard.nav_help")}
+        >
+          <HelpCircle className="h-5 w-5 text-slate-500" />
+        </Link>
         <NotificationBell />
         <div className="hidden sm:flex items-center pl-1 sm:pl-2 border-l border-slate-200/80">
           <UserAccountMenu compact />

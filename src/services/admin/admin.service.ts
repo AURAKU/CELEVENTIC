@@ -1,4 +1,4 @@
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/utils";
 import type { EventStatus, Prisma, UserRole, UserStatus } from "@prisma/client";
@@ -72,7 +72,7 @@ export class AdminService {
     role: UserRole;
     phone?: string;
   }) {
-    const passwordHash = await bcrypt.hash(data.password, 12);
+    const passwordHash = await hashPassword(data.password);
     return prisma.user.create({
       data: {
         name: data.name,
@@ -84,6 +84,15 @@ export class AdminService {
         isVerified: true,
       },
       select: { id: true, name: true, email: true, role: true, status: true },
+    });
+  }
+
+  async resetUserPassword(userId: string, password: string) {
+    const passwordHash = await hashPassword(password);
+    return prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, sessionInvalidatedAt: new Date() },
+      select: { id: true, email: true },
     });
   }
 

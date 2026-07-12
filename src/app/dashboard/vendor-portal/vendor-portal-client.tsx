@@ -11,12 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VendorPortfolioUpload } from "@/components/media/vendor-portfolio-upload";
 import { VendorProfilePhotoUpload } from "@/components/vendor-os/vendor-profile-photo-upload";
 import { UploadedMedia } from "@/components/media/uploaded-media";
-import { Store, MessageSquare, ExternalLink, Send, Calendar, Users, Package, Clock, Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Store, MessageSquare, ExternalLink, Send, Calendar, Users, Package, Clock, Star, Receipt } from "lucide-react";
 
 const SECTION_TO_TAB: Record<string, string> = {
   overview: "overview",
   portfolio: "portfolio",
   bookings: "bookings",
+  quotes: "bookings",
   clients: "clients",
   services: "services",
   availability: "availability",
@@ -34,6 +37,10 @@ export default function VendorPortalClient() {
   const [vendor, setVendor] = useState<{ id: string; slug: string; businessName: string; profileImage?: string | null; plan?: { name: string } } | null>(null);
   const [usage, setUsage] = useState<{ limits: Record<string, number>; usage: Record<string, number> } | null>(null);
   const [leads, setLeads] = useState<{ id: string; contactName?: string; status: string; eventType?: string; message?: string }[]>([]);
+  const [bookings, setBookings] = useState<{ id: string; status: string; serviceName?: string; organizer?: { name: string } }[]>([]);
+  const [quoteLead, setQuoteLead] = useState<string | null>(null);
+  const [quoteForm, setQuoteForm] = useState({ title: "", amount: "", description: "" });
+  const [quoteSending, setQuoteSending] = useState(false);
   const [replyLead, setReplyLead] = useState<string | null>(highlightLead);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
@@ -45,16 +52,24 @@ export default function VendorPortalClient() {
     });
   }
 
+  function loadBookings() {
+    return fetch("/api/marketplace/bookings").then((r) => r.json()).then((res) => {
+      if (res.success) setBookings(res.data.items);
+    });
+  }
+
   useEffect(() => {
     Promise.all([
       fetch("/api/vendor-os/me").then((r) => r.json()),
       fetch("/api/vendor-os/leads").then((r) => r.json()),
-    ]).then(([me, leadsRes]) => {
+      fetch("/api/marketplace/bookings").then((r) => r.json()),
+    ]).then(([me, leadsRes, bookingsRes]) => {
       if (me.success && me.data) {
         setVendor(me.data.vendor);
         setUsage(me.data.usage);
       }
       if (leadsRes.success) setLeads(leadsRes.data);
+      if (bookingsRes.success) setBookings(bookingsRes.data.items);
       setLoading(false);
     });
   }, []);
@@ -77,6 +92,34 @@ export default function VendorPortalClient() {
   async function refreshUsage() {
     const me = await fetch("/api/vendor-os/me").then((r) => r.json());
     if (me.success?.data) setUsage(me.data.usage);
+  }
+
+  async function sendQuote(leadId: string) {
+    const amount = Number(quoteForm.amount);
+    if (!amount || amount <= 0) return;
+    setQuoteSending(true);
+    const res = await fetch("/api/marketplace/quotes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        leadId,
+        title: quoteForm.title || "Service quote",
+        amount,
+        description: quoteForm.description,
+        depositPercent: 30,
+      }),
+    });
+    setQuoteSending(false);
+    if (res.ok) {
+      setQuoteLead(null);
+      setQuoteForm({ title: "", amount: "", description: "" });
+      await loadLeads();
+    }
+  }
+
+  async function markDelivered(bookingId: string) {
+    await fetch(`/api/marketplace/bookings/${bookingId}/deliver`, { method: "POST" });
+    await loadBookings();
   }
 
   async function sendReply(leadId: string) {
@@ -132,7 +175,18 @@ export default function VendorPortalClient() {
             <Button size="sm" variant="outline" onClick={() => setReplyLead(replyLead === l.id ? null : l.id)}>
               Quick reply
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setQuoteLead(quoteLead === l.id ? null : l.id)}>
+              <Receipt className="h-3.5 w-3.5 mr-1" /> Send quote
+            </Button>
           </div>
+          {quoteLead === l.id && (
+            <div className="border-t pt-2 space-y-2">
+              <div><Label className="text-xs">Quote title</Label><Input value={quoteForm.title} onChange={(e) => setQuoteForm((f) => ({ ...f, title: e.target.value }))} placeholder="Wedding photography package" /></div>
+              <div><Label className="text-xs">Amount (GHS)</Label><Input type="number" value={quoteForm.amount} onChange={(e) => setQuoteForm((f) => ({ ...f, amount: e.target.value }))} /></div>
+              <Textarea value={quoteForm.description} onChange={(e) => setQuoteForm((f) => ({ ...f, description: e.target.value }))} rows={2} placeholder="What's included…" />
+              <Button size="sm" onClick={() => void sendQuote(l.id)} disabled={quoteSending}>Send quote</Button>
+            </div>
+          )}
           {replyLead === l.id && (
             <div className="flex gap-2 pt-1">
               <Textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={2} placeholder="Reply to organizer…" className="resize-none" />
@@ -240,9 +294,30 @@ export default function VendorPortalClient() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="bookings" className="mt-4">
+        <TabsContent value="bookings" className="mt-4 space-y-4">
           <Card>
-            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Calendar className="h-4 w-4" /> Bookings & Leads</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Calendar className="h-4 w-4" /> Active Bookings</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {bookings.length === 0 ? (
+                <p className="text-slate-500 text-sm">No confirmed bookings yet. Send quotes from leads below.</p>
+              ) : bookings.map((b) => (
+                <div key={b.id} className="rounded-lg border p-3 text-sm flex flex-wrap justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{b.serviceName ?? "Booking"}</p>
+                    <p className="text-xs text-slate-500">{b.organizer?.name ?? "Organizer"}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{b.status}</Badge>
+                    {["DEPOSIT_PAID", "CONFIRMED", "IN_PROGRESS"].includes(b.status) && (
+                      <Button size="sm" variant="outline" onClick={() => void markDelivered(b.id)}>Mark delivered</Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Leads & Enquiries</CardTitle></CardHeader>
             <CardContent>{leadsList}</CardContent>
           </Card>
         </TabsContent>

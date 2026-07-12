@@ -1,5 +1,5 @@
 import { PrismaClient, UserRole, UserStatus } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/auth/password";
 
 export const PLATFORM_ACCOUNTS = [
   { email: "admin@celeventic.com", password: "Admin@123", name: "Super Admin", role: UserRole.SUPER_ADMIN },
@@ -31,7 +31,7 @@ export async function ensurePlatformAccounts(
       select: { id: true, passwordHash: true },
     });
 
-    const passwordHash = await bcrypt.hash(account.password, 12);
+    const passwordHash = await hashPassword(account.password);
     const shouldSetPassword = !existing || !existing.passwordHash || forceReset;
 
     const user = await prisma.user.upsert({

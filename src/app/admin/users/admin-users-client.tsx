@@ -16,7 +16,7 @@ import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 import { assignableRolesFor, canAssignAdminRole, canModifyUser } from "@/lib/admin-permissions";
 import { formatRoleLabel } from "@/lib/role-labels";
 import type { UserRole } from "@prisma/client";
-import { Pencil, Trash2, Mail, Shield } from "lucide-react";
+import { Pencil, Trash2, Mail, Shield, LogOut, KeyRound } from "lucide-react";
 
 interface UserRow {
   id: string;
@@ -120,6 +120,33 @@ export function AdminUsersClient({
     const label = formatRoleLabel(role);
     if (!confirm(`Change ${user.name} to ${label}?`)) return;
     await updateUser(user.id, { role });
+  }
+
+  async function forceLogout(user: UserRow) {
+    if (!confirm(`Force logout ${user.name}? They must sign in again.`)) return;
+    setError("");
+    const res = await fetch("/api/admin/users/force-logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id }),
+    });
+    const d = await res.json();
+    if (res.ok) setSuccess(`Forced logout for ${user.name}`);
+    else setError(d.error);
+  }
+
+  async function resetPassword(user: UserRow) {
+    const password = prompt(`New password for ${user.name} (min 8 characters):`);
+    if (!password || password.length < 8) return;
+    setError("");
+    const res = await fetch("/api/admin/users/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id, password }),
+    });
+    const d = await res.json();
+    if (res.ok) setSuccess(`Password reset for ${user.name} — user must sign in again`);
+    else setError(d.error);
   }
 
   async function deleteUser(id: string, name: string) {
@@ -362,6 +389,16 @@ export function AdminUsersClient({
                           onClick={() => void setUserRole(user, "ORGANIZER")}
                         >
                           <Shield className="h-3.5 w-3.5 text-amber-600" />
+                        </Button>
+                      )}
+                      {canModifyUser(actorRole, user.role as UserRole) && (
+                        <Button size="sm" variant="ghost" onClick={() => void forceLogout(user)} title="Force logout">
+                          <LogOut className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {canModifyUser(actorRole, user.role as UserRole) && (
+                        <Button size="sm" variant="ghost" onClick={() => void resetPassword(user)} title="Reset password">
+                          <KeyRound className="h-3.5 w-3.5" />
                         </Button>
                       )}
                       {canModifyUser(actorRole, user.role as UserRole) && (

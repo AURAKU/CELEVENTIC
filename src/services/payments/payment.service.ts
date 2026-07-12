@@ -103,6 +103,7 @@ export class PaymentService {
       ticketOrderId?: string;
       campaignId?: string;
       invitationOrderId?: string;
+      vendorBookingId?: string;
       idempotencyKey?: string;
       commerce?: {
         baseCurrency: string;
@@ -152,6 +153,7 @@ export class PaymentService {
         ticketOrderId: relations?.ticketOrderId,
         campaignId: relations?.campaignId,
         invitationOrderId: relations?.invitationOrderId,
+        vendorBookingId: relations?.vendorBookingId,
       },
     });
 
@@ -256,6 +258,13 @@ export class PaymentService {
       if (revisionId) {
         const { productionWorkflowService } = await import("@/services/invitations/production-workflow.service");
         await productionWorkflowService.onRevisionPaymentSuccess(revisionId);
+      }
+    } else if (payment.purpose === "VENDOR_BOOKING") {
+      const meta = payment.metadata as Record<string, unknown> | null;
+      const bookingId = typeof meta?.bookingId === "string" ? meta.bookingId : null;
+      if (bookingId) {
+        const { marketplaceEscrowService } = await import("@/services/marketplace/marketplace-escrow.service");
+        await marketplaceEscrowService.onPaymentSuccess(payment.id, bookingId);
       }
     } else if (payment.purpose === "INVITATION_ORDER") {
       const meta = payment.metadata as Record<string, unknown> | null;

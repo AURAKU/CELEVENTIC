@@ -1,52 +1,64 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/auth/password";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { onboardingService } from "@/services/workspace/onboarding.service";
 
-const registerSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email().optional(),
-  phone: z.string().min(10).optional(),
-  password: z.string().min(8),
-}).refine((data) => data.email || data.phone, {
-  message: "Email or phone is required",
-});
+const registerSchema = z
+  .object({
+    name: z.string().min(2),
+    email: z.string().email().optional(),
+    phone: z.string().min(10).optional(),
+    password: z.string().min(8),
+    accountType: z.enum(["ORGANIZER", "EVENT_OWNER", "VENDOR", "ORGANIZATION"]).optional(),
+    username: z.string().min(3).max(30).regex(/^[a-z0-9_]+$/).optional(),
+    companyName: z.string().optional(),
+    city: z.string().optional(),
+    region: z.string().optional(),
+    country: z.string().optional(),
+    organizationName: z.string().optional(),
+    vendorCategory: z.string().optional(),
+    joinIntent: z.boolean().optional(),
+  })
+  .refine((data) => data.email || data.phone, {
+    message: "Email or phone is required",
+  })
+  .refine(
+    (data) => data.accountType !== "ORGANIZATION" || data.organizationName,
+    { message: "Organization name is required", path: ["organizationName"] }
+  );
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const data = registerSchema.parse(body);
+    const passwordHash = await hashPassword(data.password);
 
-    if (data.email) {
-      const email = data.email.toLowerCase();
-      const existing = await prisma.user.findUnique({ where: { email } });
-      if (existing) return NextResponse.json({ error: "Email already registered" }, { status: 409 });
-      data.email = email;
-    }
-
-    if (data.phone) {
-      const existing = await prisma.user.findUnique({ where: { phone: data.phone } });
-      if (existing) return NextResponse.json({ error: "Phone already registered" }, { status: 409 });
-    }
-
-    const passwordHash = await bcrypt.hash(data.password, 12);
-
-    const user = await prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        passwordHash,
-        role: "ORGANIZER",
-      },
-      select: { id: true, name: true, email: true, phone: true, role: true },
+    const result = await onboardingService.register({
+      accountType: data.accountType ?? "ORGANIZER",
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      passwordHash,
+      username: data.username,
+      companyName: data.companyName,
+      city: data.city,
+      region: data.region,
+      country: data.country,
+      organizationName: data.organizationName,
+      vendorCategory: data.vendorCategory,
+      joinIntent: data.joinIntent,
     });
 
-    return NextResponse.json({ success: true, data: user }, { status: 201 });
+    return NextResponse.json(
+      { success: true, data: result.user, redirect: result.redirect },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Registration failed";
+    const status = message.includes("already") ? 409 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

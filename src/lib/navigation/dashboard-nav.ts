@@ -39,6 +39,7 @@ import {
   Building2,
   Plug,
   Lock,
+  Plus,
 } from "lucide-react";
 
 export type WorkspaceId = "organizer" | "vendor" | "funeral" | "admin";
@@ -69,16 +70,28 @@ export const ORGANIZER_NAV: NavSection[] = [
     labelKey: "dashboard.nav_section_events",
     items: [
       { href: "/dashboard/events", labelKey: "dashboard.nav_events", icon: Calendar },
+      { href: "/dashboard/events/create", labelKey: "dashboard.nav_create_event", icon: Plus },
+      { href: "/dashboard/invitations/workspace", labelKey: "dashboard.nav_collaborations", icon: Mail },
+      { href: "/dashboard/events", labelKey: "dashboard.nav_tasks", icon: Clock },
+      { href: "/dashboard/events", labelKey: "dashboard.nav_calendar", icon: Calendar },
+      { href: "/dashboard/organizers", labelKey: "dashboard.nav_find_organizer", icon: Users },
       { href: "/dashboard/ai-planner", labelKey: "dashboard.nav_ai_planner", icon: Sparkles },
-      { href: "/dashboard/guests", labelKey: "dashboard.nav_guests", icon: Users },
-      { href: "/dashboard/tickets", labelKey: "dashboard.nav_tickets", icon: Ticket },
-      { href: "/dashboard/qr-admission", labelKey: "dashboard.nav_qr", icon: QrCode },
-      { href: "/dashboard/seating", labelKey: "dashboard.nav_seating", icon: Armchair },
     ],
   },
   {
-    id: "studio",
-    labelKey: "dashboard.nav_section_studio",
+    id: "guests",
+    labelKey: "dashboard.nav_section_guests",
+    items: [
+      { href: "/dashboard/guests", labelKey: "dashboard.nav_guests", icon: Users },
+      { href: "/dashboard/guests", labelKey: "dashboard.nav_rsvp", icon: Users },
+      { href: "/dashboard/tickets", labelKey: "dashboard.nav_tickets", icon: Ticket },
+      { href: "/dashboard/seating", labelKey: "dashboard.nav_seating", icon: Armchair },
+      { href: "/dashboard/qr-admission", labelKey: "dashboard.nav_qr", icon: QrCode },
+    ],
+  },
+  {
+    id: "design",
+    labelKey: "dashboard.nav_section_design",
     items: [
       { href: "/dashboard/design-studio", labelKey: "dashboard.nav_design_studio", icon: Palette },
       { href: "/dashboard/invitations?tab=studio", labelKey: "dashboard.nav_invitation_studio", icon: Mail },
@@ -89,22 +102,14 @@ export const ORGANIZER_NAV: NavSection[] = [
     ],
   },
   {
-    id: "invitations",
-    labelKey: "dashboard.nav_section_invitations",
-    items: [
-      { href: "/dashboard/invitations", labelKey: "dashboard.nav_invitations", icon: Mail, exact: true },
-      { href: "/dashboard/guests", labelKey: "dashboard.nav_rsvp", icon: Users },
-      { href: "/dashboard/events", labelKey: "dashboard.nav_guest_pages", icon: BookOpen },
-      { href: "/dashboard/memory?tab=legacy", labelKey: "dashboard.nav_thank_you", icon: Heart },
-    ],
-  },
-  {
     id: "marketplace",
     labelKey: "dashboard.nav_section_marketplace",
     items: [
       { href: "/marketplace", labelKey: "dashboard.nav_marketplace", icon: Store },
       { href: "/dashboard/venues", labelKey: "dashboard.nav_venues", icon: MapPin },
       { href: "/dashboard/my-collection", labelKey: "dashboard.nav_saved", icon: Heart },
+      { href: "/dashboard/quotes", labelKey: "dashboard.nav_quotes", icon: Receipt },
+      { href: "/dashboard/bookings", labelKey: "dashboard.nav_bookings", icon: Calendar },
       { href: "/dashboard/discovery", labelKey: "dashboard.nav_discovery", icon: Compass },
       { href: "/dashboard/design-studio/marketplace", labelKey: "dashboard.nav_template_marketplace", icon: Store },
     ],
@@ -163,6 +168,7 @@ export const ORGANIZER_NAV: NavSection[] = [
       { href: "/dashboard/privacy-center", labelKey: "dashboard.nav_privacy", icon: Lock },
       { href: "/dashboard/settings?tab=security", labelKey: "dashboard.nav_security", icon: Shield },
       { href: "/dashboard/settings?tab=billing", labelKey: "dashboard.nav_billing", icon: CreditCard },
+      { href: "/dashboard/help", labelKey: "dashboard.nav_help", icon: BookOpen },
     ],
   },
 ];
@@ -175,6 +181,7 @@ export const VENDOR_NAV: NavSection[] = [
       { href: "/dashboard/vendor-portal", labelKey: "dashboard.nav_vendor_dashboard", icon: Store, exact: true },
       { href: "/dashboard/vendor-portal?section=portfolio", labelKey: "dashboard.nav_portfolio", icon: Image },
       { href: "/dashboard/vendor-portal?section=bookings", labelKey: "dashboard.nav_bookings", icon: Calendar },
+      { href: "/dashboard/vendor-portal?section=quotes", labelKey: "dashboard.nav_quotes", icon: Receipt },
       { href: "/dashboard/vendor-portal?section=clients", labelKey: "dashboard.nav_clients", icon: Users },
       { href: "/dashboard/vendor-portal?section=services", labelKey: "dashboard.nav_services", icon: Package },
       { href: "/dashboard/vendor-portal?section=availability", labelKey: "dashboard.nav_availability", icon: Clock },

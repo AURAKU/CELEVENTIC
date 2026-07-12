@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { getSession, isAdminRole } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import type { UserRole } from "@prisma/client";
@@ -7,6 +8,15 @@ import type { UserRole } from "@prisma/client";
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/auth/login");
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { accountType: true, onboardingCompletedAt: true },
+  });
+
+  if (!user?.accountType && !user?.onboardingCompletedAt && session.user.role !== "VENDOR") {
+    redirect("/auth/onboarding/intent");
+  }
 
   const cookieStore = await cookies();
   const adminViewMode = cookieStore.get("admin_view_mode");

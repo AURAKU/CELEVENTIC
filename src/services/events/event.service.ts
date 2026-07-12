@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { slugify, generateToken } from "@/lib/utils";
 import { paginatedResult } from "@/lib/pagination";
+import { eventAccessWhere } from "@/lib/workspace/event-access";
+import { getTemplateCategoriesForEventType } from "@/lib/blueprints";
 import type { EventType, EventStatus, PricingType } from "@prisma/client";
 
 export interface CreateEventInput {
@@ -71,11 +73,24 @@ export class EventService {
     });
   }
 
-  async getThemes() {
+  async getThemes(eventType?: EventType) {
+    const categories = eventType ? getTemplateCategoriesForEventType(eventType) : [];
+
+    const where = eventType
+      ? {
+          isActive: true,
+          OR: [
+            { eventType },
+            { eventType: null },
+            ...(categories.length ? [{ category: { in: categories } }] : []),
+          ],
+        }
+      : { isActive: true };
+
     return prisma.eventTemplate.findMany({
-      where: { isActive: true },
+      where,
       orderBy: { name: "asc" },
-      select: { id: true, name: true, slug: true, category: true },
+      select: { id: true, name: true, slug: true, category: true, eventType: true },
     });
   }
 
@@ -94,16 +109,16 @@ export class EventService {
     });
   }
 
-  async getOrganizerEvents(organizerId: string, page = 1, limit = 12) {
+  async getOrganizerEvents(userId: string, page = 1, limit = 12) {
     const skip = (page - 1) * limit;
-    const where = { organizerId };
+    const where = eventAccessWhere(userId);
 
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,
         include: {
           package: true,
-          _count: { select: { guests: true, tickets: true, invitations: true } },
+          _count: { select: { guests: true, tickets: true, invitations: true, collaborators: true } },
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -120,10 +135,7 @@ export class EventService {
       where: userId
         ? {
             id,
-            OR: [
-              { organizerId: userId },
-              { staff: { some: { userId, isActive: true } } },
-            ],
+            ...eventAccessWhere(userId),
           }
         : { id },
       include: {

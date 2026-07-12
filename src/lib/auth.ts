@@ -3,17 +3,19 @@ import { NextAuthOptions, getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { isAdminRole } from "@/lib/roles";
+import { canAccessAdminPanel } from "@/lib/rbac";
+import { verifyCredentials, toSafeLoginMessage, LoginFailureReason } from "@/lib/auth/login-diagnostics";
+import { authLog } from "@/lib/auth/auth-logger";
 import {
   applySyncedUserToToken,
   invalidateAuthToken,
+  isTokenIssuedBeforeInvalidation,
   syncUserTokenFromDb,
 } from "@/lib/auth/sync-user-token";
 import type { UserRole } from "@prisma/client";
 
-export { isAdminRole };
+export { canAccessAdminPanel as isAdminRole };
 
 declare module "next-auth" {
   interface Session {
@@ -25,6 +27,8 @@ declare module "next-auth" {
       image?: string | null;
       role: UserRole;
       isAdminView?: boolean;
+      accountType?: string | null;
+      onboardingCompletedAt?: string | null;
     };
   }
   interface User {
@@ -40,12 +44,17 @@ declare module "next-auth/jwt" {
     phone?: string | null;
     isAdminView?: boolean;
     invalid?: boolean;
+    accountType?: string | null;
+    onboardingCompletedAt?: string | null;
   }
 }
 
 interface SessionUpdate {
   isAdminView?: boolean;
 }
+
+const useSecureCookies =
+  process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https://");
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],
@@ -55,6 +64,14 @@ export const authOptions: NextAuthOptions = {
   process.env.VERCEL === "1"
     ? ({ trustHost: true } as Partial<NextAuthOptions>)
     : {}),
+  cookies: useSecureCookies
+    ? {
+        sessionToken: {
+          name: "__Secure-next-auth.session-token",
+          options: { httpOnly: true, sameSite: "lax", path: "/", secure: true },
+        },
+      }
+    : undefined,
   pages: {
     signIn: "/auth/login",
     error: "/auth/login",
@@ -73,34 +90,21 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.identifier || !credentials?.password) return null;
+        const result = await verifyCredentials(
+          credentials?.identifier ?? "",
+          credentials?.password ?? ""
+        );
+        if (result.ok) return result.user;
 
-        const identifier = credentials.identifier.trim();
-        const isEmail = identifier.includes("@");
-        const normalizedIdentifier = isEmail ? identifier.toLowerCase() : identifier;
-
-        const user = await prisma.user.findFirst({
-          where: isEmail ? { email: normalizedIdentifier } : { phone: normalizedIdentifier },
-        });
-
-        if (!user || !user.passwordHash || user.status === "SUSPENDED") return null;
-
-        const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!valid) return null;
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        });
-
-        return {
-          id: user.id,
-          email: user.email,
-          phone: user.phone,
-          name: user.name,
-          image: user.avatarUrl,
-          role: user.role,
-        };
+        if (
+          result.reason === LoginFailureReason.ACCOUNT_SUSPENDED ||
+          result.reason === LoginFailureReason.EMAIL_NOT_VERIFIED ||
+          result.reason === LoginFailureReason.DATABASE_ERROR ||
+          result.reason === LoginFailureReason.MISSING_CREDENTIALS
+        ) {
+          throw new Error(toSafeLoginMessage(result.reason));
+        }
+        return null;
       },
     }),
   ],
@@ -114,16 +118,20 @@ export const authOptions: NextAuthOptions = {
       }
       if (trigger === "update" && session) {
         const update = session as SessionUpdate;
-        if (update.isAdminView !== undefined) {
-          token.isAdminView = update.isAdminView;
-        }
+        if (update.isAdminView !== undefined) token.isAdminView = update.isAdminView;
       }
 
       if (token.id && !token.invalid) {
         const synced = await syncUserTokenFromDb(token.id);
         if (!synced) {
+          authLog("jwt_invalidated", { userId: token.id, reason: "missing_or_suspended" });
           return invalidateAuthToken(token);
         }
+        if (isTokenIssuedBeforeInvalidation(token.iat as number | undefined, synced.sessionInvalidatedAt)) {
+          authLog("jwt_invalidated", { userId: token.id, reason: "force_logout" });
+          return invalidateAuthToken(token);
+        }
+        authLog("jwt_sync", { userId: token.id, role: synced.role });
         return applySyncedUserToToken(token, synced);
       }
 
@@ -138,6 +146,8 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role;
         session.user.phone = token.phone;
         session.user.isAdminView = token.isAdminView;
+        session.user.accountType = token.accountType ?? null;
+        session.user.onboardingCompletedAt = token.onboardingCompletedAt ?? null;
         if (token.name) session.user.name = token.name as string;
         if (token.email) session.user.email = token.email as string;
         if (token.picture) session.user.image = token.picture as string;
@@ -157,6 +167,13 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const session = await requireAuth();
-  if (!isAdminRole(session.user.role)) throw new Error("Forbidden");
+  if (!canAccessAdminPanel(session.user.role)) throw new Error("Forbidden");
   return session;
+}
+
+export async function forceLogoutUser(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { sessionInvalidatedAt: new Date() },
+  });
 }

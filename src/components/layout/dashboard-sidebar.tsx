@@ -12,11 +12,14 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { GlobalSearch } from "@/components/layout/global-search";
+import { EventWorkspaceNav } from "@/components/layout/event-workspace-nav";
+import { useEventWorkspace, getActiveEventId, setActiveEventId as persistActiveEventId } from "@/hooks/use-event-workspace";
 import { isAdminRole } from "@/lib/roles";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { getNavSections, type WorkspaceId } from "@/lib/navigation/dashboard-nav";
+import type { WorkspaceId } from "@/lib/navigation/dashboard-nav";
+import { getFilteredNavSections } from "@/lib/navigation/nav-filter";
 import { getStoredWorkspace } from "@/components/layout/workspace-switcher";
-import type { UserRole } from "@prisma/client";
+import type { AccountType, UserRole } from "@prisma/client";
 
 interface DashboardSidebarProps {
   mobileOpen?: boolean;
@@ -28,23 +31,46 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { t } = useLocale();
-  const [workspace, setWorkspace] = useState<WorkspaceId>("organizer");
+  const [accountWorkspace, setAccountWorkspace] = useState<WorkspaceId>("organizer");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const [activeEventId, setActiveEventId] = useState("");
+  const { workspace: eventWorkspace } = useEventWorkspace(activeEventId || undefined);
 
   const isAdmin = session?.user?.role && isAdminRole(session.user.role as UserRole);
 
   useEffect(() => {
-    setWorkspace(getStoredWorkspace());
+    setActiveEventId(getActiveEventId());
+    const handler = (e: Event) => {
+      setActiveEventId((e as CustomEvent<string>).detail || getActiveEventId());
+    };
+    window.addEventListener("celeventic:active-event", handler);
+    return () => window.removeEventListener("celeventic:active-event", handler);
+  }, []);
+
+  useEffect(() => {
+    const match = pathname.match(/^\/dashboard\/events\/([^/]+)/);
+    if (match?.[1] && match[1] !== "create") {
+      setActiveEventId(match[1]);
+      persistActiveEventId(match[1]);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    setAccountWorkspace(getStoredWorkspace());
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<WorkspaceId>).detail;
-      if (detail) setWorkspace(detail);
+      if (detail) setAccountWorkspace(detail);
     };
     window.addEventListener("celeventic:workspace", handler);
     return () => window.removeEventListener("celeventic:workspace", handler);
   }, []);
 
-  const sections = useMemo(() => getNavSections(workspace), [workspace]);
+  const accountType = session?.user?.accountType as AccountType | undefined;
+  const sections = useMemo(() => {
+    return getFilteredNavSections(accountWorkspace, accountType);
+  }, [accountWorkspace, accountType]);
 
   function isActive(href: string, exact?: boolean) {
     const [path, queryString] = href.split("?");
@@ -138,7 +164,14 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
       </div>
 
       <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-2 space-y-3 scrollbar-thin">
-        {sections.map((section) => {
+        {eventWorkspace && activeEventId ? (
+          <EventWorkspaceNav
+            items={eventWorkspace.navigation}
+            eventTitle={eventWorkspace.eventTitle}
+            eventType={eventWorkspace.eventType}
+          />
+        ) : (
+          sections.map((section) => {
           const isCollapsed = collapsed[section.id] === true;
           const hasActive = section.items.some((item) => isActive(item.href, item.exact));
 
@@ -184,7 +217,8 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
               </div>
             </div>
           );
-        })}
+          })
+        )}
       </nav>
 
       {isAdmin && (

@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { eventService } from "@/services/events/event.service";
+import { workspaceProvisionService } from "@/services/entitlements/workspace-provision.service";
 import { createAuditLog } from "@/lib/audit";
 import { parsePaginationFromUrl, PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
+import { eventService } from "@/services/events/event.service";
+import type { UserRole } from "@prisma/client";
 
 const createEventSchema = z.object({
   title: z.string().min(3),
@@ -24,6 +26,7 @@ const createEventSchema = z.object({
   coverImageUrl: z.string().optional(),
   themeId: z.string().optional(),
   packageId: z.string().optional(),
+  typeSpecific: z.record(z.unknown()).optional(),
 });
 
 export async function GET(req: Request) {
@@ -74,15 +77,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Start date is required" }, { status: 400 });
     }
 
-    const event = await eventService.createEvent({
-      ...data,
-      eventType: data.eventType as never,
-      startDate: new Date(data.startDate),
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
-      packageId: data.packageId || undefined,
-      themeId: data.themeId || undefined,
-      organizerId: session.user.id,
-    });
+    const event = await workspaceProvisionService.createEventWithWorkspace(
+      {
+        title: data.title,
+        eventType: data.eventType as never,
+        hostName: data.hostName,
+        description: data.description,
+        startDate: new Date(data.startDate),
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        venueName: data.venueName,
+        landmark: data.landmark,
+        mapsLink: data.mapsLink,
+        contactPhone: data.contactPhone,
+        dressCode: data.dressCode,
+        expectedGuests: data.expectedGuests,
+        pricingType: data.pricingType,
+        coverImageUrl: data.coverImageUrl,
+        packageId: data.packageId,
+        themeId: data.themeId,
+        organizerId: session.user.id,
+        typeSpecific: data.typeSpecific,
+      },
+      session.user.role as UserRole
+    );
 
     await createAuditLog({
       userId: session.user.id,

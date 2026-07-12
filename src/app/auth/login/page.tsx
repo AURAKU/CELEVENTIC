@@ -29,7 +29,11 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError("Invalid credentials. Please try again.");
+      setError(
+        result.error === "CredentialsSignin"
+          ? "Invalid credentials. Please try again."
+          : result.error
+      );
       setLoading(false);
       return;
     }
