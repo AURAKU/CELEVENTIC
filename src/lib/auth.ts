@@ -53,8 +53,9 @@ interface SessionUpdate {
   isAdminView?: boolean;
 }
 
-const useSecureCookies =
-  process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https://");
+// Secure cookie names require HTTPS. Using them with NODE_ENV=production on
+// http://localhost breaks middleware auth (Secure cookies are not sent over HTTP).
+const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://") === true;
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],

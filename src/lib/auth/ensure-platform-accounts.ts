@@ -41,6 +41,8 @@ export async function ensurePlatformAccounts(
         status: UserStatus.ACTIVE,
         isVerified: true,
         emailVerified: new Date(),
+        // Demo platform accounts skip onboarding gates for local/prod smoke access
+        onboardingCompletedAt: new Date(),
         ...(shouldSetPassword ? { passwordHash } : {}),
       },
       create: {
@@ -51,6 +53,7 @@ export async function ensurePlatformAccounts(
         status: UserStatus.ACTIVE,
         isVerified: true,
         emailVerified: new Date(),
+        onboardingCompletedAt: new Date(),
       },
     });
 

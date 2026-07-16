@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
+/**
+ * Root error boundary — keep dependencies minimal.
+ * Heavy UI imports here can break the production SSR module graph.
+ */
 export default function GlobalError({
   error,
   reset,
@@ -17,19 +19,69 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body className="min-h-screen bg-mesh flex items-center justify-center p-6 font-sans">
-        <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-lg text-center">
-          <h1 className="text-xl font-bold text-slate-900">Something went wrong</h1>
-          <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-            Celeventic hit a client-side error. Try a hard refresh (Ctrl+Shift+R). If you were running
-            both <code className="text-xs">npm run dev</code> and <code className="text-xs">npm run start</code> at
-            once, stop one server and run <code className="text-xs">npm run build:clean</code>.
+      <body
+        style={{
+          margin: 0,
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          fontFamily: "system-ui, sans-serif",
+          background: "#f8fafc",
+          color: "#0f172a",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 420,
+            width: "100%",
+            borderRadius: 16,
+            border: "1px solid #e2e8f0",
+            background: "#fff",
+            padding: 32,
+            textAlign: "center",
+            boxShadow: "0 10px 30px rgba(15,23,42,0.08)",
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Something went wrong</h1>
+          <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.5, color: "#475569" }}>
+            Celeventic hit an unexpected error. Try again, or return home.
           </p>
-          <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
-            <Button onClick={() => reset()}>Try again</Button>
-            <Button variant="outline" asChild>
-              <Link href="/">Go home</Link>
-            </Button>
+          <div style={{ marginTop: 24, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => reset()}
+              style={{
+                border: 0,
+                borderRadius: 8,
+                padding: "10px 16px",
+                background: "#0d9488",
+                color: "#fff",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Try again
+            </button>
+            {/* Plain <a>: global-error must not import next/link (breaks SSR module graph). */}
+            <button
+              type="button"
+              onClick={() => {
+                window.location.assign("/");
+              }}
+              style={{
+                borderRadius: 8,
+                padding: "10px 16px",
+                border: "1px solid #cbd5e1",
+                background: "#fff",
+                color: "#0f172a",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Go home
+            </button>
           </div>
         </div>
       </body>
