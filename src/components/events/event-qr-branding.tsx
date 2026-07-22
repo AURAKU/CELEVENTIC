@@ -6,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
+import {
+  smartCompressImage,
+  extensionForBlob,
+  formatBytes,
+  QR_LOGO_COMPRESSION,
+} from "@/lib/image/smart-compress";
 
 interface EventQrBrandingProps {
   eventId: string;
@@ -16,27 +22,52 @@ export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
   const [url, setUrl] = useState(initialUrl ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   async function uploadCropped(blob: Blob, name: string) {
     setLoading(true);
     setError("");
-    const fd = new FormData();
-    fd.append("file", new File([blob], name, { type: blob.type || "image/png" }));
-    const res = await fetch(`/api/events/${eventId}/qr-center-image`, { method: "POST", body: fd });
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok) {
+    setNotice("");
+    try {
+      // Compress before upload so any source size is accepted. The QR renders the
+      // logo at ~342px max, so the 1024px cap is invisible in the output.
+      const result = await smartCompressImage(blob, QR_LOGO_COMPRESSION);
+      const finalName = name.replace(/\.[^.]+$/, "") + "." + extensionForBlob(result.blob);
+
+      const fd = new FormData();
+      fd.append("file", new File([result.blob], finalName, { type: result.blob.type }));
+      const res = await fetch(`/api/events/${eventId}/qr-center-image`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const message = (data?.error as string) ?? "Upload failed";
+        setError(message);
+        throw new Error(message);
+      }
+
       setUrl(data.data.url);
-      return { url: data.data.url, name };
+      if (!result.untouched) {
+        setNotice(
+          `Optimised ${formatBytes(result.originalBytes)} → ${formatBytes(result.blob.size)} ` +
+            `at ${result.width}×${result.height}${result.hasAlpha ? " · transparency kept" : ""}`
+        );
+      }
+      return { url: data.data.url, name: finalName };
+    } finally {
+      setLoading(false);
     }
-    setError(data.error ?? "Upload failed");
-    throw new Error(data.error);
   }
 
   async function remove() {
     setLoading(true);
     const res = await fetch(`/api/events/${eventId}/qr-center-image`, { method: "DELETE" });
-    if (res.ok) setUrl(null);
+    if (res.ok) {
+      setUrl(null);
+      setNotice("");
+      setError("");
+    }
     setLoading(false);
   }
 
@@ -50,7 +81,8 @@ export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-slate-600">
-          Upload and crop your event logo for branded QR codes. Square crop recommended.
+          Upload any image, at any size — it is optimised automatically. Crop freely to any
+          shape or region; square reads best in the QR centre.
         </p>
 
         {url && (
@@ -60,21 +92,26 @@ export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
         )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
+        {notice && <p className="text-sm text-emerald-700">{notice}</p>}
 
         <ImageUploadCropper
-          defaultAspect="1:1"
-          allowedAspects={CROP_PRESETS.logo}
+          defaultAspect="free"
+          allowedAspects={CROP_PRESETS.all}
           previewUrl={url}
           onClear={() => void remove()}
           disabled={loading}
           buttonLabel={url ? "Replace logo" : "Upload & crop logo"}
-          hint="Import from device, then crop to square for QR center."
+          hint="Import from device, then crop any part of the image."
+          maxFileBytes={Infinity}
+          dropzoneNote="or drag & drop · JPEG, PNG, WebP, GIF · any size"
           onCustomUpload={uploadCropped}
           onUploaded={(r) => setUrl(r.url)}
           onError={setError}
         />
 
-        <p className="text-xs text-slate-400">JPEG, PNG, or WebP · max 2MB</p>
+        <p className="text-xs text-slate-400">
+          JPEG, PNG, WebP or GIF · any file size · transparency preserved
+        </p>
       </CardContent>
     </Card>
   );

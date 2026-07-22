@@ -25,6 +25,17 @@ export const INVITATION_ACTION_KEYS = [
 
 export type InvitationActionKey = (typeof INVITATION_ACTION_KEYS)[number];
 
+/**
+ * Experience Engine aliases (Phase 2). Prefer importing ACTION_ALIASES from
+ * `@/lib/experience-engine` for validation; these stay here for discoverability.
+ * ADD_TO_CALENDAR → SAVE_DATE, FIND_SEAT → SEATING, TICKET → QR_PASS.
+ */
+export const GUEST_ACTION_ALIASES = {
+  ADD_TO_CALENDAR: "SAVE_DATE",
+  FIND_SEAT: "SEATING",
+  TICKET: "QR_PASS",
+} as const satisfies Record<string, InvitationActionKey>;
+
 export type GuestActionKind = "scroll" | "href" | "handler" | "menu" | "disabled";
 
 export interface GuestPortalActionContext {
@@ -42,6 +53,8 @@ export interface GuestPortalActionContext {
   qrPassUrl?: string | null;
   galleryCount: number;
   memoryVaultEnabled: boolean;
+  memoryUploadUrl?: string | null;
+  memoryAlbumUrl?: string | null;
   menuUrl?: string | null;
   menuBody?: string | null;
   registryUrl?: string | null;
@@ -101,7 +114,7 @@ export const ACTION_LABELS: Record<InvitationActionKey, { label: string; sub?: s
   SEATING: { label: "My Seat" },
   MENU: { label: "Menu" },
   GALLERY: { label: "Gallery" },
-  MEMORY_UPLOAD: { label: "Memories" },
+  MEMORY_UPLOAD: { label: "Album" },
   CONTRIBUTION: { label: "Gift" },
   CALL: { label: "Call" },
   WHATSAPP: { label: "WhatsApp" },
@@ -129,7 +142,15 @@ export function buildEmailUrl(email: string, subject: string, body?: string): st
 
 export function isPreviewInvitationId(id?: string): boolean {
   if (!id) return false;
-  return id.startsWith("preview") || id === "studio-preview" || id.includes("preview-");
+  return (
+    id.startsWith("preview") ||
+    id === "studio-preview" ||
+    id.includes("preview-") ||
+    id.startsWith("demo-") ||
+    id.startsWith("sample-") ||
+    id.startsWith("catalog-") ||
+    id.startsWith("thumb-")
+  );
 }
 
 export function resolveGuestPortalActions(
@@ -263,11 +284,13 @@ export function resolveGuestPortalActions(
     });
   }
 
-  if (ctx.memoryVaultEnabled && ctx.hubTabs.includes("memory")) {
+  if ((ctx.memoryVaultEnabled || ctx.memoryUploadUrl) && ctx.hubTabs.includes("memory")) {
     actions.push({
       key: "MEMORY_UPLOAD",
       ...ACTION_LABELS.MEMORY_UPLOAD,
-      kind: "scroll",
+      kind: ctx.memoryUploadUrl ? "href" : "scroll",
+      href: ctx.memoryUploadUrl ?? undefined,
+      external: false,
       onClick: () => handlers.scrollTo("memory"),
       visible: true,
       sectionId: "memory",

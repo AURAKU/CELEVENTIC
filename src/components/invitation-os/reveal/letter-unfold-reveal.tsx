@@ -19,13 +19,22 @@ export function LetterUnfoldReveal({ guestName, eventTitle, hostName, onComplete
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-b from-amber-50 to-stone-200 overflow-hidden">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center bg-gradient-to-b from-amber-50 to-stone-200 overflow-hidden">
       <div className="relative z-10 text-center px-8 max-w-md">
         <p className="text-xs uppercase tracking-[0.4em] text-stone-500 mb-8">A letter for you</p>
 
         <motion.div
           onClick={!unfolded ? unfold : undefined}
-          className="mx-auto bg-amber-50 border border-stone-300 shadow-2xl cursor-pointer touch-manipulation"
+          onKeyDown={(e) => {
+            if (!unfolded && (e.key === "Enter" || e.key === " ")) {
+              e.preventDefault();
+              unfold();
+            }
+          }}
+          role="button"
+          tabIndex={unfolded ? -1 : 0}
+          aria-label="Unfold the letter"
+          className="mx-auto bg-amber-50 border border-stone-300 shadow-2xl cursor-pointer touch-manipulation focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-500"
           style={{ width: 280, originY: "top" }}
           animate={unfolded ? { scaleY: 1.4, y: -20 } : { scaleY: 0.15, y: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}

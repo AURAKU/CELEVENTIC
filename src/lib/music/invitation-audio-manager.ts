@@ -69,13 +69,27 @@ export function createInvitationAudioManager(
     const start = musicSelection.startSec;
     const end = musicSelection.endSec;
     const loop = musicSelection.loop ?? true;
+    const fadeOutSec = musicSelection.fadeOutSec ?? 0;
+    const fadeInSec = musicSelection.fadeInSec ?? 0;
 
     trimHandler = () => {
+      const targetVol = musicSelection?.volume ?? savedVolume;
+      // Fade the clip tail so trimmed audio never hard-cuts.
+      if (!muted && fadeOutSec > 0 && a.currentTime >= end - fadeOutSec && a.currentTime < end) {
+        const remaining = Math.max(0, end - a.currentTime);
+        a.volume = targetVol * (remaining / fadeOutSec);
+      }
       if (a.currentTime >= end - 0.05) {
         if (loop) {
           a.currentTime = start;
+          if (fadeOutSec > 0 || fadeInSec > 0) {
+            applyFadeIn(targetVol, Math.max(fadeInSec, 0.5));
+          } else if (!muted) {
+            a.volume = targetVol;
+          }
         } else {
           a.pause();
+          if (!muted) a.volume = targetVol;
           a.removeEventListener("timeupdate", trimHandler!);
         }
       }

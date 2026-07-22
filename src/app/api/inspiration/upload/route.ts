@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { inspirationEngineService } from "@/services/inspiration/inspiration-engine.service";
 import { storeUploadFile } from "@/lib/uploads/file-storage";
 
-const MAX_IMAGE = 10 * 1024 * 1024;
+const MAX_IMAGE = 25 * 1024 * 1024;
 const MAX_VIDEO = 50 * 1024 * 1024;
 const MAX_AUDIO = 20 * 1024 * 1024;
 

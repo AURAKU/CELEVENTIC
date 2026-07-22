@@ -41,10 +41,15 @@ export function PackageCard({ pkg, templateSlug, eventType, popular }: PackageCa
         {t("invitations.revisions_delivery", { revisions: pkg.revisions, days: pkg.deliveryDays })}
       </p>
       <ul className="mt-5 space-y-2">
-        {pkg.features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+        {(pkg.features?.length
+          ? pkg.features
+          : ["Digital invitation", "RSVP", "Guest list", "Share link"]
+        )
+          .filter((f) => typeof f === "string" && f.trim().length > 0)
+          .map((f) => (
+          <li key={f} className="flex items-start gap-2 text-sm text-slate-700">
             <Check className="h-4 w-4 text-[#0B8A83] shrink-0 mt-0.5" />
-            {f}
+            <span>{f}</span>
           </li>
         ))}
       </ul>

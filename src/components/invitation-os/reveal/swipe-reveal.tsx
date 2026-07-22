@@ -24,7 +24,7 @@ export function SwipeReveal({ guestName, eventTitle, onComplete }: SwipeRevealPr
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-black overflow-hidden">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-black overflow-hidden">
       <div className="absolute inset-0 opacity-30">
         {[...Array(20)].map((_, i) => (
           <motion.div

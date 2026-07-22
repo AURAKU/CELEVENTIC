@@ -20,32 +20,14 @@ export async function GET(req: Request) {
 
   await verifyEventAccess(eventId, session.user.id, session.user.role);
 
+  // Prefer analytics history (names, seats, search) even for legacy callers
   if (legacyLimit && !searchParams.get("page")) {
-    const { qrService } = await import("@/services/qr/qr.service");
     const limit = Math.min(parseInt(legacyLimit, 10) || 20, 100);
-    const scans = await qrService.getRecentScans(eventId, limit);
-    return NextResponse.json({
-      success: true,
-      data: scans.map((s) => ({
-        id: s.id,
-        result: s.result,
-        status:
-          s.result === "VALID"
-            ? "valid"
-            : s.result === "ALREADY_USED"
-              ? "already_checked_in"
-              : s.result === "EXPIRED"
-                ? "expired"
-                : s.result === "WRONG_EVENT"
-                  ? "wrong_event"
-                  : "invalid",
-        guestName: s.guest?.name,
-        ticketName: s.ticket?.name,
-        scannerName: s.scanner?.name,
-        gate: s.gate,
-        createdAt: s.createdAt,
-      })),
-    });
+    const historyUrl = new URL(req.url);
+    historyUrl.searchParams.set("page", "1");
+    historyUrl.searchParams.set("limit", String(limit));
+    const history = await qrAnalyticsService.getScanHistory(eventId, historyUrl.toString());
+    return NextResponse.json({ success: true, data: history.items });
   }
 
   const history = await qrAnalyticsService.getScanHistory(eventId, req.url);

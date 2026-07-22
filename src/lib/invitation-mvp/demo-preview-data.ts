@@ -1,7 +1,8 @@
 import { getDefaultDesignConfig, getTemplatePreset } from "@/lib/invitation-templates";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
-import { resolveDefaultMusicForLayout, catalogMusicUrl } from "@/lib/music/audio-experience-catalog";
+import { catalogMusicUrl } from "@/lib/music/audio-experience-catalog";
+import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import { getDemoGalleryUrls, getDemoHeroUrl, getDemoBackgroundUrl, resolveEventTheme } from "@/lib/invitation/demo-gallery-assets";
 import { syncDesignPageBackground } from "@/lib/invitation/studio-media-utils";
 import { getLayoutVisualProfile } from "@/lib/experience/layout-visual-profiles";
@@ -295,11 +296,14 @@ export function buildLivePreviewProps(
     musicAutoplay?: boolean;
     skipIntro?: boolean;
     skipTapGate?: boolean;
+    /** Prefer catalog SKU so Wave-1 shared layouts keep unique DNA */
+    catalogSlug?: string | null;
   }
 ) {
   const theme = resolveEventTheme(layoutSlug, category);
   const preset = getTemplatePreset(layoutSlug);
-  const baseDesign: InvitationDesignConfig = preset?.config ?? getDefaultDesignConfig(layoutSlug);
+  const identitySlug = options?.catalogSlug || layoutSlug;
+  const baseDesign: InvitationDesignConfig = getDefaultDesignConfig(identitySlug) ?? preset?.config ?? getDefaultDesignConfig(layoutSlug);
   const demo = getDemoContentForCategory(theme, layoutSlug);
   const enriched = enrichDesignWithExperienceDNA(baseDesign);
   const visual = getLayoutVisualProfile(layoutSlug);
@@ -348,11 +352,10 @@ export function buildLivePreviewProps(
   const designWithMedia = syncDesignPageBackground(design, themeBg, "image");
 
   const withMusic = templateSupportsMusicPreview(options?.features, options?.musicEnabled);
-  const dnaMusic = resolveDefaultMusicForLayout(
-    layoutSlug,
-    design.experience?.defaultAudioTrackId,
-    design.experience?.defaultAudioCategory
-  );
+  const dnaMusic = resolveInvitationMusic({
+    design,
+    catalogSlug: identitySlug,
+  }).musicSelection;
 
   let resolvedMusic = withMusic ? (dnaMusic ?? buildDemoMusicSelection(theme)) : null;
   if (resolvedMusic && theme === "Funeral") {

@@ -30,7 +30,7 @@ export function PalaceEntranceReveal({ guestName, eventTitle, hostName, onComple
   if (phase === "done") return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0a0a12] overflow-hidden">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb bg-[#0a0a12] overflow-hidden">
       <RevealConfetti active={phase === "hall"} />
 
       {/* Light beams */}

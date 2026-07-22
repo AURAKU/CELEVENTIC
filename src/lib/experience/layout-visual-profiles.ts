@@ -96,6 +96,13 @@ const PROFILES: Record<InvitationLayoutSlug, LayoutVisualProfile> = {
     vignette: "soft",
     overlayGradient: "from-amber-950/40 via-red-950/30 to-emerald-950/50",
   },
+  "traditional-marriage-ceremony": {
+    background: "linear-gradient(180deg, #FDF1EC 0%, #F8E6DC 50%, #E8C9B8 100%)",
+    accentGlow: "rgba(139,105,20,0.35)",
+    environment: "floating-petals",
+    vignette: "minimal",
+    overlayGradient: "from-rose-100/20 via-orange-50/10 to-amber-100/40",
+  },
   "floral-garden-romance": {
     background: "linear-gradient(180deg, #fff1f2 0%, #fce7f3 30%, #881337 100%)",
     accentGlow: "rgba(253,164,175,0.35)",

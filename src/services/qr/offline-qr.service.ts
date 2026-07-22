@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/utils";
 import type { QrScanResult } from "@prisma/client";
+import { QR_TYPES } from "@/lib/qr/qr-types";
+import { ensureGuestManualCode } from "@/lib/qr/manual-code";
 
 export class OfflineQrService {
   async verifyDeviceAccess(deviceId: string, userId: string) {
@@ -18,24 +20,48 @@ export class OfflineQrService {
   }
 
   async syncEventData(eventId: string) {
-    const qrCodes = await prisma.qrCode.findMany({
+    const guests = await prisma.guest.findMany({
       where: { eventId },
-      include: {
-        guest: { select: { id: true, name: true, status: true } },
-        ticket: { select: { id: true, name: true, status: true } },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        manualCode: true,
+        qrCodes: {
+          where: { type: QR_TYPES.GUEST_ADMISSION, isRevoked: false },
+          select: { token: true },
+          take: 1,
+        },
       },
     });
 
-    const guests = qrCodes
-      .filter((q) => q.guest)
-      .map((q) => ({
-        id: q.guest!.id,
-        name: q.guest!.name,
-        qrToken: q.token,
-        status: q.guest!.status,
-      }));
+    const guestRows = [];
+    for (const g of guests) {
+      let manualCode = g.manualCode;
+      if (!manualCode) {
+        try {
+          manualCode = await ensureGuestManualCode(g.id);
+        } catch {
+          manualCode = null;
+        }
+      }
+      const admissionToken = g.qrCodes[0]?.token ?? null;
+      if (!admissionToken && !manualCode) continue;
+      guestRows.push({
+        id: g.id,
+        name: g.name,
+        qrToken: admissionToken,
+        manualCode,
+        status: g.status,
+      });
+    }
 
-    const tickets = qrCodes
+    const ticketQrs = await prisma.qrCode.findMany({
+      where: { eventId, type: QR_TYPES.TICKET, isRevoked: false },
+      include: { ticket: { select: { id: true, name: true, status: true } } },
+    });
+
+    const tickets = ticketQrs
       .filter((q) => q.ticket)
       .map((q) => ({
         id: q.ticket!.id,
@@ -47,7 +73,7 @@ export class OfflineQrService {
     return {
       eventId,
       syncedAt: new Date().toISOString(),
-      guests,
+      guests: guestRows,
       tickets,
       checksum: generateToken(16),
     };

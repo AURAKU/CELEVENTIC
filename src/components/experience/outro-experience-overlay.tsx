@@ -71,15 +71,47 @@ export function OutroExperienceOverlay({ outroId, message, accentColor = "#D4A63
         />
       )}
 
-      {(outroId === "thank-you-fade" || outroId === "final-quote" || outroId === "see-you-soon") && (
+      {(outroId === "thank-you-fade" ||
+        outroId === "final-quote" ||
+        outroId === "see-you-soon" ||
+        outroId === "credits-page" ||
+        outroId === "candle-legacy") && (
         <motion.p
           className="absolute bottom-8 left-0 right-0 text-center text-sm px-6 opacity-40"
           style={{ color: accentColor }}
           animate={{ opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 4, repeat: Infinity }}
         >
-          {outroId === "see-you-soon" ? "See you soon ✦" : text}
+          {outroId === "see-you-soon"
+            ? "See you soon ✦"
+            : outroId === "credits-page"
+              ? "Credits · Share · Replay"
+              : outroId === "candle-legacy"
+                ? "Your light remains with us"
+                : text}
         </motion.p>
+      )}
+
+      {outroId === "seal-reform" && (
+        <>
+          <RevealConfetti active />
+          <motion.div
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 h-14 w-14 rounded-full border-2 flex items-center justify-center text-lg"
+            style={{ borderColor: accentColor, color: accentColor }}
+            animate={{ scale: [0.85, 1.05, 1], opacity: [0.4, 1, 0.85] }}
+            transition={{ duration: 2.4, repeat: Infinity }}
+          >
+            ♛
+          </motion.div>
+          <motion.p
+            className="absolute bottom-28 left-0 right-0 text-center text-xs tracking-[0.25em] uppercase opacity-50"
+            style={{ color: accentColor }}
+            animate={{ opacity: [0.35, 0.7, 0.35] }}
+            transition={{ duration: 3.2, repeat: Infinity }}
+          >
+            Seal reforms · Replay · RSVP
+          </motion.p>
+        </>
       )}
     </div>
   );

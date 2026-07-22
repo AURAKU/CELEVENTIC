@@ -8,8 +8,13 @@ const updateSchema = z.object({
   label: z.string().min(1).optional(),
   category: z
     .enum([
-      "payments", "communications", "ai", "maps", "storage",
-      "auth", "analytics", "infrastructure", "custom",
+      "payments",
+      "communications",
+      "ai",
+      "storage",
+      "auth",
+      "infrastructure",
+      "custom",
     ])
     .optional(),
   description: z.string().optional(),

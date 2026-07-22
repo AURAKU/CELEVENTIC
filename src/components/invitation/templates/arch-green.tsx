@@ -60,7 +60,7 @@ export function ArchGreenTemplate({ invitation, event, design, guestId, guestNam
           )}
           {qrDataUrl && (
             <div className="flex justify-center pt-2">
-              <Image src={qrDataUrl} alt="QR" width={100} height={100} className="rounded bg-white/10 p-1" />
+              <Image src={qrDataUrl} alt="QR" width={100} height={100} className="rounded bg-white/10 p-1"  unoptimized />
             </div>
           )}
           <InvitationRsvpPanel

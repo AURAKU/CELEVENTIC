@@ -24,11 +24,13 @@ function CreateStartPageInner() {
   const template = searchParams.get("template");
   const packageSlug = searchParams.get("package");
   const eventType = searchParams.get("eventType") ?? "WEDDING";
+  const themeId = searchParams.get("theme");
 
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
-      const callback = `/invitations/create/start?template=${template}&package=${packageSlug}&eventType=${eventType}`;
+      const themePart = themeId ? `&theme=${themeId}` : "";
+      const callback = `/invitations/create/start?template=${template}&package=${packageSlug}&eventType=${eventType}${themePart}`;
       router.replace(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
       return;
     }
@@ -37,10 +39,24 @@ function CreateStartPageInner() {
       return;
     }
 
+    // Viral-footer attribution captured on the catalogue/preview pages.
+    let attributionRef: string | undefined;
+    try {
+      attributionRef = window.sessionStorage.getItem("celeventic:referrer-invite") ?? undefined;
+    } catch {
+      attributionRef = undefined;
+    }
+
     fetch("/api/invitation-orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ templateSlug: template, packageSlug, eventType }),
+      body: JSON.stringify({
+        templateSlug: template,
+        packageSlug,
+        eventType,
+        themeId: themeId ?? undefined,
+        attributionRef,
+      }),
     })
       .then((r) => r.json())
       .then((d) => {
@@ -51,7 +67,7 @@ function CreateStartPageInner() {
         }
       })
       .catch(() => setError("Network error"));
-  }, [session, status, template, packageSlug, eventType, router]);
+  }, [session, status, template, packageSlug, eventType, themeId, router]);
 
   if (error) {
     return (

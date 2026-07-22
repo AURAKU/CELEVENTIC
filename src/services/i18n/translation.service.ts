@@ -19,26 +19,40 @@ function interpolate(template: string, params?: Record<string, string | number>)
   return template.replace(/\{(\w+)\}/g, (_, k: string) => String(params[k] ?? `{${k}}`));
 }
 
+/** One seed per process — never re-upsert hundreds of rows on every page load. */
+let translationsSeedPromise: Promise<void> | null = null;
+
 export class TranslationService {
   async seedTranslations() {
-    await languageService.ensureLanguagesSeeded();
-    for (const row of DEFAULT_TRANSLATIONS) {
-      await prisma.translation.upsert({
-        where: { namespace_key: { namespace: row.namespace, key: row.key } },
-        update: {
-          enValue: row.enValue,
-          frValue: row.frValue,
-          editableByAdmin: row.editableByAdmin ?? true,
-        },
-        create: {
-          namespace: row.namespace,
-          key: row.key,
-          enValue: row.enValue,
-          frValue: row.frValue,
-          editableByAdmin: row.editableByAdmin ?? true,
-        },
+    if (!translationsSeedPromise) {
+      translationsSeedPromise = (async () => {
+        await languageService.ensureLanguagesSeeded();
+        const existing = await prisma.translation.count();
+        if (existing >= DEFAULT_TRANSLATIONS.length) return;
+
+        for (const row of DEFAULT_TRANSLATIONS) {
+          await prisma.translation.upsert({
+            where: { namespace_key: { namespace: row.namespace, key: row.key } },
+            update: {
+              enValue: row.enValue,
+              frValue: row.frValue,
+              editableByAdmin: row.editableByAdmin ?? true,
+            },
+            create: {
+              namespace: row.namespace,
+              key: row.key,
+              enValue: row.enValue,
+              frValue: row.frValue,
+              editableByAdmin: row.editableByAdmin ?? true,
+            },
+          });
+        }
+      })().catch((err) => {
+        translationsSeedPromise = null;
+        throw err;
       });
     }
+    await translationsSeedPromise;
   }
 
   async getDictionary(locale: AppLocale): Promise<MessageDictionary> {

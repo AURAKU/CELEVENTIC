@@ -6,7 +6,7 @@ import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
 import { seatingService } from "@/services/seating/seating.service";
 import { formatDate } from "@/lib/utils";
-import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
+import { getDefaultDesignConfig, mergeDesignConfig, applyCatalogCreativeIdentity } from "@/lib/invitation-templates";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { prisma } from "@/lib/prisma";
 import { invitationLanguageService } from "@/services/i18n/invitation-language.service";
@@ -16,6 +16,7 @@ import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import { resolveBackgroundMedia } from "@/lib/invitation/studio-media-utils";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
+import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -25,8 +26,10 @@ function resolveDesign(invitation: {
   if (stored?.layout) return stored;
 
   const templateConfig = invitation.template?.config as { layout?: string } | null;
-  const layoutSlug = templateConfig?.layout ?? invitation.template?.slug;
-  const base = getDefaultDesignConfig(layoutSlug);
+  // Prefer catalog SKU slug so shared-layout Wave-1 templates keep unique DNA
+  // (getCatalogTemplate(layoutSlug) would resolve to the first lite SKU).
+  const identitySlug = invitation.template?.slug ?? templateConfig?.layout;
+  const base = getDefaultDesignConfig(identitySlug);
   return mergeDesignConfig(base, templateConfig as Partial<InvitationDesignConfig> | undefined);
 }
 
@@ -54,9 +57,12 @@ export default async function InvitePage({
   let qrDataUrl = "";
   let admissionQrDataUrl = "";
   let admissionQrToken = "";
+  let admissionManualCode = "";
   let guestQrToken = "";
   let seatQrDataUrl = "";
   let seatLookupUrl: string | null = null;
+  let seatTable: string | null = null;
+  let seatLabel: string | null = null;
 
   if (personalizedGuest) {
     guestQrToken = personalizedGuest.qrToken;
@@ -65,6 +71,7 @@ export default async function InvitePage({
     if (admission) {
       admissionQrDataUrl = admission.dataUrl;
       admissionQrToken = admission.token;
+      admissionManualCode = admission.manualCode;
     }
     seatLookupUrl = `${appBaseUrl}/seat/${personalizedGuest.qrToken}`;
   }
@@ -78,11 +85,50 @@ export default async function InvitePage({
 
   const order = await prisma.invitationOrder.findFirst({
     where: { invitationId: invitation.id },
-    include: { languageVersions: true, template: true },
+    include: {
+      languageVersions: true,
+      template: {
+        include: {
+          defaultMusicTrack: {
+            select: {
+              id: true,
+              title: true,
+              artist: true,
+              url: true,
+              durationSec: true,
+              isActive: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   const orderDesign = order?.designConfig as Partial<InvitationDesignConfig> | null;
-  const design = mergeDesignConfig(baseDesign, orderDesign ?? undefined);
+  const catalogSlug = order?.templateSlug ?? order?.template?.slug ?? invitation.template?.slug ?? null;
+  const design = applyCatalogCreativeIdentity(
+    mergeDesignConfig(baseDesign, orderDesign ?? undefined),
+    catalogSlug
+  );
+
+  let templateDefaultTrack = order?.template?.defaultMusicTrack ?? null;
+  if (!templateDefaultTrack && catalogSlug) {
+    templateDefaultTrack = await prisma.invitationCatalogTemplate.findUnique({
+      where: { slug: catalogSlug },
+      select: {
+        defaultMusicTrack: {
+          select: {
+            id: true,
+            title: true,
+            artist: true,
+            url: true,
+            durationSec: true,
+            isActive: true,
+          },
+        },
+      },
+    }).then((t) => t?.defaultMusicTrack ?? null);
+  }
 
   const allowedLocales = order
     ? invitationLanguageService.getAvailableLocales(order.languageMode)
@@ -107,22 +153,32 @@ export default async function InvitePage({
   const blocks = await invitationBlockService.getBlocksForInvitation(invitation.id);
 
   const musicAddon = order ? addonFulfillmentService.hasFeature(order, "guest_music") : false;
-  const memoryVault = order ? addonFulfillmentService.hasFeature(order, "memory_vault") : false;
+  const memoryVaultAddon = order ? addonFulfillmentService.hasFeature(order, "memory_vault") : false;
+  // Always provision Album QR for published invites so guests can upload/view live
+  const memoryLinks = await ensureEventMemoryLinks(event.id);
+  const memoryVault = memoryVaultAddon || Boolean(memoryLinks);
   const qrCheckin = order ? addonFulfillmentService.hasFeature(order, "qr_checkin") : false;
   const seatingPlan = order ? addonFulfillmentService.hasFeature(order, "seating_plan") : false;
   const { musicSelection, hasMusic } = resolveInvitationMusic({
     orderSelection: order?.musicSelection,
     legacyMusicUrl: order?.musicPreference,
     design,
+    catalogSlug: catalogSlug,
+    eventDefaultTrack: event.defaultMusicTrack,
+    templateDefaultTrack,
     allowDnaFallback: true,
   });
   const musicEnabled = hasMusic || musicAddon;
 
-  if (personalizedGuest && seatingPlan && seatLookupUrl) {
+  if (personalizedGuest && seatLookupUrl) {
     const assignment = await seatingService.lookupByGuestId(personalizedGuest.id);
     if (assignment?.assignment) {
-      const center = await qrBrandingService.resolveCenterImageUrl(event.id);
-      seatQrDataUrl = await generateBrandedQrDataUrl(seatLookupUrl, center);
+      seatTable = assignment.assignment.tableNumber;
+      seatLabel = assignment.assignment.seatLabel;
+      if (seatingPlan) {
+        const center = await qrBrandingService.resolveCenterImageUrl(event.id);
+        seatQrDataUrl = await generateBrandedQrDataUrl(seatLookupUrl, center);
+      }
     }
   }
 
@@ -161,8 +217,9 @@ export default async function InvitePage({
       guestId={personalizedGuest?.id}
       guestName={personalizedGuest?.name}
       qrDataUrl={qrDataUrl}
-      admissionQrDataUrl={qrCheckin ? admissionQrDataUrl : null}
-      admissionQrToken={qrCheckin ? admissionQrToken : null}
+      admissionQrDataUrl={admissionQrDataUrl || null}
+      admissionQrToken={admissionQrToken || null}
+      admissionManualCode={admissionManualCode || null}
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       seatQrDataUrl={seatQrDataUrl || null}
@@ -174,9 +231,16 @@ export default async function InvitePage({
       localizedVersions={localizedVersions}
       blocks={blocks}
       memoryVaultEnabled={memoryVault}
+      memoryUploadUrl={memoryLinks?.uploadUrl ?? null}
+      memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
+      memoryUploadQrImageUrl={memoryLinks?.uploadQrImageUrl ?? null}
+      memoryAlbumTitle={memoryLinks?.eventTitle ?? null}
       eventId={event.id}
       contactEmail={order?.contactEmail ?? null}
       seatingEnabled={seatingPlan && Boolean(seatQrDataUrl && seatLookupUrl)}
+      seatTable={seatTable}
+      seatLabel={seatLabel}
+      templateSlug={order?.templateSlug}
     />
   );
 }

@@ -19,7 +19,7 @@ export function LightBeamReveal({ guestName, eventTitle, onComplete }: LightBeam
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center overflow-hidden"
       style={{ background: "radial-gradient(circle at 50% 30%, #1a1a2e 0%, #000 70%)" }}
       onClick={!revealed ? reveal : undefined}
     >
@@ -50,9 +50,14 @@ export function LightBeamReveal({ guestName, eventTitle, onComplete }: LightBeam
           animate={{ opacity: revealed ? 1 : 0.6, y: revealed ? 0 : 20 }}
           transition={{ duration: 0.8 }}
         >
-          <p className="text-xs uppercase tracking-[0.5em] text-amber-300/70 mb-6">
+          <button
+            type="button"
+            onClick={!revealed ? reveal : undefined}
+            aria-label="Reveal invitation"
+            className="text-xs uppercase tracking-[0.5em] text-amber-300/70 mb-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-200 rounded"
+          >
             {revealed ? "Presenting" : "Tap for spotlight"}
-          </p>
+          </button>
           <h1 className="font-display text-2xl sm:text-4xl text-amber-50 font-bold tracking-wide">
             {eventTitle}
           </h1>

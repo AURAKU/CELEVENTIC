@@ -18,8 +18,16 @@ export function validateMusicSelection(
   }
 
   const duration = clipDurationSec(selection);
-  if (duration < MUSIC_CLIP_MIN_SEC) {
-    return `Clip must be at least ${MUSIC_CLIP_MIN_SEC} seconds (currently ${Math.round(duration)}s).`;
+  const maxAllowed =
+    selection.originalDurationSec != null && selection.originalDurationSec < MUSIC_CLIP_MIN_SEC
+      ? Math.max(selection.originalDurationSec, 5)
+      : MUSIC_CLIP_MIN_SEC;
+
+  if (duration < maxAllowed && !(selection.originalDurationSec != null && duration >= selection.originalDurationSec - 0.25)) {
+    if (duration < 5) return "Clip must be at least 5 seconds.";
+    if (selection.originalDurationSec == null || selection.originalDurationSec >= MUSIC_CLIP_MIN_SEC) {
+      return `Clip must be at least ${MUSIC_CLIP_MIN_SEC} seconds (currently ${Math.round(duration)}s).`;
+    }
   }
   if (duration > MUSIC_CLIP_MAX_SEC) {
     return `Clip must be at most ${MUSIC_CLIP_MAX_SEC} seconds (currently ${Math.round(duration)}s).`;

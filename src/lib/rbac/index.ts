@@ -14,6 +14,8 @@ export {
   permissionsFor,
 } from "./permissions";
 
+export { hasFullPackageAccess, isAdminCommerceBypass } from "@/lib/access/package-access";
+
 export {
   assertRoleAssignmentAllowed,
   assignableRolesFor,

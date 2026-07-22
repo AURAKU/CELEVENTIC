@@ -9,7 +9,13 @@ export type AnalyticsEventType =
   | "PAYMENT_SUCCESS"
   | "INVITE_OPEN"
   | "RSVP_SUBMIT"
-  | "ADDON_SELECT";
+  | "ADDON_SELECT"
+  | "INVITE_PAGE_VIEW"
+  | "INVITE_ACTION_CLICK"
+  | "TEMPLATE_PREVIEW_OPEN"
+  | "THEME_SWITCH"
+  | "VIRAL_CTA_CLICK"
+  | "CONTRIBUTE_CLICK";
 
 export class InvitationAnalyticsService {
   async track(data: {

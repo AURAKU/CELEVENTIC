@@ -278,37 +278,99 @@ function BrandingSection() {
 }
 
 function IntegrationsSection() {
-  const [items, setItems] = useState<Array<{ provider: string; label: string; category: string; description: string; configured: boolean; docsUrl?: string }>>([]);
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role && isAdminRole(session.user.role as UserRole);
+  const [items, setItems] = useState<
+    Array<{
+      provider: string;
+      label: string;
+      category: string;
+      description: string;
+      configured: boolean;
+      docsUrl?: string;
+      isCustom?: boolean;
+    }>
+  >([]);
+  const [manageUrl, setManageUrl] = useState("/admin/integrations");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/settings/integrations")
       .then((r) => r.json())
-      .then((d) => { if (d.success) setItems(d.data); setLoading(false); });
+      .then((d) => {
+        if (d.success) {
+          setItems(d.data.integrations ?? d.data);
+          if (d.data.manageUrl) setManageUrl(d.data.manageUrl);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   if (loading) return <PageLoader />;
 
+  const connected = items.filter((i) => i.configured);
+  const pending = items.filter((i) => !i.configured);
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Integrations</CardTitle>
-        <CardDescription>Connected services and payment providers.</CardDescription>
+      <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <CardTitle>Integrations</CardTitle>
+          <CardDescription>
+            Platform services used for payments, messaging, storage, and intelligence.
+          </CardDescription>
+        </div>
+        {isAdmin && (
+          <Button asChild size="sm" className="shrink-0 gap-1.5">
+            <Link href={manageUrl}>
+              Manage APIs
+            </Link>
+          </Button>
+        )}
       </CardHeader>
-      <CardContent className="space-y-3">
-        {items.map((item) => (
-          <div key={item.provider} className="flex items-start justify-between p-3 rounded-lg border text-sm gap-3">
-            <div>
-              <p className="font-medium">{item.label}</p>
-              <p className="text-slate-500 text-xs mt-0.5">{item.description}</p>
-              <Badge variant="outline" className="mt-1 text-xs">{item.category}</Badge>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2 text-xs">
+          <Badge variant="success">{connected.length} connected</Badge>
+          <Badge variant="secondary">{pending.length} not configured</Badge>
+        </div>
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div
+              key={item.provider}
+              className="flex items-start justify-between p-3 rounded-lg border text-sm gap-3"
+            >
+              <div className="min-w-0">
+                <p className="font-medium">{item.label}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{item.description}</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  <Badge variant="outline" className="text-xs">
+                    {item.category}
+                  </Badge>
+                  {item.isCustom && (
+                    <Badge variant="outline" className="text-xs">
+                      Custom
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <Badge variant={item.configured ? "default" : "secondary"} className="shrink-0">
+                {item.configured ? "Connected" : "Not configured"}
+              </Badge>
             </div>
-            <Badge variant={item.configured ? "default" : "secondary"}>
-              {item.configured ? "Connected" : "Not configured"}
-            </Badge>
-          </div>
-        ))}
-        <p className="text-xs text-slate-500">Admins can configure integration keys in the Admin panel.</p>
+          ))}
+        </div>
+        {isAdmin ? (
+          <p className="text-xs text-slate-500">
+            Add Paystack, Resend, SMS, WhatsApp, AWS S3, OpenAI, or a custom API in Admin → Integrations.
+            Secrets are encrypted in the database.
+          </p>
+        ) : (
+          <p className="text-xs text-slate-500">
+            Only platform admins can add or change API keys. Contact your Celeventic admin if a service shows
+            “Not configured”.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -330,13 +392,21 @@ function SecuritySection() {
 }
 
 function BillingSection() {
-  const [data, setData] = useState<{ currentPlan: string; eventCount: number; packages: Array<{ name: string; slug: string; price: number; guestLimit: number }> } | null>(null);
+  const [data, setData] = useState<{
+    currentPlan: string;
+    eventCount: number;
+    adminFullAccess?: boolean;
+    packages: Array<{ name: string; slug: string; price: number; guestLimit: number }>;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/settings/billing")
       .then((r) => r.json())
-      .then((d) => { if (d.success) setData(d.data); setLoading(false); });
+      .then((d) => {
+        if (d.success) setData(d.data);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) return <PageLoader />;
@@ -347,24 +417,43 @@ function BillingSection() {
       <Card>
         <CardHeader>
           <CardTitle>Billing & Plan</CardTitle>
-          <CardDescription>Current plan: <Badge>{data.currentPlan}</Badge> · {data.eventCount} events</CardDescription>
+          <CardDescription>
+            Current plan:{" "}
+            <Badge>{data.adminFullAccess ? "Admin — full access" : data.currentPlan}</Badge> ·{" "}
+            {data.eventCount} events
+            {data.adminFullAccess ? " · all packages unlocked free" : ""}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button asChild size="sm"><Link href="/dashboard/wallet">Event Wallet & Transactions</Link></Button>
+          <Button asChild size="sm">
+            <Link href="/dashboard/wallet">Event Wallet & Transactions</Link>
+          </Button>
         </CardContent>
       </Card>
       <div className="grid sm:grid-cols-2 gap-4">
         {data.packages.map((pkg) => (
-          <Card key={pkg.slug} className={pkg.slug === data.currentPlan ? "ring-2 ring-brand-500" : ""}>
+          <Card
+            key={pkg.slug}
+            className={
+              data.adminFullAccess || pkg.slug === data.currentPlan ? "ring-2 ring-brand-500" : ""
+            }
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{pkg.name}</CardTitle>
-              <CardDescription>{pkg.guestLimit} guests · GHS {pkg.price}/mo</CardDescription>
+              <CardDescription>
+                {pkg.guestLimit} guests ·{" "}
+                {data.adminFullAccess ? "Included (admin)" : `GHS ${pkg.price}/mo`}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {pkg.slug === data.currentPlan ? (
+              {data.adminFullAccess ? (
+                <Badge>Unlocked</Badge>
+              ) : pkg.slug === data.currentPlan ? (
                 <Badge>Current plan</Badge>
               ) : (
-                <Button variant="outline" size="sm" disabled>Upgrade (contact sales)</Button>
+                <Button variant="outline" size="sm" disabled>
+                  Upgrade (contact sales)
+                </Button>
               )}
             </CardContent>
           </Card>

@@ -53,7 +53,7 @@ export const SHOWCASE_REVEAL_EFFECTS: RevealEffectMeta[] = [
   { id: "swipe-reveal", label: "Swipe to Reveal", description: "Swipe across to unveil", category: "interactive", accent: "#6366F1", icon: "→" },
   { id: "flip-reveal", label: "Flip to Reveal", description: "3D card flip ceremony", category: "interactive", accent: "#38BDF8", icon: "↻" },
   { id: "zoom-reveal", label: "Zoom to Reveal", description: "Camera zoom into moment", category: "interactive", accent: "#F59E0B", icon: "⊕" },
-  { id: "curtain-wedding", label: "Curtain Rise", description: "Velvet curtains part slowly", category: "curtain", accent: "#DC2626", icon: "🎭" },
+  { id: "curtain-wedding", label: "Curtain Rise", description: "Velvet curtains part after tap — theatrical reveal", category: "curtain", accent: "#DC2626", icon: "🎭" },
   { id: "glass", label: "Glass Swipe", description: "Frosted acrylic swipe", category: "interactive", accent: "#38BDF8", icon: "◇" },
   { id: "confetti-burst", label: "Particle Burst", description: "Instant confetti celebration", category: "interactive", accent: "#A855F7", icon: "✨" },
   { id: "light-beam", label: "Light Beam", description: "Luxury spotlight reveal", category: "interactive", accent: "#FDE68A", icon: "☀" },

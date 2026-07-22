@@ -15,13 +15,24 @@ export function TemplatePicker({ templates, selected, onSelect, disabled }: Temp
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {templates.map((t) => (
-        <button
+        <div
           key={t.slug}
-          type="button"
-          disabled={disabled}
-          onClick={() => onSelect(t.slug)}
+          role="button"
+          tabIndex={disabled ? -1 : 0}
+          aria-disabled={disabled || undefined}
+          aria-pressed={selected === t.slug}
+          onClick={() => {
+            if (!disabled) onSelect(t.slug);
+          }}
+          onKeyDown={(e) => {
+            if (disabled) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelect(t.slug);
+            }
+          }}
           className={cn(
-            "relative rounded-xl border-2 overflow-hidden text-left transition-all hover:shadow-md bg-white",
+            "relative rounded-xl border-2 overflow-hidden text-left transition-all hover:shadow-md bg-white cursor-pointer",
             selected === t.slug ? "border-brand-500 ring-2 ring-teal-200" : "border-gray-200",
             disabled && "opacity-50 cursor-not-allowed"
           )}
@@ -37,7 +48,7 @@ export function TemplatePicker({ templates, selected, onSelect, disabled }: Temp
             <p className="text-xs font-semibold leading-tight">{t.name}</p>
             <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{t.description}</p>
           </div>
-        </button>
+        </div>
       ))}
     </div>
   );

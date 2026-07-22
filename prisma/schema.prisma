@@ -267,6 +267,8 @@ model Event {
   coverImageUrl   String?
   logoUrl         String?
   qrCenterImageUrl String?
+  /// Default invitation music track from the platform library
+  defaultMusicTrackId String?
   themeId         String?
   packageId       String?
   organizationId  String?
@@ -286,6 +288,7 @@ model Event {
   organization   Organization?  @relation(fields: [organizationId], references: [id])
   package        EventPackage?  @relation(fields: [packageId], references: [id])
   theme          EventTemplate? @relation("EventTheme", fields: [themeId], references: [id])
+  defaultMusicTrack InvitationMusicTrack? @relation("EventDefaultMusic", fields: [defaultMusicTrackId], references: [id], onDelete: SetNull)
   invitations    Invitation[]
   guests         Guest[]
   tickets        Ticket[]
@@ -314,6 +317,7 @@ model Event {
   virtualCandles VirtualCandle[]
   memorialTimeline MemorialTimelineEntry[]
   memorialGuestbook MemorialGuestbookEntry[]
+  guestWishes    InvitationGuestWish[]
   memorialLivestreams MemorialLivestream[]
   memorialMediaItems MemorialMediaItem[]
   funeralFamilyMembers FuneralFamilyMember[]
@@ -338,6 +342,7 @@ model Event {
   @@index([eventType])
   @@index([isPublic, isFeatured])
   @@index([city, country])
+  @@index([defaultMusicTrackId])
   @@map("events")
 }
 
@@ -442,6 +447,7 @@ model Invitation {
   template EventTemplate? @relation(fields: [templateId], references: [id])
   guests   Guest[]
   blocks   InvitationBlock[]
+  guestWishes InvitationGuestWish[]
 
   @@index([eventId])
   @@map("invitations")
@@ -469,6 +475,8 @@ model Guest {
   phone         String?
   status        GuestStatus @default(INVITED)
   qrToken       String      @unique @default(cuid())
+  /// Event-scoped 4-digit gate code for manual admit when scanning isn't possible
+  manualCode    String?
   plusOnes      Int         @default(0)
   notes            String?
   inviteOpenedAt   DateTime?
@@ -485,7 +493,9 @@ model Guest {
   tickets    Ticket[]
   seatingAssignment SeatingAssignment?
   memoryUploads EventMemoryUpload[]
+  guestWishes   InvitationGuestWish[]
 
+  @@unique([eventId, manualCode])
   @@index([eventId])
   @@index([status])
   @@map("guests")
@@ -1696,6 +1706,26 @@ model EventMemory {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("event_memories")
+}
+
+/** Guest wishes left on digital invitations — visible to every guest for the event */
+model InvitationGuestWish {
+  id           String   @id @default(cuid())
+  eventId      String
+  invitationId String?
+  guestId      String?
+  authorName   String
+  message      String
+  isVisible    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitation Invitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  guest      Guest?      @relation(fields: [guestId], references: [id], onDelete: SetNull)
+
+  @@index([eventId, createdAt])
+  @@index([invitationId])
+  @@map("invitation_guest_wishes")
 }
 
 // ─── Admin & Settings ───────────────────────────────────────────
@@ -2999,13 +3029,28 @@ model InvitationCatalogTemplate {
   isFeatured          Boolean  @default(false)
   isActive            Boolean  @default(true)
   sortOrder           Int      @default(0)
+  // Studio 2.0 — templates as content: blueprint × theme × motif × motion
+  tier                String?  // "free" | "premium" | "luxury" (zod-validated)
+  tags                Json?    // style tags: ["royal", "gold", "minimal"]
+  colorFamily         String?  // "gold" | "emerald" | "monochrome" | …
+  hasParallax         Boolean  @default(false)
+  blueprintId         String?  // src/lib/invite-blueprints registry id
+  themeId             String?  // src/lib/invitation-theme registry id
+  motifPackId         String?
+  motionProfileId     String?  // "still" | "gentle-drift"
+  performanceClass    String?  // "light" | "standard"
+  /// Default library track for invitations using this catalog template
+  defaultMusicTrackId String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   orders InvitationOrder[]
+  defaultMusicTrack InvitationMusicTrack? @relation("CatalogTemplateDefaultMusic", fields: [defaultMusicTrackId], references: [id], onDelete: SetNull)
 
   @@index([category])
   @@index([style])
+  @@index([tier])
+  @@index([defaultMusicTrackId])
   @@map("invitation_catalog_templates")
 }
 
@@ -3020,6 +3065,8 @@ model InvitationProductPackage {
   revisions                 Int      @default(1)
   deliveryDays              Int      @default(3)
   features                  Json?
+  /// Event types this package applies to. Null/empty = all event types.
+  eventTypes                Json?
   designerAssist            Boolean  @default(false)
   paymentRequiredToPublish  Boolean  @default(true)
   isPopular                 Boolean  @default(false)
@@ -3052,13 +3099,39 @@ model InvitationAddon {
   @@map("invitation_addons")
 }
 
+// Godtier commerce: requirement collection + delivery tracking for bespoke
+// extras (monogram, illustration, custom domain, animated/voice intro).
+// A purchased extra is only a feature flag until the customer's brief is
+// captured and a deliverable is returned — this model is that lifecycle.
+model AddonFulfillmentRequest {
+  id             String   @id @default(cuid())
+  orderId        String
+  addonSlug      String
+  status         String   @default("PENDING_INFO") // PENDING_INFO | SUBMITTED | IN_PROGRESS | DELIVERED
+  brief          Json?
+  deliverableUrl String?
+  adminNotes     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  order InvitationOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, addonSlug])
+  @@index([status])
+  @@map("addon_fulfillment_requests")
+}
+
 model InvitationMusicTrack {
   id          String   @id @default(cuid())
   title       String
   artist      String?
   category    String   @default("general")
   url         String
+  /// Original full upload when url is a trimmed clip
+  sourceUrl   String?
   durationSec Float?
+  clipStartSec Float?
+  clipEndSec   Float?
   isPremium   Boolean  @default(false)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
@@ -3067,6 +3140,8 @@ model InvitationMusicTrack {
   updatedAt   DateTime @updatedAt
 
   createdBy User? @relation("MusicTrackCreator", fields: [createdById], references: [id])
+  catalogTemplates InvitationCatalogTemplate[] @relation("CatalogTemplateDefaultMusic")
+  events           Event[]                     @relation("EventDefaultMusic")
 
   @@index([isActive, category])
   @@map("invitation_music_tracks")
@@ -3141,6 +3216,7 @@ model InvitationOrder {
   revisions             InvitationRevision[]
   productionAssignments ProductionAssignment[]
   approvals             InvitationApproval[]
+  fulfillmentRequests   AddonFulfillmentRequest[]
 
   @@index([userId])
   @@index([status])

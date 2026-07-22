@@ -39,14 +39,39 @@ export function AdminInvitationExperienceControls() {
 
   if (!flags || !limits) return null;
 
+  const studioCaps: (keyof InvitationFeatureFlags)[] = [
+    "audioLibrary",
+    "audioUpload",
+    "slideshow",
+    "videoUpload",
+    "rsvp",
+    "seating",
+  ];
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Invitation Experience Controls</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="rounded-xl border border-[#0B8A83]/20 bg-[#0B8A83]/5 p-3">
+          <p className="text-sm font-medium text-[#0F172A]">Studio capabilities</p>
+          <p className="mt-1 text-xs text-slate-600">
+            These flags gate Invitation Studio assets (music, gallery, video). Hosts never paste media URLs — upload only.
+          </p>
+          <div className="mt-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {studioCaps.map((key) => (
+              <label key={key} className="flex items-center justify-between gap-2 rounded-lg border bg-white p-2.5 text-sm">
+                <span className="capitalize">{key.replace(/([A-Z])/g, " $1")}</span>
+                <Switch checked={flags[key]} onCheckedChange={(v) => setFlags({ ...flags, [key]: v })} />
+              </label>
+            ))}
+          </div>
+        </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {(Object.keys(flags) as (keyof InvitationFeatureFlags)[]).map((key) => (
+          {(Object.keys(flags) as (keyof InvitationFeatureFlags)[])
+            .filter((key) => !studioCaps.includes(key))
+            .map((key) => (
             <label key={key} className="flex items-center justify-between gap-2 rounded-lg border p-3 text-sm">
               <span className="capitalize">{key.replace(/([A-Z])/g, " $1")}</span>
               <Switch checked={flags[key]} onCheckedChange={(v) => setFlags({ ...flags, [key]: v })} />

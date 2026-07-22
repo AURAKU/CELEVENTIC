@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSession, isAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET() {
   const session = await getSession();
@@ -44,6 +45,13 @@ export async function POST(req: Request) {
         adminNotes: body.adminNotes,
       },
     });
+    await createAuditLog({
+      userId: session.user.id,
+      action: "CREATE",
+      entity: "InvitationAddon",
+      entityId: addon.id,
+      details: { operation: "COMMERCE_ADDON_CREATE", ...body },
+    });
     return NextResponse.json({ success: true, data: addon }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -68,6 +76,13 @@ export async function PATCH(req: Request) {
     const body = updateSchema.parse(await req.json());
     const { id, ...data } = body;
     const addon = await prisma.invitationAddon.update({ where: { id }, data });
+    await createAuditLog({
+      userId: session.user.id,
+      action: "UPDATE",
+      entity: "InvitationAddon",
+      entityId: id,
+      details: { operation: "COMMERCE_ADDON_UPDATE", ...body },
+    });
     return NextResponse.json({ success: true, data: addon });
   } catch (error) {
     if (error instanceof z.ZodError) {

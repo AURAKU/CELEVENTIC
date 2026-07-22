@@ -24,7 +24,7 @@ export function FilmCountdownReveal({ guestName, eventTitle, onComplete }: FilmC
   }, [count, onComplete]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black overflow-hidden">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center bg-black overflow-hidden">
       <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)" }} />
 
       <div className="relative z-10 text-center px-8">

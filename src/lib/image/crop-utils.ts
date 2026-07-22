@@ -1,3 +1,5 @@
+import { canvasHasAlpha } from "@/lib/image/smart-compress";
+
 /** Crop frame aspect presets */
 export type CropAspectPreset =
   | "free"
@@ -82,6 +84,31 @@ export function getCropScales(
   };
 }
 
+export interface CropFrameRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Minimum zoom so the scaled image fully covers the crop frame (pan stays usable). */
+export function minZoomToCoverFrame(
+  naturalWidth: number,
+  naturalHeight: number,
+  containerW: number,
+  containerH: number,
+  frameW: number,
+  frameH: number
+): number {
+  const { containScale } = getCropScales(naturalWidth, naturalHeight, containerW, containerH);
+  if (containScale <= 0 || naturalWidth <= 0 || naturalHeight <= 0) return 1;
+  return Math.max(
+    1,
+    frameW / (naturalWidth * containScale),
+    frameH / (naturalHeight * containScale)
+  );
+}
+
 export function clampCropOffset(
   offsetX: number,
   offsetY: number,
@@ -91,14 +118,16 @@ export function clampCropOffset(
   containerH: number,
   frameW: number,
   frameH: number,
-  zoom: number
+  zoom: number,
+  frameX?: number,
+  frameY?: number
 ): { x: number; y: number } {
   const { containScale } = getCropScales(naturalWidth, naturalHeight, containerW, containerH);
   const scale = containScale * Math.max(zoom, 0.25);
   const renderedW = naturalWidth * scale;
   const renderedH = naturalHeight * scale;
-  const frameLeft = (containerW - frameW) / 2;
-  const frameTop = (containerH - frameH) / 2;
+  const frameLeft = frameX ?? (containerW - frameW) / 2;
+  const frameTop = frameY ?? (containerH - frameH) / 2;
   const centerX = (containerW - renderedW) / 2;
   const centerY = (containerH - renderedH) / 2;
 
@@ -133,15 +162,17 @@ export function computePixelCrop(
   frameH: number,
   zoom: number,
   offsetX: number,
-  offsetY: number
+  offsetY: number,
+  frameX?: number,
+  frameY?: number
 ): PixelCrop {
   const { containScale } = getCropScales(naturalWidth, naturalHeight, containerW, containerH);
   const scale = containScale * Math.max(zoom, 0.25);
   const renderedW = naturalWidth * scale;
   const renderedH = naturalHeight * scale;
 
-  const frameLeft = (containerW - frameW) / 2;
-  const frameTop = (containerH - frameH) / 2;
+  const frameLeft = frameX ?? (containerW - frameW) / 2;
+  const frameTop = frameY ?? (containerH - frameH) / 2;
 
   const imageLeft = (containerW - renderedW) / 2 + offsetX;
   const imageTop = (containerH - renderedH) / 2 + offsetY;
@@ -164,17 +195,113 @@ export function computePixelCrop(
   };
 }
 
+const MIN_FRAME = 48;
+
+/** Keep the selection inside the container; optionally lock aspect ratio. */
+export function clampFrameRect(
+  frame: CropFrameRect,
+  containerW: number,
+  containerH: number,
+  aspectRatio: number | null
+): CropFrameRect {
+  let { x, y, width, height } = frame;
+  width = Math.max(MIN_FRAME, Math.min(width, containerW));
+  height = Math.max(MIN_FRAME, Math.min(height, containerH));
+
+  if (aspectRatio && aspectRatio > 0) {
+    if (width / height > aspectRatio) {
+      width = height * aspectRatio;
+    } else {
+      height = width / aspectRatio;
+    }
+    width = Math.max(MIN_FRAME, Math.min(width, containerW));
+    height = Math.max(MIN_FRAME, Math.min(height, containerH));
+    if (width / height > aspectRatio) width = height * aspectRatio;
+    else height = width / aspectRatio;
+  }
+
+  x = Math.max(0, Math.min(x, containerW - width));
+  y = Math.max(0, Math.min(y, containerH - height));
+
+  return {
+    x: Math.round(x),
+    y: Math.round(y),
+    width: Math.round(width),
+    height: Math.round(height),
+  };
+}
+
+export type CropResizeHandle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
+
+export function resizeFrameRect(
+  start: CropFrameRect,
+  handle: CropResizeHandle,
+  dx: number,
+  dy: number,
+  containerW: number,
+  containerH: number,
+  aspectRatio: number | null
+): CropFrameRect {
+  let { x, y, width, height } = start;
+  const right = x + width;
+  const bottom = y + height;
+
+  if (handle.includes("e")) width = Math.max(MIN_FRAME, right + dx - x);
+  if (handle.includes("s")) height = Math.max(MIN_FRAME, bottom + dy - y);
+  if (handle.includes("w")) {
+    const nextX = Math.min(x + dx, right - MIN_FRAME);
+    width = right - nextX;
+    x = nextX;
+  }
+  if (handle.includes("n")) {
+    const nextY = Math.min(y + dy, bottom - MIN_FRAME);
+    height = bottom - nextY;
+    y = nextY;
+  }
+
+  if (aspectRatio && aspectRatio > 0) {
+    if (handle === "e" || handle === "w") {
+      height = width / aspectRatio;
+      if (handle === "w") y = bottom - height;
+      else y = Math.min(y, containerH - height);
+    } else if (handle === "n" || handle === "s") {
+      width = height * aspectRatio;
+      if (handle === "n") x = right - width;
+      else x = Math.min(x, containerW - width);
+    } else {
+      // Corner: drive from the dominant delta while keeping the opposite corner fixed.
+      const fromW = width;
+      const fromH = height;
+      if (Math.abs(dx) * aspectRatio > Math.abs(dy)) {
+        height = fromW / aspectRatio;
+      } else {
+        width = fromH * aspectRatio;
+      }
+      if (handle.includes("w")) x = right - width;
+      if (handle.includes("n")) y = bottom - height;
+    }
+  }
+
+  return clampFrameRect({ x, y, width, height }, containerW, containerH, aspectRatio);
+}
+
 export async function cropImageToBlob(
   imageSrc: string,
   crop: PixelCrop,
   options?: { mimeType?: string; quality?: number; shape?: CropShape }
 ): Promise<Blob> {
   const shape = options?.shape ?? "rect";
-  const usePng = shape !== "rect" || options?.mimeType === "image/png";
-  const mimeType = options?.mimeType ?? (usePng ? "image/png" : "image/jpeg");
   const quality = options?.quality ?? 0.92;
 
   const img = await loadImage(imageSrc);
+
+  // A transparent source must not be encoded to JPEG — JPEG has no alpha, so the
+  // canvas backing (transparent black) bakes in as a solid black background.
+  // Non-rect shapes always need alpha for the mask they clip with.
+  const sourceHasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
+  const needsAlpha = shape !== "rect" || sourceHasAlpha;
+  const mimeType = options?.mimeType ?? (needsAlpha ? "image/png" : "image/jpeg");
+
   const canvas = document.createElement("canvas");
   canvas.width = crop.width;
   canvas.height = crop.height;
@@ -241,7 +368,9 @@ export async function rotateImage90(src: string, direction: "cw" | "ccw"): Promi
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate(direction === "cw" ? Math.PI / 2 : -Math.PI / 2);
   ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
-  const blob = await canvasToBlob(canvas, "image/jpeg", 0.92);
+  // Intermediate edit step — keep alpha so a transparent logo survives rotation.
+  const hasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
+  const blob = await canvasToBlob(canvas, hasAlpha ? "image/png" : "image/jpeg", 0.92);
   return URL.createObjectURL(blob);
 }
 
@@ -255,7 +384,9 @@ export async function flipImageHorizontal(src: string): Promise<string> {
   ctx.translate(canvas.width, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(img, 0, 0);
-  const blob = await canvasToBlob(canvas, "image/jpeg", 0.92);
+  // Intermediate edit step — keep alpha so a transparent logo survives flipping.
+  const hasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
+  const blob = await canvasToBlob(canvas, hasAlpha ? "image/png" : "image/jpeg", 0.92);
   return URL.createObjectURL(blob);
 }
 
@@ -297,7 +428,9 @@ export async function imageToBlob(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable");
   ctx.drawImage(img, 0, 0, w, h);
-  const mimeType = options?.mimeType ?? "image/jpeg";
+  // Same alpha rule as cropImageToBlob — never flatten transparency to JPEG black.
+  const hasAlpha = canvasHasAlpha(img, img.naturalWidth, img.naturalHeight);
+  const mimeType = options?.mimeType ?? (hasAlpha ? "image/png" : "image/jpeg");
   const quality = options?.quality ?? 0.92;
   return canvasToBlob(canvas, mimeType, quality);
 }
@@ -320,4 +453,5 @@ export const CROP_PRESETS = {
   logo: ["1:1", "circle", "rounded-square", "free"] as CropAspectPreset[],
   cover: ["4:5", "9:16", "16:9", "5:7", "4:6", "3:4", "free"] as CropAspectPreset[],
   portrait: ["4:5", "5:7", "9:16", "1:1", "circle"] as CropAspectPreset[],
+  inspiration: ["free", "5:7", "4:5", "3:4", "9:16", "1:1", "16:9"] as CropAspectPreset[],
 } as const;

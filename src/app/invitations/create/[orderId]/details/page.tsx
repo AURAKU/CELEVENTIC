@@ -114,7 +114,7 @@ export default function EventDetailsPage() {
     const data = await res.json();
     setSaving(false);
     if (data.success) {
-      router.push(`/invitations/create/${orderId}/addons`);
+      router.push(`/invitations/create/${orderId}/blocks`);
     } else {
       setError(data.error || t("forms.save_failed"));
     }

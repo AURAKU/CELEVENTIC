@@ -69,7 +69,7 @@ export function OrganizerBookingsClient() {
     const res = await fetch(`/api/marketplace/bookings/${id}/pay`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, provider: "PAYSTACK" }),
+      body: JSON.stringify({ email }),
     });
     const json = await res.json();
     setPaying(null);

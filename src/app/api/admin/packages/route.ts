@@ -14,8 +14,9 @@ export async function GET() {
 const createSchema = z.object({
   name: z.string().min(2),
   slug: z.string().optional(),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   price: z.number().min(0),
+  currency: z.string().optional(),
   guestLimit: z.number().optional(),
   invitationLimit: z.number().optional(),
   ticketLimit: z.number().optional(),
@@ -24,6 +25,7 @@ const createSchema = z.object({
   emailCredits: z.number().optional(),
   features: z.array(z.string()).optional(),
   sortOrder: z.number().optional(),
+  isActive: z.boolean().optional(),
 });
 
 const updateSchema = createSchema.partial().extend({ id: z.string() });

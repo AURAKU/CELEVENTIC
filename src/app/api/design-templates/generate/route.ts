@@ -20,7 +20,11 @@ export async function POST(req: Request) {
     const data = schema.parse(await req.json());
     await verifyEventAccess(data.eventId, session.user.id, session.user.role);
 
-    const hasAccess = await templateMarketplaceService.hasAccess(session.user.id, data.templateId);
+    const hasAccess = await templateMarketplaceService.hasAccess(
+      session.user.id,
+      data.templateId,
+      session.user.role
+    );
     if (!hasAccess) return NextResponse.json({ error: "Premium template — purchase required" }, { status: 402 });
 
     const designs = await designGeneratorService.generateFromEvent({

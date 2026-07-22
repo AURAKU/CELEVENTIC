@@ -2,14 +2,22 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { paymentService } from "@/services/payments/payment.service";
+import { paymentService, PaymentProviderError } from "@/services/payments/payment.service";
 
 const initSchema = z.object({
   amount: z.number().positive(),
   currency: z.string().optional(),
   email: z.string().email(),
-  purpose: z.enum(["EVENT_PACKAGE", "TICKET_PURCHASE", "BULK_MESSAGING", "ADVERTISING", "VENDOR_BOOKING", "CONTRIBUTION"]),
-  provider: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL"]).default("PAYSTACK"),
+  purpose: z.enum([
+    "EVENT_PACKAGE",
+    "TICKET_PURCHASE",
+    "BULK_MESSAGING",
+    "ADVERTISING",
+    "VENDOR_BOOKING",
+    "CONTRIBUTION",
+  ]),
+  /** Optional override — when omitted, platform default provider is used */
+  provider: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL"]).optional().nullable(),
   metadata: z.record(z.unknown()).optional(),
   ticketOrderId: z.string().optional(),
   campaignId: z.string().optional(),
@@ -24,7 +32,7 @@ export async function POST(req: Request) {
 
     const result = await paymentService.initializePayment(
       session?.user?.id,
-      data.provider,
+      data.provider ?? null,
       data.purpose,
       {
         amount: data.amount,
@@ -41,6 +49,13 @@ export async function POST(req: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Payment initialization failed" }, { status: 500 });
+    if (error instanceof PaymentProviderError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
+    console.error("[payments.initialize]", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Payment initialization failed" },
+      { status: 500 }
+    );
   }
 }

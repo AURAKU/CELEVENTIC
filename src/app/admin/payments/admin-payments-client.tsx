@@ -206,7 +206,7 @@ export function AdminPaymentsClient({ initial, initialTotal }: { initial: Paymen
         <TabsContent value="webhooks" className="mt-4 space-y-3">
           <p className="text-sm text-slate-500 flex items-center gap-2">
             <Webhook className="h-4 w-4" />
-            Webhook events from Paystack. Secret keys are never stored in the database.
+            Webhook events from payment providers. Secrets are encrypted at rest in Admin → Integrations.
           </p>
           {logs.length === 0 ? (
             <p className="text-slate-500">No webhook logs yet.</p>

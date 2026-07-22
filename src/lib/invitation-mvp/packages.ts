@@ -9,6 +9,8 @@ export interface InvitationPackageDef {
   deliveryDays: number;
   features: string[];
   designerAssist: boolean;
+  /** Null/empty means available for every event type. */
+  eventTypes?: string[] | null;
 }
 
 export const INVITATION_PACKAGES: InvitationPackageDef[] = [

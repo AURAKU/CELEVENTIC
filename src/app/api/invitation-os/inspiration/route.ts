@@ -9,6 +9,12 @@ const schema = z.object({
   url: z.string().min(1).refine((u) => u.startsWith("/") || u.startsWith("http"), "Invalid media path"),
   type: z.enum(["image", "video", "pdf"]).default("image"),
   name: z.string().optional(),
+  buildMode: z.enum(["template", "inspired", "similar", "improved"]).optional(),
+  colors: z
+    .array(z.object({ hex: z.string(), weight: z.number() }))
+    .optional(),
+  brightness: z.number().optional(),
+  aspectRatio: z.number().optional(),
 });
 
 export async function POST(req: Request) {
@@ -28,6 +34,10 @@ export async function POST(req: Request) {
       url: body.url,
       type: body.type,
       name: body.name,
+      buildMode: body.buildMode,
+      colors: body.colors,
+      brightness: body.brightness,
+      aspectRatio: body.aspectRatio,
     });
     return NextResponse.json({ success: true, data: result });
   } catch (error) {

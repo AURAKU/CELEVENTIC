@@ -7,6 +7,7 @@ import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
 import { pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
 import { pageBackgroundFromDesign } from "@/lib/invitation/studio-media-utils";
 import { TemplatePreviewGlimpse } from "@/components/invitation/template-preview-glimpse";
+import { InvitationStaticPreviewProvider } from "@/components/invitation/invitation-static-preview";
 import { Play, Smartphone, Monitor, Music2, X, Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -32,6 +33,8 @@ const VARIANT_CONFIG: Record<
 
 interface LiveTemplatePreviewProps {
   layoutSlug: string;
+  /** Catalog SKU — required for unique DNA when multiple SKUs share a layout */
+  catalogSlug?: string;
   category?: string;
   features?: string[];
   musicEnabled?: boolean;
@@ -41,6 +44,11 @@ interface LiveTemplatePreviewProps {
   showDeviceToggle?: boolean;
   /** When true (default), live invite only mounts after explicit user tap */
   tapToOpen?: boolean;
+  memoryUploadUrl?: string | null;
+  memoryAlbumUrl?: string | null;
+  memoryUploadQrImageUrl?: string | null;
+  memoryEventId?: string | null;
+  memoryAlbumTitle?: string | null;
 }
 
 function PreviewDeviceChrome({
@@ -131,6 +139,11 @@ function LivePreviewExperience({
   skipReveal,
   musicEnabled,
   musicAutoplay,
+  memoryUploadUrl,
+  memoryAlbumUrl,
+  memoryUploadQrImageUrl,
+  memoryEventId,
+  memoryAlbumTitle,
 }: {
   preview: ReturnType<typeof buildLivePreviewProps>;
   device: PreviewDevice;
@@ -139,9 +152,14 @@ function LivePreviewExperience({
   skipReveal: boolean;
   musicEnabled: boolean;
   musicAutoplay: boolean;
+  memoryUploadUrl?: string | null;
+  memoryAlbumUrl?: string | null;
+  memoryUploadQrImageUrl?: string | null;
+  memoryEventId?: string | null;
+  memoryAlbumTitle?: string | null;
 }) {
   const bg = pageBackgroundFromDesign(preview.design);
-  return (
+  const experience = (
     <PreviewDeviceChrome device={device}>
       <div
         className="relative"
@@ -181,16 +199,28 @@ function LivePreviewExperience({
           embedded={compactFrame}
           galleryInteractive
           rsvpRequired={false}
-          eventId="preview-event"
+          memoryVaultEnabled={Boolean(memoryUploadUrl)}
+          memoryUploadUrl={memoryUploadUrl}
+          memoryAlbumUrl={memoryAlbumUrl}
+          memoryUploadQrImageUrl={memoryUploadQrImageUrl}
+          memoryAlbumTitle={memoryAlbumTitle ?? preview.event.title}
+          eventId={memoryEventId ?? "preview-event"}
         />
       </div>
     </PreviewDeviceChrome>
   );
+
+  // Compact catalogue/card embeds can sit under a parent link — keep chrome non-anchoring.
+  if (compactFrame) {
+    return <InvitationStaticPreviewProvider>{experience}</InvitationStaticPreviewProvider>;
+  }
+  return experience;
 }
 
 /** Renders invitation preview only after user taps — never auto-launches on scroll or load. */
 export function LiveTemplatePreview({
   layoutSlug,
+  catalogSlug,
   category,
   features,
   musicEnabled,
@@ -199,6 +229,11 @@ export function LiveTemplatePreview({
   showBadge = true,
   showDeviceToggle = false,
   tapToOpen = true,
+  memoryUploadUrl,
+  memoryAlbumUrl,
+  memoryUploadQrImageUrl,
+  memoryEventId,
+  memoryAlbumTitle,
 }: LiveTemplatePreviewProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -219,8 +254,9 @@ export function LiveTemplatePreview({
         musicAutoplay: true,
         skipIntro: true,
         skipTapGate: true,
+        catalogSlug: catalogSlug ?? layoutSlug,
       }),
-    [layoutSlug, category, features, musicEnabled]
+    [layoutSlug, catalogSlug, category, features, musicEnabled]
   );
 
   const hasMusic = Boolean(preview.musicSelection) && (musicEnabled ?? true);
@@ -319,6 +355,7 @@ export function LiveTemplatePreview({
           {glimpseVisible && (
             <TemplatePreviewGlimpse
               layoutSlug={layoutSlug}
+              catalogSlug={catalogSlug ?? layoutSlug}
               category={category}
               features={features}
               scale={cfg.thumbScale}
@@ -422,6 +459,11 @@ export function LiveTemplatePreview({
                 skipReveal
                 musicEnabled={hasMusic && inView}
                 musicAutoplay={hasMusic && inView}
+                memoryUploadUrl={memoryUploadUrl}
+                memoryAlbumUrl={memoryAlbumUrl}
+                memoryUploadQrImageUrl={memoryUploadQrImageUrl}
+                memoryEventId={memoryEventId}
+                memoryAlbumTitle={memoryAlbumTitle}
               />
             </div>
           </div>

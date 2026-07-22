@@ -19,7 +19,7 @@ export function PopReveal({ guestName, eventTitle, onComplete }: PopRevealProps)
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-rose-100 via-amber-50 to-teal-50 overflow-hidden">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center bg-gradient-to-br from-rose-100 via-amber-50 to-teal-50 overflow-hidden">
       <AnimatePresence>
         {popped && <RevealConfetti active />}
       </AnimatePresence>

@@ -269,6 +269,17 @@
     text-shadow: var(--inv-text-shadow);
   }
 
+  /* Reveal ceremony: lock document scroll while interactive reveal is fullscreen */
+  .reveal-scroll-locked,
+  .reveal-scroll-locked body {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+
+  .interactive-reveal-root {
+    isolation: isolate;
+  }
+
   /* —— Invite viewport: iOS/Android/Windows fullscreen + safe areas —— */
   .invite-viewport-root {
     width: 100%;
@@ -783,6 +794,24 @@
 
 .inv-portal-enter {
   animation: inv-portal-enter 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Keyboard escape hatch on gesture reveals — fades in after the ceremony settles */
+@keyframes inv-fallback-in {
+  to { opacity: 0.85; }
+}
+
+.inv-reveal-fallback-btn {
+  opacity: 0;
+  animation: inv-fallback-in 0.5s ease 1.6s forwards;
+  transition: opacity 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-reveal-fallback-btn {
+    animation: none;
+    opacity: 0.85;
+  }
 }
 
 @keyframes inv-journey-step {

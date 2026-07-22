@@ -8,6 +8,7 @@ import { BlockShell } from "@/components/invitation-blocks/block-shell";
 import type { InvitationBlockDto, BlockRenderContext } from "@/lib/invitation-blocks/block-types";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
+import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 import { InvitationGalleryDisplay, slideshowStyleFromVariant } from "@/components/invitation/invitation-gallery-display";
 
 function BlockHeader({ block, locale }: { block: InvitationBlockDto; locale: string }) {
@@ -268,12 +269,15 @@ export function BlockView({ block, ctx }: BlockViewProps) {
 
     case "QR_GUEST_PASS":
     case "TICKET_PASS":
-      if (!ctx.qrDataUrl) return null;
+      if (!ctx.qrDataUrl && !ctx.admissionManualCode) return null;
       return (
         <BlockShell variant={block.styleVariant}>
           <BlockHeader block={block} locale={locale} />
-          <div className="text-center flex justify-center">
-            <BrandedQrImage src={ctx.qrDataUrl} size={140} showDownload />
+          <div className="text-center flex flex-col items-center justify-center gap-3">
+            {ctx.qrDataUrl && <BrandedQrImage src={ctx.qrDataUrl} size={140} showDownload />}
+            {ctx.admissionManualCode && (
+              <ManualGateCodeReveal code={ctx.admissionManualCode} variant="pass" />
+            )}
           </div>
         </BlockShell>
       );
@@ -283,6 +287,26 @@ export function BlockView({ block, ctx }: BlockViewProps) {
         <BlockShell variant={block.styleVariant} className="text-center">
           <BlockHeader block={block} locale={locale} />
           <p className="text-slate-600">{body || "Thank you for being part of our celebration."}</p>
+        </BlockShell>
+      );
+
+    case "CUSTOM":
+      return (
+        <BlockShell variant={block.styleVariant}>
+          <BlockHeader block={block} locale={locale} />
+          {body && <p className="text-slate-600 whitespace-pre-line text-center leading-relaxed">{body}</p>}
+          {cj.highlight && (
+            <p className="mt-3 text-center text-sm font-medium text-[#0B8A83]">{cj.highlight}</p>
+          )}
+          {cj.ctaLabel && cj.ctaUrl && (
+            <div className="mt-5 text-center">
+              <Button className="bg-[#0B8A83] hover:bg-[#097068]" asChild>
+                <a href={cj.ctaUrl} target="_blank" rel="noopener noreferrer">
+                  {cj.ctaLabel}
+                </a>
+              </Button>
+            </div>
+          )}
         </BlockShell>
       );
 

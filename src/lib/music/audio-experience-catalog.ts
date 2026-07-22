@@ -9,11 +9,18 @@ import {
   getLayoutSlugByTrackId,
   type BundledMusicFile,
 } from "@/lib/invitation/layout-music-identity";
+import {
+  buildMusicSelectionForCatalog,
+  getCatalogMusicLibraryTracks,
+  getCatalogMusicProfileByTrackId,
+  resolveMusicForCatalogOrLayout,
+} from "@/lib/invitation/catalog-music-identity";
 
 /** Tracks with bundled MP3 files in public/music/ */
 export const BUNDLED_MUSIC_IDS = new Set<string>([
   ...BUNDLED_MUSIC_FILES,
   ...getLayoutMusicCatalogTracks().map((t) => t.id),
+  ...getCatalogMusicLibraryTracks().map((t) => t.id),
 ]);
 
 /** Legacy semantic ids → bundled file (for backwards-compatible order selections) */
@@ -27,19 +34,20 @@ const LEGACY_TRACK_FILE: Record<string, BundledMusicFile> = {
   "violin-elegance": "violin-elegance",
   "strings-garden": "strings-garden",
   "strings-crystal": "strings-crystal",
-  "orchestra-royal": "violin-elegance",
-  "jazz-soft-lounge": "soundhelix-ambient-1",
-  "jazz-midnight": "piano-elegance",
-  "acoustic-warm": "piano-garden",
-  "party-edm-energy": "soundhelix-ambient-1",
-  "happy-celebration": "strings-garden",
-  "african-drums-celebration": "strings-garden",
-  "corporate-summit": "soundhelix-ambient-1",
-  "ambient-cinematic": "soundhelix-ambient-1",
-  "travel-wanderlust": "strings-crystal",
+  "orchestra-royal": "orchestra-royal",
+  "jazz-soft-lounge": "jazz-soft-lounge",
+  "jazz-midnight": "jazz-midnight",
+  "acoustic-warm": "acoustic-warm",
+  "party-edm-energy": "party-edm-energy",
+  "happy-celebration": "happy-celebration",
+  "african-drums-celebration": "african-drums-celebration",
+  "corporate-summit": "corporate-summit",
+  "ambient-cinematic": "ambient-cinematic",
+  "travel-wanderlust": "travel-wanderlust",
   "islamic-soft-instrumental": "piano-elegance",
-  "nature-forest": "piano-elegance",
-  "nature-ocean": "strings-crystal",
+  "nature-forest": "strings-crystal",
+  "nature-ocean": "orchestra-royal",
+  "soundhelix-ambient-1": "soundhelix-ambient-1",
 };
 
 const CATEGORY_FILE_FALLBACK: Record<string, BundledMusicFile> = {
@@ -48,18 +56,20 @@ const CATEGORY_FILE_FALLBACK: Record<string, BundledMusicFile> = {
   piano: "piano-garden",
   violin: "violin-elegance",
   strings: "strings-garden",
-  jazz: "soundhelix-ambient-1",
-  guitar: "piano-garden",
-  celebration: "strings-garden",
-  african: "strings-garden",
-  corporate: "soundhelix-ambient-1",
+  jazz: "jazz-midnight",
+  guitar: "acoustic-warm",
+  celebration: "party-edm-energy",
+  african: "african-drums-celebration",
+  corporate: "corporate-summit",
   muslim: "piano-elegance",
-  instrumentals: "soundhelix-ambient-1",
+  instrumentals: "ambient-cinematic",
   nature: "strings-crystal",
 };
 
 /** Resolve to a bundled file that exists on disk */
 export function resolveBundledTrackId(trackId: string, category?: string): string {
+  const catalogProfile = getCatalogMusicProfileByTrackId(trackId);
+  if (catalogProfile) return catalogProfile.bundledFile;
   const layoutProfile = getLayoutMusicProfileByTrackId(trackId);
   if (layoutProfile) return layoutProfile.bundledFile;
   if (BUNDLED_MUSIC_FILES.includes(trackId as BundledMusicFile)) return trackId;
@@ -76,16 +86,23 @@ export function catalogMusicUrl(trackId: string, category?: string): string {
   return bundledMusicUrl(resolved as BundledMusicFile);
 }
 
-/** Layout-first catalog + legacy aliases for music picker UI */
+/** Layout-first catalog + Wave 1 SKU tracks + library aliases for music picker UI */
 export const AUDIO_EXPERIENCE_CATALOG: MusicLibraryTrack[] = [
   ...getLayoutMusicCatalogTracks(),
+  ...getCatalogMusicLibraryTracks(),
   { id: "luxury-piano-romance", title: "Romantic Whispers (library)", category: "piano", url: catalogMusicUrl("luxury-piano-romance"), durationSec: 120 },
   { id: "piano-garden", title: "Garden Serenade (library)", category: "piano", url: catalogMusicUrl("piano-garden"), durationSec: 120 },
   { id: "piano-elegance", title: "Evening Elegance (library)", category: "piano", url: catalogMusicUrl("piano-elegance"), durationSec: 120 },
   { id: "violin-elegance", title: "Solo Violin (library)", category: "violin", url: catalogMusicUrl("violin-elegance"), durationSec: 120 },
   { id: "strings-garden", title: "String Quartet Garden (library)", category: "strings", url: catalogMusicUrl("strings-garden"), durationSec: 120 },
   { id: "strings-crystal", title: "Crystal Strings (library)", category: "strings", url: catalogMusicUrl("strings-crystal"), durationSec: 120 },
-  { id: "soundhelix-ambient-1", title: "Ambient Journey (library)", category: "instrumentals", url: catalogMusicUrl("soundhelix-ambient-1"), durationSec: 260 },
+  { id: "orchestra-royal", title: "Royal Orchestra (library)", category: "strings", url: catalogMusicUrl("orchestra-royal"), durationSec: 120 },
+  { id: "jazz-midnight", title: "Midnight Jazz (library)", category: "jazz", url: catalogMusicUrl("jazz-midnight"), durationSec: 120 },
+  { id: "african-drums-celebration", title: "Heritage Drums (library)", category: "african", url: catalogMusicUrl("african-drums-celebration"), durationSec: 120 },
+  { id: "party-edm-energy", title: "Neon Energy (library)", category: "celebration", url: catalogMusicUrl("party-edm-energy"), durationSec: 120 },
+  { id: "corporate-summit", title: "Summit Pulse (library)", category: "corporate", url: catalogMusicUrl("corporate-summit"), durationSec: 120 },
+  { id: "travel-wanderlust", title: "Wanderlust (library)", category: "instrumentals", url: catalogMusicUrl("travel-wanderlust"), durationSec: 120 },
+  { id: "ambient-cinematic", title: "Cinematic Ambient (library)", category: "instrumentals", url: catalogMusicUrl("ambient-cinematic"), durationSec: 120 },
 ];
 
 export const AUDIO_CATEGORY_GROUPS = [
@@ -102,6 +119,16 @@ export const AUDIO_CATEGORY_GROUPS = [
 ] as const;
 
 export function getAudioTrackById(id: string): MusicLibraryTrack | undefined {
+  const catalogProfile = getCatalogMusicProfileByTrackId(id);
+  if (catalogProfile) {
+    return {
+      id: catalogProfile.trackId,
+      title: catalogProfile.title,
+      category: catalogProfile.category,
+      url: bundledMusicUrl(catalogProfile.bundledFile),
+      durationSec: catalogProfile.endSec - catalogProfile.startSec + 30,
+    };
+  }
   const layoutProfile = getLayoutMusicProfileByTrackId(id);
   if (layoutProfile) {
     return {
@@ -130,6 +157,25 @@ export function buildMusicSelectionFromTrack(
   trackId: string,
   options?: Partial<MusicSelection>
 ): MusicSelection | null {
+  const catalogByTrack = getCatalogMusicProfileByTrackId(trackId);
+  if (catalogByTrack) {
+    return {
+      source: "library",
+      libraryTrackId: catalogByTrack.trackId,
+      url: bundledMusicUrl(catalogByTrack.bundledFile),
+      title: catalogByTrack.title,
+      startSec: catalogByTrack.startSec,
+      endSec: catalogByTrack.endSec,
+      originalDurationSec: 260,
+      autoPlay: true,
+      loop: true,
+      volume: catalogByTrack.volume,
+      fadeInSec: catalogByTrack.fadeInSec,
+      fadeOutSec: catalogByTrack.fadeOutSec,
+      ...options,
+    };
+  }
+
   const layoutSlug = getLayoutSlugByTrackId(trackId);
   if (layoutSlug) {
     return buildMusicSelectionForLayout(layoutSlug, options);
@@ -158,8 +204,16 @@ export function buildMusicSelectionFromTrack(
 export function resolveDefaultMusicForLayout(
   layout: string,
   trackId?: string,
-  category?: string
+  category?: string,
+  catalogSlug?: string | null
 ): MusicSelection | null {
+  if (catalogSlug) {
+    const catalogMusic = buildMusicSelectionForCatalog(catalogSlug);
+    if (catalogMusic && (!trackId || trackId === catalogMusic.libraryTrackId)) {
+      return catalogMusic;
+    }
+  }
+
   const layoutProfile = getLayoutMusicProfile(layout);
 
   if (trackId && trackId !== layoutProfile.trackId) {
@@ -170,6 +224,10 @@ export function resolveDefaultMusicForLayout(
   if (trackId) {
     const byLayoutTrack = buildMusicSelectionFromTrack(trackId);
     if (byLayoutTrack) return byLayoutTrack;
+  }
+
+  if (catalogSlug) {
+    return resolveMusicForCatalogOrLayout(catalogSlug, layout);
   }
 
   const layoutMusic = buildMusicSelectionForLayout(layout);

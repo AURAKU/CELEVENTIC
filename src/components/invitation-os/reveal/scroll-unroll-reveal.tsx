@@ -26,7 +26,7 @@ export function ScrollUnrollReveal({ guestName, eventTitle, hostName, onComplete
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+      className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center p-6"
       style={{ background: `linear-gradient(180deg, #1a1510 0%, ${CELEVENTIC_BRAND.palette.midnight} 100%)` }}
     >
       <RevealConfetti active={phase === "unrolling"} />

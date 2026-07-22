@@ -54,7 +54,7 @@ export function BohoHexagonTemplate({ invitation, event, design, guestId, guestN
                 {event.venueName}{event.landmark ? ` · ${event.landmark}` : ""}
               </p>
             )}
-            {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded" />}
+            {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />}
             <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} />
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} />
           </div>

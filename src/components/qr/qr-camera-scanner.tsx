@@ -256,15 +256,80 @@ export function QrFileReaderHost() {
   return <div id={FILE_READER_ID} className="hidden" aria-hidden />;
 }
 
-/** Scan QR from uploaded image file */
+const ACCEPTED_IMAGE_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+]);
+
+export class QrImageScanError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "QrImageScanError";
+  }
+}
+
+async function scanWithBarcodeDetector(file: File): Promise<string | null> {
+  if (typeof window === "undefined" || !("BarcodeDetector" in window)) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Detector = (window as any).BarcodeDetector;
+    const detector = new Detector({ formats: ["qr_code"] });
+    const bitmap = await createImageBitmap(file);
+    const codes = await detector.detect(bitmap);
+    bitmap.close?.();
+    const raw = codes?.[0]?.rawValue;
+    return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Scan QR from uploaded / dropped image — multi-engine for gate reliability */
 export async function scanQrFromFile(file: File): Promise<string> {
+  if (!file || file.size === 0) {
+    throw new QrImageScanError("The image file is empty. Please try another photo.");
+  }
+  if (file.size > 12 * 1024 * 1024) {
+    throw new QrImageScanError("Image is too large (max 12MB). Try a clearer, smaller photo of the QR.");
+  }
+  if (file.type && !ACCEPTED_IMAGE_TYPES.has(file.type) && !file.type.startsWith("image/")) {
+    throw new QrImageScanError("Please upload a PNG, JPG, or WebP image of the guest’s QR pass.");
+  }
+
+  const fromDetector = await scanWithBarcodeDetector(file);
+  if (fromDetector) return fromDetector;
+
+  const host = typeof document !== "undefined" ? document.getElementById(FILE_READER_ID) : null;
+  if (!host) {
+    throw new QrImageScanError("Scanner is not ready. Refresh the page and try again.");
+  }
+
   const { Html5Qrcode } = await import("html5-qrcode");
   const scanner = new Html5Qrcode(FILE_READER_ID, { verbose: false }) as unknown as ScannerRef;
   try {
+    let decoded: string;
     if (scanner.scanFileV2) {
-      return await scanner.scanFileV2(file, false);
+      decoded = await scanner.scanFileV2(file, false);
+    } else {
+      decoded = await scanner.scanFile(file, false);
     }
-    return await scanner.scanFile(file, false);
+    const text = typeof decoded === "string" ? decoded.trim() : String(decoded ?? "").trim();
+    if (!text) {
+      throw new QrImageScanError(
+        "No QR code detected in this image. Use a sharp photo of the admission QR, or enter the 4-digit gate code."
+      );
+    }
+    return text;
+  } catch (err) {
+    if (err instanceof QrImageScanError) throw err;
+    throw new QrImageScanError(
+      "Could not read a QR code from this image. Ensure the full code is visible and well-lit, or use the 4-digit gate code."
+    );
   } finally {
     try {
       await Promise.resolve(scanner.clear());

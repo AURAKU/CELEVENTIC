@@ -7,6 +7,8 @@ const schema = z.object({
   eventType: z.enum([
     "TEMPLATE_VIEW", "PACKAGE_SELECT", "CHECKOUT_START", "CHECKOUT_ABANDON",
     "PAYMENT_SUCCESS", "INVITE_OPEN", "RSVP_SUBMIT", "ADDON_SELECT",
+    "INVITE_PAGE_VIEW", "INVITE_ACTION_CLICK", "TEMPLATE_PREVIEW_OPEN",
+    "THEME_SWITCH", "VIRAL_CTA_CLICK", "CONTRIBUTE_CLICK",
   ]),
   orderId: z.string().optional(),
   invitationId: z.string().optional(),
@@ -16,6 +18,7 @@ const schema = z.object({
   packageSlug: z.string().optional(),
   addonSlug: z.string().optional(),
   revenueGhs: z.number().optional(),
+  metadata: z.record(z.unknown()).optional(),
 });
 
 export async function POST(req: Request) {

@@ -109,6 +109,22 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
     },
   },
   {
+    id: "wax-seal-emerald",
+    label: "Emerald wax seal",
+    description: "Palace emerald envelope — press the gold wax seal",
+    category: "envelope",
+    envelopeTheme: {
+      bodyBg: "linear-gradient(145deg, #064e3b 0%, #022c22 55%, #0a1f1a 100%)",
+      flapGradient: "linear-gradient(180deg, #D4AF37 0%, #8B6914 100%)",
+      sealGradient: "linear-gradient(145deg, #F5E6B8 0%, #C9A227 55%, #059669 100%)",
+      sealIcon: "♛",
+      borderColor: "rgba(212,175,55,0.55)",
+      accent: "#D4AF37",
+      label: "Press the wax seal",
+      royal: true,
+    },
+  },
+  {
     id: "envelope-floral",
     label: "Floral envelope",
     description: "Flowers frame the envelope reveal",
@@ -169,7 +185,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
       islamic: true,
     },
   },
-  { id: "curtain-wedding", label: "Wedding stage curtain", description: "Red velvet curtains part slowly", category: "curtain" },
+  { id: "curtain-wedding", label: "Wedding stage curtain", description: "Deep velvet curtains part slowly after tap — theatrical reveal", category: "curtain" },
   { id: "curtain-concert", label: "Concert stage", description: "Spotlight curtain reveal", category: "curtain" },
   { id: "curtain-award", label: "Award night", description: "Gold curtain gala reveal", category: "curtain" },
   { id: "curtain-birthday", label: "Birthday party", description: "Festive curtain pop", category: "curtain" },
@@ -189,6 +205,48 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   { id: "confetti-burst", label: "Confetti burst", description: "Instant confetti celebration", category: "interactive" },
   { id: "flip-reveal", label: "Flip reveal", description: "3D card flip ceremony", category: "interactive" },
   { id: "zoom-reveal", label: "Zoom reveal", description: "Camera zoom into the moment", category: "interactive" },
+  {
+    id: "magazine-page-turn",
+    label: "Magazine page turn",
+    description: "Editorial cover — swipe or tap to turn the page",
+    category: "interactive",
+  },
+  {
+    id: "candle-light",
+    label: "Candle light",
+    description: "Unlit memorial candle — tap to light",
+    category: "interactive",
+  },
+  {
+    id: "press-hold",
+    label: "Press and hold",
+    description: "Hold to unlock the invitation",
+    category: "interactive",
+  },
+  {
+    id: "satin-bow",
+    label: "Satin bow",
+    description: "Ivory card tied with a satin bow — tap to untie",
+    category: "interactive",
+  },
+  {
+    id: "ring-box",
+    label: "Ring box",
+    description: "Black-tie ring box — tap to open the lid",
+    category: "interactive",
+  },
+  {
+    id: "archway",
+    label: "Palace archway",
+    description: "Emerald cathedral gates — tap to enter",
+    category: "palace",
+  },
+  {
+    id: "petal-fall",
+    label: "Petal fall",
+    description: "Watercolor garden — tap and petals cascade away",
+    category: "interactive",
+  },
   { id: "none", label: "Instant", description: "Skip opening ceremony", category: "instant" },
 ];
 
@@ -213,11 +271,14 @@ export function mapOpeningToLegacyRevealMode(id: OpeningExperienceId): RevealMod
   if (id.startsWith("curtain-")) return "curtain";
   if (id === "scratch") return "scratch";
   if (id === "passport") return "passport";
-  if (id === "glass" || id === "swipe-reveal") return "glass";
+  if (id === "glass" || id === "swipe-reveal" || id === "petal-fall") return "glass";
   if (id === "scroll-unroll") return "scroll-unroll";
   if (id === "none" || id === "film-countdown") return "none";
   if (id === "pop-reveal" || id === "confetti-burst") return "scratch";
-  if (id === "flip-reveal" || id === "zoom-reveal") return "passport";
+  if (id === "flip-reveal" || id === "zoom-reveal" || id === "magazine-page-turn" || id === "ring-box")
+    return "passport";
+  if (id === "candle-light") return "curtain";
+  if (id === "satin-bow" || id === "archway" || id === "palace-entrance") return "envelope";
   return "envelope";
 }
 

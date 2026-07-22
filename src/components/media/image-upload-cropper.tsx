@@ -35,6 +35,13 @@ interface ImageUploadCropperProps {
   previewUrl?: string | null;
   onClear?: () => void;
   buttonLabel?: string;
+  /**
+   * Max accepted source file size. Pass `Infinity` when the consumer compresses
+   * in `onCustomUpload` — the source size no longer bounds what gets uploaded.
+   */
+  maxFileBytes?: number;
+  /** Footer text under the drop zone. Defaults to the generic 10MB wording. */
+  dropzoneNote?: string;
 }
 
 export function ImageUploadCropper({
@@ -52,6 +59,8 @@ export function ImageUploadCropper({
   previewUrl,
   onClear,
   buttonLabel = "Upload image",
+  maxFileBytes,
+  dropzoneNote = "or drag & drop · JPEG, PNG, WebP · max 10MB",
 }: ImageUploadCropperProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -61,7 +70,7 @@ export function ImageUploadCropper({
   const [dragOver, setDragOver] = useState(false);
 
   async function pickFile(file: File) {
-    const err = validateClientImage(file);
+    const err = validateClientImage(file, maxFileBytes);
     if (err) {
       onError?.(err);
       return;
@@ -186,7 +195,7 @@ export function ImageUploadCropper({
             {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             {uploading ? `Uploading ${progress}%` : buttonLabel}
           </Button>
-          <p className="text-[11px] text-slate-400 mt-2">or drag & drop · JPEG, PNG, WebP · max 10MB</p>
+          <p className="text-[11px] text-slate-400 mt-2">{dropzoneNote}</p>
           {uploading && (
             <div className="mt-3 h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div className="h-full bg-brand-600 transition-all" style={{ width: `${progress}%` }} />

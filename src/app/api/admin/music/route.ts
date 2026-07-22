@@ -40,6 +40,12 @@ export async function POST(req: Request) {
     const durationSecRaw = formData.get("durationSec");
     const durationSec =
       typeof durationSecRaw === "string" ? parseFloat(durationSecRaw) : undefined;
+    const clipStartRaw = formData.get("clipStartSec");
+    const clipEndRaw = formData.get("clipEndSec");
+    const clipStartSec =
+      typeof clipStartRaw === "string" ? parseFloat(clipStartRaw) : undefined;
+    const clipEndSec = typeof clipEndRaw === "string" ? parseFloat(clipEndRaw) : undefined;
+    const sourceUrl = (formData.get("sourceUrl") as string)?.trim() || undefined;
 
     if (!file || !title) {
       return NextResponse.json({ error: "Title and audio file are required" }, { status: 400 });
@@ -47,10 +53,13 @@ export async function POST(req: Request) {
 
     const config = resolveMusicUpload(file);
     if (!config) {
-      return NextResponse.json({ error: "Unsupported audio format" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Unsupported media. Upload an audio file the browser can play (mp3, wav, m4a, ogg, flac, …)." },
+        { status: 400 }
+      );
     }
     if (file.size > config.max) {
-      return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 400 });
+      return NextResponse.json({ error: "File too large (max 40MB)" }, { status: 400 });
     }
 
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${config.ext}`;
@@ -61,7 +70,10 @@ export async function POST(req: Request) {
       artist,
       category,
       url,
+      sourceUrl,
       durationSec: Number.isFinite(durationSec) ? durationSec : undefined,
+      clipStartSec: Number.isFinite(clipStartSec) ? clipStartSec : undefined,
+      clipEndSec: Number.isFinite(clipEndSec) ? clipEndSec : undefined,
       createdById: session.user.id,
     });
 

@@ -70,7 +70,7 @@ function InviteBody({
       {event.venueName && <p className="tracking-wide" style={{ fontSize: bodySize + 1 }}>{event.venueName}</p>}
       {event.landmark && <p className={cn("inv-muted-on-dark", variant === "light" && "inv-muted-on-light")} style={{ fontSize: bodySize - 1 }}>{event.landmark}</p>}
       {event.dressCode && <p className={cn("inv-caption-on-dark", variant === "light" && "inv-caption-on-light")} style={{ fontSize: bodySize - 1 }}>Dress code · {event.dressCode}</p>}
-      {qrDataUrl && <Image src={qrDataUrl} alt="Guest pass QR" width={112} height={112} className="mx-auto rounded-lg" />}
+      {qrDataUrl && <Image src={qrDataUrl} alt="Guest pass QR" width={112} height={112} className="mx-auto rounded-lg"  unoptimized />}
       <InvitationRsvpPanel
         invitationId={invitation.id}
         guestId={guestId}

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { ArrowRight, Heart, Sparkles, Palette, Globe2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
-import { getTemplatePreset } from "@/lib/invitation-templates";
+import { getBrowseCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
+import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
+import { getLayoutSignatureFeatures } from "@/lib/invitation/layout-template-signatures";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 const HIGHLIGHT_KEYS = [
@@ -17,16 +18,8 @@ const HIGHLIGHT_KEYS = [
 
 export function InvitationExperience() {
   const { t } = useLocale();
-  const featured = CATALOG_TEMPLATES.slice(0, 6).map((t) => {
-    const preset = getTemplatePreset(t.layoutSlug);
-    return {
-      slug: t.layoutSlug,
-      name: t.name,
-      description: t.description,
-      category: t.category,
-      preview: preset?.preview ?? { gradient: t.previewGradient, accent: "#0B8A83" },
-    };
-  });
+  // Browse-deduped winners only — never raw CATALOG_TEMPLATES.slice (hides lites / shows flagships).
+  const featured = getBrowseCatalogTemplates().slice(0, 6);
 
   return (
     <section id="invitations" className="py-28 bg-white relative overflow-hidden">
@@ -59,32 +52,37 @@ export function InvitationExperience() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featured.map((template) => (
-            <Link
-              key={template.slug}
-              href="/auth/register"
-              className="group rounded-2xl overflow-hidden border border-slate-200/70 hover:border-brand-300 hover:shadow-[0_16px_48px_rgba(11,138,131,0.12)] transition-all"
-            >
-              <div
-                className={`h-44 bg-gradient-to-br ${template.preview.gradient} flex items-center justify-center relative`}
+          {featured.map((template) => {
+            const features =
+              getLayoutSignatureFeatures(template.layoutSlug) ?? template.features;
+            const detailHref =
+              template.themeId && template.blueprintId
+                ? `/invitations/preview/${template.slug}`
+                : `/invitations/templates/${template.slug}`;
+            return (
+              <article
+                key={template.slug}
+                className="group rounded-2xl overflow-hidden border border-slate-200/70 hover:border-brand-300 hover:shadow-[0_16px_48px_rgba(11,138,131,0.12)] transition-all bg-white"
               >
-                <div
-                  className="absolute inset-6 rounded-xl border-2 opacity-60"
-                  style={{ borderColor: template.preview.accent }}
+                <LiveTemplatePreview
+                  layoutSlug={template.layoutSlug}
+                  catalogSlug={template.slug}
+                  category={template.category}
+                  features={features}
+                  variant="card"
                 />
-                <span className="font-display text-lg font-semibold text-slate-800/80 px-4 text-center">
-                  {template.name}
-                </span>
-              </div>
-              <div className="p-5 bg-white">
-                <p className="text-xs font-medium uppercase tracking-wider text-brand-600">
-                  {template.category}
-                </p>
-                <p className="font-semibold text-slate-900 mt-1">{template.name}</p>
-                <p className="text-sm text-slate-500 mt-1 line-clamp-2">{template.description}</p>
-              </div>
-            </Link>
-          ))}
+                <Link href={detailHref} className="block p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset">
+                  <p className="text-xs font-medium uppercase tracking-wider text-brand-600">
+                    {template.category}
+                  </p>
+                  <p className="font-semibold text-slate-900 mt-1 group-hover:text-brand-700 transition-colors">
+                    {template.name}
+                  </p>
+                  <p className="text-sm text-slate-500 mt-1 line-clamp-2">{template.description}</p>
+                </Link>
+              </article>
+            );
+          })}
         </div>
 
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">

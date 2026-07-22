@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/page-loader";
 import { BlockEditor } from "@/components/invitation-blocks/block-editor";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { FunnelSummaryBar } from "@/components/invitation-mvp/funnel-summary-bar";
 import type { InvitationBlockDto, BlockRenderContext } from "@/lib/invitation-blocks/block-types";
 
 export default function BlocksEditorPage() {
@@ -67,10 +68,14 @@ export default function BlocksEditorPage() {
 
   return (
     <MvpShell
-      step={3}
-      title="Design Your Invitation"
-      subtitle="Add, reorder, and customize sections — your mini event website"
+      step={2}
+      title="Choose Invitation Sections"
+      subtitle="Select and customize the story sections for your invitation"
     >
+      <FunnelSummaryBar
+        packageSlug={(order?.packageSlug as string) ?? null}
+        addonSlugs={Array.isArray(order?.addonSlugs) ? (order?.addonSlugs as string[]) : []}
+      />
       <BlockEditor
         orderId={orderId}
         blocks={blocks}
@@ -78,13 +83,13 @@ export default function BlocksEditorPage() {
         context={context}
         onChange={load}
       />
-      <div className="max-w-md mx-auto mt-10">
+      <div className="max-w-md mx-auto mt-10 pb-16">
         <Button
           className="w-full bg-[#0B8A83] hover:bg-[#097068]"
           size="lg"
-          onClick={() => router.push(`/invitations/create/${orderId}/studio`)}
+          onClick={() => router.push(`/invitations/create/${orderId}/addons`)}
         >
-          {t("flow.step_preview")} →
+          Continue to optional extras →
         </Button>
       </div>
     </MvpShell>

@@ -1,0 +1,454 @@
+/*
+ * Invitation Studio 2.0 — paged viewer + page-block styles.
+ * Token-pure: every color/size/font here derives from var(--inv-*) set by the
+ * theme resolver, plus `transparent`/`currentColor` keywords via color-mix.
+ * Animations are transform/opacity only.
+ */
+
+/* ——— Paged viewer shell ——— */
+
+.inv-paged-root {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  background: var(--inv-color-surface);
+  color: var(--inv-color-ink);
+  font-family: var(--inv-font-body);
+}
+
+.inv-paged-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Low-tier devices degrade to a plain scroll of the same content */
+.inv-paged-root[data-tier="low"] .inv-paged-scroll {
+  scroll-snap-type: none;
+}
+
+/* Viewer chrome is JS-driven — hidden until hydration (no-JS fallback = clean stacked scroll) */
+.inv-paged-root:not([data-hydrated="true"]) .inv-paged-chrome {
+  display: none;
+}
+
+/* ——— Page frame ——— */
+
+.inv-page {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: var(--inv-space-page-padding);
+  background: var(--inv-color-surface);
+}
+
+.inv-page[data-alt-surface="true"] {
+  background: var(--inv-color-surface-alt);
+}
+
+.inv-page-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 40rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--inv-space-block-gap);
+  text-align: center;
+}
+
+/* ——— Typography ——— */
+
+.inv-display {
+  font-family: var(--inv-font-display);
+  letter-spacing: var(--inv-type-letter-spacing);
+  font-size: calc(clamp(1.9rem, 7vw, 3.2rem) * var(--inv-type-scale));
+  line-height: 1.12;
+  color: var(--inv-color-primary);
+  text-wrap: balance;
+}
+
+.inv-heading {
+  font-family: var(--inv-font-display);
+  letter-spacing: var(--inv-type-letter-spacing);
+  font-size: calc(clamp(1.35rem, 4.5vw, 1.9rem) * var(--inv-type-scale));
+  line-height: 1.2;
+  color: var(--inv-color-primary);
+}
+
+.inv-script {
+  font-family: var(--inv-font-script);
+  font-size: calc(clamp(1.15rem, 4vw, 1.6rem) * var(--inv-type-scale));
+  color: var(--inv-color-accent);
+}
+
+.inv-body {
+  font-family: var(--inv-font-body);
+  font-size: calc(clamp(0.95rem, 2.4vw, 1.08rem) * var(--inv-type-scale));
+  line-height: 1.65;
+  color: var(--inv-color-ink);
+}
+
+.inv-muted {
+  color: var(--inv-color-ink-muted);
+}
+
+.inv-eyebrow {
+  font-family: var(--inv-font-body);
+  font-size: calc(0.72rem * var(--inv-type-scale));
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--inv-color-ink-muted);
+}
+
+/* Foil text: gradient-clipped when the theme carries a foil effect */
+.inv-foil-text {
+  color: var(--inv-color-accent);
+}
+[data-inv-foil="gold"] .inv-foil-text,
+[data-inv-foil="silver"] .inv-foil-text {
+  background: var(--inv-foil-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ——— Background textures (CSS-only, zero asset weight) ——— */
+
+.inv-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+[data-inv-texture="paper"] .inv-page::before {
+  background:
+    radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--inv-color-ink) 6%, transparent) 100%);
+}
+
+[data-inv-texture="linen"] .inv-page::before {
+  background:
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--inv-color-ink) 3%, transparent) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--inv-color-ink) 3%, transparent) 0 1px, transparent 1px 4px);
+}
+
+[data-inv-texture="velvet-vignette"] .inv-page::before {
+  background:
+    radial-gradient(ellipse at center, transparent 35%, color-mix(in srgb, var(--inv-color-ink) 14%, transparent) 100%);
+  mix-blend-mode: multiply;
+}
+
+/* ——— Frames ——— */
+
+[data-inv-frame="hairline"] .inv-page-inner {
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 45%, transparent);
+  border-radius: var(--inv-radius);
+  padding: calc(var(--inv-space-block-gap) * 1.25);
+}
+
+[data-inv-frame="gilded"] .inv-page-inner {
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 70%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--inv-color-accent) 30%, transparent);
+  outline-offset: 5px;
+  border-radius: var(--inv-radius);
+  padding: calc(var(--inv-space-block-gap) * 1.25);
+  box-shadow: var(--inv-shadow);
+}
+
+[data-inv-frame="arch"] .inv-page-inner {
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 55%, transparent);
+  border-radius: calc(var(--inv-radius) * 8) calc(var(--inv-radius) * 8) var(--inv-radius) var(--inv-radius);
+  padding: calc(var(--inv-space-block-gap) * 1.5) calc(var(--inv-space-block-gap) * 1.25);
+}
+
+/* Cover pages drop the frame so hero media stays cinematic */
+.inv-page[data-frameless="true"] .inv-page-inner {
+  border: none;
+  outline: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ——— Dividers ——— */
+
+.inv-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  color: var(--inv-color-accent);
+}
+
+.inv-divider::before,
+.inv-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  max-width: 6rem;
+  background: color-mix(in srgb, var(--inv-color-accent) 50%, transparent);
+}
+
+[data-inv-divider="none"] .inv-divider::before,
+[data-inv-divider="none"] .inv-divider::after {
+  background: transparent;
+}
+
+[data-inv-divider="double-rule"] .inv-divider::before,
+[data-inv-divider="double-rule"] .inv-divider::after {
+  height: 3px;
+  border-top: 1px solid color-mix(in srgb, var(--inv-color-accent) 50%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--inv-color-accent) 50%, transparent);
+  background: transparent;
+}
+
+/* ——— Buttons ——— */
+
+.inv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.65rem 1.4rem;
+  border-radius: calc(var(--inv-radius) * 2);
+  font-family: var(--inv-font-body);
+  font-size: calc(0.92rem * var(--inv-type-scale));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.inv-btn:active {
+  transform: scale(0.97);
+}
+
+.inv-btn-primary {
+  background: var(--inv-color-accent);
+  color: var(--inv-color-surface);
+  border: 1px solid transparent;
+  box-shadow: var(--inv-shadow);
+}
+
+.inv-btn-secondary {
+  background: transparent;
+  color: var(--inv-color-ink);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 55%, transparent);
+}
+
+/* ——— Detail rows ——— */
+
+.inv-detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--inv-color-ink) 10%, transparent);
+  width: 100%;
+}
+
+.inv-detail-row:last-child {
+  border-bottom: none;
+}
+
+/* ——— Countdown ——— */
+
+.inv-countdown {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.inv-countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 3.4rem;
+  padding: 0.55rem 0.4rem;
+  border-radius: var(--inv-radius);
+  background: color-mix(in srgb, var(--inv-color-ink) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 25%, transparent);
+}
+
+.inv-countdown-value {
+  font-family: var(--inv-font-display);
+  font-size: calc(1.3rem * var(--inv-type-scale));
+  font-variant-numeric: tabular-nums;
+  color: var(--inv-color-primary);
+}
+
+.inv-countdown-label {
+  font-size: calc(0.6rem * var(--inv-type-scale));
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--inv-color-ink-muted);
+}
+
+/* ——— Cover hero media ——— */
+
+.inv-cover-media {
+  position: absolute;
+  inset: -8%;
+  z-index: 0;
+}
+
+.inv-cover-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inv-cover-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--inv-color-overlay);
+}
+
+.inv-page[data-has-media="true"] .inv-display,
+.inv-page[data-has-media="true"] .inv-heading {
+  color: var(--inv-color-surface);
+}
+
+.inv-page[data-has-media="true"] .inv-body,
+.inv-page[data-has-media="true"] .inv-eyebrow,
+.inv-page[data-has-media="true"] .inv-muted {
+  color: color-mix(in srgb, var(--inv-color-surface) 88%, transparent);
+}
+
+/* ——— Dot rail ——— */
+
+.inv-dot-rail {
+  position: absolute;
+  right: max(0.4rem, env(safe-area-inset-right, 0px));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+}
+
+.inv-dot {
+  width: 44px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.inv-dot::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--inv-color-ink) 35%, transparent);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.inv-dot[data-active="true"]::after {
+  background: var(--inv-color-accent);
+  transform: scale(1.5);
+}
+
+/* ——— Persistent action bar ——— */
+
+.inv-action-bar {
+  position: absolute;
+  left: 50%;
+  bottom: max(0.9rem, env(safe-area-inset-bottom, 0px));
+  transform: translate(-50%, 0);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--inv-color-surface) 82%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 30%, transparent);
+  box-shadow: var(--inv-shadow);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.inv-action-bar[data-visible="false"] {
+  opacity: 0;
+  transform: translate(-50%, 120%);
+  pointer-events: none;
+}
+
+/* ——— Swipe hint ——— */
+
+.inv-swipe-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(1.4rem, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--inv-color-accent);
+  font-family: var(--inv-font-body);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  animation: inv-hint-in 0.6s ease 1.2s forwards;
+}
+
+.inv-swipe-hint-chevron {
+  animation: inv-hint-bob 1.6s ease-in-out 1.8s infinite;
+}
+
+@keyframes inv-hint-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes inv-hint-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-swipe-hint {
+    animation: none;
+    opacity: 1;
+  }
+  .inv-swipe-hint-chevron {
+    animation: none;
+  }
+  .inv-paged-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* ——— Motif glyphs ——— */
+
+.inv-motif {
+  color: var(--inv-color-accent);
+  display: flex;
+  justify-content: center;
+}

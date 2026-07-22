@@ -63,12 +63,17 @@ export function PricingDisplay({ plans }: { plans: PricingPlan[] }) {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-8">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm text-slate-600">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100">
-                        <Check className="h-3 w-3 text-brand-600 shrink-0" />
+                  {(plan.features?.length
+                    ? plan.features
+                    : ["Digital invitations", "RSVP tracking", "QR admission"]
+                  )
+                    .filter((f) => typeof f === "string" && f.trim().length > 0)
+                    .map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 shrink-0 mt-0.5">
+                        <Check className="h-3 w-3 text-brand-600" />
                       </div>
-                      {f}
+                      <span>{f}</span>
                     </li>
                   ))}
                 </ul>

@@ -1,10 +1,26 @@
 import crypto from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
-const KEY = process.env.ENCRYPTION_KEY ?? process.env.NEXTAUTH_SECRET ?? "celeventic-default-key-32chars!!";
+const FALLBACK_DEV_KEY = "celeventic-default-key-32chars!!";
+
+function resolveKeyMaterial(): string {
+  const fromEnv = process.env.ENCRYPTION_KEY?.trim() || process.env.NEXTAUTH_SECRET?.trim();
+  if (fromEnv) return fromEnv;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "ENCRYPTION_KEY (or NEXTAUTH_SECRET) is required in production to encrypt API secrets at rest."
+    );
+  }
+
+  console.warn(
+    "[celeventic:encryption] Using development fallback key — set ENCRYPTION_KEY before production."
+  );
+  return FALLBACK_DEV_KEY;
+}
 
 function getKey(): Buffer {
-  return crypto.createHash("sha256").update(KEY).digest();
+  return crypto.createHash("sha256").update(resolveKeyMaterial()).digest();
 }
 
 export function encrypt(text: string): string {
@@ -18,6 +34,9 @@ export function encrypt(text: string): string {
 
 export function decrypt(encryptedText: string): string {
   const [ivHex, authTagHex, encrypted] = encryptedText.split(":");
+  if (!ivHex || !authTagHex || !encrypted) {
+    throw new Error("Invalid encrypted secret format");
+  }
   const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), Buffer.from(ivHex, "hex"));
   decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
   let decrypted = decipher.update(encrypted, "hex", "utf8");

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       const { paymentService } = await import("@/services/payments/payment.service");
       const result = await paymentService.initializePayment(
         session.user.id,
-        "PAYSTACK",
+        null,
         "BULK_MESSAGING",
         {
           amount: preview.estimatedCost,

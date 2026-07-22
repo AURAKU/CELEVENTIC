@@ -9,6 +9,7 @@ import { complianceService } from "@/services/legal/compliance.service";
 import { productionWorkflowService } from "@/services/invitations/production-workflow.service";
 import { invitationAnalyticsService } from "@/services/invitation-os/invitation-analytics.service";
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
+import { isAdminCommerceBypass } from "@/lib/access/package-access";
 
 export async function POST(
   req: Request,
@@ -20,6 +21,7 @@ export async function POST(
   }
 
   const { id } = await params;
+  const adminBypass = isAdminCommerceBypass(session.user.role);
 
   try {
     const order = await invitationOrderService.getOrderForUser(id, session.user.id);
@@ -35,7 +37,7 @@ export async function POST(
       portfolioConsent?: boolean;
     };
 
-    if (!acceptTerms) {
+    if (!acceptTerms && !adminBypass) {
       return NextResponse.json({ error: "You must accept the Terms and Privacy Policy" }, { status: 400 });
     }
 
@@ -43,28 +45,30 @@ export async function POST(
     const displayCurrency = (dc ?? order.displayCurrency ?? "GHS") as DisplayCurrency;
     const addonSlugs = (order.addonSlugs as string[] | null) ?? [];
     const pricing = await pricingService.calculateOrderPricing(order.packageSlug, addonSlugs, displayCurrency);
-    const amount = pricing.totalGhs;
+    const amount = adminBypass ? 0 : pricing.totalGhs;
 
     await prisma.invitationOrder.update({
       where: { id: order.id },
       data: {
         totalAmountGhs: amount,
         displayCurrency: pricing.displayCurrency,
-        displayAmount: pricing.displayAmount,
+        displayAmount: adminBypass ? 0 : pricing.displayAmount,
         exchangeRate: pricing.exchangeRate,
         idempotencyKey: order.idempotencyKey ?? `order-${order.id}`,
         portfolioConsent: portfolioConsent ?? false,
-        termsAcceptedVersion: versions.terms?.version,
-        privacyAcceptedVersion: versions.privacy?.version,
+        termsAcceptedVersion: versions.terms?.version ?? order.termsAcceptedVersion,
+        privacyAcceptedVersion: versions.privacy?.version ?? order.privacyAcceptedVersion,
       },
     });
 
-    await complianceService.recordConsent(session.user.id, "TERMS", { version: versions.terms?.version });
-    await complianceService.recordConsent(session.user.id, "PRIVACY", { version: versions.privacy?.version });
-    await complianceService.recordConsent(session.user.id, "PORTFOLIO", {
-      value: portfolioConsent ? "allowed" : "private",
-      metadata: { invitationOrderId: order.id },
-    });
+    if (acceptTerms || adminBypass) {
+      await complianceService.recordConsent(session.user.id, "TERMS", { version: versions.terms?.version });
+      await complianceService.recordConsent(session.user.id, "PRIVACY", { version: versions.privacy?.version });
+      await complianceService.recordConsent(session.user.id, "PORTFOLIO", {
+        value: portfolioConsent ? "allowed" : "private",
+        metadata: { invitationOrderId: order.id, adminBypass },
+      });
+    }
 
     await invitationAnalyticsService.track({
       eventType: "CHECKOUT_START",
@@ -74,8 +78,11 @@ export async function POST(
       templateSlug: order.templateSlug,
     });
 
-    if (amount <= 0) {
-      const result = await invitationOrderService.publishFromPayment(order.id);
+    if (amount <= 0 || adminBypass) {
+      await prisma.invitationOrder.update({
+        where: { id: order.id },
+        data: { status: "PAID", workflowStage: "PAYMENT_SUCCESSFUL", totalAmountGhs: 0 },
+      });
       await addonFulfillmentService.fulfillOrderAddons(order.id);
       await invitationAnalyticsService.track({
         eventType: "PAYMENT_SUCCESS",
@@ -84,13 +91,14 @@ export async function POST(
         packageSlug: order.packageSlug,
         templateSlug: order.templateSlug,
       });
-      await prisma.invitationOrder.update({
-        where: { id: order.id },
-        data: { status: "PUBLISHED", workflowStage: "PUBLISHED" },
-      });
       return NextResponse.json({
         success: true,
-        data: { free: true, shareUrl: result.shareUrl, invitationId: result.invitation.id },
+        data: {
+          free: true,
+          unlockStudio: true,
+          adminBypass,
+          next: "studio",
+        },
       });
     }
 
@@ -103,7 +111,7 @@ export async function POST(
     const email = order.contactEmail ?? session.user.email ?? "guest@celeventic.com";
     const payment = await paymentService.initializePayment(
       session.user.id,
-      "PAYSTACK",
+      null,
       "INVITATION_ORDER",
       {
         email,

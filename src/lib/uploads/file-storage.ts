@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { getAwsS3Config, isAwsS3Ready, putS3Object } from "@/lib/uploads/aws-s3";
 
 /** Writable upload root — `/tmp` on serverless, `public/uploads` locally. */
 export function getUploadRoot(): string {
@@ -24,11 +25,15 @@ export function resolveUploadPath(relativePath: string): string {
   return full;
 }
 
-/** Public URL — always served via API route for cross-environment consistency. */
+/** Public URL — API route for local disk; absolute CDN/S3 URL when AWS is configured. */
 export function getPublicUploadUrl(relativePath: string): string {
   return `/api/uploads/${normalizeRelativePath(relativePath)}`;
 }
 
+/**
+ * Persist an upload.
+ * Prefer AWS S3 (+ CloudFront) from Admin Integrations or env; fall back to local disk.
+ */
 export async function storeUploadFile(
   category: string,
   subPath: string,
@@ -36,6 +41,12 @@ export async function storeUploadFile(
   buffer: Buffer
 ): Promise<{ url: string; relativePath: string }> {
   const relativePath = [category, subPath, fileName].filter(Boolean).join("/");
+
+  if (await isAwsS3Ready()) {
+    const { url } = await putS3Object(relativePath, buffer);
+    return { url, relativePath };
+  }
+
   const filePath = resolveUploadPath(relativePath);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, buffer);
@@ -53,4 +64,12 @@ export async function readUploadFile(relativePath: string): Promise<Buffer | nul
       return null;
     }
   }
+}
+
+export async function getActiveStorageBackend(): Promise<"aws-s3" | "local"> {
+  return (await isAwsS3Ready()) ? "aws-s3" : "local";
+}
+
+export function getStoragePublicBaseHint(): string | null {
+  return getAwsS3Config()?.publicBaseUrl ?? null;
 }

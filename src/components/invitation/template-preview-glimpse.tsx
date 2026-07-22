@@ -8,11 +8,14 @@ import { pageBackgroundFromDesign } from "@/lib/invitation/studio-media-utils";
 import { getLayoutMediaPack } from "@/lib/invitation/layout-media-identity";
 import { getLayoutVisualProfile } from "@/lib/experience/layout-visual-profiles";
 import { cn } from "@/lib/utils";
+import { InvitationStaticPreviewProvider } from "@/components/invitation/invitation-static-preview";
 
 const FRAME_WIDTH = 390;
 
 interface TemplatePreviewGlimpseProps {
   layoutSlug: string;
+  /** Catalog SKU — required when multiple SKUs share a layout (Wave-1 pages) */
+  catalogSlug?: string;
   category?: string;
   features?: string[];
   /** Scale of the faux phone frame inside the tile */
@@ -27,6 +30,7 @@ interface TemplatePreviewGlimpseProps {
  */
 export function TemplatePreviewGlimpse({
   layoutSlug,
+  catalogSlug,
   category,
   features,
   scale = 0.36,
@@ -40,8 +44,9 @@ export function TemplatePreviewGlimpse({
         musicEnabled: false,
         skipIntro: true,
         skipTapGate: true,
+        catalogSlug: catalogSlug ?? layoutSlug,
       }),
-    [layoutSlug, category, features]
+    [layoutSlug, catalogSlug, category, features]
   );
 
   const bg = pageBackgroundFromDesign(preview.design);
@@ -61,6 +66,7 @@ export function TemplatePreviewGlimpse({
       style={{ background: visual.background }}
       aria-hidden
     >
+      <InvitationStaticPreviewProvider>
       <img
         src={backdropUrl}
         alt=""
@@ -97,6 +103,7 @@ export function TemplatePreviewGlimpse({
           </div>
         </div>
       </div>
+      </InvitationStaticPreviewProvider>
     </div>
   );
 }

@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getActivePricingPlans } from "@/lib/packages";
 
 export async function GET() {
-  const packages = await prisma.eventPackage.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
+  const [raw, plans] = await Promise.all([
+    prisma.eventPackage.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    getActivePricingPlans(),
+  ]);
+
+  const featuresBySlug = Object.fromEntries(plans.map((p) => [p.slug, p.features]));
 
   return NextResponse.json({
     success: true,
-    data: packages.map((p) => ({
+    data: raw.map((p) => ({
       id: p.id,
       name: p.name,
       slug: p.slug,
@@ -17,7 +23,7 @@ export async function GET() {
       price: Number(p.price),
       currency: p.currency,
       guestLimit: p.guestLimit,
-      features: p.features,
+      features: featuresBySlug[p.slug] ?? [],
     })),
   });
 }

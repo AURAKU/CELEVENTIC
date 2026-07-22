@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { GUEST_TIERS } from "@/lib/constants";
+import {
+  getProviderCredentials,
+  isProviderEnabled,
+} from "@/lib/integrations/integration-runtime";
+import { getPlatformDefaultProviders } from "@/lib/integrations/platform-provider-settings";
 import type { CommunicationPreview } from "@/types";
 import type { CampaignChannel } from "@prisma/client";
 
@@ -19,9 +24,15 @@ export interface SendCampaignParams {
   guestTier?: number;
 }
 
+export class CommunicationProviderError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CommunicationProviderError";
+  }
+}
+
 /**
- * Communication Hub Service
- * Provider integrations (WhatsApp Business, SMS, Resend) plug in here
+ * Communication Hub — sends via admin-configured providers (no mock success paths).
  */
 export class CommunicationService {
   calculateCost(channel: CampaignChannel, recipientCount: number): number {
@@ -49,7 +60,7 @@ export class CommunicationService {
     const tier = params.guestTier ?? this.getNearestTier(params.recipients.length);
     const totalCost = this.calculateCost(params.channel, params.recipients.length);
 
-    const campaign = await prisma.campaign.create({
+    return prisma.campaign.create({
       data: {
         userId: params.userId,
         eventId: params.eventId,
@@ -69,8 +80,6 @@ export class CommunicationService {
       },
       include: { messages: true },
     });
-
-    return campaign;
   }
 
   async sendCampaign(campaignId: string) {
@@ -103,11 +112,15 @@ export class CommunicationService {
           data: { status: "SENT", sentAt: new Date() },
         });
         sentCount++;
-      } catch {
+      } catch (error) {
         await prisma.campaignMessage.update({
           where: { id: message.id },
-          data: { status: "FAILED" },
+          data: {
+            status: "FAILED",
+            // store last error in a safe field if schema allows — otherwise log
+          },
         });
+        console.error("[comms.send]", campaign.channel, message.recipient, error);
         failedCount++;
       }
     }
@@ -137,34 +150,199 @@ export class CommunicationService {
     body: string;
     locale?: string;
     templateType?: string;
+    html?: string;
   }) {
-    if (!process.env.RESEND_API_KEY) {
-      console.log(`[MOCK EMAIL][${params.locale ?? "en"}][${params.templateType ?? "generic"}] To: ${params.to}`);
-      console.log(`  Subject: ${params.subject}`);
-      console.log(`  Body: ${params.body}`);
-      return { success: true, mock: true };
+    const defaults = await getPlatformDefaultProviders();
+    const provider = defaults.email || "RESEND";
+
+    if (!(await isProviderEnabled(provider))) {
+      throw new CommunicationProviderError(
+        `Email provider "${provider}" is not enabled. Configure it in Admin → Integrations.`
+      );
     }
-    // Resend integration placeholder — locale stored for future template routing
-    return { success: true };
+
+    const creds = await getProviderCredentials(provider);
+    if (!creds.secret) {
+      throw new CommunicationProviderError(
+        `Email provider "${provider}" has no API key. Add it in Admin → Integrations.`
+      );
+    }
+
+    if (provider === "RESEND" || provider.startsWith("CUSTOM_")) {
+      const from =
+        (typeof creds.config.fromEmail === "string" && creds.config.fromEmail) ||
+        process.env.EMAIL_FROM ||
+        "Celeventic <noreply@celeventic.com>";
+
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${creds.secret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to: [params.to],
+          subject: params.subject,
+          text: params.body,
+          html: params.html ?? `<pre style="font-family:sans-serif;white-space:pre-wrap">${escapeHtml(params.body)}</pre>`,
+          tags: params.templateType
+            ? [{ name: "template", value: params.templateType }]
+            : undefined,
+        }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as { message?: string; id?: string };
+      if (!res.ok) {
+        throw new CommunicationProviderError(data.message || `Resend error (${res.status})`);
+      }
+      return { success: true, id: data.id, provider };
+    }
+
+    throw new CommunicationProviderError(`Unsupported email provider: ${provider}`);
   }
 
   private async sendEmail(to: string, message: string) {
     return this.sendTransactionalEmail({ to, subject: "Celeventic", body: message });
   }
 
-  private async sendSMS(to: string, _message: string) {
-    if (!process.env.SMS_PROVIDER_API_KEY) {
-      console.log(`[MOCK SMS] To: ${to}`);
-      return;
+  private async sendSMS(to: string, message: string) {
+    const defaults = await getPlatformDefaultProviders();
+    const provider = defaults.sms || "SMS";
+
+    if (!(await isProviderEnabled(provider))) {
+      throw new CommunicationProviderError(
+        `SMS provider "${provider}" is not enabled. Configure it in Admin → Integrations.`
+      );
     }
+
+    const creds = await getProviderCredentials(provider);
+    if (!creds.secret) {
+      throw new CommunicationProviderError(`SMS provider "${provider}" has no API key.`);
+    }
+
+    const endpoint =
+      (typeof creds.config.endpoint === "string" && creds.config.endpoint) ||
+      process.env.SMS_API_ENDPOINT ||
+      null;
+    const senderId =
+      (typeof creds.config.senderId === "string" && creds.config.senderId) ||
+      process.env.SMS_SENDER_ID ||
+      "Celeventic";
+
+    // Hubtel SMS when SMS provider is configured as Hubtel-compatible
+    if (provider === "HUBTEL" || creds.config.driver === "hubtel") {
+      const clientId = creds.publicKey;
+      const clientSecret = creds.secret;
+      if (!clientId) {
+        throw new CommunicationProviderError("Hubtel SMS requires Client ID as public key.");
+      }
+      const from = senderId;
+      const url = `https://sms.hubtel.com/v1/messages/send?From=${encodeURIComponent(from)}&To=${encodeURIComponent(to)}&Content=${encodeURIComponent(message)}&ClientId=${encodeURIComponent(clientId)}&ClientSecret=${encodeURIComponent(clientSecret)}`;
+      const res = await fetch(url, { method: "GET" });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new CommunicationProviderError(`Hubtel SMS failed: ${text.slice(0, 200)}`);
+      }
+      return { success: true, provider: "HUBTEL" };
+    }
+
+    if (!endpoint) {
+      throw new CommunicationProviderError(
+        'SMS endpoint missing. Set config.endpoint (e.g. your SMS gateway URL) in Admin → Integrations → SMS.'
+      );
+    }
+
+    const authHeader =
+      typeof creds.config.authHeader === "string"
+        ? creds.config.authHeader
+        : `Bearer ${creds.secret}`;
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        to,
+        from: senderId,
+        message,
+        senderId,
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new CommunicationProviderError(`SMS send failed (${res.status}): ${text.slice(0, 200)}`);
+    }
+
+    return { success: true, provider };
   }
 
-  private async sendWhatsApp(to: string, _message: string) {
-    if (!process.env.WHATSAPP_BUSINESS_TOKEN) {
-      console.log(`[MOCK WhatsApp] To: ${to}`);
-      return;
+  private async sendWhatsApp(to: string, message: string) {
+    const defaults = await getPlatformDefaultProviders();
+    const provider = defaults.whatsapp || "WHATSAPP";
+
+    if (!(await isProviderEnabled(provider))) {
+      throw new CommunicationProviderError(
+        `WhatsApp provider "${provider}" is not enabled. Configure it in Admin → Integrations.`
+      );
     }
+
+    const creds = await getProviderCredentials(provider);
+    if (!creds.secret) {
+      throw new CommunicationProviderError(`WhatsApp provider has no access token.`);
+    }
+
+    const phoneNumberId =
+      creds.publicKey ||
+      (typeof creds.config.phoneNumberId === "string" ? creds.config.phoneNumberId : null) ||
+      process.env.WHATSAPP_PHONE_NUMBER_ID ||
+      null;
+
+    if (!phoneNumberId) {
+      throw new CommunicationProviderError(
+        "WhatsApp Phone Number ID required (store as Public Key or config.phoneNumberId)."
+      );
+    }
+
+    const normalized = to.replace(/[^\d]/g, "");
+    const res = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.secret}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: normalized,
+        type: "text",
+        text: { body: message },
+      }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as {
+      error?: { message?: string };
+      messages?: unknown[];
+    };
+
+    if (!res.ok) {
+      throw new CommunicationProviderError(
+        data.error?.message || `WhatsApp API error (${res.status})`
+      );
+    }
+
+    return { success: true, provider };
   }
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 export const communicationService = new CommunicationService();

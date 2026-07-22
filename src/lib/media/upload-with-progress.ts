@@ -32,9 +32,18 @@ export async function uploadFormDataWithProgress(
 export const CLIENT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const CLIENT_MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
-export function validateClientImage(file: File): string | null {
+/**
+ * @param maxBytes Pass `Infinity` when the caller compresses client-side before
+ *   upload — the raw file size is then irrelevant to what actually gets sent.
+ */
+export function validateClientImage(
+  file: File,
+  maxBytes: number = CLIENT_MAX_IMAGE_BYTES
+): string | null {
   if (!file.type.startsWith("image/")) return "Please choose an image file (JPEG, PNG, WebP).";
-  if (file.size > CLIENT_MAX_IMAGE_BYTES) return "Image too large. Max 10MB.";
+  if (Number.isFinite(maxBytes) && file.size > maxBytes) {
+    return `Image too large. Max ${Math.round(maxBytes / (1024 * 1024))}MB.`;
+  }
   return null;
 }
 

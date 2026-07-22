@@ -177,7 +177,7 @@ export class InvitationBlockService {
     const order = await prisma.invitationOrder.findUnique({ where: { id: orderId } });
     if (!order) throw new Error("Order not found");
 
-    const types = getBlockTypesForEventType(order.eventType);
+    const types = getBlockTypesForEventType(order.eventType).filter((t) => t !== "CUSTOM");
     const blocks: InvitationBlockDto[] = [];
 
     for (let i = 0; i < types.length; i++) {

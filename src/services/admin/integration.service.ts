@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import {
   getCatalogEntry,
   INTEGRATION_CATALOG,
+  isRetiredProvider,
   slugifyProvider,
   type IntegrationCategory,
 } from "@/lib/integrations/integration-catalog";
@@ -93,7 +94,30 @@ function toListItem(row: {
 }
 
 export class IntegrationService {
+  /** Disable legacy providers removed from the product catalog. */
+  async retireDeprecatedProviders() {
+    await prisma.apiSetting.updateMany({
+      where: {
+        provider: {
+          in: [
+            "FLUTTERWAVE",
+            "HUBTEL",
+            "ANTHROPIC",
+            "GOOGLE_MAPS",
+            "SENTRY",
+            "POSTHOG",
+            "PUSHER",
+            "LARAVEL_API",
+          ],
+        },
+        isEnabled: true,
+      },
+      data: { isEnabled: false },
+    });
+  }
+
   async ensureCatalogSeeded() {
+    await this.retireDeprecatedProviders();
     for (const entry of INTEGRATION_CATALOG) {
       await prisma.apiSetting.upsert({
         where: { provider: entry.provider },
@@ -105,7 +129,11 @@ export class IntegrationService {
           config: {},
           isEnabled: envConfiguredForProvider(entry.provider),
         },
-        update: {},
+        update: {
+          label: entry.label,
+          category: entry.category,
+          description: entry.description,
+        },
       });
     }
   }
@@ -113,12 +141,13 @@ export class IntegrationService {
   async list(): Promise<IntegrationListItem[]> {
     await this.ensureCatalogSeeded();
     const rows = await prisma.apiSetting.findMany({ orderBy: [{ category: "asc" }, { label: "asc" }] });
-    return rows.map(toListItem);
+    // Hide retired providers from the hub; keep CUSTOM_* and active catalog
+    return rows.filter((r) => !isRetiredProvider(r.provider)).map(toListItem);
   }
 
   async getById(id: string) {
     const row = await prisma.apiSetting.findUnique({ where: { id } });
-    if (!row) return null;
+    if (!row || isRetiredProvider(row.provider)) return null;
     return toListItem(row);
   }
 
@@ -127,8 +156,12 @@ export class IntegrationService {
     if (input.fromCatalog) {
       const catalog = getCatalogEntry(input.fromCatalog);
       if (!catalog) throw new Error("Unknown catalog provider");
+      if (isRetiredProvider(catalog.provider)) {
+        throw new Error("This provider has been removed from Celeventic");
+      }
       provider = catalog.provider;
     } else {
+      if (!input.label?.trim()) throw new Error("Label is required for a custom API");
       provider = slugifyProvider(input.label);
     }
 
@@ -136,16 +169,17 @@ export class IntegrationService {
     if (existing) throw new Error("Integration already exists for this provider");
 
     const catalog = provider ? getCatalogEntry(provider) : undefined;
+    const config = { ...(input.config ?? {}) } as Record<string, unknown>;
 
     const row = await prisma.apiSetting.create({
       data: {
-        provider,
+        provider: provider!,
         label: input.label || catalog?.label || provider,
         category: input.category ?? catalog?.category ?? "custom",
         description: input.description ?? catalog?.description,
         publicKey: input.publicKey,
         webhookUrl: input.webhookUrl,
-        config: (input.config ?? {}) as Prisma.InputJsonValue,
+        config: config as Prisma.InputJsonValue,
         isEnabled: input.isEnabled ?? false,
         encryptedKey: input.secret ? encrypt(input.secret) : undefined,
       },
@@ -235,17 +269,100 @@ export class IntegrationService {
             ? { ok: true, message: "Resend API key accepted" }
             : { ok: false, message: `Resend returned ${res.status}` };
         }
-        default:
-          if (creds.secret || envConfiguredForProvider(row.provider)) {
+        case "WHATSAPP": {
+          const token = creds.secret ?? process.env.WHATSAPP_BUSINESS_TOKEN;
+          const phoneId =
+            creds.publicKey ?? process.env.WHATSAPP_PHONE_NUMBER_ID ?? null;
+          if (!token) return { ok: false, message: "No WhatsApp access token" };
+          if (!phoneId) {
+            return { ok: false, message: "Phone Number ID required (Public Key field)" };
+          }
+          const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          return res.ok
+            ? { ok: true, message: "WhatsApp Business connection verified" }
+            : { ok: false, message: `WhatsApp Graph API returned ${res.status}` };
+        }
+        case "SMS": {
+          const config = (row.config as Record<string, unknown>) ?? {};
+          if (creds.secret || envConfiguredForProvider("SMS")) {
             return {
               ok: true,
-              message: `${row.label ?? row.provider} credentials stored. Live test not implemented for this provider.`,
+              message: config.endpoint
+                ? `SMS credentials stored. Gateway: ${String(config.endpoint)}`
+                : "SMS credentials stored. Set config.endpoint for your SMS gateway URL.",
+            };
+          }
+          return { ok: false, message: "No SMS API key configured" };
+        }
+        case "AWS_S3": {
+          const { resolveAwsS3Config } = await import("@/lib/uploads/aws-s3");
+          const cfg = await resolveAwsS3Config();
+          if (!cfg) {
+            return {
+              ok: false,
+              message:
+                "AWS S3 incomplete. Need Access Key ID, Secret Access Key, plus region + bucket (env or config JSON).",
+            };
+          }
+          return {
+            ok: true,
+            message: cfg.publicBaseUrl
+              ? `S3 ready (${cfg.bucket} / ${cfg.region}) with CDN`
+              : `S3 ready (${cfg.bucket} / ${cfg.region}) — add CloudFront URL for CDN`,
+          };
+        }
+        case "REDIS": {
+          const url = creds.secret ?? process.env.REDIS_URL;
+          if (!url) return { ok: false, message: "No Redis URL configured" };
+          return { ok: true, message: "Redis URL configured for caching and rate limits" };
+        }
+        case "GOOGLE_OAUTH": {
+          const secret = creds.secret ?? process.env.GOOGLE_CLIENT_SECRET;
+          const clientId = creds.publicKey ?? process.env.GOOGLE_CLIENT_ID;
+          if (!secret || !clientId) {
+            return { ok: false, message: "Google Client ID and Client Secret required" };
+          }
+          return { ok: true, message: "Google OAuth credentials present" };
+        }
+        default: {
+          // Custom APIs — optional live ping when config.endpoint is set
+          const config = (row.config as Record<string, unknown>) ?? {};
+          const endpoint = typeof config.endpoint === "string" ? config.endpoint.trim() : "";
+          if (endpoint) {
+            try {
+              const headers: Record<string, string> = { Accept: "application/json" };
+              if (creds.secret) headers.Authorization = `Bearer ${creds.secret}`;
+              const res = await fetch(endpoint, {
+                method: "GET",
+                headers,
+                signal: AbortSignal.timeout(8000),
+              });
+              return res.ok || res.status === 401 || res.status === 403
+                ? {
+                    ok: true,
+                    message: `Reached ${endpoint} (HTTP ${res.status}). Integration is wired for runtime use.`,
+                  }
+                : { ok: false, message: `Endpoint returned HTTP ${res.status}` };
+            } catch (e) {
+              return {
+                ok: false,
+                message: e instanceof Error ? e.message : "Could not reach custom endpoint",
+              };
+            }
+          }
+          if (creds.secret || creds.publicKey || envConfiguredForProvider(row.provider)) {
+            return {
+              ok: true,
+              message: `${row.label ?? row.provider} credentials stored. Add config.endpoint to run a live connectivity test.`,
             };
           }
           return {
             ok: false,
             message: `Configure a secret key or set env vars: ${catalog?.envKeys?.join(", ") ?? "N/A"}`,
           };
+        }
       }
     } catch (e) {
       return { ok: false, message: e instanceof Error ? e.message : "Connection test failed" };

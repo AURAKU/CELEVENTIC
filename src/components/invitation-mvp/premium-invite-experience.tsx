@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Share2, Clock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvitationRenderer } from "@/components/invitation/invitation-renderer";
+import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { BlockRenderer } from "@/components/invitation-blocks/block-renderer";
@@ -43,7 +44,17 @@ export interface PremiumInviteExperienceProps {
   localizedVersions?: Partial<Record<AppLocale, LocalizedInviteContent>>;
   blocks?: InvitationBlockDto[];
   memoryVaultEnabled?: boolean;
+  /** Guest Album — unique per-event upload page */
+  memoryUploadUrl?: string | null;
+  /** Shared album gallery for all guests */
+  memoryAlbumUrl?: string | null;
+  /** QR image that opens the upload page when tapped */
+  memoryUploadQrImageUrl?: string | null;
+  /** Optional override for Album card title (demo event name) */
+  memoryAlbumTitle?: string | null;
   eventId?: string;
+  /** Catalog template slug (Studio 2.0 viral-footer attribution) */
+  templateSlug?: string;
 }
 
 function Countdown({ target, begunLabel, label }: { target: string; begunLabel: string; label: string }) {
@@ -168,6 +179,14 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
                 <p className="mt-3 text-slate-600 leading-relaxed whitespace-pre-line">{displayEvent.description}</p>
               </div>
             )}
+            <GuestWishesCard
+              eventId={props.eventId}
+              invitationId={props.invitation.id}
+              guestId={props.guestId}
+              guestName={props.guestName}
+              inviteLink={props.invitation.uniqueLink}
+              memoryVaultEnabled={props.memoryVaultEnabled}
+            />
           </>
         )}
 

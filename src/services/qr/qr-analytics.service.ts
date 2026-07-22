@@ -1,38 +1,140 @@
 import { prisma } from "@/lib/prisma";
 import { paginatedResult, parsePaginationFromUrl } from "@/lib/pagination";
-import type { QrScanResult } from "@prisma/client";
+import type { Prisma, QrScanResult } from "@prisma/client";
+
+function formatSeatNumber(
+  assignment: { tableNumber: string; seatLabel: string | null } | null | undefined
+): string | null {
+  if (!assignment) return null;
+  const parts: string[] = [];
+  if (assignment.tableNumber?.trim()) {
+    parts.push(`Table ${assignment.tableNumber.trim()}`);
+  }
+  if (assignment.seatLabel?.trim()) {
+    const label = assignment.seatLabel.trim();
+    parts.push(/^seat\b/i.test(label) ? label : `Seat ${label}`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+type ScanGuestShape = {
+  id: string;
+  name: string;
+  invitation?: { name: string } | null;
+  seatingAssignment?: { tableNumber: string; seatLabel: string | null } | null;
+} | null;
+
+type ScanTicketShape = { id: string; name: string } | null;
+
+type ScanQrShape = {
+  guest?: ScanGuestShape;
+  ticket?: ScanTicketShape;
+} | null;
+
+function resolveScanIdentity(s: {
+  guest: ScanGuestShape;
+  ticket: ScanTicketShape;
+  qrCode?: ScanQrShape;
+}) {
+  const guest = s.guest ?? s.qrCode?.guest ?? null;
+  const ticket = s.ticket ?? s.qrCode?.ticket ?? null;
+  const invitationName = guest?.invitation?.name?.trim() || null;
+  const guestName = guest?.name?.trim() || null;
+  const ticketName = ticket?.name?.trim() || null;
+  const displayName =
+    guestName || invitationName || ticketName || null;
+  const seatNumber = formatSeatNumber(guest?.seatingAssignment);
+
+  return {
+    guestId: guest?.id ?? null,
+    guestName: guestName ?? undefined,
+    invitationName: invitationName ?? undefined,
+    ticketName: ticketName ?? undefined,
+    displayName: displayName ?? "Unknown guest",
+    seatNumber,
+  };
+}
+
+const scanHistoryInclude = {
+  guest: {
+    select: {
+      id: true,
+      name: true,
+      invitation: { select: { name: true } },
+      seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+    },
+  },
+  ticket: { select: { id: true, name: true } },
+  scanner: { select: { id: true, name: true } },
+  qrCode: {
+    select: {
+      guest: {
+        select: {
+          id: true,
+          name: true,
+          invitation: { select: { name: true } },
+          seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+        },
+      },
+      ticket: { select: { id: true, name: true } },
+    },
+  },
+} as const;
 
 export class QrAnalyticsService {
   async getScanHistory(eventId: string, url: string) {
     const { page, limit, skip } = parsePaginationFromUrl(url);
+    const { searchParams } = new URL(url);
+    const q = (searchParams.get("q") ?? searchParams.get("search") ?? "").trim();
+
+    const where: Prisma.QrScanWhereInput = { eventId };
+    if (q) {
+      where.OR = [
+        { guest: { name: { contains: q } } },
+        { guest: { invitation: { name: { contains: q } } } },
+        { guest: { seatingAssignment: { seatLabel: { contains: q } } } },
+        { guest: { seatingAssignment: { tableNumber: { contains: q } } } },
+        { guest: { manualCode: { contains: q } } },
+        { ticket: { name: { contains: q } } },
+        { gate: { contains: q } },
+        { qrCode: { guest: { name: { contains: q } } } },
+        { qrCode: { guest: { invitation: { name: { contains: q } } } } },
+        { qrCode: { guest: { seatingAssignment: { seatLabel: { contains: q } } } } },
+        { qrCode: { guest: { seatingAssignment: { tableNumber: { contains: q } } } } },
+        { qrCode: { ticket: { name: { contains: q } } } },
+      ];
+    }
 
     const [items, total] = await Promise.all([
       prisma.qrScan.findMany({
-        where: { eventId },
+        where,
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
-        include: {
-          guest: { select: { id: true, name: true } },
-          ticket: { select: { id: true, name: true } },
-          scanner: { select: { id: true, name: true } },
-        },
+        include: scanHistoryInclude,
       }),
-      prisma.qrScan.count({ where: { eventId } }),
+      prisma.qrScan.count({ where }),
     ]);
 
     return paginatedResult(
-      items.map((s) => ({
-        id: s.id,
-        result: s.result,
-        status: mapResultToDisplay(s.result),
-        guestName: s.guest?.name,
-        ticketName: s.ticket?.name,
-        scannerName: s.scanner?.name,
-        gate: s.gate,
-        deviceInfo: s.deviceInfo,
-        createdAt: s.createdAt,
-      })),
+      items.map((s) => {
+        const identity = resolveScanIdentity(s);
+        return {
+          id: s.id,
+          result: s.result,
+          status: mapResultToDisplay(s.result),
+          guestId: identity.guestId,
+          guestName: identity.guestName,
+          invitationName: identity.invitationName,
+          ticketName: identity.ticketName,
+          displayName: identity.displayName,
+          seatNumber: identity.seatNumber,
+          scannerName: s.scanner?.name,
+          gate: s.gate,
+          deviceInfo: s.deviceInfo,
+          createdAt: s.createdAt,
+        };
+      }),
       total,
       page,
       limit

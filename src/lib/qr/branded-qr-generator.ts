@@ -7,6 +7,7 @@ import {
   type QrDisplayMode,
   type QrExportSize,
 } from "@/lib/qr/qr-constants";
+import { readUploadFile } from "@/lib/uploads/file-storage";
 
 /** Error correction H supports ~30% overlay coverage */
 const ERROR_LEVEL = "H" as const;
@@ -81,6 +82,12 @@ export async function loadCenterImageBuffer(imageUrl?: string | null): Promise<B
     let buf: Buffer | null = null;
     if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
       buf = await fetchRemoteImage(imageUrl);
+    } else if (imageUrl.startsWith("/api/uploads/")) {
+      // Uploaded assets are served by a route handler, not from public/. Joining
+      // this URL onto public/ yields public/api/uploads/... which never exists,
+      // so every uploaded QR centre logo silently fell back to the brand mark.
+      // Read through the storage layer, which knows the real upload root.
+      buf = await readUploadFile(imageUrl.slice("/api/uploads/".length));
     } else {
       buf = await readLocalImage(imageUrl);
     }

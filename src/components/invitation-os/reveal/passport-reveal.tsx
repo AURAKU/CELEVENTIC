@@ -22,7 +22,7 @@ export function PassportReveal({ guestName, eventTitle, hostName, onComplete }: 
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+      className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center p-6"
       style={{ background: `linear-gradient(165deg, ${CELEVENTIC_BRAND.palette.midnight} 0%, #1a2f2e 100%)` }}
     >
       <button

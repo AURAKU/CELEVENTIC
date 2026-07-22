@@ -46,6 +46,7 @@ const EMPTY_FORM = {
   secret: "",
   publicKey: "",
   webhookUrl: "",
+  endpoint: "",
   isEnabled: false,
 };
 
@@ -66,17 +67,51 @@ export function AdminIntegrationsClient() {
   const [addCatalogProvider, setAddCatalogProvider] = useState("");
   const [addForm, setAddForm] = useState({ ...EMPTY_FORM });
   const [copied, setCopied] = useState(false);
+  const [defaults, setDefaults] = useState({
+    payments: "PAYSTACK",
+    email: "RESEND",
+    sms: "SMS",
+    whatsapp: "WHATSAPP",
+  });
+  const [defaultsStatus, setDefaultsStatus] = useState<Record<string, { provider: string; enabled: boolean }>>({});
+  const [savingDefaults, setSavingDefaults] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/integrations");
+    const [res, defaultsRes] = await Promise.all([
+      fetch("/api/admin/integrations"),
+      fetch("/api/admin/integrations/defaults"),
+    ]);
     const d = await res.json();
     if (d.success) {
       setIntegrations(d.data.integrations);
       setCatalog(d.data.catalog);
     }
+    const dd = await defaultsRes.json();
+    if (dd.success) {
+      setDefaults(dd.data.defaults);
+      setDefaultsStatus(dd.data.status);
+    }
     setLoading(false);
   }, []);
+
+  async function saveDefaults() {
+    setSavingDefaults(true);
+    setError("");
+    const res = await fetch("/api/admin/integrations/defaults", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(defaults),
+    });
+    const d = await res.json();
+    setSavingDefaults(false);
+    if (!d.success) {
+      setError(d.error || "Failed to save default providers");
+      return;
+    }
+    setDefaults(d.data);
+    await load();
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -109,6 +144,7 @@ export function AdminIntegrationsClient() {
       secret: "",
       publicKey: row.publicKey ?? "",
       webhookUrl: row.webhookUrl ?? "",
+      endpoint: typeof row.config?.endpoint === "string" ? String(row.config.endpoint) : "",
       isEnabled: row.isEnabled,
     });
     setTestResult(null);
@@ -116,9 +152,16 @@ export function AdminIntegrationsClient() {
   }
 
   async function saveEdit() {
-    if (!selectedId) return;
+    if (!selectedId || !selected) return;
     setSaving(true);
     setError("");
+    const nextConfig = {
+      ...(selected.config ?? {}),
+      ...(editForm.endpoint.trim() ? { endpoint: editForm.endpoint.trim() } : {}),
+    };
+    if (!editForm.endpoint.trim() && "endpoint" in nextConfig) {
+      delete nextConfig.endpoint;
+    }
     const res = await fetch(`/api/admin/integrations/${selectedId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -130,6 +173,7 @@ export function AdminIntegrationsClient() {
         publicKey: editForm.publicKey,
         webhookUrl: editForm.webhookUrl,
         isEnabled: editForm.isEnabled,
+        config: nextConfig,
       }),
     });
     const d = await res.json();
@@ -205,6 +249,9 @@ export function AdminIntegrationsClient() {
             publicKey: addForm.publicKey || undefined,
             webhookUrl: addForm.webhookUrl || undefined,
             isEnabled: addForm.isEnabled,
+            config: addForm.endpoint.trim()
+              ? { endpoint: addForm.endpoint.trim() }
+              : undefined,
           };
 
     const res = await fetch("/api/admin/integrations", {
@@ -239,7 +286,7 @@ export function AdminIntegrationsClient() {
     <div className="space-y-6">
       <AdminToolbar
         title="Integrations & API Hub"
-        subtitle="Connect, configure, enable, and test every third-party service. Secrets are encrypted at rest."
+        subtitle="Paystack, email, SMS, WhatsApp, AWS storage, OpenAI, and custom APIs. Secrets are encrypted at rest."
         count={integrations.length}
         search={search}
         onSearchChange={setSearch}
@@ -256,6 +303,74 @@ export function AdminIntegrationsClient() {
           {error}
         </div>
       )}
+
+      <Card className="border-teal-200/80 bg-gradient-to-br from-teal-50/40 to-white">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Shield className="h-4 w-4 text-teal-700" />
+            Platform default providers
+          </CardTitle>
+          <p className="text-sm text-slate-600">
+            Checkouts, emails, SMS, and WhatsApp use these defaults when a request does not specify a provider.
+            Enable and store secrets below first — disabled providers are never used.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {(
+            [
+              { key: "payments" as const, label: "Payments", options: ["PAYSTACK"] },
+              { key: "email" as const, label: "Email", options: ["RESEND"] },
+              { key: "sms" as const, label: "SMS", options: ["SMS"] },
+              { key: "whatsapp" as const, label: "WhatsApp", options: ["WHATSAPP"] },
+            ] as const
+          ).map((field) => (
+            <div key={field.key} className="space-y-2">
+              <Label>{field.label}</Label>
+              <Select
+                value={defaults[field.key]}
+                onValueChange={(v) => setDefaults((prev) => ({ ...prev, [field.key]: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {field.options.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                  {/* Allow selecting any enabled integration of matching category */}
+                  {integrations
+                    .filter((i) => {
+                      if (field.key === "payments") return i.category === "payments";
+                      if (field.key === "email") return i.provider === "RESEND" || i.category === "communications";
+                      if (field.key === "sms") return i.provider === "SMS" || i.provider === "HUBTEL";
+                      return i.provider === "WHATSAPP";
+                    })
+                    .filter((i) => !field.options.includes(i.provider as never))
+                    .map((i) => (
+                      <SelectItem key={i.provider} value={i.provider}>
+                        {i.label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                {defaultsStatus[field.key]?.enabled ? (
+                  <span className="text-emerald-700">Connected & enabled</span>
+                ) : (
+                  <span className="text-amber-700">Not enabled — configure below</span>
+                )}
+              </p>
+            </div>
+          ))}
+          <div className="sm:col-span-2 lg:col-span-4">
+            <Button type="button" onClick={saveDefaults} disabled={savingDefaults}>
+              {savingDefaults ? "Saving…" : "Save defaults"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {showAdd && (
         <Card className="border-brand-200">
@@ -350,6 +465,17 @@ export function AdminIntegrationsClient() {
                       value={addForm.publicKey}
                       onChange={(e) => setAddForm({ ...addForm, publicKey: e.target.value })}
                     />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>API base URL (for connection test)</Label>
+                    <Input
+                      value={addForm.endpoint}
+                      onChange={(e) => setAddForm({ ...addForm, endpoint: e.target.value })}
+                      placeholder="https://api.example.com/health"
+                    />
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Saved as config.endpoint. Test connection will GET this URL with your secret as Bearer token.
+                    </p>
                   </div>
                 </div>
               )}
@@ -521,6 +647,19 @@ export function AdminIntegrationsClient() {
                       placeholder="https://your-service.com/webhook"
                     />
                   </div>
+                  {(selected.isCustom || selected.provider === "SMS") && (
+                    <div>
+                      <Label>API endpoint (connection test)</Label>
+                      <Input
+                        value={editForm.endpoint}
+                        onChange={(e) => setEditForm({ ...editForm, endpoint: e.target.value })}
+                        placeholder="https://api.example.com/health"
+                      />
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Saved in config. Test Connection GETs this URL with your secret as Bearer token.
+                      </p>
+                    </div>
+                  )}
                   {selected.webhookPath && (
                     <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
                       <p className="text-xs font-medium text-slate-700 mb-1">Inbound webhook endpoint</p>

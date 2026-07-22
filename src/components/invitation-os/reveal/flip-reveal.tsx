@@ -18,7 +18,7 @@ export function FlipReveal({ guestName, eventTitle, onComplete }: FlipRevealProp
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-slate-900 via-sky-950 to-black overflow-hidden">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center bg-gradient-to-br from-slate-900 via-sky-950 to-black overflow-hidden">
       <div className="relative z-10 text-center px-8 max-w-md">
         <p className="text-xs uppercase tracking-[0.4em] text-sky-300/80 mb-8">Tap to flip</p>
 

@@ -5,9 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QrCode } from "lucide-react";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
+import {
+  smartCompressImage,
+  extensionForBlob,
+  formatBytes,
+  QR_LOGO_COMPRESSION,
+} from "@/lib/image/smart-compress";
 
 export function AdminQrBrandingCard() {
   const [url, setUrl] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/qr-branding")
@@ -28,22 +36,39 @@ export function AdminQrBrandingCard() {
       <CardContent className="space-y-3">
         <p className="text-sm text-slate-600">
           Platform fallback when events have no custom QR logo. Used on invitations, tickets, and admission passes.
+          Upload any size — it is optimised automatically.
         </p>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        {notice && <p className="text-sm text-emerald-700">{notice}</p>}
         <ImageUploadCropper
-          defaultAspect="1:1"
-          allowedAspects={CROP_PRESETS.logo}
+          defaultAspect="free"
+          allowedAspects={CROP_PRESETS.all}
           buttonLabel="Upload Celeventic fallback"
-          hint="Import logo from device — crop to square for QR center."
+          hint="Import logo from device — crop any part of the image."
+          maxFileBytes={Infinity}
+          dropzoneNote="or drag & drop · JPEG, PNG, WebP, GIF · any size"
           previewUrl={url}
           onClear={() => setUrl(null)}
+          onError={setError}
           onCustomUpload={async (blob, name) => {
+            setError("");
+            setNotice("");
+            const result = await smartCompressImage(blob, QR_LOGO_COMPRESSION);
+            const finalName = name.replace(/\.[^.]+$/, "") + "." + extensionForBlob(result.blob);
+
             const fd = new FormData();
-            fd.append("file", new File([blob], name, { type: blob.type || "image/jpeg" }));
+            fd.append("file", new File([result.blob], finalName, { type: result.blob.type }));
             const res = await fetch("/api/admin/qr-branding", { method: "PUT", body: fd });
             const d = await res.json();
             if (!res.ok) throw new Error(d.error || "Upload failed");
             setUrl(d.data.url);
-            return { url: d.data.url, name };
+            if (!result.untouched) {
+              setNotice(
+                `Optimised ${formatBytes(result.originalBytes)} → ${formatBytes(result.blob.size)} ` +
+                  `at ${result.width}×${result.height}${result.hasAlpha ? " · transparency kept" : ""}`
+              );
+            }
+            return { url: d.data.url, name: finalName };
           }}
           onUploaded={(r) => setUrl(r.url)}
         />

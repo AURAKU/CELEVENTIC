@@ -9,7 +9,12 @@ import { getCachedQrPng, setCachedQrPng } from "@/lib/qr/qr-cache";
 import { buildVerifyUrl } from "@/lib/qr/parse-qr-payload";
 
 const ADMIN_DEFAULT_KEY = "qr_default_logo_url";
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+/**
+ * Backstop only. Clients compress before upload (see `QR_LOGO_COMPRESSION`), so
+ * this exists to bound direct API calls rather than to gate the UI — the old 2MB
+ * value rejected ordinary phone photos outright instead of shrinking them.
+ */
+const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 export const QR_CENTER_ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export class QrBrandingService {
@@ -117,7 +122,7 @@ export class QrBrandingService {
       return "Use JPEG, PNG, or WebP only.";
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      return "Image must be 2MB or smaller.";
+      return `Image must be ${Math.round(MAX_IMAGE_BYTES / (1024 * 1024))}MB or smaller.`;
     }
     return null;
   }

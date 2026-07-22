@@ -307,6 +307,109 @@ export class InvitationAdminService {
     });
   }
 
+  /** Soft-archive (isActive=false). Does not delete published invitation designConfig. */
+  async archiveCatalogTemplate(id: string, adminUserId: string) {
+    const template = await prisma.invitationCatalogTemplate.update({
+      where: { id },
+      data: { isActive: false, isFeatured: false },
+    });
+    await createAuditLog({
+      userId: adminUserId,
+      action: "UPDATE",
+      entity: "invitation_catalog_template",
+      entityId: id,
+      details: { action: "archive", slug: template.slug },
+    });
+    return template;
+  }
+
+  async restoreCatalogTemplate(id: string, adminUserId: string) {
+    const template = await prisma.invitationCatalogTemplate.update({
+      where: { id },
+      data: { isActive: true },
+    });
+    await createAuditLog({
+      userId: adminUserId,
+      action: "UPDATE",
+      entity: "invitation_catalog_template",
+      entityId: id,
+      details: { action: "restore", slug: template.slug },
+    });
+    return template;
+  }
+
+  async duplicateCatalogTemplate(id: string, adminUserId: string) {
+    const source = await prisma.invitationCatalogTemplate.findUnique({ where: { id } });
+    if (!source) throw new Error("Template not found");
+    const baseSlug = `${source.slug}-copy`;
+    let slug = baseSlug;
+    let n = 2;
+    while (await prisma.invitationCatalogTemplate.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${n++}`;
+    }
+    const created = await prisma.invitationCatalogTemplate.create({
+      data: {
+        slug,
+        name: `${source.name} (Copy)`,
+        description: source.description,
+        category: source.category,
+        style: source.style,
+        layoutSlug: source.layoutSlug,
+        eventTypes: source.eventTypes ?? undefined,
+        packageSlugs: source.packageSlugs ?? undefined,
+        previewGradient: source.previewGradient,
+        previewImageUrl: source.previewImageUrl,
+        previewVideoUrl: source.previewVideoUrl,
+        backgroundImageUrl: source.backgroundImageUrl,
+        backgroundVideoUrl: source.backgroundVideoUrl,
+        motionReferenceUrl: source.motionReferenceUrl,
+        inspirationMediaUrl: source.inspirationMediaUrl,
+        defaultGalleryUrls: source.defaultGalleryUrls ?? undefined,
+        priceGhs: source.priceGhs,
+        languages: source.languages ?? undefined,
+        isPremium: source.isPremium,
+        isFeatured: false,
+        isActive: false,
+        sortOrder: source.sortOrder + 1,
+        tier: source.tier,
+        tags: source.tags ?? undefined,
+        colorFamily: source.colorFamily,
+        hasParallax: source.hasParallax,
+        blueprintId: source.blueprintId,
+        themeId: source.themeId,
+        motifPackId: source.motifPackId,
+        motionProfileId: source.motionProfileId,
+        performanceClass: source.performanceClass,
+      },
+    });
+    await createAuditLog({
+      userId: adminUserId,
+      action: "CREATE",
+      entity: "invitation_catalog_template",
+      entityId: created.id,
+      details: { action: "duplicate", sourceId: id, sourceSlug: source.slug, slug },
+    });
+    return created;
+  }
+
+  async hardDeleteCatalogTemplate(id: string, adminUserId: string) {
+    const existing = await prisma.invitationCatalogTemplate.findUnique({ where: { id } });
+    if (!existing) throw new Error("Template not found");
+    const orderCount = await prisma.invitationOrder.count({ where: { templateSlug: existing.slug } });
+    if (orderCount > 0) {
+      throw new Error(`Cannot delete — ${orderCount} order(s) reference this template. Archive instead.`);
+    }
+    await prisma.invitationCatalogTemplate.delete({ where: { id } });
+    await createAuditLog({
+      userId: adminUserId,
+      action: "DELETE",
+      entity: "invitation_catalog_template",
+      entityId: id,
+      details: { action: "hard-delete", slug: existing.slug },
+    });
+    return { ok: true as const, slug: existing.slug };
+  }
+
   async listReviews(status?: string, page = 1, limit = 20) {
     const where = status ? { status: status as never } : undefined;
     const skip = (page - 1) * limit;

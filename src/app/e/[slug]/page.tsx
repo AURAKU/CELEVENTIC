@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BrandMotto } from "@/components/brand/brand-motto";
 import { BRAND_MOTTO } from "@/lib/constants";
-import { resolveMediaUrl, isUploadedMediaUrl } from "@/lib/uploads/media-url";
+import { resolveMediaUrl, shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 
 export async function generateMetadata({
   params,
@@ -123,7 +123,7 @@ export default async function EventMiniSitePage({ params }: { params: Promise<{ 
                     alt={item.caption ?? site.title}
                     fill
                     className="object-cover"
-                    unoptimized={isUploadedMediaUrl(item.url)}
+                    unoptimized={shouldUnoptimizeNextImage(item.url)}
                   />
                 </div>
               ))}

@@ -17,26 +17,33 @@ export default function PreviewPage() {
   const orderId = params.orderId as string;
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
   const [view, setView] = useState<"mobile" | "desktop">("mobile");
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetch(`/api/invitation-orders/${orderId}`)
       .then((r) => r.json())
-      .then((d) => { if (d.success) setOrder(d.data); });
+      .then((d) => {
+        if (d.success) setOrder(d.data);
+      });
   }, [orderId]);
 
   if (!order) return <PageLoader label="Building preview..." className="min-h-screen" />;
 
   const template = getCatalogTemplate(order.templateSlug as string);
-  const design = (order.designConfig as InvitationDesignConfig) ?? getDefaultDesignConfig(template?.layoutSlug);
+  const design =
+    (order.designConfig as InvitationDesignConfig) ??
+    getDefaultDesignConfig((order.templateSlug as string) ?? template?.slug);
   const { musicSelection } = resolveInvitationMusic({
     orderSelection: order.musicSelection,
     legacyMusicUrl: order.musicPreference as string | null,
     design,
+    catalogSlug: (order.templateSlug as string) ?? template?.slug ?? null,
   });
   const hostName =
     order.coupleName1 && order.coupleName2
       ? `${order.coupleName1} & ${order.coupleName2}`
-      : (order.hostName as string) ?? "Host";
+      : ((order.hostName as string) ?? "Host");
 
   const previewEvent = {
     title: (order.eventTitle as string) ?? "Your Event",
@@ -51,11 +58,33 @@ export default function PreviewPage() {
     dressCode: (order.dressCode as string) ?? null,
   };
 
+  async function publish() {
+    setPublishing(true);
+    setError("");
+    const res = await fetch(`/api/invitation-orders/${orderId}/publish`, { method: "POST" });
+    const data = await res.json();
+    setPublishing(false);
+    if (!data.success) {
+      setError(data.error || "Publish failed");
+      return;
+    }
+    router.push(`/invitations/create/${orderId}/success?url=${encodeURIComponent(data.data.shareUrl)}`);
+  }
+
   return (
-    <MvpShell step={5} title="Live Preview" subtitle="Review before checkout">
-      <div className="flex justify-center gap-2 mb-6">
-        <Button variant={view === "mobile" ? "default" : "outline"} size="sm" onClick={() => setView("mobile")}>Mobile</Button>
-        <Button variant={view === "desktop" ? "default" : "outline"} size="sm" onClick={() => setView("desktop")}>Desktop</Button>
+    <MvpShell step={6} title="Live Preview" subtitle="Same renderer as your published invitation · Preview Mode">
+      <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+        <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+          Preview Mode — RSVP, payments and bookings are disabled
+        </span>
+      </div>
+      <div className="mb-6 flex justify-center gap-2">
+        <Button variant={view === "mobile" ? "default" : "outline"} size="sm" onClick={() => setView("mobile")}>
+          Mobile
+        </Button>
+        <Button variant={view === "desktop" ? "default" : "outline"} size="sm" onClick={() => setView("desktop")}>
+          Desktop
+        </Button>
       </div>
       <div className={`mx-auto transition-all ${view === "mobile" ? "max-w-sm" : "max-w-3xl"}`}>
         <InvitationStudioPreview
@@ -65,15 +94,31 @@ export default function PreviewPage() {
           invitationName={(order.eventTitle as string) ?? "Preview"}
           musicSelection={musicSelection}
           galleryUrls={(order.galleryUrls as string[]) ?? []}
+          catalogSlug={(order.templateSlug as string) ?? template?.slug ?? null}
         />
       </div>
-      <div className="max-w-md mx-auto mt-8">
+      {error && (
+        <p className="mx-auto mt-4 max-w-md text-center text-sm text-red-600">{error}</p>
+      )}
+      <div className="mx-auto mt-8 flex max-w-md flex-col gap-3">
         <Button
           className="w-full bg-[#0B8A83] hover:bg-[#097068]"
           size="lg"
-          onClick={() => router.push(`/invitations/create/${orderId}/checkout`)}
+          disabled={publishing}
+          onClick={() => {
+            if (order.shareUrl) {
+              router.push(
+                `/invitations/create/${orderId}/success?url=${encodeURIComponent(String(order.shareUrl))}`
+              );
+              return;
+            }
+            void publish();
+          }}
         >
-          Continue to Checkout
+          {publishing ? "Publishing…" : order.shareUrl ? "Continue to Share" : "Approve & Publish"}
+        </Button>
+        <Button variant="outline" onClick={() => router.push(`/invitations/create/${orderId}/studio`)}>
+          Back to Studio
         </Button>
       </div>
     </MvpShell>

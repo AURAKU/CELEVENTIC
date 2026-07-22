@@ -8,6 +8,10 @@ const createSchema = z.object({
   templateSlug: z.string().min(1),
   packageSlug: z.string().min(1),
   eventType: z.string().min(1),
+  /** Studio 2.0: theme chosen in the live preview */
+  themeId: z.string().optional(),
+  /** Viral-footer attribution — the referring invitation's uniqueLink */
+  attributionRef: z.string().max(120).optional(),
 });
 
 export async function GET(req: Request) {

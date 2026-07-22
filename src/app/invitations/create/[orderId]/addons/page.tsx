@@ -6,6 +6,7 @@ import { MvpShell } from "@/components/invitation-mvp/mvp-shell";
 import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/components/commerce/currency-provider";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { FunnelSummaryBar } from "@/components/invitation-mvp/funnel-summary-bar";
 
 interface AddonRow {
   slug: string;
@@ -28,6 +29,7 @@ export default function AddonsPage() {
   const [suggested, setSuggested] = useState<string[]>([]);
   const [eventType, setEventType] = useState("WEDDING");
   const [guestCount, setGuestCount] = useState<number | undefined>();
+  const [packageSlug, setPackageSlug] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/invitation-orders/${orderId}`)
@@ -36,6 +38,7 @@ export default function AddonsPage() {
         if (!orderRes.success) return;
         if (Array.isArray(orderRes.data.addonSlugs)) setSelected(orderRes.data.addonSlugs);
         const pkg = orderRes.data.packageSlug as string;
+        setPackageSlug(pkg);
         setEventType(orderRes.data.eventType ?? "WEDDING");
         setGuestCount(orderRes.data.guestCount ?? undefined);
         const addonRes = await fetch(`/api/commerce/addons?package=${encodeURIComponent(pkg)}`).then((r) => r.json());
@@ -78,12 +81,13 @@ export default function AddonsPage() {
       body: JSON.stringify({ addonSlugs: selected }),
     });
     setSaving(false);
-    router.push(`/invitations/create/${orderId}/blocks`);
+    router.push(`/invitations/create/${orderId}/checkout`);
   }
 
   return (
-    <MvpShell step={2} title={t("forms.addons_title")} subtitle={t("forms.addons_subtitle")}>
-      <div className="max-w-2xl mx-auto space-y-4">
+    <MvpShell step={3} title={t("forms.addons_title")} subtitle={t("forms.addons_subtitle")}>
+      <FunnelSummaryBar packageSlug={packageSlug} addonSlugs={selected} />
+      <div className="max-w-2xl mx-auto space-y-4 pb-16">
         {suggested.length > 0 && (
           <div className="rounded-2xl border border-[#D4A63A]/30 bg-[#D4A63A]/5 p-4">
             <p className="text-sm font-semibold text-[#0F172A]">Celeventic Smart Upsells</p>
@@ -132,7 +136,7 @@ export default function AddonsPage() {
           </button>
         ))}
         <Button className="w-full bg-[#0B8A83] hover:bg-[#097068]" size="lg" onClick={handleContinue} disabled={saving}>
-          {saving ? t("forms.saving") : t("forms.preview_invitation")}
+          {saving ? t("forms.saving") : "Continue to review & payment →"}
         </Button>
       </div>
     </MvpShell>

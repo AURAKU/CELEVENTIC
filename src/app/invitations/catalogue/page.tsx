@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
 import { CatalogueClient } from "./catalogue-client";
@@ -15,7 +16,9 @@ export default function CataloguePage() {
               countdown, music, gallery, and guest wishes. Switch templates anytime while editing.
             </p>
           </div>
-          <CatalogueClient />
+          <Suspense>
+            <CatalogueClient />
+          </Suspense>
         </div>
       </main>
       <Footer />

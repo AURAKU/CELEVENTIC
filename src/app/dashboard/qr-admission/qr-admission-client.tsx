@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Camera, Upload, Keyboard, QrCode, CheckCircle2, XCircle, AlertTriangle,
-  Clock, Download, Shield, Wifi, WifiOff, ImagePlus,
+  Clock, Download, Shield, Wifi, WifiOff, ImagePlus, CloudDownload, RotateCcw,
+  Search, Armchair,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
-import { QrCameraScanner, QrFileReaderHost, scanQrFromFile, playScanFeedback } from "@/components/qr/qr-camera-scanner";
+import { QrCameraScanner, QrFileReaderHost, scanQrFromFile, playScanFeedback, QrImageScanError } from "@/components/qr/qr-camera-scanner";
+import { AdmissionScanFeedback, type AdmissionFeedbackStatus } from "@/components/qr/admission-scan-feedback";
 import { PaginationBar } from "@/components/ui/pagination";
 import { useEventContext } from "@/hooks/use-event-context";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -29,33 +31,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  getOfflinePackage,
+  saveOfflinePackage,
+  validateOfflineToken,
+  recordOfflineScan,
+  resetOfflineAdmissionLocal,
+  getPendingOfflineScans,
+  type OfflinePackage,
+} from "@/lib/offline-qr-client";
 
-type ScanStatus =
-  | "valid"
-  | "invalid"
-  | "expired"
-  | "already_checked_in"
-  | "not_found"
-  | "wrong_event"
-  | "revoked"
-  | "refunded"
-  | "cancelled";
+type ScanStatus = AdmissionFeedbackStatus;
 
 interface ScanResult {
   status: ScanStatus;
-  guest?: { name: string } | null;
+  guest?: { id?: string; name: string } | null;
   ticket?: { name: string } | null;
   event?: { title: string } | null;
+  selectedEventTitle?: string | null;
   qrType?: string;
   admittedAt?: string | null;
+  offline?: boolean;
+  feedback?: string | null;
 }
 
 interface RecentScan {
   id: string;
   status: string;
   result: string;
+  guestId?: string | null;
   guestName?: string;
+  invitationName?: string;
   ticketName?: string;
+  displayName?: string;
+  seatNumber?: string | null;
   scannerName?: string;
   gate?: string;
   createdAt: string;
@@ -90,14 +99,22 @@ export function QrAdmissionClient() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPages, setHistoryPages] = useState(1);
   const [historyTotal, setHistoryTotal] = useState(0);
+  const [scanSearch, setScanSearch] = useState("");
+  const [scanSearchDebounced, setScanSearchDebounced] = useState("");
   const [stats, setStats] = useState<AdmissionStats | null>(null);
   const [liveScanCount, setLiveScanCount] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
   const [loadingScans, setLoadingScans] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [screenScanMode, setScreenScanMode] = useState(true);
+  const [offlinePkg, setOfflinePkg] = useState<OfflinePackage | null>(null);
+  const [offlineMsg, setOfflineMsg] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [scanningImage, setScanningImage] = useState(false);
+  const [lastImageName, setLastImageName] = useState("");
 
   const isAdmin = session?.user?.role && isAdminRole(session.user.role as UserRole);
+  const selectedEventTitle = events.find((e) => e.id === eventId)?.title ?? null;
 
   useEffect(() => {
     setIsOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -111,6 +128,15 @@ export function QrAdmissionClient() {
     };
   }, []);
 
+  useEffect(() => {
+    const t = window.setTimeout(() => setScanSearchDebounced(scanSearch.trim()), 280);
+    return () => window.clearTimeout(t);
+  }, [scanSearch]);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [eventId, scanSearchDebounced]);
+
   const loadEventData = useCallback(async (page: number) => {
     if (!eventId) {
       setRecentScans([]);
@@ -120,8 +146,11 @@ export function QrAdmissionClient() {
     }
     setLoadingScans(true);
     try {
+      const q = scanSearchDebounced
+        ? `&q=${encodeURIComponent(scanSearchDebounced)}`
+        : "";
       const [scansRes, statsRes] = await Promise.all([
-        fetch(`/api/qr/history?eventId=${eventId}&page=${page}&limit=20`),
+        fetch(`/api/qr/history?eventId=${eventId}&page=${page}&limit=20${q}`),
         fetch(`/api/qr/stats?eventId=${eventId}`),
       ]);
       const scansData = await scansRes.json();
@@ -141,14 +170,22 @@ export function QrAdmissionClient() {
     } finally {
       setLoadingScans(false);
     }
-  }, [eventId]);
+  }, [eventId, scanSearchDebounced]);
 
   useEffect(() => {
     void loadEventData(historyPage);
   }, [loadEventData, historyPage]);
 
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId) {
+      setOfflinePkg(null);
+      return;
+    }
+    setOfflinePkg(getOfflinePackage(eventId));
+  }, [eventId]);
+
+  useEffect(() => {
+    if (!eventId || !isOnline) return;
     const interval = setInterval(() => {
       void fetch(`/api/qr/stats?eventId=${eventId}`)
         .then((r) => r.json())
@@ -161,7 +198,98 @@ export function QrAdmissionClient() {
         .catch(() => undefined);
     }, 15000);
     return () => clearInterval(interval);
-  }, [eventId]);
+  }, [eventId, isOnline]);
+
+  const downloadOfflinePackage = useCallback(async () => {
+    if (!eventId || !isOnline) return;
+    setOfflineMsg("");
+    try {
+      const res = await fetch(`/api/qr/offline?eventId=${eventId}`);
+      const d = await res.json();
+      if (!res.ok) {
+        setOfflineMsg(d.error ?? "Could not download offline package");
+        return;
+      }
+      saveOfflinePackage(eventId, d.data);
+      setOfflinePkg(d.data);
+      setOfflineMsg(
+        `Offline ready — ${d.data.guests.length} guests, ${d.data.tickets.length} tickets (incl. 4-digit codes)`
+      );
+    } catch {
+      setOfflineMsg("Could not download offline package");
+    }
+  }, [eventId, isOnline]);
+
+  // Prefetch offline package when event is selected online (gate can keep working if net drops)
+  useEffect(() => {
+    if (!eventId || !isOnline) return;
+    if (getOfflinePackage(eventId)) {
+      setOfflinePkg(getOfflinePackage(eventId));
+      return;
+    }
+    void downloadOfflinePackage();
+  }, [eventId, isOnline, downloadOfflinePackage]);
+
+  const performOfflineCheckIn = useCallback(
+    (raw: string) => {
+      if (!eventId) return;
+      const pkg = getOfflinePackage(eventId);
+      if (!pkg) {
+        setError("No offline package. Connect once to download guest passes for this event.");
+        playScanFeedback(false);
+        return;
+      }
+
+      const validation = validateOfflineToken(eventId, raw.trim());
+      const syncToken = validation.syncToken ?? raw.trim();
+      recordOfflineScan(eventId, {
+        qrToken: syncToken,
+        result: validation.result,
+        guestId: validation.guestId,
+        ticketId: validation.ticketId,
+        scannedAt: new Date().toISOString(),
+      });
+
+      const status: ScanStatus =
+        validation.result === "VALID"
+          ? "valid"
+          : validation.result === "ALREADY_USED"
+            ? "already_checked_in"
+            : "invalid";
+
+      const eventTitle = selectedEventTitle ?? "this event";
+      const name = validation.name;
+      let feedback: string;
+      if (status === "valid") {
+        feedback = name
+          ? `Welcome, ${name}! You are admitted to ${eventTitle}. Enjoy the celebration.`
+          : `Welcome! You are admitted to ${eventTitle}.`;
+      } else if (status === "already_checked_in") {
+        feedback = name
+          ? `${name} was already admitted. This scan was not counted again.`
+          : "This guest was already admitted. This scan was not counted again.";
+      } else {
+        feedback =
+          "No matching pass in the offline package for this event. Confirm the QR is for this celebration, or refresh the offline pack while online.";
+      }
+
+      setResult({
+        status,
+        guest: validation.guestId && name ? { id: validation.guestId, name } : null,
+        ticket: validation.ticketId && name ? { name } : null,
+        event: selectedEventTitle ? { title: selectedEventTitle } : null,
+        selectedEventTitle,
+        offline: true,
+        feedback,
+      });
+      setOfflinePkg(getOfflinePackage(eventId));
+      playScanFeedback(status === "valid" || status === "already_checked_in");
+      if (status === "valid") {
+        setLiveScanCount((c) => c + 1);
+      }
+    },
+    [eventId, selectedEventTitle]
+  );
 
   const performCheckIn = useCallback(
     async (raw: string) => {
@@ -169,21 +297,25 @@ export function QrAdmissionClient() {
         setError(t("qr_admission.no_event"));
         return;
       }
-      if (!isOnline) {
-        setError("You are offline. Connect to check in online.");
-        return;
-      }
 
       setProcessing(true);
       setError("");
       setResult(null);
+
+      const trimmed = raw.trim();
+
+      if (!isOnline) {
+        performOfflineCheckIn(trimmed);
+        setProcessing(false);
+        return;
+      }
 
       try {
         const res = await fetch("/api/qr/check-in", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            token: raw,
+            token: trimmed,
             eventId,
             gate: gate || undefined,
             override: adminOverride && isAdmin,
@@ -196,22 +328,78 @@ export function QrAdmissionClient() {
           guest: data.data?.guest,
           ticket: data.data?.ticket,
           event: data.data?.event,
+          selectedEventTitle: data.data?.selectedEventTitle ?? selectedEventTitle,
           qrType: data.data?.qrType,
           admittedAt: data.data?.admittedAt ?? null,
+          feedback: data.data?.feedback ?? null,
         };
         setResult(scanResult);
         playScanFeedback(scanResult.status === "valid" || scanResult.status === "already_checked_in");
         if (!res.ok && data.error) setError(data.error);
         await loadEventData(historyPage);
       } catch {
-        setError("Check-in failed. Please try again.");
-        playScanFeedback(false);
+        // Network failure mid-request — fall back to offline admit
+        if (getOfflinePackage(eventId)) {
+          setError("Network failed — admitting from offline package.");
+          performOfflineCheckIn(trimmed);
+        } else {
+          setError("Check-in failed. Download offline package while online to keep the gate moving.");
+          playScanFeedback(false);
+        }
       } finally {
         setProcessing(false);
       }
     },
-    [eventId, gate, adminOverride, isAdmin, typeFilter, isOnline, loadEventData, historyPage, t]
+    [
+      eventId,
+      gate,
+      adminOverride,
+      isAdmin,
+      typeFilter,
+      isOnline,
+      loadEventData,
+      historyPage,
+      t,
+      performOfflineCheckIn,
+      selectedEventTitle,
+    ]
   );
+
+  async function resetAdmission(scope: "guest" | "event", guestId?: string) {
+    if (!eventId) return;
+    if (scope === "event") {
+      const ok = window.confirm(
+        "Reset ALL guest admissions for this event? Every QR and 4-digit code can be scanned again."
+      );
+      if (!ok) return;
+    }
+    setResetting(true);
+    setError("");
+    try {
+      if (isOnline) {
+        const res = await fetch("/api/qr/reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            scope === "guest" ? { scope: "guest", eventId, guestId } : { scope: "event", eventId }
+          ),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? "Reset failed");
+          return;
+        }
+      }
+      resetOfflineAdmissionLocal(eventId, scope === "guest" ? { guestId } : { all: true });
+      setOfflinePkg(getOfflinePackage(eventId));
+      setResult(null);
+      if (isOnline) await loadEventData(historyPage);
+    } catch {
+      setError("Reset failed");
+    } finally {
+      setResetting(false);
+    }
+  }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -221,13 +409,32 @@ export function QrAdmissionClient() {
   }
 
   async function processUploadedFile(file: File) {
+    if (!eventId) {
+      setError(t("qr_admission.no_event"));
+      return;
+    }
     setCameraError("");
+    setError("");
+    setResult(null);
+    setScanningImage(true);
+    setLastImageName(file.name || "QR image");
     try {
       const text = await scanQrFromFile(file);
       await performCheckIn(text);
-    } catch {
-      setError("Could not read QR from image.");
+    } catch (err) {
+      const message =
+        err instanceof QrImageScanError
+          ? err.message
+          : "Could not read a QR code from this image. Try a clearer photo or the 4-digit gate code.";
+      setError(message);
+      setResult({
+        status: "not_found",
+        feedback: message,
+        selectedEventTitle,
+      });
       playScanFeedback(false);
+    } finally {
+      setScanningImage(false);
     }
   }
 
@@ -242,22 +449,23 @@ export function QrAdmissionClient() {
       if (result?.guest) return t("qr_admission.result_already_guest");
       return t("qr_admission.result_already");
     }
-    const map: Record<Exclude<ScanStatus, "valid" | "already_checked_in">, string> = {
+    if (status === "wrong_event") return t("qr_admission.result_wrong_event");
+    if (status === "wrong_pass") return t("qr_admission.result_wrong_pass");
+    const map: Record<
+      Exclude<ScanStatus, "valid" | "already_checked_in" | "wrong_event" | "wrong_pass">,
+      string
+    > = {
       invalid: t("qr_admission.result_invalid"),
       expired: t("qr_admission.result_expired"),
       not_found: t("qr_admission.result_not_found"),
-      wrong_event: t("qr_admission.result_wrong_event"),
       revoked: "Revoked",
       refunded: "Refunded",
       cancelled: "Cancelled",
     };
-    return map[status as Exclude<ScanStatus, "valid" | "already_checked_in">] ?? status;
-  }
-
-  function resultStyles(status: ScanStatus) {
-    if (status === "valid") return "border-green-300 bg-green-50";
-    if (status === "already_checked_in") return "border-amber-300 bg-amber-50";
-    return "border-red-200 bg-red-50";
+    return (
+      map[status as Exclude<ScanStatus, "valid" | "already_checked_in" | "wrong_event" | "wrong_pass">] ??
+      status
+    );
   }
 
   async function exportCsv() {
@@ -294,11 +502,22 @@ export function QrAdmissionClient() {
           </Badge>
         ) : (
           <Badge variant="warning" className="gap-1">
-            <WifiOff className="h-3 w-3" /> Offline
+            <WifiOff className="h-3 w-3" /> Offline admit active
+          </Badge>
+        )}
+        {eventId && offlinePkg && (
+          <Badge variant="outline" className="gap-1 text-xs">
+            Offline pack · {offlinePkg.guests.length} guests · synced{" "}
+            {new Date(offlinePkg.syncedAt).toLocaleString()}
+          </Badge>
+        )}
+        {eventId && !offlinePkg && !isOnline && (
+          <Badge variant="destructive" className="text-xs">
+            No offline pack — connect once to download
           </Badge>
         )}
         <Link href="/dashboard/qr" className="text-xs text-slate-500 hover:text-brand-600 ml-auto">
-          Offline package mode →
+          Offline package tools →
         </Link>
       </div>
 
@@ -333,6 +552,50 @@ export function QrAdmissionClient() {
                 {t("qr_admission.override_checkin")}
               </div>
               <Switch checked={adminOverride} onCheckedChange={setAdminOverride} />
+            </div>
+          )}
+
+          {eventId && (
+            <div className="flex flex-col sm:flex-row gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-800 flex items-center gap-2">
+                  <CloudDownload className="h-4 w-4 text-brand-600 shrink-0" />
+                  Offline gate pack
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Download guest QR tokens + 4-digit codes so scanning still works without internet.
+                </p>
+                {offlineMsg && <p className="text-xs text-brand-700 mt-1">{offlineMsg}</p>}
+                {!isOnline && getPendingOfflineScans(eventId).length > 0 && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    {getPendingOfflineScans(eventId).length} offline admits waiting to sync when back online.
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!isOnline || processing}
+                  onClick={() => void downloadOfflinePackage()}
+                  className="gap-1.5"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {offlinePkg ? "Refresh pack" : "Download pack"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!eventId || resetting}
+                  onClick={() => void resetAdmission("event")}
+                  className="gap-1.5 text-amber-800 border-amber-200 hover:bg-amber-50"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset all admits
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -379,18 +642,25 @@ export function QrAdmissionClient() {
               size="lg"
               variant="outline"
               className="flex-1 min-h-[52px] gap-2 touch-manipulation"
-              disabled={!eventId || processing}
+              disabled={!eventId || processing || scanningImage}
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="h-5 w-5" />
-              {t("qr_admission.upload_image")}
+              {scanningImage ? "Reading QR…" : t("qr_admission.upload_image")}
             </Button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void handleFileUpload(e)} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
+              className="hidden"
+              onChange={(e) => void handleFileUpload(e)}
+            />
           </div>
 
           <div
             onDragOver={(e) => {
               e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
               setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
@@ -400,15 +670,37 @@ export function QrAdmissionClient() {
               const file = e.dataTransfer.files?.[0];
               if (file) void processUploadedFile(file);
             }}
+            role="button"
+            tabIndex={eventId ? 0 : -1}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
             className={cn(
-              "rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors",
+              "rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors touch-manipulation",
               dragOver ? "border-brand-500 bg-brand-50/50" : "border-slate-200 bg-slate-50/50",
-              !eventId && "opacity-50 pointer-events-none"
+              scanningImage && "border-brand-400 bg-brand-50/40",
+              (!eventId || processing || scanningImage) && "opacity-50 pointer-events-none"
             )}
           >
-            <ImagePlus className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-            <p className="text-sm font-medium text-slate-700">Drag & drop QR image here</p>
-            <p className="text-xs text-slate-500 mt-1">PNG, JPG, or WebP</p>
+            <ImagePlus
+              className={cn(
+                "h-8 w-8 mx-auto mb-2",
+                scanningImage ? "text-brand-600 animate-pulse" : "text-slate-400"
+              )}
+            />
+            <p className="text-sm font-medium text-slate-700">
+              {scanningImage
+                ? `Scanning ${lastImageName || "image"}…`
+                : dragOver
+                  ? "Drop to scan & admit"
+                  : "Drag & drop QR image here"}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              PNG, JPG, or WebP · validates against the selected event
+            </p>
           </div>
 
           {cameraError && (
@@ -438,10 +730,14 @@ export function QrAdmissionClient() {
             <CardContent className="space-y-3">
               <Input
                 value={manualToken}
-                onChange={(e) => setManualToken(e.target.value)}
-                placeholder="Paste token or verification URL"
+                onChange={(e) => setManualToken(e.target.value.trim())}
+                inputMode="numeric"
+                placeholder="4-digit code, token, or verify URL"
                 disabled={processing}
               />
+              <p className="text-xs text-slate-500">
+                Each guest pass has a unique 4-digit code for manual admit when scanning isn’t practical.
+              </p>
               <Button
                 className="w-full min-h-[44px] touch-manipulation"
                 disabled={!eventId || !manualToken.trim() || processing}
@@ -452,43 +748,33 @@ export function QrAdmissionClient() {
             </CardContent>
           </Card>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && !result && <p className="text-sm text-red-600">{error}</p>}
 
           {result && (
-            <Card className={cn("border-2", resultStyles(result.status))}>
-              <CardContent className="p-6 text-center space-y-3">
-                {result.status === "valid" ? (
-                  <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto" />
-                ) : result.status === "already_checked_in" ? (
-                  <AlertTriangle className="h-12 w-12 text-amber-600 mx-auto" />
-                ) : (
-                  <XCircle className="h-12 w-12 text-red-500 mx-auto" />
-                )}
-                <Badge
-                  variant={result.status === "valid" ? "success" : result.status === "already_checked_in" ? "warning" : "destructive"}
-                  className="text-base px-4 py-1"
-                >
-                  {statusLabel(result.status, result)}
-                </Badge>
-                {result.guest && <p className="text-lg font-semibold text-slate-900">{result.guest.name}</p>}
-                {result.ticket && <p className="text-sm text-slate-600">Ticket: {result.ticket.name}</p>}
-                {result.event && <p className="text-xs text-slate-500">{result.event.title}</p>}
-                {result.status === "already_checked_in" && result.admittedAt && (
-                  <p className="text-xs text-amber-800 bg-amber-100/80 rounded-lg px-3 py-2">
-                    {t("qr_admission.admitted_at")}: {new Date(result.admittedAt).toLocaleString()}
-                  </p>
-                )}
-                {result.status === "already_checked_in" && (
-                  <p className="text-xs text-slate-500">This scan was not counted again.</p>
-                )}
-              </CardContent>
-            </Card>
+            <AdmissionScanFeedback
+              result={result}
+              statusLabel={statusLabel(result.status, result)}
+              resetting={resetting}
+              onResetGuest={(guestId) => void resetAdmission("guest", guestId)}
+            />
           )}
         </div>
 
         <Card className="h-fit">
-          <CardHeader>
+          <CardHeader className="space-y-3">
             <CardTitle className="text-base">{t("qr_admission.recent_scans")}</CardTitle>
+            {eventId && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Input
+                  className="pl-9 h-10"
+                  placeholder={t("qr_admission.search_admitted")}
+                  value={scanSearch}
+                  onChange={(e) => setScanSearch(e.target.value)}
+                  aria-label={t("qr_admission.search_admitted")}
+                />
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {!eventId ? (
@@ -496,37 +782,60 @@ export function QrAdmissionClient() {
             ) : loadingScans ? (
               <p className="text-sm text-slate-500 text-center py-8">Loading…</p>
             ) : recentScans.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-8">{t("qr_admission.no_scans")}</p>
+              <p className="text-sm text-slate-500 text-center py-8">
+                {scanSearchDebounced
+                  ? t("qr_admission.no_search_results")
+                  : t("qr_admission.no_scans")}
+              </p>
             ) : (
               <ul className="space-y-2 max-h-[480px] overflow-y-auto">
-                {recentScans.map((scan) => (
-                  <li
-                    key={scan.id}
-                    className="flex items-start justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 text-sm"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-900 truncate">
-                        {scan.guestName ?? scan.ticketName ?? "Unknown"}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {scan.gate ? `${scan.gate} · ` : ""}
-                        {new Date(scan.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <Badge
-                      variant={
-                        scan.result === "VALID" || scan.status === "checked_in" || scan.status === "valid"
-                          ? "success"
-                          : scan.result === "ALREADY_USED" || scan.status === "duplicate_scan"
-                            ? "warning"
-                            : "destructive"
-                      }
-                      className="shrink-0 text-[10px]"
+                {recentScans.map((scan) => {
+                  const name =
+                    scan.displayName ||
+                    scan.guestName ||
+                    scan.invitationName ||
+                    scan.ticketName ||
+                    "Unknown guest";
+                  const subtitle = [
+                    scan.guestName && scan.invitationName && scan.guestName !== scan.invitationName
+                      ? scan.invitationName
+                      : null,
+                    scan.gate || null,
+                    new Date(scan.createdAt).toLocaleString(),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
+
+                  return (
+                    <li
+                      key={scan.id}
+                      className="flex items-start justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 text-sm"
                     >
-                      {(scan.result ?? scan.status ?? "unknown").replace(/_/g, " ")}
-                    </Badge>
-                  </li>
-                ))}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-slate-900 truncate">{name}</p>
+                        {scan.seatNumber && (
+                          <p className="text-xs font-medium text-brand-700 flex items-center gap-1 mt-0.5">
+                            <Armchair className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{scan.seatNumber}</span>
+                          </p>
+                        )}
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">{subtitle}</p>
+                      </div>
+                      <Badge
+                        variant={
+                          scan.result === "VALID" || scan.status === "checked_in" || scan.status === "valid"
+                            ? "success"
+                            : scan.result === "ALREADY_USED" || scan.status === "duplicate_scan"
+                              ? "warning"
+                              : "destructive"
+                        }
+                        className="shrink-0 text-[10px]"
+                      >
+                        {(scan.result ?? scan.status ?? "unknown").replace(/_/g, " ")}
+                      </Badge>
+                    </li>
+                  );
+                })}
               </ul>
             )}
             {historyPages > 1 && (

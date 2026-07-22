@@ -30,7 +30,10 @@ export class MusicLibraryService {
         orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
         skip,
         take: limit,
-        include: { createdBy: { select: { id: true, name: true } } },
+        include: {
+          createdBy: { select: { id: true, name: true } },
+          _count: { select: { catalogTemplates: true, events: true } },
+        },
       }),
       prisma.invitationMusicTrack.count(),
     ]);
@@ -42,7 +45,10 @@ export class MusicLibraryService {
     artist?: string;
     category: string;
     url: string;
+    sourceUrl?: string;
     durationSec?: number;
+    clipStartSec?: number;
+    clipEndSec?: number;
     createdById?: string;
     isPremium?: boolean;
   }) {
@@ -53,12 +59,83 @@ export class MusicLibraryService {
         artist: data.artist,
         category: data.category,
         url: data.url,
+        sourceUrl: data.sourceUrl,
         durationSec: data.durationSec,
+        clipStartSec: data.clipStartSec,
+        clipEndSec: data.clipEndSec,
         createdById: data.createdById,
         isPremium: data.isPremium ?? false,
         sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
       },
     });
+  }
+
+  async assignTrack(data: {
+    trackId: string;
+    templateIds?: string[];
+    eventIds?: string[];
+    clearTemplates?: boolean;
+    clearEvents?: boolean;
+  }) {
+    const track = await prisma.invitationMusicTrack.findUnique({ where: { id: data.trackId } });
+    if (!track) throw new Error("Track not found");
+
+    if (data.clearTemplates) {
+      await prisma.invitationCatalogTemplate.updateMany({
+        where: { defaultMusicTrackId: data.trackId },
+        data: { defaultMusicTrackId: null },
+      });
+    }
+    if (data.clearEvents) {
+      await prisma.event.updateMany({
+        where: { defaultMusicTrackId: data.trackId },
+        data: { defaultMusicTrackId: null },
+      });
+    }
+
+    if (data.templateIds?.length) {
+      await prisma.invitationCatalogTemplate.updateMany({
+        where: { id: { in: data.templateIds } },
+        data: { defaultMusicTrackId: data.trackId },
+      });
+    }
+    if (data.eventIds?.length) {
+      await prisma.event.updateMany({
+        where: { id: { in: data.eventIds } },
+        data: { defaultMusicTrackId: data.trackId },
+      });
+    }
+
+    const [templates, events] = await Promise.all([
+      prisma.invitationCatalogTemplate.findMany({
+        where: { defaultMusicTrackId: data.trackId },
+        select: { id: true, name: true, slug: true },
+      }),
+      prisma.event.findMany({
+        where: { defaultMusicTrackId: data.trackId },
+        select: { id: true, title: true, slug: true },
+        take: 100,
+      }),
+    ]);
+
+    return { track, templates, events };
+  }
+
+  async listAssignTargets() {
+    const [templates, events] = await Promise.all([
+      prisma.invitationCatalogTemplate.findMany({
+        where: { isActive: true },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        select: { id: true, name: true, slug: true, defaultMusicTrackId: true },
+        take: 200,
+      }),
+      prisma.event.findMany({
+        orderBy: { updatedAt: "desc" },
+        select: { id: true, title: true, slug: true, defaultMusicTrackId: true },
+        take: 100,
+      }),
+    ]);
+    return { templates, events };
   }
 
   async updateTrack(

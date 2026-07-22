@@ -45,7 +45,7 @@ export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestN
             <p className="text-xs inv-muted-on-dark">{date.time}</p>
             {event.venueName && <p className="text-sm tracking-wider">{event.venueName}</p>}
             {event.contactPhone && <p className="text-xs inv-muted-on-dark">RSVP {event.contactPhone}</p>}
-            {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded" />}
+            {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />}
             <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} textColor={colors.text} variant="dark" />
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} variant="dark" />
           </div>

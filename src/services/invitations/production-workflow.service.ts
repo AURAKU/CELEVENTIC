@@ -399,7 +399,7 @@ export class ProductionWorkflowService {
 
     const payment = await paymentService.initializePayment(
       userId,
-      "PAYSTACK",
+      null,
       "INVITATION_REVISION",
       {
         email,

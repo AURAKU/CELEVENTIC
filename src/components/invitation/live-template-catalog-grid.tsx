@@ -21,6 +21,7 @@ export function LiveCatalogTemplateGrid({ templates }: { templates: CatalogTempl
           >
             <LiveTemplatePreview
               layoutSlug={template.layoutSlug}
+              catalogSlug={template.slug}
               category={template.category}
               features={features}
               variant="card"

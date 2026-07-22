@@ -47,7 +47,11 @@ export function InvitationRevealRouter({
     case "glass":
       return <GlassReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "curtain":
-      return <CurtainReveal eventTitle={eventTitle} onComplete={complete} />;
+      return (
+        <CurtainReveal eventTitle={eventTitle} guestName={guestName} onComplete={complete}>
+          {children}
+        </CurtainReveal>
+      );
     case "scroll-unroll":
       return (
         <ScrollUnrollReveal

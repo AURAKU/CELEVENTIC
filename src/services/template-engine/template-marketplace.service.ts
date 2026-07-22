@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { hasFullPackageAccess } from "@/lib/access/package-access";
+import type { UserRole } from "@prisma/client";
 
 export class TemplateMarketplaceService {
   async getMarketplace(filters?: { category?: string; premium?: boolean }) {
@@ -21,6 +23,11 @@ export class TemplateMarketplaceService {
     const template = await prisma.designTemplate.findUnique({ where: { id: templateId } });
     if (!template) throw new Error("Template not found");
     if (!template.isPremium) return { purchased: true, free: true };
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (hasFullPackageAccess(user?.role)) {
+      return { purchased: true, free: true, adminBypass: true };
+    }
 
     const existing = await prisma.templatePurchase.findFirst({ where: { userId, templateId } });
     if (existing) return { purchased: true, alreadyOwned: true };
@@ -75,11 +82,18 @@ export class TemplateMarketplaceService {
     });
   }
 
-  async hasAccess(userId: string, templateId: string) {
+  async hasAccess(userId: string, templateId: string, role?: UserRole | null) {
     const template = await prisma.designTemplate.findUnique({ where: { id: templateId } });
     if (!template) return false;
     if (!template.isPremium) return true;
     if (template.createdById === userId) return true;
+
+    let resolvedRole = role;
+    if (resolvedRole === undefined) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      resolvedRole = user?.role;
+    }
+    if (hasFullPackageAccess(resolvedRole)) return true;
 
     const purchase = await prisma.templatePurchase.findFirst({ where: { userId, templateId } });
     return !!purchase;

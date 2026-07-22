@@ -19,6 +19,7 @@ export const DEFAULT_BLOCK_TYPES = [
   "QR_GUEST_PASS",
   "THANK_YOU",
   "MEMORY_VAULT",
+  "CUSTOM",
 ] as const;
 
 export const FUNERAL_BLOCK_TYPES = [
@@ -65,6 +66,7 @@ export const BLOCK_TYPE_LABELS: Record<string, { en: string; fr: string; categor
   QR_GUEST_PASS: { en: "QR Guest Pass", fr: "Pass invité QR", category: "default" },
   THANK_YOU: { en: "Thank You", fr: "Merci", category: "default" },
   MEMORY_VAULT: { en: "Memory Vault Preview", fr: "Aperçu Memory Vault", category: "default" },
+  CUSTOM: { en: "Custom Section", fr: "Section personnalisée", category: "default" },
   OBITUARY: { en: "Obituary", fr: "Nécrologie", category: "funeral" },
   TRIBUTE_WALL: { en: "Tribute Wall", fr: "Mur des hommages", category: "funeral" },
   FUNERAL_PROGRAM: { en: "Funeral Program", fr: "Programme funéraire", category: "funeral" },
@@ -84,21 +86,60 @@ export const BLOCK_TYPE_LABELS: Record<string, { en: string; fr: string; categor
 export const STYLE_VARIANTS = ["elegant", "minimal", "bold", "romantic", "formal"] as const;
 export type StyleVariant = (typeof STYLE_VARIANTS)[number];
 
+const WEDDING_ONLY_BLOCKS = new Set<InvitationBlockType>([
+  "COUPLE_INTRO",
+  "DRESS_CODE",
+  "GIFT_REGISTRY",
+  "MENU",
+  "SEATING_INFO",
+]);
+
+const CELEBRATION_HIDDEN_FOR_FUNERAL = new Set<InvitationBlockType>([
+  "COUPLE_INTRO",
+  "DRESS_CODE",
+  "GIFT_REGISTRY",
+  "MENU",
+  "SEATING_INFO",
+  "QR_GUEST_PASS",
+]);
+
 export function getBlockTypesForEventType(eventType: string): InvitationBlockType[] {
   const normalized = eventType.toUpperCase();
   const base = [...DEFAULT_BLOCK_TYPES] as InvitationBlockType[];
 
   if (normalized === "FUNERAL" || normalized.includes("MEMORIAL")) {
-    return [...base, ...FUNERAL_BLOCK_TYPES];
+    return [
+      ...base.filter((t) => !CELEBRATION_HIDDEN_FOR_FUNERAL.has(t)),
+      ...FUNERAL_BLOCK_TYPES,
+    ];
   }
   if (
     normalized === "CORPORATE_EVENT" ||
     normalized === "CORPORATE" ||
     normalized === "CONFERENCE"
   ) {
-    return [...base, ...CORPORATE_BLOCK_TYPES];
+    return [
+      ...base.filter((t) => !WEDDING_ONLY_BLOCKS.has(t) && t !== "MEMORY_VAULT"),
+      ...CORPORATE_BLOCK_TYPES,
+    ];
   }
-  return base;
+  // WEDDING / ENGAGEMENT / celebration defaults — never expose funeral or corporate blocks
+  if (
+    normalized === "WEDDING" ||
+    normalized === "ENGAGEMENT" ||
+    normalized.includes("WEDDING")
+  ) {
+    return base.filter(
+      (t) =>
+        !(FUNERAL_BLOCK_TYPES as readonly string[]).includes(t) &&
+        !(CORPORATE_BLOCK_TYPES as readonly string[]).includes(t)
+    );
+  }
+  return base.filter(
+    (t) =>
+      !(FUNERAL_BLOCK_TYPES as readonly string[]).includes(t) &&
+      !(CORPORATE_BLOCK_TYPES as readonly string[]).includes(t)
+  );
 }
 
 export interface BlockContentJson {
@@ -155,6 +196,7 @@ export interface BlockRenderContext {
   guestId?: string;
   guestName?: string;
   qrDataUrl?: string;
+  admissionManualCode?: string | null;
   memoryVaultEnabled?: boolean;
   eventId?: string;
   seatLookupUrl?: string;

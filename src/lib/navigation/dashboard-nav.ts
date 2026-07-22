@@ -260,9 +260,30 @@ export function getNavSections(workspace: WorkspaceId): NavSection[] {
   }
 }
 
+/**
+ * Workspace switcher entries.
+ * FuneralOS is intentionally omitted — it is a product module under organizer tools,
+ * not a top-level account workspace.
+ */
 export const WORKSPACE_OPTIONS: { id: WorkspaceId; labelKey: string; roles?: string[] }[] = [
-  { id: "organizer", labelKey: "dashboard.workspace_organizer" },
+  {
+    id: "organizer",
+    labelKey: "dashboard.workspace_organizer",
+    roles: ["ORGANIZER", "AGENCY", "STAFF", "VENUE_OWNER", "GUEST", "ADMIN", "SUPER_ADMIN"],
+  },
   { id: "vendor", labelKey: "dashboard.workspace_vendor", roles: ["VENDOR"] },
-  { id: "funeral", labelKey: "dashboard.workspace_funeral" },
   { id: "admin", labelKey: "dashboard.workspace_admin", roles: ["ADMIN", "SUPER_ADMIN"] },
 ];
+
+/** Workspaces the signed-in account may open — one primary role, admins keep organizer + admin. */
+export function getWorkspaceOptionsForRole(role: string | null | undefined) {
+  if (!role) return WORKSPACE_OPTIONS.filter((o) => o.id === "organizer");
+  return WORKSPACE_OPTIONS.filter((o) => !o.roles || o.roles.includes(role));
+}
+
+export function defaultWorkspaceForRole(role: string | null | undefined): WorkspaceId {
+  const allowed = getWorkspaceOptionsForRole(role);
+  if (role === "VENDOR") return "vendor";
+  if (role === "ADMIN" || role === "SUPER_ADMIN") return "admin";
+  return allowed[0]?.id ?? "organizer";
+}

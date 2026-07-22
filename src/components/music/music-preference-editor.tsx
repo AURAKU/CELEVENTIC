@@ -105,6 +105,13 @@ export function MusicPreferenceEditor({
         const fb = await fallback.json();
         tracks = fb.data ?? [];
       }
+      // Wedding / engagement studio must never surface funeral or memorial moods
+      if (cat === "wedding") {
+        tracks = tracks.filter((t) => {
+          const c = (t.category ?? "").toLowerCase();
+          return c !== "funeral" && c !== "memorial" && !c.includes("elegy");
+        });
+      }
       setLibrary(tracks);
     } catch {
       setLibrary([]);
@@ -418,7 +425,7 @@ export function MusicPreferenceEditor({
             onClick={() => fileInputRef.current?.click()}
           >
             {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {uploading ? "Uploading…" : "Upload audio (MP3, WAV, M4A — max 15MB)"}
+            {uploading ? "Uploading…" : "Upload audio (MP3, WAV, M4A — max 25MB)"}
           </Button>
         </>
       )}
@@ -441,11 +448,43 @@ export function MusicPreferenceEditor({
           </div>
 
           <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs text-slate-600 mb-1">
-                <span>Start: {formatAudioTime(startSec)}</span>
-                <span>End: {formatAudioTime(endSec)}</span>
+            <div className="flex justify-between text-xs text-slate-600 mb-1">
+              <span>Start: {formatAudioTime(startSec)}</span>
+              <span>End: {formatAudioTime(endSec)}</span>
+            </div>
+            {/* MVP waveform — trim window highlighted */}
+            <div
+              className="relative h-10 w-full overflow-hidden rounded-md bg-slate-100"
+              aria-hidden
+            >
+              <div className="absolute inset-0 flex items-end gap-px px-0.5 py-1">
+                {Array.from({ length: 48 }).map((_, i) => {
+                  const h = 20 + ((i * 17) % 55);
+                  const pos = durationSec > 0 ? (i / 47) * durationSec : 0;
+                  const inClip = pos >= startSec && pos <= endSec;
+                  return (
+                    <div
+                      key={i}
+                      className={`flex-1 rounded-sm ${inClip ? "bg-[#0B8A83]" : "bg-slate-300"}`}
+                      style={{ height: `${h}%` }}
+                    />
+                  );
+                })}
               </div>
+              {durationSec > 0 && (
+                <>
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-[#D4A63A]"
+                    style={{ left: `${(startSec / durationSec) * 100}%` }}
+                  />
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-[#D4A63A]"
+                    style={{ left: `${(endSec / durationSec) * 100}%` }}
+                  />
+                </>
+              )}
+            </div>
+            <div>
               <input
                 type="range"
                 min={0}

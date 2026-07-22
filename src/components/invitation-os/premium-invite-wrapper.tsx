@@ -4,9 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuestInvitationPortal } from "@/components/guest-portal/guest-invitation-portal";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
 import { CeleventicIntroExperience } from "@/components/invitations/CeleventicIntroExperience";
+import { defaultIntroVariantFor } from "@/lib/experience/intro-variants";
 import { TapToBeginExperience } from "@/components/invitations/tap-to-begin-experience";
 import { InvitationAudioControls } from "@/components/invitations/invitation-audio-controls";
-import { OpeningExperienceRouter } from "@/components/experience/opening-experience-router";
+import { isDarkColor } from "@/lib/invitation-theme/color-utils";
+import { CeleventicSoftIntro } from "@/components/experience-engine/celeventic-soft-intro";
+import { InteractiveReveal } from "@/components/experience-engine/interactive-reveal";
+import { SceneErrorBoundary } from "@/components/experience-engine/scene-error-boundary";
+import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
@@ -15,12 +20,18 @@ import { DEFAULT_INTRO_DURATION_SEC } from "@/lib/experience/celeventic-palette"
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import { mapLegacyRevealMode } from "@/lib/experience/opening-experiences";
 import { createInvitationAudioManager } from "@/lib/music/invitation-audio-manager";
+import {
+  phaseAfterSoftIntro,
+  resolveInitialInvitePhase,
+  type InvitePipelinePhase,
+} from "@/lib/experience-engine/soft-intro";
 
 /**
- * Full opening pipeline:
- * Celeventic intro → Tap to Begin (audio) → Opening reveal ceremony → Guest portal
+ * Full opening pipeline (platform → template → reveal → invite):
+ * Celeventic soft intro → template DNA intro → Tap to Begin → Opening reveal → Guest portal
+ * Curtain ceremonies: soft intro → closed curtain (owns tap) → slow open → Guest portal
  */
-type ExperiencePhase = "intro" | "tap-to-begin" | "reveal" | "portal";
+type ExperiencePhase = InvitePipelinePhase;
 
 interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   revealEnabled?: boolean;
@@ -36,6 +47,7 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   rsvpRequired?: boolean;
   admissionQrDataUrl?: string | null;
   admissionQrToken?: string | null;
+  admissionManualCode?: string | null;
   guestQrToken?: string | null;
   seatLookupUrl?: string | null;
   seatQrDataUrl?: string | null;
@@ -47,8 +59,14 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   skipReveal?: boolean;
   /** Skip tap-to-begin gate (non-interactive thumbnails) */
   skipTapGate?: boolean;
-  /** Skip Celeventic logo intro (studio/catalog previews) */
+  /** Skip template DNA / variant intro (studio/catalog previews) */
   skipIntro?: boolean;
+  /**
+   * Skip platform Celeventic soft intro.
+   * When omitted, follows `skipIntro` so thumbnails stay snappy while live + full
+   * preview still get consistent branding.
+   */
+  skipSoftIntro?: boolean;
   /** Skip INVITE_OPEN analytics (catalog/studio previews) */
   skipAnalytics?: boolean;
   contactEmail?: string | null;
@@ -56,6 +74,8 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   menuUrl?: string | null;
   menuBody?: string | null;
   registryUrl?: string | null;
+  seatTable?: string | null;
+  seatLabel?: string | null;
 }
 
 export function PremiumInviteWrapper({
@@ -72,6 +92,7 @@ export function PremiumInviteWrapper({
   skipReveal = false,
   skipTapGate = false,
   skipIntro = false,
+  skipSoftIntro,
   skipAnalytics = false,
   ...props
 }: PremiumInviteWrapperProps) {
@@ -80,7 +101,6 @@ export function PremiumInviteWrapper({
     [props.design]
   );
   const experience = enrichedDesign.experience;
-  const introEnabled = experience?.introEnabled ?? true;
   const introDuration = experience?.introDurationSec ?? DEFAULT_INTRO_DURATION_SEC;
   const enabledTabs = experience?.enabledTabs ?? DEFAULT_HUB_TABS;
   const themeColors = enrichedDesign.colors;
@@ -89,6 +109,15 @@ export function PremiumInviteWrapper({
     openingExperienceProp ??
     experience?.openingExperience ??
     mapLegacyRevealMode(revealMode ?? enrichedDesign.studio?.revealMode ?? "envelope");
+
+  // Branded intro choreography — user choice, else the template family's own.
+  const introVariant =
+    experience?.introVariant ??
+    defaultIntroVariantFor({
+      layout: enrichedDesign.layout,
+      collectionId: experience?.collectionId,
+      heroLayout: experience?.heroLayout,
+    });
 
   const showReveal =
     !skipReveal &&
@@ -106,26 +135,30 @@ export function PremiumInviteWrapper({
   );
 
   const wantsAutoplay = musicAutoplay ?? musicSelection?.autoPlay ?? true;
-  const needsTapGate = Boolean(hasMusic && wantsAutoplay && !skipTapGate);
+  // Curtain ceremonies own "touch to begin" and are the theatrical beat after soft intro:
+  // soft-intro → closed curtain (await tap) → slow open → portal.
+  // Skip separate TapToBegin + template DNA intro so curtains appear next.
+  const curtainOwnsTap = openingExperience.startsWith("curtain-");
+  const needsTapGate = Boolean(!skipTapGate && !curtainOwnsTap);
+  const introEnabled = curtainOwnsTap ? false : (experience?.introEnabled ?? true);
 
-  function initialPhase(): ExperiencePhase {
-    if (!skipIntro && introEnabled) return "intro";
-    if (needsTapGate) return "tap-to-begin";
-    if (showReveal) return "reveal";
-    return "portal";
-  }
+  const pipelineFlags = {
+    skipSoftIntro,
+    skipIntro,
+    introEnabled,
+    needsTapGate,
+    showReveal,
+  };
 
-  const [phase, setPhase] = useState<ExperiencePhase>(initialPhase);
+  const [phase, setPhase] = useState<ExperiencePhase>(() =>
+    resolveInitialInvitePhase(pipelineFlags)
+  );
   const tracked = useRef(false);
   const audioStarted = useRef(false);
 
   useEffect(() => {
     if (tracked.current || skipAnalytics) return;
-    if (
-      props.invitation.id.startsWith("preview-") ||
-      props.invitation.id === "studio-preview" ||
-      props.invitation.uniqueLink === "preview"
-    ) {
+    if (isPreviewInvitationId(props.invitation.id) || props.invitation.uniqueLink === "preview") {
       return;
     }
     tracked.current = true;
@@ -158,6 +191,11 @@ export function PremiumInviteWrapper({
     const ok = await audioManager.play();
     if (ok) audioStarted.current = true;
   }, [audioManager, wantsAutoplay]);
+
+  function afterSoftIntro() {
+    // Curtain path: soft-intro → reveal (closed curtain). Else: DNA intro / tap / reveal.
+    setPhase(phaseAfterSoftIntro(pipelineFlags));
+  }
 
   function afterIntro() {
     if (needsTapGate) {
@@ -196,26 +234,44 @@ export function PremiumInviteWrapper({
     audioManager && hasMusic && (phase === "portal" || phase === "reveal" || phase === "tap-to-begin")
   );
 
+  // Template-aware chrome for the audio controller: accent tint + light/dark
+  // surface derived from the theme so it belongs to the design, not bolted on.
+  const audioControlProps = {
+    trackTitle: musicSelection?.title ?? undefined,
+    accentColor: themeColors?.accent,
+    variant: isDarkColor(themeColors?.background ?? themeColors?.primary ?? "#0F172A")
+      ? ("dark" as const)
+      : ("light" as const),
+  };
+
   const portal = (
-    <GuestInvitationPortal
-      {...props}
-      design={enrichedDesign}
-      fullScreen={fullScreen || enrichedDesign.studio?.fullScreen}
-      embedded={embedded}
-      galleryInteractive={galleryInteractive}
-      seatLookupUrl={props.seatLookupUrl}
-      seatQrDataUrl={props.seatQrDataUrl}
-      experienceConfig={experience}
-      enabledHubTabs={enabledTabs}
-      openingComplete
-    />
+    <SceneErrorBoundary sceneId="guest-portal">
+      <GuestInvitationPortal
+        {...props}
+        design={enrichedDesign}
+        fullScreen={fullScreen || enrichedDesign.studio?.fullScreen}
+        embedded={embedded}
+        galleryInteractive={galleryInteractive}
+        seatLookupUrl={props.seatLookupUrl}
+        seatQrDataUrl={props.seatQrDataUrl}
+        experienceConfig={experience}
+        enabledHubTabs={enabledTabs}
+        openingComplete
+      />
+    </SceneErrorBoundary>
   );
+
+  // 1) Platform soft intro (all live invites) → 2) template DNA intro → …
+  if (phase === "soft-intro") {
+    return <CeleventicSoftIntro onComplete={afterSoftIntro} />;
+  }
 
   if (phase === "intro") {
     return (
       <CeleventicIntroExperience
         durationSec={introDuration}
         onComplete={afterIntro}
+        variant={introVariant}
         themeColors={{
           accent: themeColors?.accent,
           primary: themeColors?.primary,
@@ -238,19 +294,22 @@ export function PremiumInviteWrapper({
   if (phase === "reveal") {
     return (
       <>
-        <OpeningExperienceRouter
-          experienceId={openingExperience}
+        <InteractiveReveal
+          openingExperience={openingExperience}
           guestName={props.guestName}
           eventTitle={props.event.title}
           hostName={props.event.hostName}
           musicEnabled={Boolean(hasMusic)}
           enableSounds={experience?.enableRevealSounds}
+          onBegin={() => {
+            void startAudio();
+          }}
           onComplete={afterReveal}
         >
           {portal}
-        </OpeningExperienceRouter>
+        </InteractiveReveal>
         {showAudioControls && audioManager && (
-          <InvitationAudioControls manager={audioManager} embedded={embedded} />
+          <InvitationAudioControls manager={audioManager} embedded={embedded} {...audioControlProps} />
         )}
       </>
     );

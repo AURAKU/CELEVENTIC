@@ -20,7 +20,7 @@ export function GiftBoxReveal({ guestName, eventTitle, onComplete }: GiftBoxReve
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-b from-amber-950 via-red-950 to-black overflow-hidden">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center bg-gradient-to-b from-amber-950 via-red-950 to-black overflow-hidden">
       {opened && <RevealConfetti active />}
 
       <div className="relative z-10 text-center px-8 max-w-md">

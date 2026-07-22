@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ChevronDown, LayoutGrid } from "lucide-react";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { isAdminRole } from "@/lib/roles";
-import { WORKSPACE_OPTIONS, type WorkspaceId } from "@/lib/navigation/dashboard-nav";
+import {
+  WORKSPACE_OPTIONS,
+  defaultWorkspaceForRole,
+  getWorkspaceOptionsForRole,
+  type WorkspaceId,
+} from "@/lib/navigation/dashboard-nav";
 import type { UserRole } from "@prisma/client";
 import { cn } from "@/lib/utils";
 
@@ -24,33 +28,47 @@ export function setStoredWorkspace(id: WorkspaceId) {
   window.dispatchEvent(new CustomEvent("celeventic:workspace", { detail: id }));
 }
 
+function resolveAllowedWorkspace(
+  role: UserRole | undefined,
+  preferred: WorkspaceId
+): WorkspaceId {
+  const allowed = getWorkspaceOptionsForRole(role).map((o) => o.id);
+  if (allowed.includes(preferred) && preferred !== "funeral") return preferred;
+  return defaultWorkspaceForRole(role);
+}
+
 export function WorkspaceSwitcher({ compact }: { compact?: boolean }) {
   const { t } = useLocale();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const [workspace, setWorkspace] = useState<WorkspaceId>("organizer");
 
   const role = session?.user?.role as UserRole | undefined;
-  const isAdmin = role && isAdminRole(role);
+
+  const options = useMemo(() => getWorkspaceOptionsForRole(role), [role]);
 
   useEffect(() => {
-    setWorkspace(getStoredWorkspace());
+    if (status === "loading") return;
+
+    const preferred = getStoredWorkspace();
+    const next = resolveAllowedWorkspace(role, preferred);
+    if (next !== preferred || preferred === "funeral") {
+      setStoredWorkspace(next);
+    }
+    setWorkspace(next);
+
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<WorkspaceId>).detail;
-      if (detail) setWorkspace(detail);
+      if (!detail) return;
+      setWorkspace(resolveAllowedWorkspace(role, detail));
     };
     window.addEventListener("celeventic:workspace", handler);
     return () => window.removeEventListener("celeventic:workspace", handler);
-  }, []);
-
-  const options = WORKSPACE_OPTIONS.filter((o) => {
-    if (!o.roles) return true;
-    if (!role) return false;
-    return o.roles.includes(role);
-  });
+  }, [role, status]);
 
   function select(id: WorkspaceId) {
+    if (!options.some((o) => o.id === id)) return;
     setStoredWorkspace(id);
     setWorkspace(id);
     setOpen(false);
@@ -62,14 +80,29 @@ export function WorkspaceSwitcher({ compact }: { compact?: boolean }) {
       router.push("/dashboard/vendor-portal");
       return;
     }
-    if (id === "funeral") {
-      router.push("/dashboard/funeral");
-      return;
-    }
     router.push("/dashboard");
   }
 
-  const current = options.find((o) => o.id === workspace) ?? options[0];
+  const current =
+    options.find((o) => o.id === workspace) ??
+    options[0] ??
+    WORKSPACE_OPTIONS.find((o) => o.id === "organizer")!;
+
+  // Single allowed workspace — show a clean label, no fake multi-role menu.
+  if (options.length <= 1) {
+    return (
+      <div
+        className={cn(
+          "inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white text-sm font-medium text-slate-700",
+          compact ? "h-9 px-2.5" : "h-10 px-3"
+        )}
+        title={t(current.labelKey)}
+      >
+        <LayoutGrid className="h-4 w-4 text-[#0B8A83] shrink-0" />
+        <span className="hidden sm:inline max-w-[140px] truncate">{t(current.labelKey)}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
@@ -110,17 +143,6 @@ export function WorkspaceSwitcher({ compact }: { compact?: boolean }) {
                 </button>
               </li>
             ))}
-            {isAdmin && workspace !== "admin" && (
-              <li className="border-t border-slate-100 mt-1 pt-1">
-                <button
-                  type="button"
-                  onClick={() => select("admin")}
-                  className="w-full text-left px-3 py-2 text-sm text-[#0B8A83] font-medium hover:bg-brand-50"
-                >
-                  {t("dashboard.admin_control_center")}
-                </button>
-              </li>
-            )}
           </ul>
         </>
       )}

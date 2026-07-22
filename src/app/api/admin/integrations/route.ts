@@ -17,21 +17,33 @@ export async function GET() {
   return NextResponse.json({ success: true, data: { integrations, catalog } });
 }
 
-const createSchema = z.object({
-  label: z.string().min(1),
-  category: z.enum([
-    "payments", "communications", "ai", "maps", "storage",
-    "auth", "analytics", "infrastructure", "custom",
-  ]),
-  description: z.string().optional(),
-  secret: z.string().optional(),
-  publicKey: z.string().optional(),
-  webhookUrl: z.string().url().optional().or(z.literal("")),
-  config: z.record(z.unknown()).optional(),
-  isEnabled: z.boolean().optional(),
-  fromCatalog: z.string().optional(),
-  provider: z.string().optional(),
-});
+const createSchema = z
+  .object({
+    label: z.string().optional(),
+    category: z
+      .enum([
+        "payments",
+        "communications",
+        "ai",
+        "storage",
+        "auth",
+        "infrastructure",
+        "custom",
+      ])
+      .optional(),
+    description: z.string().optional(),
+    secret: z.string().optional(),
+    publicKey: z.string().optional(),
+    webhookUrl: z.string().url().optional().or(z.literal("")),
+    config: z.record(z.unknown()).optional(),
+    isEnabled: z.boolean().optional(),
+    fromCatalog: z.string().optional(),
+    provider: z.string().optional(),
+  })
+  .refine((d) => !!d.fromCatalog || !!(d.label && d.label.trim()), {
+    message: "Label is required for custom APIs",
+    path: ["label"],
+  });
 
 export async function POST(req: Request) {
   const session = await requireAdminSession();
@@ -40,8 +52,16 @@ export async function POST(req: Request) {
   try {
     const body = createSchema.parse(await req.json());
     const integration = await integrationService.create({
-      ...body,
+      label: body.label || body.fromCatalog || "Custom API",
+      category: body.category ?? "custom",
+      description: body.description,
+      secret: body.secret,
+      publicKey: body.publicKey,
       webhookUrl: body.webhookUrl || undefined,
+      config: body.config,
+      isEnabled: body.isEnabled,
+      fromCatalog: body.fromCatalog,
+      provider: body.provider,
     });
 
     await createAuditLog({

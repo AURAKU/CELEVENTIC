@@ -5,6 +5,7 @@ import { entitlementService } from "@/services/entitlements/entitlement.service"
 import { buildWorkspaceNavigation } from "@/services/entitlements/navigation-builder";
 import { chatService } from "@/services/workspace/chat.service";
 import { slugify, generateToken } from "@/lib/utils";
+import { hasFullPackageAccess } from "@/lib/access/package-access";
 
 export class WorkspaceProvisionService {
   async provisionForEvent(eventId: string, userId: string, role: import("@prisma/client").UserRole) {
@@ -22,7 +23,9 @@ export class WorkspaceProvisionService {
     const blueprint = getBlueprint(event.eventType);
     const featureStates = entitlementService.resolveFeatureStates(
       event.eventType,
-      event.package?.name
+      event.package?.name,
+      undefined,
+      { unlockAll: hasFullPackageAccess(role) }
     );
 
     await prisma.$transaction(async (tx) => {
@@ -188,7 +191,9 @@ export class WorkspaceProvisionService {
 
       const featureStates = entitlementService.resolveFeatureStates(
         input.eventType,
-        pkg?.name ?? event.package?.name
+        pkg?.name ?? event.package?.name,
+        undefined,
+        { unlockAll: hasFullPackageAccess(userRole) }
       );
 
       await tx.eventWorkspace.create({

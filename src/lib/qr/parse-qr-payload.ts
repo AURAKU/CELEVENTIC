@@ -4,6 +4,7 @@
  */
 
 import { DEFAULT_PRODUCTION_URL, getAppUrlFromEnv } from "@/lib/app-url";
+import { isManualAdmissionCode } from "@/lib/qr/manual-code-pattern";
 
 const TOKEN_PATTERN = /^[a-zA-Z0-9_-]{16,64}$/;
 
@@ -22,13 +23,15 @@ function normalizeScanText(raw: string): string {
 
 /**
  * Parse QR payload into a token string.
- * Accepts raw tokens or Celeventic verification/admission URLs.
+ * Accepts raw tokens, Celeventic verification/admission URLs, or 4-digit manual codes.
+ * Manual codes are event-scoped and resolved in QrService with eventId.
  */
 export function parseQrToken(raw: string): string | null {
   const text = normalizeScanText(raw);
   if (!text) return null;
 
   if (TOKEN_PATTERN.test(text)) return text;
+  if (isManualAdmissionCode(text)) return text;
 
   try {
     const url = text.startsWith("http") ? new URL(text) : new URL(text, DEFAULT_PRODUCTION_URL);
@@ -37,7 +40,6 @@ export function parseQrToken(raw: string): string | null {
       if (match?.[1] && TOKEN_PATTERN.test(match[1])) return match[1];
     }
   } catch {
-    // not a URL — try path-only patterns
     for (const pattern of URL_PATTERNS) {
       const match = text.match(pattern);
       if (match?.[1] && TOKEN_PATTERN.test(match[1])) return match[1];

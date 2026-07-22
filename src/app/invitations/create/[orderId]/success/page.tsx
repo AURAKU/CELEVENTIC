@@ -1,11 +1,12 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Copy, ExternalLink } from "lucide-react";
 import { MvpShell } from "@/components/invitation-mvp/mvp-shell";
 import { Button } from "@/components/ui/button";
+import { ExtrasBriefPanel } from "@/components/invitation-mvp/extras-brief-panel";
 
 export default function SuccessPage() {
   return (
@@ -16,6 +17,8 @@ export default function SuccessPage() {
 }
 
 function SuccessPageInner() {
+  const params = useParams();
+  const orderId = params.orderId as string;
   const searchParams = useSearchParams();
   const shareUrl = searchParams.get("url") ?? "";
   const [copied, setCopied] = useState(false);
@@ -59,6 +62,7 @@ function SuccessPageInner() {
             <Link href="/dashboard/my-invitations">Go to My Invitations</Link>
           </Button>
         </div>
+        {orderId && <ExtrasBriefPanel orderId={orderId} />}
       </div>
     </MvpShell>
   );

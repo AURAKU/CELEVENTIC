@@ -24,8 +24,8 @@ export default async function TemplateDetailPage({
   const template = getCatalogTemplate(slug);
   if (!template) notFound();
 
-  const packages = await catalogService.getActivePackages();
   const eventType = eventTypeParam ?? "WEDDING";
+  const packages = await catalogService.getActivePackages(eventType);
 
   return (
     <>

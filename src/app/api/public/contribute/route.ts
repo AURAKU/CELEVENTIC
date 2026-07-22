@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { paymentService } from "@/services/payments/payment.service";
+import { paymentService, PaymentProviderError } from "@/services/payments/payment.service";
+import { isPaymentProviderId } from "@/lib/integrations/platform-provider-settings";
 
 const schema = z.object({
   eventSlug: z.string(),
@@ -20,7 +21,7 @@ const schema = z.object({
       "GENERAL",
     ])
     .optional(),
-  paymentMethod: z.string().optional(),
+  paymentMethod: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL"]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -45,9 +46,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This memorial is private" }, { status: 403 });
     }
 
+    const provider = isPaymentProviderId(data.paymentMethod) ? data.paymentMethod : null;
+
     const result = await paymentService.initializePayment(
       undefined,
-      "PAYSTACK",
+      provider,
       "CONTRIBUTION",
       {
         amount: data.amount,
@@ -59,7 +62,7 @@ export async function POST(req: Request) {
           message: data.message,
           isAnonymous: data.isAnonymous ?? false,
           purpose: data.purpose ?? "FAMILY_SUPPORT",
-          paymentMethod: data.paymentMethod ?? "PAYSTACK",
+          paymentMethod: provider,
         },
       }
     );
@@ -85,6 +88,9 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+    }
+    if (error instanceof PaymentProviderError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
     }
     return NextResponse.json({ error: "Contribution failed" }, { status: 500 });
   }

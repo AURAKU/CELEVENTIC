@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TemplateCard } from "@/components/invitation-mvp/template-card";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
+import { getBrowseCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
 import { INVITATION_REVIEWS } from "@/lib/invitation-mvp/reviews";
 import type { InvitationPackageDef } from "@/lib/invitation-mvp/packages";
 
@@ -16,7 +16,7 @@ interface Props {
 
 export function InvitationsLandingContent({ packages }: Props) {
   const { t } = useLocale();
-  const featured = CATALOG_TEMPLATES;
+  const featured = getBrowseCatalogTemplates();
 
   const steps = [
     { step: "01", title: t("invitations.step1_title"), desc: t("invitations.step1_desc") },

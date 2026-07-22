@@ -2,9 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/utils";
 import { createAuditLog } from "@/lib/audit";
 import type { QrScanResult } from "@prisma/client";
-import { QR_TYPES, ADMISSION_QR_TYPES, type QrIntentType } from "@/lib/qr/qr-types";
+import { QR_TYPES, ADMISSION_QR_TYPES, INVITE_QR_TYPES, type QrIntentType } from "@/lib/qr/qr-types";
 import { QR_DEFAULT_SIZE } from "@/lib/qr/qr-constants";
 import { parseQrToken } from "@/lib/qr/parse-qr-payload";
+import { ensureGuestManualCode, isManualAdmissionCode } from "@/lib/qr/manual-code";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 
 export type QrAdmissionStatus =
@@ -14,6 +15,7 @@ export type QrAdmissionStatus =
   | "already_checked_in"
   | "not_found"
   | "wrong_event"
+  | "wrong_pass"
   | "revoked"
   | "refunded"
   | "cancelled";
@@ -42,7 +44,11 @@ interface QrLookupResult {
   guest?: { id: string; name: string; email?: string | null } | null;
   ticket?: { id: string; name: string } | null;
   event?: { id: string; title: string } | null;
+  /** Selected gate event title when mismatch / context messaging */
+  selectedEventTitle?: string | null;
   qrType?: string;
+  /** Professional gate feedback for staff UI */
+  feedback?: string;
 }
 
 export class QrService {
@@ -134,21 +140,44 @@ export class QrService {
       const created = await this.createGuestAdmissionQr(guest.eventId, guestId);
       qr = created.qrCode;
     }
+    const manualCode = await ensureGuestManualCode(guestId);
     const dataUrl = await qrBrandingService.generateForEvent(qr.eventId, qr.token, QR_DEFAULT_SIZE, "pass");
-    return { qr, dataUrl, token: qr.token };
+    return { qr, dataUrl, token: qr.token, manualCode };
   }
 
-  private async resolveQrRecord(rawToken: string) {
-    const token = parseQrToken(rawToken) ?? rawToken.trim();
+  private admissionInclude() {
+    return {
+      guest: true,
+      ticket: true,
+      event: true,
+      scans: { where: { result: "VALID" as const }, take: 1, orderBy: { createdAt: "desc" as const } },
+    };
+  }
+
+  private async resolveQrRecord(rawToken: string, eventId?: string) {
+    const trimmed = rawToken.trim();
+
+    // Event-scoped 4-digit manual gate code
+    if (isManualAdmissionCode(trimmed) && eventId) {
+      const guest = await prisma.guest.findFirst({
+        where: { eventId, manualCode: trimmed },
+        include: { qrCodes: { where: { type: QR_TYPES.GUEST_ADMISSION }, take: 1 } },
+      });
+      if (guest?.qrCodes[0]) {
+        const admission = await prisma.qrCode.findUnique({
+          where: { id: guest.qrCodes[0].id },
+          include: this.admissionInclude(),
+        });
+        if (admission) return { token: admission.token, qrCode: admission, manualCode: trimmed };
+      }
+      return { token: trimmed, qrCode: null, manualCode: trimmed };
+    }
+
+    const token = parseQrToken(rawToken) ?? trimmed;
 
     const qrCode = await prisma.qrCode.findUnique({
       where: { token },
-      include: {
-        guest: true,
-        ticket: true,
-        event: true,
-        scans: { where: { result: "VALID" }, take: 1, orderBy: { createdAt: "desc" } },
-      },
+      include: this.admissionInclude(),
     });
 
     if (qrCode) return { token, qrCode };
@@ -160,12 +189,7 @@ export class QrService {
     if (guest?.qrCodes[0]) {
       const admission = await prisma.qrCode.findUnique({
         where: { id: guest.qrCodes[0].id },
-        include: {
-          guest: true,
-          ticket: true,
-          event: true,
-          scans: { where: { result: "VALID" }, take: 1, orderBy: { createdAt: "desc" } },
-        },
+        include: this.admissionInclude(),
       });
       if (admission) return { token: admission.token, qrCode: admission };
     }
@@ -177,12 +201,7 @@ export class QrService {
     if (ticket?.qrCodes[0]) {
       const ticketQr = await prisma.qrCode.findUnique({
         where: { id: ticket.qrCodes[0].id },
-        include: {
-          guest: true,
-          ticket: true,
-          event: true,
-          scans: { where: { result: "VALID" }, take: 1, orderBy: { createdAt: "desc" } },
-        },
+        include: this.admissionInclude(),
       });
       if (ticketQr) return { token: ticketQr.token, qrCode: ticketQr };
     }
@@ -220,17 +239,59 @@ export class QrService {
     performCheckIn: boolean,
     override: boolean
   ): Promise<QrLookupResult> {
+    const trimmed = rawToken.trim();
     const parsed = parseQrToken(rawToken);
-    if (!parsed && !rawToken.trim()) {
+    const isManual = isManualAdmissionCode(trimmed);
+    if (!parsed && !trimmed) {
       const scan = await this.logScan(null, eventId, scannedBy, gate, "INVALID", rawToken, undefined, undefined, deviceInfo);
       return { status: "not_found", result: "INVALID", scan: { id: scan.scan.id, createdAt: scan.scan.createdAt } };
     }
+    if (isManual && !eventId) {
+      const scan = await this.logScan(null, eventId, scannedBy, gate, "INVALID", trimmed, undefined, undefined, deviceInfo);
+      return { status: "not_found", result: "INVALID", scan: { id: scan.scan.id, createdAt: scan.scan.createdAt } };
+    }
+    if (!parsed && !isManual) {
+      const scan = await this.logScan(null, eventId, scannedBy, gate, "INVALID", trimmed, undefined, undefined, deviceInfo);
+      return { status: "not_found", result: "INVALID", scan: { id: scan.scan.id, createdAt: scan.scan.createdAt } };
+    }
 
-    const { token, qrCode } = await this.resolveQrRecord(rawToken);
+    const { token: resolvedToken, qrCode: resolvedQr } = await this.resolveQrRecord(rawToken, eventId);
+    let token = resolvedToken;
+    let qrCode = resolvedQr;
 
     if (!qrCode) {
       const scan = await this.logScan(null, eventId, scannedBy, gate, "INVALID", token, undefined, undefined, deviceInfo);
-      return { status: "not_found", result: "INVALID", scan: { id: scan.scan.id, createdAt: scan.scan.createdAt } };
+      return {
+        status: "not_found",
+        result: "INVALID",
+        scan: { id: scan.scan.id, createdAt: scan.scan.createdAt },
+        feedback: "No matching Celeventic pass was found. Ask for the admission QR or the guest’s 4-digit gate code.",
+      };
+    }
+
+    const selectedEvent = eventId
+      ? await prisma.event.findUnique({ where: { id: eventId }, select: { id: true, title: true } })
+      : null;
+
+    // Event mismatch first — never admit a pass from another celebration
+    if (eventId && qrCode.eventId !== eventId) {
+      const scan = await this.logScan(
+        qrCode.id,
+        qrCode.eventId,
+        scannedBy,
+        gate,
+        "WRONG_EVENT",
+        token,
+        qrCode.guestId ?? undefined,
+        qrCode.ticketId ?? undefined,
+        deviceInfo
+      );
+      const lookup = this.formatLookup("wrong_event", scan, qrCode);
+      return {
+        ...lookup,
+        selectedEventTitle: selectedEvent?.title ?? null,
+        feedback: `This QR belongs to “${qrCode.event.title}”, not “${selectedEvent?.title ?? "the selected event"}”. Please use a pass issued for this gate’s event.`,
+      };
     }
 
     const entityStatus = this.resolveEntityBlockStatus(qrCode);
@@ -246,7 +307,10 @@ export class QrService {
         qrCode.ticketId ?? undefined,
         deviceInfo
       );
-      return this.formatLookup(entityStatus, scan, qrCode);
+      return {
+        ...this.formatLookup(entityStatus, scan, qrCode),
+        feedback: "This pass cannot be admitted (cancelled, declined, or refunded).",
+      };
     }
 
     if (qrCode.isRevoked) {
@@ -261,37 +325,63 @@ export class QrService {
         qrCode.ticketId ?? undefined,
         deviceInfo
       );
-      return this.formatLookup("revoked", scan, qrCode);
+      return {
+        ...this.formatLookup("revoked", scan, qrCode),
+        feedback: "This pass has been revoked and cannot be used for entry.",
+      };
     }
 
+    // Invitation / portal QR → smartly resolve to that guest’s admission pass for this event
     if (!ADMISSION_QR_TYPES.includes(qrCode.type as QrIntentType)) {
-      const scan = await this.logScan(
-        qrCode.id,
-        qrCode.eventId,
-        scannedBy,
-        gate,
-        "INVALID",
-        token,
-        qrCode.guestId ?? undefined,
-        qrCode.ticketId ?? undefined,
-        deviceInfo
-      );
-      return this.formatLookup("invalid", scan, qrCode);
-    }
-
-    if (eventId && qrCode.eventId !== eventId) {
-      const scan = await this.logScan(
-        qrCode.id,
-        qrCode.eventId,
-        scannedBy,
-        gate,
-        "WRONG_EVENT",
-        token,
-        qrCode.guestId ?? undefined,
-        qrCode.ticketId ?? undefined,
-        deviceInfo
-      );
-      return this.formatLookup("wrong_event", scan, qrCode);
+      if (INVITE_QR_TYPES.includes(qrCode.type as QrIntentType) && qrCode.guestId) {
+        const admission = await prisma.qrCode.findFirst({
+          where: {
+            guestId: qrCode.guestId,
+            eventId: qrCode.eventId,
+            type: QR_TYPES.GUEST_ADMISSION,
+            isRevoked: false,
+          },
+          include: this.admissionInclude(),
+        });
+        if (admission) {
+          qrCode = admission;
+          token = admission.token;
+        } else {
+          const scan = await this.logScan(
+            qrCode.id,
+            qrCode.eventId,
+            scannedBy,
+            gate,
+            "INVALID",
+            token,
+            qrCode.guestId ?? undefined,
+            qrCode.ticketId ?? undefined,
+            deviceInfo
+          );
+          return {
+            ...this.formatLookup("wrong_pass", scan, qrCode),
+            feedback:
+              "This is an invitation QR, not an admission pass. Ask the guest for their Admission QR or 4-digit gate code.",
+          };
+        }
+      } else {
+        const scan = await this.logScan(
+          qrCode.id,
+          qrCode.eventId,
+          scannedBy,
+          gate,
+          "INVALID",
+          token,
+          qrCode.guestId ?? undefined,
+          qrCode.ticketId ?? undefined,
+          deviceInfo
+        );
+        return {
+          ...this.formatLookup("wrong_pass", scan, qrCode),
+          feedback:
+            "This QR is not a gate admission pass. Please scan the guest’s Admission QR or enter their 4-digit code.",
+        };
+      }
     }
 
     if (qrCode.expiresAt && qrCode.expiresAt < new Date()) {
@@ -306,7 +396,10 @@ export class QrService {
         qrCode.ticketId ?? undefined,
         deviceInfo
       );
-      return this.formatLookup("expired", scan, qrCode);
+      return {
+        ...this.formatLookup("expired", scan, qrCode),
+        feedback: "This admission pass has expired and cannot be used.",
+      };
     }
 
     const alreadyUsed = qrCode.scans.length > 0;
@@ -322,7 +415,12 @@ export class QrService {
         qrCode.ticketId ?? undefined,
         deviceInfo
       );
-      return this.formatLookup("already_checked_in", scan, qrCode);
+      const lookup = this.formatLookup("already_checked_in", scan, qrCode);
+      const name = qrCode.guest?.name ?? qrCode.ticket?.name ?? "This guest";
+      return {
+        ...lookup,
+        feedback: `${name} was already admitted. This scan was not counted again.`,
+      };
     }
 
     if (!performCheckIn) {
@@ -334,6 +432,7 @@ export class QrService {
         ticket: qrCode.ticket ? { id: qrCode.ticket.id, name: qrCode.ticket.name } : null,
         event: qrCode.event ? { id: qrCode.event.id, title: qrCode.event.title } : null,
         qrType: qrCode.type,
+        feedback: "Pass is valid and ready for check-in.",
       };
     }
 
@@ -363,7 +462,12 @@ export class QrService {
       });
     }
 
-    return this.formatLookup("valid", scan, qrCode);
+    const lookup = this.formatLookup("valid", scan, qrCode);
+    const welcomeName = qrCode.guest?.name ?? qrCode.ticket?.name ?? "Guest";
+    return {
+      ...lookup,
+      feedback: `Welcome, ${welcomeName}! You are admitted to ${qrCode.event.title}. Enjoy the celebration.`,
+    };
   }
 
   private formatLookup(
@@ -378,9 +482,11 @@ export class QrService {
     }
   ): QrLookupResult {
     const firstValidScan = qrCode.scans?.[0]?.createdAt ?? null;
+    const result: QrScanResult =
+      status === "wrong_pass" ? "INVALID" : logged.result;
     return {
       status,
-      result: logged.result,
+      result,
       scan: { id: logged.scan.id, createdAt: logged.scan.createdAt },
       admittedAt: status === "already_checked_in" ? firstValidScan : status === "valid" ? logged.scan.createdAt : null,
       guest: qrCode.guest ? { id: qrCode.guest.id, name: qrCode.guest.name, email: qrCode.guest.email } : null,
@@ -396,9 +502,29 @@ export class QrService {
       orderBy: { createdAt: "desc" },
       take: limit,
       include: {
-        guest: { select: { id: true, name: true } },
+        guest: {
+          select: {
+            id: true,
+            name: true,
+            invitation: { select: { name: true } },
+            seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+          },
+        },
         ticket: { select: { id: true, name: true } },
         scanner: { select: { id: true, name: true } },
+        qrCode: {
+          select: {
+            guest: {
+              select: {
+                id: true,
+                name: true,
+                invitation: { select: { name: true } },
+                seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+              },
+            },
+            ticket: { select: { id: true, name: true } },
+          },
+        },
       },
     });
   }
@@ -426,6 +552,74 @@ export class QrService {
       select: { id: true, guestId: true, ticketId: true, type: true },
     });
     return { count: codes.length, message: "Branding cache invalidated; tokens remain secure verify URLs." };
+  }
+
+  /** Clear VALID scans for one guest so their admission QR / 4-digit code can be used again. */
+  async resetGuestAdmission(eventId: string, guestId: string, resetBy: string) {
+    const guest = await prisma.guest.findFirst({ where: { id: guestId, eventId } });
+    if (!guest) throw new Error("Guest not found for this event");
+
+    const admissionQrs = await prisma.qrCode.findMany({
+      where: { eventId, guestId, type: { in: [...ADMISSION_QR_TYPES] } },
+      select: { id: true },
+    });
+    const qrIds = admissionQrs.map((q) => q.id);
+
+    const deleted = qrIds.length
+      ? await prisma.qrScan.deleteMany({
+          where: { eventId, qrCodeId: { in: qrIds }, result: "VALID" },
+        })
+      : { count: 0 };
+
+    if (guest.status === "CHECKED_IN") {
+      await prisma.guest.update({
+        where: { id: guestId },
+        data: { status: "ACCEPTED" },
+      });
+    }
+
+    await createAuditLog({
+      userId: resetBy,
+      action: "QR_SCAN",
+      entity: "guest",
+      entityId: guestId,
+      details: { action: "reset_admission", eventId, clearedScans: deleted.count },
+    });
+
+    return { guestId, clearedScans: deleted.count };
+  }
+
+  /** Clear all guest admission VALID scans for an event (bulk gate reset). */
+  async resetEventAdmissions(eventId: string, resetBy: string) {
+    const admissionQrs = await prisma.qrCode.findMany({
+      where: { eventId, type: { in: [...ADMISSION_QR_TYPES] }, guestId: { not: null } },
+      select: { id: true, guestId: true },
+    });
+    const qrIds = admissionQrs.map((q) => q.id);
+    const guestIds = [...new Set(admissionQrs.map((q) => q.guestId).filter(Boolean))] as string[];
+
+    const deleted = qrIds.length
+      ? await prisma.qrScan.deleteMany({
+          where: { eventId, qrCodeId: { in: qrIds }, result: "VALID" },
+        })
+      : { count: 0 };
+
+    if (guestIds.length) {
+      await prisma.guest.updateMany({
+        where: { id: { in: guestIds }, status: "CHECKED_IN" },
+        data: { status: "ACCEPTED" },
+      });
+    }
+
+    await createAuditLog({
+      userId: resetBy,
+      action: "QR_SCAN",
+      entity: "event",
+      entityId: eventId,
+      details: { action: "reset_all_admissions", clearedScans: deleted.count, guests: guestIds.length },
+    });
+
+    return { clearedScans: deleted.count, guestsReset: guestIds.length };
   }
 
   private resolveEntityBlockStatus(qrCode: {
@@ -458,8 +652,26 @@ export class QrService {
         orderBy: { createdAt: "desc" },
         take: 10,
         include: {
-          guest: { select: { name: true } },
+          guest: {
+            select: {
+              name: true,
+              invitation: { select: { name: true } },
+              seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+            },
+          },
           ticket: { select: { name: true } },
+          qrCode: {
+            select: {
+              guest: {
+                select: {
+                  name: true,
+                  invitation: { select: { name: true } },
+                  seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+                },
+              },
+              ticket: { select: { name: true } },
+            },
+          },
         },
       }),
     ]);
@@ -477,12 +689,29 @@ export class QrService {
       pending,
       invalidAttempts,
       checkInRate,
-      lastScanned: recentValid.map((s) => ({
-        id: s.id,
-        name: s.guest?.name ?? s.ticket?.name ?? "Unknown",
-        at: s.createdAt,
-        gate: s.gate,
-      })),
+      lastScanned: recentValid.map((s) => {
+        const guest = s.guest ?? s.qrCode?.guest ?? null;
+        const ticket = s.ticket ?? s.qrCode?.ticket ?? null;
+        const seatParts: string[] = [];
+        if (guest?.seatingAssignment?.tableNumber) {
+          seatParts.push(`Table ${guest.seatingAssignment.tableNumber}`);
+        }
+        if (guest?.seatingAssignment?.seatLabel) {
+          const label = guest.seatingAssignment.seatLabel;
+          seatParts.push(/^seat\b/i.test(label) ? label : `Seat ${label}`);
+        }
+        return {
+          id: s.id,
+          name:
+            guest?.name?.trim() ||
+            guest?.invitation?.name?.trim() ||
+            ticket?.name?.trim() ||
+            "Unknown guest",
+          at: s.createdAt,
+          gate: s.gate,
+          seatNumber: seatParts.length > 0 ? seatParts.join(" · ") : null,
+        };
+      }),
     };
   }
 

@@ -45,7 +45,7 @@ export function EnvelopeCollectionReveal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center overflow-hidden"
       style={{ background: "linear-gradient(160deg, #0F172A 0%, #1a3a38 50%, #0B8A83 100%)" }}
     >
       <RevealConfetti active={isOpening} />

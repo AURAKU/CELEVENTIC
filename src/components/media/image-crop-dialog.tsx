@@ -9,16 +9,23 @@ import { cn } from "@/lib/utils";
 import {
   CROP_ASPECT_OPTIONS,
   type CropAspectPreset,
+  type CropFrameRect,
+  type CropResizeHandle,
+  cropAspectRatio,
   cropFrameSize,
   computePixelCrop,
   cropImageToBlob,
   getCropShape,
   getCropScales,
   clampCropOffset,
+  clampFrameRect,
+  resizeFrameRect,
+  minZoomToCoverFrame,
   imageToBlob,
   rotateImage90,
   flipImageHorizontal,
 } from "@/lib/image/crop-utils";
+import { extensionForBlob } from "@/lib/image/smart-compress";
 
 interface ImageCropDialogProps {
   open: boolean;
@@ -32,6 +39,32 @@ interface ImageCropDialogProps {
 
 const CONTAINER_W = 360;
 const CONTAINER_H = 320;
+
+type DragMode =
+  | { kind: "pan"; startX: number; startY: number; ox: number; oy: number }
+  | { kind: "move"; startX: number; startY: number; frame: CropFrameRect }
+  | { kind: "resize"; handle: CropResizeHandle; startX: number; startY: number; frame: CropFrameRect };
+
+const HANDLES: { id: CropResizeHandle; className: string }[] = [
+  { id: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize" },
+  { id: "ne", className: "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize" },
+  { id: "sw", className: "left-0 bottom-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize" },
+  { id: "se", className: "right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize" },
+  { id: "n", className: "left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize" },
+  { id: "s", className: "left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 cursor-ns-resize" },
+  { id: "e", className: "right-0 top-1/2 translate-x-1/2 -translate-y-1/2 cursor-ew-resize" },
+  { id: "w", className: "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize" },
+];
+
+function centeredFrame(aspect: CropAspectPreset): CropFrameRect {
+  const size = cropFrameSize(CONTAINER_W, CONTAINER_H, aspect);
+  return {
+    x: (CONTAINER_W - size.width) / 2,
+    y: (CONTAINER_H - size.height) / 2,
+    width: size.width,
+    height: size.height,
+  };
+}
 
 export function ImageCropDialog({
   open,
@@ -47,15 +80,33 @@ export function ImageCropDialog({
   const [workingSrc, setWorkingSrc] = useState(imageSrc);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [frame, setFrame] = useState<CropFrameRect>(() => centeredFrame(defaultAspect));
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [applying, setApplying] = useState(false);
   const [transforming, setTransforming] = useState(false);
-  const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
+  const dragRef = useRef<DragMode | null>(null);
+  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
   const ownedUrls = useRef<string[]>([]);
+  const frameRef = useRef(frame);
+  frameRef.current = frame;
 
   const aspects = allowedAspects
     ? CROP_ASPECT_OPTIONS.filter((a) => allowedAspects.includes(a.id))
     : CROP_ASPECT_OPTIONS;
+
+  const ratio = cropAspectRatio(aspect);
+  const shape = getCropShape(aspect);
+  const { containScale, coverScale } = getCropScales(natural.w, natural.h, CONTAINER_W, CONTAINER_H);
+  const scale = containScale * Math.max(zoom, 0.25);
+  const renderedW = natural.w * scale;
+  const renderedH = natural.h * scale;
+  const minZoom = natural.w
+    ? minZoomToCoverFrame(natural.w, natural.h, CONTAINER_W, CONTAINER_H, frame.width, frame.height)
+    : 1;
+  const maxZoom = Math.max(4, coverScale / Math.max(containScale, 0.001) + 1.5);
+
+  const frameRadius =
+    shape === "circle" ? "9999px" : shape === "rounded" ? "18px" : "2px";
 
   useEffect(() => {
     setMounted(true);
@@ -74,8 +125,9 @@ export function ImageCropDialog({
     if (!open) return;
     setAspect(defaultAspect);
     setWorkingSrc(imageSrc);
-    setZoom(1);
+    setFrame(centeredFrame(defaultAspect));
     setOffset({ x: 0, y: 0 });
+    setZoom(1);
     ownedUrls.current = [];
     const img = new Image();
     img.onload = () => setNatural({ w: img.naturalWidth, h: img.naturalHeight });
@@ -89,50 +141,191 @@ export function ImageCropDialog({
     img.src = workingSrc;
   }, [workingSrc, open]);
 
-  const frame = cropFrameSize(CONTAINER_W, CONTAINER_H, aspect);
-  const shape = getCropShape(aspect);
-  const { containScale, coverScale } = getCropScales(natural.w, natural.h, CONTAINER_W, CONTAINER_H);
-  const scale = containScale * Math.max(zoom, 0.25);
-  const renderedW = natural.w * scale;
-  const renderedH = natural.h * scale;
-  const maxZoom = Math.max(3, coverScale / containScale + 1);
-
-  const frameRadius =
-    shape === "circle" ? "9999px" : shape === "rounded" ? "18px" : "2px";
-
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      dragRef.current = { startX: e.clientX, startY: e.clientY, ox: offset.x, oy: offset.y };
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    },
-    [offset]
-  );
-
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!dragRef.current || !natural.w) return;
-      const raw = {
-        x: dragRef.current.ox + (e.clientX - dragRef.current.startX),
-        y: dragRef.current.oy + (e.clientY - dragRef.current.startY),
-      };
-      const clamped = clampCropOffset(
-        raw.x,
-        raw.y,
+  // Cover the frame by default so dragging the image always moves visible content.
+  useEffect(() => {
+    if (!natural.w) return;
+    const nextMin = minZoomToCoverFrame(
+      natural.w,
+      natural.h,
+      CONTAINER_W,
+      CONTAINER_H,
+      frame.width,
+      frame.height
+    );
+    setZoom((z) => Math.max(z, nextMin));
+    setOffset((prev) =>
+      clampCropOffset(
+        prev.x,
+        prev.y,
         natural.w,
         natural.h,
         CONTAINER_W,
         CONTAINER_H,
         frame.width,
         frame.height,
-        zoom
+        Math.max(zoom, nextMin),
+        frame.x,
+        frame.y
+      )
+    );
+    // Only when natural dims or aspect-driven frame resets — not every frame drag.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [natural.w, natural.h, aspect]);
+
+  function resetFrameForAspect(next: CropAspectPreset) {
+    const nextFrame = centeredFrame(next);
+    setAspect(next);
+    setFrame(nextFrame);
+    if (natural.w) {
+      const nextMin = minZoomToCoverFrame(
+        natural.w,
+        natural.h,
+        CONTAINER_W,
+        CONTAINER_H,
+        nextFrame.width,
+        nextFrame.height
       );
-      setOffset(clamped);
+      setZoom(nextMin);
+      setOffset(
+        clampCropOffset(
+          0,
+          0,
+          natural.w,
+          natural.h,
+          CONTAINER_W,
+          CONTAINER_H,
+          nextFrame.width,
+          nextFrame.height,
+          nextMin,
+          nextFrame.x,
+          nextFrame.y
+        )
+      );
+    }
+  }
+
+  const applyOffsetClamp = useCallback(
+    (ox: number, oy: number, z: number, f: CropFrameRect) =>
+      clampCropOffset(
+        ox,
+        oy,
+        natural.w,
+        natural.h,
+        CONTAINER_W,
+        CONTAINER_H,
+        f.width,
+        f.height,
+        z,
+        f.x,
+        f.y
+      ),
+    [natural.w, natural.h]
+  );
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent, mode: DragMode["kind"] | CropResizeHandle) => {
+      e.stopPropagation();
+      const target = e.currentTarget as HTMLElement;
+      target.setPointerCapture(e.pointerId);
+      const f = frameRef.current;
+      if (mode === "pan") {
+        dragRef.current = { kind: "pan", startX: e.clientX, startY: e.clientY, ox: offset.x, oy: offset.y };
+      } else if (mode === "move") {
+        dragRef.current = { kind: "move", startX: e.clientX, startY: e.clientY, frame: f };
+      } else {
+        dragRef.current = {
+          kind: "resize",
+          handle: mode,
+          startX: e.clientX,
+          startY: e.clientY,
+          frame: f,
+        };
+      }
     },
-    [natural.w, natural.h, frame.width, frame.height, zoom]
+    [offset.x, offset.y]
+  );
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag || !natural.w) return;
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+
+      if (drag.kind === "pan") {
+        setOffset(applyOffsetClamp(drag.ox + dx, drag.oy + dy, zoom, frameRef.current));
+        return;
+      }
+      if (drag.kind === "move") {
+        const next = clampFrameRect(
+          {
+            ...drag.frame,
+            x: drag.frame.x + dx,
+            y: drag.frame.y + dy,
+          },
+          CONTAINER_W,
+          CONTAINER_H,
+          null
+        );
+        setFrame(next);
+        setOffset(applyOffsetClamp(offset.x, offset.y, zoom, next));
+        return;
+      }
+      const next = resizeFrameRect(
+        drag.frame,
+        drag.handle,
+        dx,
+        dy,
+        CONTAINER_W,
+        CONTAINER_H,
+        ratio
+      );
+      setFrame(next);
+      const nextMin = minZoomToCoverFrame(
+        natural.w,
+        natural.h,
+        CONTAINER_W,
+        CONTAINER_H,
+        next.width,
+        next.height
+      );
+      const nextZoom = Math.max(zoom, nextMin);
+      if (nextZoom !== zoom) setZoom(nextZoom);
+      setOffset(applyOffsetClamp(offset.x, offset.y, nextZoom, next));
+    },
+    [natural.w, natural.h, zoom, offset.x, offset.y, ratio, applyOffsetClamp]
   );
 
   const onPointerUp = useCallback(() => {
     dragRef.current = null;
+  }, []);
+
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      const [a, b] = [e.touches[0], e.touches[1]];
+      const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      pinchRef.current = { dist, zoom };
+    },
+    [zoom]
+  );
+
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length !== 2 || !pinchRef.current || !natural.w) return;
+      e.preventDefault();
+      const [a, b] = [e.touches[0], e.touches[1]];
+      const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      const factor = dist / Math.max(pinchRef.current.dist, 1);
+      const nextZoom = Math.min(maxZoom, Math.max(minZoom, pinchRef.current.zoom * factor));
+      setZoom(nextZoom);
+      setOffset(applyOffsetClamp(offset.x, offset.y, nextZoom, frameRef.current));
+    },
+    [natural.w, maxZoom, minZoom, offset.x, offset.y, applyOffsetClamp]
+  );
+
+  const onTouchEnd = useCallback(() => {
+    pinchRef.current = null;
   }, []);
 
   async function applyTransform(fn: (src: string) => Promise<string>) {
@@ -141,8 +334,8 @@ export function ImageCropDialog({
       const next = await fn(workingSrc);
       ownedUrls.current.push(next);
       setWorkingSrc(next);
-      setZoom(1);
       setOffset({ x: 0, y: 0 });
+      setFrame(centeredFrame(aspect));
     } finally {
       setTransforming(false);
     }
@@ -153,7 +346,7 @@ export function ImageCropDialog({
     setApplying(true);
     try {
       const blob = await imageToBlob(workingSrc);
-      await onConfirm(blob, fileName.includes(".") ? fileName : `image-${Date.now()}.jpg`);
+      await onConfirm(blob, `image-${Date.now()}.${extensionForBlob(blob)}`);
       ownedUrls.current.forEach((u) => URL.revokeObjectURL(u));
       onClose();
     } finally {
@@ -174,11 +367,12 @@ export function ImageCropDialog({
         frame.height,
         zoom,
         offset.x,
-        offset.y
+        offset.y,
+        frame.x,
+        frame.y
       );
       const blob = await cropImageToBlob(workingSrc, crop, { shape });
-      const ext = shape !== "rect" ? "png" : fileName.includes(".") ? fileName.split(".").pop() : "jpg";
-      await onConfirm(blob, `cropped-${Date.now()}.${ext === "png" ? "png" : "jpg"}`);
+      await onConfirm(blob, `cropped-${Date.now()}.${extensionForBlob(blob)}`);
       ownedUrls.current.forEach((u) => URL.revokeObjectURL(u));
       onClose();
     } finally {
@@ -211,7 +405,8 @@ export function ImageCropDialog({
           <div className="min-w-0 pr-2">
             <p className="font-semibold text-slate-900">Crop & frame</p>
             <p className="text-xs text-slate-500 flex items-center gap-1">
-              <Move className="h-3 w-3 shrink-0" /> Drag to reposition · pinch or zoom slider · pick any area
+              <Move className="h-3 w-3 shrink-0" />
+              Drag the frame · resize corners · pan the image · pinch to zoom
             </p>
           </div>
           <button
@@ -230,7 +425,7 @@ export function ImageCropDialog({
               <button
                 key={a.id}
                 type="button"
-                onClick={() => setAspect(a.id)}
+                onClick={() => resetFrameForAspect(a.id)}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors touch-manipulation",
                   aspect === a.id
@@ -246,10 +441,13 @@ export function ImageCropDialog({
           <div
             className="relative mx-auto bg-slate-900 rounded-xl overflow-hidden select-none touch-none"
             style={{ width: CONTAINER_W, height: CONTAINER_H, maxWidth: "100%" }}
-            onPointerDown={onPointerDown}
+            onPointerDown={(e) => onPointerDown(e, "pan")}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerLeave={onPointerUp}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -264,17 +462,28 @@ export function ImageCropDialog({
                 top: (CONTAINER_H - renderedH) / 2 + offset.y,
               }}
             />
-            <div className="absolute inset-0 pointer-events-none">
-              <div
-                className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"
-                style={{
-                  width: frame.width,
-                  height: frame.height,
-                  left: (CONTAINER_W - frame.width) / 2,
-                  top: (CONTAINER_H - frame.height) / 2,
-                  borderRadius: frameRadius,
-                }}
-              />
+            <div
+              className="absolute border-2 border-white pointer-events-auto shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"
+              style={{
+                left: frame.x,
+                top: frame.y,
+                width: frame.width,
+                height: frame.height,
+                borderRadius: frameRadius,
+              }}
+              onPointerDown={(e) => onPointerDown(e, "move")}
+            >
+              {HANDLES.map((h) => (
+                <span
+                  key={h.id}
+                  role="presentation"
+                  className={cn(
+                    "absolute z-10 h-3.5 w-3.5 rounded-full border-2 border-white bg-brand-600 shadow touch-manipulation",
+                    h.className
+                  )}
+                  onPointerDown={(e) => onPointerDown(e, h.id)}
+                />
+              ))}
             </div>
           </div>
 
@@ -309,26 +518,14 @@ export function ImageCropDialog({
             </Label>
             <input
               type="range"
-              min={0.25}
+              min={minZoom}
               max={maxZoom}
               step={0.02}
-              value={zoom}
+              value={Math.max(zoom, minZoom)}
               onChange={(e) => {
                 const nextZoom = parseFloat(e.target.value);
                 setZoom(nextZoom);
-                setOffset((prev) =>
-                  clampCropOffset(
-                    prev.x,
-                    prev.y,
-                    natural.w,
-                    natural.h,
-                    CONTAINER_W,
-                    CONTAINER_H,
-                    frame.width,
-                    frame.height,
-                    nextZoom
-                  )
-                );
+                setOffset(applyOffsetClamp(offset.x, offset.y, nextZoom, frame));
               }}
               className="w-full accent-brand-600"
             />
@@ -347,18 +544,18 @@ export function ImageCropDialog({
             Use full image (no crop)
           </Button>
           <div className="flex gap-2">
-          <Button type="button" variant="outline" className="flex-1 min-h-[44px]" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="flex-1 gap-2 min-h-[44px]"
-            disabled={applying || transforming || !natural.w}
-            onClick={() => void handleApply()}
-          >
-            <Check className="h-4 w-4" />
-            {applying ? "Saving…" : "Use this crop"}
-          </Button>
+            <Button type="button" variant="outline" className="flex-1 min-h-[44px]" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="flex-1 gap-2 min-h-[44px]"
+              disabled={applying || transforming || !natural.w}
+              onClick={() => void handleApply()}
+            >
+              <Check className="h-4 w-4" />
+              {applying ? "Saving…" : "Use this crop"}
+            </Button>
           </div>
         </div>
       </div>

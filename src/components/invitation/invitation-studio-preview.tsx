@@ -25,6 +25,8 @@ interface InvitationStudioPreviewProps {
   invitationName: string;
   musicSelection?: MusicSelection | null;
   galleryUrls?: string[] | null;
+  /** Catalog SKU — ensures Wave 1 templates get unique audio */
+  catalogSlug?: string | null;
 }
 
 export function InvitationStudioPreview({
@@ -34,6 +36,7 @@ export function InvitationStudioPreview({
   invitationName,
   musicSelection: musicOverride,
   galleryUrls,
+  catalogSlug,
 }: InvitationStudioPreviewProps) {
   const [activated, setActivated] = useState(false);
   const enrichedDesign = useMemo(() => enrichDesignWithExperienceDNA(design), [design]);
@@ -45,6 +48,7 @@ export function InvitationStudioPreview({
     musicAutoplay: true,
     skipIntro: true,
     skipTapGate: true,
+    catalogSlug: catalogSlug ?? layoutSlug,
   });
 
   const resolvedGallery = useMemo(
@@ -73,9 +77,9 @@ export function InvitationStudioPreview({
   const musicSelection = useMemo(
     () =>
       musicOverride ??
-      resolveInvitationMusic({ design: enrichedDesign }).musicSelection ??
+      resolveInvitationMusic({ design: enrichedDesign, catalogSlug }).musicSelection ??
       fallback.musicSelection,
-    [musicOverride, enrichedDesign, fallback.musicSelection]
+    [musicOverride, enrichedDesign, catalogSlug, fallback.musicSelection]
   );
 
   const backgrounds = useMemo(
@@ -93,6 +97,7 @@ export function InvitationStudioPreview({
       >
         <TemplatePreviewGlimpse
           layoutSlug={layoutSlug}
+          catalogSlug={catalogSlug ?? layoutSlug}
           category={theme}
           scale={0.42}
         />

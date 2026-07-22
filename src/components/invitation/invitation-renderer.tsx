@@ -10,8 +10,10 @@ import { CustomMediaTemplate } from "./templates/custom-media";
 import { PassportLuxeTemplate } from "./templates/passport-luxe";
 import { GlassAcrylicTemplate } from "./templates/glass-acrylic";
 import { FloralGardenTemplate } from "./templates/floral-garden";
+import { TraditionalMarriageCeremonyTemplate } from "./templates/traditional-marriage-ceremony";
 import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
 import { InvitationMediaProvider } from "./invitation-media-context";
+import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 
 export type InvitationRendererProps = InvitationRenderProps & {
   interactiveMedia?: boolean;
@@ -22,6 +24,8 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
     <CinematicTemplate {...props} />
   ) : (() => {
     switch (props.design.layout) {
+      case "traditional-marriage-ceremony":
+        return <TraditionalMarriageCeremonyTemplate {...props} />;
       case "passport-luxe":
         return <PassportLuxeTemplate {...props} />;
       case "glass-acrylic":
@@ -47,6 +51,11 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
   return (
     <div className="invitation-copy-root">
       <InvitationMediaProvider interactive={interactiveMedia}>{content}</InvitationMediaProvider>
+      {props.admissionManualCode && (
+        <div className="px-4 pb-6 -mt-2">
+          <ManualGateCodeReveal code={props.admissionManualCode} variant="invite" />
+        </div>
+      )}
     </div>
   );
 }

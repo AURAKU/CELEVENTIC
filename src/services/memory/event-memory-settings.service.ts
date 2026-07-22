@@ -20,7 +20,8 @@ const DEFAULTS = {
   maxVideosPerGuest: 2,
   maxImageSizeMb: 50,
   maxVideoSizeMb: 200,
-  approvalRequired: true,
+  /** Live guest albums: uploads appear for all guests unless host turns approval on */
+  approvalRequired: false,
   guestOnlyMode: false,
   allowAnonymousUploads: true,
   allowDownloads: true,

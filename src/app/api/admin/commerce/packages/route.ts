@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession, isAdminRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET() {
   const session = await getSession();
@@ -59,6 +60,14 @@ export async function PATCH(req: Request) {
         data: { amountGhs: priceGhs },
       });
     }
+
+    await createAuditLog({
+      userId: session.user.id,
+      action: "UPDATE",
+      entity: "InvitationProductPackage",
+      entityId: id,
+      details: { operation: "COMMERCE_PACKAGE_UPDATE", ...body },
+    });
 
     return NextResponse.json({ success: true, data: pkg });
   } catch (error) {

@@ -150,6 +150,18 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     ],
     video: "https://assets.mixkit.co/videos/preview/mixkit-african-pattern-fabric-texture-43844-large.mp4",
   },
+  "traditional-marriage-ceremony": {
+    hero: "/templates/traditional-marriage-ceremony.png",
+    background: "/templates/traditional-marriage-ceremony.png",
+    gallery: [
+      "/templates/traditional-marriage-ceremony.png",
+      u("1519741497674-611481863552"),
+      u("1465496636074-5fa5b4d39ca0"),
+      u("1522673607200-164d1b6ce486"),
+      u("1519225421980-715cb0215aed"),
+    ],
+    video: "https://assets.mixkit.co/videos/preview/mixkit-pink-flowers-blowing-in-the-wind-4494-large.mp4",
+  },
   "floral-garden-romance": {
     hero: u("1465142134349-bc99b30851d7", 900),
     background: uBg("1522673607200-164d1b6ce486"),

@@ -136,6 +136,49 @@ async function main() {
     console.log(`  [${r.ok ? "OK" : "FAIL"}] ${path} → ${r.status}${!r.ok && r.hint ? ` (${r.hint.replace(/\s+/g, " ")})` : ""}`);
   }
 
+  console.log("\n--- Invitation Studio / preview create flow ---");
+  try {
+    const ordersRes = await fetch(`${BASE}/api/invitation-orders?limit=5`, {
+      headers: { Cookie: org.cookies },
+    });
+    const ordersJson = await ordersRes.json();
+    const items =
+      ordersJson?.data?.items ??
+      ordersJson?.data?.orders ??
+      ordersJson?.data ??
+      [];
+    const list = Array.isArray(items) ? items : [];
+    const unlocked = new Set([
+      "PAID",
+      "IN_PRODUCTION",
+      "APPROVED",
+      "PUBLISHED",
+      "REVISION_REQUESTED",
+    ]);
+    const order =
+      list.find((o) => unlocked.has(o.status)) ??
+      list[0] ??
+      null;
+
+    if (!order?.id) {
+      console.log("  [SKIP] No invitation orders for organizer — studio/preview smoke skipped");
+    } else {
+      const studioPath = `/invitations/create/${order.id}/studio`;
+      const previewPath = `/invitations/create/${order.id}/preview`;
+      for (const path of [studioPath, previewPath]) {
+        const r = await check(path, org.cookies, "studio");
+        // Studio may gate unpaid drafts with 200 (gate UI) or redirect; treat <400 as pass
+        if (!r.ok) failed++;
+        console.log(
+          `  [${r.ok ? "OK" : "FAIL"}] ${path} → ${r.status}${!r.ok && r.hint ? ` (${r.hint.replace(/\s+/g, " ")})` : ""}`
+        );
+      }
+    }
+  } catch (e) {
+    failed++;
+    console.log(`  [FAIL] studio/preview smoke: ${e.message}`);
+  }
+
   console.log("\n--- Admin pages (logged in) ---");
   const admin = await login("admin@celeventic.com", "Admin@123");
   if (!admin.session?.user?.id) {

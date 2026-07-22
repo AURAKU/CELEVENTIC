@@ -26,7 +26,7 @@ export function GlassReveal({ guestName, eventTitle, onComplete }: GlassRevealPr
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0a1628] flex flex-col items-center justify-center p-6">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb bg-[#0a1628] flex flex-col items-center justify-center p-6">
       <div className="text-center mb-8 space-y-2">
         {guestName && <p className="text-white/50 text-xs tracking-widest uppercase">For {guestName}</p>}
         <h2 className="font-display text-2xl text-white/90">{eventTitle}</h2>

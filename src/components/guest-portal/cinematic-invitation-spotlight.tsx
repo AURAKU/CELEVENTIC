@@ -8,6 +8,7 @@ import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-r
 import { CountdownDisplay } from "@/components/experience/countdown-display";
 import { InvitationGalleryDisplay } from "@/components/invitation/invitation-gallery-display";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
+import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
 import { SaveDateCalendarCard } from "@/components/guest-portal/save-date-calendar-card";
 import { CalendarActionsMenu } from "@/components/guest-portal/calendar-actions-menu";
@@ -16,7 +17,10 @@ import { GiftQrBox } from "@/components/guest-portal/gift-qr-box";
 import { ParticleEnvironment } from "@/components/experience/particle-environment";
 import { useLocale } from "@/components/i18n/locale-provider";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
-import type { EventExperienceConfig } from "@/lib/experience/experience-types";
+import type { EventExperienceConfig, HubTabId } from "@/lib/experience/experience-types";
+import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
+import { enabledTabsFromScenes } from "@/lib/invitation-studio/studio-scenes";
+import { layerZIndexMap } from "@/lib/invitation-studio/studio-layers";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
 import { cn } from "@/lib/utils";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
@@ -36,6 +40,7 @@ interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps
   rsvpRequired?: boolean;
   admissionQrDataUrl?: string | null;
   admissionQrToken?: string | null;
+  admissionManualCode?: string | null;
   guestQrToken?: string | null;
   seatLookupUrl?: string | null;
   seatQrDataUrl?: string | null;
@@ -92,7 +97,20 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
   );
   const slideMs = getSlideDurationForLayout(props.design.layout ?? "classic-gold") ?? DEFAULT_SLIDE_MS;
   const buttonStyle = props.design.studio?.buttonStyle;
-  const showRsvp = props.rsvpRequired !== false;
+  const hubTabs = useMemo((): HubTabId[] => {
+    const exp = props.experienceConfig;
+    if (exp?.scenes?.length) return enabledTabsFromScenes(exp.scenes);
+    return exp?.enabledTabs ?? DEFAULT_HUB_TABS;
+  }, [props.experienceConfig]);
+  const showRsvp = props.rsvpRequired !== false && hubTabs.includes("rsvp");
+  const hiddenLayers = useMemo(
+    () => new Set(props.experienceConfig?.hiddenLayers ?? []),
+    [props.experienceConfig?.hiddenLayers]
+  );
+  const layerZ = useMemo(
+    () => layerZIndexMap(props.experienceConfig?.layerOrder),
+    [props.experienceConfig?.layerOrder]
+  );
 
   const galleryItems = useMemo(
     () =>
@@ -160,6 +178,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       });
     }
 
+    if (hubTabs.includes("countdown") && !hiddenLayers.has("countdown")) {
     list.push({
       id: "countdown",
       durationMs: slideMs,
@@ -174,6 +193,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
         </div>
       ),
     });
+    }
 
     if (props.event.startDateRaw) {
       list.push({
@@ -196,7 +216,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       });
     }
 
-    if (displayEvent.description) {
+    if (hubTabs.includes("story") && displayEvent.description) {
       list.push({
         id: "story",
         durationMs: slideMs + 2000,
@@ -213,7 +233,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       });
     }
 
-    if (displayEvent.venueName || displayEvent.landmark) {
+    if (hubTabs.includes("venue") && (displayEvent.venueName || displayEvent.landmark)) {
       list.push({
         id: "venue",
         durationMs: slideMs + 2000,
@@ -243,7 +263,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       });
     }
 
-    if (galleryItems.length > 0) {
+    if (hubTabs.includes("gallery") && galleryItems.length > 0) {
       list.push({
         id: "gallery",
         durationMs: slideMs + 4000,
@@ -265,12 +285,21 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       durationMs: slideMs,
       content: (
         <div className="max-w-md mx-auto px-6 w-full">
-          <GuestWishesCard accentColor={accent} memoryVaultEnabled={props.memoryVaultEnabled} variant="dark" />
+          <GuestWishesCard
+            eventId={props.eventId}
+            invitationId={props.invitation.id}
+            guestId={props.guestId}
+            guestName={props.guestName}
+            inviteLink={props.invitation.uniqueLink}
+            accentColor={accent}
+            memoryVaultEnabled={props.memoryVaultEnabled}
+            variant="dark"
+          />
         </div>
       ),
     });
 
-    if (props.qrDataUrl) {
+    if (hubTabs.includes("gifts") && props.qrDataUrl) {
       list.push({
         id: "gifts",
         durationMs: slideMs,
@@ -316,16 +345,21 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
               Your Pass
             </p>
             {props.admissionQrDataUrl && (
-              <BrandedQrImage
-                src={props.admissionQrDataUrl}
-                token={props.admissionQrToken ?? undefined}
-                size={240}
-                mode="pass"
-                allowFullscreen
-                guestName={props.guestName ?? undefined}
-                caption="Show at the gate"
-                showDownload
-              />
+              <>
+                <BrandedQrImage
+                  src={props.admissionQrDataUrl}
+                  token={props.admissionQrToken ?? undefined}
+                  size={240}
+                  mode="pass"
+                  allowFullscreen
+                  guestName={props.guestName ?? undefined}
+                  caption="Show at the gate"
+                  showDownload
+                />
+                {props.admissionManualCode && (
+                  <ManualGateCodeReveal code={props.admissionManualCode} variant="dark" />
+                )}
+              </>
             )}
             {props.seatQrDataUrl && props.seatLookupUrl && (
               <>
@@ -336,7 +370,12 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
               </>
             )}
             {props.qrDataUrl && !props.admissionQrDataUrl && (
-              <BrandedQrImage src={props.qrDataUrl} token={props.guestQrToken ?? undefined} size={160} showDownload={false} />
+              <>
+                <BrandedQrImage src={props.qrDataUrl} token={props.guestQrToken ?? undefined} size={160} showDownload={false} />
+                {props.admissionManualCode && (
+                  <ManualGateCodeReveal code={props.admissionManualCode} variant="dark" />
+                )}
+              </>
             )}
           </div>
         ),
@@ -395,6 +434,8 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     locale,
     t,
     handleShare,
+    hubTabs,
+    hiddenLayers,
   ]);
 
   const total = scenes.length;
@@ -430,14 +471,18 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           : {}),
       }}
     >
-      <ParticleEnvironment presetId={environmentId} intensity="medium" />
+      {!hiddenLayers.has("environment") && (
+        <div className="pointer-events-none absolute inset-0" style={{ zIndex: layerZ.environment }}>
+          <ParticleEnvironment presetId={environmentId} intensity="medium" />
+        </div>
+      )}
       <OutroExperienceOverlay
         outroId={outroId}
         message={props.experienceConfig?.thankYouMessage}
         accentColor={secondary}
       />
 
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0" style={{ zIndex: layerZ.background }}>
         {props.backgroundVideoUrl ? (
           <UploadedMedia
             src={props.backgroundVideoUrl}
@@ -487,8 +532,14 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
         </div>
 
         <div className="px-4 pb-5 pt-1 space-y-3">
-          {props.portalActions && props.portalActions.length > 0 && props.onPortalAction && (
-            <div className="rounded-2xl border border-white/15 bg-black/25 backdrop-blur-md px-3 py-2.5">
+          {props.portalActions &&
+            props.portalActions.length > 0 &&
+            props.onPortalAction &&
+            !hiddenLayers.has("actions") && (
+            <div
+              className="rounded-2xl border border-white/15 bg-black/25 backdrop-blur-md px-3 py-2.5"
+              style={{ position: "relative", zIndex: layerZ.actions }}
+            >
               <GuestPortalQuickActions
                 actions={props.portalActions.slice(0, 6)}
                 variant="dark-chips"

@@ -31,6 +31,12 @@ import { AGI_COPY, AGI_ENGINE } from "@/lib/agi-engine/branding";
 import { OUTPUT_TYPE_OPTIONS, PLATFORM_LABELS } from "@/lib/inspiration/inspiration-constants";
 import { extractImagePalette } from "@/lib/extract-image-palette";
 import { uploadFormDataWithProgress } from "@/lib/media/upload-with-progress";
+import { CROP_PRESETS } from "@/lib/image/crop-utils";
+import {
+  smartCompressImage,
+  extensionForBlob,
+  INSPIRATION_IMAGE_COMPRESSION,
+} from "@/lib/image/smart-compress";
 import type { InspirationEngineStatus, InspirationOutputType, InspirationPlatform } from "@prisma/client";
 
 interface HistoryItem {
@@ -153,10 +159,15 @@ export function InspirationEngineClient() {
     try {
       if (kind === "image") {
         try {
-          const palette = await extractImagePalette(URL.createObjectURL(file));
-          form.set("colors", JSON.stringify(palette.colors));
-          form.set("brightness", String(palette.brightness));
-          form.set("aspectRatio", String(palette.aspectRatio));
+          const preview = URL.createObjectURL(file);
+          try {
+            const palette = await extractImagePalette(preview);
+            form.set("colors", JSON.stringify(palette.colors));
+            form.set("brightness", String(palette.brightness));
+            form.set("aspectRatio", String(palette.aspectRatio));
+          } finally {
+            URL.revokeObjectURL(preview);
+          }
         } catch { /* palette optional */ }
       }
 
@@ -168,11 +179,30 @@ export function InspirationEngineClient() {
       if (kind === "audio") setAudioPreviewUrl(d.data.media?.[0]?.url ?? d.data.sourceUrl ?? null);
       void loadHistory(1);
       setPage(1);
+      return d.data;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
+      throw err;
     } finally {
       setUploadingMedia(null);
     }
+  }
+
+  async function uploadCroppedInspiration(blob: Blob, name: string) {
+    if (!consent) {
+      const message = t("inspiration.consent_required");
+      setError(message);
+      throw new Error(message);
+    }
+    const compressed = await smartCompressImage(blob, INSPIRATION_IMAGE_COMPRESSION);
+    const finalName = name.replace(/\.[^.]+$/, "") + "." + extensionForBlob(compressed.blob);
+    const file = new File([compressed.blob], finalName, {
+      type: compressed.blob.type || "image/jpeg",
+    });
+    const source = await uploadMedia(file, "image");
+    const url = source?.media?.[0]?.url ?? source?.sourceUrl ?? "";
+    if (!url) throw new Error("Upload succeeded but no media URL was returned");
+    return { url, name: finalName };
   }
 
   async function generateTemplate() {
@@ -276,13 +306,16 @@ export function InspirationEngineClient() {
           <ImageUploadCropper
               buttonLabel={t("inspiration.upload_image")}
               hint={t("inspiration.upload_image_hint")}
-              defaultAspect="3:4"
+              defaultAspect="free"
+              allowedAspects={CROP_PRESETS.inspiration}
               disabled={!consent || uploadingMedia !== null}
-              onUploaded={async (r) => {
-                const blob = await fetch(r.url).then((res) => res.blob());
-                const file = new File([blob], r.name, { type: blob.type || "image/jpeg" });
-                await uploadMedia(file, "image");
+              maxFileBytes={Infinity}
+              dropzoneNote="or drag & drop · JPEG, PNG, WebP · any size · auto-optimised"
+              onCustomUpload={uploadCroppedInspiration}
+              onUploaded={() => {
+                /* active source + history updated inside uploadMedia */
               }}
+              onError={setError}
             />
             <div className="flex flex-wrap gap-2">
               <Button

@@ -39,7 +39,9 @@ export function BlockEditor({ orderId, blocks, available, context, onChange }: B
 
   const sorted = [...blocks].sort((a, b) => a.sortOrder - b.sortOrder);
   const existingTypes = new Set(blocks.map((b) => b.blockType));
-  const addable = available.filter((a) => !existingTypes.has(a.blockType));
+  const addable = available.filter(
+    (a) => a.blockType === "CUSTOM" || !existingTypes.has(a.blockType)
+  );
 
   function startEdit(block: InvitationBlockDto) {
     const fr = block.contents?.find((c) => c.language === "fr");
@@ -179,11 +181,11 @@ export function BlockEditor({ orderId, blocks, available, context, onChange }: B
                 <div><Label>Subtitle</Label><Input value={editForm.subtitle} onChange={(e) => setEditForm({ ...editForm, subtitle: e.target.value })} /></div>
                 <div><Label>Content</Label><Textarea rows={3} value={editForm.body} onChange={(e) => setEditForm({ ...editForm, body: e.target.value })} /></div>
                 <div><Label>Content (FR)</Label><Textarea rows={2} value={editForm.frContent} onChange={(e) => setEditForm({ ...editForm, frContent: e.target.value })} /></div>
-                {(block.blockType === "GALLERY" || block.blockType === "MEMORIAL_GALLERY") && (
+                {(block.blockType === "GALLERY" || block.blockType === "MEMORIAL_GALLERY" || block.blockType === "CUSTOM") && (
                   <GalleryUploadPanel
                     urls={editForm.galleryUrls}
                     onChange={(galleryUrls) => setEditForm({ ...editForm, galleryUrls })}
-                    maxImages={24}
+                    maxImages={block.blockType === "CUSTOM" ? 8 : 24}
                   />
                 )}
                 <div>

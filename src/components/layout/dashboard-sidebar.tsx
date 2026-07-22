@@ -116,7 +116,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
     >
       <div className="shrink-0 p-4 sm:p-5 pt-[max(1rem,env(safe-area-inset-top))] border-b border-white/10 flex items-center justify-between gap-2">
         <Link href="/dashboard" onClick={onClose} className="min-w-0 flex items-center gap-2">
-          <Logo variant="light" size="xs" />
+          <Logo variant="light" size="xs" decorative />
           <span className="font-display font-bold text-white text-base leading-none hidden sm:inline">Celeventic</span>
         </Link>
         <button
@@ -130,13 +130,13 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
       </div>
 
       <div className="shrink-0 px-4 pt-3 pb-2 space-y-2">
-        <Link href="/dashboard/events/create" onClick={onClose}>
-          <Button
-            className="w-full min-h-[44px] bg-gradient-to-r from-[#D4A63A] to-[#C4952E] hover:from-[#E0B44A] hover:to-[#D4A63A] text-slate-900 font-semibold shadow-md border-0 touch-manipulation"
+        <Link href="/dashboard/events/create" onClick={onClose} className="block">
+          <span
+            className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#D4A63A] to-[#C4952E] hover:from-[#E0B44A] hover:to-[#D4A63A] text-slate-900 font-semibold shadow-md border-0 touch-manipulation px-4 text-sm"
           >
-            <Plus className="h-4 w-4 mr-1.5" />
+            <Plus className="h-4 w-4" />
             {t("dashboard.create_event")}
-          </Button>
+          </span>
         </Link>
 
         <div className="flex gap-2 lg:hidden">

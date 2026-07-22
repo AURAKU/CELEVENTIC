@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
@@ -26,11 +27,17 @@ const FEATURE_ICONS: Record<string, string> = {
 export function TemplateCard({ template, showActions = true }: TemplateCardProps) {
   const signatureFeatures =
     getLayoutSignatureFeatures(template.layoutSlug) ?? template.features;
+  // Studio 2.0 paged templates open the real viewer in preview mode.
+  const isPaged = Boolean(template.themeId && template.blueprintId);
+  const detailHref = isPaged
+    ? `/invitations/preview/${template.slug}`
+    : `/invitations/templates/${template.slug}`;
 
   return (
     <div className="group inv-3d-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-[0_16px_48px_rgba(11,138,131,0.12)] transition-all">
       <LiveTemplatePreview
         layoutSlug={template.layoutSlug}
+        catalogSlug={template.slug}
         category={template.category}
         features={signatureFeatures}
         variant="card"
@@ -40,8 +47,16 @@ export function TemplateCard({ template, showActions = true }: TemplateCardProps
           {template.isNew && (
             <Badge className="bg-emerald-500 text-white shadow-sm">New</Badge>
           )}
-          {template.isPremium && (
+          {template.tier === "free" && (
+            <Badge className="bg-slate-100 text-slate-700 border border-slate-200">Free</Badge>
+          )}
+          {(template.isPremium || template.tier === "premium") && (
             <Badge className="bg-[#D4A63A] text-[#0F172A]">Premium</Badge>
+          )}
+          {template.hasParallax && (
+            <Badge className="bg-[#0B8A83] text-white" title="Includes parallax motion">
+              <Sparkles className="h-3 w-3" aria-hidden />
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -72,10 +87,10 @@ export function TemplateCard({ template, showActions = true }: TemplateCardProps
         {showActions && (
           <div className="mt-4 flex gap-2">
             <Button variant="outline" size="sm" className="flex-1" asChild>
-              <Link href={`/invitations/templates/${template.slug}`}>Preview</Link>
+              <Link href={detailHref}>Preview</Link>
             </Button>
             <Button size="sm" className="flex-1 bg-[#0B8A83] hover:bg-[#097068]" asChild>
-              <Link href={`/invitations/templates/${template.slug}`}>Select</Link>
+              <Link href={detailHref}>Select</Link>
             </Button>
           </div>
         )}

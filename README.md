@@ -20,7 +20,7 @@ Celeventic = Celebrate + Event + Ticket
 | **Queue** | Background jobs table + Laravel Redis queues |
 | **Auth** | NextAuth.js + 2FA (TOTP) + Google OAuth |
 | **Payments** | Paystack, Flutterwave, Hubtel adapters |
-| **Storage** | Cloudinary / S3-ready |
+| **Storage** | AWS S3 + CloudFront (local disk fallback in dev) |
 | **Realtime** | Pusher-ready |
 | **Monitoring** | Sentry + PostHog ready |
 

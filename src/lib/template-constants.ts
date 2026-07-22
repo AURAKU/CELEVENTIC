@@ -26,9 +26,11 @@ export const THEME_PRESETS = [
 
 export const EVENT_TYPE_TO_CATEGORY: Record<string, string> = {
   WEDDING: "Wedding",
+  ENGAGEMENT: "Engagement",
   FUNERAL: "Funeral",
   BIRTHDAY: "Birthday",
   CORPORATE: "Corporate",
+  CORPORATE_EVENT: "Corporate",
   CHURCH: "Church",
   CONCERT: "Concert",
   FESTIVAL: "Festival",

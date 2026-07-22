@@ -4,6 +4,8 @@ import { getBlueprint } from "@/lib/blueprints/registry";
 import type { FeatureEntitlementResult } from "@/lib/blueprints/types";
 import { resolveEventAccess } from "@/lib/workspace/event-access";
 import { EventPermissionKey } from "@/lib/workspace/permission-keys";
+import { normalizePackageFeatureKeys } from "@/lib/packages/feature-catalog";
+import { hasFullPackageAccess } from "@/lib/access/package-access";
 
 export type EntitlementInput = {
   userId: string;
@@ -28,17 +30,6 @@ const FEATURE_TO_PERMISSION: Partial<Record<string, string>> = {
   TIMELINE: EventPermissionKey.EDIT_TIMELINE,
 };
 
-function parsePackageFeatures(features: unknown): string[] {
-  if (!features) return [];
-  if (Array.isArray(features)) return features.filter((f) => typeof f === "string");
-  if (typeof features === "object" && features !== null) {
-    return Object.entries(features as Record<string, boolean>)
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-  }
-  return [];
-}
-
 function inferPlanTier(packageName?: string | null): "starter" | "premium" | "elite" | "free" {
   if (!packageName) return "free";
   const n = packageName.toLowerCase();
@@ -61,7 +52,7 @@ export class EntitlementService {
     const event = await prisma.event.findUnique({
       where: { id: input.eventId },
       include: {
-        package: true,
+        package: { include: { packageFeatures: true } },
         enabledFeatures: true,
         addons: true,
         workspace: true,
@@ -74,6 +65,13 @@ export class EntitlementService {
 
     if (blueprint.hiddenModules.includes(input.featureKey as never)) {
       return { allowed: false, locked: true, reason: "Not available for this event type" };
+    }
+
+    // Platform admins: every package feature unlocked (still requires event access).
+    if (hasFullPackageAccess(input.role)) {
+      const ctx = await resolveEventAccess(input.eventId, input.userId, input.role!);
+      if (!ctx) return { allowed: false, locked: true, reason: "No event access" };
+      return { allowed: true, locked: false };
     }
 
     if (input.featureKey === "OVERVIEW" || input.featureKey === "SETTINGS") {
@@ -101,10 +99,20 @@ export class EntitlementService {
 
     if (featureRow) {
       if (!featureRow.isEnabled) {
-        return { allowed: false, locked: featureRow.isLocked, requiredPlan: featureRow.requiredPlan ?? undefined, reason: "Feature disabled" };
+        return {
+          allowed: false,
+          locked: featureRow.isLocked,
+          requiredPlan: featureRow.requiredPlan ?? undefined,
+          reason: "Feature disabled",
+        };
       }
       if (featureRow.isLocked) {
-        return { allowed: false, locked: true, requiredPlan: featureRow.requiredPlan ?? undefined, reason: "Upgrade required" };
+        return {
+          allowed: false,
+          locked: true,
+          requiredPlan: featureRow.requiredPlan ?? undefined,
+          reason: "Upgrade required",
+        };
       }
       return { allowed: true, locked: false };
     }
@@ -117,7 +125,14 @@ export class EntitlementService {
       return { allowed: true, locked: false };
     }
 
-    const pkgFeatures = parsePackageFeatures(event.package?.features);
+    const rowIncluded = event.package?.packageFeatures?.some(
+      (f) => f.featureKey === input.featureKey && f.isIncluded
+    );
+    if (rowIncluded) {
+      return { allowed: true, locked: false };
+    }
+
+    const pkgFeatures = normalizePackageFeatureKeys(event.package?.features);
     if (pkgFeatures.includes(input.featureKey)) {
       return { allowed: true, locked: false };
     }
@@ -156,16 +171,33 @@ export class EntitlementService {
   resolveFeatureStates(
     eventType: EventType,
     packageName?: string | null,
-    dbFeatures?: { featureKey: string; isEnabled: boolean; isLocked: boolean; requiredPlan?: string | null }[]
+    dbFeatures?: {
+      featureKey: string;
+      isEnabled: boolean;
+      isLocked: boolean;
+      requiredPlan?: string | null;
+    }[],
+    options?: { unlockAll?: boolean }
   ) {
     const blueprint = getBlueprint(eventType);
-    const tier = inferPlanTier(packageName);
-    const allRelevant = [
-      ...blueprint.defaultModules,
-      ...blueprint.optionalModules,
-    ];
+    const allRelevant = [...blueprint.defaultModules, ...blueprint.optionalModules];
 
-    const states: { featureKey: string; isEnabled: boolean; isLocked: boolean; requiredPlan?: string }[] = [];
+    if (options?.unlockAll) {
+      return allRelevant.map((featureKey) => ({
+        featureKey,
+        isEnabled: true,
+        isLocked: false,
+        requiredPlan: undefined as string | undefined,
+      }));
+    }
+
+    const tier = inferPlanTier(packageName);
+    const states: {
+      featureKey: string;
+      isEnabled: boolean;
+      isLocked: boolean;
+      requiredPlan?: string;
+    }[] = [];
 
     for (const key of allRelevant) {
       const db = dbFeatures?.find((f) => f.featureKey === key);

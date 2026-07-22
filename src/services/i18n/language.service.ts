@@ -10,15 +10,28 @@ const MVP_LANGUAGES = [
   { code: "ha", name: "Hausa", enabled: false, isDefault: false },
 ];
 
+let languagesSeedPromise: Promise<void> | null = null;
+
 export class LanguageService {
   async ensureLanguagesSeeded() {
-    for (const lang of MVP_LANGUAGES) {
-      await prisma.language.upsert({
-        where: { code: lang.code },
-        update: { name: lang.name, enabled: lang.enabled, isDefault: lang.isDefault },
-        create: lang,
+    if (!languagesSeedPromise) {
+      languagesSeedPromise = (async () => {
+        const existing = await prisma.language.count();
+        if (existing >= MVP_LANGUAGES.length) return;
+
+        for (const lang of MVP_LANGUAGES) {
+          await prisma.language.upsert({
+            where: { code: lang.code },
+            update: { name: lang.name, enabled: lang.enabled, isDefault: lang.isDefault },
+            create: lang,
+          });
+        }
+      })().catch((err) => {
+        languagesSeedPromise = null;
+        throw err;
       });
     }
+    await languagesSeedPromise;
   }
 
   async getEnabledLanguages() {

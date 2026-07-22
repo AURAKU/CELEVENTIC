@@ -2,6 +2,12 @@ import type { InvitationDesignConfig, InvitationLayoutSlug, MediaType } from "@/
 import { CINEMATIC_THEMES, CINEMATIC_LAYOUT_SLUGS } from "@/lib/invitation/cinematic-themes";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import { CATALOG_TEMPLATES, getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
+import { getInvitationTheme } from "@/lib/invitation-theme/theme-registry";
+import { applyThemeToDesign } from "@/lib/invitation-theme/theme-compat";
+import {
+  getCreativeExperienceOverrides,
+  getCreativeButtonFamily,
+} from "@/lib/invitation/template-creative-registry";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -155,6 +161,74 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       studio: { revealMode: "scratch", buttonStyle: "pill", fullScreen: true },
     },
   },
+  {
+    slug: "traditional-marriage-ceremony",
+    name: "Traditional Marriage Ceremony",
+    description: "Peach floral vision-board invite with live QR, RSVP, seating, and ceremony music",
+    category: "wedding",
+    preview: { gradient: "from-rose-100 via-orange-50 to-amber-100", accent: "#8B6914" },
+    config: {
+      layout: "traditional-marriage-ceremony",
+      colors: {
+        primary: "#5C3D2E",
+        secondary: "#8B6914",
+        accent: "#C4A484",
+        background: "#FDF1EC",
+        text: "#1a1a1a",
+      },
+      fonts: { heading: "Cinzel", script: "Great Vibes", body: "Cormorant Garamond" },
+      animation: "fade",
+      ornament: "floral",
+      introText: "Traditional Marriage Ceremony",
+      media: [
+        {
+          url: "/templates/traditional-marriage-ceremony.png",
+          type: "image",
+          role: "background",
+          name: "Traditional Marriage Ceremony art",
+        },
+        {
+          url: "/templates/traditional-marriage-ceremony.png",
+          type: "image",
+          role: "hero",
+          name: "Traditional Marriage Ceremony art",
+        },
+      ],
+      studio: {
+        revealMode: "envelope",
+        buttonStyle: "ribbon",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 12,
+        scriptSize: 28,
+        rsvpLabel: "R.S.V.P",
+        visionBoard: {
+          eyebrow: "TRADITIONAL",
+          scriptTitle: "Marriage Ceremony",
+          familyInvite:
+            "THE AFARI AND OPOKU FAMILIES HUMBLY INVITE YOU TO WITNESS THE TRADITIONAL MARRIAGE CEREMONY BETWEEN THEIR SON AND DAUGHTER",
+          coupleName1: "OWURAKU AFARI",
+          coupleName2: "FRANCISCA CHELSY SERWAAH OPOKU",
+          weekday: "THURSDAY",
+          monthLabel: "AUGUST",
+          dayNumber: "13",
+          timeLabel: "10:00AM",
+          dressCodeLine:
+            "DRESS CODE: EMBRACE THE OCCASION WITH AN ELEGANT TRADITIONAL / AFRICAN WEAR",
+          sentiment: "Your Presence Will Be Deeply Appreciated!",
+          locationCta: "CLICK HERE FOR LOCATION",
+          rsvpHeading: "R.S.V.P",
+          rsvpContacts: [
+            { name: "MAAME YEBOAH", phone: "0242651828" },
+            { name: "MABEL OPOKU", phone: "0544956617" },
+          ],
+          hashtag: "#TheForeverAfaris",
+          showArtBackdrop: true,
+          liveTypography: false,
+        },
+      },
+    },
+  },
   ...CINEMATIC_LAYOUT_SLUGS.map((slug) => {
     const t = CINEMATIC_THEMES[slug];
     return {
@@ -175,7 +249,10 @@ export function getTemplatePreset(slug: string): InvitationTemplatePreset | unde
 
 /** One picker entry per catalogue template — no duplicate layouts or titles */
 export function getUniqueTemplatePresets(): InvitationTemplatePreset[] {
-  return CATALOG_TEMPLATES.map((catalog) => {
+  // Wave 1 paged templates (themeId set) reuse legacy layout slugs as static
+  // fallbacks; keep them out of the legacy preset picker to avoid duplicates —
+  // they surface through the catalogue gallery + preview flow instead.
+  return CATALOG_TEMPLATES.filter((catalog) => !catalog.themeId).map((catalog) => {
     const preset = getTemplatePreset(catalog.layoutSlug);
     const gradient = catalog.previewGradient.includes("from-")
       ? catalog.previewGradient
@@ -196,7 +273,7 @@ export function getUniqueTemplatePresets(): InvitationTemplatePreset[] {
       description: catalog.description,
       category: catalog.category.toLowerCase(),
       preview: { gradient, accent: "#0B8A83" },
-      config: getDefaultDesignConfig(catalog.layoutSlug),
+      config: getDefaultDesignConfig(catalog.slug),
     };
   });
 }
@@ -207,23 +284,116 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
   const preset = layoutSlug ? getTemplatePreset(layoutSlug) : INVITATION_TEMPLATE_PRESETS[0];
   const base = preset?.config ?? INVITATION_TEMPLATE_PRESETS[0].config;
   const { experience: _strip, ...baseWithoutStaleExperience } = base;
-  return enrichDesignWithExperienceDNA({
+  const enriched = enrichDesignWithExperienceDNA({
     ...baseWithoutStaleExperience,
     studio: { fullScreen: true, ...base.studio },
   });
+
+  // Central Creative Registry (SKU) → catalog experienceOverrides → layout DNA
+  const registryOverrides = catalog?.slug ? getCreativeExperienceOverrides(catalog.slug) : undefined;
+  const catalogOverrides = catalog?.experienceOverrides;
+  const mergedOverrides = {
+    ...registryOverrides,
+    ...catalogOverrides,
+  };
+  const hasOverrides = Object.values(mergedOverrides).some(Boolean);
+
+  const identityExperience = hasOverrides
+    ? ({ ...enriched.experience, ...mergedOverrides } as InvitationDesignConfig["experience"])
+    : enriched.experience;
+
+  const registryButton = catalog?.slug ? getCreativeButtonFamily(catalog.slug) : undefined;
+  const buttonStyle = (catalog?.buttonStyle ?? registryButton) as
+    | NonNullable<InvitationDesignConfig["studio"]>["buttonStyle"]
+    | undefined;
+  const identityStudio = buttonStyle
+    ? { ...enriched.studio, buttonStyle }
+    : enriched.studio;
+  const identified: InvitationDesignConfig = {
+    ...enriched,
+    experience: identityExperience,
+    studio: identityStudio,
+  };
+
+  // Studio 2.0: Wave 1 catalog templates (blueprint + token theme) default to
+  // the paged viewer; the catalog's motion profile overrides the theme default
+  // (free tier is always still).
+  const theme = getInvitationTheme(catalog?.themeId);
+  if (theme && catalog?.blueprintId) {
+    const motionProfileId = catalog.motionProfileId ?? theme.motion.profileId;
+    return applyThemeToDesign(
+      {
+        ...identified,
+        blueprintId: catalog.blueprintId,
+        experience: { ...identified.experience, hubMode: "paged" },
+      },
+      {
+        ...theme,
+        motion: {
+          profileId: motionProfileId,
+          intensity: motionProfileId === "still" || motionProfileId === "solemn" ? 0 : theme.motion.intensity,
+        },
+      }
+    );
+  }
+  return identified;
 }
 
 export function mergeDesignConfig(
   base: InvitationDesignConfig,
   overrides?: Partial<InvitationDesignConfig>
 ): InvitationDesignConfig {
-  if (!overrides) return base;
+  const merged: InvitationDesignConfig = !overrides
+    ? base
+    : {
+        ...base,
+        ...overrides,
+        colors: { ...base.colors, ...overrides.colors },
+        fonts: { ...base.fonts, ...overrides.fonts },
+        media: overrides.media ?? base.media,
+      };
+  // Studio 2.0: hydrate token theme from the registry when only an id is stored,
+  // then keep legacy colors/fonts mirrored to the tokens.
+  const theme = merged.theme ?? getInvitationTheme(merged.themeId);
+  return theme ? applyThemeToDesign(merged, theme) : merged;
+}
+
+/**
+ * Apply catalog SKU creative identity onto a stored design at render time.
+ * Ceremony DNA (intro / reveal / typography pack / etc.) follows the registry
+ * unless the host marked experienceCustomized. Colors, fonts, and media stay
+ * as stored — no destructive migration.
+ */
+export function applyCatalogCreativeIdentity(
+  design: InvitationDesignConfig,
+  catalogSlug?: string | null
+): InvitationDesignConfig {
+  if (!catalogSlug || design.experience?.experienceCustomized) return design;
+  const catalogDefaults = getDefaultDesignConfig(catalogSlug);
+
   return {
-    ...base,
-    ...overrides,
-    colors: { ...base.colors, ...overrides.colors },
-    fonts: { ...base.fonts, ...overrides.fonts },
-    media: overrides.media ?? base.media,
+    ...design,
+    experience: {
+      ...design.experience,
+      introVariant:
+        catalogDefaults.experience?.introVariant ?? design.experience?.introVariant,
+      openingExperience:
+        catalogDefaults.experience?.openingExperience ?? design.experience?.openingExperience,
+      sceneTransition:
+        catalogDefaults.experience?.sceneTransition ?? design.experience?.sceneTransition,
+      outroExperience:
+        catalogDefaults.experience?.outroExperience ?? design.experience?.outroExperience,
+      typographyPackId:
+        catalogDefaults.experience?.typographyPackId ?? design.experience?.typographyPackId,
+      slideshowStyle:
+        catalogDefaults.experience?.slideshowStyle ?? design.experience?.slideshowStyle,
+      countdownStyle:
+        catalogDefaults.experience?.countdownStyle ?? design.experience?.countdownStyle,
+    },
+    studio: {
+      ...design.studio,
+      buttonStyle: catalogDefaults.studio?.buttonStyle ?? design.studio?.buttonStyle,
+    },
   };
 }
 

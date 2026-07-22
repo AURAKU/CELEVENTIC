@@ -17,6 +17,18 @@ async function ensureSeeded() {
   if (count === 0) await seedCommerceEngine();
 }
 
+function asEventTypes(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  return value.filter((v): v is string => typeof v === "string");
+}
+
+function packageMatchesEventType(eventTypes: string[] | null, eventType?: string): boolean {
+  if (!eventType) return true;
+  if (!eventTypes || eventTypes.length === 0) return true;
+  const normalized = eventType.toUpperCase();
+  return eventTypes.some((t) => t.toUpperCase() === normalized);
+}
+
 function mapPackage(pkg: {
   slug: string;
   name: string;
@@ -27,11 +39,23 @@ function mapPackage(pkg: {
   deliveryDays: number;
   features: unknown;
   designerAssist: boolean;
+  eventTypes?: unknown;
   prices?: { amountGhs: unknown }[];
 }): InvitationPackageDef {
   const activePrice = pkg.prices?.[0];
   const priceGhs = Number(activePrice?.amountGhs ?? pkg.priceGhs);
-  const features = Array.isArray(pkg.features) ? (pkg.features as string[]) : [];
+  const rawFeatures = Array.isArray(pkg.features)
+    ? (pkg.features as unknown[]).filter((f): f is string => typeof f === "string" && f.trim().length > 0)
+    : [];
+  const fallbackBySlug: Record<string, string[]> = {
+    starter: ["Digital invitation link", "Basic RSVP", "Maps & calendar", "Core sections", "1 revision"],
+    celebration: ["Everything in Essential", "Animated intro", "Photo story & gallery", "Travel and stay", "Dress code & menu", "2 revisions"],
+    signature: ["Everything in Premium", "Custom monogram option", "QR guest pass", "Custom domain option", "3 revisions"],
+    prestige: ["Everything in Signature", "Designer-assisted customization", "Multi-language invitation", "Priority support"],
+    bespoke: ["Fully custom invitation", "Dedicated designer", "Advanced animation", "VIP support"],
+  };
+  const features =
+    rawFeatures.length > 0 ? rawFeatures : (fallbackBySlug[pkg.slug] ?? ["Digital invitation", "RSVP", "Guest list"]);
   return {
     slug: pkg.slug,
     name: pkg.name,
@@ -41,18 +65,21 @@ function mapPackage(pkg: {
     deliveryDays: pkg.deliveryDays,
     features,
     designerAssist: pkg.designerAssist,
+    eventTypes: asEventTypes(pkg.eventTypes),
   };
 }
 
 export class CatalogService {
-  async getActivePackages(): Promise<InvitationPackageDef[]> {
+  async getActivePackages(eventType?: string): Promise<InvitationPackageDef[]> {
     await ensureSeeded();
     const packages = await prisma.invitationProductPackage.findMany({
       where: { isActive: true },
       include: { prices: { where: { isActive: true }, orderBy: { createdAt: "desc" }, take: 1 } },
       orderBy: { sortOrder: "asc" },
     });
-    return packages.map(mapPackage);
+    return packages
+      .map(mapPackage)
+      .filter((pkg) => packageMatchesEventType(pkg.eventTypes ?? null, eventType));
   }
 
   async getPackageBySlug(slug: string): Promise<InvitationPackageDef | null> {

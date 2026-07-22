@@ -53,7 +53,7 @@ export function CustomMediaTemplate({ invitation, event, design, guestId, guestN
               {pdfAsset && (
                 <p className="text-xs text-brand-600">Designed from your uploaded sample</p>
               )}
-              {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={110} height={110} className="mx-auto rounded" />}
+              {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={110} height={110} className="mx-auto rounded"  unoptimized />}
               <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.primary} />
               <InvitationActions event={event} pdfUrl={pdfAsset?.url} />
             </div>

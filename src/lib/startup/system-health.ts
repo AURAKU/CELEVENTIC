@@ -1,3 +1,4 @@
+import { getAwsStorageHealth } from "@/lib/uploads/aws-s3";
 import { checkDatabaseHealth, type HealthStatus } from "./db-health";
 import { validateEnvironment } from "./env-validation";
 
@@ -34,10 +35,12 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
   const authStatus = envGroupStatus(["NEXTAUTH_SECRET", "NEXTAUTH_URL"], envChecks);
   const emailStatus = envGroupStatus(["RESEND_API_KEY"], envChecks);
   const paymentStatus = envGroupStatus(["PAYSTACK_SECRET_KEY", "FLUTTERWAVE_SECRET_KEY"], envChecks);
-  const storageStatus = envGroupStatus(
-    ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],
-    envChecks
-  );
+  const awsStorage = getAwsStorageHealth();
+  const storageStatus: HealthStatus = awsStorage.configured
+    ? awsStorage.hasCdn
+      ? "healthy"
+      : "warning"
+    : "warning";
   const redisStatus = envGroupStatus(["REDIS_URL"], envChecks);
   const pusherStatus = envGroupStatus(["PUSHER_APP_ID", "PUSHER_KEY", "PUSHER_SECRET"], envChecks);
   const googleStatus = envGroupStatus(["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"], envChecks);
@@ -71,7 +74,7 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
       id: "storage",
       label: "Storage",
       status: storageStatus,
-      message: storageStatus === "healthy" ? "Cloudinary configured" : "Cloudinary not fully configured",
+      message: awsStorage.message,
     },
     {
       id: "redis",

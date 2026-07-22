@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { resolveMediaUrl, isUploadedMediaUrl } from "@/lib/uploads/media-url";
+import { resolveMediaUrl, shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { cn } from "@/lib/utils";
 
 interface UploadedMediaProps {
@@ -40,6 +40,7 @@ export function UploadedMedia({
 
   const isVideo =
     video ?? (/\.(mp4|webm|mov)(\?|$)/i.test(resolved) || resolved.includes("video/"));
+  const unoptimized = shouldUnoptimizeNextImage(resolved);
 
   if (isVideo) {
     return (
@@ -63,7 +64,7 @@ export function UploadedMedia({
         fill
         className={cn("object-cover", className)}
         sizes={sizes ?? "(max-width: 768px) 100vw, 480px"}
-        unoptimized={isUploadedMediaUrl(resolved)}
+        unoptimized={unoptimized}
         priority={priority}
       />
     );
@@ -77,7 +78,7 @@ export function UploadedMedia({
         width={width}
         height={height}
         className={className}
-        unoptimized={isUploadedMediaUrl(resolved)}
+        unoptimized={unoptimized}
         priority={priority}
       />
     );

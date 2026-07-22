@@ -84,7 +84,22 @@ export class InvitationService {
     return prisma.invitation.findUnique({
       where: { uniqueLink },
       include: {
-        event: { include: { theme: true, media: true } },
+        event: {
+          include: {
+            theme: true,
+            media: true,
+            defaultMusicTrack: {
+              select: {
+                id: true,
+                title: true,
+                artist: true,
+                url: true,
+                durationSec: true,
+                isActive: true,
+              },
+            },
+          },
+        },
         template: true,
         guests: { include: { rsvps: { orderBy: { createdAt: "desc" }, take: 1 } } },
       },
@@ -137,6 +152,9 @@ export class InvitationService {
   }
 
   async addGuest(input: AddGuestInput) {
+    const { allocateManualAdmissionCode } = await import("@/lib/qr/manual-code");
+    const manualCode = await allocateManualAdmissionCode(input.eventId);
+
     const guest = await prisma.guest.create({
       data: {
         eventId: input.eventId,
@@ -146,13 +164,14 @@ export class InvitationService {
         phone: input.phone,
         plusOnes: input.plusOnes ?? 0,
         status: "INVITED",
+        manualCode,
       },
     });
 
     const { dataUrl, token } = await qrService.createGuestQr(input.eventId, guest.id);
     await qrService.createGuestAdmissionQr(input.eventId, guest.id);
 
-    return { guest, qrDataUrl: dataUrl, qrToken: token };
+    return { guest, qrDataUrl: dataUrl, qrToken: token, manualCode };
   }
 
   async addGuestsBulk(eventId: string, invitationId: string | undefined, guests: GuestInput[]) {

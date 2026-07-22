@@ -5,6 +5,7 @@ import { translationService } from "../src/services/i18n/translation.service";
 import { invitationBlockService } from "../src/services/invitations/invitation-block.service";
 import { seedVendorOs } from "../src/services/vendor-os/vendor-os-seed.service";
 import { slugify } from "../src/lib/utils";
+import { normalizePackageFeatureKeys } from "../src/lib/packages/feature-catalog";
 
 const prisma = new PrismaClient();
 
@@ -34,7 +35,15 @@ async function main() {
       emailCredits: 50,
       whatsappCredits: 0,
       sortOrder: 1,
-      features: { qrAdmission: true, rsvp: true, basicTemplates: true },
+      features: [
+        "OVERVIEW",
+        "SETTINGS",
+        "INVITATIONS",
+        "GUEST_LIST",
+        "RSVP",
+        "QR_ADMISSION",
+        "GALLERY",
+      ],
     },
     {
       name: "Growth",
@@ -48,7 +57,20 @@ async function main() {
       emailCredits: 500,
       whatsappCredits: 50,
       sortOrder: 2,
-      features: { qrAdmission: true, rsvp: true, ticketing: true, campaigns: true },
+      features: [
+        "OVERVIEW",
+        "SETTINGS",
+        "INVITATIONS",
+        "GUEST_LIST",
+        "RSVP",
+        "QR_ADMISSION",
+        "GALLERY",
+        "TICKETING",
+        "COMMUNICATIONS",
+        "TIMELINE",
+        "DESIGN_STUDIO",
+        "SEATING",
+      ],
     },
     {
       name: "Premium",
@@ -76,16 +98,29 @@ async function main() {
       emailCredits: 10000,
       whatsappCredits: 2000,
       sortOrder: 4,
-      features: { all: true, whiteLabel: true, prioritySupport: true },
+      features: { all: true },
     },
   ];
 
   for (const pkg of packages) {
-    await prisma.eventPackage.upsert({
+    const featuresJson = pkg.features as Prisma.InputJsonValue;
+    const row = await prisma.eventPackage.upsert({
       where: { slug: pkg.slug },
-      update: pkg,
-      create: pkg,
+      update: { ...pkg, features: featuresJson },
+      create: { ...pkg, features: featuresJson },
     });
+
+    const keys = normalizePackageFeatureKeys(pkg.features);
+    await prisma.eventPackageFeature.deleteMany({ where: { packageId: row.id } });
+    if (keys.length > 0) {
+      await prisma.eventPackageFeature.createMany({
+        data: keys.map((featureKey) => ({
+          packageId: row.id,
+          featureKey,
+          isIncluded: true,
+        })),
+      });
+    }
   }
 
   const templates = [

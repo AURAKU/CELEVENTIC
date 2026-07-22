@@ -25,6 +25,10 @@ export interface CreateOrderInput {
   templateSlug: string;
   packageSlug: string;
   eventType: string;
+  /** Studio 2.0: theme chosen in the live preview (registry id) */
+  themeId?: string;
+  /** Viral-footer attribution — referring invitation's uniqueLink */
+  attributionRef?: string;
 }
 
 export interface UpdateOrderDetailsInput {
@@ -69,9 +73,27 @@ export class InvitationOrderService {
   async ensureCatalogSeeded() {
     const { CATALOG_TEMPLATES } = await import("@/lib/invitation-mvp/catalogue");
     for (const t of CATALOG_TEMPLATES) {
+      const studioFields = {
+        tier: t.tier ?? null,
+        tags: t.tags ? (t.tags as Prisma.InputJsonValue) : PrismaClient.JsonNull,
+        colorFamily: t.colorFamily ?? null,
+        hasParallax: t.hasParallax ?? false,
+        blueprintId: t.blueprintId ?? null,
+        themeId: t.themeId ?? null,
+        motifPackId: t.motifPackId ?? null,
+        motionProfileId: t.motionProfileId ?? null,
+        performanceClass: t.performanceClass ?? null,
+      };
       await prisma.invitationCatalogTemplate.upsert({
         where: { slug: t.slug },
-        update: { name: t.name, category: t.category, style: t.style, layoutSlug: t.layoutSlug, isActive: true },
+        update: {
+          name: t.name,
+          category: t.category,
+          style: t.style,
+          layoutSlug: t.layoutSlug,
+          isActive: true,
+          ...studioFields,
+        },
         create: {
           slug: t.slug,
           name: t.name,
@@ -82,6 +104,7 @@ export class InvitationOrderService {
           previewGradient: t.previewGradient,
           isPremium: t.isPremium,
           sortOrder: CATALOG_TEMPLATES.indexOf(t),
+          ...studioFields,
         },
       });
     }
@@ -100,7 +123,21 @@ export class InvitationOrderService {
     const pkg = await catalogService.getPackageBySlug(input.packageSlug);
     if (!template || !pkg) throw new Error("Invalid template or package");
 
-    const designConfig = getDefaultDesignConfig(template.layoutSlug);
+    // Pass the catalog slug (not layoutSlug) so Studio 2.0 templates resolve
+    // their own theme/blueprint instead of the legacy entry sharing the layout.
+    let designConfig = getDefaultDesignConfig(template.slug);
+    if (input.themeId && designConfig.blueprintId) {
+      const { getInvitationTheme } = await import("@/lib/invitation-theme/theme-registry");
+      const { applyThemeToDesign } = await import("@/lib/invitation-theme/theme-compat");
+      const chosenTheme = getInvitationTheme(input.themeId);
+      if (chosenTheme) designConfig = applyThemeToDesign(designConfig, chosenTheme);
+    }
+    if (input.attributionRef) {
+      designConfig = {
+        ...designConfig,
+        attribution: { ref: input.attributionRef, source: "viral_footer" },
+      };
+    }
 
     const workflowType = productionWorkflowService.inferWorkflowType(input.packageSlug);
 
@@ -253,9 +290,19 @@ export class InvitationOrderService {
     });
     if (!order) throw new Error("Order not found");
 
+    if (order.invitationId && order.shareUrl) {
+      const invitation = await prisma.invitation.findUnique({ where: { id: order.invitationId } });
+      const event = order.eventId
+        ? await prisma.event.findUnique({ where: { id: order.eventId } })
+        : null;
+      if (invitation) {
+        return { order, invitation, event, shareUrl: order.shareUrl };
+      }
+    }
+
     const catalog = getCatalogTemplate(order.templateSlug);
     const layoutSlug = catalog?.layoutSlug ?? "classic-gold";
-    const baseDesign = getDefaultDesignConfig(layoutSlug);
+    const baseDesign = getDefaultDesignConfig(order.templateSlug);
     const storedDesign = order.designConfig as Record<string, unknown> | null;
     const designConfig = mergeDesignConfig(baseDesign, storedDesign as never);
 

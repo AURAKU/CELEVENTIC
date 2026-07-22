@@ -192,14 +192,36 @@ export class AdminService {
   }
 
   async getPackages() {
-    return prisma.eventPackage.findMany({ orderBy: { sortOrder: "asc" } });
+    return prisma.eventPackage.findMany({
+      orderBy: { sortOrder: "asc" },
+      include: {
+        packageFeatures: {
+          select: { featureKey: true, isIncluded: true },
+        },
+        _count: { select: { events: true } },
+      },
+    });
+  }
+
+  private async syncPackageFeatures(packageId: string, featureKeys: string[]) {
+    const unique = [...new Set(featureKeys.filter(Boolean))];
+    await prisma.eventPackageFeature.deleteMany({ where: { packageId } });
+    if (unique.length === 0) return;
+    await prisma.eventPackageFeature.createMany({
+      data: unique.map((featureKey) => ({
+        packageId,
+        featureKey,
+        isIncluded: true,
+      })),
+    });
   }
 
   async createPackage(data: {
     name: string;
     slug?: string;
-    description?: string;
+    description?: string | null;
     price: number;
+    currency?: string;
     guestLimit?: number;
     invitationLimit?: number;
     ticketLimit?: number;
@@ -208,22 +230,34 @@ export class AdminService {
     emailCredits?: number;
     features?: string[];
     sortOrder?: number;
+    isActive?: boolean;
   }) {
     const slug = data.slug ?? data.name.toLowerCase().replace(/\s+/g, "-");
-    return prisma.eventPackage.create({
+    const features = data.features ?? [];
+    const pkg = await prisma.eventPackage.create({
       data: {
         name: data.name,
         slug,
-        description: data.description,
+        description: data.description ?? undefined,
         price: data.price,
+        currency: data.currency ?? "GHS",
         guestLimit: data.guestLimit ?? 100,
         invitationLimit: data.invitationLimit ?? 50,
         ticketLimit: data.ticketLimit ?? 500,
         smsCredits: data.smsCredits ?? 0,
         whatsappCredits: data.whatsappCredits ?? 0,
         emailCredits: data.emailCredits ?? 0,
-        features: data.features as Prisma.InputJsonValue,
+        features: features as Prisma.InputJsonValue,
         sortOrder: data.sortOrder ?? 0,
+        isActive: data.isActive ?? true,
+      },
+    });
+    await this.syncPackageFeatures(pkg.id, features);
+    return prisma.eventPackage.findUniqueOrThrow({
+      where: { id: pkg.id },
+      include: {
+        packageFeatures: { select: { featureKey: true, isIncluded: true } },
+        _count: { select: { events: true } },
       },
     });
   }
@@ -233,8 +267,9 @@ export class AdminService {
     data: Partial<{
       name: string;
       slug: string;
-      description: string;
+      description: string | null;
       price: number;
+      currency: string;
       guestLimit: number;
       invitationLimit: number;
       ticketLimit: number;
@@ -246,11 +281,22 @@ export class AdminService {
       sortOrder: number;
     }>
   ) {
-    return prisma.eventPackage.update({
+    const { features, ...rest } = data;
+    await prisma.eventPackage.update({
       where: { id },
       data: {
-        ...data,
-        features: data.features as Prisma.InputJsonValue | undefined,
+        ...rest,
+        ...(features !== undefined ? { features: features as Prisma.InputJsonValue } : {}),
+      },
+    });
+    if (features !== undefined) {
+      await this.syncPackageFeatures(id, features);
+    }
+    return prisma.eventPackage.findUniqueOrThrow({
+      where: { id },
+      include: {
+        packageFeatures: { select: { featureKey: true, isIncluded: true } },
+        _count: { select: { events: true } },
       },
     });
   }

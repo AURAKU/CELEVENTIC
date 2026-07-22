@@ -12,9 +12,23 @@ export type ButtonStyle =
   | "kente"
   | "floral-edge"
   | "solemn"
-  | "passport-stamp";
+  | "passport-stamp"
+  | "embossed-royal"
+  | "ticket-stub"
+  | "ribbon"
+  | "editorial-underline"
+  | "metallic"
+  | "paper-tab"
+  | "crystal"
+  | "minimal-text"
+  | "gradient-cta"
+  | "corporate-solid"
+  | "pearl"
+  | "ornamental-arch";
 
 export type ButtonPosition = "bottom" | "center" | "floating";
+
+import type { VisionBoardContent } from "@/lib/invitation/vision-board";
 
 export interface InvitationStudioConfig {
   revealMode?: RevealMode;
@@ -25,6 +39,10 @@ export interface InvitationStudioConfig {
   scriptSize?: number;
   rsvpLabel?: string;
   fullScreen?: boolean;
+  /** Secondary CTA label (maps with experience.buttonActions.secondary) */
+  secondaryLabel?: string;
+  /** Traditional Marriage / vision-board editable copy + feature toggles */
+  visionBoard?: VisionBoardContent;
 }
 
 export const REVEAL_MODE_OPTIONS: { id: RevealMode; label: string; description: string }[] = [
@@ -50,6 +68,18 @@ export const BUTTON_STYLE_OPTIONS: { id: ButtonStyle; label: string }[] = [
   { id: "floral-edge", label: "Floral edge" },
   { id: "solemn", label: "Solemn outline" },
   { id: "passport-stamp", label: "Passport stamp" },
+  { id: "embossed-royal", label: "Royal embossed" },
+  { id: "ticket-stub", label: "Ticket stub" },
+  { id: "ribbon", label: "Ribbon" },
+  { id: "editorial-underline", label: "Editorial underline" },
+  { id: "metallic", label: "Metallic silver" },
+  { id: "paper-tab", label: "Paper tab" },
+  { id: "crystal", label: "Crystal facet" },
+  { id: "minimal-text", label: "Minimal text" },
+  { id: "gradient-cta", label: "Cinematic gradient" },
+  { id: "corporate-solid", label: "Corporate solid" },
+  { id: "pearl", label: "Pearl" },
+  { id: "ornamental-arch", label: "Ornamental arch" },
 ];
 
 export const BUTTON_POSITION_OPTIONS: { id: ButtonPosition; label: string }[] = [

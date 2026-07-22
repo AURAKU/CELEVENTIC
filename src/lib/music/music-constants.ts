@@ -1,5 +1,5 @@
-/** Maximum upload file size (bytes) */
-export const MUSIC_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
+/** Maximum upload file size (bytes) — library masters can be larger before trim */
+export const MUSIC_UPLOAD_MAX_BYTES = 40 * 1024 * 1024;
 
 const EXT_MAP: Record<string, { mime: string; ext: string }> = {
   ".mp3": { mime: "audio/mpeg", ext: ".mp3" },
@@ -19,6 +19,9 @@ const EXT_MAP: Record<string, { mime: string; ext: string }> = {
   ".wma": { mime: "audio/x-ms-wma", ext: ".wma" },
   ".mid": { mime: "audio/midi", ext: ".mid" },
   ".midi": { mime: "audio/midi", ext: ".midi" },
+  ".caf": { mime: "audio/x-caf", ext: ".caf" },
+  ".amr": { mime: "audio/amr", ext: ".amr" },
+  ".3gp": { mime: "audio/3gpp", ext: ".3gp" },
 };
 
 export const MUSIC_ALLOWED_TYPES: Record<string, { ext: string; max: number }> = {
@@ -41,24 +44,52 @@ export const MUSIC_ALLOWED_TYPES: Record<string, { ext: string; max: number }> =
   "audio/midi": { ext: ".mid", max: MUSIC_UPLOAD_MAX_BYTES },
   "audio/x-midi": { ext: ".mid", max: MUSIC_UPLOAD_MAX_BYTES },
   "application/ogg": { ext: ".ogg", max: MUSIC_UPLOAD_MAX_BYTES },
+  "audio/x-caf": { ext: ".caf", max: MUSIC_UPLOAD_MAX_BYTES },
+  "audio/amr": { ext: ".amr", max: MUSIC_UPLOAD_MAX_BYTES },
+  "audio/3gpp": { ext: ".3gp", max: MUSIC_UPLOAD_MAX_BYTES },
+  "video/mp4": { ext: ".m4a", max: MUSIC_UPLOAD_MAX_BYTES },
+  "video/webm": { ext: ".webm", max: MUSIC_UPLOAD_MAX_BYTES },
 };
 
-/** Resolve MIME + extension from browser File (handles empty or generic types). */
+/**
+ * Resolve MIME + extension. Accepts any audio/* (and common media containers)
+ * so admins can upload whatever the browser can decode, then trim to WAV.
+ */
 export function resolveMusicUpload(file: File): { ext: string; max: number } | null {
+  if (file.size <= 0) return null;
+  if (file.size > MUSIC_UPLOAD_MAX_BYTES) {
+    return { ext: ".bin", max: MUSIC_UPLOAD_MAX_BYTES };
+  }
+
   const byMime = MUSIC_ALLOWED_TYPES[file.type];
   if (byMime) return byMime;
 
   const name = file.name?.toLowerCase() ?? "";
   const dot = name.lastIndexOf(".");
-  if (dot === -1) return null;
-  const extKey = name.slice(dot);
-  const mapped = EXT_MAP[extKey];
-  if (!mapped) return null;
-  return { ext: mapped.ext, max: MUSIC_UPLOAD_MAX_BYTES };
+  if (dot !== -1) {
+    const extKey = name.slice(dot);
+    const mapped = EXT_MAP[extKey];
+    if (mapped) return { ext: mapped.ext, max: MUSIC_UPLOAD_MAX_BYTES };
+    // Unknown extension but claimed as audio — keep original extension
+    if (file.type.startsWith("audio/") || file.type.startsWith("video/")) {
+      return { ext: extKey.slice(0, 8) || ".audio", max: MUSIC_UPLOAD_MAX_BYTES };
+    }
+  }
+
+  if (file.type.startsWith("audio/") || file.type.startsWith("video/") || file.type === "") {
+    return { ext: ".audio", max: MUSIC_UPLOAD_MAX_BYTES };
+  }
+
+  return null;
 }
 
-export const MUSIC_CLIP_MIN_SEC = 60;
-export const MUSIC_CLIP_MAX_SEC = 120;
+/** Organizer studio clip window (playback trim on full library tracks) */
+export const MUSIC_CLIP_MIN_SEC = 30;
+export const MUSIC_CLIP_MAX_SEC = 180;
+
+/** Admin library clip — free range after trim-to-file */
+export const ADMIN_CLIP_MIN_SEC = 5;
+export const ADMIN_CLIP_MAX_SEC = 600;
 
 export const MUSIC_CATEGORIES = [
   { value: "general", label: "General" },

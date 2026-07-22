@@ -66,7 +66,7 @@ export function ClassicGoldTemplate({ invitation, event, design, guestId, guestN
           {event.dressCode && <p className="text-xs inv-muted-on-light">Dress Code: {event.dressCode}</p>}
           {qrDataUrl && (
             <div className="flex justify-center pt-2">
-              <Image src={qrDataUrl} alt="QR Code" width={120} height={120} className="rounded" />
+              <Image src={qrDataUrl} alt="QR Code" width={120} height={120} className="rounded"  unoptimized />
             </div>
           )}
           <InvitationRsvpPanel

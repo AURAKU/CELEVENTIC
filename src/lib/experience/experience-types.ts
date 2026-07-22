@@ -6,6 +6,7 @@ export type OpeningExperienceId =
   | "wax-seal-rose"
   | "wax-seal-silver"
   | "wax-seal-black"
+  | "wax-seal-emerald"
   | "envelope-floral"
   | "envelope-royal"
   | "envelope-kente"
@@ -30,6 +31,13 @@ export type OpeningExperienceId =
   | "confetti-burst"
   | "flip-reveal"
   | "zoom-reveal"
+  | "magazine-page-turn"
+  | "candle-light"
+  | "press-hold"
+  | "satin-bow"
+  | "ring-box"
+  | "archway"
+  | "petal-fall"
   | "none";
 
 export type OutroExperienceId =
@@ -44,6 +52,9 @@ export type OutroExperienceId =
   | "final-quote"
   | "see-you-soon"
   | "upload-memories"
+  | "seal-reform"
+  | "credits-page"
+  | "candle-legacy"
   | "none";
 
 export type EnvironmentPresetId =
@@ -133,7 +144,43 @@ export type SceneTransitionId =
   | "book"
   | "sparkle";
 
-export type ExperienceHubMode = "tabs" | "scroll" | "journey" | "storybook";
+export type ExperienceHubMode = "tabs" | "scroll" | "journey" | "storybook" | "paged";
+
+/** Branded Celeventic intro choreographies — same logo, different worlds */
+export type IntroVariantId =
+  | "engine-grid"
+  | "logo-bloom"
+  | "particle-burst"
+  | "spotlight"
+  | "ink-reveal"
+  | "glass-shimmer"
+  | "light-sweep"
+  | "film-title"
+  | "orbit"
+  | "gold-foil"
+  | "candlelight"
+  | "constellation"
+  | "fabric-unfold"
+  // Phase 4 — additional SKU-keyed choreographies (distinct identity + tagline)
+  | "seal-impress"
+  | "petal-cascade"
+  | "neon-pulse"
+  | "marble-veil"
+  | "drum-pulse"
+  | "prism-refract"
+  | "lace-draw"
+  | "hex-assemble"
+  | "quill-script"
+  | "lily-breathe"
+  | "drape-fall"
+  | "canvas-wipe"
+  | "aurora-rise"
+  | "ticket-tear"
+  | "ring-orbit"
+  | "vine-grow"
+  | "chapel-glow"
+  | "folio-open"
+  | "foil-rise";
 
 export interface JourneyChapter {
   id: string;
@@ -148,6 +195,33 @@ export interface EventScheduleItem {
   title: string;
   description?: string;
   location?: string;
+}
+
+/** Studio scene list entry — additive; legacy invites omit this and use enabledTabs */
+export interface StudioSceneConfig {
+  id: string;
+  tabId: HubTabId | "custom";
+  title: string;
+  visible: boolean;
+  body?: string;
+}
+
+export type StudioParallaxIntensity = "none" | "subtle" | "moderate" | "cinematic" | "interactive";
+
+export type StudioButtonActionId =
+  | "rsvp"
+  | "calendar"
+  | "maps"
+  | "share"
+  | "gifts"
+  | "gallery"
+  | "story"
+  | "none";
+
+export interface StudioButtonActions {
+  primary?: StudioButtonActionId;
+  secondary?: StudioButtonActionId;
+  tertiary?: StudioButtonActionId;
 }
 
 export interface EventExperienceConfig {
@@ -165,6 +239,8 @@ export interface EventExperienceConfig {
   enableRevealSounds?: boolean;
   introEnabled?: boolean;
   introDurationSec?: 1.5 | 2 | 3 | 5;
+  /** Branded intro choreography; defaults per template family when unset */
+  introVariant?: IntroVariantId;
   scheduleItems?: EventScheduleItem[];
   themePresetId?: string;
   collectionId?: string;
@@ -177,6 +253,18 @@ export interface EventExperienceConfig {
   backgroundPackId?: string;
   /** When true, studio edits to experience fields are preserved on re-enrich */
   experienceCustomized?: boolean;
+  /** Phase 5 — editable scene/section list (drives enabledTabs when present) */
+  scenes?: StudioSceneConfig[];
+  /** Phase 5 — parallax intensity override */
+  parallaxIntensity?: StudioParallaxIntensity;
+  /** Phase 5 — primary dock button action mapping */
+  buttonActions?: StudioButtonActions;
+  /** Phase 5 — layer stack order (background → foreground) */
+  layerOrder?: string[];
+  /** Phase 5 — hidden layer ids */
+  hiddenLayers?: string[];
+  /** Phase 5 — active snap guide for preview alignment */
+  snapGuideId?: string;
 }
 
 export const DEFAULT_HUB_TABS: HubTabId[] = [

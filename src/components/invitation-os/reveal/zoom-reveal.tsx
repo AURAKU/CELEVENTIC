@@ -18,7 +18,7 @@ export function ZoomReveal({ guestName, eventTitle, onComplete }: ZoomRevealProp
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black">
+    <div className="fixed inset-0 z-[100] safe-area-pt safe-area-pb flex items-center justify-center overflow-hidden bg-black">
       <motion.div
         className="absolute inset-0 bg-gradient-to-br from-amber-900 via-slate-900 to-black"
         animate={zoomed ? { scale: 3, opacity: 0 } : { scale: 1, opacity: 1 }}

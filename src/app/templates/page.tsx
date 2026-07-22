@@ -5,7 +5,7 @@ import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PaginationLinks } from "@/components/ui/pagination";
-import { CATALOG_TEMPLATES } from "@/lib/invitation-mvp/catalogue";
+import { getBrowseCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
 import { LiveCatalogTemplateGrid } from "@/components/invitation/live-template-catalog-grid";
 import { prisma } from "@/lib/prisma";
 import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
@@ -21,6 +21,7 @@ export default async function PublicTemplatesPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const limit = PUBLIC_GRID_LIMIT;
   const skip = (page - 1) * limit;
+  const browseTemplates = getBrowseCatalogTemplates();
 
   const where = { approvalStatus: "APPROVED" as const, isActive: true };
 
@@ -60,12 +61,12 @@ export default async function PublicTemplatesPage({
               Premium Invitation Templates
             </h1>
             <p className="mt-4 text-slate-600">
-              {CATALOG_TEMPLATES.length} unique cinematic experiences — each with its own layout, motion, and soundtrack.
+              {browseTemplates.length} unique cinematic experiences — each with its own layout, motion, and soundtrack.
               Scroll live previews exactly as your guests will see them.
             </p>
           </div>
 
-          <LiveCatalogTemplateGrid templates={CATALOG_TEMPLATES} />
+          <LiveCatalogTemplateGrid templates={browseTemplates} />
 
           {total > 0 && (
             <div className="mt-16">

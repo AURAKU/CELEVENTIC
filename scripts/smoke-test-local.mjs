@@ -18,6 +18,8 @@ const PUBLIC_ROUTES = [
   "/invitations",
   "/invitations/catalogue",
   "/templates",
+  "/invitations/templates/royal-emerald-wedding",
+  "/invitations/templates/midnight-velvet-reception",
   "/qr/demo-token",
   "/memory-upload/demo-token",
 ];

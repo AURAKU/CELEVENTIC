@@ -6,12 +6,15 @@ import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
 import { setSmartCalendarReminder } from "@/lib/invitation/smart-calendar";
 import {
   isPreviewInvitationId,
-  pickPrimaryActions,
-  resolveGuestPortalActions,
   type GuestPortalActionHandlers,
   type InvitationActionKey,
   type ResolvedGuestAction,
 } from "@/lib/invitation/guest-portal-actions";
+import {
+  pickActionsFromStudioMapping,
+  resolveExperienceActions,
+} from "@/lib/experience-engine/action-registry";
+import type { StudioButtonActions } from "@/lib/experience/experience-types";
 
 export interface UseGuestPortalActionsInput {
   invitationId: string;
@@ -28,6 +31,8 @@ export interface UseGuestPortalActionsInput {
   hasQrPass?: boolean;
   galleryCount?: number;
   memoryVaultEnabled?: boolean;
+  memoryUploadUrl?: string | null;
+  memoryAlbumUrl?: string | null;
   menuUrl?: string | null;
   menuBody?: string | null;
   registryUrl?: string | null;
@@ -41,6 +46,8 @@ export interface UseGuestPortalActionsInput {
   audioMuted?: boolean;
   onToggleAudio?: () => void;
   onReplay?: () => void;
+  /** Phase 5 — Studio Action Registry mapping for dock buttons */
+  buttonActions?: StudioButtonActions | null;
 }
 
 export function useGuestPortalActions(input: UseGuestPortalActionsInput) {
@@ -139,6 +146,8 @@ export function useGuestPortalActions(input: UseGuestPortalActionsInput) {
       qrPassUrl: input.qrPassUrl,
       galleryCount: input.galleryCount ?? 0,
       memoryVaultEnabled: input.memoryVaultEnabled ?? false,
+      memoryUploadUrl: input.memoryUploadUrl,
+      memoryAlbumUrl: input.memoryAlbumUrl,
       menuUrl: input.menuUrl,
       menuBody: input.menuBody,
       registryUrl: input.registryUrl,
@@ -155,11 +164,26 @@ export function useGuestPortalActions(input: UseGuestPortalActionsInput) {
   );
 
   const allActions = useMemo(
-    () => resolveGuestPortalActions(context, handlers),
-    [context, handlers]
+    () =>
+      resolveExperienceActions(context, handlers, {
+        invitationId: input.invitationId,
+        eventId: input.eventId,
+        isPreview,
+        entitlements: {
+          seating: input.seatingEnabled ?? Boolean(input.seatLookupUrl),
+          qrPass: input.hasQrPass ?? false,
+          memoryVault: input.memoryVaultEnabled || Boolean(input.memoryUploadUrl),
+          menu: Boolean(input.menuUrl || input.menuBody),
+          gallery: (input.galleryCount ?? 0) > 0,
+        },
+      }),
+    [context, handlers, input, isPreview]
   );
 
-  const primaryActions = useMemo(() => pickPrimaryActions(allActions), [allActions]);
+  const primaryActions = useMemo(
+    () => pickActionsFromStudioMapping(allActions, input.buttonActions),
+    [allActions, input.buttonActions]
+  );
 
   const runAction = useCallback(
     async (action: ResolvedGuestAction) => {

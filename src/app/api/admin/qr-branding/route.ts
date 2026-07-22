@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminRole } from "@/lib/roles";
-import { qrBrandingService, QR_CENTER_ALLOWED_TYPES } from "@/services/qr/qr-branding.service";
+import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { storeUploadFile } from "@/lib/uploads/file-storage";
 import type { UserRole } from "@prisma/client";
 
@@ -25,8 +25,11 @@ export async function PUT(req: Request) {
     if (!file) {
       return NextResponse.json({ error: "No file" }, { status: 400 });
     }
-    if (!QR_CENTER_ALLOWED_TYPES.has(file.type) || file.size > 2 * 1024 * 1024) {
-      return NextResponse.json({ error: "Invalid image (JPEG/PNG/WebP, max 2MB)" }, { status: 400 });
+    // Single source of truth — this used to duplicate the size/type rules and
+    // drifted out of sync with the service.
+    const validationError = qrBrandingService.validateUpload(file);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
     const ext = file.type === "image/png" ? ".png" : file.type === "image/webp" ? ".webp" : ".jpg";

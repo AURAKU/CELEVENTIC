@@ -9,23 +9,30 @@ import { BlockRenderer } from "@/components/invitation-blocks/block-renderer";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { PortalSection } from "@/components/guest-portal/portal-section";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
+import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 import { FloatingCountdownPill } from "@/components/guest-portal/floating-countdown-pill";
 import { InvitationFeatureDock } from "@/components/guest-portal/invitation-feature-dock";
 import { SaveDateCalendarCard } from "@/components/guest-portal/save-date-calendar-card";
 import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
 import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
 import { GiftQrBox } from "@/components/guest-portal/gift-qr-box";
+import { InvitationMemoryAlbumCard } from "@/components/guest-portal/invitation-memory-album-card";
 import { useGuestPortalActions } from "@/hooks/use-guest-portal-actions";
-import { buildWhatsAppUrl, buildEmailUrl } from "@/lib/invitation/guest-portal-actions";
+import { buildWhatsAppUrl, buildEmailUrl, isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
+import { PagedInvitationViewer } from "@/components/invitation-paged/paged-invitation-viewer";
+import { categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
 import type { BlockRenderContext } from "@/lib/invitation-blocks/block-types";
 import type { EventExperienceConfig, HubTabId } from "@/lib/experience/experience-types";
 import { DEFAULT_HUB_TABS, DEFAULT_JOURNEY } from "@/lib/experience/experience-types";
+import { enabledTabsFromScenes } from "@/lib/invitation-studio/studio-scenes";
+import { layerZIndexMap, type StudioLayerId } from "@/lib/invitation-studio/studio-layers";
 import { ParticleEnvironment } from "@/components/experience/particle-environment";
 import { ExperienceBackgroundLayer } from "@/components/experience/experience-background-layer";
 import { InvitationGalleryDisplay } from "@/components/invitation/invitation-gallery-display";
 import { galleryItemsFromUrls } from "@/lib/invitation/studio-media-utils";
 import { getMediaEntranceClass, getMediaEntranceForLayout } from "@/lib/invitation/media-entrance-engine";
+import { mapExperienceSlideshowStyle } from "@/lib/experience/experience-engine-v2";
 import type { SlideshowStyleId } from "@/lib/invitation/slideshow-styles";
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import { CountdownDisplay } from "@/components/experience/countdown-display";
@@ -46,6 +53,7 @@ interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   rsvpRequired?: boolean;
   admissionQrDataUrl?: string | null;
   admissionQrToken?: string | null;
+  admissionManualCode?: string | null;
   guestQrToken?: string | null;
   seatLookupUrl?: string | null;
   seatQrDataUrl?: string | null;
@@ -65,6 +73,8 @@ interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   registryUrl?: string | null;
   seatingEnabled?: boolean;
   openingComplete?: boolean;
+  seatTable?: string | null;
+  seatLabel?: string | null;
 }
 
 function Countdown({ target, begunLabel, label, style }: { target: string; begunLabel: string; label: string; style?: CountdownStyleId }) {
@@ -99,8 +109,27 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   }), [props.invitation, localized]);
 
   const experience = props.experienceConfig;
-  const hubTabs = props.enabledHubTabs ?? experience?.enabledTabs ?? DEFAULT_HUB_TABS;
-  const showRsvp = props.rsvpRequired !== false;
+  const hubTabs = useMemo(() => {
+    if (props.enabledHubTabs?.length) return props.enabledHubTabs;
+    if (experience?.scenes?.length) return enabledTabsFromScenes(experience.scenes);
+    return experience?.enabledTabs ?? DEFAULT_HUB_TABS;
+  }, [props.enabledHubTabs, experience?.scenes, experience?.enabledTabs]);
+  const showRsvp = props.rsvpRequired !== false && hubTabs.includes("rsvp");
+  const hiddenLayers = useMemo(
+    () => new Set((experience?.hiddenLayers ?? []) as StudioLayerId[]),
+    [experience?.hiddenLayers]
+  );
+  const layerZ = useMemo(
+    () => layerZIndexMap(experience?.layerOrder),
+    [experience?.layerOrder]
+  );
+  const customScenes = useMemo(
+    () =>
+      (experience?.scenes ?? []).filter(
+        (s) => s.tabId === "custom" && s.visible !== false && (s.body?.trim() || s.title)
+      ),
+    [experience?.scenes]
+  );
 
   const calendarEvent = useMemo(
     () => ({
@@ -133,7 +162,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     hasQrPass: Boolean(props.qrDataUrl || props.admissionQrDataUrl || props.seatQrDataUrl),
     qrPassUrl: props.admissionQrToken ? `/admission/${props.admissionQrToken}` : null,
     galleryCount: props.galleryUrls?.length ?? 0,
-    memoryVaultEnabled: props.memoryVaultEnabled,
+    memoryVaultEnabled: props.memoryVaultEnabled || Boolean(props.memoryUploadUrl),
+    memoryUploadUrl: props.memoryUploadUrl,
+    memoryAlbumUrl: props.memoryAlbumUrl,
     menuUrl: props.menuUrl,
     menuBody: props.menuBody,
     registryUrl: props.registryUrl,
@@ -142,6 +173,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     shareTitle: displayEvent.title,
     hubTabs,
     hasCalendarDate: Boolean(props.event.startDateRaw),
+    buttonActions: experience?.buttonActions,
   });
 
   const blockContext: BlockRenderContext = {
@@ -159,6 +191,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     guestId: props.guestId,
     guestName: props.guestName,
     qrDataUrl: props.qrDataUrl,
+    admissionManualCode: props.admissionManualCode,
     memoryVaultEnabled: props.memoryVaultEnabled,
     eventId: props.eventId,
     seatLookupUrl: props.seatLookupUrl ?? undefined,
@@ -182,8 +215,38 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     return getMediaEntranceClass(getMediaEntranceForLayout(layout ?? props.design.layout ?? "classic-gold"));
   }
 
+  // Studio 2.0 paged viewer — activates when the design carries a token theme
+  // (Wave 1 templates). Checked before cinematic mode; legacy invites without
+  // a theme are untouched.
+  const pagedTheme = props.design?.theme;
+  if (pagedTheme && (experience?.hubMode === "paged" || !experience?.hubMode || Boolean(props.design?.blueprintId))) {
+    return (
+      <InviteViewportShell mode={props.embedded ? "embedded" : "live"} scrollable={false}>
+        <PagedInvitationViewer
+          context={{
+            invitation: displayInvitation,
+            event: displayEvent,
+            design: props.design,
+            theme: pagedTheme,
+            category: categoryForBlueprint(props.design?.blueprintId),
+            guestId: props.guestId,
+            guestName: props.guestName,
+            templateSlug: props.templateSlug,
+            rsvpRequired: props.rsvpRequired,
+            previewMode: isPreviewInvitationId(props.invitation.id),
+          }}
+        />
+      </InviteViewportShell>
+    );
+  }
+
+  const isTraditionalMarriage = props.design.layout === "traditional-marriage-ceremony";
+
   const cinematicMode =
-    props.cinematicMode !== false && props.fullScreen !== false && !useBlocks;
+    props.cinematicMode !== false &&
+    props.fullScreen !== false &&
+    !useBlocks &&
+    !isTraditionalMarriage;
 
   if (cinematicMode) {
     return (
@@ -195,6 +258,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         rsvpRequired={props.rsvpRequired}
         admissionQrDataUrl={props.admissionQrDataUrl}
         admissionQrToken={props.admissionQrToken}
+        admissionManualCode={props.admissionManualCode}
         guestQrToken={props.guestQrToken}
         seatLookupUrl={props.seatLookupUrl}
         seatQrDataUrl={props.seatQrDataUrl}
@@ -231,16 +295,30 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           : {}),
       }}
     >
-      <ParticleEnvironment presetId={environmentId} intensity={environmentIntensity} />
-      {!props.backgroundVideoUrl && !props.backgroundImageUrl && (
-        <ExperienceBackgroundLayer
-          packId={experience?.backgroundPackId}
-          fallbackColor={props.design?.colors?.background ?? "#FAF8F4"}
-          className="fixed inset-0 z-0 pointer-events-none opacity-90"
-        />
+      {!hiddenLayers.has("environment") && (
+        <div className="pointer-events-none fixed inset-0" style={{ zIndex: layerZ.environment }}>
+          <ParticleEnvironment presetId={environmentId} intensity={environmentIntensity} />
+        </div>
       )}
-      {(props.backgroundVideoUrl || props.backgroundImageUrl) && (
-        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+      {!hiddenLayers.has("background") && !props.backgroundVideoUrl && !props.backgroundImageUrl && (
+        <div
+          className="pointer-events-none fixed inset-0 opacity-90"
+          style={{ zIndex: layerZ.background }}
+        >
+          <ExperienceBackgroundLayer
+            packId={experience?.backgroundPackId}
+            fallbackColor={props.design?.colors?.background ?? "#FAF8F4"}
+            className="fixed inset-0"
+          />
+        </div>
+      )}
+      {!isTraditionalMarriage &&
+        !hiddenLayers.has("background") &&
+        (props.backgroundVideoUrl || props.backgroundImageUrl) && (
+        <div
+          className="fixed inset-0 overflow-hidden pointer-events-none"
+          style={{ zIndex: layerZ.background }}
+        >
           {props.backgroundVideoUrl ? (
             <UploadedMedia
               src={props.backgroundVideoUrl}
@@ -266,11 +344,21 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           guestId={props.guestId}
           guestName={props.guestName}
           qrDataUrl={props.qrDataUrl}
+          admissionManualCode={props.admissionManualCode}
+          admissionQrDataUrl={props.admissionQrDataUrl}
+          seatTable={props.seatTable}
+          seatLabel={props.seatLabel}
+          memoryUploadUrl={props.memoryUploadUrl}
+          memoryAlbumUrl={props.memoryAlbumUrl}
+          memoryUploadQrImageUrl={props.memoryUploadQrImageUrl}
           interactiveMedia
         />
 
-        {!useBlocks && primaryActions.length > 0 && (
-          <div className="mx-auto max-w-2xl px-4 -mt-1 mb-1">
+        {!useBlocks && !hiddenLayers.has("actions") && primaryActions.length > 0 && (
+          <div
+            className="mx-auto max-w-2xl px-4 -mt-1 mb-1"
+            style={{ position: "relative", zIndex: layerZ.actions }}
+          >
             <div className="rounded-2xl border border-slate-200/50 bg-white/85 backdrop-blur-sm px-2 py-2.5 shadow-sm">
               <InvitationFeatureDock
                 actions={primaryActions}
@@ -297,21 +385,24 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
-          <PortalSection id="welcome">
-            <div className="text-center space-y-2">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#0B8A83]">Welcome</p>
-              {props.guestName ? (
-                <h2 className="font-display text-2xl font-bold text-[#0F172A]">
-                  {t("invite.welcome", { name: props.guestName })}
-                </h2>
-              ) : (
-                <h2 className="font-display text-2xl font-bold text-[#0F172A]">{displayEvent.title}</h2>
-              )}
-              <p className="text-slate-700 text-sm">Hosted by {displayEvent.hostName}</p>
-            </div>
-          </PortalSection>
+          {/* Vision-board invite already shows guest name + full card copy — skip duplicate portal chrome */}
+          {!isTraditionalMarriage && (
+            <PortalSection id="welcome">
+              <div className="text-center space-y-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-[#0B8A83]">Welcome</p>
+                {props.guestName ? (
+                  <h2 className="font-display text-2xl font-bold text-[#0F172A]">
+                    {t("invite.welcome", { name: props.guestName })}
+                  </h2>
+                ) : (
+                  <h2 className="font-display text-2xl font-bold text-[#0F172A]">{displayEvent.title}</h2>
+                )}
+                <p className="text-slate-700 text-sm">Hosted by {displayEvent.hostName}</p>
+              </div>
+            </PortalSection>
+          )}
 
-          {!useBlocks && props.event.startDateRaw && (
+          {!isTraditionalMarriage && !useBlocks && props.event.startDateRaw && (
             <PortalSection delay={75} id="save-date">
               <SaveDateCalendarCard
                 accentColor={accent}
@@ -328,9 +419,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
-          {hubMode === "storybook" ? (
+          {!isTraditionalMarriage && hubMode === "storybook" ? (
             <StorybookJourney chapters={experience?.journeyChapters ?? STORYBOOK_JOURNEY} accentColor={accent} />
-          ) : hubMode === "journey" ? (
+          ) : !isTraditionalMarriage && hubMode === "journey" ? (
             <JourneyFlow chapters={journeyChapters}>
               {(chapter) => (
                 <div className="rounded-2xl border bg-white/90 p-6 text-center">
@@ -347,6 +438,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           ) : (
             <>
+              {hubTabs.includes("countdown") && !hiddenLayers.has("countdown") && (
               <PortalSection delay={100} id="countdown">
                 <Countdown
                   target={props.event.startDateRaw ?? props.event.startDate}
@@ -355,14 +447,15 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                   style={countdownStyle}
                 />
               </PortalSection>
+              )}
 
-              {displaySchedule.length > 0 && (
+              {hubTabs.includes("timeline") && displaySchedule.length > 0 && (
               <PortalSection delay={120} id="schedule">
                 <EventScheduleSection items={displaySchedule} accentColor={accent} />
               </PortalSection>
               )}
 
-              {displayEvent.description && (
+              {hubTabs.includes("story") && displayEvent.description && !isTraditionalMarriage && (
                 <PortalSection delay={150} id="story">
                   <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 shadow-sm">
                     <h2 className="font-display text-lg font-bold text-[#0F172A]">{t("invite.our_story")}</h2>
@@ -371,6 +464,18 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 </PortalSection>
               )}
 
+              {customScenes.map((scene, idx) => (
+                <PortalSection key={scene.id} delay={160 + idx * 10} id={`custom-${scene.id}`}>
+                  <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 shadow-sm">
+                    <h2 className="font-display text-lg font-bold text-[#0F172A]">{scene.title}</h2>
+                    {scene.body?.trim() && (
+                      <p className="mt-3 text-slate-600 leading-relaxed whitespace-pre-line">{scene.body}</p>
+                    )}
+                  </div>
+                </PortalSection>
+              ))}
+
+              {!isTraditionalMarriage && (
               <PortalSection delay={200} id="details">
                 <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 space-y-4 shadow-sm">
                   <h2 className="font-display text-lg font-bold text-[#0F172A]">Event Details</h2>
@@ -385,8 +490,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                   </div>
                 </div>
               </PortalSection>
+              )}
 
-              {(props.event.mapsLink || displayEvent.venueName) && (
+              {hubTabs.includes("venue") && (props.event.mapsLink || displayEvent.venueName) && (
                 <PortalSection delay={210} id="venue-map">
                   <VenueMapEmbed
                     mapsLink={props.event.mapsLink}
@@ -413,7 +519,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 </PortalSection>
               )}
 
-              {props.galleryUrls && props.galleryUrls.length > 0 && (
+              {hubTabs.includes("gallery") && props.galleryUrls && props.galleryUrls.length > 0 && (
                 <PortalSection delay={250} id="gallery">
                   <div className="rounded-2xl border border-slate-200/80 bg-white/95 backdrop-blur p-6 shadow-sm inv-text-on-light">
                     <h2
@@ -426,7 +532,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                       items={galleryItemsFromUrls(props.galleryUrls)}
                       interactive={props.galleryInteractive ?? !props.embedded}
                       settings={{
-                        style: (experience?.slideshowStyle ?? "fade-carousel") as SlideshowStyleId,
+                        style: mapExperienceSlideshowStyle(experience?.slideshowStyle) as SlideshowStyleId,
                         slideDurationSec: 4,
                         autoplay: props.galleryInteractive ? false : Boolean(props.embedded),
                         showCaptions: false,
@@ -491,7 +597,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             <PortalSection delay={400} id="pass">
               <div className="rounded-2xl border border-[#D4A63A]/30 bg-white p-6 text-center shadow-sm">
                 <h2 className="font-display text-lg font-bold text-[#0F172A] mb-4">Your Pass</h2>
-                {props.seatQrDataUrl && props.seatLookupUrl && (
+                {hubTabs.includes("seating") && props.seatQrDataUrl && props.seatLookupUrl && (
                   <div className="mb-6 rounded-xl bg-[#0B8A83]/5 border border-[#0B8A83]/20 p-4">
                     <p className="text-xs text-slate-600 mb-2 flex items-center justify-center gap-1">
                       <Armchair className="h-3.5 w-3.5" /> Your table & seat
@@ -515,6 +621,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                       caption="Tap to enlarge · turn brightness up for scanning"
                       showDownload
                     />
+                    {props.admissionManualCode && (
+                      <ManualGateCodeReveal code={props.admissionManualCode} variant="pass" />
+                    )}
                   </div>
                 )}
                 {props.qrDataUrl && (
@@ -526,6 +635,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                       size={160}
                       showDownload={false}
                     />
+                    {!props.admissionQrDataUrl && props.admissionManualCode && (
+                      <ManualGateCodeReveal code={props.admissionManualCode} variant="pass" />
+                    )}
                   </div>
                 )}
               </div>
@@ -533,9 +645,18 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           )}
 
           <PortalSection delay={415} id="wishes">
-            <GuestWishesCard accentColor={accent} memoryVaultEnabled={props.memoryVaultEnabled} />
+            <GuestWishesCard
+              eventId={props.eventId}
+              invitationId={props.invitation.id}
+              guestId={props.guestId}
+              guestName={props.guestName}
+              inviteLink={props.invitation.uniqueLink}
+              accentColor={accent}
+              memoryVaultEnabled={props.memoryVaultEnabled}
+            />
           </PortalSection>
 
+          {hubTabs.includes("gifts") && (
           <PortalSection delay={420} id="gifts">
             <GiftQrBox
               qrDataUrl={props.qrDataUrl}
@@ -549,23 +670,26 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               </div>
             )}
           </PortalSection>
+          )}
 
+          {(hubTabs.includes("memory") || props.memoryUploadUrl || props.memoryVaultEnabled) && (
           <PortalSection delay={430} id="memory">
-            <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 text-center shadow-sm">
-              <h2 className="font-display text-lg font-bold text-[#0F172A] mb-2">Memory Vault</h2>
-              <p className="text-sm text-slate-600">
-                {props.memoryVaultEnabled
-                  ? "Share photos and videos after the celebration — your memories live here forever."
-                  : "Memories from this event will appear here after the celebration."}
-              </p>
-            </div>
+            <InvitationMemoryAlbumCard
+              eventTitle={props.memoryAlbumTitle?.trim() || displayEvent.title}
+              uploadUrl={props.memoryUploadUrl}
+              albumUrl={props.memoryAlbumUrl}
+              uploadQrImageUrl={props.memoryUploadQrImageUrl}
+            />
           </PortalSection>
+          )}
 
           {lifecyclePhase === "post-event" && (
             <PortalSection delay={435} id="post-event">
               <PostEventExperience
                 eventTitle={displayEvent.title}
                 memoryVaultEnabled={props.memoryVaultEnabled}
+                memoryUploadUrl={props.memoryUploadUrl}
+                memoryAlbumUrl={props.memoryAlbumUrl}
                 galleryCount={galleryCount}
                 accentColor={accent}
                 thankYouMessage={thankYouMessage}
@@ -584,7 +708,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
         </div>
 
-        {!props.embedded && props.event.startDateRaw && (
+        {!props.embedded && props.event.startDateRaw && hubTabs.includes("countdown") && !hiddenLayers.has("countdown") && (
           <FloatingCountdownPill
             targetIso={props.event.startDateRaw}
             label={t("invite.countdown")}

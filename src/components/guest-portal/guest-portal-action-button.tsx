@@ -12,6 +12,7 @@ import {
   Mail,
   MapPin,
   Menu,
+  MessageCircle,
   Phone,
   QrCode,
   RotateCcw,
@@ -37,7 +38,7 @@ const ACTION_ICONS: Record<InvitationActionKey, LucideIcon> = {
   MEMORY_UPLOAD: Upload,
   CONTRIBUTION: Gift,
   CALL: Phone,
-  WHATSAPP: Phone,
+  WHATSAPP: MessageCircle,
   EMAIL: Mail,
   REPLAY: RotateCcw,
   AUDIO_TOGGLE: Volume2,
@@ -148,7 +149,7 @@ interface GuestPortalQuickActionsProps {
 }
 
 export function GuestPortalQuickActions({
-  actions,
+  actions: allActions,
   accentColor = "#0B8A83",
   variant = "rail",
   compact,
@@ -157,6 +158,8 @@ export function GuestPortalQuickActions({
   error,
   className,
 }: GuestPortalQuickActionsProps) {
+  // Hide soft-dead CTAs from the primary dock — only actionable controls belong here.
+  const actions = allActions.filter((a) => !a.disabled);
   if (actions.length === 0) return null;
 
   if (variant === "rail" || variant === "dark-chips") {

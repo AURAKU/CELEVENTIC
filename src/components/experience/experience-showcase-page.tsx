@@ -62,26 +62,28 @@ export function ExperienceShowcasePage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {CINEMATIC_SHOWCASE.map((item) => (
-              <Link
+              <article
                 key={item.slug}
-                href={`/templates?layout=${item.slug}`}
                 className="group rounded-2xl overflow-hidden border border-white/10 bg-white/5 hover:border-amber-500/40 hover:shadow-[0_0_40px_rgba(212,175,55,0.12)] transition-all"
               >
                 <div className="relative">
                   <LiveTemplatePreview layoutSlug={item.slug} category={item.category} variant="card" />
-                  <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 border border-amber-500/40 flex items-center justify-center text-xs font-bold text-amber-300">
+                  <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 border border-amber-500/40 flex items-center justify-center text-xs font-bold text-amber-300 z-10">
                     {item.index}
                   </div>
                 </div>
-                <div className="p-4 space-y-2">
+                <Link
+                  href={`/templates?layout=${item.slug}`}
+                  className="block p-4 space-y-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-inset"
+                >
                   <p className="font-semibold text-sm leading-tight group-hover:text-amber-200 transition-colors">{item.name}</p>
                   <p className="text-[10px] uppercase tracking-wider text-slate-500">{item.category}</p>
                   <div className="flex flex-wrap gap-1">
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300">{item.introLabel.split(" ")[0]} Intro</span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 truncate max-w-full">{item.audioLabel}</span>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </article>
             ))}
           </div>
         </div>
