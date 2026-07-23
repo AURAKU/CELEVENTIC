@@ -14,11 +14,17 @@ import type { InvitationLanguageMode } from "@prisma/client";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
 import { isVideoUrl } from "@/lib/invitation/theme-media-assets";
 import type { Prisma } from "@prisma/client";
-import { getAppUrlFromEnv } from "@/lib/app-url";
+import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
 import { Prisma as PrismaClient } from "@prisma/client";
 import { paginatedResult } from "@/lib/pagination";
 import type { MusicSelection } from "@/lib/music/music-types";
 import { validateMusicSelection } from "@/lib/music/validate-selection";
+
+/** Guard against legacy/dev-seeded `shareUrl` values that point at localhost. */
+function sanitizeOrderShareUrl<T extends { shareUrl?: string | null }>(order: T): T {
+  if (!order.shareUrl) return order;
+  return { ...order, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) };
+}
 
 export interface CreateOrderInput {
   userId: string;
@@ -248,7 +254,7 @@ export class InvitationOrderService {
       include: { template: true, package: true, payment: true, languageVersions: true },
     });
     if (!order) throw new Error("Order not found");
-    return order;
+    return sanitizeOrderShareUrl(order);
   }
 
   async listUserOrders(userId: string, page = 1, limit = 10) {
@@ -266,14 +272,15 @@ export class InvitationOrderService {
       prisma.invitationOrder.count({ where }),
     ]);
 
-    return paginatedResult(orders, total, page, limit);
+    return paginatedResult(orders.map(sanitizeOrderShareUrl), total, page, limit);
   }
 
   async listAllOrders() {
-    return prisma.invitationOrder.findMany({
+    const orders = await prisma.invitationOrder.findMany({
       include: { template: true, package: true, payment: true, user: { select: { name: true, email: true } } },
       orderBy: { createdAt: "desc" },
     });
+    return orders.map(sanitizeOrderShareUrl);
   }
 
   async setStatus(orderId: string, status: Prisma.InvitationOrderUpdateInput["status"]) {
@@ -296,7 +303,7 @@ export class InvitationOrderService {
         ? await prisma.event.findUnique({ where: { id: order.eventId } })
         : null;
       if (invitation) {
-        return { order, invitation, event, shareUrl: order.shareUrl };
+        return { order, invitation, event, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) };
       }
     }
 

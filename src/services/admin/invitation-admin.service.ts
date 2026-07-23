@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
+import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
 import type { Prisma } from "@prisma/client";
+
+/** Guard against legacy/dev-seeded `shareUrl` values that point at localhost. */
+function sanitizeOrderShareUrl<T extends { shareUrl?: string | null }>(order: T): T {
+  if (!order.shareUrl) return order;
+  return { ...order, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) };
+}
 
 export class InvitationAdminService {
   async getInvitationAnalytics() {
@@ -153,7 +160,7 @@ export class InvitationAdminService {
       prisma.invitationOrder.count({ where }),
     ]);
 
-    return paginatedResult(orders, total, page, limit);
+    return paginatedResult(orders.map(sanitizeOrderShareUrl), total, page, limit);
   }
 
   async updateOrder(
@@ -208,7 +215,7 @@ export class InvitationAdminService {
       details: data,
     });
 
-    return order;
+    return sanitizeOrderShareUrl(order);
   }
 
   async markDelivered(orderId: string, adminUserId: string) {

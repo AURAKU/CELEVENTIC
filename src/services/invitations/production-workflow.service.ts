@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 import { paymentService } from "@/services/payments/payment.service";
 import { productionNotificationService } from "@/services/invitations/production-notification.service";
+import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
 import {
   categoryToRevisionType,
   DEFAULT_EXTRA_REVISION_PRICE,
@@ -448,13 +449,14 @@ export class ProductionWorkflowService {
   }
 
   async deliverOrder(orderId: string, adminUserId: string, shareUrl?: string) {
+    const safeShareUrl = shareUrl ? sanitizePublicUrl(shareUrl, getAppUrlFromEnv()) : undefined;
     const order = await prisma.invitationOrder.update({
       where: { id: orderId },
       data: {
         productionStatus: "DELIVERED",
         workflowStage: "DELIVERED",
         status: "APPROVED",
-        ...(shareUrl ? { shareUrl } : {}),
+        ...(safeShareUrl ? { shareUrl: safeShareUrl } : {}),
       },
       include: { user: true },
     });
@@ -466,7 +468,7 @@ export class ProductionWorkflowService {
 
     await productionNotificationService.notify(order.userId, "INVITATION_PUBLISHED", {
       orderId,
-      link: order.shareUrl ?? undefined,
+      link: order.shareUrl ? sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) : undefined,
       customMessage: "Your final invitation has been delivered.",
     });
 
@@ -494,7 +496,7 @@ export class ProductionWorkflowService {
 
     await productionNotificationService.notify(order.userId, "INVITATION_PUBLISHED", {
       orderId,
-      link: order.shareUrl ?? undefined,
+      link: order.shareUrl ? sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) : undefined,
     });
 
     return order;
