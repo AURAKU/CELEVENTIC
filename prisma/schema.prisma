@@ -738,6 +738,7 @@ model OfflineDevice {
   checkins OfflineCheckin[]
   syncLogs OfflineSyncLog[]
 
+  @@index([eventId])
   @@map("offline_devices")
 }
 
@@ -754,6 +755,7 @@ model OfflineCheckin {
 
   device OfflineDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
+  @@index([deviceId])
   @@map("offline_checkins")
 }
 
@@ -768,6 +770,7 @@ model OfflineSyncLog {
 
   device OfflineDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
+  @@index([deviceId])
   @@map("offline_sync_logs")
 }
 

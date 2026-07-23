@@ -147,63 +147,76 @@ export class EventService {
     return { mode: "deleted" as const, event: deleted };
   }
 
-  /** Remove RESTRICT / non-cascading dependents, then delete the event row. */
+  /**
+   * Remove RESTRICT / non-cascading dependents, then delete the event row.
+   *
+   * Perf note (root cause of the P2028 "transaction already closed" error in prod):
+   * this used to run ~15 sequential queries — including two findMany-then-delete
+   * round trips for offlineDevice/ticketOrder — inside one 5s (Prisma default)
+   * interactive transaction. On SQLite (single-writer, see src/lib/prisma.ts)
+   * that easily tips over 5s under load. Fix:
+   *   1. Detach the purely optional FKs (SetNull-on-delete columns; nulling them
+   *      is idempotent and non-destructive) BEFORE opening the transaction, so
+   *      they can't burn the transaction's time budget.
+   *   2. Replace findMany-then-deleteMany with single deleteMany calls using
+   *      relation filters (device: { eventId: id }) — halves the round trips
+   *      for the offline-device and ticket-order cleanup.
+   *   3. Give the remaining RESTRICT-critical work (which must stay atomic with
+   *      the event delete) a generous explicit timeout/maxWait instead of the
+   *      5s default, since this is an infrequent admin/organizer action, not a
+   *      hot path.
+   */
   private async purgeAndDeleteEvent(id: string) {
-    return prisma.$transaction(async (tx) => {
-      // QR scans (RESTRICT on eventId)
-      await tx.qrScan.deleteMany({ where: { eventId: id } });
+    // Optional FKs (default onDelete: SetNull) — detaching them doesn't need to
+    // be atomic with the event delete, so keep this off the transaction clock.
+    await Promise.all([
+      prisma.campaign.updateMany({ where: { eventId: id }, data: { eventId: null } }),
+      prisma.flyerDesign.updateMany({ where: { eventId: id }, data: { eventId: null } }),
+      prisma.inspirationUpload.updateMany({ where: { eventId: id }, data: { eventId: null } }),
+      prisma.fraudDetectionLog.updateMany({ where: { eventId: id }, data: { eventId: null } }),
+      prisma.inspirationSource.updateMany({ where: { eventId: id }, data: { eventId: null } }),
+      // Invitation orders store eventId as a plain string (no Prisma relation)
+      prisma.invitationOrder.updateMany({ where: { eventId: id }, data: { eventId: null } }),
+    ]);
 
-      // Offline devices + child rows (RESTRICT on eventId / deviceId)
-      const devices = await tx.offlineDevice.findMany({
-        where: { eventId: id },
-        select: { id: true },
-      });
-      if (devices.length) {
-        const deviceIds = devices.map((d) => d.id);
-        await tx.offlineCheckin.deleteMany({ where: { deviceId: { in: deviceIds } } });
-        await tx.offlineSyncLog.deleteMany({ where: { deviceId: { in: deviceIds } } });
+    return prisma.$transaction(
+      async (tx) => {
+        // QR scans (RESTRICT on eventId)
+        await tx.qrScan.deleteMany({ where: { eventId: id } });
+
+        // Offline devices + child rows (RESTRICT on eventId / deviceId) — one
+        // pass via relation filters, no findMany round trip needed.
+        await tx.offlineCheckin.deleteMany({ where: { device: { eventId: id } } });
+        await tx.offlineSyncLog.deleteMany({ where: { device: { eventId: id } } });
         await tx.offlineDevice.deleteMany({ where: { eventId: id } });
-      }
 
-      // Ticket orders (RESTRICT) — detach payments first
-      const ticketOrders = await tx.ticketOrder.findMany({
-        where: { eventId: id },
-        select: { id: true },
-      });
-      if (ticketOrders.length) {
-        const orderIds = ticketOrders.map((o) => o.id);
+        // Ticket orders (RESTRICT) — detach payments first, same relation-filter approach
         await tx.payment.updateMany({
-          where: { ticketOrderId: { in: orderIds } },
+          where: { ticketOrder: { eventId: id } },
           data: { ticketOrderId: null },
         });
         await tx.ticketOrder.deleteMany({ where: { eventId: id } });
-      }
 
-      await tx.contribution.deleteMany({ where: { eventId: id } });
+        await tx.contribution.deleteMany({ where: { eventId: id } });
 
-      // Optional FKs — null rather than block (belt-and-suspenders)
-      await tx.campaign.updateMany({ where: { eventId: id }, data: { eventId: null } });
-      await tx.flyerDesign.updateMany({ where: { eventId: id }, data: { eventId: null } });
-      await tx.inspirationUpload.updateMany({ where: { eventId: id }, data: { eventId: null } });
-      await tx.fraudDetectionLog.updateMany({ where: { eventId: id }, data: { eventId: null } });
-      await tx.inspirationSource.updateMany({ where: { eventId: id }, data: { eventId: null } });
+        // Wallet is SetNull on eventId; detach expenses/tx then remove wallet row
+        const wallet = await tx.wallet.findFirst({ where: { eventId: id }, select: { id: true } });
+        if (wallet) {
+          await tx.eventExpense.updateMany({ where: { walletId: wallet.id }, data: { walletId: null } });
+          await tx.walletTransaction.deleteMany({ where: { walletId: wallet.id } });
+          await tx.wallet.delete({ where: { id: wallet.id } });
+        }
 
-      // Invitation orders store eventId as a plain string (no Prisma relation)
-      await tx.invitationOrder.updateMany({ where: { eventId: id }, data: { eventId: null } });
+        // Break Guest → Invitation before cascade deletes both from Event
+        await tx.guest.updateMany({ where: { eventId: id }, data: { invitationId: null } });
 
-      // Wallet is SetNull on eventId; detach expenses/tx then remove wallet row
-      const wallet = await tx.wallet.findFirst({ where: { eventId: id }, select: { id: true } });
-      if (wallet) {
-        await tx.eventExpense.updateMany({ where: { walletId: wallet.id }, data: { walletId: null } });
-        await tx.walletTransaction.deleteMany({ where: { walletId: wallet.id } });
-        await tx.wallet.delete({ where: { id: wallet.id } });
-      }
-
-      // Break Guest → Invitation before cascade deletes both from Event
-      await tx.guest.updateMany({ where: { eventId: id }, data: { invitationId: null } });
-
-      return tx.event.delete({ where: { id } });
-    });
+        return tx.event.delete({ where: { id } });
+      },
+      // Admin hard-delete can touch large graphs (many devices/orders/guests);
+      // 5s default is too tight for SQLite under concurrent writers. maxWait is
+      // how long to wait for a transaction slot; timeout is the execution budget.
+      { timeout: 20_000, maxWait: 10_000 }
+    );
   }
 
   async getOrganizerEvents(userId: string, page = 1, limit = 12) {
