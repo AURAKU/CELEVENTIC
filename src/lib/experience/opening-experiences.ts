@@ -325,3 +325,44 @@ export function isEnvelopeExperience(id: OpeningExperienceId) {
   const meta = getOpeningExperience(id);
   return meta?.category === "envelope";
 }
+
+export function isCurtainExperience(id: OpeningExperienceId | string | undefined) {
+  return Boolean(id && String(id).startsWith("curtain-"));
+}
+
+/**
+ * Catalogue / studio “Tap to open” already consumed the user gesture.
+ * Envelope + curtain ceremonies should begin opening immediately (one-shot),
+ * matching the live guest path without a second seal/curtain tap.
+ * Gesture-heavy openings (scratch, swipe, press-hold, …) stay interactive.
+ */
+export function previewAutoOpensReveal(id: OpeningExperienceId | string | undefined): boolean {
+  if (!id || id === "none") return false;
+  return isEnvelopeExperience(id as OpeningExperienceId) || isCurtainExperience(id);
+}
+
+/** Affordance copy for catalogue tiles that mirror the live opening cover. */
+export function previewTapLabelForOpening(
+  id: OpeningExperienceId | string | undefined
+): { label: string; subtitle?: string } {
+  if (!id || id === "none") {
+    return { label: "Tap to view invitation" };
+  }
+  if (isEnvelopeExperience(id as OpeningExperienceId)) {
+    return {
+      label: "Tap to open envelope",
+      subtitle: "Seal opens · invite reveals as guests see it",
+    };
+  }
+  if (isCurtainExperience(id)) {
+    return {
+      label: "Tap to open curtains",
+      subtitle: "Curtains part · invite reveals as guests see it",
+    };
+  }
+  const meta = getOpeningExperience(id as OpeningExperienceId);
+  return {
+    label: meta?.label ? `Tap to open · ${meta.label}` : "Tap to view invitation",
+    subtitle: meta?.description,
+  };
+}

@@ -24,11 +24,11 @@ interface EmbroideredEnvelopeFaceProps {
 
 /**
  * Classic invitation envelope proportions (landscape, not square).
- * Mobile: slightly less wide so it fills tall viewports.
- * Desktop: A7-ish ~1.36∶1.
+ * Tuned wide enough to read as a real envelope, tall enough to fill the stage
+ * without large grey letterbox bands on mobile or desktop.
  */
-const ENVELOPE_ASPECT_MOBILE = 1.2;
-const ENVELOPE_ASPECT_DESKTOP = 1.36;
+const ENVELOPE_ASPECT_MOBILE = 1.18;
+const ENVELOPE_ASPECT_DESKTOP = 1.28;
 /** Source art intrinsic ratio (IMG_8701 ≈ square). */
 const ART_ASPECT_NUM = 937 / 957;
 
@@ -50,9 +50,9 @@ const FALLBACK_SEAL_WIDTH = "36%";
 
 /**
  * Cover-zoom so embroidery fills the landscape rectangle with no grey paper gaps.
- * Higher than 1 so florals stay rich after aspect conversion.
+ * Slightly higher so florals stay rich after aspect conversion on larger stage.
  */
-const PHOTO_ZOOM = 1.14;
+const PHOTO_ZOOM = 1.12;
 
 const PAPER =
   "linear-gradient(165deg, #faf6f0 0%, #f3ebe3 42%, #ebe2d6 78%, #e4d9cc 100%)";
@@ -155,29 +155,35 @@ export function EmbroideredEnvelopeFace({
 
   /** Maximize envelope in viewport — landscape box constrained by width AND height. */
   const envelopeWidth = fitContainer
-    ? "min(100%, 100%)"
-    : `min(96.5vw, calc((100dvh - 1.1rem) * ${envelopeAspect}), 46rem)`;
+    ? "100%"
+    : `min(99.2vw, calc((100dvh - 0.28rem) * ${envelopeAspect}), 56rem)`;
 
   return (
     <div
       className={`absolute inset-0 z-10 flex items-center justify-center ${invitationFontVars}`}
       style={{
         background: stageBg,
+        /* Hold the envelope on-stage while the flap opens; fade only after the lift reads. */
         opacity: isOpening ? 0 : 1,
         transform: isOpening
           ? reduceMotion
-            ? "translateY(-5%) scale(1.02)"
-            : "translateY(-10%) scale(1.06)"
+            ? "translateY(-4%) scale(1.01)"
+            : "translateY(-6%) scale(1.03)"
           : "translateY(0) scale(1)",
         transition: reduceMotion
           ? `opacity ${durationMs}ms ${openEase}, transform ${durationMs}ms ${openEase}`
-          : `opacity ${Math.round(durationMs * 0.42)}ms ${openEase} ${Math.round(
-              durationMs * 0.52
-            )}ms, transform ${durationMs}ms ${openEase}`,
+          : `opacity ${Math.round(durationMs * 0.28)}ms ${openEase} ${Math.round(
+              durationMs * 0.68
+            )}ms, transform ${Math.round(durationMs * 0.55)}ms ${openEase} ${Math.round(
+              durationMs * 0.38
+            )}ms`,
         pointerEvents: "none",
         padding: fitContainer
-          ? "0.25rem"
-          : "max(0.35rem, env(safe-area-inset-top, 0px)) max(0.45rem, env(safe-area-inset-right, 0px)) max(0.35rem, env(safe-area-inset-bottom, 0px)) max(0.45rem, env(safe-area-inset-left, 0px))",
+          ? "0"
+          : "max(0.12rem, env(safe-area-inset-top, 0px)) max(0.18rem, env(safe-area-inset-right, 0px)) max(0.12rem, env(safe-area-inset-bottom, 0px)) max(0.18rem, env(safe-area-inset-left, 0px))",
+        /* Perspective lives here so rotateX on the flap+seal unit is never flattened. */
+        perspective: reduceMotion ? undefined : "1600px",
+        perspectiveOrigin: "50% 0%",
       }}
     >
       {/* Soft linen atmosphere */}
@@ -198,13 +204,13 @@ export function EmbroideredEnvelopeFace({
           /* Classic landscape invitation envelope — fills screen, adapts mobile/desktop. */
           width: envelopeWidth,
           aspectRatio: `${envelopeAspect} / 1`,
-          maxHeight: fitContainer ? "100%" : "calc(100dvh - 0.85rem)",
+          maxHeight: fitContainer ? "100%" : "calc(100dvh - 0.28rem)",
           height: "auto",
           transformStyle: "preserve-3d",
-          borderRadius: "0.1rem",
+          borderRadius: "0.12rem",
           boxShadow:
-            "0 24px 70px rgba(80, 50, 30, 0.22), 0 0 0 1px rgba(196, 154, 120, 0.28)",
-          /* Flap+seal may rotate past the face; keep clipped while sealed. */
+            "0 24px 70px rgba(80, 50, 30, 0.22), 0 0 0 1px rgba(196, 154, 120, 0.34)",
+          /* Flap+seal may swing past the face; keep clipped while sealed. */
           overflow: isOpening ? "visible" : "hidden",
           background: "#efe6dc",
         }}
@@ -268,7 +274,7 @@ export function EmbroideredEnvelopeFace({
           />
         )}
 
-        {/* Flap + seal assembly — one transform; seal stays fixed on the tip */}
+        {/* Flap + seal assembly — ONE rotateX; seal is a child so it never floats alone */}
         <div
           className="absolute inset-x-0 top-0 z-20"
           style={{
@@ -277,23 +283,37 @@ export function EmbroideredEnvelopeFace({
             transform: isOpening
               ? reduceMotion
                 ? "translateY(-105%)"
-                : "translateY(-4%) rotateX(-124deg) scaleY(1.015)"
+                /* Stay under 90° so the embroidered face stays visible while lifting. */
+                : "translateY(-1%) rotateX(-82deg)"
               : "translateY(0) rotateX(0deg)",
             transition: `transform ${durationMs}ms ${openEase} ${flapDelayMs}ms`,
             transformStyle: "preserve-3d",
             /* Seal protrudes past the V-tip; never clip the assembly. */
             overflow: "visible",
+            willChange: isOpening ? "transform" : undefined,
           }}
           aria-hidden
         >
-          {/* V-flap face only (clipped triangle) */}
+          {/* Cream underside — reads as paper when the flap lifts toward camera */}
+          <div
+            className="absolute inset-0"
+            style={{
+              clipPath: "polygon(0 0, 100% 0, 50% 100%)",
+              background: FLAP_PAPER,
+              transform: "rotateX(180deg)",
+              backfaceVisibility: "hidden",
+              boxShadow: "inset 0 8px 24px rgba(80,50,30,0.12)",
+            }}
+          />
+
+          {/* V-flap face only (clipped triangle) — NO backface hide (that made the flap vanish past ~90°) */}
           <div
             className="absolute inset-0 overflow-hidden"
             style={{
               clipPath: "polygon(0 0, 100% 0, 50% 100%)",
               boxShadow: isOpening ? "none" : "0 18px 40px rgba(80,50,30,0.16)",
-              filter: isOpening ? "brightness(1.12)" : undefined,
-              backfaceVisibility: "hidden",
+              filter: isOpening ? "brightness(1.1)" : undefined,
+              transform: "translateZ(0.5px)",
             }}
           >
             {usePhoto && faceArtUrl ? (
@@ -352,8 +372,8 @@ export function EmbroideredEnvelopeFace({
           </div>
 
           {/*
-            Peach wax stamp — child of flap transform.
-            Anchored on the V-tip; covers cream plate fully; never floats away alone.
+            Peach wax stamp — child of flap transform (same rotateX).
+            Anchored on the V-tip; covers cream plate; never floats away alone.
           */}
           <div
             className="absolute left-1/2 z-30"
@@ -362,12 +382,11 @@ export function EmbroideredEnvelopeFace({
               width: sealWidth,
               height: "auto",
               aspectRatio: "1",
-              minWidth: fitContainer ? "4.75rem" : "10rem",
-              minHeight: fitContainer ? "4.75rem" : "10rem",
-              maxWidth: fitContainer ? "8.5rem" : "18.5rem",
-              /* Centered on tip; parent flap owns open motion. */
-              transform: "translate(-50%, -50%)",
-              willChange: isOpening ? "transform" : undefined,
+              minWidth: fitContainer ? "4.25rem" : "9.25rem",
+              minHeight: fitContainer ? "4.25rem" : "9.25rem",
+              maxWidth: fitContainer ? "7.75rem" : "17rem",
+              /* Centered on tip; parent flap owns ALL open motion — no seal-only transform. */
+              transform: "translate3d(-50%, -50%, 1.5px)",
             }}
           >
             <PremiumWaxSeal

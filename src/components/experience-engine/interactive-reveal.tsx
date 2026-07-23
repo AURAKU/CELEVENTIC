@@ -18,6 +18,10 @@ interface InteractiveRevealProps {
   onComplete: () => void;
   /** User gesture that starts the reveal (audio unlock). */
   onBegin?: () => void;
+  /** Framed catalogue/studio preview — absolute envelope shell. */
+  embedded?: boolean;
+  /** Start envelope/curtain open immediately (preview tap gesture already happened). */
+  autoOpen?: boolean;
   children: ReactNode;
 }
 
@@ -36,6 +40,8 @@ export function InteractiveReveal({
   sealInitials,
   onComplete,
   onBegin,
+  embedded = false,
+  autoOpen = false,
   children,
 }: InteractiveRevealProps) {
   const contract = getRevealContractForOpening(openingExperience);
@@ -51,7 +57,11 @@ export function InteractiveReveal({
       data-reveal-hint={contract.gestureHint}
       data-reveal-keyboard={contract.supportsKeyboardFallback ? "true" : "false"}
       data-reveal-reduced-motion={contract.supportsReducedMotion ? "true" : "false"}
-      className="interactive-reveal-root"
+      className={
+        embedded
+          ? "interactive-reveal-root absolute inset-0 h-full w-full min-h-full"
+          : "interactive-reveal-root"
+      }
     >
       <OpeningExperienceRouter
         experienceId={contract.openingExperience}
@@ -63,6 +73,8 @@ export function InteractiveReveal({
         sealInitials={sealInitials}
         onComplete={onComplete}
         onBegin={onBegin}
+        embedded={embedded}
+        autoOpen={autoOpen}
       >
         {children}
       </OpeningExperienceRouter>

@@ -76,6 +76,11 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   skipSoftIntro?: boolean;
   /** Skip INVITE_OPEN analytics (catalog/studio previews) */
   skipAnalytics?: boolean;
+  /**
+   * Catalogue “Tap to open envelope” already consumed the gesture —
+   * start the opening reveal immediately (music unlocks via onBegin).
+   */
+  autoOpenReveal?: boolean;
   contactEmail?: string | null;
   seatingEnabled?: boolean;
   menuUrl?: string | null;
@@ -101,6 +106,7 @@ export function PremiumInviteWrapper({
   skipIntro = false,
   skipSoftIntro,
   skipAnalytics = false,
+  autoOpenReveal = false,
   ...props
 }: PremiumInviteWrapperProps) {
   const enrichedDesign = useMemo(
@@ -364,6 +370,8 @@ export function PremiumInviteWrapper({
           musicEnabled={Boolean(hasMusic)}
           enableSounds={experience?.enableRevealSounds}
           sealInitials={sealInitials}
+          embedded={Boolean(embedded)}
+          autoOpen={Boolean(autoOpenReveal)}
           onBegin={() => {
             void startAudio();
           }}

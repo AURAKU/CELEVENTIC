@@ -45,6 +45,10 @@ interface OpeningExperienceRouterProps {
   onComplete: () => void;
   /** Fires on the reveal start gesture (e.g. curtain tap / envelope open) for audio unlock. */
   onBegin?: () => void;
+  /** Framed preview — envelope uses absolute fill instead of viewport-fixed. */
+  embedded?: boolean;
+  /** Catalogue tap already unlocked audio — open without a second seal tap. */
+  autoOpen?: boolean;
   children: React.ReactNode;
 }
 
@@ -66,6 +70,8 @@ export function OpeningExperienceRouter({
   sealInitials,
   onComplete,
   onBegin,
+  embedded = false,
+  autoOpen = false,
   children,
 }: OpeningExperienceRouterProps) {
   const [revealed, setRevealed] = useState(false);
@@ -106,6 +112,8 @@ export function OpeningExperienceRouter({
         sealInitials={sealInitials}
         onBegin={onBegin}
         onComplete={complete}
+        embedded={embedded}
+        autoOpen={autoOpen}
       >
         {children}
       </EnvelopeCollectionReveal>
@@ -145,6 +153,8 @@ export function OpeningExperienceRouter({
         theme={CURTAIN_THEME_MAP[experienceId] ?? "wedding"}
         onBegin={onBegin}
         onComplete={complete}
+        embedded={embedded}
+        autoOpen={autoOpen}
       >
         {children}
       </CurtainReveal>

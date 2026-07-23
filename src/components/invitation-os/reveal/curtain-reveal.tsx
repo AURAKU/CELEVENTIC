@@ -15,6 +15,13 @@ interface CurtainRevealProps {
   children?: ReactNode;
   /** Catalogue glimpse: closed curtains only — absolute fill, no open gesture. */
   staticPreview?: boolean;
+  /** Framed catalogue / studio live preview — absolute fill instead of viewport-fixed. */
+  embedded?: boolean;
+  /**
+   * Start opening on mount (catalogue “Tap to open curtains” already consumed
+   * the user gesture — do not require a second stage tap).
+   */
+  autoOpen?: boolean;
 }
 
 const CURTAIN_THEMES: Record<
@@ -221,12 +228,17 @@ export function CurtainReveal({
   onBegin,
   children,
   staticPreview = false,
+  embedded = false,
+  autoOpen = false,
 }: CurtainRevealProps) {
   const colors = CURTAIN_THEMES[theme];
   const reduceMotion = useReducedMotion();
+  const shouldAutoOpen = Boolean(autoOpen) && !staticPreview;
+  /** Always mount closed so the open transition has a from→to (autoOpen flips next frame). */
   const [phase, setPhase] = useState<Phase>("closed");
   const started = useRef(false);
   const completeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoOpenBootstrapped = useRef(false);
 
   const durationMs = reduceMotion ? OPEN_REDUCED_MS : OPEN_MS;
   const weddingTrim = theme === "wedding";
@@ -250,8 +262,31 @@ export function CurtainReveal({
     };
   }, []);
 
+  /**
+   * Catalogue “Tap to open curtains” already happened.
+   * Paint one closed frame, then open so CSS transitions actually run.
+   */
   useEffect(() => {
-    if (staticPreview || phase !== "closed") return;
+    if (!shouldAutoOpen || autoOpenBootstrapped.current) return;
+    autoOpenBootstrapped.current = true;
+    if (started.current) return;
+    started.current = true;
+    onBegin?.();
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setPhase("opening");
+        completeTimer.current = setTimeout(finish, durationMs + 80);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [shouldAutoOpen, onBegin, finish, durationMs]);
+
+  useEffect(() => {
+    if (staticPreview || shouldAutoOpen || phase !== "closed") return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
@@ -260,20 +295,27 @@ export function CurtainReveal({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [beginOpen, phase, staticPreview]);
+  }, [beginOpen, phase, staticPreview, shouldAutoOpen]);
 
   if (phase === "done") return null;
 
   const opened = phase === "opening";
 
+  const shellClass = staticPreview
+    ? "absolute inset-0 overflow-hidden pointer-events-none"
+    : embedded
+      ? "absolute inset-0 z-[100] overflow-hidden"
+      : "fixed inset-0 z-[100] invite-viewport-live safe-area-pt safe-area-pb overflow-hidden";
+
   return (
     <div
-      className={
-        staticPreview
-          ? "absolute inset-0 overflow-hidden pointer-events-none"
-          : "fixed inset-0 z-[100] invite-viewport-live safe-area-pt safe-area-pb overflow-hidden"
-      }
-      style={{ background: colors.stage }}
+      className={shellClass}
+      style={{
+        background: colors.stage,
+        minHeight: staticPreview || embedded ? "100%" : undefined,
+        height: staticPreview || embedded ? "100%" : undefined,
+        width: staticPreview || embedded ? "100%" : undefined,
+      }}
       role={staticPreview ? "img" : "dialog"}
       aria-modal={staticPreview ? undefined : true}
       aria-label={
@@ -336,8 +378,8 @@ export function CurtainReveal({
         />
       )}
 
-      {/* Tap affordance — full-stage hit target while closed */}
-      {!staticPreview && phase === "closed" && (
+      {/* Tap affordance — full-stage hit target while closed (skipped when autoOpen). */}
+      {!staticPreview && !shouldAutoOpen && phase === "closed" && (
         <button
           type="button"
           onClick={beginOpen}

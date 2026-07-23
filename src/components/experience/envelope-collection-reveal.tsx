@@ -27,6 +27,16 @@ interface EnvelopeCollectionRevealProps {
    * Used so preview tiles show the real opening DNA before tap-to-view.
    */
   staticPreview?: boolean;
+  /**
+   * Framed catalogue / studio live preview — absolute fill inside the tile
+   * instead of viewport-fixed (avoids zero-height collapse under CSS transforms).
+   */
+  embedded?: boolean;
+  /**
+   * Start opening on mount (catalogue “Tap to open envelope” already consumed
+   * the user gesture — do not require a second tap on a sealed face).
+   */
+  autoOpen?: boolean;
 }
 
 type Phase = "idle" | "opening" | "done";
@@ -70,11 +80,16 @@ export function EnvelopeCollectionReveal({
   onComplete,
   children,
   staticPreview = false,
+  embedded = false,
+  autoOpen = false,
 }: EnvelopeCollectionRevealProps) {
   const reduceMotion = useReducedMotion();
+  const shouldAutoOpen = Boolean(autoOpen) && !staticPreview;
+  /** Always mount sealed so the open transition has a from→to (autoOpen flips next frame). */
   const [phase, setPhase] = useState<Phase>("idle");
   const started = useRef(false);
   const completeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoOpenBootstrapped = useRef(false);
 
   /** Cream embroidered face — photoreal art fill + interactive seal when themed. */
   const photoreal = Boolean(theme.photoreal);
@@ -143,6 +158,34 @@ export function EnvelopeCollectionReveal({
     };
   }, []);
 
+  /**
+   * Catalogue “Tap to open envelope” already happened.
+   * Paint one sealed frame, then open so CSS transitions actually run.
+   * Music unlock runs immediately (sticky activation from the affordance tap).
+   */
+  useEffect(() => {
+    if (!shouldAutoOpen || autoOpenBootstrapped.current) return;
+    autoOpenBootstrapped.current = true;
+    if (started.current) return;
+    started.current = true;
+    triggerHapticLight();
+    onBegin?.();
+    if (enableSounds && !photoreal) {
+      playRevealSounds(true);
+    }
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setPhase("opening");
+        completeTimer.current = setTimeout(finish, durationMs + 80);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [shouldAutoOpen, onBegin, enableSounds, photoreal, finish, durationMs]);
+
   useEffect(() => {
     if (staticPreview || phase !== "idle") return;
     function onKey(e: KeyboardEvent) {
@@ -157,14 +200,24 @@ export function EnvelopeCollectionReveal({
 
   if (phase === "done") return null;
 
+  const shellClass = staticPreview
+    ? "absolute inset-0 overflow-hidden pointer-events-none"
+    : embedded
+      ? "absolute inset-0 z-[100] overflow-hidden"
+      : "fixed inset-0 z-[100] invite-viewport-live overflow-hidden";
+
   return (
     <div
-      className={
-        staticPreview
-          ? "absolute inset-0 overflow-hidden pointer-events-none"
-          : "fixed inset-0 z-[100] invite-viewport-live overflow-hidden"
-      }
-      style={{ background: stageBase, perspective: reduceMotion ? undefined : "1600px" }}
+      className={shellClass}
+      style={{
+        background: stageBase,
+        perspective: reduceMotion ? undefined : "1600px",
+        perspectiveOrigin: "50% 18%",
+        /* Ensure absolute/fixed children have a real box in framed previews. */
+        minHeight: staticPreview || embedded ? "100%" : undefined,
+        height: staticPreview || embedded ? "100%" : undefined,
+        width: staticPreview || embedded ? "100%" : undefined,
+      }}
       role={staticPreview ? "img" : "dialog"}
       aria-modal={staticPreview ? undefined : true}
       aria-label={
@@ -454,8 +507,8 @@ export function EnvelopeCollectionReveal({
       </div>
       )}
 
-      {/* Full-screen hit target — seal/envelope IS the control; no copy stack */}
-      {!staticPreview && phase === "idle" && (
+      {/* Full-area hit target — seal/envelope IS the control; no copy stack */}
+      {!staticPreview && !shouldAutoOpen && phase === "idle" && (
         <button
           type="button"
           onClick={beginOpen}

@@ -16,6 +16,11 @@ import { TemplatePreviewGlimpse } from "@/components/invitation/template-preview
 import { PreviewTapAffordance } from "@/components/invitation/preview-tap-affordance";
 import type { InvitationDesignConfig, InvitationEventData } from "@/types/invitation-design";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
+import {
+  previewAutoOpensReveal,
+  previewTapLabelForOpening,
+} from "@/lib/experience/opening-experiences";
+import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 
 interface InvitationStudioPreviewProps {
   design: InvitationDesignConfig;
@@ -42,6 +47,10 @@ export function InvitationStudioPreview({
 
   const layoutSlug = enrichedDesign.layout ?? "classic-gold";
   const theme = resolveEventTheme(layoutSlug);
+  const openingId = (enrichedDesign.experience?.openingExperience ??
+    "none") as OpeningExperienceId;
+  const autoOpenReveal = previewAutoOpensReveal(openingId);
+  const tapCopy = previewTapLabelForOpening(openingId);
   const fallback = buildLivePreviewProps(layoutSlug, theme, {
     musicEnabled: true,
     musicAutoplay: true,
@@ -102,17 +111,14 @@ export function InvitationStudioPreview({
         />
         <PreviewTapAffordance
           hasMusic={hasMusic}
-          label={
-            layoutSlug === "traditional-marriage-ceremony"
-              ? "Tap to open envelope"
-              : "Tap to open live preview"
-          }
+          label={tapCopy.label}
           subtitle={
-            hasMusic
-              ? layoutSlug === "traditional-marriage-ceremony"
-                ? "Seal opens · music begins with the invite"
-                : "Music starts automatically — use the corner button to mute"
-              : "Full guest experience with reveal and gallery"
+            autoOpenReveal && hasMusic
+              ? `${tapCopy.subtitle ?? "Opens as guests see it"} · music begins`
+              : tapCopy.subtitle ??
+                (hasMusic
+                  ? "Music starts automatically — use the corner button to mute"
+                  : "Full guest experience with reveal and gallery")
           }
           onOpen={(e) => {
             e.preventDefault();
@@ -155,6 +161,7 @@ export function InvitationStudioPreview({
         guestName="Guest Preview"
         fullScreen
         embedded
+        autoOpenReveal={autoOpenReveal}
         galleryInteractive
         rsvpRequired={false}
         eventId="preview-event"

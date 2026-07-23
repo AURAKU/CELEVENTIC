@@ -9,6 +9,11 @@ import { pageBackgroundFromDesign } from "@/lib/invitation/studio-media-utils";
 import { TemplatePreviewGlimpse } from "@/components/invitation/template-preview-glimpse";
 import { InvitationStaticPreviewProvider } from "@/components/invitation/invitation-static-preview";
 import { PreviewTapAffordance } from "@/components/invitation/preview-tap-affordance";
+import {
+  previewAutoOpensReveal,
+  previewTapLabelForOpening,
+} from "@/lib/experience/opening-experiences";
+import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import { Play, Smartphone, Monitor, Music2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -106,6 +111,7 @@ function LivePreviewExperience({
   memoryAlbumTitle,
   skipIntro = true,
   skipTapGate = true,
+  autoOpenReveal = false,
 }: {
   preview: ReturnType<typeof buildLivePreviewProps>;
   device: PreviewDevice;
@@ -122,13 +128,23 @@ function LivePreviewExperience({
   /** Compact thumbs skip; interactive detail/hero can run soft-intro → tap gate */
   skipIntro?: boolean;
   skipTapGate?: boolean;
+  /**
+   * Catalogue tap already unlocked audio — start envelope/curtain open immediately
+   * (same one-shot path guests get after their open gesture).
+   */
+  autoOpenReveal?: boolean;
 }) {
   const bg = pageBackgroundFromDesign(preview.design);
   const experience = (
     <PreviewDeviceChrome device={device}>
       <div
-        className="relative"
-        style={{ pointerEvents: "auto" }}
+        className="relative w-full"
+        style={{
+          pointerEvents: "auto",
+          /* Give absolute/fixed reveal shells a real box inside scaled frames. */
+          minHeight: fullScreen ? (device === "desktop" ? 560 : 640) : 520,
+          height: fullScreen ? (device === "desktop" ? 560 : 640) : undefined,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <PremiumInviteWrapper
@@ -136,6 +152,7 @@ function LivePreviewExperience({
           skipIntro={skipIntro}
           skipTapGate={skipTapGate}
           skipAnalytics
+          autoOpenReveal={autoOpenReveal}
           musicEnabled={musicEnabled}
           musicAutoplay={musicAutoplay}
           musicSelection={preview.musicSelection}
@@ -161,7 +178,7 @@ function LivePreviewExperience({
           design={preview.design}
           guestName={preview.guestName}
           fullScreen={fullScreen}
-          embedded={compactFrame}
+          embedded
           galleryInteractive
           rsvpRequired={false}
           memoryVaultEnabled={Boolean(memoryUploadUrl)}
@@ -225,12 +242,25 @@ export function LiveTemplatePreview({
     [layoutSlug, catalogSlug, category, features, musicEnabled]
   );
 
+  const openingId = (preview.design.experience?.openingExperience ??
+    "none") as OpeningExperienceId;
+  const hasTheatricalOpen = openingId !== "none";
+  const autoOpenOnActivate = previewAutoOpensReveal(openingId);
+  const tapCopy = previewTapLabelForOpening(openingId);
+
   const hasMusic = Boolean(preview.musicSelection) && (musicEnabled ?? true);
   const portalLive = showLive;
-  const isFullLayout = portalLive && cfg.interactive;
-  const isTraditionalMarriagePreview =
-    layoutSlug === "traditional-marriage-ceremony" ||
-    catalogSlug === "traditional-marriage-ceremony";
+  /**
+   * Live preview must run the same opening guests get — never skip into a
+   * static portal when the template has a theatrical reveal.
+   * Compact thumbs without an opening still skip for snappy catalogue scroll.
+   * A sealed envelope / curtain needs real screen space to read as the guest
+   * choreography (seal lifts → flap opens → invite reveals) — never confine
+   * that ceremony to a catalogue tile's tiny scaled mini-portal, even on
+   * compact card/picker tiles.
+   */
+  const isFullLayout = portalLive && (cfg.interactive || hasTheatricalOpen);
+  const skipRevealForLive = hasTheatricalOpen ? false : !isFullLayout;
 
   const frameWidth = device === "mobile" ? MOBILE_FRAME_WIDTH : DESKTOP_FRAME_WIDTH;
 
@@ -308,6 +338,13 @@ export function LiveTemplatePreview({
     : Math.ceil(cfg.height / Math.max(displayScale, 0.01));
 
   const compactPoster = variant === "picker";
+  /**
+   * Static thumbnail keeps the tile's compact catalogue height. Once live +
+   * full-layout (theatrical envelope/curtain choreography), the stage must
+   * grow to fit the real opening — pinning it to the thumbnail height is what
+   * clipped the reveal / stranded it on the sealed frame behind a scrollbar.
+   */
+  const stageHeight = showLive && isFullLayout ? undefined : cfg.height;
 
   return (
     <div
@@ -317,7 +354,7 @@ export function LiveTemplatePreview({
         variant === "detail" && "rounded-2xl border border-slate-200/80",
         className
       )}
-      style={{ height: cfg.height }}
+      style={{ height: stageHeight, minHeight: stageHeight === undefined ? cfg.height : undefined }}
     >
       {!showLive ? (
         <>
@@ -336,20 +373,16 @@ export function LiveTemplatePreview({
           <PreviewTapAffordance
             compact={compactPoster}
             hasMusic={hasMusic}
-            label={
-              isTraditionalMarriagePreview
-                ? "Tap to open envelope"
-                : "Tap to view invitation"
-            }
+            label={tapCopy.label}
             subtitle={
-              isTraditionalMarriagePreview && hasMusic
-                ? "Seal opens · music begins with the invite"
-                : undefined
+              autoOpenOnActivate && hasMusic
+                ? `${tapCopy.subtitle ?? "Opens as guests see it"} · music begins`
+                : tapCopy.subtitle
             }
             onOpen={openPreview}
             aria-label={
-              isTraditionalMarriagePreview
-                ? "Tap to open traditional marriage envelope preview"
+              autoOpenOnActivate
+                ? `Tap to open live ${tapCopy.label.replace(/^Tap to open\s*/i, "").trim() || "opening"} preview`
                 : "Tap to open live template preview"
             }
           />
@@ -442,9 +475,11 @@ export function LiveTemplatePreview({
                 device={isFullLayout ? device : "mobile"}
                 fullScreen={isFullLayout}
                 compactFrame={!isFullLayout}
-                skipReveal={!(isFullLayout && isTraditionalMarriagePreview)}
-                skipIntro={!isFullLayout || isTraditionalMarriagePreview}
-                skipTapGate={!isFullLayout || isTraditionalMarriagePreview}
+                skipReveal={skipRevealForLive}
+                /* Catalogue tap IS the guest gesture — skip soft intro / tap gate. */
+                skipIntro
+                skipTapGate
+                autoOpenReveal={autoOpenOnActivate}
                 musicEnabled={hasMusic && inView}
                 musicAutoplay={hasMusic && inView}
                 memoryUploadUrl={memoryUploadUrl}
