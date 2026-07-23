@@ -10,12 +10,55 @@ import { useLocale } from "@/components/i18n/locale-provider";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 import { InvitationGalleryDisplay, slideshowStyleFromVariant } from "@/components/invitation/invitation-gallery-display";
+import { TraditionalMarriageGallerySection } from "@/components/invitation/templates/traditional-marriage-gallery";
+import { TraditionalMarriageCountdown } from "@/components/invitation/templates/traditional-marriage-countdown";
+import { TraditionalMarriageThankYou } from "@/components/invitation/templates/traditional-marriage-thank-you";
+import { TM_PALETTE } from "@/components/invitation/templates/traditional-marriage-palette";
+import { cn } from "@/lib/utils";
 
-function BlockHeader({ block, locale }: { block: InvitationBlockDto; locale: string }) {
+function BlockHeader({
+  block,
+  locale,
+  editorial,
+}: {
+  block: InvitationBlockDto;
+  locale: string;
+  /** Traditional Marriage / heritage editorial header */
+  editorial?: boolean;
+}) {
   const localized = block.contents?.find((c) => c.language === locale);
   const title = localized?.title ?? block.title;
   const subtitle = localized?.subtitle ?? block.subtitle;
   if (!title && !subtitle) return null;
+
+  if (editorial) {
+    return (
+      <div className="mb-5 text-center space-y-2">
+        {subtitle && (
+          <p
+            className="font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.36em] uppercase"
+            style={{ color: TM_PALETTE.bronzeDeep }}
+          >
+            {subtitle}
+          </p>
+        )}
+        {title && (
+          <h2
+            className="font-[family-name:var(--font-great-vibes)] text-[2.35rem] sm:text-[2.65rem] leading-none"
+            style={{ color: TM_PALETTE.bronze }}
+          >
+            {title}
+          </h2>
+        )}
+        <div
+          className="tm-hairline mx-auto mt-3 h-px w-14"
+          style={{ backgroundColor: `${TM_PALETTE.mustard}70` }}
+          aria-hidden
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mb-5 text-center">
       {title && <h2 className="font-display text-xl sm:text-2xl font-bold text-[#0F172A]">{title}</h2>}
@@ -24,11 +67,22 @@ function BlockHeader({ block, locale }: { block: InvitationBlockDto; locale: str
   );
 }
 
-function CountdownView({ target, label, begun }: { target?: string; label: string; begun: string }) {
+function CountdownView({
+  target,
+  label,
+  begun,
+  chrome = "default",
+}: {
+  target?: string;
+  label: string;
+  begun: string;
+  /** Traditional Marriage linen editorial — other templates keep classic navy */
+  chrome?: "default" | "linen";
+}) {
   const [left, setLeft] = useState("");
 
   useEffect(() => {
-    if (!target) return;
+    if (!target || chrome === "linen") return;
     const targetDate = target;
     function tick() {
       const diff = new Date(targetDate).getTime() - Date.now();
@@ -44,9 +98,19 @@ function CountdownView({ target, label, begun }: { target?: string; label: strin
     tick();
     const id = setInterval(tick, 60000);
     return () => clearInterval(id);
-  }, [target, begun]);
+  }, [target, begun, chrome]);
 
   if (!target) return null;
+
+  if (chrome === "linen") {
+    return (
+      <TraditionalMarriageCountdown
+        targetIso={target}
+        label={label === "Countdown" || !label ? "Until we gather" : label}
+        begunLabel={begun}
+      />
+    );
+  }
 
   return (
     <div className="rounded-2xl bg-[#0F172A] text-white p-6 text-center inv-fade-in">
@@ -95,6 +159,7 @@ export function BlockView({ block, ctx }: BlockViewProps) {
           target={cj.countdownTarget ?? ctx.eventDateRaw}
           label={block.title ?? t("invite.countdown")}
           begun={t("invite.celebration_begun")}
+          chrome={ctx.layout === "traditional-marriage-ceremony" ? "linen" : "default"}
         />
       );
 
@@ -133,19 +198,52 @@ export function BlockView({ block, ctx }: BlockViewProps) {
         ? block.galleryItems
         : (cj.items ?? []).map((i, idx) => ({ id: String(idx), url: i.value ?? i.label, caption: null, sortOrder: idx }));
       if (!items.length) return null;
+      const galleryItems = items.map((item) => ({
+        id: item.id,
+        url: item.url,
+        caption: item.caption,
+        type: /\.(mp4|webm|mov)(\?|$)/i.test(item.url) ? ("video" as const) : ("image" as const),
+      }));
+
+      if (ctx.layout === "traditional-marriage-ceremony" && block.blockType === "GALLERY") {
+        return (
+          <TraditionalMarriageGallerySection
+            items={galleryItems}
+            interactive
+            settings={{
+              style: slideshowStyleFromVariant(block.styleVariant ?? "carousel"),
+            }}
+          />
+        );
+      }
+
       const styleVariant = block.styleVariant ?? "carousel";
+      const isTm = ctx.layout === "traditional-marriage-ceremony";
       return (
-        <BlockShell variant={block.styleVariant}>
-          <BlockHeader block={block} locale={locale} />
+        <BlockShell
+          variant={block.styleVariant}
+          className={cn(isTm && "border-[#E8C9B8] bg-[#FAF8F4]/95")}
+        >
+          <BlockHeader
+            block={{
+              ...block,
+              title:
+                isTm && (block.title === "Gallery" || !block.title)
+                  ? "The Couple"
+                  : block.title,
+              subtitle:
+                isTm && (!block.subtitle || block.title === "Gallery")
+                  ? "In our frame"
+                  : block.subtitle,
+            }}
+            locale={locale}
+            editorial={isTm}
+          />
           <InvitationGalleryDisplay
-            items={items.map((item) => ({
-              id: item.id,
-              url: item.url,
-              caption: item.caption,
-              type: /\.(mp4|webm|mov)(\?|$)/i.test(item.url) ? "video" as const : "image" as const,
-            }))}
+            items={galleryItems}
             settings={{ style: slideshowStyleFromVariant(styleVariant) }}
             interactive
+            chrome={isTm ? "linen" : "default"}
           />
         </BlockShell>
       );
@@ -245,6 +343,8 @@ export function BlockView({ block, ctx }: BlockViewProps) {
 
     case "CONTACT_HOST":
     case "FAMILY_CONTACTS":
+      // TM: Kindly Respond already owns “Reach the hosts” — skip duplicate teal button cards
+      if (ctx.layout === "traditional-marriage-ceremony") return null;
       return (
         <BlockShell variant={block.styleVariant}>
           <BlockHeader block={block} locale={locale} />
@@ -283,10 +383,24 @@ export function BlockView({ block, ctx }: BlockViewProps) {
       );
 
     case "THANK_YOU":
+      if (ctx.layout === "traditional-marriage-ceremony") {
+        return (
+          <TraditionalMarriageThankYou
+            message={
+              ctx.thankYouMessage?.trim() ||
+              body ||
+              "Your presence is a blessing. We are deeply honoured to share this sacred day with you."
+            }
+            fontFamily={ctx.thankYouFontFamily}
+          />
+        );
+      }
       return (
         <BlockShell variant={block.styleVariant} className="text-center">
           <BlockHeader block={block} locale={locale} />
-          <p className="text-slate-600">{body || "Thank you for being part of our celebration."}</p>
+          <p className="text-slate-600 whitespace-pre-line">
+            {ctx.thankYouMessage?.trim() || body || "Thank you for being part of our celebration."}
+          </p>
         </BlockShell>
       );
 

@@ -67,8 +67,23 @@ export function AdminEventsClient() {
   }
 
   async function removeEvent(id: string, title: string) {
-    if (!confirm(`Cancel or delete event "${title}"?`)) return;
-    await fetch(`/api/admin/events?id=${id}`, { method: "DELETE" });
+    if (
+      !confirm(
+        `Permanently delete "${title}" and all invitations?\n\nThis cannot be undone. The event will be removed from the platform entirely.`
+      )
+    ) {
+      return;
+    }
+    const res = await fetch(`/api/admin/events?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.error || "Failed to permanently delete event");
+      return;
+    }
+    if (data?.data?.mode && data.data.mode !== "deleted") {
+      alert("Delete did not permanently remove the event.");
+      return;
+    }
     load();
   }
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { parsePaginationInput, paginatedResult, FEED_LIMIT } from "@/lib/pagination";
 
 export interface NotifyInput {
   title: string;
@@ -20,16 +21,22 @@ export class NotificationService {
     });
   }
 
-  async listForUser(userId: string, limit = 30) {
-    const [items, unreadCount] = await Promise.all([
+  async listForUser(userId: string, page = 1, limit = FEED_LIMIT) {
+    const { page: p, limit: take, skip } = parsePaginationInput(
+      { page, limit },
+      { limit: FEED_LIMIT }
+    );
+    const [items, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where: { userId },
         orderBy: { createdAt: "desc" },
-        take: limit,
+        skip,
+        take,
       }),
+      prisma.notification.count({ where: { userId } }),
       prisma.notification.count({ where: { userId, isRead: false } }),
     ]);
-    return { items, unreadCount };
+    return { ...paginatedResult(items, total, p, take), unreadCount };
   }
 
   async markRead(userId: string, id: string) {

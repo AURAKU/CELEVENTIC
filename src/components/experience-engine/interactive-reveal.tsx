@@ -13,6 +13,8 @@ interface InteractiveRevealProps {
   hostName?: string;
   musicEnabled?: boolean;
   enableSounds?: boolean;
+  /** Wax-seal initials for envelope reveals. */
+  sealInitials?: string;
   onComplete: () => void;
   /** User gesture that starts the reveal (audio unlock). */
   onBegin?: () => void;
@@ -31,6 +33,7 @@ export function InteractiveReveal({
   hostName,
   musicEnabled,
   enableSounds = true,
+  sealInitials,
   onComplete,
   onBegin,
   children,
@@ -57,6 +60,7 @@ export function InteractiveReveal({
         hostName={hostName}
         musicEnabled={musicEnabled}
         enableSounds={enableSounds}
+        sealInitials={sealInitials}
         onComplete={onComplete}
         onBegin={onBegin}
       >

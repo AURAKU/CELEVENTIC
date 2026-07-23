@@ -6,6 +6,7 @@ import { EntranceReveal } from "@/components/motion/entrance-reveal";
 import { CountdownBlock } from "./blocks/countdown-block";
 import { ViralFooterBlock } from "./blocks/viral-footer-block";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
+import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 
 /** Page 10 — thank-you + countdown + the always-on viral footer. */
 export function ClosingPage({ context, page }: InvitePageProps) {
@@ -16,6 +17,9 @@ export function ClosingPage({ context, page }: InvitePageProps) {
     (isFuneral
       ? "The family is grateful for your love, prayers, and support."
       : "We can't wait to celebrate with you.");
+  const thankYouFont = resolveThankYouFontStack(
+    design.experience?.thankYouFontFamily
+  );
 
   return (
     <PageFrame pageId={page.id} label={page.label} altSurface>
@@ -24,7 +28,12 @@ export function ClosingPage({ context, page }: InvitePageProps) {
         <p className="inv-script">{isFuneral ? "With gratitude" : "Thank you"}</p>
       </EntranceReveal>
       <EntranceReveal delay={0.08}>
-        <p className="inv-body">{thankYou}</p>
+        <p
+          className="inv-body whitespace-pre-line"
+          style={{ fontFamily: thankYouFont }}
+        >
+          {thankYou}
+        </p>
       </EntranceReveal>
       <EntranceReveal delay={0.14} className="w-full">
         <CountdownBlock context={context} />

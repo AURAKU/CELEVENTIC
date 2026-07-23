@@ -21,7 +21,7 @@ export const EXPERIENCE_ENGINE_CONCEPT_MAP = {
   },
   CeleventicSoftIntro: {
     module: "@/components/experience-engine/celeventic-soft-intro",
-    role: "Platform soft launch before template DNA intro / reveal (PremiumInviteWrapper)",
+    role: "Cinematic platform soft launch (atmosphere + brand + event title) before DNA intro / reveal",
   },
   InteractiveReveal: {
     module: "@/components/experience-engine/interactive-reveal",

@@ -6,6 +6,7 @@ import { seatingService } from "@/services/seating/seating.service";
 import type { SeatingLayout } from "@/services/seating/seating.service";
 import { verifyEventAccess } from "@/lib/event-access";
 import { z } from "zod";
+import { SEATING_GUEST_LIMIT } from "@/lib/pagination";
 
 export async function GET(
   _req: Request,
@@ -18,12 +19,24 @@ export async function GET(
   try {
     await verifyEventAccess(eventId, session.user.id, session.user.role);
     const plan = await seatingService.getPlanForEvent(eventId);
-    const guests = await prisma.guest.findMany({
-      where: { eventId },
-      select: { id: true, name: true, email: true, phone: true, qrToken: true, status: true },
-      orderBy: { name: "asc" },
+    const [guests, guestTotal] = await Promise.all([
+      prisma.guest.findMany({
+        where: { eventId },
+        select: { id: true, name: true, email: true, phone: true, qrToken: true, status: true },
+        orderBy: { name: "asc" },
+        take: SEATING_GUEST_LIMIT,
+      }),
+      prisma.guest.count({ where: { eventId } }),
+    ]);
+    return NextResponse.json({
+      success: true,
+      data: {
+        plan,
+        guests,
+        guestTotal,
+        guestsTruncated: guestTotal > guests.length,
+      },
     });
-    return NextResponse.json({ success: true, data: { plan, guests } });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

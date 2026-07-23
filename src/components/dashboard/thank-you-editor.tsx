@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,8 @@ import { THANK_YOU_TEMPLATES } from "@/lib/thank-you/templates";
 import { ExternalLink, Send, Eye, QrCode, Download } from "lucide-react";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ThankYouPublicView } from "@/components/memory/public-memories-gallery";
+import { FormDraftStatusBar } from "@/components/forms/form-draft-status-bar";
+import { isBlankFormDraft, readFormDraft, useFormDraft } from "@/hooks/use-form-draft";
 
 interface ThankYouEditorProps {
   eventId: string;
@@ -34,14 +37,29 @@ interface ThankYouData {
   event?: { slug: string; title: string; hostName: string };
 }
 
+type ThankYouForm = {
+  templateId: string;
+  title: string;
+  message: string;
+  flyerUrl: string;
+  hostPhotoUrl: string;
+  audioUrl: string;
+  status: string;
+};
+
 export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
+  const { data: session, status: sessionStatus } = useSession();
+  const userId = session?.user?.id;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
   const [shareLinks, setShareLinks] = useState<{ thankYouUrl?: string; uploadUrl?: string } | null>(null);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [hydrated, setHydrated] = useState(false);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
+  const [serverBaseline, setServerBaseline] = useState<ThankYouForm | null>(null);
+  const [form, setForm] = useState<ThankYouForm>({
     templateId: "luxury-wedding",
     title: "",
     message: "",
@@ -51,33 +69,76 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
     status: "DRAFT",
   });
 
-  async function load() {
-    setLoading(true);
-    const [tyRes, qrRes] = await Promise.all([
-      fetch(`/api/events/${eventId}/thank-you`),
-      fetch(`/api/events/${eventId}/memory-qr/generate`),
-    ]);
-    const ty = await tyRes.json();
-    const qr = await qrRes.json();
-    if (ty.success) {
-      const p = ty.data as ThankYouData;
-      setForm({
-        templateId: p.templateId,
-        title: p.title ?? "",
-        message: p.message ?? "",
-        flyerUrl: p.flyerUrl ?? "",
-        hostPhotoUrl: p.hostPhotoUrl ?? "",
-        audioUrl: p.audioUrl ?? "",
-        status: p.status,
-      });
-    }
-    if (qr.success && qr.data?.qrImageUrl) setQrImageUrl(qr.data.qrImageUrl);
-    setLoading(false);
-  }
+  const draft = useFormDraft<ThankYouForm>({
+    formId: "event-thank-you",
+    userId,
+    eventId,
+    value: form,
+    enabled: hydrated && sessionStatus !== "loading",
+    restoreOnMount: false,
+    debounceMs: 400,
+    isEmpty: (v) => isBlankFormDraft(v, ["templateId", "status"]),
+  });
 
   useEffect(() => {
+    if (sessionStatus === "loading") return;
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      const [tyRes, qrRes] = await Promise.all([
+        fetch(`/api/events/${eventId}/thank-you`),
+        fetch(`/api/events/${eventId}/memory-qr/generate`),
+      ]);
+      const ty = await tyRes.json();
+      const qr = await qrRes.json();
+      if (cancelled) return;
+
+      if (ty.success) {
+        const p = ty.data as ThankYouData;
+        const serverForm: ThankYouForm = {
+          templateId: p.templateId,
+          title: p.title ?? "",
+          message: p.message ?? "",
+          flyerUrl: p.flyerUrl ?? "",
+          hostPhotoUrl: p.hostPhotoUrl ?? "",
+          audioUrl: p.audioUrl ?? "",
+          status: p.status,
+        };
+        setServerBaseline(serverForm);
+        const saved = readFormDraft<ThankYouForm>({
+          formId: "event-thank-you",
+          userId,
+          eventId,
+        });
+        if (
+          saved &&
+          !isBlankFormDraft(saved, ["templateId", "status"]) &&
+          JSON.stringify(saved) !== JSON.stringify(serverForm)
+        ) {
+          setForm(saved);
+          setRestoredFromDraft(true);
+        } else {
+          setForm(serverForm);
+          setRestoredFromDraft(false);
+        }
+      }
+      if (qr.success && qr.data?.qrImageUrl) setQrImageUrl(qr.data.qrImageUrl);
+      setHydrated(true);
+      setLoading(false);
+    }
+
     void load();
-  }, [eventId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, userId, sessionStatus]);
+
+  function handleClearDraft() {
+    draft.clearDraft();
+    setRestoredFromDraft(false);
+    if (serverBaseline) setForm(serverBaseline);
+  }
 
   async function save() {
     setSaving(true);
@@ -96,7 +157,15 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
     });
     const d = await res.json();
     if (!res.ok) setError(d.error);
-    else setForm((f) => ({ ...f, status: d.data.status }));
+    else {
+      draft.clearDraft();
+      setRestoredFromDraft(false);
+      setForm((f) => {
+        const next = { ...f, status: d.data.status };
+        setServerBaseline(next);
+        return next;
+      });
+    }
     setSaving(false);
   }
 
@@ -142,6 +211,14 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
           )}
         </div>
       </div>
+
+      <FormDraftStatusBar
+        status={draft.status}
+        hasDraft={draft.hasDraft}
+        wasRestored={restoredFromDraft}
+        lastSavedAt={draft.lastSavedAt}
+        onClear={handleClearDraft}
+      />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

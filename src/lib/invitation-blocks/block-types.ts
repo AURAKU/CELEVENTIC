@@ -200,4 +200,10 @@ export interface BlockRenderContext {
   memoryVaultEnabled?: boolean;
   eventId?: string;
   seatLookupUrl?: string;
+  /** Invitation layout slug — enables template-native block chrome */
+  layout?: string;
+  /** Host experience thank-you body — preferred over block body when set */
+  thankYouMessage?: string | null;
+  /** Host experience thank-you body font (FontId) */
+  thankYouFontFamily?: string | null;
 }

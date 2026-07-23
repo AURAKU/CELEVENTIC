@@ -75,12 +75,17 @@ export function AdminIntegrationsClient() {
   });
   const [defaultsStatus, setDefaultsStatus] = useState<Record<string, { provider: string; enabled: boolean }>>({});
   const [savingDefaults, setSavingDefaults] = useState(false);
+  const [envStorageHealth, setEnvStorageHealth] = useState<{
+    environment?: { status: string; message: string; details?: string[] };
+    storage?: { status: string; message: string; details?: string[] };
+  }>({});
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [res, defaultsRes] = await Promise.all([
+    const [res, defaultsRes, healthRes] = await Promise.all([
       fetch("/api/admin/integrations"),
       fetch("/api/admin/integrations/defaults"),
+      fetch("/api/admin/system-health"),
     ]);
     const d = await res.json();
     if (d.success) {
@@ -91,6 +96,25 @@ export function AdminIntegrationsClient() {
     if (dd.success) {
       setDefaults(dd.data.defaults);
       setDefaultsStatus(dd.data.status);
+    }
+    const health = await healthRes.json();
+    if (health.success && Array.isArray(health.data?.services)) {
+      const services = health.data.services as {
+        id: string;
+        status: string;
+        message: string;
+        details?: string[];
+      }[];
+      const environment = services.find((s) => s.id === "environment");
+      const storage = services.find((s) => s.id === "storage");
+      setEnvStorageHealth({
+        environment: environment
+          ? { status: environment.status, message: environment.message, details: environment.details }
+          : undefined,
+        storage: storage
+          ? { status: storage.status, message: storage.message, details: storage.details }
+          : undefined,
+      });
     }
     setLoading(false);
   }, []);
@@ -301,6 +325,87 @@ export function AdminIntegrationsClient() {
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
+        </div>
+      )}
+
+      {(envStorageHealth.environment || envStorageHealth.storage) && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {envStorageHealth.environment && (
+            <Card className="border-slate-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-[#0B8A83]" />
+                    Environment
+                  </span>
+                  <Badge
+                    variant={
+                      envStorageHealth.environment.status === "healthy"
+                        ? "success"
+                        : envStorageHealth.environment.status === "critical"
+                          ? "destructive"
+                          : "secondary"
+                    }
+                  >
+                    {envStorageHealth.environment.status === "healthy"
+                      ? "Healthy"
+                      : envStorageHealth.environment.status === "critical"
+                        ? "Failed"
+                        : "Degraded"}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <p className="text-sm text-slate-700">{envStorageHealth.environment.message}</p>
+                {envStorageHealth.environment.details?.slice(0, 3).map((line) => (
+                  <p key={line} className="text-xs text-slate-500">
+                    {line}
+                  </p>
+                ))}
+                <p className="text-xs text-slate-500 pt-1">
+                  Configure via <code className="text-[11px]">.env</code> — secrets never shown here.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          {envStorageHealth.storage && (
+            <Card className="border-slate-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-[#0B8A83]" />
+                    Storage (AWS S3)
+                  </span>
+                  <Badge
+                    variant={
+                      envStorageHealth.storage.status === "healthy"
+                        ? "success"
+                        : envStorageHealth.storage.status === "critical"
+                          ? "destructive"
+                          : "secondary"
+                    }
+                  >
+                    {envStorageHealth.storage.status === "healthy"
+                      ? "Healthy"
+                      : envStorageHealth.storage.status === "critical"
+                        ? "Failed"
+                        : "Degraded"}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <p className="text-sm text-slate-700">{envStorageHealth.storage.message}</p>
+                {envStorageHealth.storage.details?.slice(0, 3).map((line) => (
+                  <p key={line} className="text-xs text-slate-500">
+                    {line}
+                  </p>
+                ))}
+                <p className="text-xs text-slate-500 pt-1">
+                  Wire keys in <code className="text-[11px]">.env</code> or enable the AWS S3 provider below.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 

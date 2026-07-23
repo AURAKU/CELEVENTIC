@@ -1,9 +1,10 @@
 import { adminService } from "@/services/admin/admin.service";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 import { AdminPackagesClient, type PackageRow } from "./admin-packages-client";
 
 export default async function AdminPackagesPage() {
-  const packages = await adminService.getPackages();
-  const initial: PackageRow[] = packages.map((p) => ({
+  const result = await adminService.getPackages(1, ADMIN_TABLE_LIMIT);
+  const initial: PackageRow[] = result.items.map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,
@@ -23,5 +24,11 @@ export default async function AdminPackagesPage() {
     _count: p._count,
   }));
 
-  return <AdminPackagesClient initial={initial} />;
+  return (
+    <AdminPackagesClient
+      initial={initial}
+      initialTotal={result.total}
+      initialPages={result.pages}
+    />
+  );
 }

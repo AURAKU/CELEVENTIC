@@ -169,15 +169,23 @@ function VaultPanel({ eventId }: { eventId: string }) {
 }
 
 function GuestbookPanel({ eventId }: { eventId: string }) {
+  const { page, setPage, appendToParams, resetPage } = usePagination(20);
   const [guestbook, setGuestbook] = useState<MemoryItem[]>([]);
+  const [gbTotal, setGbTotal] = useState(0);
+  const [gbPages, setGbPages] = useState(1);
   const [form, setForm] = useState({ content: "", author: "" });
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/memory/vault?eventId=${eventId}`);
+    const params = appendToParams(new URLSearchParams({ eventId, type: "guestbook" }));
+    const res = await fetch(`/api/memory?${params}`);
     const d = await res.json();
-    if (res.ok) setGuestbook(d.data.guestbook ?? []);
-  }, [eventId]);
+    if (res.ok) {
+      setGuestbook(d.data.items ?? []);
+      setGbTotal(d.data.total ?? 0);
+      setGbPages(d.data.pages ?? 1);
+    }
+  }, [eventId, appendToParams]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -190,7 +198,8 @@ function GuestbookPanel({ eventId }: { eventId: string }) {
     });
     if (res.ok) {
       setForm({ content: "", author: "" });
-      load();
+      resetPage();
+      void load();
     } else setError((await res.json()).error);
   }
 
@@ -218,6 +227,13 @@ function GuestbookPanel({ eventId }: { eventId: string }) {
               {m.author && <p className="text-xs text-slate-400 mt-2">— {m.author}</p>}
             </div>
           ))}
+          <PaginationBar
+            page={page}
+            pages={gbPages}
+            total={gbTotal}
+            limit={20}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>

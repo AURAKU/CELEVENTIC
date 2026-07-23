@@ -5,6 +5,8 @@
  */
 
 import {
+  DeleteObjectCommand,
+  GetObjectCommand,
   PutObjectCommand,
   S3Client,
   type ObjectCannedACL,
@@ -28,6 +30,19 @@ function trimEnv(key: string): string | undefined {
   return v || undefined;
 }
 
+function resolvePublicBaseUrl(
+  cfgPublic?: string | null
+): string | null {
+  const raw =
+    (cfgPublic && cfgPublic.trim()) ||
+    trimEnv("AWS_CLOUDFRONT_URL") ||
+    trimEnv("AWS_S3_PUBLIC_BASE_URL") ||
+    trimEnv("AWS_S3_PUBLIC_URL") ||
+    trimEnv("NEXT_PUBLIC_MEDIA_CDN_URL") ||
+    null;
+  return raw ? raw.replace(/\/+$/, "") : null;
+}
+
 /** Sync env-only config (fast path for health checks). */
 export function getAwsS3Config(): AwsS3Config | null {
   const region = trimEnv("AWS_REGION") ?? trimEnv("AWS_DEFAULT_REGION");
@@ -36,18 +51,12 @@ export function getAwsS3Config(): AwsS3Config | null {
   const secretAccessKey = trimEnv("AWS_SECRET_ACCESS_KEY");
   if (!region || !bucket || !accessKeyId || !secretAccessKey) return null;
 
-  const publicBase =
-    trimEnv("AWS_CLOUDFRONT_URL") ??
-    trimEnv("AWS_S3_PUBLIC_URL") ??
-    trimEnv("NEXT_PUBLIC_MEDIA_CDN_URL") ??
-    null;
-
   return {
     region,
     bucket,
     accessKeyId,
     secretAccessKey,
-    publicBaseUrl: publicBase ? publicBase.replace(/\/+$/, "") : null,
+    publicBaseUrl: resolvePublicBaseUrl(),
     endpoint: trimEnv("AWS_S3_ENDPOINT") ?? null,
     publicReadAcl: (trimEnv("AWS_S3_PUBLIC_READ_ACL") ?? "false").toLowerCase() === "true",
   };
@@ -77,12 +86,9 @@ export async function resolveAwsS3Config(): Promise<AwsS3Config | null> {
       return envCfg;
     }
 
-    const publicBase =
+    const publicFromCfg =
       (typeof cfg.cloudFrontUrl === "string" && cfg.cloudFrontUrl) ||
       (typeof cfg.publicBaseUrl === "string" && cfg.publicBaseUrl) ||
-      trimEnv("AWS_CLOUDFRONT_URL") ||
-      trimEnv("AWS_S3_PUBLIC_URL") ||
-      trimEnv("NEXT_PUBLIC_MEDIA_CDN_URL") ||
       null;
 
     const endpoint =
@@ -93,7 +99,7 @@ export async function resolveAwsS3Config(): Promise<AwsS3Config | null> {
       bucket,
       accessKeyId,
       secretAccessKey,
-      publicBaseUrl: publicBase ? publicBase.replace(/\/+$/, "") : null,
+      publicBaseUrl: resolvePublicBaseUrl(publicFromCfg),
       endpoint,
       publicReadAcl:
         cfg.publicReadAcl === true ||
@@ -104,8 +110,14 @@ export async function resolveAwsS3Config(): Promise<AwsS3Config | null> {
   }
 }
 
+/** True when env has the four required S3 credentials (sync). */
 export function isAwsS3Configured(): boolean {
   return getAwsS3Config() !== null;
+}
+
+/** Alias — preferred name in call sites / docs. */
+export function isS3Enabled(): boolean {
+  return isAwsS3Configured();
 }
 
 export async function isAwsS3Ready(): Promise<boolean> {
@@ -120,23 +132,31 @@ export function getAwsStorageHealth(): {
 } {
   const cfg = getAwsS3Config();
   if (!cfg) {
+    const partial = !!(
+      trimEnv("AWS_REGION") ||
+      trimEnv("AWS_ACCESS_KEY_ID") ||
+      trimEnv("AWS_SECRET_ACCESS_KEY") ||
+      trimEnv("AWS_S3_BUCKET")
+    );
     return {
       configured: false,
       hasCdn: false,
-      message: "AWS S3 not fully configured",
+      message: partial
+        ? "AWS S3 incomplete — local upload fallback until region, keys, and bucket are all set"
+        : "AWS S3 not configured — local upload fallback (dev-safe)",
     };
   }
   if (!cfg.publicBaseUrl) {
     return {
       configured: true,
       hasCdn: false,
-      message: "AWS S3 configured — add CloudFront URL for fastest CDN delivery",
+      message: "AWS S3 configured — add CloudFront / AWS_S3_PUBLIC_BASE_URL for fastest CDN delivery",
     };
   }
   return {
     configured: true,
     hasCdn: true,
-    message: "AWS S3 + CDN configured",
+    message: "AWS S3 + CDN configured — media uploads use cloud storage",
   };
 }
 
@@ -202,6 +222,11 @@ export function publicUrlForS3Key(cfg: AwsS3Config, key: string): string {
   return `https://${cfg.bucket}.s3.${cfg.region}.amazonaws.com/${key}`;
 }
 
+/** Alias for publicUrlForS3Key. */
+export function getPublicUrl(cfg: AwsS3Config, key: string): string {
+  return publicUrlForS3Key(cfg, key);
+}
+
 export async function putS3Object(
   relativePath: string,
   buffer: Buffer,
@@ -228,6 +253,55 @@ export async function putS3Object(
   return { url: publicUrlForS3Key(cfg, key), key };
 }
 
+/** Alias for putS3Object. */
+export async function uploadToS3(
+  relativePath: string,
+  buffer: Buffer,
+  contentType?: string
+): Promise<{ url: string; key: string }> {
+  return putS3Object(relativePath, buffer, contentType);
+}
+
+export async function getS3Object(relativePath: string): Promise<Buffer | null> {
+  const cfg = (await resolveAwsS3Config()) ?? getAwsS3Config();
+  if (!cfg) return null;
+
+  const key = buildS3ObjectKey(relativePath);
+  try {
+    const client = getS3Client(cfg);
+    const out = await client.send(
+      new GetObjectCommand({
+        Bucket: cfg.bucket,
+        Key: key,
+      })
+    );
+    if (!out.Body) return null;
+    const bytes = await out.Body.transformToByteArray();
+    return Buffer.from(bytes);
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteS3Object(relativePath: string): Promise<boolean> {
+  const cfg = (await resolveAwsS3Config()) ?? getAwsS3Config();
+  if (!cfg) return false;
+
+  const key = buildS3ObjectKey(relativePath);
+  try {
+    const client = getS3Client(cfg);
+    await client.send(
+      new DeleteObjectCommand({
+        Bucket: cfg.bucket,
+        Key: key,
+      })
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function isRemoteMediaHost(url: string): boolean {
   try {
     const u = new URL(url);
@@ -237,6 +311,18 @@ export function isRemoteMediaHost(url: string): boolean {
     if (cfg?.publicBaseUrl) {
       const cdnHost = new URL(cfg.publicBaseUrl).hostname;
       if (u.hostname === cdnHost) return true;
+    }
+    const publicEnv =
+      trimEnv("AWS_CLOUDFRONT_URL") ||
+      trimEnv("AWS_S3_PUBLIC_BASE_URL") ||
+      trimEnv("AWS_S3_PUBLIC_URL") ||
+      trimEnv("NEXT_PUBLIC_MEDIA_CDN_URL");
+    if (publicEnv) {
+      try {
+        if (u.hostname === new URL(publicEnv).hostname) return true;
+      } catch {
+        /* ignore */
+      }
     }
     return false;
   } catch {

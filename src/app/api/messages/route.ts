@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { messageService } from "@/services/messages/message.service";
+import { parsePaginationFromUrl, DEFAULT_LIMIT } from "@/lib/pagination";
 
 export async function GET(req: Request) {
   const session = await getSession();
@@ -9,15 +10,23 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const threadId = new URL(req.url).searchParams.get("thread");
+  const url = new URL(req.url);
+  const threadId = url.searchParams.get("thread");
   if (threadId) {
-    const messages = await messageService.getThread(session.user.id, threadId);
+    const { page, limit } = parsePaginationFromUrl(req.url, {
+      limit: DEFAULT_LIMIT,
+      maxLimit: 200,
+    });
+    const result = await messageService.getThread(session.user.id, threadId, page, limit);
     return NextResponse.json({
       success: true,
-      data: messages.map((m) => ({
-        ...m,
-        createdAt: m.createdAt.toISOString(),
-      })),
+      data: {
+        ...result,
+        items: result.items.map((m) => ({
+          ...m,
+          createdAt: m.createdAt.toISOString(),
+        })),
+      },
     });
   }
 

@@ -13,6 +13,8 @@ interface CurtainRevealProps {
   /** Fires synchronously on the user gesture that starts the open (audio unlock). */
   onBegin?: () => void;
   children?: ReactNode;
+  /** Catalogue glimpse: closed curtains only — absolute fill, no open gesture. */
+  staticPreview?: boolean;
 }
 
 const CURTAIN_THEMES: Record<
@@ -218,6 +220,7 @@ export function CurtainReveal({
   onComplete,
   onBegin,
   children,
+  staticPreview = false,
 }: CurtainRevealProps) {
   const colors = CURTAIN_THEMES[theme];
   const reduceMotion = useReducedMotion();
@@ -234,12 +237,12 @@ export function CurtainReveal({
   }, [onComplete]);
 
   const beginOpen = useCallback(() => {
-    if (started.current) return;
+    if (staticPreview || started.current) return;
     started.current = true;
     onBegin?.();
     setPhase("opening");
     completeTimer.current = setTimeout(finish, durationMs + 80);
-  }, [durationMs, finish, onBegin]);
+  }, [durationMs, finish, onBegin, staticPreview]);
 
   useEffect(() => {
     return () => {
@@ -248,7 +251,7 @@ export function CurtainReveal({
   }, []);
 
   useEffect(() => {
-    if (phase !== "closed") return;
+    if (staticPreview || phase !== "closed") return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
@@ -257,7 +260,7 @@ export function CurtainReveal({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [beginOpen, phase]);
+  }, [beginOpen, phase, staticPreview]);
 
   if (phase === "done") return null;
 
@@ -265,10 +268,14 @@ export function CurtainReveal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] invite-viewport-live safe-area-pt safe-area-pb overflow-hidden"
+      className={
+        staticPreview
+          ? "absolute inset-0 overflow-hidden pointer-events-none"
+          : "fixed inset-0 z-[100] invite-viewport-live safe-area-pt safe-area-pb overflow-hidden"
+      }
       style={{ background: colors.stage }}
-      role="dialog"
-      aria-modal="true"
+      role={staticPreview ? "img" : "dialog"}
+      aria-modal={staticPreview ? undefined : true}
       aria-label={
         phase === "closed"
           ? `Stage curtains closed. ${colors.label} for ${eventTitle}.`
@@ -330,7 +337,7 @@ export function CurtainReveal({
       )}
 
       {/* Tap affordance — full-stage hit target while closed */}
-      {phase === "closed" && (
+      {!staticPreview && phase === "closed" && (
         <button
           type="button"
           onClick={beginOpen}
@@ -369,11 +376,13 @@ export function CurtainReveal({
         </button>
       )}
 
-      <p className="sr-only" aria-live="polite">
-        {phase === "closed"
-          ? "Curtains are closed. Touch to begin or press Enter to reveal the invitation."
-          : "Curtains are opening."}
-      </p>
+      {!staticPreview && (
+        <p className="sr-only" aria-live="polite">
+          {phase === "closed"
+            ? "Curtains are closed. Touch to begin or press Enter to reveal the invitation."
+            : "Curtains are opening."}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Heart, Loader2, MessageCircle, Send, Sparkles } from "lucide-react";
+import { Heart, Loader2, MessageCircle, Send, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FEED_LIMIT } from "@/lib/pagination";
 
 export interface GuestWishItem {
   id: string;
@@ -25,6 +26,8 @@ interface GuestWishesCardProps {
   variant?: "light" | "dark";
 }
 
+const PAGE_SIZE = FEED_LIMIT;
+
 export function GuestWishesCard({
   eventId,
   invitationId,
@@ -38,41 +41,63 @@ export function GuestWishesCard({
   const dark = variant === "dark";
   const [wishes, setWishes] = useState<GuestWishItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [canModerate, setCanModerate] = useState(false);
   const [loading, setLoading] = useState(Boolean(eventId));
+  const [loadingMore, setLoadingMore] = useState(false);
   const [authorName, setAuthorName] = useState(guestName?.trim() || "");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const load = useCallback(async () => {
-    if (!eventId && !inviteLink && !invitationId) {
-      setWishes([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: "1", limit: "50" });
-      if (eventId) params.set("eventId", eventId);
-      if (inviteLink) params.set("link", inviteLink);
-      if (invitationId) params.set("invitationId", invitationId);
-      const res = await fetch(`/api/invite/wishes?${params.toString()}`);
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setWishes(data.data.items ?? []);
-        setTotal(data.data.total ?? 0);
+  const fetchPage = useCallback(
+    async (pageNum: number, append: boolean) => {
+      if (!eventId && !inviteLink && !invitationId) {
+        setWishes([]);
+        setCanModerate(false);
+        setHasMore(false);
+        setTotal(0);
+        setLoading(false);
+        return;
       }
-    } catch {
-      // non-blocking
-    } finally {
-      setLoading(false);
-    }
-  }, [eventId, inviteLink, invitationId]);
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: String(pageNum),
+          limit: String(PAGE_SIZE),
+        });
+        if (eventId) params.set("eventId", eventId);
+        if (inviteLink) params.set("link", inviteLink);
+        if (invitationId) params.set("invitationId", invitationId);
+        const res = await fetch(`/api/invite/wishes?${params.toString()}`);
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const items = (data.data.items ?? []) as GuestWishItem[];
+          setWishes((prev) => (append ? [...prev, ...items] : items));
+          setTotal(data.data.total ?? 0);
+          setHasMore(Boolean(data.data.hasMore ?? pageNum < (data.data.pages ?? 1)));
+          setPage(pageNum);
+          setCanModerate(Boolean(data.data.canModerate));
+        } else if (!append) {
+          setCanModerate(false);
+        }
+      } catch {
+        if (!append) setCanModerate(false);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [eventId, inviteLink, invitationId]
+  );
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void fetchPage(1, false);
+  }, [fetchPage]);
 
   useEffect(() => {
     if (guestName?.trim()) setAuthorName(guestName.trim());
@@ -111,12 +136,40 @@ export function GuestWishesCard({
         setWishes((prev) => [data.data as GuestWishItem, ...prev.filter((w) => w.id !== data.data.id)]);
         setTotal((t) => t + 1);
       } else {
-        await load();
+        await fetchPage(1, false);
       }
     } catch {
       setError("Could not save your wish. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function removeWish(wish: GuestWishItem) {
+    if (!canModerate || deletingId) return;
+    const label = wish.authorName?.trim() || "this guest";
+    if (
+      !window.confirm(
+        `Permanently delete the wish from ${label}? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setDeletingId(wish.id);
+    setError("");
+    try {
+      const res = await fetch(`/api/invite/wishes/${wish.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Could not delete wish");
+        return;
+      }
+      setWishes((prev) => prev.filter((w) => w.id !== wish.id));
+      setTotal((t) => Math.max(0, t - 1));
+    } catch {
+      setError("Could not delete wish. Please try again.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -193,9 +246,31 @@ export function GuestWishesCard({
                 dark ? "bg-white/10 border-white/15" : "bg-white/90 border-rose-100"
               }`}
             >
-              <p className={`text-sm italic leading-relaxed ${dark ? "text-white/90" : "text-slate-700"}`}>
-                &ldquo;{w.message}&rdquo;
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className={`text-sm italic leading-relaxed min-w-0 ${dark ? "text-white/90" : "text-slate-700"}`}>
+                  &ldquo;{w.message}&rdquo;
+                </p>
+                {canModerate && (
+                  <button
+                    type="button"
+                    onClick={() => void removeWish(w)}
+                    disabled={deletingId === w.id}
+                    aria-label={`Delete wish from ${w.authorName}`}
+                    title="Delete wish"
+                    className={`shrink-0 -mr-1 -mt-0.5 rounded-md p-1.5 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40 ${
+                      dark
+                        ? "text-white/35 hover:text-white/70 hover:bg-white/10 focus-visible:ring-white/30"
+                        : "text-slate-300 hover:text-slate-500 hover:bg-slate-100/80 focus-visible:ring-slate-300"
+                    }`}
+                  >
+                    {deletingId === w.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    )}
+                  </button>
+                )}
+              </div>
               <p
                 className={`text-xs font-semibold mt-2 flex items-center gap-1 ${
                   dark ? "text-rose-300" : "text-rose-600"
@@ -209,6 +284,18 @@ export function GuestWishesCard({
               </p>
             </div>
           ))
+        )}
+        {hasMore && !loading && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            disabled={loadingMore}
+            onClick={() => void fetchPage(page + 1, true)}
+          >
+            {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load more wishes"}
+          </Button>
         )}
       </div>
 

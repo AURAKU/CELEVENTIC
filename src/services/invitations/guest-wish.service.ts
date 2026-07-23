@@ -11,14 +11,17 @@ export type CreateGuestWishInput = {
 
 export class GuestWishService {
   async listForEvent(eventId: string, page = 1, limit = 50) {
-    const { skip } = parsePaginationInput({ page, limit }, { limit: 50, maxLimit: 100 });
+    const { page: p, limit: take, skip } = parsePaginationInput(
+      { page, limit },
+      { limit: 50, maxLimit: 100 }
+    );
     const where = { eventId, isVisible: true };
     const [items, total] = await Promise.all([
       prisma.invitationGuestWish.findMany({
         where,
         orderBy: { createdAt: "desc" },
         skip,
-        take: limit,
+        take,
         select: {
           id: true,
           authorName: true,
@@ -29,7 +32,7 @@ export class GuestWishService {
       }),
       prisma.invitationGuestWish.count({ where }),
     ]);
-    return paginatedResult(items, total, page, limit);
+    return paginatedResult(items, total, p, take);
   }
 
   async create(input: CreateGuestWishInput) {
@@ -75,6 +78,28 @@ export class GuestWishService {
         createdAt: true,
         guestId: true,
       },
+    });
+  }
+
+  async getById(id: string) {
+    return prisma.invitationGuestWish.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        eventId: true,
+        authorName: true,
+        message: true,
+        createdAt: true,
+        guestId: true,
+      },
+    });
+  }
+
+  /** Permanently remove a wish (moderation hard-delete). */
+  async hardDelete(id: string) {
+    return prisma.invitationGuestWish.delete({
+      where: { id },
+      select: { id: true, eventId: true },
     });
   }
 }

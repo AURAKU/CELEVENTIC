@@ -1,14 +1,17 @@
 import Link from "next/link";
 import {
-  Calendar, Mail, Ticket, DollarSign, Users, QrCode, Plus, ArrowRight, Sparkles, Heart,
+  Calendar, Mail, Ticket, DollarSign, Users, QrCode, Plus, Sparkles, Heart,
 } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PrimaryAction } from "@/components/layout/primary-action";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import {
+  RecentEventsList,
+  type RecentEventSummary,
+} from "@/components/dashboard/recent-events-list";
+import { formatCurrency } from "@/lib/utils";
 
 interface DashboardStats {
   eventsCreated: number;
@@ -19,21 +22,23 @@ interface DashboardStats {
   qrScans: number;
 }
 
-interface EventSummary {
-  id: string;
-  title: string;
-  startDate: Date;
-  status: string;
-  _count?: { guests: number };
-}
-
 interface OwnerDashboardProps {
   firstName: string;
   stats: DashboardStats;
-  events: EventSummary[];
+  events: RecentEventSummary[];
+  userId?: string;
+  isAdmin?: boolean;
+  canEditEvents?: boolean;
 }
 
-export function EventOwnerDashboard({ firstName, stats, events }: OwnerDashboardProps) {
+export function EventOwnerDashboard({
+  firstName,
+  stats,
+  events,
+  userId,
+  isAdmin,
+  canEditEvents,
+}: OwnerDashboardProps) {
   return (
     <div className="space-y-8">
       <HeroBanner
@@ -44,7 +49,14 @@ export function EventOwnerDashboard({ firstName, stats, events }: OwnerDashboard
       />
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
-        <EventsList events={events} emptyTitle="You haven't created an event yet" emptyDesc="Start with your event type, then add guests and send invitations." />
+        <RecentEventsList
+          events={events}
+          emptyTitle="You haven't created an event yet"
+          emptyDesc="Start with your event type, then add guests and send invitations."
+          userId={userId}
+          isAdmin={isAdmin}
+          canEdit={canEditEvents ?? true}
+        />
         <QuickActions
           actions={[
             { href: "/dashboard/events/create", label: "Create Event", icon: Calendar },
@@ -60,7 +72,14 @@ export function EventOwnerDashboard({ firstName, stats, events }: OwnerDashboard
   );
 }
 
-export function OrganizerDashboard({ firstName, stats, events }: OwnerDashboardProps) {
+export function OrganizerDashboard({
+  firstName,
+  stats,
+  events,
+  userId,
+  isAdmin,
+  canEditEvents,
+}: OwnerDashboardProps) {
   return (
     <div className="space-y-8">
       <HeroBanner
@@ -71,7 +90,16 @@ export function OrganizerDashboard({ firstName, stats, events }: OwnerDashboardP
       />
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
-        <EventsList events={events} emptyTitle="No client events yet" emptyDesc="Create an event or accept a workspace invitation to get started." secondaryHref="/dashboard/invitations/workspace" secondaryLabel="View Invitations" />
+        <RecentEventsList
+          events={events}
+          emptyTitle="No client events yet"
+          emptyDesc="Create an event or accept a workspace invitation to get started."
+          secondaryHref="/dashboard/invitations/workspace"
+          secondaryLabel="View Invitations"
+          userId={userId}
+          isAdmin={isAdmin}
+          canEdit={canEditEvents ?? true}
+        />
         <QuickActions
           actions={[
             { href: "/dashboard/events/create", label: "Create Event", icon: Calendar },
@@ -87,7 +115,14 @@ export function OrganizerDashboard({ firstName, stats, events }: OwnerDashboardP
   );
 }
 
-export function OrganizationDashboard({ firstName, stats, events }: OwnerDashboardProps) {
+export function OrganizationDashboard({
+  firstName,
+  stats,
+  events,
+  userId,
+  isAdmin,
+  canEditEvents,
+}: OwnerDashboardProps) {
   return (
     <div className="space-y-8">
       <HeroBanner
@@ -98,7 +133,14 @@ export function OrganizationDashboard({ firstName, stats, events }: OwnerDashboa
       />
       <StatsRow stats={stats} />
       <div className="grid lg:grid-cols-3 gap-6">
-        <EventsList events={events} emptyTitle="No organization events yet" emptyDesc="Create your first event, then invite your team to collaborate." />
+        <RecentEventsList
+          events={events}
+          emptyTitle="No organization events yet"
+          emptyDesc="Create your first event, then invite your team to collaborate."
+          userId={userId}
+          isAdmin={isAdmin}
+          canEdit={canEditEvents ?? true}
+        />
         <QuickActions
           actions={[
             { href: "/dashboard/settings?tab=team", label: "Invite Team", icon: Users },
@@ -184,59 +226,6 @@ function StatsRow({ stats }: { stats: DashboardStats }) {
       <StatCard title="RSVP Accepted" value={stats.rsvpAccepted} icon={Users} />
       <StatCard title="QR Scans" value={stats.qrScans} icon={QrCode} />
     </div>
-  );
-}
-
-function EventsList({
-  events,
-  emptyTitle,
-  emptyDesc,
-  secondaryHref,
-  secondaryLabel,
-}: {
-  events: EventSummary[];
-  emptyTitle: string;
-  emptyDesc: string;
-  secondaryHref?: string;
-  secondaryLabel?: string;
-}) {
-  return (
-    <Card className="lg:col-span-2">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Events</CardTitle>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/events">View All <ArrowRight className="h-4 w-4" /></Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {events.length === 0 ? (
-          <EmptyState
-            icon={Calendar}
-            title={emptyTitle}
-            description={emptyDesc}
-            actionLabel="Create Event"
-            actionHref="/dashboard/events/create"
-            secondaryLabel={secondaryLabel}
-            secondaryHref={secondaryHref}
-          />
-        ) : (
-          <div className="space-y-3">
-            {events.map((event) => (
-              <Link key={event.id} href={`/dashboard/events/${event.id}`} className="interactive-row">
-                <div>
-                  <p className="font-semibold text-slate-900">{event.title}</p>
-                  <p className="text-sm text-slate-500">{formatDate(event.startDate)}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={event.status === "PUBLISHED" ? "success" : "outline"}>{event.status}</Badge>
-                  <span className="text-sm text-slate-400">{event._count?.guests ?? 0} guests</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 

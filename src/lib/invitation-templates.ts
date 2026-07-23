@@ -196,7 +196,8 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       ],
       studio: {
         revealMode: "envelope",
-        buttonStyle: "ribbon",
+        /** Editorial underline — never magenta ribbon cut-corners on this template */
+        buttonStyle: "editorial-underline",
         fullScreen: true,
         headingSize: 28,
         bodySize: 12,
@@ -209,6 +210,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
             "THE AFARI AND OPOKU FAMILIES HUMBLY INVITE YOU TO WITNESS THE TRADITIONAL MARRIAGE CEREMONY BETWEEN THEIR SON AND DAUGHTER",
           coupleName1: "OWURAKU AFARI",
           coupleName2: "FRANCISCA CHELSY SERWAAH OPOKU",
+          sealInitials: "C | J",
           weekday: "THURSDAY",
           monthLabel: "AUGUST",
           dayNumber: "13",

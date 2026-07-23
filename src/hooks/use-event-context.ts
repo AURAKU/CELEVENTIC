@@ -28,11 +28,40 @@ export function useEventContext() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load events");
 
-      const list: UserEvent[] = Array.isArray(data.data) ? data.data : (data.data?.items ?? []);
-      setEvents(list);
+      let list: UserEvent[] = Array.isArray(data.data) ? data.data : (data.data?.items ?? []);
 
       const params = new URLSearchParams(window.location.search);
       const fromUrl = params.get("eventId");
+
+      // Deep-link: if eventId is in the URL but missing from the picker (e.g. admin
+      // editing another organizer's event before list refresh), fetch it directly.
+      if (fromUrl && !list.some((e) => e.id === fromUrl)) {
+        try {
+          const oneRes = await fetch(`/api/events/${encodeURIComponent(fromUrl)}`);
+          const oneData = await oneRes.json();
+          if (oneRes.ok && oneData?.data) {
+            const e = oneData.data;
+            list = [
+              {
+                id: e.id,
+                slug: e.slug,
+                title: e.title,
+                eventType: e.eventType,
+                startDate: typeof e.startDate === "string" ? e.startDate : new Date(e.startDate).toISOString(),
+                status: e.status,
+                expectedGuests: e.expectedGuests,
+                city: e.city,
+                venueName: e.venueName,
+              },
+              ...list,
+            ];
+          }
+        } catch {
+          /* ignore — picker stays as-is */
+        }
+      }
+
+      setEvents(list);
 
       setEventId((prev) => {
         if (fromUrl && list.some((e) => e.id === fromUrl)) return fromUrl;

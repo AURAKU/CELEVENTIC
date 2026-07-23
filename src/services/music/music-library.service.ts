@@ -4,13 +4,14 @@ import type { MusicSelection } from "@/lib/music/music-types";
 import { validateMusicSelection } from "@/lib/music/validate-selection";
 
 export class MusicLibraryService {
-  async listActive(category?: string) {
+  async listActive(category?: string, limit = 100) {
     return prisma.invitationMusicTrack.findMany({
       where: {
         isActive: true,
         ...(category && category !== "all" ? { category } : {}),
       },
       orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+      take: Math.min(100, Math.max(1, limit)),
       select: {
         id: true,
         title: true,

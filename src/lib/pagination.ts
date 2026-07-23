@@ -4,12 +4,22 @@ export type PaginatedResult<T> = {
   page: number;
   limit: number;
   pages: number;
+  /** True when more pages exist after the current page (handy for Load more UIs). */
+  hasMore: boolean;
 };
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_LIMIT = 20;
 export const PUBLIC_GRID_LIMIT = 12;
 export const ADMIN_TABLE_LIMIT = 20;
+/** Guest wishes / notification dropdown / feed-style lists */
+export const FEED_LIMIT = 20;
+/** Event picker / switcher bulk list */
+export const PICKER_LIMIT = 200;
+/** Seating chart guest roster (needs most guests; hard safety cap) */
+export const SEATING_GUEST_LIMIT = 500;
+/** Offline QR sync batch size (cursor batches) */
+export const OFFLINE_SYNC_BATCH = 500;
 export const MAX_LIMIT = 100;
 
 export function clampPage(page: number): number {
@@ -48,12 +58,14 @@ export function paginatedResult<T>(
   page: number,
   limit: number
 ): PaginatedResult<T> {
+  const pages = Math.max(1, Math.ceil(total / limit));
   return {
     items,
     total,
     page,
     limit,
-    pages: Math.max(1, Math.ceil(total / limit)),
+    pages,
+    hasMore: page < pages,
   };
 }
 

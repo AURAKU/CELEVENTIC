@@ -63,7 +63,13 @@ export async function DELETE(req: Request) {
 
   try {
     const result = await adminService.deleteEvent(id);
-    await createAuditLog({ userId: session.user.id, action: "DELETE", entity: "event", entityId: id });
+    await createAuditLog({
+      userId: session.user.id,
+      action: "DELETE",
+      entity: "event",
+      entityId: id,
+      details: { mode: result.mode },
+    });
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Delete failed" }, { status: 500 });

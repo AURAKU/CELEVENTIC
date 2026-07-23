@@ -267,6 +267,8 @@ model Event {
   coverImageUrl   String?
   logoUrl         String?
   qrCenterImageUrl String?
+  /// Center logo inset size on branded QRs: subtle | balanced | bold
+  qrLogoSize      String?
   /// Default invitation music track from the platform library
   defaultMusicTrackId String?
   themeId         String?
@@ -484,7 +486,7 @@ model Guest {
   updatedAt        DateTime    @updatedAt
 
   event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  invitation Invitation? @relation(fields: [invitationId], references: [id])
+  invitation Invitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
   group      GuestGroup? @relation(fields: [groupId], references: [id])
   user       User?       @relation(fields: [userId], references: [id])
   rsvps      Rsvp[]
@@ -580,7 +582,7 @@ model TicketOrder {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  event    Event     @relation(fields: [eventId], references: [id])
+  event    Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   ticket   Ticket    @relation(fields: [ticketId], references: [id])
   user     User?     @relation(fields: [userId], references: [id])
   payments Payment[]
@@ -709,7 +711,7 @@ model QrScan {
   deviceInfo String?
   createdAt  DateTime     @default(now())
 
-  event     Event    @relation(fields: [eventId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   qrCode    QrCode?  @relation(fields: [qrCodeId], references: [id])
   guest     Guest?   @relation(fields: [guestId], references: [id])
   ticket    Ticket?  @relation(fields: [ticketId], references: [id])
@@ -731,7 +733,7 @@ model OfflineDevice {
   lastSyncAt   DateTime?
   createdAt    DateTime @default(now())
 
-  event    Event             @relation(fields: [eventId], references: [id])
+  event    Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user     User              @relation(fields: [userId], references: [id])
   checkins OfflineCheckin[]
   syncLogs OfflineSyncLog[]
@@ -750,7 +752,7 @@ model OfflineCheckin {
   synced       Boolean  @default(false)
   syncedAt     DateTime?
 
-  device OfflineDevice @relation(fields: [deviceId], references: [id])
+  device OfflineDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@map("offline_checkins")
 }
@@ -764,7 +766,7 @@ model OfflineSyncLog {
   payload    Json?
   createdAt  DateTime @default(now())
 
-  device OfflineDevice @relation(fields: [deviceId], references: [id])
+  device OfflineDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@map("offline_sync_logs")
 }
@@ -1685,7 +1687,7 @@ model Contribution {
   isAnonymous   Boolean              @default(false)
   createdAt     DateTime             @default(now())
 
-  event Event @relation(fields: [eventId], references: [id])
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id])
 
   @@index([eventId])

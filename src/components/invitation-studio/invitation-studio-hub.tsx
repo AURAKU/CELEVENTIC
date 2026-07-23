@@ -35,6 +35,11 @@ import {
   FUNERAL_THEME_IDS,
 } from "@/lib/invitation-theme/theme-registry";
 import { applyThemeToDesign } from "@/lib/invitation-theme/theme-compat";
+import {
+  FONT_STACKS,
+  THANK_YOU_FONT_OPTIONS,
+  resolveThankYouFontStack,
+} from "@/lib/invitation-theme/fonts";
 import { categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import {
@@ -1061,6 +1066,7 @@ export const InvitationStudioHub = forwardRef<
                         <SelectItem value="glass">Glass</SelectItem>
                         <SelectItem value="gold-royal">Gold royal</SelectItem>
                         <SelectItem value="card-3d">3D cards</SelectItem>
+                        <SelectItem value="linen">Linen editorial (TM)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1320,13 +1326,55 @@ export const InvitationStudioHub = forwardRef<
                 </div>
                 <div className="space-y-1">
                   <Label>Thank you message</Label>
-                  <Input
+                  <Textarea
+                    rows={4}
                     value={experience.thankYouMessage ?? ""}
                     onChange={(e) =>
-                      patchExperience({ thankYouMessage: e.target.value })
+                      patchExperience({
+                        thankYouMessage: e.target.value,
+                        experienceCustomized: true,
+                      })
                     }
-                    placeholder="Thank you for being part of our celebration…"
+                    placeholder="Your presence is a blessing. We are deeply honoured to share this sacred day with you."
                   />
+                  <p className="text-[11px] text-slate-500">
+                    Shown in the invitation Thank You section (WITH GRATITUDE). Guests see this read-only.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label>Thank you message font</Label>
+                  <Select
+                    value={experience.thankYouFontFamily ?? "cormorant"}
+                    onValueChange={(v) =>
+                      patchExperience({
+                        thankYouFontFamily: v,
+                        experienceCustomized: true,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {THANK_YOU_FONT_OPTIONS.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>
+                          <span style={{ fontFamily: FONT_STACKS[o.id] }}>{o.label}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {experience.thankYouMessage?.trim() ? (
+                    <p
+                      className="mt-2 rounded-lg border border-slate-200 bg-[#FAF8F4] px-3 py-2.5 text-sm leading-relaxed text-[#5C3D2E] whitespace-pre-line"
+                      style={{
+                        fontFamily: resolveThankYouFontStack(
+                          experience.thankYouFontFamily
+                        ),
+                      }}
+                    >
+                      {experience.thankYouMessage}
+                    </p>
+                  ) : null}
                 </div>
                 <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
                   <input

@@ -9,6 +9,7 @@ export type OpeningExperienceId =
   | "wax-seal-emerald"
   | "envelope-floral"
   | "envelope-royal"
+  | "envelope-embroidered"
   | "envelope-kente"
   | "envelope-islamic"
   | "curtain-wedding"
@@ -98,11 +99,13 @@ export type CountdownStyleId =
   | "glass"
   | "gold-royal"
   | "circular"
-  | "card-3d";
+  | "card-3d"
+  | "linen";
 
 export type SlideshowStyleId =
   | "fade-carousel"
   | "magazine"
+  | "magazine-collage"
   | "polaroid"
   | "film-strip"
   | "floating-cards"
@@ -247,6 +250,8 @@ export interface EventExperienceConfig {
   defaultAudioCategory?: string;
   defaultAudioTrackId?: string;
   thankYouMessage?: string;
+  /** Body font for invite thank-you section (TM linen editorial + guests). FontId from invitation theme. */
+  thankYouFontFamily?: string;
   /** Gallery / media display style in guest invitation */
   slideshowStyle?: SlideshowStyleId | string;
   typographyPackId?: string;

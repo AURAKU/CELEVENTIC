@@ -7,9 +7,12 @@ import { Switch } from "@/components/ui/switch";
 import {
   DEFAULT_VISION_BOARD,
   mergeVisionBoard,
+  normalizeSealInitials,
+  TRADITIONAL_MARRIAGE_DEFAULT_SEAL,
   type VisionBoardContent,
   type VisionBoardFeatureFlags,
 } from "@/lib/invitation/vision-board";
+import { invitationFontVars } from "@/lib/invitation-fonts";
 
 const FEATURE_TOGGLES: { key: keyof VisionBoardFeatureFlags; label: string }[] = [
   { key: "guestWelcome", label: "Guest welcome banner" },
@@ -53,7 +56,7 @@ export function VisionBoardStudioPanel({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
+    <div className={`space-y-4 rounded-xl border border-amber-200/80 bg-amber-50/40 p-4 ${invitationFontVars}`}>
       <div>
         <h3 className="text-sm font-semibold text-slate-900">Vision board details</h3>
         <p className="text-xs text-slate-500 mt-0.5">
@@ -86,6 +89,31 @@ export function VisionBoardStudioPanel({
         <div>
           <Label>Couple name 2</Label>
           <Input value={board.coupleName2} onChange={(e) => patch({ coupleName2: e.target.value })} />
+        </div>
+        <div className="sm:col-span-2">
+          <Label>Seal initials</Label>
+          <div className="mt-1.5 flex items-center gap-4">
+            <SealLivePreview
+              label={
+                normalizeSealInitials(board.sealInitials) ||
+                TRADITIONAL_MARRIAGE_DEFAULT_SEAL
+              }
+            />
+            <div className="min-w-0 flex-1">
+              <Input
+                value={board.sealInitials}
+                maxLength={16}
+                placeholder="C | J"
+                onChange={(e) => patch({ sealInitials: e.target.value })}
+                className="max-w-[12rem] tracking-[0.06em] font-[family-name:var(--font-great-vibes)] text-xl"
+                aria-describedby="seal-initials-hint"
+              />
+              <p id="seal-initials-hint" className="mt-1 text-[11px] text-slate-500">
+                Shown on the wax seal when guests open the envelope. Monograms (C | J) or short
+                words — default {TRADITIONAL_MARRIAGE_DEFAULT_SEAL}.
+              </p>
+            </div>
+          </div>
         </div>
         <div>
           <Label>Weekday</Label>
@@ -200,6 +228,92 @@ export function VisionBoardStudioPanel({
       >
         Reset to original Afari × Opoku card copy
       </button>
+    </div>
+  );
+}
+
+/** Mini peach wax seal — live preview of guest-facing initials. */
+function SealLivePreview({ label }: { label: string }) {
+  const letters = label.replace(/[\s|·•.]/g, "").length;
+  const monogram =
+    letters > 0 &&
+    letters <= 3 &&
+    /^[a-zA-ZÀ-ÿ\s|·•.]+$/.test(label.trim()) &&
+    !/&/.test(label);
+  const pipeMonogram = monogram && /\s*\|\s*/.test(label);
+  const compact = letters > 4;
+  return (
+    <div
+      className="relative shrink-0"
+      style={{ width: "4.75rem", height: "4.75rem" }}
+      aria-hidden
+    >
+      <svg viewBox="0 0 100 100" className="h-full w-full drop-shadow-md" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="studioWaxPearl" cx="34%" cy="28%" r="72%">
+            <stop offset="0%" stopColor="#fff6f0" />
+            <stop offset="38%" stopColor="#f0cbb8" />
+            <stop offset="100%" stopColor="#c98a72" />
+          </radialGradient>
+          <linearGradient id="studioWaxRim" x1="18%" y1="10%" x2="82%" y2="90%">
+            <stop offset="0%" stopColor="#fff0e6" />
+            <stop offset="55%" stopColor="#d9a088" />
+            <stop offset="100%" stopColor="#c08a70" />
+          </linearGradient>
+        </defs>
+        <ellipse cx="51.5" cy="54" rx="41" ry="39" fill="rgba(120,70,50,0.16)" />
+        <circle cx="50" cy="50" r="46" fill="url(#studioWaxRim)" />
+        <circle cx="50" cy="50" r="37.5" fill="url(#studioWaxPearl)" />
+        {Array.from({ length: 32 }, (_, i) => {
+          const a = (i / 32) * Math.PI * 2 - Math.PI / 2;
+          return (
+            <circle
+              key={i}
+              cx={50 + Math.cos(a) * 38.5}
+              cy={50 + Math.sin(a) * 38.5}
+              r="1.45"
+              fill="#f8eee6"
+              stroke="#e0c8b8"
+              strokeWidth="0.3"
+            />
+          );
+        })}
+        <ellipse cx="36" cy="33" rx="18" ry="12" fill="rgba(255,255,255,0.42)" />
+      </svg>
+      <span
+        className="absolute inset-0 flex items-center justify-center text-center leading-none"
+        style={{
+          color: monogram ? "#E8C96A" : "#D4A63A",
+          fontFamily: monogram
+            ? "var(--font-cinzel), Cinzel, serif"
+            : "var(--font-great-vibes), 'Great Vibes', cursive",
+          fontWeight: monogram ? 600 : 400,
+          fontSize: compact
+            ? "0.72rem"
+            : pipeMonogram
+              ? "0.95rem"
+              : monogram
+                ? "1.25rem"
+                : "1.35rem",
+          letterSpacing: pipeMonogram
+            ? "0.02em"
+            : monogram && letters === 2
+              ? "0.14em"
+              : monogram
+                ? "0.08em"
+                : "0.02em",
+          textTransform: monogram ? "uppercase" : "none",
+          textShadow: "0 1px 0 rgba(255,248,230,0.7), 0 1px 2px rgba(80,40,20,0.35)",
+          padding: "12%",
+          whiteSpace: monogram ? "nowrap" : /\s/.test(label) ? "pre-line" : "nowrap",
+        }}
+      >
+        {monogram
+          ? label.trim()
+          : /\s/.test(label.trim())
+            ? label.trim().split(/\s+/).join("\n")
+            : label}
+      </span>
     </div>
   );
 }

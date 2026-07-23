@@ -28,7 +28,7 @@ export function NotificationBell({ className }: { className?: string }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/notifications", { cache: "no-store" });
+      const res = await fetch("/api/notifications?page=1&limit=20", { cache: "no-store" });
       const d = await res.json();
       if (d.success) {
         setItems(d.data.items);

@@ -11,7 +11,7 @@ export const REVEAL_MECHANIC_CONTRACTS: Record<RevealMechanicId, InteractiveReve
     openingExperience: "envelope-classic",
     supportsKeyboardFallback: true,
     supportsReducedMotion: true,
-    gestureHint: "Tap the seal to open",
+    gestureHint: "Open the sealed envelope",
     keyboardLabel: "Open invitation",
   },
   "wax-seal": {
@@ -252,6 +252,7 @@ const OPENING_TO_MECHANIC: Partial<Record<OpeningExperienceId, RevealMechanicId>
   "envelope-classic": "envelope",
   "envelope-floral": "envelope",
   "envelope-royal": "envelope",
+  "envelope-embroidered": "wax-seal",
   "envelope-kente": "envelope",
   "envelope-islamic": "envelope",
   "wax-seal-pink": "wax-seal",

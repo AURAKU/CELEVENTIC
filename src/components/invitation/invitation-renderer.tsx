@@ -17,6 +17,11 @@ import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 
 export type InvitationRendererProps = InvitationRenderProps & {
   interactiveMedia?: boolean;
+  /** Optional organizer email — used by themed templates (e.g. traditional marriage merge) */
+  contactEmail?: string | null;
+  /** Portal section presence — quiet journey links (traditional marriage) */
+  hasGiftsSection?: boolean;
+  hasTimelineSection?: boolean;
 };
 
 export function InvitationRenderer({ interactiveMedia = false, ...props }: InvitationRendererProps) {

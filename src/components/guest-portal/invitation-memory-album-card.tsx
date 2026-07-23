@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Camera, Images, QrCode, Sparkles } from "lucide-react";
+import { Camera, Images, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
+import { TM_PALETTE } from "@/components/invitation/templates/traditional-marriage-palette";
 
 export type MemoryAlbumCardProps = {
   eventTitle: string;
@@ -15,12 +16,13 @@ export type MemoryAlbumCardProps = {
   className?: string;
   /** Compact chip-style for invitation template docks */
   compact?: boolean;
+  /** Traditional Marriage linen / bronze editorial treatment */
+  editorial?: boolean;
 };
 
 /**
  * Guest-facing Memory Vault / Album card.
- * Pre-informs guests to find the physical Album QR at the event,
- * and lets them tap the on-invite QR / buttons to open live upload or the shared album.
+ * Guests scan the QR or tap below to upload; the shared album stays open for the event.
  */
 export function InvitationMemoryAlbumCard({
   eventTitle,
@@ -29,6 +31,7 @@ export function InvitationMemoryAlbumCard({
   uploadQrImageUrl,
   className,
   compact = false,
+  editorial = false,
 }: MemoryAlbumCardProps) {
   const staticPreview = useInvitationStaticPreview();
   const canUpload = Boolean(uploadUrl) && !staticPreview;
@@ -42,11 +45,15 @@ export function InvitationMemoryAlbumCard({
           className
         )}
       >
-        <p className="text-[11px] tracking-[0.28em] uppercase text-[#8B6914] mb-2 flex items-center justify-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5" /> Album
+        <p className="text-[11px] tracking-[0.28em] uppercase text-[#8B6914] mb-1 flex items-center justify-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5" /> Memory Vault
         </p>
-        <p className="text-sm text-[#5C3D2E] leading-relaxed">
-          Share your experience with us from your lens — find the Album QR at the event.
+        <p className="text-sm font-medium text-[#5C3D2E] mb-1">
+          Share the event through your eyes.
+        </p>
+        <p className="text-sm text-[#5C3D2E]/80 leading-relaxed">
+          Scan the QR code at the event or tap below to upload photos and videos as the celebration
+          happens.
         </p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {canUpload && (
@@ -73,6 +80,144 @@ export function InvitationMemoryAlbumCard({
     );
   }
 
+  if (editorial) {
+    return (
+      <div
+        className={cn(
+          "tm-section-rise relative overflow-hidden rounded-sm border p-6 sm:p-7 text-center",
+          className
+        )}
+        style={{
+          borderColor: TM_PALETTE.border,
+          background: `linear-gradient(168deg, ${TM_PALETTE.linen} 0%, ${TM_PALETTE.peach} 48%, ${TM_PALETTE.peachDeep} 100%)`,
+          boxShadow: "0 22px 48px -28px rgba(92,61,46,0.35)",
+        }}
+      >
+        <div
+          className="pointer-events-none absolute inset-3 rounded-sm border opacity-30"
+          style={{ borderColor: `${TM_PALETTE.mustard}55` }}
+          aria-hidden
+        />
+
+        <header className="relative space-y-2">
+          <h2
+            className="font-[family-name:var(--font-great-vibes)] text-[2.45rem] sm:text-[2.75rem] leading-none"
+            style={{ color: TM_PALETTE.bronze }}
+          >
+            Memory Vault
+          </h2>
+          <p
+            className="font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.36em] uppercase"
+            style={{ color: TM_PALETTE.bronzeDeep }}
+          >
+            Share the event through your eyes.
+          </p>
+          <div
+            className="tm-hairline mx-auto mt-3 h-px w-14"
+            style={{ backgroundColor: `${TM_PALETTE.mustard}70` }}
+            aria-hidden
+          />
+        </header>
+
+        <p
+          className="relative mt-5 font-[family-name:var(--font-cormorant)] text-sm leading-relaxed max-w-md mx-auto"
+          style={{ color: TM_PALETTE.dress }}
+        >
+          Scan the QR code at the event or tap below to upload photos and videos as the celebration
+          happens. Guests can view the shared album for this event and enjoy the memories together.
+        </p>
+
+        {uploadQrImageUrl && canUpload ? (
+          <Link
+            href={uploadUrl!}
+            className="relative mt-5 inline-flex flex-col items-center gap-2 group"
+            aria-label="Open album upload — take or share photos and videos"
+          >
+            <span
+              className="rounded-sm bg-white p-2 border shadow-sm transition-colors"
+              style={{ borderColor: TM_PALETTE.border }}
+            >
+              <Image
+                src={uploadQrImageUrl}
+                alt={`Album QR for ${eventTitle}`}
+                width={148}
+                height={148}
+                className="rounded-sm"
+                unoptimized
+              />
+            </span>
+            <span
+              className="text-[11px] uppercase tracking-[0.16em] font-semibold group-hover:underline"
+              style={{ color: TM_PALETTE.bronzeDeep }}
+            >
+              Tap QR to upload photos &amp; videos
+            </span>
+          </Link>
+        ) : uploadQrImageUrl && staticPreview ? (
+          <div className="relative mt-5 inline-flex flex-col items-center gap-2">
+            <span
+              className="rounded-sm bg-white p-2 border shadow-sm"
+              style={{ borderColor: TM_PALETTE.border }}
+            >
+              <Image
+                src={uploadQrImageUrl}
+                alt={`Album QR for ${eventTitle}`}
+                width={148}
+                height={148}
+                className="rounded-sm"
+                unoptimized
+              />
+            </span>
+          </div>
+        ) : (
+          <div
+            className="relative mt-5 mx-auto w-[148px] h-[148px] rounded-sm border border-dashed flex items-center justify-center text-xs px-3"
+            style={{
+              borderColor: `${TM_PALETTE.bronze}66`,
+              backgroundColor: `${TM_PALETTE.linen}`,
+              color: TM_PALETTE.bronzeDeep,
+            }}
+          >
+            Album QR activates when this invitation is published
+          </div>
+        )}
+
+        <div className="relative mt-5 flex flex-wrap justify-center gap-2">
+          {canUpload && (
+            <Button
+              className="hover:opacity-90"
+              style={{ backgroundColor: TM_PALETTE.bronzeDeep, color: TM_PALETTE.linen }}
+              asChild
+            >
+              <Link href={uploadUrl!}>
+                <Camera className="h-4 w-4 mr-2" /> Upload
+              </Link>
+            </Button>
+          )}
+          {canView && (
+            <Button
+              variant="outline"
+              className="bg-white/70"
+              style={{ borderColor: TM_PALETTE.border, color: TM_PALETTE.bronzeDeep }}
+              asChild
+            >
+              <Link href={albumUrl!}>
+                <Images className="h-4 w-4 mr-2" /> View album
+              </Link>
+            </Button>
+          )}
+        </div>
+
+        <p
+          className="relative mt-4 text-[11px] leading-relaxed"
+          style={{ color: `${TM_PALETTE.bronzeDeep}99` }}
+        >
+          Your uploads will remain in the album unless the host removes them.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -80,26 +225,22 @@ export function InvitationMemoryAlbumCard({
         className
       )}
     >
-      <div className="inline-flex items-center gap-2 rounded-full bg-[#0B8A83]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#0B8A83] mb-3">
-        <QrCode className="h-3.5 w-3.5" />
-        Album
-      </div>
-      <h2 className="font-display text-lg font-bold text-[#0F172A] mb-2">Memory Vault</h2>
+      <h2 className="font-display text-lg font-bold text-[#0F172A] mb-1">Memory Vault</h2>
+      <p className="text-sm font-medium text-slate-700 mb-3">
+        Share the event through your eyes.
+      </p>
       <p className="text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
-        Find the <span className="font-semibold text-[#0F172A]">Album</span> — share your experience
-        with us from your lens. Scan the QR at the event (or tap below) to take photos &amp; videos
-        live. Everyone can view the shared album for{" "}
-        <span className="font-semibold text-[#0F172A]">{eventTitle}</span>. Uploads stay forever —
-        only the host can remove them.
+        Scan the QR code at the event or tap below to upload photos and videos as the celebration
+        happens. Guests can view the shared album for this event and enjoy the memories together.
       </p>
 
       {uploadQrImageUrl && canUpload ? (
         <Link
           href={uploadUrl!}
           className="mt-5 inline-flex flex-col items-center gap-2 group"
-          aria-label="Open Album upload — take or share photos and videos"
+          aria-label="Open album upload — take or share photos and videos"
         >
-          <span className="rounded-xl bg-white p-2 border border-slate-200 shadow-sm group-hover:border-[#0B8A83]/50 transition-colors">
+          <span className="rounded-xl bg-white p-2 border border-slate-200 shadow-sm group-hover:border-slate-400 transition-colors">
             <Image
               src={uploadQrImageUrl}
               alt={`Album QR for ${eventTitle}`}
@@ -109,7 +250,7 @@ export function InvitationMemoryAlbumCard({
               unoptimized
             />
           </span>
-          <span className="text-[11px] uppercase tracking-[0.16em] text-[#0B8A83] font-semibold group-hover:underline">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-slate-600 font-semibold group-hover:underline">
             Tap QR to upload photos &amp; videos
           </span>
         </Link>
@@ -134,23 +275,23 @@ export function InvitationMemoryAlbumCard({
 
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         {canUpload && (
-          <Button className="bg-[#0B8A83] hover:bg-[#097068]" asChild>
+          <Button className="bg-slate-800 hover:bg-slate-900" asChild>
             <Link href={uploadUrl!}>
-              <Camera className="h-4 w-4 mr-2" /> Share from your lens
+              <Camera className="h-4 w-4 mr-2" /> Upload
             </Link>
           </Button>
         )}
         {canView && (
           <Button variant="outline" asChild>
             <Link href={albumUrl!}>
-              <Images className="h-4 w-4 mr-2" /> View shared album
+              <Images className="h-4 w-4 mr-2" /> View album
             </Link>
           </Button>
         )}
       </div>
 
       <p className="mt-4 text-[11px] text-slate-400 leading-relaxed">
-        Look for the physical Album QR at the venue — same album, unique to this event.
+        Your uploads will remain in the album unless the host removes them.
       </p>
     </div>
   );

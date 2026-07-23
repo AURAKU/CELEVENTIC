@@ -68,6 +68,19 @@ export class InspirationEngineService {
   ): Promise<{ allowed: boolean; reason?: string }> {
     await this.ensureDefaultPolicies();
     if (url.startsWith("/uploads/") || url.startsWith("/api/uploads/")) return { allowed: true };
+    // First-party uploads stored on S3 / CloudFront are always allowed.
+    try {
+      const host = new URL(url).hostname;
+      if (
+        host.endsWith(".amazonaws.com") ||
+        host.endsWith(".cloudfront.net") ||
+        host.includes("celeventic")
+      ) {
+        return { allowed: true };
+      }
+    } catch {
+      /* fall through to domain policy */
+    }
 
     const domain = extractDomain(url);
     if (!domain) return { allowed: false, reason: "Invalid URL" };

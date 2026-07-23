@@ -468,20 +468,21 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       emotionalTone: "traditional",
       visualLanguage:
         "peach blossom backdrop, bronze Cinzel names, script ceremony title, date triptych, functional QR & RSVP footer",
-      revealMechanic: "ribbon envelope open into the printed card",
+      revealMechanic:
+        "embroidered cream envelope — peach wax seal lifts off, then flap unveils into the printed card",
       audioMood: "african ceremony drums soft",
       outroType: "hashtag forever thank-you",
     },
     experienceOverrides: {
       introVariant: "particle-burst",
-      openingExperience: "envelope-royal",
+      openingExperience: "envelope-embroidered",
       sceneTransition: "sparkle",
       outroExperience: "golden-sparkles",
       typographyPackId: "traditional",
       slideshowStyle: "magazine-collage",
-      countdownStyle: "classic",
+      countdownStyle: "linen",
     },
-    buttonStyle: "ribbon",
+    buttonStyle: "editorial-underline",
   },
   {
     slug: "floral-garden-romance",

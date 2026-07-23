@@ -2,10 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
+import { TraditionalMarriageCountdown } from "@/components/invitation/templates/traditional-marriage-countdown";
 
 interface CountdownDisplayProps {
   targetIso: string;
-  style?: "classic" | "flip" | "luxury" | "ring" | "minimal" | "glass" | "gold-royal" | "circular" | "card-3d";
+  style?:
+    | "classic"
+    | "flip"
+    | "luxury"
+    | "ring"
+    | "minimal"
+    | "glass"
+    | "gold-royal"
+    | "circular"
+    | "card-3d"
+    | "linen";
   label?: string;
   begunLabel?: string;
 }
@@ -54,6 +65,16 @@ export function CountdownDisplay({
   begunLabel = "The celebration has begun!",
 }: CountdownDisplayProps) {
   const { d, h, m, s, begun } = useCountdown(targetIso, begunLabel);
+
+  if (style === "linen") {
+    return (
+      <TraditionalMarriageCountdown
+        targetIso={targetIso}
+        label={label}
+        begunLabel={begunLabel}
+      />
+    );
+  }
 
   if (begun) {
     return (

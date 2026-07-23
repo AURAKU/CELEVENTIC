@@ -76,6 +76,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [guests, setGuests] = useState<GuestRow[]>([]);
+  const [guestsTruncated, setGuestsTruncated] = useState(false);
+  const [guestTotal, setGuestTotal] = useState(0);
   const [planName, setPlanName] = useState("Main reception");
   const [tables, setTables] = useState<SeatingTableConfig[]>([]);
   const [assignments, setAssignments] = useState<Record<string, AssignmentRow>>({});
@@ -109,6 +111,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
       const guestList: GuestRow[] = d.data.guests ?? [];
       setGuests(guestList);
       setGenGuestCount(guestList.length);
+      setGuestsTruncated(Boolean(d.data.guestsTruncated));
+      setGuestTotal(Number(d.data.guestTotal ?? guestList.length));
 
       if (d.data.plan) {
         setPlanName(d.data.plan.name);
@@ -335,6 +339,12 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
       {saveError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {saveError}
+        </div>
+      )}
+      {guestsTruncated && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Showing {guests.length.toLocaleString()} of {guestTotal.toLocaleString()} guests for seating.
+          Use guest search when assigning from very large lists.
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">

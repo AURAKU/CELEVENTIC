@@ -9,3 +9,4 @@ export {
   getVendorCategoriesForEventType,
   getTerminology,
 } from "./registry";
+export { resolveCoupleName, coupleNamesLegacyAlias } from "./couple-name";

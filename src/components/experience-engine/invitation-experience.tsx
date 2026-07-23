@@ -28,6 +28,8 @@ export interface InvitationExperienceProps {
   hostName?: string;
   musicEnabled?: boolean;
   enableSounds?: boolean;
+  /** Wax-seal initials for envelope reveals. */
+  sealInitials?: string;
   /** Skip reveal and render portal children immediately */
   skipReveal?: boolean;
   viewportMode?: InviteViewportMode;
@@ -58,6 +60,7 @@ export function InvitationExperience({
   hostName,
   musicEnabled,
   enableSounds = true,
+  sealInitials,
   skipReveal = false,
   viewportMode,
   background,
@@ -128,6 +131,7 @@ export function InvitationExperience({
               hostName={hostName}
               musicEnabled={musicEnabled}
               enableSounds={enableSounds && !config.flags.suppressSideEffects}
+              sealInitials={sealInitials}
               onComplete={() => onRevealComplete?.()}
             >
               {portal}

@@ -1,79 +1,317 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import Image from "next/image";
+import { useReducedMotion } from "framer-motion";
 import { CELEVENTIC_PALETTE } from "@/lib/experience/celeventic-palette";
-import { BRAND_MOTTO } from "@/lib/constants";
+import { invitationFontVars } from "@/lib/invitation-fonts";
+import { parseCoupleNames } from "@/lib/invitation-templates";
+import { resolveMediaUrl, shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
+import styles from "./tap-to-begin-experience.module.css";
 
-interface TapToBeginExperienceProps {
+const EXIT_MS = 480;
+
+export interface TapToBeginExperienceProps {
   onBegin: () => void;
   eventTitle?: string;
+  hostName?: string;
   accentColor?: string;
+  primaryColor?: string;
+  backgroundColor?: string;
+  /** Shared atmosphere from soft intro for a continuous visual field */
+  atmosphereUrl?: string | null;
+  /** design.introText or ceremony label */
+  ceremonyLabel?: string | null;
+  name1?: string | null;
+  name2?: string | null;
+  layoutSlug?: string;
+  category?: string;
 }
 
-export function TapToBeginExperience({ onBegin, eventTitle, accentColor }: TapToBeginExperienceProps) {
+type EventBeat = {
+  eyebrow?: string;
+  script?: string;
+  plain?: string;
+};
+
+function resolveEventBeat(input: {
+  ceremonyLabel?: string | null;
+  eventTitle?: string;
+  layoutSlug?: string;
+  category?: string;
+}): EventBeat {
+  const label = input.ceremonyLabel?.trim();
+  if (label) {
+    const m = label.match(/^(traditional)\s+(.+)$/i);
+    if (m) return { eyebrow: m[1].toUpperCase(), script: titleCase(m[2]) };
+    if (/marriage|wedding|ceremony|union|nikkah/i.test(label) && label.split(/\s+/).length <= 4) {
+      const parts = label.split(/\s+/);
+      if (parts.length >= 2) {
+        return { eyebrow: parts[0].toUpperCase(), script: titleCase(parts.slice(1).join(" ")) };
+      }
+    }
+    return { plain: label };
+  }
+
+  const hay = `${input.layoutSlug ?? ""} ${input.category ?? ""}`.toLowerCase();
+  if (hay.includes("traditional-marriage")) {
+    return { eyebrow: "TRADITIONAL", script: "Marriage Ceremony" };
+  }
+  if (hay.includes("memorial") || hay.includes("funeral") || hay.includes("candle") || hay.includes("tribute")) {
+    return { plain: "In Loving Memory" };
+  }
+  if (input.eventTitle?.trim()) return { plain: input.eventTitle.trim() };
+  return { plain: "Your Invitation" };
+}
+
+function titleCase(s: string): string {
+  return s
+    .split(/\s+/)
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
+    .join(" ");
+}
+
+function resolveBeginLabel(layoutSlug?: string, category?: string): string {
+  const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
+  if (
+    hay.includes("memorial") ||
+    hay.includes("funeral") ||
+    hay.includes("tribute") ||
+    hay.includes("candle") ||
+    hay.includes("concert") ||
+    hay.includes("neon") ||
+    hay.includes("party") ||
+    hay.includes("festival")
+  ) {
+    return "Enter";
+  }
+  return "Begin";
+}
+
+function resolveNames(
+  name1: string | null | undefined,
+  name2: string | null | undefined,
+  eventTitle?: string,
+  hostName?: string,
+  layoutSlug?: string,
+  category?: string
+): { name1: string; name2: string } | null {
+  const a = name1?.trim();
+  const b = name2?.trim();
+  if (a && b) return { name1: a, name2: b };
+
+  const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
+  const weddingLike =
+    hay.includes("wedding") ||
+    hay.includes("marriage") ||
+    hay.includes("engagement") ||
+    hay.includes("nikkah") ||
+    hay.includes("union") ||
+    /[&+]/.test(eventTitle ?? "") ||
+    /[&+]/.test(hostName ?? "");
+
+  if (!weddingLike) return null;
+  const parsed = parseCoupleNames(eventTitle ?? "", hostName ?? "");
+  if (parsed.name1 && parsed.name2) return { name1: parsed.name1, name2: parsed.name2 };
+  return null;
+}
+
+const ORBS = [
+  { left: "12%", top: "18%", size: 7, color: "gold", delay: "0s" },
+  { left: "78%", top: "22%", size: 5, color: "accent", delay: "0.4s" },
+  { left: "22%", top: "72%", size: 6, color: "gold", delay: "0.9s" },
+  { left: "68%", top: "68%", size: 4, color: "accent", delay: "1.2s" },
+  { left: "48%", top: "14%", size: 3, color: "ivory", delay: "0.2s" },
+  { left: "88%", top: "48%", size: 5, color: "gold", delay: "1.6s" },
+  { left: "8%", top: "48%", size: 4, color: "ivory", delay: "0.7s" },
+  { left: "55%", top: "80%", size: 6, color: "accent", delay: "1.1s" },
+];
+
+/**
+ * Music-unlock gate — cinematic, content-aware, single begin action.
+ * One brand beat · one event beat · one CTA. No “touch anywhere” stack.
+ */
+export function TapToBeginExperience({
+  onBegin,
+  eventTitle,
+  hostName,
+  accentColor,
+  primaryColor,
+  backgroundColor,
+  atmosphereUrl,
+  ceremonyLabel,
+  name1,
+  name2,
+  layoutSlug,
+  category,
+}: TapToBeginExperienceProps) {
+  const reduceMotion = useReducedMotion();
+  const [exiting, setExiting] = useState(false);
+  const completed = useRef(false);
+  const exitingRef = useRef(false);
+  const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const accent = accentColor ?? CELEVENTIC_PALETTE.teal;
+  const gold =
+    primaryColor && /gold|#d4a|#c4a|#8b69|#a183|#5c3d/i.test(primaryColor)
+      ? primaryColor
+      : CELEVENTIC_PALETTE.gold;
+
+  const beat = useMemo(
+    () => resolveEventBeat({ ceremonyLabel, eventTitle, layoutSlug, category }),
+    [ceremonyLabel, eventTitle, layoutSlug, category]
+  );
+
+  const couple = useMemo(
+    () => resolveNames(name1, name2, eventTitle, hostName, layoutSlug, category),
+    [name1, name2, eventTitle, hostName, layoutSlug, category]
+  );
+
+  const beginLabel = resolveBeginLabel(layoutSlug, category);
+  const hero = atmosphereUrl?.trim() ? resolveMediaUrl(atmosphereUrl) : null;
+  const showHostFallback =
+    !couple && Boolean(hostName?.trim()) && hostName!.trim() !== eventTitle?.trim();
+
+  const finish = useCallback(() => {
+    if (completed.current) return;
+    completed.current = true;
+    if (exitTimer.current) clearTimeout(exitTimer.current);
+    onBegin();
+  }, [onBegin]);
+
+  const beginExit = useCallback(() => {
+    if (completed.current || exitingRef.current) return;
+    exitingRef.current = true;
+    setExiting(true);
+    const delay = reduceMotion ? 0 : EXIT_MS;
+    exitTimer.current = setTimeout(finish, delay);
+  }, [finish, reduceMotion]);
+
+  useEffect(() => {
+    return () => {
+      if (exitTimer.current) clearTimeout(exitTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        beginExit();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [beginExit]);
+
+  const rootClass = [
+    styles.root,
+    invitationFontVars,
+    "invite-viewport-live",
+    "safe-area-pt",
+    "safe-area-pb",
+    "safe-area-pl",
+    "safe-area-pr",
+    reduceMotion ? styles.static : "",
+    exiting ? styles.exiting : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const ariaLabel = `${beginLabel} — ${beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")}${
+    couple ? `, ${couple.name1} and ${couple.name2}` : ""
+  }`;
+
   return (
-    <motion.button
+    <button
       type="button"
-      onClick={onBegin}
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center cursor-pointer touch-manipulation celeventic-tap-begin celeventic-intro-future invite-viewport-live safe-area-pt safe-area-pb safe-area-pl safe-area-pr"
-      style={{ background: `linear-gradient(165deg, ${CELEVENTIC_PALETTE.navy} 0%, #061a18 40%, ${accent}33 100%)` }}
-      aria-label="Tap to begin experience"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
+      className={rootClass}
+      onClick={beginExit}
+      aria-label={ariaLabel}
+      style={
+        {
+          ["--tap-accent" as string]: accent,
+          ["--tap-gold" as string]: gold,
+          ...(exiting && backgroundColor
+            ? {
+                background: `linear-gradient(180deg, #061018 0%, ${backgroundColor} 120%)`,
+              }
+            : null),
+        } as CSSProperties
+      }
     >
-      <div className="absolute inset-0 celeventic-intro-grid opacity-25 pointer-events-none" />
-      <div className="absolute inset-0 celeventic-intro-scanlines pointer-events-none" />
+      <p className={styles.srStatus} aria-live="polite">
+        {ariaLabel}
+      </p>
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {Array.from({ length: 24 }).map((_, i) => (
-          <span
-            key={i}
-            className="celeventic-intro-particle absolute rounded-full"
-            style={{
-              left: `${(i * 17) % 100}%`,
-              top: `${(i * 23) % 100}%`,
-              width: 4 + (i % 3) * 2,
-              height: 4 + (i % 3) * 2,
-              background: i % 3 === 0 ? CELEVENTIC_PALETTE.gold : i % 3 === 1 ? CELEVENTIC_PALETTE.coral : accent,
-              animationDelay: `${i * 0.15}s`,
-            }}
+      <div className={styles.hero} aria-hidden>
+        {hero ? (
+          <Image
+            src={hero}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className={styles.heroImg}
+            unoptimized={shouldUnoptimizeNextImage(hero)}
           />
-        ))}
+        ) : (
+          <div className={styles.heroFallback} />
+        )}
       </div>
+      <div className={styles.grade} aria-hidden />
 
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 16 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 flex flex-col items-center px-8 text-center max-w-sm"
-      >
-        <div className="celeventic-intro-hud mb-8 px-6 py-4 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md w-full max-w-xs">
-          <p className="text-[10px] uppercase tracking-[0.4em] text-white/45 font-medium mb-2">
-            Celeventic Experience Engine
-          </p>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-white/60">{BRAND_MOTTO}</p>
+      {!reduceMotion ? (
+        <div className={styles.bokeh} aria-hidden>
+          {ORBS.map((orb, i) => (
+            <span
+              key={i}
+              className={styles.orb}
+              style={{
+                left: orb.left,
+                top: orb.top,
+                width: orb.size,
+                height: orb.size,
+                animationDelay: orb.delay,
+                background:
+                  orb.color === "gold"
+                    ? gold
+                    : orb.color === "accent"
+                      ? accent
+                      : "rgba(250, 248, 244, 0.7)",
+              }}
+            />
+          ))}
         </div>
+      ) : null}
 
-        {eventTitle && (
-          <p className="text-white/60 text-sm font-medium tracking-wide mb-4 line-clamp-2">{eventTitle}</p>
+      <div className={styles.stage}>
+        <p className={styles.brand}>Celeventic</p>
+
+        {beat.eyebrow && beat.script ? (
+          <>
+            <p className={styles.eventBeat}>{beat.eyebrow}</p>
+            <p className={styles.scriptBeat}>{beat.script}</p>
+          </>
+        ) : (
+          <p className={styles.eventBeat}>{beat.plain}</p>
         )}
 
-        <p className="text-white font-display text-xl sm:text-2xl font-semibold tracking-tight mb-2">
-          Tap to Begin Experience
-        </p>
-        <p className="text-white/50 text-sm">Music and your invitation will start</p>
+        {couple ? (
+          <div className={styles.names}>
+            <p className={styles.name}>{couple.name1}</p>
+            <p className={styles.amp}>&amp;</p>
+            <p className={styles.name}>{couple.name2}</p>
+          </div>
+        ) : showHostFallback ? (
+          <p className={styles.hostLine}>{hostName}</p>
+        ) : null}
 
-        <motion.span
-          className="mt-10 inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/25 bg-white/10 text-white/90 text-sm font-medium"
-          animate={{ scale: [1, 1.04, 1] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <span className="h-2 w-2 rounded-full bg-[#D4A63A] animate-pulse" />
-          Touch anywhere
-        </motion.span>
-      </motion.div>
-    </motion.button>
+        <div className={styles.cta}>
+          <p className={styles.ctaWord}>{beginLabel}</p>
+          {!reduceMotion && !exiting ? <span className={styles.ctaRule} aria-hidden /> : null}
+        </div>
+      </div>
+    </button>
   );
 }

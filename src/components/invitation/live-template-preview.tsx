@@ -8,7 +8,8 @@ import { pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
 import { pageBackgroundFromDesign } from "@/lib/invitation/studio-media-utils";
 import { TemplatePreviewGlimpse } from "@/components/invitation/template-preview-glimpse";
 import { InvitationStaticPreviewProvider } from "@/components/invitation/invitation-static-preview";
-import { Play, Smartphone, Monitor, Music2, X, Hand } from "lucide-react";
+import { PreviewTapAffordance } from "@/components/invitation/preview-tap-affordance";
+import { Play, Smartphone, Monitor, Music2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type LivePreviewVariant = "picker" | "card" | "hero" | "detail";
@@ -90,47 +91,6 @@ function PreviewDeviceChrome({
   );
 }
 
-function PreviewPoster({
-  compact,
-  hasMusic,
-  onOpen,
-}: {
-  compact?: boolean;
-  hasMusic?: boolean;
-  onOpen: (e: React.MouseEvent) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={cn(
-        "absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 w-full h-full",
-        "bg-gradient-to-t from-black/80 via-black/45 to-black/25",
-        "transition-all hover:from-black/85 hover:via-black/55 active:scale-[0.995]"
-      )}
-      aria-label="Tap to open live template preview"
-    >
-      <div className="rounded-full bg-black/45 backdrop-blur-sm p-3 shadow-lg border border-white/20">
-        <Play className={cn("text-white fill-white", compact ? "h-5 w-5" : "h-7 w-7")} />
-      </div>
-      <span
-        className={cn(
-          "font-medium text-white drop-shadow-md flex items-center gap-1.5",
-          compact ? "text-[10px]" : "text-xs sm:text-sm"
-        )}
-      >
-        <Hand className={cn(compact ? "h-3 w-3" : "h-3.5 w-3.5")} />
-        Tap to view invitation
-      </span>
-      {hasMusic && (
-        <span className="text-[10px] text-white/80 flex items-center gap-1">
-          <Music2 className="h-3 w-3" /> Includes music
-        </span>
-      )}
-    </button>
-  );
-}
-
 function LivePreviewExperience({
   preview,
   device,
@@ -144,6 +104,8 @@ function LivePreviewExperience({
   memoryUploadQrImageUrl,
   memoryEventId,
   memoryAlbumTitle,
+  skipIntro = true,
+  skipTapGate = true,
 }: {
   preview: ReturnType<typeof buildLivePreviewProps>;
   device: PreviewDevice;
@@ -157,6 +119,9 @@ function LivePreviewExperience({
   memoryUploadQrImageUrl?: string | null;
   memoryEventId?: string | null;
   memoryAlbumTitle?: string | null;
+  /** Compact thumbs skip; interactive detail/hero can run soft-intro → tap gate */
+  skipIntro?: boolean;
+  skipTapGate?: boolean;
 }) {
   const bg = pageBackgroundFromDesign(preview.design);
   const experience = (
@@ -168,8 +133,8 @@ function LivePreviewExperience({
       >
         <PremiumInviteWrapper
           skipReveal={skipReveal}
-          skipIntro
-          skipTapGate
+          skipIntro={skipIntro}
+          skipTapGate={skipTapGate}
           skipAnalytics
           musicEnabled={musicEnabled}
           musicAutoplay={musicAutoplay}
@@ -239,7 +204,8 @@ export function LiveTemplatePreview({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activated, setActivated] = useState(false);
   const [inView, setInView] = useState(true);
-  const [glimpseVisible, setGlimpseVisible] = useState(false);
+  /** Start true so above-the-fold tiles never flash blank gray before IO. */
+  const [glimpseVisible, setGlimpseVisible] = useState(true);
   const [device, setDevice] = useState<PreviewDevice>("mobile");
   const [containerWidth, setContainerWidth] = useState(360);
   const cfg = VARIANT_CONFIG[variant];
@@ -262,6 +228,9 @@ export function LiveTemplatePreview({
   const hasMusic = Boolean(preview.musicSelection) && (musicEnabled ?? true);
   const portalLive = showLive;
   const isFullLayout = portalLive && cfg.interactive;
+  const isTraditionalMarriagePreview =
+    layoutSlug === "traditional-marriage-ceremony" ||
+    catalogSlug === "traditional-marriage-ceremony";
 
   const frameWidth = device === "mobile" ? MOBILE_FRAME_WIDTH : DESKTOP_FRAME_WIDTH;
 
@@ -352,20 +321,37 @@ export function LiveTemplatePreview({
     >
       {!showLive ? (
         <>
-          {glimpseVisible && (
-            <TemplatePreviewGlimpse
-              layoutSlug={layoutSlug}
-              catalogSlug={catalogSlug ?? layoutSlug}
-              category={category}
-              features={features}
-              scale={cfg.thumbScale}
-              compact={compactPoster}
-            />
-          )}
-          <PreviewPoster
+          <div className="absolute inset-0 z-10 overflow-hidden">
+            {glimpseVisible && (
+              <TemplatePreviewGlimpse
+                layoutSlug={layoutSlug}
+                catalogSlug={catalogSlug ?? layoutSlug}
+                category={category}
+                features={features}
+                scale={cfg.thumbScale}
+                compact={compactPoster}
+              />
+            )}
+          </div>
+          <PreviewTapAffordance
             compact={compactPoster}
             hasMusic={hasMusic}
+            label={
+              isTraditionalMarriagePreview
+                ? "Tap to open envelope"
+                : "Tap to view invitation"
+            }
+            subtitle={
+              isTraditionalMarriagePreview && hasMusic
+                ? "Seal opens · music begins with the invite"
+                : undefined
+            }
             onOpen={openPreview}
+            aria-label={
+              isTraditionalMarriagePreview
+                ? "Tap to open traditional marriage envelope preview"
+                : "Tap to open live template preview"
+            }
           />
         </>
       ) : (
@@ -456,7 +442,9 @@ export function LiveTemplatePreview({
                 device={isFullLayout ? device : "mobile"}
                 fullScreen={isFullLayout}
                 compactFrame={!isFullLayout}
-                skipReveal
+                skipReveal={!(isFullLayout && isTraditionalMarriagePreview)}
+                skipIntro={!isFullLayout || isTraditionalMarriagePreview}
+                skipTapGate={!isFullLayout || isTraditionalMarriagePreview}
                 musicEnabled={hasMusic && inView}
                 musicAutoplay={hasMusic && inView}
                 memoryUploadUrl={memoryUploadUrl}

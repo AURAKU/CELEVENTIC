@@ -560,23 +560,29 @@ export class InvitationAdminService {
     }
   }
 
-  async getPaymentLogs(limit = 50) {
-    return prisma.paymentLog.findMany({
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        payment: {
-          select: {
-            reference: true,
-            status: true,
-            purpose: true,
-            baseAmount: true,
-            displayCurrency: true,
-            user: { select: { name: true, email: true } },
+  async getPaymentLogs(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.paymentLog.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          payment: {
+            select: {
+              reference: true,
+              status: true,
+              purpose: true,
+              baseAmount: true,
+              displayCurrency: true,
+              user: { select: { name: true, email: true } },
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.paymentLog.count(),
+    ]);
+    return { items, total, page, limit, pages: Math.max(1, Math.ceil(total / limit)) };
   }
 
   async exportPaymentsCsv() {

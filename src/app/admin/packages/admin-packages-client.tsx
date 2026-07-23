@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,9 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 export interface PackageRow {
   id: string;
@@ -141,8 +144,19 @@ function serializePackage(raw: Record<string, unknown>): PackageRow {
 
 const FEATURE_GROUPS = featuresByGroup();
 
-export function AdminPackagesClient({ initial }: { initial: PackageRow[] }) {
+export function AdminPackagesClient({
+  initial,
+  initialTotal,
+  initialPages,
+}: {
+  initial: PackageRow[];
+  initialTotal: number;
+  initialPages: number;
+}) {
+  const { page, setPage, appendToParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [packages, setPackages] = useState(initial);
+  const [total, setTotal] = useState(initialTotal);
+  const [pages, setPages] = useState(initialPages);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -157,12 +171,20 @@ export function AdminPackagesClient({ initial }: { initial: PackageRow[] }) {
   );
 
   const reload = useCallback(async () => {
-    const res = await fetch("/api/admin/packages");
+    const params = appendToParams(new URLSearchParams());
+    const res = await fetch(`/api/admin/packages?${params}`);
     const d = await res.json();
     if (d.success) {
-      setPackages((d.data as Record<string, unknown>[]).map(serializePackage));
+      const items = (d.data.items ?? d.data) as Record<string, unknown>[];
+      setPackages(items.map(serializePackage));
+      setTotal(d.data.total ?? items.length);
+      setPages(d.data.pages ?? 1);
     }
-  }, []);
+  }, [appendToParams]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   function startCreate() {
     setCreating(true);
@@ -312,7 +334,7 @@ export function AdminPackagesClient({ initial }: { initial: PackageRow[] }) {
       <AdminToolbar
         title="Event Packages"
         subtitle="Set prices, limits, credits, and which features/services each package unlocks — edit freely without leaving the page."
-        count={packages.length}
+        count={total}
         onRefresh={() => void reload()}
         onAdd={startCreate}
         addLabel="Add Package"
@@ -388,6 +410,14 @@ export function AdminPackagesClient({ initial }: { initial: PackageRow[] }) {
           );
         })}
       </div>
+
+      <PaginationBar
+        page={page}
+        pages={pages}
+        total={total}
+        limit={ADMIN_TABLE_LIMIT}
+        onPageChange={setPage}
+      />
 
       {editorOpen && (
         <Card className="border-brand-200 shadow-sm">

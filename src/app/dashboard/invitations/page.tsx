@@ -27,6 +27,9 @@ import { getClientAppUrl } from "@/lib/app-url";
 import { PaginationBar } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { DEFAULT_LIMIT } from "@/lib/pagination";
+import { FormDraftStatusBar } from "@/components/forms/form-draft-status-bar";
+import { isBlankFormDraft, readFormDraft, useFormDraft } from "@/hooks/use-form-draft";
+import { useSession } from "next-auth/react";
 
 interface InvitationResult {
   id: string;
@@ -97,6 +100,7 @@ export default function InvitationsPage() {
 }
 
 function InvitationStudioContent() {
+  const { data: session } = useSession();
   const { events, eventId, setEventId, selectedEvent, loading: eventsLoading } = useEventContext();
   const { page, setPage, appendToParams } = usePagination(DEFAULT_LIMIT);
   const [form, setForm] = useState({ name: "", message: "", introText: "" });
@@ -112,6 +116,48 @@ function InvitationStudioContent() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [draftReady, setDraftReady] = useState(false);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
+
+  const draft = useFormDraft({
+    formId: "dashboard-invitation-studio",
+    userId: session?.user?.id,
+    eventId: eventId || undefined,
+    value: form,
+    enabled: Boolean(eventId) && draftReady,
+    restoreOnMount: false,
+    debounceMs: 400,
+    isEmpty: (v) => isBlankFormDraft(v),
+  });
+
+  useEffect(() => {
+    if (!eventId) {
+      setForm({ name: "", message: "", introText: "" });
+      setDraftReady(false);
+      setRestoredFromDraft(false);
+      return;
+    }
+    setDraftReady(false);
+    const saved = readFormDraft<{ name: string; message: string; introText: string }>({
+      formId: "dashboard-invitation-studio",
+      userId: session?.user?.id,
+      eventId,
+    });
+    if (saved && !isBlankFormDraft(saved)) {
+      setForm({ name: saved.name ?? "", message: saved.message ?? "", introText: saved.introText ?? "" });
+      setRestoredFromDraft(true);
+    } else {
+      setForm({ name: "", message: "", introText: "" });
+      setRestoredFromDraft(false);
+    }
+    setDraftReady(true);
+  }, [eventId, session?.user?.id]);
+
+  function handleClearDraft() {
+    draft.clearDraft();
+    setRestoredFromDraft(false);
+    setForm({ name: "", message: "", introText: "" });
+  }
 
   useEffect(() => {
     if (!eventId) return;
@@ -195,6 +241,7 @@ function InvitationStudioContent() {
 
     const data = await res.json();
     if (res.ok) {
+      draft.clearDraft();
       setResult(data.data);
       setForm({ name: "", message: "", introText: "" });
       setMedia([]);
@@ -290,6 +337,13 @@ function InvitationStudioContent() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreate} className="space-y-4">
+                <FormDraftStatusBar
+                  status={draft.status}
+                  hasDraft={draft.hasDraft}
+                  wasRestored={restoredFromDraft}
+                  lastSavedAt={draft.lastSavedAt}
+                  onClear={handleClearDraft}
+                />
                 <div className="space-y-2">
                   <Label>Invitation Name *</Label>
                   <Input

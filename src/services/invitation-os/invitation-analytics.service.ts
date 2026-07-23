@@ -60,6 +60,8 @@ export class InvitationAnalyticsService {
     const orders = await prisma.invitationOrder.findMany({
       where: { userId },
       select: { id: true, invitationId: true, eventId: true, packageSlug: true, templateSlug: true, totalAmountGhs: true, status: true },
+      orderBy: { createdAt: "desc" },
+      take: 200,
     });
 
     const orderIds = orders.map((o) => o.id);

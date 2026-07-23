@@ -1,6 +1,7 @@
 import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/utils";
+import { eventService } from "@/services/events/event.service";
 import type { EventStatus, Prisma, UserRole, UserStatus } from "@prisma/client";
 
 export class AdminService {
@@ -191,16 +192,23 @@ export class AdminService {
     return prisma.adminSetting.delete({ where: { key } });
   }
 
-  async getPackages() {
-    return prisma.eventPackage.findMany({
-      orderBy: { sortOrder: "asc" },
-      include: {
-        packageFeatures: {
-          select: { featureKey: true, isIncluded: true },
+  async getPackages(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      prisma.eventPackage.findMany({
+        orderBy: { sortOrder: "asc" },
+        skip,
+        take: limit,
+        include: {
+          packageFeatures: {
+            select: { featureKey: true, isIncluded: true },
+          },
+          _count: { select: { events: true } },
         },
-        _count: { select: { events: true } },
-      },
-    });
+      }),
+      prisma.eventPackage.count(),
+    ]);
+    return { items, total, page, limit, pages: Math.max(1, Math.ceil(total / limit)) };
   }
 
   private async syncPackageFeatures(packageId: string, featureKeys: string[]) {
@@ -355,12 +363,7 @@ export class AdminService {
   }
 
   async deleteEvent(id: string) {
-    const event = await prisma.event.findUnique({ where: { id } });
-    if (!event) throw new Error("Event not found");
-    if (["LIVE", "PUBLISHED"].includes(event.status)) {
-      return prisma.event.update({ where: { id }, data: { status: "CANCELLED" } });
-    }
-    return prisma.event.delete({ where: { id } });
+    return eventService.deleteEvent(id, { hard: true });
   }
 
   async getTemplates() {

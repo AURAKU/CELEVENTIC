@@ -47,11 +47,14 @@ interface ApiProvider {
 
 export function AdminPaymentsClient({ initial, initialTotal }: { initial: PaymentRow[]; initialTotal: number }) {
   const { page, setPage, resetPage, appendToParams } = usePagination(ADMIN_TABLE_LIMIT);
+  const { page: logPage, setPage: setLogPage, appendToParams: appendLogParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [payments, setPayments] = useState(initial);
   const [total, setTotal] = useState(initialTotal);
   const [pages, setPages] = useState(Math.max(1, Math.ceil(initialTotal / ADMIN_TABLE_LIMIT)));
   const [status, setStatus] = useState("");
   const [logs, setLogs] = useState<PaymentLogRow[]>([]);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const [logsPages, setLogsPages] = useState(1);
   const [providers, setProviders] = useState<ApiProvider[]>([]);
 
   const load = useCallback(async () => {
@@ -66,11 +69,17 @@ export function AdminPaymentsClient({ initial, initialTotal }: { initial: Paymen
     }
   }, [status, appendToParams]);
 
-  async function loadLogs() {
-    const res = await fetch("/api/admin/payments/logs");
+  const loadLogs = useCallback(async () => {
+    const params = appendLogParams(new URLSearchParams());
+    const res = await fetch(`/api/admin/payments/logs?${params}`);
     const d = await res.json();
-    if (d.success) setLogs(d.data);
-  }
+    if (d.success) {
+      const items = d.data.items ?? d.data;
+      setLogs(Array.isArray(items) ? items : []);
+      setLogsTotal(d.data.total ?? (Array.isArray(items) ? items.length : 0));
+      setLogsPages(d.data.pages ?? 1);
+    }
+  }, [appendLogParams]);
 
   async function loadProviders() {
     const res = await fetch("/api/admin/api-settings");
@@ -82,8 +91,9 @@ export function AdminPaymentsClient({ initial, initialTotal }: { initial: Paymen
     resetPage();
   }, [status, resetPage]);
 
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { loadLogs(); loadProviders(); }, []);
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void loadLogs(); }, [loadLogs]);
+  useEffect(() => { void loadProviders(); }, []);
 
   async function toggleProvider(provider: string, isEnabled: boolean) {
     await fetch("/api/admin/api-settings", {
@@ -103,7 +113,7 @@ export function AdminPaymentsClient({ initial, initialTotal }: { initial: Paymen
         title="Payment Settings"
         subtitle="Paystack, payment logs, webhook logs, reconciliation, and exports"
         count={total}
-        onRefresh={() => { load(); loadLogs(); }}
+        onRefresh={() => { void load(); void loadLogs(); }}
       >
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -226,6 +236,13 @@ export function AdminPaymentsClient({ initial, initialTotal }: { initial: Paymen
               </CardContent>
             </Card>
           ))}
+          <PaginationBar
+            page={logPage}
+            pages={logsPages}
+            total={logsTotal}
+            limit={ADMIN_TABLE_LIMIT}
+            onPageChange={setLogPage}
+          />
         </TabsContent>
       </Tabs>
     </div>

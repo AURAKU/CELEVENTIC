@@ -223,7 +223,7 @@ export function ImageCropDialog({
   );
 
   const onPointerDown = useCallback(
-    (e: React.PointerEvent, mode: DragMode["kind"] | CropResizeHandle) => {
+    (e: React.PointerEvent, mode: "pan" | "move" | CropResizeHandle) => {
       e.stopPropagation();
       const target = e.currentTarget as HTMLElement;
       target.setPointerCapture(e.pointerId);

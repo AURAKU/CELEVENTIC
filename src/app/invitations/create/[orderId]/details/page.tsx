@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { MvpShell } from "@/components/invitation-mvp/mvp-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PageLoader } from "@/components/ui/page-loader";
+import { FormDraftStatusBar } from "@/components/forms/form-draft-status-bar";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { AiCreatorPanel } from "@/components/invitation-os/ai-creator-panel";
 import { InspirationUploadPanel } from "@/components/invitation-os/inspiration-upload-panel";
@@ -16,47 +18,93 @@ import { GalleryUploadPanel } from "@/components/media/gallery-upload-panel";
 import type { MusicSelection } from "@/lib/music/music-types";
 import { parseMusicSelection } from "@/lib/music/validate-selection";
 import type { AiCreatorOutput } from "@/services/invitation-os/ai-invitation-creator.service";
+import { isBlankFormDraft, readFormDraft, useFormDraft } from "@/hooks/use-form-draft";
 
 type LanguageMode = "EN_ONLY" | "FR_ONLY" | "EN_FR";
+
+type DetailsForm = {
+  eventType: string;
+  hostName: string;
+  coupleName1: string;
+  coupleName2: string;
+  deceasedName: string;
+  eventTitle: string;
+  eventTitleFr: string;
+  eventDate: string;
+  eventTime: string;
+  venueName: string;
+  landmark: string;
+  mapsLink: string;
+  dressCode: string;
+  contactPhone: string;
+  contactEmail: string;
+  story: string;
+  storyFr: string;
+  musicPreference: string;
+  rsvpRequired: boolean;
+  guestCount: string;
+  languageMode: LanguageMode;
+};
+
+const EMPTY_FORM: DetailsForm = {
+  eventType: "WEDDING",
+  hostName: "",
+  coupleName1: "",
+  coupleName2: "",
+  deceasedName: "",
+  eventTitle: "",
+  eventTitleFr: "",
+  eventDate: "",
+  eventTime: "",
+  venueName: "",
+  landmark: "",
+  mapsLink: "",
+  dressCode: "",
+  contactPhone: "",
+  contactEmail: "",
+  story: "",
+  storyFr: "",
+  musicPreference: "",
+  rsvpRequired: true,
+  guestCount: "",
+  languageMode: "EN_FR",
+};
 
 export default function EventDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const orderId = params.orderId as string;
+  const { data: session, status: sessionStatus } = useSession();
+  const userId = session?.user?.id;
   const { t } = useLocale();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [hydrated, setHydrated] = useState(false);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
+  const [serverBaseline, setServerBaseline] = useState<DetailsForm | null>(null);
   const [musicSelection, setMusicSelection] = useState<MusicSelection | null>(null);
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
-  const [form, setForm] = useState({
-    eventType: "WEDDING",
-    hostName: "",
-    coupleName1: "",
-    coupleName2: "",
-    deceasedName: "",
-    eventTitle: "",
-    eventTitleFr: "",
-    eventDate: "",
-    eventTime: "",
-    venueName: "",
-    landmark: "",
-    mapsLink: "",
-    dressCode: "",
-    contactPhone: "",
-    contactEmail: "",
-    story: "",
-    storyFr: "",
-    musicPreference: "",
-    rsvpRequired: true,
-    guestCount: "",
-    languageMode: "EN_FR" as LanguageMode,
+  const [form, setForm] = useState<DetailsForm>(EMPTY_FORM);
+
+  const draft = useFormDraft<DetailsForm>({
+    formId: "invitation-order-details",
+    userId,
+    orderId,
+    value: form,
+    enabled: hydrated && sessionStatus !== "loading",
+    restoreOnMount: false,
+    debounceMs: 400,
+    isEmpty: (v) => isBlankFormDraft(v, ["eventType", "rsvpRequired", "languageMode"]),
   });
 
   useEffect(() => {
+    if (sessionStatus === "loading") return;
+    let cancelled = false;
     fetch(`/api/invitation-orders/${orderId}`)
       .then((r) => r.json())
-      .then(async (d) => {
+      .then((d) => {
+        if (cancelled) return;
         if (d.success) {
           const o = d.data;
           let eventTitleFr = "";
@@ -67,7 +115,7 @@ export default function EventDetailsPage() {
             eventTitleFr = frVersion.eventTitle ?? "";
             storyFr = frVersion.story ?? "";
           }
-          setForm({
+          const serverForm: DetailsForm = {
             eventType: o.eventType ?? "WEDDING",
             hostName: o.hostName ?? "",
             coupleName1: o.coupleName1 ?? "",
@@ -89,13 +137,42 @@ export default function EventDetailsPage() {
             rsvpRequired: o.rsvpRequired ?? true,
             guestCount: o.guestCount?.toString() ?? "",
             languageMode: o.languageMode ?? "EN_FR",
-          });
+          };
+          setServerBaseline(serverForm);
           setGalleryUrls(Array.isArray(o.galleryUrls) ? (o.galleryUrls as string[]) : []);
           setMusicSelection(parseMusicSelection(o.musicSelection));
+
+          const saved = readFormDraft<DetailsForm>({
+            formId: "invitation-order-details",
+            userId,
+            orderId,
+          });
+          if (
+            saved &&
+            !isBlankFormDraft(saved, ["eventType", "rsvpRequired", "languageMode"]) &&
+            JSON.stringify(saved) !== JSON.stringify(serverForm)
+          ) {
+            setForm(saved);
+            setRestoredFromDraft(true);
+          } else {
+            setForm(serverForm);
+            setRestoredFromDraft(false);
+          }
         }
+        setHydrated(true);
         setLoading(false);
       });
-  }, [orderId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId, userId, sessionStatus]);
+
+  function handleClearDraft() {
+    draft.clearDraft();
+    setRestoredFromDraft(false);
+    if (serverBaseline) setForm(serverBaseline);
+    else setForm(EMPTY_FORM);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,6 +191,7 @@ export default function EventDetailsPage() {
     const data = await res.json();
     setSaving(false);
     if (data.success) {
+      draft.clearDraft();
       router.push(`/invitations/create/${orderId}/blocks`);
     } else {
       setError(data.error || t("forms.save_failed"));
@@ -145,6 +223,13 @@ export default function EventDetailsPage() {
         <InspirationUploadPanel orderId={orderId} />
       </div>
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-5">
+        <FormDraftStatusBar
+          status={draft.status}
+          hasDraft={draft.hasDraft}
+          wasRestored={restoredFromDraft}
+          lastSavedAt={draft.lastSavedAt}
+          onClear={handleClearDraft}
+        />
         {error && <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-600">{error}</div>}
 
         <div>

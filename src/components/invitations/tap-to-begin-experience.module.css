@@ -1,0 +1,349 @@
+/**
+ * Cinematic tap-to-begin — content-aware open that blends into the invitation.
+ * One brand beat · one event beat · one begin action. No redundant instructions.
+ */
+
+.root {
+  --tap-navy: #061018;
+  --tap-ink: #0f172a;
+  --tap-ivory: #faf8f4;
+  --tap-gold: #d4a63a;
+  --tap-accent: #0b8a83;
+  --tap-exit-ms: 480ms;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+  background: var(--tap-navy);
+  color: var(--tap-ivory);
+  outline: none;
+  border: 0;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.root:focus-visible {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tap-gold) 55%, transparent);
+}
+
+.hero {
+  position: absolute;
+  inset: -6%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.heroImg {
+  object-fit: cover;
+  object-position: center 35%;
+  filter: saturate(0.92) contrast(1.05) brightness(0.72);
+  animation: tap-ken-burns 14s ease-in-out both;
+  will-change: transform;
+}
+
+.heroFallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 38%, color-mix(in srgb, var(--tap-accent) 28%, transparent) 0%, transparent 58%),
+    radial-gradient(ellipse 90% 70% at 50% 100%, color-mix(in srgb, var(--tap-gold) 12%, transparent) 0%, transparent 48%),
+    linear-gradient(168deg, #040a10 0%, var(--tap-ink) 42%, #0a1416 100%);
+}
+
+.grade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(4, 10, 16, 0.55) 0%, rgba(4, 10, 16, 0.18) 38%, rgba(4, 10, 16, 0.72) 100%),
+    radial-gradient(ellipse 60% 50% at 50% 42%, transparent 20%, rgba(4, 10, 16, 0.55) 100%);
+}
+
+.bokeh {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(1px);
+  opacity: 0.35;
+  animation: tap-orb-drift 5.5s ease-in-out infinite;
+}
+
+.stage {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 22rem;
+  width: 100%;
+  padding: 1.5rem 1.75rem;
+  animation: tap-stage-rise 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.brand {
+  margin: 0 0 1.75rem;
+  font-family: var(--font-cormorant), "Cormorant Garamond", serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--tap-ivory) 48%, transparent);
+  animation: tap-line-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+.eventBeat {
+  margin: 0;
+  max-width: 18rem;
+  font-family: var(--font-cinzel), "Cinzel", serif;
+  font-size: clamp(0.95rem, 3.6vw, 1.15rem);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--tap-ivory) 88%, var(--tap-gold) 12%);
+  animation: tap-line-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+
+.scriptBeat {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-great-vibes), "Great Vibes", cursive;
+  font-size: clamp(2rem, 8vw, 2.65rem);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  text-transform: none;
+  color: color-mix(in srgb, var(--tap-gold) 78%, var(--tap-ivory) 22%);
+  animation: tap-line-in 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both;
+  text-shadow: 0 8px 36px rgba(0, 0, 0, 0.35);
+}
+
+.names {
+  margin: 1.35rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  animation: tap-line-in 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-cinzel), "Cinzel", serif;
+  font-size: clamp(0.82rem, 2.8vw, 0.95rem);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--tap-ivory) 82%, transparent);
+  max-width: 17rem;
+  line-height: 1.4;
+}
+
+.amp {
+  margin: 0;
+  font-family: var(--font-great-vibes), "Great Vibes", cursive;
+  font-size: 1.55rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--tap-gold) 70%, transparent);
+}
+
+.hostLine {
+  margin: 1.1rem 0 0;
+  font-family: var(--font-cormorant), "Cormorant Garamond", serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--tap-ivory) 72%, transparent);
+  max-width: 17rem;
+  line-height: 1.35;
+  animation: tap-line-in 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+}
+
+.cta {
+  margin: 2.35rem 0 0;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  animation: tap-line-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.75s both;
+}
+
+.ctaWord {
+  margin: 0;
+  font-family: var(--font-cinzel), "Cinzel", serif;
+  font-size: clamp(0.95rem, 3.2vw, 1.1rem);
+  font-weight: 500;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: var(--tap-ivory);
+  text-indent: 0.38em;
+}
+
+.ctaRule {
+  display: block;
+  width: 3.25rem;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--tap-gold) 85%, transparent),
+    transparent
+  );
+  animation: tap-rule-breathe 2.4s ease-in-out infinite;
+}
+
+.exiting {
+  animation: tap-outro-fade var(--tap-exit-ms) ease-in forwards;
+  pointer-events: none;
+}
+
+.exiting .heroImg,
+.exiting .heroFallback {
+  animation: tap-outro-zoom var(--tap-exit-ms) ease-in forwards;
+}
+
+.exiting .stage {
+  animation: tap-outro-rise var(--tap-exit-ms) ease-in forwards;
+}
+
+.static .heroImg,
+.static .orb,
+.static .stage,
+.static .brand,
+.static .eventBeat,
+.static .scriptBeat,
+.static .names,
+.static .hostLine,
+.static .cta,
+.static .ctaRule {
+  animation: none;
+}
+
+.srStatus {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes tap-ken-burns {
+  from {
+    transform: scale(1.06) translate(0.6%, 0.4%);
+  }
+  to {
+    transform: scale(1.14) translate(-1.2%, -0.8%);
+  }
+}
+
+@keyframes tap-orb-drift {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.48;
+    transform: translate3d(6px, -14px, 0) scale(1.08);
+  }
+}
+
+@keyframes tap-stage-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tap-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes tap-rule-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scaleX(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes tap-outro-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes tap-outro-zoom {
+  to {
+    transform: scale(1.12);
+    filter: saturate(0.95) contrast(1.08) brightness(0.55);
+  }
+}
+
+@keyframes tap-outro-rise {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroImg,
+  .orb,
+  .stage,
+  .brand,
+  .eventBeat,
+  .scriptBeat,
+  .names,
+  .hostLine,
+  .cta,
+  .ctaRule,
+  .exiting,
+  .exiting .heroImg,
+  .exiting .heroFallback,
+  .exiting .stage {
+    animation: none !important;
+  }
+
+  .exiting {
+    opacity: 0;
+  }
+}

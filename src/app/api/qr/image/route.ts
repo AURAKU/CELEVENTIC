@@ -54,18 +54,22 @@ export async function GET(req: Request) {
 
     if (rawData) {
       const url = rawData.startsWith("http") ? rawData : buildVerifyUrl(rawData);
-      const center =
-        eventId ? await qrBrandingService.resolveCenterImageUrl(eventId) : await qrBrandingService.getAdminDefaultLogoUrl();
+      const center = eventId
+        ? await qrBrandingService.resolveCenterImageUrl(eventId)
+        : await qrBrandingService.getAdminDefaultLogoUrl();
+      const logoSize = eventId
+        ? await qrBrandingService.resolveLogoSize(eventId)
+        : await qrBrandingService.getAdminDefaultLogoSize();
 
       if (format === "svg") {
         const { generateBrandedQrSvg } = await import("@/lib/qr/branded-qr-generator");
-        const svg = await generateBrandedQrSvg(url, center, size, mode);
+        const svg = await generateBrandedQrSvg(url, center, size, mode, logoSize);
         return new NextResponse(svg, {
           headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=300" },
         });
       }
 
-      const png = await generateBrandedQrPng(url, center, size, mode);
+      const png = await generateBrandedQrPng(url, center, size, mode, logoSize);
       return new NextResponse(new Uint8Array(png), {
         headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=300" },
       });

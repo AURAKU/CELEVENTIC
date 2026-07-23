@@ -6,6 +6,8 @@ import { eventService } from "@/services/events/event.service";
 import { verifyEventAccess } from "@/lib/event-access";
 import { isAdminRole } from "@/lib/roles";
 import { createAuditLog } from "@/lib/audit";
+import { prisma } from "@/lib/prisma";
+import type { UserRole } from "@prisma/client";
 
 const updateEventSchema = z.object({
   action: z.enum(["update", "publish"]).optional(),
@@ -24,6 +26,7 @@ const updateEventSchema = z.object({
   pricingType: z.enum(["FREE", "PAID"]).optional(),
   coverImageUrl: z.string().optional(),
   qrCenterImageUrl: z.string().optional().nullable(),
+  qrLogoSize: z.enum(["subtle", "balanced", "bold"]).optional().nullable(),
   themeId: z.string().optional(),
   packageId: z.string().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "CANCELLED", "COMPLETED"]).optional(),
@@ -104,6 +107,50 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to update event" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    });
+    const role = (dbUser?.role ?? session.user.role) as UserRole;
+
+    const event = await verifyEventAccess(id, session.user.id, role);
+    const isAdmin = isAdminRole(role);
+    const isOwner = event.organizerId === session.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json(
+        { error: "Only the event organizer or a platform admin can delete this event" },
+        { status: 403 }
+      );
+    }
+
+    const result = await eventService.deleteEvent(id, { hard: isAdmin });
+    await createAuditLog({
+      userId: session.user.id,
+      action: "DELETE",
+      entity: "event",
+      entityId: id,
+      details: { mode: result.mode },
+    });
+
+    return NextResponse.json({ success: true, data: result });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to delete event" },
       { status: 500 }
     );
   }

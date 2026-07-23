@@ -49,17 +49,17 @@ const DEFAULTS = {
 /**
  * Tuning for QR centre logos.
  *
- * The branded QR generator draws the logo at `size * LOGO_RATIO * 0.88`. At the
- * largest export (2048px) that is 2048 * 0.19 * 0.88 ≈ 342px, so the logo is
- * never rendered above ~342px. A 1024px cap leaves ~3x headroom and is therefore
- * invisible in the QR output while cutting multi-megabyte photos down sharply.
+ * The branded QR generator draws the logo at `size * logoRatio * 0.9`. At the
+ * largest export (2048px) with bold (0.22) that is 2048 * 0.22 * 0.9 ≈ 405px,
+ * so the logo is never rendered above ~405px. A 1024px cap leaves headroom and
+ * is therefore invisible in the QR output while cutting multi-megabyte photos.
  */
 export const QR_LOGO_COMPRESSION: SmartCompressOptions = {
   maxEdge: 1024,
   targetBytes: 1_200_000,
   minQuality: 0.7,
   startQuality: 0.95,
-  minEdge: 342,
+  minEdge: 405,
 };
 
 /**

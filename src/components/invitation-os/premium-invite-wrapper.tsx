@@ -23,8 +23,15 @@ import { createInvitationAudioManager } from "@/lib/music/invitation-audio-manag
 import {
   phaseAfterSoftIntro,
   resolveInitialInvitePhase,
+  resolveSoftIntroAtmosphere,
   type InvitePipelinePhase,
 } from "@/lib/experience-engine/soft-intro";
+import { getLayoutMediaPack } from "@/lib/invitation/layout-media-identity";
+import {
+  TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL,
+  resolveSealInitials,
+  type VisionBoardContent,
+} from "@/lib/invitation/vision-board";
 
 /**
  * Full opening pipeline (platform → template → reveal → invite):
@@ -150,6 +157,39 @@ export function PremiumInviteWrapper({
     showReveal,
   };
 
+  const layoutMedia = getLayoutMediaPack(enrichedDesign.layout);
+  // TM soft intro must match embroidery pre-reveal — never the printed card art.
+  const layoutFallbackUrl =
+    enrichedDesign.layout === "traditional-marriage-ceremony"
+      ? TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL
+      : (layoutMedia?.background ?? layoutMedia?.hero ?? null);
+  const mediaHero =
+    enrichedDesign.media?.find((m) => m.role === "hero" || m.role === "background")?.url ?? null;
+  const softAtmosphereUrl = resolveSoftIntroAtmosphere({
+    backgroundImageUrl: props.backgroundImageUrl,
+    coverImageUrl: props.event.coverImageUrl,
+    mediaUrl: mediaHero,
+    layoutFallbackUrl,
+  });
+
+  const visionBoard = (enrichedDesign.studio as { visionBoard?: VisionBoardContent } | undefined)
+    ?.visionBoard;
+  // Prefer ceremony wording from content once — never restate on tap-to-begin.
+  const softIntroTitle =
+    (visionBoard?.eyebrow && visionBoard?.scriptTitle
+      ? `${visionBoard.eyebrow} ${visionBoard.scriptTitle}`
+      : null) ||
+    enrichedDesign.introText?.trim() ||
+    props.event.title?.trim() ||
+    undefined;
+
+  const softAccent =
+    themeColors?.accent ??
+    (enrichedDesign.layout === "traditional-marriage-ceremony" ? "#A18373" : undefined);
+  const softSecondary =
+    themeColors?.primary ??
+    (enrichedDesign.layout === "traditional-marriage-ceremony" ? "#F5EBE3" : undefined);
+
   const [phase, setPhase] = useState<ExperiencePhase>(() =>
     resolveInitialInvitePhase(pipelineFlags)
   );
@@ -263,7 +303,14 @@ export function PremiumInviteWrapper({
 
   // 1) Platform soft intro (all live invites) → 2) template DNA intro → …
   if (phase === "soft-intro") {
-    return <CeleventicSoftIntro onComplete={afterSoftIntro} />;
+    return (
+      <CeleventicSoftIntro
+        onComplete={afterSoftIntro}
+        atmosphereUrl={softAtmosphereUrl}
+        accentColor={softAccent}
+        secondaryColor={softSecondary}
+      />
+    );
   }
 
   if (phase === "intro") {
@@ -286,12 +333,27 @@ export function PremiumInviteWrapper({
       <TapToBeginExperience
         onBegin={handleTapBegin}
         eventTitle={props.event.title}
-        accentColor={themeColors?.accent}
+        hostName={props.event.hostName}
+        accentColor={themeColors?.accent ?? softAccent}
+        primaryColor={themeColors?.primary ?? themeColors?.secondary}
+        backgroundColor={themeColors?.background}
+        atmosphereUrl={softAtmosphereUrl}
+        ceremonyLabel={softIntroTitle}
+        name1={visionBoard?.coupleName1}
+        name2={visionBoard?.coupleName2}
+        layoutSlug={enrichedDesign.layout}
+        category={experience?.collectionId}
       />
     );
   }
 
   if (phase === "reveal") {
+    const sealInitials = resolveSealInitials(visionBoard?.sealInitials, {
+      layout: enrichedDesign.layout,
+      coupleName1: visionBoard?.coupleName1,
+      coupleName2: visionBoard?.coupleName2,
+      hostName: props.event.hostName,
+    });
     return (
       <>
         <InteractiveReveal
@@ -301,6 +363,7 @@ export function PremiumInviteWrapper({
           hostName={props.event.hostName}
           musicEnabled={Boolean(hasMusic)}
           enableSounds={experience?.enableRevealSounds}
+          sealInitials={sealInitials}
           onBegin={() => {
             void startAudio();
           }}

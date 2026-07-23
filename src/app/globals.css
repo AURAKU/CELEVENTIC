@@ -241,6 +241,20 @@
     animation: inv-fade-in 0.7s ease-out both;
   }
 
+  /* Traditional Marriage Ceremony — soft editorial motion */
+  .tm-section-rise {
+    animation: tm-section-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .tm-hairline {
+    transform-origin: center;
+    animation: tm-hairline-draw 0.9s ease-out both;
+  }
+
+  .tm-countdown-unit {
+    animation: tm-countdown-unit-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   .inv-text-on-dark,
   .cinematic-spotlight-root {
     --inv-text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55), 0 0 32px rgba(0, 0, 0, 0.2);
@@ -589,6 +603,24 @@
     border-radius: 1rem;
   }
 
+  /* Traditional Marriage — media is the stage; no padded slate letterbox */
+  .inv-gallery-frame-linen .inv-gallery-item {
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .inv-gallery-frame-linen .inv-gallery-item img,
+  .inv-gallery-frame-linen .inv-gallery-item video {
+    object-fit: cover;
+    object-position: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tm-gallery-stage {
+    isolation: isolate;
+  }
+
   .inv-gallery-frame-luxury .inv-gallery-item {
     box-shadow: 0 0 0 2px rgba(212, 166, 58, 0.45), 0 16px 48px rgba(0, 0, 0, 0.2);
   }
@@ -767,6 +799,21 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes tm-section-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tm-hairline-draw {
+  from { opacity: 0; transform: scaleX(0.35); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes tm-countdown-unit-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes inv-block-reveal {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -862,10 +909,83 @@
   .celeventic-logo-glow {
     animation: none;
   }
+
+  .tm-section-rise,
+  .tm-hairline,
+  .tm-countdown-unit {
+    animation: none !important;
+  }
 }
 
 .inv-envelope-glow {
   animation: inv-envelope-glow 0.8s ease-in-out;
+}
+
+@keyframes inv-envelope-glint {
+  0%, 100% { opacity: 0.15; transform: translateX(-8%) skewX(-12deg); }
+  45% { opacity: 0.55; transform: translateX(18%) skewX(-12deg); }
+  70% { opacity: 0.2; }
+}
+
+@keyframes inv-envelope-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.006); }
+}
+
+@keyframes inv-seal-pulse {
+  0%, 100% {
+    box-shadow:
+      0 10px 36px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(212, 166, 58, 0.55),
+      inset 0 2px 10px rgba(255, 255, 255, 0.35),
+      0 0 22px rgba(212, 166, 58, 0.28);
+  }
+  50% {
+    box-shadow:
+      0 12px 42px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(245, 230, 184, 0.7),
+      inset 0 2px 12px rgba(255, 255, 255, 0.42),
+      0 0 36px rgba(212, 166, 58, 0.55);
+  }
+}
+
+@keyframes inv-seal-pulse-peach {
+  0%, 100% {
+    filter:
+      drop-shadow(0 10px 16px rgba(80, 40, 20, 0.34))
+      drop-shadow(0 0 12px rgba(232, 184, 154, 0.38));
+    transform: scale(1);
+  }
+  50% {
+    filter:
+      drop-shadow(0 14px 22px rgba(80, 40, 20, 0.4))
+      drop-shadow(0 0 26px rgba(232, 184, 154, 0.7));
+    transform: scale(1.035);
+  }
+}
+
+.inv-envelope-breathe {
+  animation: inv-envelope-breathe 4.2s ease-in-out infinite;
+}
+
+.inv-seal-pulse {
+  animation: inv-seal-pulse 2.6s ease-in-out infinite;
+}
+
+.inv-seal-pulse-peach {
+  animation: inv-seal-pulse-peach 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-envelope-glow {
+    animation: none;
+  }
+
+  .inv-envelope-breathe,
+  .inv-seal-pulse,
+  .inv-seal-pulse-peach {
+    animation: none !important;
+  }
 }
 
 .inv-scroll-unroll-active {

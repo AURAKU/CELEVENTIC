@@ -23,9 +23,18 @@ interface InvitationActionsProps {
   variant?: "light" | "dark";
   buttonStyle?: ButtonStyle | string;
   onShare?: () => void | Promise<void>;
+  /** Hide tel Contact when contact lives in a merged RSVP section */
+  omitContact?: boolean;
 }
 
-export function InvitationActions({ event, pdfUrl, variant = "light", buttonStyle, onShare }: InvitationActionsProps) {
+export function InvitationActions({
+  event,
+  pdfUrl,
+  variant = "light",
+  buttonStyle,
+  onShare,
+  omitContact = false,
+}: InvitationActionsProps) {
   const staticPreview = useInvitationStaticPreview();
   const btnClass = buttonStyle
     ? styledInvitationButton(buttonStyle, variant, "text-xs")
@@ -85,7 +94,8 @@ export function InvitationActions({ event, pdfUrl, variant = "light", buttonStyl
           <SetReminderButton event={calendarEvent} variant="minimal" fullWidth />
         )}
       </div>
-      {event.contactPhone &&
+      {!omitContact &&
+        event.contactPhone &&
         (staticPreview ? (
           <Button type="button" variant="outline" disabled className={btnClass}>
             <Phone className="h-4 w-4" /> Contact

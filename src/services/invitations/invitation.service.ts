@@ -106,10 +106,32 @@ export class InvitationService {
     });
   }
 
+  /**
+   * Resolve the guest for a personalized invite link (`/invite/{link}?guest={qrToken}`).
+   * Prefer an exact invitation match; fall back to event-scoped token lookup because
+   * Guest CRM often creates guests without invitationId.
+   */
   async getGuestForInvitation(invitationId: string, guestToken: string) {
+    const token = guestToken?.trim();
+    if (!token) return null;
+
+    const include = { rsvps: { orderBy: { createdAt: "desc" as const }, take: 1 } };
+
+    const byInvitation = await prisma.guest.findFirst({
+      where: { invitationId, qrToken: token },
+      include,
+    });
+    if (byInvitation) return byInvitation;
+
+    const invitation = await prisma.invitation.findUnique({
+      where: { id: invitationId },
+      select: { eventId: true },
+    });
+    if (!invitation) return null;
+
     return prisma.guest.findFirst({
-      where: { invitationId, qrToken: guestToken },
-      include: { rsvps: { orderBy: { createdAt: "desc" }, take: 1 } },
+      where: { eventId: invitation.eventId, qrToken: token },
+      include,
     });
   }
 
@@ -155,10 +177,20 @@ export class InvitationService {
     const { allocateManualAdmissionCode } = await import("@/lib/qr/manual-code");
     const manualCode = await allocateManualAdmissionCode(input.eventId);
 
+    let invitationId = input.invitationId;
+    if (!invitationId) {
+      const primary = await prisma.invitation.findFirst({
+        where: { eventId: input.eventId, status: { not: "EXPIRED" } },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
+      invitationId = primary?.id;
+    }
+
     const guest = await prisma.guest.create({
       data: {
         eventId: input.eventId,
-        invitationId: input.invitationId,
+        invitationId,
         name: input.name,
         email: input.email,
         phone: input.phone,
@@ -214,7 +246,7 @@ export class InvitationService {
       }
     }
 
-    const [guests, total, statusGroups] = await Promise.all([
+    const [guests, total, statusGroups, primaryInvite] = await Promise.all([
       prisma.guest.findMany({
         where,
         include: { rsvps: { orderBy: { createdAt: "desc" }, take: 1 }, invitation: true },
@@ -227,6 +259,11 @@ export class InvitationService {
         by: ["status"],
         where: { eventId },
         _count: true,
+      }),
+      prisma.invitation.findFirst({
+        where: { eventId, status: { not: "EXPIRED" } },
+        orderBy: { createdAt: "desc" },
+        select: { uniqueLink: true },
       }),
     ]);
 
@@ -247,6 +284,7 @@ export class InvitationService {
     return {
       ...paginatedResult(guests, total, page, limit),
       stats: { counts, total: eventTotal, noResponse },
+      defaultInviteUniqueLink: primaryInvite?.uniqueLink ?? null,
     };
   }
 }

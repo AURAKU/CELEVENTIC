@@ -1,5 +1,5 @@
 /**
- * Platform soft intro — Celeventic-branded gate before template DNA intros / reveals.
+ * Platform soft intro — Celeventic-branded cinematic gate before template DNA intros / reveals.
  *
  * Live sequence (typical):
  *   soft-intro → (template intro) → tap-to-begin → opening reveal → invitation
@@ -7,10 +7,13 @@
  *   soft-intro → curtain closed (await touch) → slow open → invitation
  */
 
-export const SOFT_INTRO_DURATION_MS = 2200;
+export const SOFT_INTRO_DURATION_MS = 3200;
 export const SOFT_INTRO_REDUCED_MOTION_MS = 800;
-export const SOFT_INTRO_EXIT_MS = 420;
-export const SOFT_INTRO_FALLBACK_MS = 4000;
+export const SOFT_INTRO_EXIT_MS = 560;
+export const SOFT_INTRO_FALLBACK_MS = 5200;
+
+/** Optional shared begin label — tap gate owns the visible CTA. Soft intro is silent skip. */
+export const SOFT_INTRO_CTA = "Begin";
 
 export type InvitePipelinePhase =
   | "soft-intro"
@@ -26,6 +29,13 @@ export interface SoftIntroGateInput {
   introEnabled?: boolean;
   needsTapGate?: boolean;
   showReveal?: boolean;
+}
+
+export interface SoftIntroAtmosphereInput {
+  backgroundImageUrl?: string | null;
+  coverImageUrl?: string | null;
+  mediaUrl?: string | null;
+  layoutFallbackUrl?: string | null;
 }
 
 /**
@@ -57,4 +67,19 @@ export function phaseAfterSoftIntro(input: SoftIntroGateInput): InvitePipelinePh
 /** Hold duration before auto-advance; reduced-motion gets a short static brand hold. */
 export function softIntroHoldMs(reducedMotion: boolean): number {
   return reducedMotion ? SOFT_INTRO_REDUCED_MOTION_MS : SOFT_INTRO_DURATION_MS;
+}
+
+/** Prefer live media, then cover, then layout identity art. */
+export function resolveSoftIntroAtmosphere(input: SoftIntroAtmosphereInput): string | null {
+  const candidates = [
+    input.backgroundImageUrl,
+    input.coverImageUrl,
+    input.mediaUrl,
+    input.layoutFallbackUrl,
+  ];
+  for (const url of candidates) {
+    const trimmed = url?.trim();
+    if (trimmed) return trimmed;
+  }
+  return null;
 }

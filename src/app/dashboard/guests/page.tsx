@@ -32,6 +32,7 @@ export default function GuestsPage() {
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
   const [stats, setStats] = useState({ counts: {} as Record<string, number>, total: 0, noResponse: 0 });
+  const [defaultInviteUniqueLink, setDefaultInviteUniqueLink] = useState<string | null>(null);
   const [newGuest, setNewGuest] = useState({ name: "", email: "", phone: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -49,6 +50,7 @@ export default function GuestsPage() {
       setTotal(data.data.total ?? 0);
       setPages(data.data.pages ?? 1);
       if (data.data.stats) setStats(data.data.stats);
+      setDefaultInviteUniqueLink(data.data.defaultInviteUniqueLink ?? null);
     } else setError(data.error);
   }, [eventId, filter, appendToParams]);
 
@@ -84,10 +86,9 @@ export default function GuestsPage() {
   }
 
   function guestInviteLink(guest: Guest) {
-    const base = guest.invitation?.uniqueLink
-      ? `${window.location.origin}/invite/${guest.invitation.uniqueLink}`
-      : window.location.origin;
-    return `${base}?guest=${guest.qrToken}`;
+    const uniqueLink = guest.invitation?.uniqueLink || defaultInviteUniqueLink;
+    if (!uniqueLink) return window.location.origin;
+    return `${window.location.origin}/invite/${uniqueLink}?guest=${guest.qrToken}`;
   }
 
   function whatsAppUrl(guest: Guest) {

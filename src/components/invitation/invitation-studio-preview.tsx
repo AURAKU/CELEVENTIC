@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Play, Hand } from "lucide-react";
 import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
 import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
@@ -14,9 +13,9 @@ import {
 } from "@/lib/invitation/studio-media-utils";
 import { resolveEventTheme } from "@/lib/invitation/demo-gallery-assets";
 import { TemplatePreviewGlimpse } from "@/components/invitation/template-preview-glimpse";
+import { PreviewTapAffordance } from "@/components/invitation/preview-tap-affordance";
 import type { InvitationDesignConfig, InvitationEventData } from "@/types/invitation-design";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
-import { cn } from "@/lib/utils";
 
 interface InvitationStudioPreviewProps {
   design: InvitationDesignConfig;
@@ -101,29 +100,27 @@ export function InvitationStudioPreview({
           category={theme}
           scale={0.42}
         />
-        <button
-          type="button"
-          onClick={() => setActivated(true)}
-          className={cn(
-            "absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 w-full",
-            "bg-gradient-to-t from-black/80 via-black/45 to-black/25",
-            "transition-all hover:from-black/85 hover:via-black/55"
-          )}
+        <PreviewTapAffordance
+          hasMusic={hasMusic}
+          label={
+            layoutSlug === "traditional-marriage-ceremony"
+              ? "Tap to open envelope"
+              : "Tap to open live preview"
+          }
+          subtitle={
+            hasMusic
+              ? layoutSlug === "traditional-marriage-ceremony"
+                ? "Seal opens · music begins with the invite"
+                : "Music starts automatically — use the corner button to mute"
+              : "Full guest experience with reveal and gallery"
+          }
+          onOpen={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setActivated(true);
+          }}
           aria-label="Tap to open live studio preview"
-        >
-          <div className="rounded-full bg-black/45 backdrop-blur-sm p-4 shadow-lg border border-white/20">
-            <Play className="h-8 w-8 text-white fill-white" />
-          </div>
-          <span className="text-sm font-medium text-white drop-shadow-md flex items-center gap-2">
-            <Hand className="h-4 w-4" />
-            Tap to open live preview
-          </span>
-          <span className="text-xs text-white/75 max-w-xs text-center px-4">
-            {hasMusic
-              ? "Music starts automatically — use the corner button to mute"
-              : "Full guest experience with reveal and gallery"}
-          </span>
-        </button>
+        />
       </InviteViewportShell>
     );
   }

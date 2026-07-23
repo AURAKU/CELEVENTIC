@@ -64,8 +64,11 @@ export class QrService {
       return qrBrandingService.generateForEvent(eventId, token);
     }
     const { generateBrandedQrDataUrl } = await import("@/lib/qr/branded-qr-generator");
-    const adminLogo = await qrBrandingService.getAdminDefaultLogoUrl();
-    return generateBrandedQrDataUrl(targetUrl, adminLogo);
+    const [adminLogo, logoSize] = await Promise.all([
+      qrBrandingService.getAdminDefaultLogoUrl(),
+      qrBrandingService.getAdminDefaultLogoSize(),
+    ]);
+    return generateBrandedQrDataUrl(targetUrl, adminLogo, undefined, "brand", logoSize);
   }
 
   async generatePortalQr(eventId: string, token: string) {

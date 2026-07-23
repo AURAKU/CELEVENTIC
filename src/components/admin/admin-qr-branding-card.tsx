@@ -11,9 +11,17 @@ import {
   formatBytes,
   QR_LOGO_COMPRESSION,
 } from "@/lib/image/smart-compress";
+import { QrLogoSizeControl } from "@/components/qr/qr-logo-size-control";
+import {
+  QR_DEFAULT_LOGO_SIZE,
+  parseQrLogoSize,
+  type QrLogoSizePreset,
+} from "@/lib/qr/qr-constants";
 
 export function AdminQrBrandingCard() {
   const [url, setUrl] = useState<string | null>(null);
+  const [logoSize, setLogoSize] = useState<QrLogoSizePreset>(QR_DEFAULT_LOGO_SIZE);
+  const [savingSize, setSavingSize] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -21,9 +29,34 @@ export function AdminQrBrandingCard() {
     fetch("/api/admin/qr-branding")
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) setUrl(d.data.url);
+        if (d.success) {
+          setUrl(d.data.url);
+          setLogoSize(parseQrLogoSize(d.data.logoSize));
+        }
       });
   }, []);
+
+  async function saveLogoSize(next: QrLogoSizePreset) {
+    setLogoSize(next);
+    setSavingSize(true);
+    setError("");
+    setNotice("");
+    try {
+      const res = await fetch("/api/admin/qr-branding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ logoSize: next }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not save logo size");
+      setLogoSize(parseQrLogoSize(d.data.logoSize));
+      setNotice(`Logo size set to ${next}. New QRs use this size.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save logo size");
+    } finally {
+      setSavingSize(false);
+    }
+  }
 
   return (
     <Card>
@@ -33,7 +66,7 @@ export function AdminQrBrandingCard() {
           Default QR Center Logo
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <p className="text-sm text-slate-600">
           Platform fallback when events have no custom QR logo. Used on invitations, tickets, and admission passes.
           Upload any size — it is optimised automatically.
@@ -58,10 +91,12 @@ export function AdminQrBrandingCard() {
 
             const fd = new FormData();
             fd.append("file", new File([result.blob], finalName, { type: result.blob.type }));
+            fd.append("logoSize", logoSize);
             const res = await fetch("/api/admin/qr-branding", { method: "PUT", body: fd });
             const d = await res.json();
             if (!res.ok) throw new Error(d.error || "Upload failed");
             setUrl(d.data.url);
+            if (d.data.logoSize) setLogoSize(parseQrLogoSize(d.data.logoSize));
             if (!result.untouched) {
               setNotice(
                 `Optimised ${formatBytes(result.originalBytes)} → ${formatBytes(result.blob.size)} ` +
@@ -72,6 +107,8 @@ export function AdminQrBrandingCard() {
           }}
           onUploaded={(r) => setUrl(r.url)}
         />
+
+        <QrLogoSizeControl value={logoSize} onChange={(v) => void saveLogoSize(v)} disabled={savingSize} />
       </CardContent>
     </Card>
   );

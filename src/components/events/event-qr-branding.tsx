@@ -12,15 +12,30 @@ import {
   formatBytes,
   QR_LOGO_COMPRESSION,
 } from "@/lib/image/smart-compress";
+import { QrLogoSizeControl } from "@/components/qr/qr-logo-size-control";
+import {
+  QR_DEFAULT_LOGO_SIZE,
+  parseQrLogoSize,
+  type QrLogoSizePreset,
+} from "@/lib/qr/qr-constants";
 
 interface EventQrBrandingProps {
   eventId: string;
   initialUrl?: string | null;
+  initialLogoSize?: string | null;
 }
 
-export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
+export function EventQrBranding({
+  eventId,
+  initialUrl,
+  initialLogoSize,
+}: EventQrBrandingProps) {
   const [url, setUrl] = useState(initialUrl ?? null);
+  const [logoSize, setLogoSize] = useState<QrLogoSizePreset>(
+    parseQrLogoSize(initialLogoSize ?? QR_DEFAULT_LOGO_SIZE)
+  );
   const [loading, setLoading] = useState(false);
+  const [savingSize, setSavingSize] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -30,7 +45,7 @@ export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
     setNotice("");
     try {
       // Compress before upload so any source size is accepted. The QR renders the
-      // logo at ~342px max, so the 1024px cap is invisible in the output.
+      // logo at ~405px max (bold @ 2048), so the 1024px cap is invisible in output.
       const result = await smartCompressImage(blob, QR_LOGO_COMPRESSION);
       const finalName = name.replace(/\.[^.]+$/, "") + "." + extensionForBlob(result.blob);
 
@@ -71,6 +86,28 @@ export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
     setLoading(false);
   }
 
+  async function saveLogoSize(next: QrLogoSizePreset) {
+    setLogoSize(next);
+    setSavingSize(true);
+    setError("");
+    setNotice("");
+    try {
+      const res = await fetch(`/api/events/${eventId}/qr-center-image`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ logoSize: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save logo size");
+      setLogoSize(parseQrLogoSize(data.data.logoSize));
+      setNotice(`Logo size set to ${next}. Invitation & admission QRs update on next render.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save logo size");
+    } finally {
+      setSavingSize(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -79,15 +116,22 @@ export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
           QR Center Logo
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <p className="text-sm text-slate-600">
-          Upload any image, at any size — it is optimised automatically. Crop freely to any
-          shape or region; square reads best in the QR centre.
+          Upload any image, at any size — it is optimised automatically. The full mark is shown inside
+          the QR white inset (never cropped). Square reads best; wide or tall logos letterbox with padding.
         </p>
 
         {url && (
-          <div className="relative h-20 w-20 rounded-xl border bg-white overflow-hidden">
-            <UploadedMedia src={url} alt="QR center logo" fill className="object-contain p-1" />
+          <div className="relative flex h-20 w-20 items-center justify-center rounded-xl border bg-white p-1.5 overflow-hidden">
+            {/* object-contain — full uploaded mark, never cropped in the preview tile */}
+            <UploadedMedia
+              src={url}
+              alt="QR center logo"
+              width={72}
+              height={72}
+              className="max-h-full max-w-full object-contain"
+            />
           </div>
         )}
 
@@ -107,6 +151,12 @@ export function EventQrBranding({ eventId, initialUrl }: EventQrBrandingProps) {
           onCustomUpload={uploadCropped}
           onUploaded={(r) => setUrl(r.url)}
           onError={setError}
+        />
+
+        <QrLogoSizeControl
+          value={logoSize}
+          onChange={(v) => void saveLogoSize(v)}
+          disabled={loading || savingSize}
         />
 
         <p className="text-xs text-slate-400">

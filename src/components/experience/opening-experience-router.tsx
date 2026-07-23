@@ -40,8 +40,10 @@ interface OpeningExperienceRouterProps {
   hostName?: string;
   musicEnabled?: boolean;
   enableSounds?: boolean;
+  /** Wax-seal initials (envelope reveals). */
+  sealInitials?: string;
   onComplete: () => void;
-  /** Fires on the reveal start gesture (e.g. curtain tap) for audio unlock. */
+  /** Fires on the reveal start gesture (e.g. curtain tap / envelope open) for audio unlock. */
   onBegin?: () => void;
   children: React.ReactNode;
 }
@@ -61,6 +63,7 @@ export function OpeningExperienceRouter({
   hostName,
   musicEnabled,
   enableSounds,
+  sealInitials,
   onComplete,
   onBegin,
   children,
@@ -68,6 +71,7 @@ export function OpeningExperienceRouter({
   const [revealed, setRevealed] = useState(false);
   const reducedMotion = useReducedMotion();
   const isCurtain = experienceId.startsWith("curtain-");
+  const isEnvelope = isEnvelopeExperience(experienceId);
 
   function complete() {
     setRevealed(true);
@@ -78,13 +82,13 @@ export function OpeningExperienceRouter({
     return <div className="inv-portal-enter">{children}</div>;
   }
 
-  // Curtain ceremonies handle reduced-motion internally (short open / fade + tap).
+  // Curtain + envelope ceremonies handle reduced-motion internally (short dignified open).
   // All other ceremonies collapse to a static keyboard-first gate.
-  if (reducedMotion && !isCurtain) {
+  if (reducedMotion && !isCurtain && !isEnvelope) {
     return <ReducedMotionGate eventTitle={eventTitle} guestName={guestName} onComplete={complete} />;
   }
 
-  if (isEnvelopeExperience(experienceId)) {
+  if (isEnvelope) {
     const meta = getOpeningExperience(experienceId);
     const theme = meta?.envelopeTheme;
     if (!theme) {
@@ -99,8 +103,12 @@ export function OpeningExperienceRouter({
         hostName={hostName}
         musicEnabled={musicEnabled}
         enableSounds={enableSounds}
+        sealInitials={sealInitials}
+        onBegin={onBegin}
         onComplete={complete}
-      />
+      >
+        {children}
+      </EnvelopeCollectionReveal>
     );
   }
 

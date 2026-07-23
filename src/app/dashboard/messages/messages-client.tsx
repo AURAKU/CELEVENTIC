@@ -35,6 +35,9 @@ export function MessagesClient() {
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [activeThread, setActiveThread] = useState<string | null>(initialThread);
   const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [msgHasMore, setMsgHasMore] = useState(false);
+  const [msgPage, setMsgPage] = useState(1);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -48,10 +51,19 @@ export function MessagesClient() {
     setLoading(false);
   }, []);
 
-  const loadThread = useCallback(async (threadId: string) => {
-    const res = await fetch(`/api/messages?thread=${encodeURIComponent(threadId)}`);
+  const loadThread = useCallback(async (threadId: string, pageNum = 1, append = false) => {
+    if (append) setLoadingOlder(true);
+    const res = await fetch(
+      `/api/messages?thread=${encodeURIComponent(threadId)}&page=${pageNum}&limit=50`
+    );
     const d = await res.json();
-    if (d.success) setMessages(d.data);
+    if (d.success) {
+      const items = (d.data.items ?? d.data) as MessageRow[];
+      setMessages((prev) => (append ? [...items, ...prev] : items));
+      setMsgHasMore(Boolean(d.data.hasMore));
+      setMsgPage(pageNum);
+    }
+    setLoadingOlder(false);
   }, []);
 
   useEffect(() => {
@@ -59,7 +71,7 @@ export function MessagesClient() {
   }, [loadThreads]);
 
   useEffect(() => {
-    if (activeThread) loadThread(activeThread);
+    if (activeThread) void loadThread(activeThread, 1, false);
   }, [activeThread, loadThread]);
 
   async function sendReply() {
@@ -82,7 +94,7 @@ export function MessagesClient() {
     setSending(false);
     if (res.ok) {
       setReply("");
-      await loadThread(activeThread);
+      await loadThread(activeThread, 1, false);
       await loadThreads();
     }
   }
@@ -158,7 +170,21 @@ export function MessagesClient() {
           <CardContent className="flex-1 flex flex-col gap-3 min-h-[24rem]">
             <div className="flex-1 overflow-y-auto space-y-3 pr-1">
               {activeThread ? (
-                messages.map((m) => (
+                <>
+                  {msgHasMore && (
+                    <div className="flex justify-center pb-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={loadingOlder}
+                        onClick={() => void loadThread(activeThread, msgPage + 1, true)}
+                      >
+                        {loadingOlder ? "Loading…" : "Load older messages"}
+                      </Button>
+                    </div>
+                  )}
+                  {messages.map((m) => (
                   <div key={m.id} className="rounded-xl border border-slate-100 bg-slate-50/80 p-3">
                     <p className="text-xs font-semibold text-slate-700">{m.sender.name}</p>
                     <p className="text-sm text-slate-800 mt-1 whitespace-pre-wrap">{m.body}</p>
@@ -166,7 +192,8 @@ export function MessagesClient() {
                       {new Date(m.createdAt).toLocaleString()}
                     </p>
                   </div>
-                ))
+                  ))}
+                </>
               ) : (
                 <p className="text-sm text-slate-500 text-center py-12">
                   Choose a thread from your inbox

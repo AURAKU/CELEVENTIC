@@ -2,6 +2,13 @@ import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 
 export interface EnvelopeVisualTheme {
+  /** Full-viewport stage behind the framed envelope. */
+  stageBg?: string;
+  /** Cyan / accent inner frame stroke. */
+  frameColor?: string;
+  /** Subtle gold outer edge stroke. */
+  outerEdgeColor?: string;
+  /** Envelope card body fill (navy / paper). */
   bodyBg: string;
   flapGradient: string;
   sealGradient: string;
@@ -13,6 +20,13 @@ export interface EnvelopeVisualTheme {
   royal?: boolean;
   kente?: boolean;
   islamic?: boolean;
+  /**
+   * Photoreal face art — masked into the V-flap envelope geometry with an
+   * interactive wax seal overlay (dynamic initials). CSS/SVG remains fallback.
+   */
+  faceArtUrl?: string;
+  /** Soft cream stage + embroidered / photoreal envelope face. */
+  photoreal?: boolean;
 }
 
 export interface OpeningExperienceMeta {
@@ -145,13 +159,38 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
     description: "Gold trim luxury animation",
     category: "envelope",
     envelopeTheme: {
-      bodyBg: "linear-gradient(145deg, #1a1a2e 0%, #16213e 100%)",
-      flapGradient: "linear-gradient(180deg, #D4A63A 0%, #8B6914 100%)",
-      sealGradient: "linear-gradient(145deg, #F5E6B8 0%, #C9A227 100%)",
-      borderColor: "rgba(212,166,58,0.6)",
+      stageBg: "linear-gradient(180deg, #0a1628 0%, #0d3d3a 42%, #0a2a38 72%, #061018 100%)",
+      frameColor: "rgba(56, 189, 248, 0.85)",
+      outerEdgeColor: "rgba(212, 166, 58, 0.45)",
+      bodyBg: "linear-gradient(160deg, #121a2e 0%, #0c1424 55%, #0a101c 100%)",
+      flapGradient: "linear-gradient(180deg, #C9A84C 0%, #A8892E 48%, #8B6914 100%)",
+      sealGradient: "linear-gradient(145deg, #F5E6B8 0%, #D4A63A 48%, #A8892E 100%)",
+      borderColor: "rgba(212,166,58,0.7)",
       accent: "#D4A63A",
-      label: "Tap to open",
+      label: "Open invitation",
       royal: true,
+    },
+  },
+  {
+    id: "envelope-embroidered",
+    label: "Embroidered cream envelope",
+    description:
+      "Photoreal cream embroidered envelope — peach seal rides the flap tip (fills cream disc), flap lifts as one — tap to begin",
+    category: "envelope",
+    envelopeTheme: {
+      photoreal: true,
+      faceArtUrl: "/templates/traditional-marriage-envelope.png?v=pearl-cj-2",
+      stageBg:
+        "linear-gradient(180deg, #f8f2ea 0%, #f0e6dc 36%, #e9ddd2 68%, #e2d4c6 100%)",
+      frameColor: "rgba(180, 140, 110, 0.35)",
+      outerEdgeColor: "rgba(196, 154, 120, 0.28)",
+      bodyBg: "linear-gradient(160deg, #faf6f0 0%, #f0e8de 55%, #e8ddd2 100%)",
+      flapGradient: "linear-gradient(180deg, #f5efe6 0%, #ebe2d6 100%)",
+      sealGradient:
+        "radial-gradient(circle at 32% 26%, #f8e4d6 0%, #f0cbb8 28%, #e8b49a 52%, #d9a088 78%, #c98a72 100%)",
+      borderColor: "rgba(200, 140, 110, 0.5)",
+      accent: "#C9A227",
+      label: "Open invitation",
     },
   },
   {

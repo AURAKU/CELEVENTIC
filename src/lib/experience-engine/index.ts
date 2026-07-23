@@ -112,12 +112,18 @@ export {
   SOFT_INTRO_REDUCED_MOTION_MS,
   SOFT_INTRO_EXIT_MS,
   SOFT_INTRO_FALLBACK_MS,
+  SOFT_INTRO_CTA,
   shouldShowSoftIntro,
   resolveInitialInvitePhase,
   phaseAfterSoftIntro,
   softIntroHoldMs,
+  resolveSoftIntroAtmosphere,
 } from "@/lib/experience-engine/soft-intro";
-export type { InvitePipelinePhase, SoftIntroGateInput } from "@/lib/experience-engine/soft-intro";
+export type {
+  InvitePipelinePhase,
+  SoftIntroGateInput,
+  SoftIntroAtmosphereInput,
+} from "@/lib/experience-engine/soft-intro";
 
 export { EXPERIENCE_ENGINE_CONCEPT_MAP } from "@/lib/experience-engine/concept-map";
 export type { ExperienceEngineConceptId } from "@/lib/experience-engine/concept-map";

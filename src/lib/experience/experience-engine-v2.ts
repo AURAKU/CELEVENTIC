@@ -318,13 +318,13 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
   },
   "traditional-marriage-ceremony": {
     collectionId: "african-heritage",
-    openingExperience: "envelope-royal",
+    openingExperience: "envelope-embroidered",
     outroExperience: "golden-sparkles",
     defaultAudioCategory: "african",
     defaultAudioTrackId: "layout-traditional-marriage-ceremony",
-    buttonStyle: "ribbon",
+    buttonStyle: "editorial-underline",
     hubMode: "storybook",
-    countdownStyle: "classic",
+    countdownStyle: "linen",
     sceneTransition: "sparkle",
     heroLayout: "garden-bloom",
     slideshowStyle: "magazine-collage",
@@ -474,7 +474,8 @@ export function buildExperienceConfigFromDNA(
     pacing: dna.pacing,
     introEnabled: true,
     introDurationSec: dna.pacing === "fast" ? 1.5 : dna.pacing === "slow" ? 3 : 2,
-    enableRevealSounds: true,
+    // Embroidered TM: template music only — no wax-crack / pop SFX on open.
+    enableRevealSounds: dna.openingExperience !== "envelope-embroidered",
     enabledTabs: layoutTabs ?? DEFAULT_HUB_TABS,
   };
 }
@@ -533,6 +534,7 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
       journeyChapters: userExp.journeyChapters,
       themePresetId: userExp.themePresetId,
       thankYouMessage: userExp.thankYouMessage,
+      thankYouFontFamily: userExp.thankYouFontFamily,
       typographyPackId: userExp.typographyPackId ?? typographyPack?.id,
       backgroundPackId: userExp.backgroundPackId ?? backgroundPack?.id,
       openingExperience: userExp.openingExperience ?? dnaExperience.openingExperience,

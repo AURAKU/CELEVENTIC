@@ -33,6 +33,9 @@ export class OfflineQrService {
           take: 1,
         },
       },
+      // Hard safety cap — offline packages are per-event; extreme lists stay bounded.
+      take: 5000,
+      orderBy: { createdAt: "asc" },
     });
 
     const guestRows = [];

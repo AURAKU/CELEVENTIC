@@ -21,3 +21,21 @@ export const FONT_DISPLAY_NAMES: Record<FontId, string> = {
   cormorant: "Cormorant Garamond",
   poppins: "Poppins",
 };
+
+/** Curated font choices for Traditional Marriage / invitation thank-you body copy. */
+export const THANK_YOU_FONT_OPTIONS: { id: FontId; label: string }[] = [
+  { id: "cormorant", label: "Cormorant Garamond" },
+  { id: "great-vibes", label: "Great Vibes" },
+  { id: "playfair", label: "Playfair Display" },
+  { id: "cinzel", label: "Cinzel" },
+  { id: "poppins", label: "Poppins" },
+];
+
+export const DEFAULT_THANK_YOU_FONT: FontId = "cormorant";
+
+export function resolveThankYouFontStack(fontId?: FontId | string | null): string {
+  if (fontId && fontId in FONT_STACKS) {
+    return FONT_STACKS[fontId as FontId];
+  }
+  return FONT_STACKS[DEFAULT_THANK_YOU_FONT];
+}

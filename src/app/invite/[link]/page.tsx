@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
@@ -17,6 +18,8 @@ import { resolveBackgroundMedia } from "@/lib/invitation/studio-media-utils";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
+import { resolveMediaUrl } from "@/lib/uploads/media-url";
+import { APP_NAME } from "@/lib/constants";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -35,6 +38,50 @@ function resolveDesign(invitation: {
 
 export const revalidate = 60;
 
+/** Share-card preview uses event cover / invite art — never a cropped QR branding asset. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ link: string }>;
+}): Promise<Metadata> {
+  const { link } = await params;
+  const invitation = await invitationService.getInvitationByLink(link);
+  if (!invitation || invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") {
+    return { title: "Invitation" };
+  }
+
+  const event = invitation.event;
+  const title = `${event.title} · You're invited`;
+  const description =
+    event.description?.trim() ||
+    `${event.hostName ? `${event.hostName} invites you` : "You're invited"} to ${event.title} on Celeventic.`;
+  const cover = resolveMediaUrl(event.coverImageUrl);
+  const appUrl = await getServerAppUrl();
+  const ogImage = cover
+    ? cover.startsWith("http")
+      ? cover
+      : `${appUrl}${cover.startsWith("/") ? cover : `/${cover}`}`
+    : undefined;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: APP_NAME,
+      ...(ogImage ? { images: [{ url: ogImage, alt: event.title }] } : {}),
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+  };
+}
+
 export default async function InvitePage({
   params,
   searchParams,
@@ -48,6 +95,11 @@ export default async function InvitePage({
   const invitation = await invitationService.getInvitationByLink(link);
 
   if (!invitation) notFound();
+
+  // Soft-deleted / cancelled events must not keep serving as live guest pages.
+  if (invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") {
+    notFound();
+  }
 
   const event = invitation.event;
   const personalizedGuest = guestToken
@@ -176,8 +228,17 @@ export default async function InvitePage({
       seatTable = assignment.assignment.tableNumber;
       seatLabel = assignment.assignment.seatLabel;
       if (seatingPlan) {
-        const center = await qrBrandingService.resolveCenterImageUrl(event.id);
-        seatQrDataUrl = await generateBrandedQrDataUrl(seatLookupUrl, center);
+        const [center, logoSize] = await Promise.all([
+          qrBrandingService.resolveCenterImageUrl(event.id),
+          qrBrandingService.resolveLogoSize(event.id),
+        ]);
+        seatQrDataUrl = await generateBrandedQrDataUrl(
+          seatLookupUrl,
+          center,
+          undefined,
+          "brand",
+          logoSize
+        );
       }
     }
   }
@@ -215,7 +276,7 @@ export default async function InvitePage({
       }}
       design={design}
       guestId={personalizedGuest?.id}
-      guestName={personalizedGuest?.name}
+      guestName={personalizedGuest?.name?.trim() || undefined}
       qrDataUrl={qrDataUrl}
       admissionQrDataUrl={admissionQrDataUrl || null}
       admissionQrToken={admissionQrToken || null}

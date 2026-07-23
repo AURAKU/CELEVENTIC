@@ -20,6 +20,8 @@ export interface CreateEventInput {
   expectedGuests?: number;
   pricingType?: PricingType;
   coverImageUrl?: string;
+  qrCenterImageUrl?: string | null;
+  qrLogoSize?: string | null;
   themeId?: string;
   packageId?: string;
   organizerId: string;
@@ -106,6 +108,101 @@ export class EventService {
     return prisma.event.update({
       where: { id, organizerId },
       data: { status: "PUBLISHED", isPublic: true },
+    });
+  }
+
+  /**
+   * Event removal.
+   * - hard: true (platform admin) → always permanently delete (clears RESTRICT FKs first).
+   * - Organizer (default): LIVE/PUBLISHED → soft-cancel + deactivate ACTIVE invitations;
+   *   DRAFT/other → hard delete.
+   *
+   * Several Event relations lack onDelete:Cascade in DB (qr_scans, ticket_orders,
+   * offline_devices, contributions). A bare prisma.event.delete() returns P2003 and
+   * leaves CANCELLED rows stuck on the dashboard — purge those first.
+   */
+  async deleteEvent(id: string, options?: { hard?: boolean }) {
+    const event = await prisma.event.findUnique({ where: { id } });
+    if (!event) throw new Error("Event not found");
+
+    const hardDelete =
+      options?.hard === true ||
+      (event.status !== "LIVE" && event.status !== "PUBLISHED");
+
+    if (!hardDelete) {
+      const [cancelled] = await prisma.$transaction([
+        prisma.event.update({
+          where: { id },
+          data: { status: "CANCELLED", isPublic: false },
+        }),
+        prisma.invitation.updateMany({
+          where: { eventId: id, status: "ACTIVE" },
+          data: { status: "EXPIRED" },
+        }),
+      ]);
+      return { mode: "cancelled" as const, event: cancelled };
+    }
+
+    const deleted = await this.purgeAndDeleteEvent(id);
+    return { mode: "deleted" as const, event: deleted };
+  }
+
+  /** Remove RESTRICT / non-cascading dependents, then delete the event row. */
+  private async purgeAndDeleteEvent(id: string) {
+    return prisma.$transaction(async (tx) => {
+      // QR scans (RESTRICT on eventId)
+      await tx.qrScan.deleteMany({ where: { eventId: id } });
+
+      // Offline devices + child rows (RESTRICT on eventId / deviceId)
+      const devices = await tx.offlineDevice.findMany({
+        where: { eventId: id },
+        select: { id: true },
+      });
+      if (devices.length) {
+        const deviceIds = devices.map((d) => d.id);
+        await tx.offlineCheckin.deleteMany({ where: { deviceId: { in: deviceIds } } });
+        await tx.offlineSyncLog.deleteMany({ where: { deviceId: { in: deviceIds } } });
+        await tx.offlineDevice.deleteMany({ where: { eventId: id } });
+      }
+
+      // Ticket orders (RESTRICT) — detach payments first
+      const ticketOrders = await tx.ticketOrder.findMany({
+        where: { eventId: id },
+        select: { id: true },
+      });
+      if (ticketOrders.length) {
+        const orderIds = ticketOrders.map((o) => o.id);
+        await tx.payment.updateMany({
+          where: { ticketOrderId: { in: orderIds } },
+          data: { ticketOrderId: null },
+        });
+        await tx.ticketOrder.deleteMany({ where: { eventId: id } });
+      }
+
+      await tx.contribution.deleteMany({ where: { eventId: id } });
+
+      // Optional FKs — null rather than block (belt-and-suspenders)
+      await tx.campaign.updateMany({ where: { eventId: id }, data: { eventId: null } });
+      await tx.flyerDesign.updateMany({ where: { eventId: id }, data: { eventId: null } });
+      await tx.inspirationUpload.updateMany({ where: { eventId: id }, data: { eventId: null } });
+      await tx.fraudDetectionLog.updateMany({ where: { eventId: id }, data: { eventId: null } });
+      await tx.inspirationSource.updateMany({ where: { eventId: id }, data: { eventId: null } });
+
+      // Invitation orders store eventId as a plain string (no Prisma relation)
+      await tx.invitationOrder.updateMany({ where: { eventId: id }, data: { eventId: null } });
+
+      // Wallet is SetNull on eventId; detach expenses/tx then remove wallet row
+      const wallet = await tx.wallet.findFirst({ where: { eventId: id }, select: { id: true } });
+      if (wallet) {
+        await tx.eventExpense.updateMany({ where: { walletId: wallet.id }, data: { walletId: null } });
+        await tx.walletTransaction.deleteMany({ where: { walletId: wallet.id } });
+        await tx.wallet.delete({ where: { id: wallet.id } });
+      }
+
+      // Break Guest → Invitation before cascade deletes both from Event
+      await tx.guest.updateMany({ where: { eventId: id }, data: { invitationId: null } });
+
+      return tx.event.delete({ where: { id } });
     });
   }
 

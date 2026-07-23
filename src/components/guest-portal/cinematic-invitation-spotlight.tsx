@@ -33,6 +33,7 @@ import { getSlideDurationForLayout, mapExperienceSlideshowStyle } from "@/lib/ex
 import type { SlideshowStyleId as GallerySlideshowStyleId } from "@/lib/invitation/slideshow-styles";
 import type { ResolvedGuestAction, InvitationActionKey } from "@/lib/invitation/guest-portal-actions";
 import { GuestPortalQuickActions } from "@/components/guest-portal/guest-portal-action-button";
+import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 
 interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -390,7 +391,14 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           <p className="text-xs uppercase tracking-[0.35em]" style={{ color: secondary }}>
             With love
           </p>
-          <p className="font-display text-xl sm:text-2xl leading-relaxed opacity-95">
+          <p
+            className="font-display text-xl sm:text-2xl leading-relaxed opacity-95 whitespace-pre-line"
+            style={{
+              fontFamily: resolveThankYouFontStack(
+                props.experienceConfig?.thankYouFontFamily
+              ),
+            }}
+          >
             {props.experienceConfig?.thankYouMessage ??
               "Thank you for being part of our celebration. We cannot wait to share this moment with you."}
           </p>

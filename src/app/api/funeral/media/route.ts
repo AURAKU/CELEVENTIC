@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { funeralService } from "@/services/funeral/funeral.service";
 import { verifyEventAccess } from "@/lib/event-access";
 import { storeUploadFile } from "@/lib/uploads/file-storage";
+import { parsePaginationFromUrl, PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 const moderateSchema = z.object({
   action: z.literal("moderate"),
@@ -27,7 +28,8 @@ export async function GET(req: Request) {
     }
   }
 
-  const data = await funeralService.getMedia(eventId, pending);
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: PUBLIC_GRID_LIMIT });
+  const data = await funeralService.getMedia(eventId, pending, page, limit);
   return NextResponse.json({ success: true, data });
 }
 

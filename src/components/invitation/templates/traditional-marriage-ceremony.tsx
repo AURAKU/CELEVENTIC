@@ -2,27 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Armchair,
-  Heart,
-  MapPin,
-  Music2,
-  Images,
-  BookHeart,
-  Gift,
-  CalendarDays,
-} from "lucide-react";
+import { Armchair } from "lucide-react";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
-import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
-import { InvitationActions } from "../shared/invitation-actions";
+import { TraditionalMarriageJourney } from "./traditional-marriage-journey";
+import { TraditionalMarriageRespond } from "./traditional-marriage-respond";
+import { TM_PALETTE as PALETTE } from "./traditional-marriage-palette";
 import {
   DEFAULT_VISION_BOARD,
   TRADITIONAL_MARRIAGE_ART_URL,
   mergeVisionBoard,
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
-import { cn } from "@/lib/utils";
 import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
 
@@ -31,18 +22,13 @@ export type TraditionalMarriageProps = InvitationRenderProps & {
   seatTable?: string | null;
   admissionQrDataUrl?: string | null;
   mapsLink?: string | null;
+  /** Organizer email for the merged respond & reach section */
+  contactEmail?: string | null;
+  /** Portal has a #gifts section */
+  hasGiftsSection?: boolean;
+  /** Portal has a #schedule timeline section */
+  hasTimelineSection?: boolean;
 };
-
-/** Exact palette from the Traditional Marriage Ceremony card art */
-const PALETTE = {
-  bronze: "#A18373",
-  bronzeDeep: "#8B6F5C",
-  ink: "#1C253A",
-  dress: "#5C5346",
-  peach: "#FAF8F4",
-  peachDeep: "#F5EBE3",
-  border: "#E8C9B8",
-} as const;
 
 function resolveBoard(design: InvitationRenderProps["design"]): ReturnType<typeof mergeVisionBoard> {
   const fromStudio = (design.studio as { visionBoard?: VisionBoardContent } | undefined)?.visionBoard;
@@ -66,14 +52,16 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
     seatLabel,
     seatTable,
     admissionQrDataUrl,
-    memoryUploadUrl,
-    memoryAlbumUrl,
-    memoryUploadQrImageUrl,
+    contactEmail,
+    hasGiftsSection,
+    hasTimelineSection,
   } = props;
 
   const staticPreview = useInvitationStaticPreview();
   const board = resolveBoard(design);
   const features = board.features;
+  /** Live `/invite/{link}?guest=` passes the real guest; preview may pass a sample. Never invent a name. */
+  const invitedGuestName = guestName?.trim() || null;
   const { name1: parsed1, name2: parsed2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
 
@@ -92,6 +80,10 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
       : DEFAULT_VISION_BOARD.dressCodeLine);
   const mapsHref = event.mapsLink || props.mapsLink || null;
   const passQr = admissionQrDataUrl || qrDataUrl;
+  const organizerPhone = event.contactPhone?.trim() || null;
+  const organizerEmail = contactEmail?.trim() || null;
+  const showReachHosts = Boolean(organizerPhone || organizerEmail);
+  const showRespondSection = Boolean(features.rsvp || showReachHosts);
   const seatDisplay =
     seatTable || seatLabel
       ? [seatTable ? `Table ${seatTable}` : null, seatLabel ? (/^seat\b/i.test(seatLabel) ? seatLabel : `Seat ${seatLabel}`) : null]
@@ -116,8 +108,8 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
         color: PALETTE.ink,
       }}
     >
-      {/* Invited guest name — personalized per guest link */}
-      {features.guestWelcome && guestName && (
+      {/* Invited guest name — personalized per guest link; hidden when unknown */}
+      {features.guestWelcome && invitedGuestName && (
         <div
           className="w-full max-w-[420px] mb-3 rounded-2xl bg-white/70 border px-4 py-3 text-center shadow-sm backdrop-blur-sm"
           style={{ borderColor: PALETTE.border }}
@@ -133,9 +125,9 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
             className="font-[family-name:var(--font-cinzel)] text-lg tracking-wide"
             style={{ color: PALETTE.bronzeDeep }}
             data-invite-field="guest-name"
-            aria-label={`Invited guest: ${guestName}`}
+            aria-label={`Invited guest: ${invitedGuestName}`}
           >
-            {guestName}
+            {invitedGuestName}
           </p>
           {features.seating && seatDisplay && (
             <p
@@ -364,134 +356,28 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
         )}
       </article>
 
-      {/* System feature dock — actions only, no duplicated card phrases */}
-      <div className="w-full max-w-[420px] mt-5 space-y-4">
-        {(features.seating || features.music || features.gallery || features.memory || features.contributions || features.timeline || (features.location && mapsHref)) && (
-          <div className="flex flex-wrap justify-center gap-2">
-            {features.seating && seatDisplay && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <Armchair className="h-3.5 w-3.5" /> {seatDisplay}
-              </span>
-            )}
-            {features.location && mapsHref && !staticPreview ? (
-              <Link
-                href={mapsHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <MapPin className="h-3.5 w-3.5" /> Location
-              </Link>
-            ) : features.location ? (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <MapPin className="h-3.5 w-3.5" /> Location
-              </span>
-            ) : null}
-            {features.music && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <Music2 className="h-3.5 w-3.5" /> Ceremony music
-              </span>
-            )}
-            {features.gallery && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <Images className="h-3.5 w-3.5" /> Gallery
-              </span>
-            )}
-            {features.memory && memoryUploadUrl && !staticPreview ? (
-              <Link
-                href={memoryUploadUrl}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs hover:bg-white"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <BookHeart className="h-3.5 w-3.5" /> Album
-              </Link>
-            ) : features.memory ? (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <BookHeart className="h-3.5 w-3.5" /> Album
-              </span>
-            ) : null}
-            {features.contributions && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <Gift className="h-3.5 w-3.5" /> Gifts
-              </span>
-            )}
-            {features.timeline && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border px-3 py-1.5 text-xs"
-                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep }}
-              >
-                <CalendarDays className="h-3.5 w-3.5" /> Timeline
-              </span>
-            )}
-          </div>
-        )}
-
-        {features.rsvp && (
-          <div
-            className="rounded-2xl bg-white/85 border px-4 py-5 shadow-sm"
-            style={{ borderColor: PALETTE.border }}
-          >
-            <p
-              className="text-center text-[11px] tracking-[0.28em] uppercase mb-3 flex items-center justify-center gap-2"
-              style={{ color: PALETTE.bronzeDeep }}
-            >
-              <Heart className="h-3.5 w-3.5" /> Digital RSVP
-            </p>
-            <InvitationRsvpPanel
-              invitationId={invitation.id}
-              guestId={guestId}
-              guestName={guestName}
-              accentColor={PALETTE.bronzeDeep}
-              textColor={PALETTE.ink}
-              variant="light"
-              buttonStyle={design.studio?.buttonStyle ?? "ribbon"}
-            />
-          </div>
-        )}
-
-        <div
-          className="rounded-2xl bg-white/70 border px-4 py-4"
-          style={{ borderColor: PALETTE.border }}
-        >
-          <InvitationActions
-            event={event}
-            pdfUrl={design.media?.find((m) => m.type === "pdf")?.url}
-            variant="light"
-            buttonStyle={design.studio?.buttonStyle ?? "ribbon"}
+      {/* Lower chrome: Kindly Respond + Continue With Us — no chips / DIGITAL RSVP / utility cards */}
+      <div className="w-full max-w-[420px] mt-5 space-y-5 pb-8">
+        {showRespondSection && (
+          <TraditionalMarriageRespond
+            invitationId={invitation.id}
+            guestId={guestId}
+            guestName={invitedGuestName}
+            eventTitle={event.title}
+            rsvpHeading={board.rsvpHeading || "R.S.V.P"}
+            showRsvp={Boolean(features.rsvp)}
+            organizerPhone={organizerPhone}
+            organizerEmail={organizerEmail}
           />
-        </div>
-
-        {invitation.message?.trim() &&
-          invitation.message.trim() !== board.sentiment &&
-          invitation.message.trim() !== board.familyInvite && (
-          <p
-            className={cn(
-              "text-center text-sm italic font-[family-name:var(--font-cormorant)]"
-            )}
-            style={{ color: `${PALETTE.bronzeDeep}CC` }}
-          >
-            {invitation.message.trim()}
-          </p>
         )}
+
+        <TraditionalMarriageJourney
+          event={event}
+          mapsHref={features.location ? mapsHref : null}
+          pdfUrl={design.media?.find((m) => m.type === "pdf")?.url}
+          showGifts={Boolean(features.contributions && hasGiftsSection)}
+          showTimeline={Boolean(features.timeline && hasTimelineSection)}
+        />
       </div>
     </div>
   );

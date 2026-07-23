@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { notificationService } from "@/services/notifications/notification.service";
+import { parsePaginationFromUrl, FEED_LIMIT } from "@/lib/pagination";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const data = await notificationService.listForUser(session.user.id);
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: FEED_LIMIT });
+  const data = await notificationService.listForUser(session.user.id, page, limit);
   return NextResponse.json({
     success: true,
     data: {
@@ -17,6 +19,11 @@ export async function GET() {
         ...n,
         createdAt: n.createdAt.toISOString(),
       })),
+      total: data.total,
+      page: data.page,
+      limit: data.limit,
+      pages: data.pages,
+      hasMore: data.hasMore,
       unreadCount: data.unreadCount,
     },
   });

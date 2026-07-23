@@ -32,6 +32,7 @@ import {
   resolveInitialInvitePhase,
   phaseAfterSoftIntro,
   softIntroHoldMs,
+  resolveSoftIntroAtmosphere,
   SOFT_INTRO_DURATION_MS,
   SOFT_INTRO_REDUCED_MOTION_MS,
 } from "../soft-intro";
@@ -161,6 +162,45 @@ describe("interactive-reveal-contract", () => {
     assert.equal(revealMechanicFromOpening("pop-reveal"), "pop");
     assert.equal(getRevealContractForOpening("scratch").mechanic, "scratch");
     assert.equal(getRevealContract("press-hold").openingExperience, "press-hold");
+    assert.equal(revealMechanicFromOpening("envelope-royal"), "envelope");
+    assert.equal(revealMechanicFromOpening("envelope-embroidered"), "wax-seal");
+  });
+});
+
+describe("seal initials", () => {
+  it("defaults traditional marriage to C | J", async () => {
+    const {
+      normalizeSealInitials,
+      resolveSealInitials,
+      deriveCoupleSealInitials,
+      TRADITIONAL_MARRIAGE_DEFAULT_SEAL,
+      mergeVisionBoard,
+      formatPipeMonogram,
+    } = await import("@/lib/invitation/vision-board");
+    assert.equal(TRADITIONAL_MARRIAGE_DEFAULT_SEAL, "C | J");
+    assert.equal(formatPipeMonogram("CJ"), "C | J");
+    assert.equal(normalizeSealInitials("c.j!"), "C | J");
+    assert.equal(normalizeSealInitials("CJ"), "C | J");
+    assert.equal(normalizeSealInitials("c | j"), "C | J");
+    assert.equal(
+      resolveSealInitials(undefined, { layout: "traditional-marriage-ceremony" }),
+      "C | J"
+    );
+    assert.equal(resolveSealInitials("ab", { layout: "traditional-marriage-ceremony" }), "A | B");
+    assert.equal(mergeVisionBoard(null).sealInitials, "C | J");
+    assert.equal(deriveCoupleSealInitials("Owuraku Afari", "Francisca Opoku"), "OF");
+    assert.equal(deriveCoupleSealInitials(null, null, "Chris & Jane"), "CJ");
+    assert.equal(
+      resolveSealInitials(undefined, {
+        layout: "traditional-marriage-ceremony",
+        coupleName1: "Ada",
+        coupleName2: "Kwame",
+      }),
+      "A | K"
+    );
+    assert.equal(normalizeSealInitials("love"), "Love");
+    assert.equal(normalizeSealInitials("anu roopa"), "Anu Roopa");
+    assert.equal(resolveSealInitials("  love  "), "Love");
   });
 });
 
@@ -297,6 +337,25 @@ describe("soft-intro gate", () => {
     assert.equal(softIntroHoldMs(false), SOFT_INTRO_DURATION_MS);
     assert.equal(softIntroHoldMs(true), SOFT_INTRO_REDUCED_MOTION_MS);
     assert.ok(SOFT_INTRO_REDUCED_MOTION_MS < SOFT_INTRO_DURATION_MS);
+  });
+
+  it("resolves atmosphere preferring live media over layout fallback", () => {
+    assert.equal(
+      resolveSoftIntroAtmosphere({
+        backgroundImageUrl: "/bg.jpg",
+        coverImageUrl: "/cover.jpg",
+        layoutFallbackUrl: "/layout.png",
+      }),
+      "/bg.jpg"
+    );
+    assert.equal(
+      resolveSoftIntroAtmosphere({
+        coverImageUrl: "  ",
+        layoutFallbackUrl: "/templates/traditional-marriage-ceremony.png",
+      }),
+      "/templates/traditional-marriage-ceremony.png"
+    );
+    assert.equal(resolveSoftIntroAtmosphere({}), null);
   });
 
   it("curtain path: soft-intro → reveal (no tap gate, no DNA intro)", () => {

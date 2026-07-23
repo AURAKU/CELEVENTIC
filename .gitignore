@@ -49,10 +49,3 @@ public/uploads/**
 !public/uploads/
 !public/uploads/**/
 !public/uploads/**/.gitkeep
-
-# local probe / agent artifacts
-_route-probe-temp*.mjs
-route-test-results.json
-scan-500-routes.json
-.dev.db
-.claude/

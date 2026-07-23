@@ -11,6 +11,7 @@ import {
   UserPlus, Calendar, BarChart3, Music, Layers, Mic, BadgeCheck, Star, Tent, Map, Lock,
 } from "lucide-react";
 import { useEventWorkspace, setActiveEventId } from "@/hooks/use-event-workspace";
+import { EventInfoEditor } from "@/components/events/event-info-editor";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard, Heart, Mail, Users, Armchair, Clock, Store, Gift, QrCode, Image, Sparkles,
@@ -25,7 +26,13 @@ interface EventOverviewClientProps {
   eventType: string;
   status: string;
   startDate: string;
+  endDate?: string | null;
+  description?: string | null;
   venueName?: string | null;
+  landmark?: string | null;
+  mapsLink?: string | null;
+  contactPhone?: string | null;
+  dressCode?: string | null;
   expectedGuests?: number | null;
   children?: React.ReactNode;
 }
@@ -37,7 +44,13 @@ export function EventOverviewClient({
   eventType,
   status,
   startDate,
+  endDate,
+  description,
   venueName,
+  landmark,
+  mapsLink,
+  contactPhone,
+  dressCode,
   expectedGuests,
   children,
 }: EventOverviewClientProps) {
@@ -56,7 +69,7 @@ export function EventOverviewClient({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline">{workspace?.eventType?.replace(/_/g, " ") ?? eventType.replace(/_/g, " ")}</Badge>
-            <Badge variant={status === "PUBLISHED" ? "success" : "warning"}>{status}</Badge>
+            <Badge variant={status === "PUBLISHED" || status === "LIVE" ? "success" : status === "DRAFT" ? "warning" : "outline"}>{status}</Badge>
           </div>
           <h1 className="text-2xl font-bold">{title}</h1>
           <p className="text-slate-500 mt-1">
@@ -112,10 +125,31 @@ export function EventOverviewClient({
           <CardHeader>
             <CardTitle>{workspace?.terminology?.overview ?? "Event Details"}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-slate-500">Date</span><span>{new Date(startDate).toLocaleDateString()}</span></div>
-            {venueName && <div className="flex justify-between"><span className="text-slate-500">Venue</span><span>{venueName}</span></div>}
-            {expectedGuests && <div className="flex justify-between"><span className="text-slate-500">Expected {guestsLabel}</span><span>{expectedGuests}</span></div>}
+          <CardContent className="space-y-4 text-sm">
+            <div className="space-y-3">
+              <div className="flex justify-between"><span className="text-slate-500">Date</span><span>{new Date(startDate).toLocaleDateString()}</span></div>
+              {venueName && <div className="flex justify-between"><span className="text-slate-500">Venue</span><span>{venueName}</span></div>}
+              {expectedGuests && <div className="flex justify-between"><span className="text-slate-500">Expected {guestsLabel}</span><span>{expectedGuests}</span></div>}
+              {description && (
+                <p className="text-slate-600 pt-1 border-t border-slate-100 whitespace-pre-wrap">{description}</p>
+              )}
+            </div>
+            <EventInfoEditor
+              eventId={eventId}
+              initial={{
+                title,
+                hostName,
+                description,
+                venueName,
+                landmark,
+                mapsLink,
+                contactPhone,
+                dressCode,
+                expectedGuests,
+                startDate,
+                endDate,
+              }}
+            />
           </CardContent>
         </Card>
         {children}

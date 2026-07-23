@@ -287,6 +287,9 @@ export function getDemoContentForCategory(category?: string, layoutSlug?: string
   return override ? { ...base, ...override } : base;
 }
 
+/** Sample guest shown only in catalog / studio live previews — never used on `/invite/{link}`. */
+export const DEMO_PREVIEW_GUEST_NAME = "Alex Mensah";
+
 export function buildLivePreviewProps(
   layoutSlug: string,
   category?: string,
@@ -374,7 +377,7 @@ export function buildLivePreviewProps(
     event,
     message: demo.message,
     invitationName: demo.invitationName,
-    guestName: "Alex Mensah",
+    guestName: DEMO_PREVIEW_GUEST_NAME,
     musicSelection: resolvedMusic,
     galleryUrls: demoGallery,
     skipTapGate: options?.skipTapGate ?? false,

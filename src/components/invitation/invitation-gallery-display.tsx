@@ -21,20 +21,36 @@ interface InvitationGalleryDisplayProps {
   className?: string;
   /** User-controlled navigation — disables autoplay, enables swipe + arrows + tap fullscreen */
   interactive?: boolean;
+  /**
+   * Visual chrome family.
+   * `linen` — Traditional Marriage / heritage: full-bleed media, bronze dots, quiet cues.
+   * Does not change non-TM callers (default).
+   */
+  chrome?: "default" | "linen";
 }
 
 const SWIPE_THRESHOLD = 48;
+
+const LINEN = {
+  bronze: "#A18373",
+  bronzeDeep: "#8B6F5C",
+  mustard: "#B8963E",
+  border: "#E8C9B8",
+  peach: "#FAF8F4",
+} as const;
 
 export function InvitationGalleryDisplay({
   items,
   settings,
   className,
   interactive = false,
+  chrome = "default",
 }: InvitationGalleryDisplayProps) {
   const cfg = { ...DEFAULT_SLIDESHOW_SETTINGS, ...settings };
   const autoplay = interactive ? false : cfg.autoplay;
-  const frameClass = getGalleryFrameClass(cfg.style);
-  const tapHint = getGalleryTapHint(cfg.style);
+  const isLinen = chrome === "linen";
+  const frameClass = isLinen ? "inv-gallery-frame-linen" : getGalleryFrameClass(cfg.style);
+  const tapHint = isLinen ? "Tap to open · swipe gently" : getGalleryTapHint(cfg.style);
   const [index, setIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const touchStartX = useRef<number | null>(null);
@@ -130,7 +146,7 @@ export function InvitationGalleryDisplay({
             />
           ))}
         </div>
-        {interactive && (
+        {interactive && !isLinen && (
           <p className="text-center text-[10px] text-slate-400 mt-2 uppercase tracking-widest">{tapHint}</p>
         )}
         {lightbox}
@@ -165,10 +181,17 @@ export function InvitationGalleryDisplay({
             </button>
           ))}
           {interactive && slides.length > 1 && (
-            <GalleryNav index={index} total={slides.length} onPrev={goPrev} onNext={goNext} className="bottom-2" />
+            <GalleryNav
+              index={index}
+              total={slides.length}
+              onPrev={goPrev}
+              onNext={goNext}
+              className="bottom-2"
+              chrome={chrome}
+            />
           )}
         </div>
-        {interactive && (
+        {interactive && !isLinen && (
           <p className="text-center text-[10px] text-slate-400 mt-2 uppercase tracking-widest">{tapHint}</p>
         )}
         {lightbox}
@@ -197,7 +220,7 @@ export function InvitationGalleryDisplay({
             />
           ))}
         </div>
-        {interactive && (
+        {interactive && !isLinen && (
           <p className="text-center text-[10px] text-slate-400 mt-2 uppercase tracking-widest">{tapHint}</p>
         )}
         {lightbox}
@@ -229,10 +252,10 @@ export function InvitationGalleryDisplay({
             />
           ))}
           {interactive && slides.length > 1 && (
-            <GalleryNav index={index} total={slides.length} onPrev={goPrev} onNext={goNext} />
+            <GalleryNav index={index} total={slides.length} onPrev={goPrev} onNext={goNext} chrome={chrome} />
           )}
         </div>
-        {interactive && (
+        {interactive && !isLinen && (
           <p className="text-center text-[10px] text-slate-400 mt-2 uppercase tracking-widest">{tapHint}</p>
         )}
         {lightbox}
@@ -256,7 +279,7 @@ export function InvitationGalleryDisplay({
             />
           </div>
           {interactive && slides.length > 1 && (
-            <GalleryNav index={index} total={slides.length} onPrev={goPrev} onNext={goNext} compact />
+            <GalleryNav index={index} total={slides.length} onPrev={goPrev} onNext={goNext} compact chrome={chrome} />
           )}
         </div>
         {lightbox}
@@ -277,7 +300,7 @@ export function InvitationGalleryDisplay({
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
           }
         />
-        {interactive && (
+        {interactive && !isLinen && (
           <p className="text-center text-[10px] text-slate-400 mt-2 uppercase tracking-widest">{tapHint}</p>
         )}
         {lightbox}
@@ -297,8 +320,11 @@ export function InvitationGalleryDisplay({
         <button
           type="button"
           className={cn(
-            "relative w-full aspect-[4/5] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-slate-900 shadow-inner inv-gallery-item block",
-            cfg.style === "luxury-frame" && "border-4 border-amber-500/70 p-1 bg-gradient-to-br from-amber-900/40 to-black/40",
+            "relative w-full overflow-hidden inv-gallery-item block",
+            isLinen
+              ? "aspect-[4/5] sm:aspect-[5/6] rounded-none bg-transparent shadow-none"
+              : "aspect-[4/5] sm:aspect-[16/10] rounded-2xl bg-slate-900 shadow-inner",
+            !isLinen && cfg.style === "luxury-frame" && "border-4 border-amber-500/70 p-1 bg-gradient-to-br from-amber-900/40 to-black/40",
             interactive && "cursor-pointer group"
           )}
           onClick={() => openLightbox(index)}
@@ -312,16 +338,23 @@ export function InvitationGalleryDisplay({
                 i === index ? "opacity-100" : "opacity-0 pointer-events-none"
               )}
             >
-              <GalleryMedia item={item} className="w-full h-full object-cover" fit="cover" />
+              <GalleryMedia item={item} className="absolute inset-0 w-full h-full object-cover" fit="cover" />
               {cfg.showCaptions && item.caption && (
-                <p className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent text-white text-sm p-4 text-left">
+                <p
+                  className={cn(
+                    "absolute bottom-0 inset-x-0 text-sm p-4 text-left",
+                    isLinen
+                      ? "bg-gradient-to-t from-[#5C5346]/75 to-transparent text-[#FAF8F4]"
+                      : "bg-gradient-to-t from-black/70 to-transparent text-white"
+                  )}
+                >
                   {item.caption}
                 </p>
               )}
             </div>
           ))}
 
-          {interactive && (
+          {interactive && !isLinen && (
             <span className="absolute top-3 right-3 rounded-full bg-black/45 p-2 text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               <Maximize2 className="h-4 w-4" />
             </span>
@@ -329,30 +362,63 @@ export function InvitationGalleryDisplay({
 
           {interactive && slides.length > 1 && (
             <div className="absolute inset-y-0 inset-x-1 z-10 pointer-events-none" onClick={(e) => e.stopPropagation()}>
-              <GalleryNav index={index} total={slides.length} onPrev={goPrev} onNext={goNext} overlay />
+              <GalleryNav
+                index={index}
+                total={slides.length}
+                onPrev={goPrev}
+                onNext={goNext}
+                overlay
+                chrome={chrome}
+              />
             </div>
           )}
         </button>
 
         {slides.length > 1 && (
-          <div className="flex justify-center gap-1.5 mt-3">
+          <div
+            className={cn(
+              "flex justify-center gap-1.5",
+              isLinen ? "py-4" : "mt-3"
+            )}
+          >
             {slides.map((_, i) => (
               <button
                 key={i}
                 type="button"
                 aria-label={`Slide ${i + 1}`}
                 className={cn(
-                  "h-2 rounded-full transition-all touch-manipulation",
-                  i === index ? "w-6 bg-brand-600" : "w-2 bg-slate-300"
+                  "h-1.5 rounded-full transition-all touch-manipulation",
+                  i === index
+                    ? isLinen
+                      ? "w-7"
+                      : "w-6 bg-brand-600 h-2"
+                    : isLinen
+                      ? "w-1.5"
+                      : "w-2 bg-slate-300 h-2"
                 )}
+                style={
+                  isLinen
+                    ? {
+                        backgroundColor: i === index ? LINEN.mustard : `${LINEN.border}`,
+                      }
+                    : undefined
+                }
                 onClick={() => setIndex(i)}
               />
             ))}
           </div>
         )}
 
-        {interactive && slides.length > 1 && (
+        {interactive && slides.length > 1 && !isLinen && (
           <p className="text-center text-[10px] text-slate-400 mt-1 uppercase tracking-widest">{tapHint}</p>
+        )}
+        {interactive && slides.length > 1 && isLinen && (
+          <p
+            className="text-center font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.22em] uppercase pb-5"
+            style={{ color: `${LINEN.bronzeDeep}99` }}
+          >
+            {tapHint}
+          </p>
         )}
       </div>
       {lightbox}
@@ -410,6 +476,7 @@ function GalleryNav({
   overlay,
   compact,
   className,
+  chrome = "default",
 }: {
   index: number;
   total: number;
@@ -418,8 +485,10 @@ function GalleryNav({
   overlay?: boolean;
   compact?: boolean;
   className?: string;
+  chrome?: "default" | "linen";
 }) {
   if (total <= 1) return null;
+  const isLinen = chrome === "linen";
   return (
     <div
       className={cn(
@@ -433,20 +502,30 @@ function GalleryNav({
         type="button"
         aria-label="Previous"
         className={cn(
-          "pointer-events-auto rounded-full p-2 touch-manipulation transition-colors",
-          overlay
-            ? "bg-black/40 text-white hover:bg-black/60 backdrop-blur-sm"
-            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+          "pointer-events-auto touch-manipulation transition-all duration-300",
+          isLinen
+            ? "rounded-sm p-2 text-[#FAF8F4] hover:brightness-110"
+            : "rounded-full p-2",
+          !isLinen && overlay && "bg-black/40 text-white hover:bg-black/60 backdrop-blur-sm",
+          !isLinen && !overlay && "bg-slate-100 text-slate-700 hover:bg-slate-200"
         )}
+        style={
+          isLinen && overlay
+            ? { backgroundColor: "rgba(92,61,46,0.38)", backdropFilter: "blur(6px)" }
+            : undefined
+        }
         onClick={(e) => {
           e.stopPropagation();
           onPrev();
         }}
       >
-        <ChevronLeft className={compact ? "h-4 w-4" : "h-5 w-5"} />
+        <ChevronLeft className={compact ? "h-4 w-4" : isLinen ? "h-4 w-4" : "h-5 w-5"} />
       </button>
       {!overlay && (
-        <span className="text-xs text-slate-500 tabular-nums">
+        <span
+          className={cn("text-xs tabular-nums", isLinen ? "tracking-widest" : "text-slate-500")}
+          style={isLinen ? { color: LINEN.bronzeDeep } : undefined}
+        >
           {index + 1} / {total}
         </span>
       )}
@@ -454,17 +533,24 @@ function GalleryNav({
         type="button"
         aria-label="Next"
         className={cn(
-          "pointer-events-auto rounded-full p-2 touch-manipulation transition-colors",
-          overlay
-            ? "bg-black/40 text-white hover:bg-black/60 backdrop-blur-sm ml-auto"
-            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+          "pointer-events-auto touch-manipulation transition-all duration-300",
+          isLinen
+            ? "rounded-sm p-2 text-[#FAF8F4] hover:brightness-110 ml-auto"
+            : "rounded-full p-2",
+          !isLinen && overlay && "bg-black/40 text-white hover:bg-black/60 backdrop-blur-sm ml-auto",
+          !isLinen && !overlay && "bg-slate-100 text-slate-700 hover:bg-slate-200"
         )}
+        style={
+          isLinen && overlay
+            ? { backgroundColor: "rgba(92,61,46,0.38)", backdropFilter: "blur(6px)" }
+            : undefined
+        }
         onClick={(e) => {
           e.stopPropagation();
           onNext();
         }}
       >
-        <ChevronRight className={compact ? "h-4 w-4" : "h-5 w-5"} />
+        <ChevronRight className={compact ? "h-4 w-4" : isLinen ? "h-4 w-4" : "h-5 w-5"} />
       </button>
     </div>
   );

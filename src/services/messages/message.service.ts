@@ -104,24 +104,44 @@ export class MessageService {
     );
   }
 
-  async getThread(userId: string, threadId: string) {
-    const messages = await prisma.userMessage.findMany({
-      where: {
-        threadId,
-        OR: [{ senderId: userId }, { recipientId: userId }],
-      },
-      orderBy: { createdAt: "asc" },
-      include: {
-        sender: { select: { id: true, name: true, role: true } },
-      },
-    });
+  async getThread(userId: string, threadId: string, page = 1, limit = 50) {
+    const take = Math.min(200, Math.max(1, limit));
+    const safePage = Math.max(1, page);
+    const skip = (safePage - 1) * take;
+    const where = {
+      threadId,
+      OR: [{ senderId: userId }, { recipientId: userId }],
+    };
+
+    const [newestFirst, total] = await Promise.all([
+      prisma.userMessage.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+        include: {
+          sender: { select: { id: true, name: true, role: true } },
+        },
+      }),
+      prisma.userMessage.count({ where }),
+    ]);
 
     await prisma.userMessage.updateMany({
       where: { threadId, recipientId: userId, isRead: false },
       data: { isRead: true },
     });
 
-    return messages;
+    // Chronological for the chat pane (oldest → newest within this window).
+    const items = newestFirst.slice().reverse();
+    const pages = Math.max(1, Math.ceil(total / take));
+    return {
+      items,
+      total,
+      page: safePage,
+      limit: take,
+      pages,
+      hasMore: safePage < pages,
+    };
   }
 
   async adminSendToUser(adminId: string, userId: string, subject: string, body: string) {

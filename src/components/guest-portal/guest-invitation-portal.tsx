@@ -30,6 +30,8 @@ import { layerZIndexMap, type StudioLayerId } from "@/lib/invitation-studio/stud
 import { ParticleEnvironment } from "@/components/experience/particle-environment";
 import { ExperienceBackgroundLayer } from "@/components/experience/experience-background-layer";
 import { InvitationGalleryDisplay } from "@/components/invitation/invitation-gallery-display";
+import { TraditionalMarriageGallerySection } from "@/components/invitation/templates/traditional-marriage-gallery";
+import { TraditionalMarriageThankYou } from "@/components/invitation/templates/traditional-marriage-thank-you";
 import { galleryItemsFromUrls } from "@/lib/invitation/studio-media-utils";
 import { getMediaEntranceClass, getMediaEntranceForLayout } from "@/lib/invitation/media-entrance-engine";
 import { mapExperienceSlideshowStyle } from "@/lib/experience/experience-engine-v2";
@@ -187,6 +189,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     dressCode: displayEvent.dressCode ?? undefined,
     story: displayEvent.description ?? undefined,
     contactPhone: props.event.contactPhone ?? undefined,
+    contactEmail: props.contactEmail ?? undefined,
     invitationId: props.invitation.id,
     guestId: props.guestId,
     guestName: props.guestName,
@@ -195,6 +198,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     memoryVaultEnabled: props.memoryVaultEnabled,
     eventId: props.eventId,
     seatLookupUrl: props.seatLookupUrl ?? undefined,
+    layout: props.design.layout,
+    thankYouMessage: experience?.thankYouMessage,
+    thankYouFontFamily: experience?.thankYouFontFamily,
   };
 
   const useBlocks = props.blocks && props.blocks.length > 0;
@@ -206,10 +212,21 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   const scheduleItems = experience?.scheduleItems;
   const displaySchedule = scheduleItems?.length ? scheduleItems : (hubTabs.includes("timeline") ? DEFAULT_SCHEDULE_SAMPLES : []);
   const thankYouMessage = experience?.thankYouMessage;
+  const thankYouFontFamily = experience?.thankYouFontFamily;
   const accent = props.design?.colors?.accent ?? "#0B8A83";
   const secondary = props.design?.colors?.secondary ?? "#D4A63A";
   const lifecyclePhase = resolveEventLifecycle(props.event.startDateRaw);
   const galleryCount = props.galleryUrls?.length ?? 0;
+  const blocksHaveThankYou = Boolean(
+    props.blocks?.some((b) => b.blockType === "THANK_YOU" && b.isVisible !== false)
+  );
+  const blocksHaveContact = Boolean(
+    props.blocks?.some(
+      (b) =>
+        (b.blockType === "CONTACT_HOST" || b.blockType === "FAMILY_CONTACTS") &&
+        b.isVisible !== false
+    )
+  );
 
   function getGalleryEntranceClass(layout?: string) {
     return getMediaEntranceClass(getMediaEntranceForLayout(layout ?? props.design.layout ?? "classic-gold"));
@@ -352,9 +369,20 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           memoryAlbumUrl={props.memoryAlbumUrl}
           memoryUploadQrImageUrl={props.memoryUploadQrImageUrl}
           interactiveMedia
+          contactEmail={isTraditionalMarriage ? props.contactEmail : undefined}
+          hasGiftsSection={isTraditionalMarriage && hubTabs.includes("gifts")}
+          hasTimelineSection={
+            isTraditionalMarriage &&
+            hubTabs.includes("timeline") &&
+            displaySchedule.length > 0
+          }
         />
 
-        {!useBlocks && !hiddenLayers.has("actions") && primaryActions.length > 0 && (
+        {/* Traditional Marriage owns its own journey chrome — hide duplicate portal action rail */}
+        {!isTraditionalMarriage &&
+          !useBlocks &&
+          !hiddenLayers.has("actions") &&
+          primaryActions.length > 0 && (
           <div
             className="mx-auto max-w-2xl px-4 -mt-1 mb-1"
             style={{ position: "relative", zIndex: layerZ.actions }}
@@ -444,7 +472,11 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                   target={props.event.startDateRaw ?? props.event.startDate}
                   label={t("invite.countdown")}
                   begunLabel={t("invite.celebration_begun")}
-                  style={countdownStyle}
+                  style={
+                    isTraditionalMarriage
+                      ? "linen"
+                      : countdownStyle
+                  }
                 />
               </PortalSection>
               )}
@@ -520,33 +552,41 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               )}
 
               {hubTabs.includes("gallery") && props.galleryUrls && props.galleryUrls.length > 0 && (
-                <PortalSection delay={250} id="gallery">
-                  <div className="rounded-2xl border border-slate-200/80 bg-white/95 backdrop-blur p-6 shadow-sm inv-text-on-light">
-                    <h2
-                      className="font-display text-lg font-bold flex items-center gap-2 mb-4"
-                      style={{ color: accent }}
-                    >
-                      <Images className="h-5 w-5" /> Gallery
-                    </h2>
-                    <InvitationGalleryDisplay
+                <PortalSection delay={250} id={isTraditionalMarriage ? undefined : "gallery"}>
+                  {isTraditionalMarriage ? (
+                    <TraditionalMarriageGallerySection
                       items={galleryItemsFromUrls(props.galleryUrls)}
                       interactive={props.galleryInteractive ?? !props.embedded}
-                      settings={{
-                        style: mapExperienceSlideshowStyle(experience?.slideshowStyle) as SlideshowStyleId,
-                        slideDurationSec: 4,
-                        autoplay: props.galleryInteractive ? false : Boolean(props.embedded),
-                        showCaptions: false,
-                        transition: "fade",
-                      }}
                       className={getGalleryEntranceClass(props.design.layout)}
                     />
-                  </div>
+                  ) : (
+                    <div className="rounded-2xl border border-slate-200/80 bg-white/95 backdrop-blur p-6 shadow-sm inv-text-on-light">
+                      <h2
+                        className="font-display text-lg font-bold flex items-center gap-2 mb-4"
+                        style={{ color: accent }}
+                      >
+                        <Images className="h-5 w-5" /> Gallery
+                      </h2>
+                      <InvitationGalleryDisplay
+                        items={galleryItemsFromUrls(props.galleryUrls)}
+                        interactive={props.galleryInteractive ?? !props.embedded}
+                        settings={{
+                          style: mapExperienceSlideshowStyle(experience?.slideshowStyle) as SlideshowStyleId,
+                          slideDurationSec: 4,
+                          autoplay: props.galleryInteractive ? false : Boolean(props.embedded),
+                          showCaptions: false,
+                          transition: "fade",
+                        }}
+                        className={getGalleryEntranceClass(props.design.layout)}
+                      />
+                    </div>
+                  )}
                 </PortalSection>
               )}
             </>
           )}
 
-          {showRsvp && !useBlocks && (
+          {showRsvp && !useBlocks && !isTraditionalMarriage && (
             <PortalSection delay={300} id="rsvp">
               <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 shadow-sm">
                 <h2 className="font-display text-lg font-bold text-[#0F172A] mb-4">{t("rsvp.title")}</h2>
@@ -560,7 +600,10 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
-          {(props.event.contactPhone || props.contactEmail) && (
+          {/* TM: reach-hosts lives in Kindly Respond; block CONTACT_HOST is suppressed for TM */}
+          {(props.event.contactPhone || props.contactEmail) &&
+            !isTraditionalMarriage &&
+            !(useBlocks && blocksHaveContact) && (
             <PortalSection delay={350} id="contact">
               <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 text-center shadow-sm">
                 <h2 className="font-display text-lg font-bold text-[#0F172A] mb-3">Contact Organizer</h2>
@@ -679,6 +722,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               uploadUrl={props.memoryUploadUrl}
               albumUrl={props.memoryAlbumUrl}
               uploadQrImageUrl={props.memoryUploadQrImageUrl}
+              editorial={isTraditionalMarriage}
             />
           </PortalSection>
           )}
@@ -697,18 +741,32 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
+          {/* TM + block thank-you: single editorial close. Skip generic portal slab when blocks already closed. */}
+          {!(isTraditionalMarriage && blocksHaveThankYou) && (
           <PortalSection delay={440} id="thank-you">
-            <div className="rounded-2xl border border-[#D4A63A]/25 bg-gradient-to-br from-white to-[#FAF8F4] p-8 text-center shadow-sm">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#D4A63A] mb-3">With love</p>
-              <p className="font-display text-lg text-[#0F172A] leading-relaxed">
-                {thankYouMessage ?? "Thank you for being part of our celebration. We cannot wait to share this moment with you."}
-              </p>
-            </div>
+            {isTraditionalMarriage ? (
+              <TraditionalMarriageThankYou
+                message={thankYouMessage}
+                fontFamily={thankYouFontFamily}
+              />
+            ) : (
+              <div className="rounded-2xl border border-[#D4A63A]/25 bg-gradient-to-br from-white to-[#FAF8F4] p-8 text-center shadow-sm">
+                <p className="text-xs uppercase tracking-[0.3em] text-[#D4A63A] mb-3">With love</p>
+                <p className="font-display text-lg text-[#0F172A] leading-relaxed whitespace-pre-line">
+                  {thankYouMessage ?? "Thank you for being part of our celebration. We cannot wait to share this moment with you."}
+                </p>
+              </div>
+            )}
           </PortalSection>
+          )}
 
         </div>
 
-        {!props.embedded && props.event.startDateRaw && hubTabs.includes("countdown") && !hiddenLayers.has("countdown") && (
+        {!isTraditionalMarriage &&
+          !props.embedded &&
+          props.event.startDateRaw &&
+          hubTabs.includes("countdown") &&
+          !hiddenLayers.has("countdown") && (
           <FloatingCountdownPill
             targetIso={props.event.startDateRaw}
             label={t("invite.countdown")}

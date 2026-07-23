@@ -3,12 +3,17 @@ import { z } from "zod";
 import { adminService } from "@/services/admin/admin.service";
 import { requireAdminSession } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
+import { parsePaginationFromUrl, ADMIN_TABLE_LIMIT, paginatedResult } from "@/lib/pagination";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await requireAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const packages = await adminService.getPackages();
-  return NextResponse.json({ success: true, data: packages });
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: ADMIN_TABLE_LIMIT });
+  const result = await adminService.getPackages(page, limit);
+  return NextResponse.json({
+    success: true,
+    data: paginatedResult(result.items, result.total, result.page, result.limit),
+  });
 }
 
 const createSchema = z.object({

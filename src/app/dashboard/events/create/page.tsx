@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,9 +11,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { FormDraftStatusBar } from "@/components/forms/form-draft-status-bar";
+import { isBlankFormDraft, useFormDraft } from "@/hooks/use-form-draft";
 import { EVENT_TYPES } from "@/lib/constants";
+import { coupleNamesLegacyAlias, resolveCoupleName } from "@/lib/blueprints";
 import { ArrowLeft, ArrowRight, Check, Heart, Flower2, Cake, Presentation, Music, Tent, Building2, Church, GraduationCap, PartyPopper, Sparkles } from "lucide-react";
 import Link from "next/link";
+
+const INITIAL_FORM = {
+  eventType: "",
+  title: "",
+  /** Canonical couple / host name (wedding: "Couple Name"). */
+  hostName: "",
+  description: "",
+  startDate: "",
+  endDate: "",
+  venueName: "",
+  landmark: "",
+  mapsLink: "",
+  contactPhone: "",
+  dressCode: "",
+  expectedGuests: "",
+  pricingType: "FREE",
+  packageId: "",
+  themeId: "",
+  ceremonyType: "",
+  deceasedName: "",
+  conferenceTitle: "",
+};
+
+type CreateEventForm = typeof INITIAL_FORM;
+type CreateEventDraft = CreateEventForm & { step: number };
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   WEDDING: Heart,
@@ -41,33 +70,40 @@ interface BlueprintPreview {
 
 export default function CreateEventPage() {
   const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [packages, setPackages] = useState<PackageOption[]>([]);
   const [themes, setThemes] = useState<ThemeOption[]>([]);
   const [blueprint, setBlueprint] = useState<BlueprintPreview | null>(null);
+  const [form, setForm] = useState<CreateEventForm>(INITIAL_FORM);
 
-  const [form, setForm] = useState({
-    eventType: "",
-    title: "",
-    hostName: "",
-    description: "",
-    startDate: "",
-    endDate: "",
-    venueName: "",
-    landmark: "",
-    mapsLink: "",
-    contactPhone: "",
-    dressCode: "",
-    expectedGuests: "",
-    pricingType: "FREE",
-    packageId: "",
-    themeId: "",
-    coupleNames: "",
-    ceremonyType: "",
-    deceasedName: "",
-    conferenceTitle: "",
+  const draftValue = useMemo(
+    (): CreateEventDraft => ({ ...form, step }),
+    [form, step]
+  );
+
+  const draft = useFormDraft<CreateEventDraft>({
+    formId: "dashboard-event-create",
+    userId: session?.user?.id,
+    value: draftValue,
+    enabled: sessionStatus !== "loading",
+    debounceMs: 400,
+    isEmpty: (v) => isBlankFormDraft(v, ["pricingType", "step"]),
+    onRestore: (saved) => {
+      const { step: savedStep, coupleNames: legacyCoupleNames, ...rest } = saved as CreateEventDraft & {
+        coupleNames?: string;
+      };
+      const hostName = resolveCoupleName({
+        hostName: rest.hostName,
+        coupleNames: legacyCoupleNames,
+      });
+      setForm({ ...INITIAL_FORM, ...rest, hostName });
+      if (typeof savedStep === "number" && savedStep >= 0 && savedStep < STEPS.length) {
+        setStep(savedStep);
+      }
+    },
   });
 
   const loadOptions = useCallback(async (eventType: string) => {
@@ -86,6 +122,13 @@ export default function CreateEventPage() {
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleClearDraft() {
+    draft.clearDraft();
+    setForm(INITIAL_FORM);
+    setStep(0);
+    setError("");
   }
 
   function validateStep(current: number): string | null {
@@ -112,8 +155,12 @@ export default function CreateEventPage() {
     setLoading(true);
     setError("");
 
+    const hostName = form.hostName.trim();
     const typeSpecific: Record<string, string> = {};
-    if (form.coupleNames) typeSpecific.coupleNames = form.coupleNames;
+    // Legacy alias: older workspace configs expected typeSpecific.coupleNames
+    if (form.eventType === "WEDDING" && hostName) {
+      typeSpecific.coupleNames = coupleNamesLegacyAlias(hostName);
+    }
     if (form.ceremonyType) typeSpecific.ceremonyType = form.ceremonyType;
     if (form.deceasedName) typeSpecific.deceasedName = form.deceasedName;
     if (form.conferenceTitle) typeSpecific.conferenceTitle = form.conferenceTitle;
@@ -121,7 +168,7 @@ export default function CreateEventPage() {
     const payload = {
       title: form.title.trim(),
       eventType: form.eventType,
-      hostName: form.hostName.trim(),
+      hostName,
       description: form.description || undefined,
       startDate: form.startDate,
       endDate: form.endDate || undefined,
@@ -145,6 +192,7 @@ export default function CreateEventPage() {
 
     const data = await res.json();
     if (res.ok) {
+      draft.clearDraft();
       const { setActiveEventId } = await import("@/hooks/use-event-workspace");
       setActiveEventId(data.data.id);
       router.push(`/dashboard/events/${data.data.id}`);
@@ -170,6 +218,14 @@ export default function CreateEventPage() {
       </div>
 
       <Progress value={progress} className="h-2" />
+
+      <FormDraftStatusBar
+        status={draft.status}
+        hasDraft={draft.hasDraft}
+        wasRestored={draft.wasRestored}
+        lastSavedAt={draft.lastSavedAt}
+        onClear={handleClearDraft}
+      />
 
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{error}</div>
@@ -211,22 +267,29 @@ export default function CreateEventPage() {
                 <Label>Event Title *</Label>
                 <Input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="My Amazing Event" />
               </div>
+              {/* Single canonical couple/host field — do not reintroduce coupleNames input */}
               <div className="space-y-2">
-                <Label>{hostLabel} Name *</Label>
-                <Input value={form.hostName} onChange={(e) => update("hostName", e.target.value)} />
+                <Label htmlFor="create-event-host-name">{hostLabel} Name *</Label>
+                <Input
+                  id="create-event-host-name"
+                  name="hostName"
+                  autoComplete="name"
+                  value={form.hostName}
+                  onChange={(e) => update("hostName", e.target.value)}
+                  placeholder={form.eventType === "WEDDING" ? "Ama & Kofi" : undefined}
+                />
               </div>
 
               {form.eventType === "WEDDING" && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Couple Names</Label>
-                    <Input value={form.coupleNames} onChange={(e) => update("coupleNames", e.target.value)} placeholder="Ama & Kofi" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Ceremony Type</Label>
-                    <Input value={form.ceremonyType} onChange={(e) => update("ceremonyType", e.target.value)} placeholder="Traditional, White Wedding..." />
-                  </div>
-                </>
+                <div className="space-y-2">
+                  <Label htmlFor="create-event-ceremony-type">Ceremony Type</Label>
+                  <Input
+                    id="create-event-ceremony-type"
+                    value={form.ceremonyType}
+                    onChange={(e) => update("ceremonyType", e.target.value)}
+                    placeholder="Traditional, White Wedding..."
+                  />
+                </div>
               )}
 
               {form.eventType === "FUNERAL" && (
