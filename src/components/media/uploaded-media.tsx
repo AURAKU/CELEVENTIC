@@ -12,6 +12,8 @@ interface UploadedMediaProps {
   width?: number;
   height?: number;
   video?: boolean;
+  /** Poster frame for the `<video>` element (e.g. the processed asset's JPEG poster). */
+  poster?: string | null;
   autoPlay?: boolean;
   muted?: boolean;
   loop?: boolean;
@@ -28,6 +30,7 @@ export function UploadedMedia({
   width,
   height,
   video,
+  poster,
   autoPlay = true,
   muted = true,
   loop = true,
@@ -38,14 +41,19 @@ export function UploadedMedia({
   const resolved = resolveMediaUrl(src);
   if (!resolved) return null;
 
+  // Never point a <video> element's src at an image (a caller-forced `video` combined with a
+  // thumbnail-only `src` — e.g. a grid tile falling back to a poster JPEG — must still render
+  // as an image). Extension sniffing here is a safety net, not the primary signal.
+  const looksLikeImage = /\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(resolved);
   const isVideo =
-    video ?? (/\.(mp4|webm|mov)(\?|$)/i.test(resolved) || resolved.includes("video/"));
+    !looksLikeImage && (video ?? (/\.(mp4|webm|mov)(\?|$)/i.test(resolved) || resolved.includes("video/")));
   const unoptimized = shouldUnoptimizeNextImage(resolved);
 
   if (isVideo) {
     return (
       <video
         src={resolved}
+        poster={poster ?? undefined}
         className={className}
         autoPlay={autoPlay}
         muted={muted}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
 import { checkUploadRateLimit } from "@/lib/video/quota";
-import { completeMultipartUpload, abortMultipartUpload } from "@/lib/video/s3-video";
+import { completeMultipartUpload, abortMultipartUpload, VideoStorageNotConfiguredError } from "@/lib/video/s3-video";
 import { finalizeVideoUpload } from "@/lib/video/processing";
 import { serializeVideoAsset } from "@/lib/video/serialize";
 
@@ -55,6 +55,12 @@ export async function POST(req: Request) {
       where: { id: asset.id },
       data: { status: "FAILED", failureReason: "Failed to assemble uploaded parts. Please retry the upload." },
     });
+    if (error instanceof VideoStorageNotConfiguredError) {
+      return NextResponse.json(
+        { error: "Video storage is not available for this upload session. Please retry the upload." },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to complete multipart upload." },
       { status: 502 }

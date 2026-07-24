@@ -4,6 +4,12 @@ import { eventMemorySettingsService } from "@/services/memory/event-memory-setti
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
 import { storeMemoryFile, validateMemoryFile } from "@/lib/memory/memory-upload-storage";
 
+// Node runtime required: video uploads on this legacy path are transcoded with FFmpeg via
+// node:child_process (see memory-upload-storage.ts). maxDuration is a no-op on self-hosted
+// (pm2/systemd) but caps gracefully on platforms that enforce one.
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
 const uploadRateMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60 * 60 * 1000;

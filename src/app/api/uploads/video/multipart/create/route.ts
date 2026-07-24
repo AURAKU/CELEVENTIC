@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
-import { createMultipartUpload } from "@/lib/video/s3-video";
+import { createMultipartUpload, VideoStorageNotConfiguredError } from "@/lib/video/s3-video";
 import { EXTENSION_MIME_MAP } from "@/lib/video/constants";
 import { computePartPlan } from "@/lib/video/multipart-plan";
 
@@ -39,7 +39,20 @@ export async function POST(req: Request) {
   }
 
   const contentType = EXTENSION_MIME_MAP[asset.originalExtension as keyof typeof EXTENSION_MIME_MAP] ?? "application/octet-stream";
-  const { uploadId } = await createMultipartUpload(asset.originalKey, contentType);
+  let uploadId: string;
+  try {
+    ({ uploadId } = await createMultipartUpload(asset.originalKey, contentType));
+  } catch (error) {
+    // Defense in depth: this asset was presigned for S3 multipart but S3 stopped being usable
+    // (or a stale/local-fallback client called this route directly). Never leak the AWS error.
+    if (error instanceof VideoStorageNotConfiguredError) {
+      return NextResponse.json(
+        { error: "Video storage is not available for this upload session. Please retry the upload." },
+        { status: 503 }
+      );
+    }
+    throw error;
+  }
   const { partSize, totalParts } = computePartPlan(Number(asset.sizeBytes));
 
   await prisma.videoAsset.update({

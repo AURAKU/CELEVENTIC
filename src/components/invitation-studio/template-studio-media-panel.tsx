@@ -271,7 +271,7 @@ export function TemplateStudioMediaPanel({
             onError={setError}
             disabled={disabled}
             buttonLabel="Background image"
-            hint="Freeform crop by default — drag to select any region, any size. Also feeds the soft-intro/opening backdrop (e.g. Traditional Marriage Ceremony)."
+            hint="Freeform crop by default — drag to select any region, any size. Used as a fallback for the welcome screen only if no dedicated welcome photo is set above."
             className="flex-1"
           />
         </div>
