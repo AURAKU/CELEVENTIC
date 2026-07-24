@@ -1,5 +1,11 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { BASE_CURRENCY, DEFAULT_EXCHANGE_RATES, type DisplayCurrency } from "@/lib/commerce/constants";
+
+/** P2002 = unique constraint violation — another concurrent request already seeded this row. */
+function isUniqueConstraintError(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
 
 export function roundConverted(amount: number, currency: string): number {
   if (currency === "GHS") return Math.round(amount * 100) / 100;
@@ -9,27 +15,61 @@ export function roundConverted(amount: number, currency: string): number {
 }
 
 export class CurrencyService {
+  /**
+   * Process-lifetime cache: once we've confirmed currencies exist (or just seeded them),
+   * never re-check on this instance again. Combined with the `count()` short-circuit below,
+   * this is what eliminates the P1008 socket-timeout storm — every prior request to
+   * `/api/commerce/currencies` ran a full batch of `upsert()` writes (currencies + exchange
+   * rates) on *every single call*, exhausting the Prisma connection pool under load. Now a
+   * write only ever happens once per empty table, and every other call (including the very
+   * first one after that, in this same process) is a cheap in-memory no-op or a single read.
+   */
+  private seededChecked = false;
+
+  /**
+   * Seeds the default currencies/exchange rates ONLY when the `currencies` table is empty —
+   * never on every request. `skipDuplicates` isn't available on `createMany` for this
+   * project's SQLite datasource, so a concurrent cold-start race (two requests both see an
+   * empty table before either has written) is instead handled by swallowing the resulting
+   * unique-constraint error — whichever request wins, the seed rows end up correct either way.
+   */
   async ensureCurrenciesSeeded() {
+    if (this.seededChecked) return;
+
+    const existing = await prisma.currency.count();
+    if (existing > 0) {
+      this.seededChecked = true;
+      return;
+    }
+
     const defaults = [
       { code: "GHS", symbol: "₵", name: "Ghana Cedi", enabled: true, isDefault: true },
       { code: "USD", symbol: "$", name: "US Dollar", enabled: true, isDefault: false },
       { code: "GBP", symbol: "£", name: "British Pound", enabled: true, isDefault: false },
     ];
-    for (const c of defaults) {
-      await prisma.currency.upsert({
-        where: { code: c.code },
-        update: { symbol: c.symbol, name: c.name, enabled: c.enabled },
-        create: c,
-      });
+    try {
+      await prisma.currency.createMany({ data: defaults });
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) throw error;
     }
-    for (const [target, rate] of Object.entries(DEFAULT_EXCHANGE_RATES)) {
-      if (target === BASE_CURRENCY) continue;
-      await prisma.exchangeRate.upsert({
-        where: { baseCurrency_targetCurrency: { baseCurrency: BASE_CURRENCY, targetCurrency: target } },
-        update: { rate },
-        create: { baseCurrency: BASE_CURRENCY, targetCurrency: target, rate, source: "seed" },
-      });
+
+    const rateRows = Object.entries(DEFAULT_EXCHANGE_RATES)
+      .filter(([target]) => target !== BASE_CURRENCY)
+      .map(([target, rate]) => ({
+        baseCurrency: BASE_CURRENCY,
+        targetCurrency: target,
+        rate,
+        source: "seed",
+      }));
+    if (rateRows.length > 0) {
+      try {
+        await prisma.exchangeRate.createMany({ data: rateRows });
+      } catch (error) {
+        if (!isUniqueConstraintError(error)) throw error;
+      }
     }
+
+    this.seededChecked = true;
   }
 
   async getEnabledCurrencies() {

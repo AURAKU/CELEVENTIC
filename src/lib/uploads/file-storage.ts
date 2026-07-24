@@ -60,6 +60,28 @@ export async function storeUploadFile(
 }
 
 /**
+ * Persist an upload at an exact, pre-built relative path (no `category/subPath/fileName`
+ * joining) — used by the video pipeline, which already generates a collision-proof key
+ * (see `key-builder.ts`) at presign time and needs to write/read that exact path later from
+ * a different request (upload -> background worker). Same S3-or-local-disk behavior as
+ * `storeUploadFile`.
+ */
+export async function storeUploadFileAtRelativePath(
+  relativePath: string,
+  buffer: Buffer
+): Promise<{ url: string; relativePath: string }> {
+  if (await isAwsS3Ready()) {
+    const { url } = await putS3Object(relativePath, buffer);
+    return { url, relativePath };
+  }
+
+  const filePath = resolveUploadPath(relativePath);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, buffer);
+  return { url: getPublicUploadUrl(relativePath), relativePath };
+}
+
+/**
  * Read an upload by relative path.
  * Tries local disk first, then S3 (supports migrated / dual-write scenarios).
  */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Upload, Image as ImageIcon, Video, FileText, X, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { extractImagePalette } from "@/lib/extract-image-palette";
@@ -30,6 +30,54 @@ interface MediaUploaderProps {
   disabled?: boolean;
 }
 
+const VIDEO_POLL_INTERVAL_MS = 3000;
+const VIDEO_POLL_TIMEOUT_MS = 15 * 60 * 1000;
+
+interface VideoAssetStatusPayload {
+  status: string;
+  processedMp4Url: string | null;
+  posterUrl: string | null;
+  thumbnailUrl: string | null;
+  durationSeconds: number | null;
+  width: number | null;
+  height: number | null;
+  failureReason: string | null;
+}
+
+/**
+ * Polls `GET /api/uploads/video/:id` (the same generic status endpoint `VideoUploader` uses)
+ * until the background worker flips the asset to READY or FAILED/CANCELLED, or the bounded
+ * timeout elapses. Never throws — transient network hiccups just keep the loop going.
+ */
+async function pollVideoAsset(pollUrl: string): Promise<VideoAssetStatusPayload> {
+  const startedAt = Date.now();
+  for (;;) {
+    await new Promise((resolve) => setTimeout(resolve, VIDEO_POLL_INTERVAL_MS));
+    try {
+      const res = await fetch(pollUrl);
+      const json = await res.json().catch(() => null);
+      const data = json?.data as VideoAssetStatusPayload | undefined;
+      if (res.ok && data && ["READY", "FAILED", "CANCELLED"].includes(data.status)) {
+        return data;
+      }
+    } catch {
+      /* transient network error — keep polling */
+    }
+    if (Date.now() - startedAt > VIDEO_POLL_TIMEOUT_MS) {
+      return {
+        status: "FAILED",
+        processedMp4Url: null,
+        posterUrl: null,
+        thumbnailUrl: null,
+        durationSeconds: null,
+        width: null,
+        height: null,
+        failureReason: "Video is taking longer than expected to process. It will finish in the background — check back shortly.",
+      };
+    }
+  }
+}
+
 export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspired", disabled }: MediaUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -39,41 +87,46 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [cropName, setCropName] = useState("design.jpg");
 
-  async function uploadFile(file: File, paletteFields?: Record<string, string>) {
-    const formData = new FormData();
-    formData.append("file", file);
-    const isVideo = file.type.startsWith("video/");
-    const isPdf = file.type === "application/pdf";
-    formData.append("role", isVideo ? "background" : isPdf ? "attachment" : "hero");
-    formData.append("buildMode", buildMode);
-    if (paletteFields) {
-      Object.entries(paletteFields).forEach(([k, v]) => formData.append(k, v));
-    }
+  const uploadFile = useCallback(
+    async (file: File, paletteFields?: Record<string, string>) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const isVideo = file.type.startsWith("video/");
+      const isPdf = file.type === "application/pdf";
+      formData.append("role", isVideo ? "background" : isPdf ? "attachment" : "hero");
+      formData.append("buildMode", buildMode);
+      if (paletteFields) {
+        Object.entries(paletteFields).forEach(([k, v]) => formData.append(k, v));
+      }
 
-    const res = await fetch("/api/invitations/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "Upload failed");
-      return null;
-    }
-    return data.data as {
-      url: string;
-      type: string;
-      role: string;
-      name: string;
-      analysis?: UploadAnalysisResult;
-      video?: {
-        playbackUrl: string;
-        posterUrl: string | null;
-        thumbnailUrl: string | null;
-        originalUrl: string | null;
-        status: "READY" | "FAILED";
-        durationSeconds: number | null;
-        width: number | null;
-        height: number | null;
+      const res = await fetch("/api/invitations/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Upload failed");
+        return null;
+      }
+      return data.data as {
+        url: string;
+        type: string;
+        role: string;
+        name: string;
+        analysis?: UploadAnalysisResult;
+        video?: {
+          assetId: string;
+          pollUrl: string;
+          playbackUrl: string | null;
+          posterUrl: string | null;
+          thumbnailUrl: string | null;
+          originalUrl: string | null;
+          status: string;
+          durationSeconds: number | null;
+          width: number | null;
+          height: number | null;
+        };
       };
-    };
-  }
+    },
+    [buildMode]
+  );
 
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -98,6 +151,39 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
     for (const file of Array.from(files)) {
       const uploaded = await uploadFile(file);
       if (!uploaded) continue;
+
+      // Video is now queued for background processing (202) rather than finished inline —
+      // show a "PROCESSING" placeholder immediately, then poll and patch it in place once the
+      // worker finishes. `VideoPlayer`-aware consumers of `assets` (e.g. the studio preview)
+      // already know how to render the `PROCESSING`/`FAILED` states via `InvitationMediaAsset.status`.
+      if (uploaded.video && uploaded.video.status !== "READY" && uploaded.video.status !== "FAILED") {
+        const role = mediaRoleFromUpload(uploaded.role, file);
+        const placeholderIndex = newAssets.length;
+        newAssets.push({ url: "", type: "video", role, name: uploaded.name, status: "PROCESSING" });
+        onChange([...newAssets]);
+
+        const finalState = await pollVideoAsset(uploaded.video.pollUrl);
+        if (finalState.status === "READY" && finalState.processedMp4Url) {
+          newAssets[placeholderIndex] = {
+            url: finalState.processedMp4Url,
+            type: "video",
+            role,
+            name: uploaded.name,
+            posterUrl: finalState.posterUrl,
+            thumbnailUrl: finalState.thumbnailUrl,
+            status: "READY",
+            durationSeconds: finalState.durationSeconds,
+            width: finalState.width,
+            height: finalState.height,
+          };
+        } else {
+          newAssets.splice(placeholderIndex, 1);
+          setError(finalState.failureReason ?? "Video processing failed.");
+        }
+        onChange([...newAssets]);
+        continue;
+      }
+
       newAssets.push({
         url: uploaded.url,
         type: uploaded.type as MediaType,
@@ -108,7 +194,7 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
               posterUrl: uploaded.video.posterUrl,
               thumbnailUrl: uploaded.video.thumbnailUrl,
               originalUrl: uploaded.video.originalUrl,
-              status: uploaded.video.status,
+              status: uploaded.video.status as "READY" | "FAILED",
               durationSeconds: uploaded.video.durationSeconds,
               width: uploaded.video.width,
               height: uploaded.video.height,
@@ -230,7 +316,11 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
         <div className="space-y-2">
           {assets.map((a, i) => (
             <div key={i} className="flex items-center gap-3 p-2 rounded-lg border bg-mesh text-sm">
-              {a.type === "image" ? (
+              {a.type === "video" && a.status === "PROCESSING" ? (
+                <div className="h-10 w-10 rounded bg-slate-100 flex items-center justify-center text-slate-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              ) : a.type === "image" ? (
                 <UploadedMedia src={a.url} alt="" className="h-10 w-10 rounded object-cover" width={40} height={40} />
               ) : a.type === "video" ? (
                 <UploadedMedia src={a.url} alt="" className="h-10 w-10 rounded object-cover" video width={40} height={40} />
@@ -241,7 +331,10 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
               )}
               <div className="flex-1 min-w-0">
                 <p className="truncate font-medium">{a.name ?? a.type}</p>
-                <p className="text-xs text-slate-500 capitalize">{a.role} · {a.type}</p>
+                <p className="text-xs text-slate-500 capitalize">
+                  {a.role} · {a.type}
+                  {a.type === "video" && a.status === "PROCESSING" ? " · Processing…" : ""}
+                </p>
               </div>
               <Button type="button" size="icon" variant="ghost" onClick={() => removeAsset(i)}>
                 <X className="h-4 w-4" />

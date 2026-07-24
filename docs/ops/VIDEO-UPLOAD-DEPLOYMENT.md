@@ -15,13 +15,26 @@
 > otherwise-valid videos. This is now automatic: `/api/uploads/video/presign` detects that S3
 > isn't usable (see `src/lib/video/storage-strategy.ts`) and returns `strategy: "local"`
 > instead of erroring; `VideoUploader` posts the raw file straight to
-> `/api/uploads/video/local`, which transcodes it synchronously with the same VPS FFmpeg
-> engine described above and stores the result on local disk via
+> `/api/uploads/video/local`, which stores the result on local disk via
 > `src/lib/uploads/file-storage.ts` (served from `/api/uploads/...`, same as the invitations
 > upload route). **No env change is required to get this** — it activates automatically
 > whenever S3 isn't configured. Set `VIDEO_LOCAL_FALLBACK_ENABLED=false` only if you
 > specifically want uploads to hard-fail instead of falling back (not recommended on Hostinger
 > today). See `docs/video-processing.md` for the full flow.
+>
+> ⚠️ **Update (2026-07-24, part 3) — async 202 for both local-FFmpeg upload routes (ECONNRESET
+> fix):** `/api/uploads/video/local` and the video branch of `/api/invitations/upload` used to
+> run FFmpeg **inline**, holding the HTTP request open for the whole transcode (minutes, for a
+> large file) — under load this produced `Upload error: ECONNRESET` when the client/proxy idle
+> timeout killed the socket mid-transcode. Both routes now persist the raw upload to disk,
+> flip the `VideoAsset` to `QUEUED`, dispatch the same `video-process` `BackgroundJob` the
+> S3/MediaConvert pipeline already uses, and respond **`202 Accepted`** immediately — no
+> ffmpeg call ever happens on the request thread. `video-jobs-worker`
+> (`processQueuedVideoAssetLocalFfmpeg` in `src/lib/video/processing.ts`) picks the job up and
+> runs the real transcode in the background, updating the row to `READY`/`FAILED`. Clients
+> (`VideoUploader`, `MediaUploader`) poll `GET /api/uploads/video/:id` until it's `READY`, then
+> switch to `processedMp4Url`/`playbackUrl`. See `docs/video-processing.md` for the full
+> request/poll contract.
 
 # Universal Video Upload & Processing — Deployment Guide
 
@@ -206,6 +219,10 @@ upscaled).
 ## Testing
 
 ```bash
-npm run test:video   # format/signature/HEVC/MediaConvert-plan unit tests (no AWS calls made)
-npm run build        # full production build
+npm run test:video            # format/signature/HEVC/MediaConvert-plan unit tests (no AWS calls made)
+npm run test:video-pipeline   # real-DB integration: 202 queue -> worker (ffmpeg mocked) -> READY
+npm run test:currency         # currency seed-once / no-repeated-writes regression tests
+npm run test:uploads          # byte-range / form-data-file parsing unit tests
+npm run test:all              # everything above
+npm run build                 # full production build
 ```

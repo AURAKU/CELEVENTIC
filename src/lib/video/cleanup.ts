@@ -33,6 +33,9 @@ export async function cleanupAbandonedVideoUploads(batchSize = 50): Promise<{ ca
       await abortMultipartUpload(asset.originalKey, asset.multipartUploadId);
     }
     await deleteVideoObject(asset.originalKey);
+    // Local-disk fallback originals (see `queueLocalVideoUpload`) never reach S3 — best-effort,
+    // no-op if the file doesn't exist (e.g. this asset never made it past the UPLOADING step).
+    await deleteUploadFile(asset.originalKey);
     await prisma.videoAsset.update({
       where: { id: asset.id },
       data: {
@@ -56,7 +59,7 @@ export async function cleanupAbandonedVideoUploads(batchSize = 50): Promise<{ ca
  *     (S3) — prefix-deleted so it doesn't matter whether that's a single MP4+poster or a full
  *     multi-rendition + HLS + thumbnail-frame set.
  *   - Local-disk fallback derivatives under `videos/<category>/<id>/` (used when S3 isn't
- *     configured on this environment — see `processLocalVideoUpload`).
+ *     configured on this environment — see `queueLocalVideoUpload` / `processQueuedVideoAssetLocalFfmpeg`).
  * Storage failures are swallowed by the underlying helpers; the DB row is always removed last
  * so a partial storage cleanup never leaves an orphaned VideoAsset behind. The FK from
  * `EventMemoryUpload.videoAssetId` is `onDelete: SetNull`, so guestbook rows survive intact.
@@ -66,6 +69,9 @@ export async function deleteVideoAssetAndStorage(asset: VideoAsset): Promise<voi
     await abortMultipartUpload(asset.originalKey, asset.multipartUploadId);
   }
   await deleteVideoObject(asset.originalKey);
+  // Local-disk fallback original (raw upload persisted by `queueLocalVideoUpload`) — no-op if
+  // this asset's original ever lived in S3 instead.
+  await deleteUploadFile(asset.originalKey);
 
   const categorySlug = (asset.category as string).toLowerCase();
   await deleteVideoObjectsByPrefix(`processed/videos/${categorySlug}/${asset.id}/`);
