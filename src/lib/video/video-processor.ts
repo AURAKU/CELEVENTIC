@@ -43,7 +43,13 @@ const execFileAsync = promisify(execFile);
 // ─── Configuration ──────────────────────────────────────────────────────────
 
 export function getExternalConverterPath(): string {
-  return (process.env.CELEVENTIC_VIDEO_CONVERTER_PATH?.trim()) || "/usr/local/bin/celeventic-process-video";
+  return (
+    process.env.CELEVENTIC_VIDEO_CONVERTER_PATH?.trim() ||
+    // Generic alias — some ops docs/scripts refer to this env var name; both point at the
+    // same production binary, first non-empty wins.
+    process.env.VIDEO_PROCESSOR_PATH?.trim() ||
+    "/usr/local/bin/celeventic-process-video"
+  );
 }
 
 function getFfmpegBin(): string {
@@ -309,7 +315,12 @@ export function buildVideoFilterChain(probe: ProbeResult): string {
 }
 
 export function buildTranscodeArgs(inputPath: string, outputPath: string, probe: ProbeResult): string[] {
-  const args: string[] = ["-y", "-autorotate", "1", "-i", inputPath];
+  // `-autorotate` is a boolean CLI flag — some ffmpeg builds (7.x+) parse a bare trailing value
+  // like `-autorotate 1` as a *separate* positional output argument (not the flag's value),
+  // which corrupts the whole command line ("Error parsing options for output file 1"). Passing
+  // the flag with no value enables it (the documented default anyway) and works identically
+  // across ffmpeg versions that support the option at all.
+  const args: string[] = ["-y", "-autorotate", "-i", inputPath];
   args.push("-map", "0:v:0");
   if (probe.hasAudio) args.push("-map", "0:a:0?");
   args.push("-vf", buildVideoFilterChain(probe));
@@ -525,6 +536,25 @@ async function extractPosterFallback(outputPath: string, posterPath: string, dur
   try {
     await runProcess(getFfmpegBin(), buildPosterArgs(outputPath, posterPath, choosePosterSeekSeconds(durationSeconds)), 60_000);
     return (await fileNonEmpty(posterPath)) ? await readFile(posterPath) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Derives a small grid/list thumbnail from the (larger) poster frame — distinct asset from the
+ * poster so cards/lists can ship a lighter payload than the detail-view poster. Uses `sharp`
+ * (already a project dependency, image-only, no ffmpeg spawn needed) so it's cheap and safe to
+ * run on every upload/backfill item. Best-effort: returns `null` (never throws) if `sharp` is
+ * unavailable or the poster buffer isn't decodable — callers should fall back to the poster URL.
+ */
+export async function generateThumbnail(posterBuffer: Buffer, maxWidth = 480): Promise<Buffer | null> {
+  try {
+    const sharp = (await import("sharp")).default;
+    return await sharp(posterBuffer)
+      .resize({ width: maxWidth, withoutEnlargement: true })
+      .jpeg({ quality: 70 })
+      .toBuffer();
   } catch {
     return null;
   }

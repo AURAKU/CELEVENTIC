@@ -11,7 +11,7 @@ import {
 } from "@/lib/video/constants";
 import { extractExtension } from "@/lib/video/validation";
 import { sniffVideoContainer } from "@/lib/video/container-sniff";
-import { processVideoFile } from "@/lib/video/video-processor";
+import { processVideoFile, generateThumbnail } from "@/lib/video/video-processor";
 
 // Node runtime required: video processing uses node:child_process/fs. `maxDuration` is a
 // no-op on self-hosted (pm2/systemd) but caps gracefully if ever deployed behind a platform
@@ -167,9 +167,20 @@ async function handleVideoUpload(
   const { url: playbackUrl } = await storeUploadFile("invitations", userId, `${baseId}.mp4`, result.outputBuffer);
 
   let posterUrl: string | null = null;
+  let thumbnailUrl: string | null = null;
   if (result.posterBuffer) {
     const poster = await storeUploadFile("invitations", userId, `${baseId}-poster.jpg`, result.posterBuffer).catch(() => null);
     posterUrl = poster?.url ?? null;
+
+    // Distinct, lighter asset for cards/lists/thumbnails — falls back to the poster URL if
+    // thumbnail derivation isn't possible (never blocks the upload on this best-effort step).
+    const thumbBuffer = await generateThumbnail(result.posterBuffer).catch(() => null);
+    if (thumbBuffer) {
+      const thumb = await storeUploadFile("invitations", userId, `${baseId}-thumbnail.jpg`, thumbBuffer).catch(() => null);
+      thumbnailUrl = thumb?.url ?? posterUrl;
+    } else {
+      thumbnailUrl = posterUrl;
+    }
   }
 
   return NextResponse.json({
@@ -184,7 +195,7 @@ async function handleVideoUpload(
       video: {
         playbackUrl,
         posterUrl,
-        thumbnailUrl: posterUrl,
+        thumbnailUrl,
         originalUrl,
         status: "READY",
         method: result.method,

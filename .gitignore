@@ -49,3 +49,7 @@ public/uploads/**
 !public/uploads/
 !public/uploads/**/
 !public/uploads/**/.gitkeep
+
+# video backfill runtime state (manifests, audit logs, SQLite backups, rollback files) —
+# never committed; regenerated per run, may contain local file paths/DB content.
+/var/video-backfill/

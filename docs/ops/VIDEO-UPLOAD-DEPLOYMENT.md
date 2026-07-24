@@ -145,14 +145,23 @@ npx prisma generate
 npx prisma db push
 rm -rf .next && npm run build
 pm2 restart celeventic --update-env
-# Start (first time) or restart the queue worker as its own PM2 process:
-pm2 start "npm run jobs:worker" --name celeventic-jobs-worker --update-env
+# Start (first time) or restart the queue worker as its own PM2 process. `celeventic-video-worker`
+# is the canonical process name going forward (matches the ops runbook in
+# docs/ops/HOSTINGER-VPS-HEVC-DOLBY-VISION-PROMPT.md); `celeventic-jobs-worker` from earlier
+# deploys keeps working unchanged if it's already running — no need to rename an existing process.
+pm2 start "npm run jobs:worker" --name celeventic-video-worker --update-env
 pm2 save
+
+# One-time (or re-runnable) backfill of pre-existing invitation videos to browser-universal MP4 —
+# see docs/video-processing.md#backfilling-pre-existing-videos for full details/flags:
+npm run video:backfill:dry-run
+npm run video:backfill
 ```
 
-The worker (`celeventic-jobs-worker`) is a small, long-running Node process — it only makes
-AWS API calls (CreateJob/GetJob) and Prisma queries every `JOB_WORKER_TICK_MS`; it does not
-receive uploads or run FFmpeg, so it's safe to run on the same VPS as the Next.js app.
+The worker (`celeventic-video-worker`, script: `scripts/video-jobs-worker.ts`, alias npm script:
+`npm run video:worker` / `npm run jobs:worker`) is a small, long-running Node process — it only
+makes AWS API calls (CreateJob/GetJob) and Prisma queries every `JOB_WORKER_TICK_MS`; it does not
+receive uploads or run FFmpeg itself, so it's safe to run on the same VPS as the Next.js app.
 
 ## Rollback
 
@@ -172,6 +181,12 @@ receive uploads or run FFmpeg, so it's safe to run on the same VPS as the Next.j
   FFmpeg fallback (`/api/uploads/video/local`) instead of failing — see the 2026-07-24 update
   at the top of this doc. To restore the old hard-block-without-S3 behavior instead, set
   `VIDEO_LOCAL_FALLBACK_ENABLED=false`.
+- **Backfill DB changes**: every `npm run video:backfill` run writes a
+  `var/video-backfill/rollback-<runId>.json`; run
+  `npm run video:backfill -- --rollback=var/video-backfill/rollback-<runId>.json` to restore the
+  exact prior value of every row/field it touched (does not delete the generated processed video
+  files — harmless to leave in place). A SQLite backup from the same run also sits in
+  `var/video-backfill/backups/` if a full file-level restore is ever needed instead.
 
 ## Format & codec support
 

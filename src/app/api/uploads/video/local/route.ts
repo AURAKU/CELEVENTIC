@@ -4,6 +4,7 @@ import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
 import { checkUploadRateLimit } from "@/lib/video/quota";
 import { processLocalVideoUpload } from "@/lib/video/processing";
 import { serializeVideoAsset } from "@/lib/video/serialize";
+import { isFormDataFile } from "@/lib/uploads/form-data-file";
 
 // Node runtime required: video processing shells out to ffmpeg via node:child_process.
 // maxDuration is a no-op on self-hosted (pm2/systemd) — real bound is
@@ -34,7 +35,14 @@ export async function POST(req: Request) {
   if (typeof assetIdField !== "string" || !assetIdField) {
     return NextResponse.json({ error: "assetId is required." }, { status: 400 });
   }
-  if (!(file instanceof File)) {
+  // NOTE: deliberately NOT `file instanceof File` — the global `File` class doesn't exist on
+  // Node < 20 (Node 18's `undici`-backed `Request.formData()` still parses file parts into a
+  // File-like object, but there is no global `File` constructor to check against on that
+  // runtime), which crashed every request here with an uncaught `ReferenceError: File is not
+  // defined` -> framework-level 500 before this route's own try/catch ever ran. Duck-type
+  // instead — every FormData file entry is a Blob-like object with `arrayBuffer()`, regardless
+  // of Node version or which `File` implementation (undici vs. Node's own) produced it.
+  if (!isFormDataFile(file)) {
     return NextResponse.json({ error: "A video file is required." }, { status: 400 });
   }
   const guestToken = typeof guestTokenField === "string" ? guestTokenField : null;
