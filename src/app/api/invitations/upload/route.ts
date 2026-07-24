@@ -4,20 +4,17 @@ import { authOptions } from "@/lib/auth";
 import { invitationInspirationService } from "@/services/invitations/invitation-inspiration.service";
 import { getInvitationMediaLimits } from "@/lib/invitation/media-limits";
 import { storeUploadFile } from "@/lib/uploads/file-storage";
-import {
-  ALLOWED_VIDEO_EXTENSIONS,
-  ALLOWED_VIDEO_MIME_TYPES,
-  type AllowedVideoExtension,
-} from "@/lib/video/constants";
+import { ALLOWED_VIDEO_EXTENSIONS, ALLOWED_VIDEO_MIME_TYPES } from "@/lib/video/constants";
 import { extractExtension } from "@/lib/video/validation";
 import { sniffVideoContainer } from "@/lib/video/container-sniff";
-import { processVideoFile, generateThumbnail } from "@/lib/video/video-processor";
+import { createAndQueueLocalVideoAsset } from "@/lib/video/processing";
+import { serializeVideoAsset } from "@/lib/video/serialize";
 
-// Node runtime required: video processing uses node:child_process/fs. `maxDuration` is a
-// no-op on self-hosted (pm2/systemd) but caps gracefully if ever deployed behind a platform
-// that enforces one (e.g. Vercel).
+// Node runtime required: reads multipart bodies into memory. Video no longer runs ffmpeg
+// inline here (see `handleVideoUpload`) — only image/PDF processing is synchronous now, so
+// this route always returns quickly regardless of `maxDuration`.
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 const MAX_PDF = 15 * 1024 * 1024;
 
@@ -94,7 +91,7 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(bytes);
 
     if (resolved.mediaType === "video") {
-      return await handleVideoUpload(buffer, resolved, role, file, session.user.id, formData);
+      return await handleVideoUpload(buffer, resolved, role, file, session.user.id);
     }
 
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${resolved.ext}`;
@@ -118,22 +115,24 @@ export async function POST(req: Request) {
 }
 
 /**
- * Video path: byte-sniff the real container (never trust the client), transcode to a
- * browser-universal MP4 (H.264/AAC/yuv420p/faststart, <=1080p, correct orientation, SDR),
- * store the processed MP4 + poster (+ the original for reference), and return a payload
- * where `data.url` is ALWAYS the playable MP4 — never the raw upload.
+ * Video path: byte-sniff the real container (never trust the client), persist the raw bytes
+ * immediately, and queue background transcoding to a browser-universal MP4 (H.264/AAC/
+ * yuv420p/faststart, <=1080p, correct orientation, SDR) via the same `VideoAsset` + worker
+ * pipeline the rest of the app uses.
  *
- * Synchronous by design (v1): this VPS route processes one request's video inline, bounded
- * to `VIDEO_PROCESSOR_CONCURRENCY` (default 1) concurrent ffmpeg/converter runs process-wide.
- * See docs/video-processing.md for the async-worker upgrade path.
+ * ASYNC (v2): this used to call `processVideoFile` inline and hold the request open for the
+ * full ffmpeg run — on large uploads that produced `Upload error: ECONNRESET` (client/proxy
+ * idle-timeout killing the socket mid-transcode). Now the response returns `202 Accepted` the
+ * instant the bytes are safely on disk, carrying `video.assetId` + `video.pollUrl`; the
+ * caller polls `GET /api/uploads/video/:id` (the same generic endpoint `VideoUploader` uses)
+ * until `status` is `READY` (then `video.playbackUrl` is the final MP4) or `FAILED`.
  */
 async function handleVideoUpload(
   buffer: Buffer,
   resolved: ResolvedUpload,
   role: string,
   file: File,
-  userId: string,
-  formData: FormData
+  userId: string
 ) {
   const sniff = sniffVideoContainer(buffer.subarray(0, 262_144));
   if (sniff.disallowed) {
@@ -143,71 +142,65 @@ async function handleVideoUpload(
     );
   }
 
-  const extHint = (sniff.container ?? resolved.ext.replace(".", "")) as AllowedVideoExtension | string;
-  const baseId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const extHint = String(sniff.container ?? resolved.ext.replace(".", ""));
 
-  const result = await processVideoFile(buffer, { extensionHint: String(extHint) });
+  // "PREMIUM" carries no artificial duration cap and a generous size ceiling in the shared
+  // video pipeline (see limits.ts) — this route's own `resolved.maxBytes` check above (run by
+  // the caller before this function) remains the real, pre-existing size gate, so behavior
+  // for callers of this legacy endpoint is unchanged from before this refactor.
+  const asset = await createAndQueueLocalVideoAsset({
+    category: "PREMIUM",
+    ownerId: userId,
+    context: { role, source: "invitations-upload" },
+    originalFilename: file.name,
+    originalMimeType: file.type || "application/octet-stream",
+    originalExtension: extHint,
+    buffer,
+  });
 
-  if (!result.success || !result.outputBuffer) {
-    console.error("Invitation video processing failed:", result.error);
+  if (asset.status === "FAILED") {
+    console.error("Invitation video queueing failed:", asset.failureReason);
     return NextResponse.json(
       {
         error:
+          asset.failureReason ??
           "We couldn't process this video for playback. Please try again shortly, or upload an MP4 (H.264) exported from your device.",
-        detail: process.env.NODE_ENV === "production" ? undefined : result.error,
       },
       { status: 503 }
     );
   }
 
-  // Keep the original privately (audit/reprocessing) — never returned as the primary `url`.
-  const originalName = `${baseId}-original${sniff.container ? `.${sniff.container}` : resolved.ext}`;
-  const { url: originalUrl } = await storeUploadFile("invitations", `${userId}/originals`, originalName, buffer).catch(() => ({ url: null as string | null }));
+  const serialized = serializeVideoAsset(asset);
 
-  const { url: playbackUrl } = await storeUploadFile("invitations", userId, `${baseId}.mp4`, result.outputBuffer);
-
-  let posterUrl: string | null = null;
-  let thumbnailUrl: string | null = null;
-  if (result.posterBuffer) {
-    const poster = await storeUploadFile("invitations", userId, `${baseId}-poster.jpg`, result.posterBuffer).catch(() => null);
-    posterUrl = poster?.url ?? null;
-
-    // Distinct, lighter asset for cards/lists/thumbnails — falls back to the poster URL if
-    // thumbnail derivation isn't possible (never blocks the upload on this best-effort step).
-    const thumbBuffer = await generateThumbnail(result.posterBuffer).catch(() => null);
-    if (thumbBuffer) {
-      const thumb = await storeUploadFile("invitations", userId, `${baseId}-thumbnail.jpg`, thumbBuffer).catch(() => null);
-      thumbnailUrl = thumb?.url ?? posterUrl;
-    } else {
-      thumbnailUrl = posterUrl;
-    }
-  }
-
-  return NextResponse.json({
-    success: true,
-    data: buildAnalysisPayload({
-      url: playbackUrl,
-      type: "video",
-      role,
-      name: file.name,
-      size: file.size,
-      formData,
-      video: {
-        playbackUrl,
-        posterUrl,
-        thumbnailUrl,
-        originalUrl,
-        status: "READY",
-        method: result.method,
-        durationSeconds: result.metadata.durationSeconds,
-        width: result.metadata.width,
-        height: result.metadata.height,
-        hadHevc: result.metadata.hadHevc,
-        hadHdr: result.metadata.hadHdr,
-        hasAudio: result.metadata.hasAudio,
+  // Deliberately NOT running `invitationInspirationService.analyze()` here (unlike the
+  // image/PDF path below) — it would bake today's (still-empty) `url` into `designConfig`.
+  // The client re-applies the design once polling reaches READY and has the real
+  // `playbackUrl`, so there's nothing useful to analyze yet.
+  return NextResponse.json(
+    {
+      success: true,
+      data: {
+        url: "",
+        type: "video" as const,
+        role,
+        name: file.name,
+        size: file.size,
+        video: {
+          assetId: serialized.id,
+          pollUrl: `/api/uploads/video/${serialized.id}`,
+          playbackUrl: serialized.processedMp4Url,
+          posterUrl: serialized.posterUrl,
+          thumbnailUrl: serialized.thumbnailUrl,
+          originalUrl: null,
+          status: serialized.status,
+          durationSeconds: serialized.durationSeconds,
+          width: serialized.width,
+          height: serialized.height,
+        },
       },
-    }),
-  });
+    },
+    { status: 202 }
+  );
 }
 
 function buildAnalysisPayload(input: {

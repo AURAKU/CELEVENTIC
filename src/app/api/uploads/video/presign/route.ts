@@ -134,8 +134,9 @@ export async function POST(req: Request) {
   });
 
   // S3 not usable on this environment (or the operator forced local mode) — route the
-  // browser straight to the local-disk + VPS FFmpeg endpoint. The response shape mirrors
-  // the S3 strategies below so `VideoUploader` only needs one extra branch.
+  // browser straight to the local-disk + VPS FFmpeg endpoint. That endpoint queues
+  // background processing and responds 202 (see `/api/uploads/video/local`); the response
+  // shape mirrors the S3 strategies below so `VideoUploader` only needs one extra branch.
   if (decision.strategy === "local") {
     return NextResponse.json({
       success: true,

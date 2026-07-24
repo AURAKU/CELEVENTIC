@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { dispatchJob } from "@/lib/queue";
-import type { VideoAsset } from "@prisma/client";
+import type { VideoAsset, Prisma } from "@prisma/client";
 import {
   headVideoObject,
   getVideoObjectRange,
@@ -9,7 +9,8 @@ import {
   buildPublicVideoUrl,
   deleteVideoObject,
 } from "@/lib/video/s3-video";
-import { storeUploadFile } from "@/lib/uploads/file-storage";
+import { storeUploadFile, storeUploadFileAtRelativePath, readUploadFile } from "@/lib/uploads/file-storage";
+import { isAwsS3Ready } from "@/lib/uploads/aws-s3";
 import { validateFinalSize, validateVideoSignature } from "@/lib/video/validation";
 import { parseMp4Metadata } from "@/lib/video/mp4-metadata";
 import { categoryMaxBytes, getVideoCategoryLimits } from "@/lib/video/limits";
@@ -24,6 +25,8 @@ import { processVideoFile } from "@/lib/video/video-processor";
 import { vendorMediaService } from "@/services/vendor-os/vendor-media.service";
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
 import type { VideoCategory } from "@/lib/video/constants";
+import { buildRawVideoKey } from "@/lib/video/key-builder";
+import type { VideoOwnerType } from "@prisma/client";
 
 /**
  * Which engine transcodes queued videos for the universal (S3-backed) upload pipeline.
@@ -140,14 +143,22 @@ export async function finalizeVideoUpload(assetId: string): Promise<VideoAsset> 
 /**
  * Local-disk + VPS FFmpeg fallback for the universal video pipeline — used automatically
  * when S3 isn't configured/usable on this environment (see `storage-strategy.ts`), e.g.
- * Hostinger production without AWS creds. Unlike the S3 path, the raw bytes are already in
- * memory (the browser posted them straight to our API instead of to S3), so there is no
- * separate "finalize then queue then worker polls" dance — everything happens synchronously
- * in one call: validate → transcode with `processVideoFile` (ffmpeg) → store the processed
- * MP4 + poster via `storeUploadFile` (local disk, or S3 if it becomes available mid-flight)
- * → mark READY/FAILED. Idempotent: a duplicate call on an already-finalized asset is a no-op.
+ * Hostinger production without AWS creds.
+ *
+ * ASYNC BY DESIGN (v2): the raw bytes arrive in this single HTTP request (the browser posted
+ * them straight to our API instead of to S3), but transcoding does NOT happen inline here
+ * anymore — a large upload holding the request open through several minutes of ffmpeg work
+ * was exactly what produced the `ECONNRESET` failures under load (client/proxy idle-timeouts
+ * killing the socket mid-transcode). Instead this: validates the descriptor → persists the
+ * raw bytes to disk (or S3, if it becomes available mid-flight) at the asset's reserved
+ * `originalKey` → flips the row to QUEUED → dispatches the same `video-process` queue the
+ * S3/MediaConvert path already uses. The `video-jobs-worker` background process then calls
+ * `processQueuedVideoAssetLocalFfmpeg` to actually run ffmpeg, completely off the request
+ * thread. Callers get a fast 202 response with the QUEUED asset and poll
+ * `GET /api/uploads/video/:id` (already wired into `VideoUploader`) until READY/FAILED.
+ * Idempotent: a duplicate call on an already-finalized (non-UPLOADING) asset is a no-op.
  */
-export async function processLocalVideoUpload(assetId: string, buffer: Buffer): Promise<VideoAsset> {
+export async function queueLocalVideoUpload(assetId: string, buffer: Buffer): Promise<VideoAsset> {
   const asset = await prisma.videoAsset.findUniqueOrThrow({ where: { id: assetId } });
   if (asset.status !== "UPLOADING") {
     return asset;
@@ -175,10 +186,18 @@ export async function processLocalVideoUpload(assetId: string, buffer: Buffer): 
     return failAsset(asset.id, `Video is too long for this category. Max ${Math.round(limits.maxDurationSeconds)}s.`);
   }
 
-  const uploaded = await prisma.videoAsset.update({
+  // Persist the raw bytes NOW (cheap disk write), before spending any time on ffmpeg — this
+  // is the entire fix: the HTTP response can return the instant this write finishes instead
+  // of after several minutes of transcoding.
+  await storeUploadFileAtRelativePath(asset.originalKey, buffer);
+  const usedS3 = await isAwsS3Ready();
+
+  const context = { ...(asset.context as Record<string, unknown> | null), originalStorage: usedS3 ? "s3" : "local" };
+
+  const queued = await prisma.videoAsset.update({
     where: { id: asset.id },
     data: {
-      status: "PROCESSING",
+      status: "QUEUED",
       sizeBytes: BigInt(buffer.length),
       detectedContainer: sigCheck.detectedContainer,
       detectedVideoCodec: sigCheck.detectedVideoCodec,
@@ -187,28 +206,104 @@ export async function processLocalVideoUpload(assetId: string, buffer: Buffer): 
       height: mp4Meta.height,
       uploadedAt: new Date(),
       queuedAt: new Date(),
-      processingStartedAt: new Date(),
-      attempts: { increment: 1 },
+      context: context as Prisma.InputJsonValue,
     },
   });
 
-  const sideEffect = await runPreQueueSideEffects(uploaded);
+  const sideEffect = await runPreQueueSideEffects(queued);
   if (!sideEffect.ok) {
-    return failAsset(uploaded.id, sideEffect.reason);
+    return failAsset(queued.id, sideEffect.reason);
   }
 
+  await dispatchJob("video-process", { assetId: queued.id });
+  return queued;
+}
+
+export interface CreateAndQueueLocalVideoAssetInput {
+  category: VideoCategory;
+  ownerType?: VideoOwnerType;
+  ownerId: string;
+  eventId?: string | null;
+  vendorId?: string | null;
+  orderId?: string | null;
+  context?: Record<string, unknown>;
+  originalFilename: string;
+  originalMimeType: string;
+  originalExtension: string;
+  buffer: Buffer;
+}
+
+/**
+ * One-shot variant of the presign -> upload -> queue dance for callers (like the legacy
+ * `/api/invitations/upload` route) that receive the whole file in a single request with no
+ * separate presign step. Creates the `VideoAsset` row and immediately hands it to
+ * `queueLocalVideoUpload` — same async/202 contract, same background worker, same poll
+ * endpoint (`GET /api/uploads/video/:id`) as the rest of the universal pipeline.
+ */
+export async function createAndQueueLocalVideoAsset(
+  input: CreateAndQueueLocalVideoAssetInput
+): Promise<VideoAsset> {
+  const { key, id } = buildRawVideoKey(input.category, input.ownerId, input.originalExtension);
+  const asset = await prisma.videoAsset.create({
+    data: {
+      id,
+      category: input.category,
+      status: "UPLOADING",
+      ownerType: input.ownerType ?? "USER",
+      ownerId: input.ownerId,
+      eventId: input.eventId ?? null,
+      vendorId: input.vendorId ?? null,
+      orderId: input.orderId ?? null,
+      context: (input.context ?? {}) as Prisma.InputJsonValue,
+      originalKey: key,
+      originalFilename: input.originalFilename,
+      originalMimeType: input.originalMimeType,
+      originalExtension: input.originalExtension,
+      sizeBytes: BigInt(input.buffer.length),
+    },
+  });
+  return queueLocalVideoUpload(asset.id, input.buffer);
+}
+
+/**
+ * Background-worker counterpart to `queueLocalVideoUpload` — runs ffmpeg against the
+ * original bytes already sitting on local disk (or S3, for the "S3 configured but forced
+ * ffmpeg mode without an original ever going through the local-fallback route" edge case,
+ * which never reaches this function — see `processQueuedVideoAsset`'s branch below), stores
+ * the processed MP4 + poster, and marks the asset READY/FAILED. Same idempotency contract as
+ * every other worker entry point: only acts on `QUEUED` assets.
+ *
+ * IMPORTANT: this runs inside the standalone `video-jobs-worker` process (plain `tsx`, no
+ * Next.js server/request context), so it must NEVER call `getVideoCategoryLimits` (or
+ * anything else backed by `unstable_cache`) — `next/cache` throws "incrementalCache missing"
+ * outside a Next request. The duration/size gate already ran once, safely, inside the Next.js
+ * API route in `queueLocalVideoUpload` before this job was ever dispatched; the sibling
+ * `processQueuedVideoAssetWithFfmpeg` (MediaConvert-adjacent VPS bridge) follows the same rule.
+ *
+ * `deps.transcode` is an injection seam for tests — defaults to the real ffmpeg pipeline.
+ */
+export async function processQueuedVideoAssetLocalFfmpeg(
+  asset: VideoAsset,
+  deps: { transcode?: typeof processVideoFile } = {}
+): Promise<VideoAsset> {
+  const transcode = deps.transcode ?? processVideoFile;
+
+  if (asset.status !== "QUEUED") return asset;
+
+  const uploaded = await prisma.videoAsset.update({
+    where: { id: asset.id },
+    data: { status: "PROCESSING", processingStartedAt: new Date(), attempts: { increment: 1 } },
+  });
+
   try {
-    const result = await processVideoFile(buffer, { extensionHint: asset.originalExtension });
-    if (!result.success || !result.outputBuffer) {
-      throw new Error(result.error ?? "We couldn't process this video for playback.");
+    const buffer = await readUploadFile(asset.originalKey);
+    if (!buffer) {
+      throw new Error("Could not read the uploaded file from storage for processing.");
     }
 
-    if (
-      limits.maxDurationSeconds &&
-      result.metadata.durationSeconds &&
-      result.metadata.durationSeconds > limits.maxDurationSeconds
-    ) {
-      throw new Error(`Video is too long for this category. Max ${Math.round(limits.maxDurationSeconds)}s.`);
+    const result = await transcode(buffer, { extensionHint: asset.originalExtension });
+    if (!result.success || !result.outputBuffer) {
+      throw new Error(result.error ?? "We couldn't process this video for playback.");
     }
 
     const baseSubPath = `${(asset.category as string).toLowerCase()}/${asset.id}`;
@@ -296,7 +391,18 @@ export async function processQueuedVideoAsset(assetId: string): Promise<void> {
   const mode = getVideoProcessorMode();
 
   if (mode === "ffmpeg") {
-    await processQueuedVideoAssetWithFfmpeg(asset);
+    // The original bytes for THIS asset may live on local disk (Hostinger with no S3 at
+    // all — see `queueLocalVideoUpload`) or in S3 (S3 configured but ffmpeg forced/MediaConvert
+    // unavailable). `context.originalStorage` is stamped at upload time and is the source of
+    // truth per-asset — never a global assumption — since the two modes can coexist across an
+    // environment's lifetime (e.g. S3 creds added after some assets already went local).
+    const context = (asset.context as Record<string, unknown> | null) ?? null;
+    const originalStorage = context?.originalStorage;
+    if (originalStorage === "local") {
+      await processQueuedVideoAssetLocalFfmpeg(asset);
+    } else {
+      await processQueuedVideoAssetWithFfmpeg(asset);
+    }
     return;
   }
 

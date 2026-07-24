@@ -2,23 +2,29 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
 import { checkUploadRateLimit } from "@/lib/video/quota";
-import { processLocalVideoUpload } from "@/lib/video/processing";
+import { queueLocalVideoUpload } from "@/lib/video/processing";
 import { serializeVideoAsset } from "@/lib/video/serialize";
 import { isFormDataFile } from "@/lib/uploads/form-data-file";
 
-// Node runtime required: video processing shells out to ffmpeg via node:child_process.
-// maxDuration is a no-op on self-hosted (pm2/systemd) — real bound is
-// VIDEO_PROCESSOR_TIMEOUT_MS in src/lib/video/video-processor.ts — but set generously here
-// in case this is ever deployed behind a platform that enforces one.
+// Node runtime required: reads the multipart body into memory before handing off to the
+// background worker (no ffmpeg spawned in this route anymore — see `queueLocalVideoUpload`).
 export const runtime = "nodejs";
-export const maxDuration = 900;
+export const maxDuration = 120;
 
 /**
  * Local-disk + VPS FFmpeg fallback for the universal video pipeline. `VideoUploader` posts
  * here directly (instead of a presigned S3 PUT) whenever `/api/uploads/video/presign`
- * reports `strategy: "local"` — i.e. S3 isn't configured/usable on this environment. The
- * whole raw file arrives in this single request; the response already carries the final
- * READY/FAILED asset (processing is synchronous), so the client never needs to poll.
+ * reports `strategy: "local"` — i.e. S3 isn't configured/usable on this environment.
+ *
+ * ASYNC (v2): the whole raw file arrives in this single request, but this route only persists
+ * the bytes to disk and queues background processing — it never runs ffmpeg inline. Holding
+ * the HTTP connection open for the several minutes a large transcode can take was the direct
+ * cause of `Upload error: ECONNRESET` under load (idle-timeout on the client/proxy/server
+ * killing the socket mid-transcode). The response now returns `202 Accepted` with the asset
+ * in `QUEUED` state as soon as the bytes are safely on disk; the caller polls
+ * `GET /api/uploads/video/:id` (already built into `VideoUploader.pollUntilReady`) until the
+ * background worker (`video-jobs-worker` / pm2 `celeventic-video-worker`) flips it to
+ * READY/FAILED.
  */
 export async function POST(req: Request) {
   let formData: FormData;
@@ -70,11 +76,15 @@ export async function POST(req: Request) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const finalized = await processLocalVideoUpload(asset.id, buffer);
-    if (finalized.status === "FAILED") {
-      return NextResponse.json({ success: true, data: serializeVideoAsset(finalized) }, { status: 200 });
+    const queued = await queueLocalVideoUpload(asset.id, buffer);
+    if (queued.status === "FAILED") {
+      // Fast, synchronous validation (size/signature/duration) failed before we ever queued
+      // anything — safe and correct to report immediately rather than round-tripping through
+      // a poll for something we already know the answer to.
+      return NextResponse.json({ success: true, data: serializeVideoAsset(queued) }, { status: 200 });
     }
-    return NextResponse.json({ success: true, data: serializeVideoAsset(finalized) });
+    // 202 Accepted: bytes are safely persisted, transcoding happens in the background.
+    return NextResponse.json({ success: true, data: serializeVideoAsset(queued) }, { status: 202 });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Upload failed." },

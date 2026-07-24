@@ -68,31 +68,42 @@ async function loadStoredLimits(): Promise<StoredLimits> {
   return row.value as StoredLimits;
 }
 
+async function computeAllVideoCategoryLimits(): Promise<Record<VideoCategory, VideoCategoryLimits>> {
+  const stored = await loadStoredLimits();
+  const categories = Object.keys(HARD_DEFAULTS) as VideoCategory[];
+  const result = {} as Record<VideoCategory, VideoCategoryLimits>;
+  for (const category of categories) {
+    const envMax = envDefaultsForCategory(category);
+    const override = stored[category];
+    result[category] = {
+      maxSizeMb: override?.maxSizeMb && override.maxSizeMb > 0 ? override.maxSizeMb : envMax,
+      maxDurationSeconds:
+        override?.maxDurationSeconds !== undefined
+          ? override.maxDurationSeconds
+          : DURATION_DEFAULTS[category],
+    };
+  }
+  return result;
+}
+
 /** Cached admin-overridable limits, merged over env defaults, merged over hard defaults. */
 export const getAllVideoCategoryLimits = unstable_cache(
-  async (): Promise<Record<VideoCategory, VideoCategoryLimits>> => {
-    const stored = await loadStoredLimits();
-    const categories = Object.keys(HARD_DEFAULTS) as VideoCategory[];
-    const result = {} as Record<VideoCategory, VideoCategoryLimits>;
-    for (const category of categories) {
-      const envMax = envDefaultsForCategory(category);
-      const override = stored[category];
-      result[category] = {
-        maxSizeMb: override?.maxSizeMb && override.maxSizeMb > 0 ? override.maxSizeMb : envMax,
-        maxDurationSeconds:
-          override?.maxDurationSeconds !== undefined
-            ? override.maxDurationSeconds
-            : DURATION_DEFAULTS[category],
-      };
-    }
-    return result;
-  },
+  computeAllVideoCategoryLimits,
   ["video-category-limits"],
   { revalidate: 60, tags: ["video-category-limits"] }
 );
 
 export async function getVideoCategoryLimits(category: VideoCategory): Promise<VideoCategoryLimits> {
-  const all = await getAllVideoCategoryLimits();
+  let all: Record<VideoCategory, VideoCategoryLimits>;
+  try {
+    all = await getAllVideoCategoryLimits();
+  } catch {
+    // `unstable_cache` requires a live Next.js request/data-cache context. It's unreachable
+    // from the standalone `video-jobs-worker` process (plain `tsx`, no Next server) and from
+    // plain-script test runs — fall back to the same computation, uncached, so both
+    // environments still get correct limits instead of a hard crash.
+    all = await computeAllVideoCategoryLimits();
+  }
   return all[category];
 }
 

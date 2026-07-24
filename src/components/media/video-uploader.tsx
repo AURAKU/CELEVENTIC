@@ -267,8 +267,11 @@ export function VideoUploader({
   /**
    * S3 isn't configured/usable on this environment — presign already told us to route the
    * raw bytes straight to our own server instead of a presigned S3 PUT. One request carries
-   * the whole file; the server transcodes with FFmpeg synchronously and the response already
-   * contains the final READY/FAILED asset, so there's no separate poll step on this path.
+   * the whole file; the server just persists it to disk and responds `202 QUEUED` (fast) —
+   * ffmpeg transcoding runs in the background worker, so this always falls through to the
+   * same polling loop the S3/multipart paths use. A same-request `READY`/`FAILED` is still
+   * handled (idempotent replays of an already-finalized asset, or a fast synchronous
+   * validation failure) but is no longer the expected common case for a fresh upload.
    */
   async function uploadLocalFallback(file: File) {
     setPhase("uploading");
@@ -304,7 +307,8 @@ export function VideoUploader({
       reportError(asset.failureReason ?? "Video processing failed.");
       return;
     }
-    // Defensive: server queued instead of finishing synchronously — fall back to polling.
+    // QUEUED (the expected response now) — poll the same generic status endpoint every other
+    // upload strategy uses until the background worker flips this to READY/FAILED.
     await pollUntilReady(asset.id);
   }
 
