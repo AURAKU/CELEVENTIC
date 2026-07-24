@@ -179,13 +179,74 @@ present); leave any other apps on the box (e.g. Spark & Drive) untouched.
 ## Testing
 
 ```bash
-npm run test:video   # includes src/lib/video/__tests__/video-processor.test.ts
+npm run test:video   # includes src/lib/video/__tests__/video-processor.test.ts + backfill-utils.test.ts
 npm run build
 ```
 
 `video-processor.test.ts` covers: ffprobe JSON parsing (duration/codec/rotation/HDR
 detection), the remux-vs-transcode decision, ffmpeg argument construction (H.264/AAC/yuv420p/
 faststart/no-shell-injection), the HDR tonemap filter chain, poster-frame timestamp selection,
-external-converter path resolution, and the concurrency semaphore. These are pure-function
-tests — they do not require ffmpeg/ffprobe to be installed and run in CI without any video
-tooling present.
+external-converter path resolution, and the concurrency semaphore. `backfill-utils.test.ts`
+covers the backfill CLI's pure logic (candidate-file filtering, URL-variant generation, JSON
+deep-replace, manifest idempotency). These are pure-function tests — they do not require
+ffmpeg/ffprobe to be installed and run in CI without any video tooling present.
+
+A full manual end-to-end smoke test of the backfill CLI (real ffmpeg, synthetic HEVC/rotated/
+corrupt fixtures, a sandboxed SQLite copy) was also run — see "Backfilling pre-existing videos"
+below for the exact repro. It caught and fixed two real ffmpeg-version-specific bugs (see git
+history): `-autorotate 1` is misparsed as a stray output argument on ffmpeg 7.x/8.x (must be
+passed as a bare flag), and Prisma's `$queryRawUnsafe` auto-deserializes `Json`-typed SQLite
+columns into objects (the backfill script's JSON-field updater must not assume a raw string).
+
+## Backfilling pre-existing videos
+
+Every video uploaded **before** this fix shipped may still be a raw MOV/HEVC/etc. file with its
+un-converted URL saved in the database. `scripts/backfill-video-playback.ts` finds and fixes
+those, using the exact same `processVideoFile` engine as new uploads.
+
+```bash
+# 1. See what would happen — touches nothing (no files written, no DB rows changed):
+npm run video:backfill:dry-run
+
+# 2. Convert + fix DB references (safe to interrupt — resumable, idempotent):
+npm run video:backfill
+
+# Useful flags (pass after `--`, e.g. `npm run video:backfill -- --limit=20`):
+#   --limit=N          process at most N files this run
+#   --user-id=<id>      only invitations/<id>/...
+#   --resume            required to continue after a run that didn't exit cleanly
+#   --rollback=<file>   revert every DB change from a specific rollback-*.json, then exit
+```
+
+What it does, safely:
+- Scans `public/uploads/invitations/**` (or `UPLOAD_DIR` in production) for known video
+  extensions, skipping anything already in a `processed/`/`originals/` directory (its own past
+  output) — safe to re-run any time, including on a schedule.
+- Converts each candidate with `processVideoFile` (same H.264/AAC/yuv420p/faststart/≤1080p/
+  HDR→SDR/orientation contract as live uploads) and publishes the result to
+  `invitations/<userId>/processed/<ts>-<uuid>-playback.mp4` (+ `-poster.jpg` + `-thumbnail.jpg`)
+  via the same `storeUploadFile` helper live uploads use (local disk or S3, whichever is active).
+- **Never touches or deletes the original file.**
+- Rewrites every database reference it can find — `InvitationMedia.url`,
+  `InvitationGalleryItem.url`, `InvitationOrder.previewUrl`/`previewVideoUrl`, and every string
+  occurrence inside the `designConfig`/`sections`/`galleryUrls`/`inspirationAssets`/
+  `fulfilledAddons` JSON columns on `Invitation`/`InvitationOrder` — using exact-URL and
+  embedded-substring matching (handles both `/api/uploads/...`-relative and absolute URLs).
+- Takes a timestamped backup of the SQLite database file (skipped automatically for non-SQLite
+  `DATABASE_URL`s — back those up with your normal tooling first) into
+  `var/video-backfill/backups/` before the first write of a run.
+- Writes a resumable manifest (`var/video-backfill/manifest.json`, one entry per source file) and
+  an append-only audit log (`var/video-backfill/audit-<runId>.jsonl`) after every file — a killed
+  process picks up exactly where it left off on the next run.
+- Writes a rollback manifest (`var/video-backfill/rollback-<runId>.json`) for every DB mutation
+  made that run; `--rollback=<file>` replays it in reverse to restore the exact prior values.
+- Corrupt/undecodable files are marked `FAILED` in the manifest (with the ffmpeg/ffprobe error)
+  and skipped — they never crash the run or block the remaining files.
+
+Run on Hostinger production after `git pull` + `npm install` + `npm run build`, from the app
+directory (`/var/www/CELEVENTIC`):
+
+```bash
+npm run video:backfill:dry-run   # review first
+npm run video:backfill           # then actually convert
+```

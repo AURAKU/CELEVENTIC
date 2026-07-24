@@ -199,7 +199,9 @@ describe("buildTranscodeArgs", () => {
     const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation: 90 }));
     const idx = args.indexOf("-autorotate");
     assert.ok(idx !== -1);
-    assert.equal(args[idx + 1], "1");
+    // Bare flag (no trailing "1") — some ffmpeg builds (7.x+) misparse `-autorotate 1` as a
+    // stray positional output argument instead of the flag's boolean value. See video-processor.ts.
+    assert.equal(args[idx + 1], "-i");
   });
 });
 

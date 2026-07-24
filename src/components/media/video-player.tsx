@@ -163,9 +163,9 @@ export function VideoPlayer({
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 animate-pulse" />
         )}
-        <div className="relative z-10 flex flex-col items-center gap-2 text-slate-600 py-8">
+        <div className="relative z-10 flex flex-col items-center gap-2 text-slate-600 py-8 px-4 text-center">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <p className="text-xs font-medium">{status === "PROCESSING" ? "Processing video…" : "Preparing video…"}</p>
+          <p className="text-xs font-medium">Preparing your video for smooth playback.</p>
         </div>
       </div>
     );
@@ -179,7 +179,9 @@ export function VideoPlayer({
       >
         <div className="flex flex-col items-center gap-2 text-slate-500 py-8 px-4 text-center">
           <AlertTriangle className="h-6 w-6 text-amber-500" />
-          <p className="text-xs font-medium">{failureReason ?? "This video couldn't be loaded."}</p>
+          <p className="text-xs font-medium">
+            {failureReason ?? "We could not prepare this video. Please retry or upload another copy."}
+          </p>
           {onRetry && (
             <Button type="button" size="sm" variant="outline" className="gap-1 mt-1" onClick={onRetry}>
               <RotateCcw className="h-3.5 w-3.5" /> Retry
