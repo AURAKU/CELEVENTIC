@@ -158,12 +158,39 @@ describe("buildVideoFilterChain", () => {
     assert.match(chain, /min\(1080,ih\)/);
   });
 
-  it("adds an HDR->SDR BT.709 tonemap chain when isHdr is true", () => {
-    const chain = buildVideoFilterChain(probe({ isHdr: true, videoCodec: "hevc" }));
+  it("adds an HDR->SDR BT.709 tonemap chain when isHdr is true and zscale+tonemap are available", () => {
+    const chain = buildVideoFilterChain(probe({ isHdr: true, videoCodec: "hevc" }), { hasZscale: true, hasTonemap: true });
     assert.match(chain, /zscale=t=linear/);
     assert.match(chain, /tonemap=tonemap=hable/);
     assert.match(chain, /zscale=t=bt709:m=bt709:r=tv/);
     assert.match(chain, /format=yuv420p$/);
+  });
+
+  it("defaults to assuming zscale+tonemap are available when no capabilities are passed (back-compat)", () => {
+    const chain = buildVideoFilterChain(probe({ isHdr: true, videoCodec: "hevc" }));
+    assert.match(chain, /zscale=t=linear/);
+  });
+
+  it("falls back to the plain scale/format chain for HDR sources when zscale is missing", () => {
+    const chain = buildVideoFilterChain(probe({ isHdr: true, videoCodec: "hevc" }), { hasZscale: false, hasTonemap: true });
+    assert.doesNotMatch(chain, /zscale|tonemap/);
+    assert.match(chain, /^scale=/);
+    assert.match(chain, /format=yuv420p$/);
+  });
+
+  it("falls back to the plain scale/format chain for HDR sources when tonemap is missing", () => {
+    const chain = buildVideoFilterChain(probe({ isHdr: true, videoCodec: "hevc" }), { hasZscale: true, hasTonemap: false });
+    assert.doesNotMatch(chain, /zscale|tonemap/);
+  });
+
+  it("falls back to the plain scale/format chain for HDR sources when neither filter is available", () => {
+    const chain = buildVideoFilterChain(probe({ isHdr: true, videoCodec: "hevc" }), { hasZscale: false, hasTonemap: false });
+    assert.doesNotMatch(chain, /zscale|tonemap/);
+  });
+
+  it("uses the plain scale/format chain for non-HDR sources regardless of capabilities", () => {
+    const chain = buildVideoFilterChain(probe({ isHdr: false }), { hasZscale: true, hasTonemap: true });
+    assert.doesNotMatch(chain, /zscale|tonemap/);
   });
 });
 
