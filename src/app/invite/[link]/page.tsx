@@ -18,7 +18,7 @@ import { resolveBackgroundMedia } from "@/lib/invitation/studio-media-utils";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
-import { resolveMediaUrl } from "@/lib/uploads/media-url";
+import { resolveShareOgImage } from "@/lib/social/share-image";
 import { APP_NAME } from "@/lib/constants";
 
 function resolveDesign(invitation: {
@@ -38,7 +38,12 @@ function resolveDesign(invitation: {
 
 export const revalidate = 60;
 
-/** Share-card preview uses event cover / invite art — never a cropped QR branding asset. */
+/**
+ * Share-card preview defaults to the QR center logo (the mark guests see at
+ * the heart of their branded QR) so the link-preview thumbnail matches what
+ * they'll scan. Falls back to the Celeventic official logo when no center
+ * logo has been uploaded — see `resolveShareOgImage`.
+ */
 export async function generateMetadata({
   params,
 }: {
@@ -55,13 +60,8 @@ export async function generateMetadata({
   const description =
     event.description?.trim() ||
     `${event.hostName ? `${event.hostName} invites you` : "You're invited"} to ${event.title} on Celeventic.`;
-  const cover = resolveMediaUrl(event.coverImageUrl);
   const appUrl = await getServerAppUrl();
-  const ogImage = cover
-    ? cover.startsWith("http")
-      ? cover
-      : `${appUrl}${cover.startsWith("/") ? cover : `/${cover}`}`
-    : undefined;
+  const ogImage = await resolveShareOgImage(event.id, appUrl);
 
   return {
     title,

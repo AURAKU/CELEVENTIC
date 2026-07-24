@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { Logo } from "@/components/layout/logo";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +9,50 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { qrService } from "@/services/qr/qr.service";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
+import { resolveShareOgImage } from "@/lib/social/share-image";
+import { getServerAppUrl } from "@/lib/app-url";
+import { APP_NAME } from "@/lib/constants";
+
+/**
+ * Share-card preview defaults to the QR center logo (falls back to the
+ * Celeventic official logo) so link previews match the branded QR guests
+ * scan — see `resolveShareOgImage`.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  const qrCode = await prisma.qrCode.findUnique({
+    where: { token },
+    select: { event: { select: { id: true, title: true, hostName: true } } },
+  });
+  if (!qrCode?.event) return { title: "Admission Pass" };
+
+  const title = `${qrCode.event.title} · Admission Pass`;
+  const description = `${qrCode.event.hostName ? `${qrCode.event.hostName}'s` : "Your"} digital admission pass on Celeventic.`;
+  const appUrl = await getServerAppUrl();
+  const ogImage = await resolveShareOgImage(qrCode.event.id, appUrl);
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: APP_NAME,
+      images: [{ url: ogImage, alt: qrCode.event.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+  };
+}
 
 export default async function AdmissionPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
