@@ -33,6 +33,7 @@ import {
   resolveSealInitials,
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
+import { resolveSealStyle } from "@/lib/invitation/seal-design";
 
 /**
  * Full opening pipeline (platform → template → reveal → invite):
@@ -365,6 +366,7 @@ export function PremiumInviteWrapper({
       coupleName2: visionBoard?.coupleName2,
       hostName: props.event.hostName,
     });
+    const sealStyle = resolveSealStyle(visionBoard);
     return (
       <>
         <InteractiveReveal
@@ -375,6 +377,7 @@ export function PremiumInviteWrapper({
           musicEnabled={Boolean(hasMusic)}
           enableSounds={experience?.enableRevealSounds}
           sealInitials={sealInitials}
+          sealStyle={sealStyle}
           embedded={Boolean(embedded)}
           autoOpen={Boolean(autoOpenReveal)}
           onBegin={() => {

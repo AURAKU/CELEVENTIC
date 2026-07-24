@@ -5,6 +5,7 @@ import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import { OpeningExperienceRouter } from "@/components/experience/opening-experience-router";
 import { getRevealContractForOpening } from "@/lib/experience-engine/interactive-reveal-contract";
 import { lockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
+import type { ResolvedSealStyle } from "@/lib/invitation/seal-design";
 
 interface InteractiveRevealProps {
   openingExperience: OpeningExperienceId;
@@ -15,6 +16,8 @@ interface InteractiveRevealProps {
   enableSounds?: boolean;
   /** Wax-seal initials for envelope reveals. */
   sealInitials?: string;
+  /** Designed seal (color/material) + font/size/color overrides. */
+  sealStyle?: ResolvedSealStyle;
   onComplete: () => void;
   /** User gesture that starts the reveal (audio unlock). */
   onBegin?: () => void;
@@ -38,6 +41,7 @@ export function InteractiveReveal({
   musicEnabled,
   enableSounds = true,
   sealInitials,
+  sealStyle,
   onComplete,
   onBegin,
   embedded = false,
@@ -71,6 +75,7 @@ export function InteractiveReveal({
         musicEnabled={musicEnabled}
         enableSounds={enableSounds}
         sealInitials={sealInitials}
+        sealStyle={sealStyle}
         onComplete={onComplete}
         onBegin={onBegin}
         embedded={embedded}

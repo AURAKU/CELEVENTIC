@@ -5,6 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import {
   DEFAULT_VISION_BOARD,
   mergeVisionBoard,
   normalizeSealInitials,
@@ -13,6 +21,19 @@ import {
   type VisionBoardFeatureFlags,
 } from "@/lib/invitation/vision-board";
 import { invitationFontVars } from "@/lib/invitation-fonts";
+import {
+  getSealDesignPreset,
+  resolveSealStyle,
+  sealInkStyle,
+  SEAL_DESIGN_PRESETS,
+  SEAL_FONT_OPTIONS,
+  SEAL_FONT_STACKS,
+  SEAL_SIZE_IDS,
+  SEAL_SIZE_LABELS,
+  SEAL_SIZE_SCALE,
+  SEAL_TEXT_COLOR_PRESETS,
+  type SealFontChoice,
+} from "@/lib/invitation/seal-design";
 
 const FEATURE_TOGGLES: { key: keyof VisionBoardFeatureFlags; label: string }[] = [
   { key: "guestWelcome", label: "Guest welcome banner" },
@@ -36,6 +57,12 @@ export function VisionBoardStudioPanel({
   onChange: (next: VisionBoardContent) => void;
 }) {
   const board = mergeVisionBoard(value);
+  const sealStyle = resolveSealStyle(board);
+  const sealPreset = getSealDesignPreset(sealStyle.design);
+  const sealLabelPreview =
+    normalizeSealInitials(board.sealInitials) || TRADITIONAL_MARRIAGE_DEFAULT_SEAL;
+  const sealIsMonogram = sealLabelPreview.replace(/[\s|·•.]/g, "").length <= 3;
+  const sealDefaultInkColor = sealIsMonogram ? sealPreset.monogramColor : sealPreset.wordColor;
 
   function patch(partial: Partial<VisionBoardContent>) {
     onChange({ ...board, ...partial });
@@ -91,13 +118,14 @@ export function VisionBoardStudioPanel({
           <Input value={board.coupleName2} onChange={(e) => patch({ coupleName2: e.target.value })} />
         </div>
         <div className="sm:col-span-2">
-          <Label>Seal initials</Label>
+          <Label>Wax seal</Label>
           <div className="mt-1.5 flex items-center gap-4">
             <SealLivePreview
               label={
                 normalizeSealInitials(board.sealInitials) ||
                 TRADITIONAL_MARRIAGE_DEFAULT_SEAL
               }
+              sealStyle={sealStyle}
             />
             <div className="min-w-0 flex-1">
               <Input
@@ -112,6 +140,120 @@ export function VisionBoardStudioPanel({
                 Shown on the wax seal when guests open the envelope. Monograms (C | J) or short
                 words — default {TRADITIONAL_MARRIAGE_DEFAULT_SEAL}.
               </p>
+            </div>
+          </div>
+
+          <div className="mt-3 space-y-1.5">
+            <Label className="text-xs">Seal design</Label>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {SEAL_DESIGN_PRESETS.map((preset) => {
+                const active = sealStyle.design === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    title={preset.description}
+                    onClick={() => patch({ sealDesign: preset.id })}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-lg border p-1.5 text-center transition-all",
+                      active
+                        ? "border-brand-500 ring-2 ring-brand-500/30 bg-white"
+                        : "border-slate-200 bg-white/60 hover:border-slate-300"
+                    )}
+                  >
+                    <span
+                      className="h-6 w-6 rounded-full border border-black/10 shadow-inner"
+                      style={{ background: preset.swatch }}
+                      aria-hidden
+                    />
+                    <span className="text-[9px] leading-tight text-slate-600">{preset.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Seal font</Label>
+              <Select
+                value={sealStyle.fontFamily}
+                onValueChange={(v) => patch({ sealFontFamily: v as SealFontChoice })}
+              >
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SEAL_FONT_OPTIONS.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      <span
+                        style={{
+                          fontFamily: f.id === "auto" ? undefined : SEAL_FONT_STACKS[f.id],
+                        }}
+                      >
+                        {f.label}
+                      </span>
+                      <span className="ml-1.5 text-[10px] text-slate-400">{f.group}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Seal size</Label>
+              <div className="flex gap-1.5">
+                {SEAL_SIZE_IDS.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => patch({ sealSize: size })}
+                    className={cn(
+                      "flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition-all",
+                      sealStyle.size === size
+                        ? "border-brand-500 bg-brand-50 text-brand-700"
+                        : "border-slate-200 bg-white/60 text-slate-500 hover:border-slate-300"
+                    )}
+                  >
+                    {SEAL_SIZE_LABELS[size]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Seal text color</Label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={sealStyle.textColor || sealDefaultInkColor}
+                  onChange={(e) => patch({ sealTextColor: e.target.value })}
+                  className="h-9 w-10 cursor-pointer rounded"
+                  aria-label="Custom seal text color"
+                />
+                <Select
+                  value={sealStyle.textColor || "auto"}
+                  onValueChange={(v) => patch({ sealTextColor: v === "auto" ? "" : v })}
+                >
+                  <SelectTrigger className="h-9 flex-1 text-xs">
+                    <SelectValue placeholder="Auto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SEAL_TEXT_COLOR_PRESETS.map((c) => (
+                      <SelectItem key={c.value || "auto"} value={c.value || "auto"}>
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            className="h-3 w-3 rounded-full border border-black/10"
+                            style={{ background: c.value || sealDefaultInkColor }}
+                            aria-hidden
+                          />
+                          {c.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </div>
@@ -232,8 +374,18 @@ export function VisionBoardStudioPanel({
   );
 }
 
-/** Mini peach wax seal — live preview of guest-facing initials. */
-function SealLivePreview({ label }: { label: string }) {
+/**
+ * Mini wax seal chip — mirrors the guest-facing embroidered seal:
+ * same design preset gradients + font/size/color the host has chosen.
+ */
+function SealLivePreview({
+  label,
+  sealStyle,
+}: {
+  label: string;
+  sealStyle: ReturnType<typeof resolveSealStyle>;
+}) {
+  const preset = getSealDesignPreset(sealStyle.design);
   const letters = label.replace(/[\s|·•.]/g, "").length;
   const monogram =
     letters > 0 &&
@@ -242,6 +394,24 @@ function SealLivePreview({ label }: { label: string }) {
     !/&/.test(label);
   const pipeMonogram = monogram && /\s*\|\s*/.test(label);
   const compact = letters > 4;
+  const inkColor = sealStyle.textColor || (monogram ? preset.monogramColor : preset.wordColor);
+  const ink = sealInkStyle(inkColor, Boolean(preset.dark), monogram);
+  const fontFamily =
+    sealStyle.fontFamily !== "auto"
+      ? SEAL_FONT_STACKS[sealStyle.fontFamily]
+      : monogram
+        ? "var(--font-cinzel), Cinzel, serif"
+        : "var(--font-great-vibes), 'Great Vibes', cursive";
+  const fontWeight =
+    sealStyle.fontFamily !== "auto"
+      ? { "great-vibes": 400, cinzel: 600, playfair: 600, cormorant: 500, poppins: 600 }[
+          sealStyle.fontFamily
+        ]
+      : monogram
+        ? 600
+        : 400;
+  const sizeScale = SEAL_SIZE_SCALE[sealStyle.size];
+
   return (
     <div
       className="relative shrink-0"
@@ -251,15 +421,20 @@ function SealLivePreview({ label }: { label: string }) {
       <svg viewBox="0 0 100 100" className="h-full w-full drop-shadow-md" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="studioWaxPearl" cx="34%" cy="28%" r="72%">
-            <stop offset="0%" stopColor="#fff6f0" />
-            <stop offset="38%" stopColor="#f0cbb8" />
-            <stop offset="100%" stopColor="#c98a72" />
+            {preset.face.map((s, i) => (
+              <stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
           </radialGradient>
           <linearGradient id="studioWaxRim" x1="18%" y1="10%" x2="82%" y2="90%">
-            <stop offset="0%" stopColor="#fff0e6" />
-            <stop offset="55%" stopColor="#d9a088" />
-            <stop offset="100%" stopColor="#c08a70" />
+            {preset.rim.map((s, i) => (
+              <stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
           </linearGradient>
+          <radialGradient id="studioWaxBead" cx="32%" cy="28%" r="68%">
+            {preset.bead.map((s, i) => (
+              <stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
+          </radialGradient>
         </defs>
         <ellipse cx="51.5" cy="54" rx="41" ry="39" fill="rgba(120,70,50,0.16)" />
         <circle cx="50" cy="50" r="46" fill="url(#studioWaxRim)" />
@@ -272,22 +447,24 @@ function SealLivePreview({ label }: { label: string }) {
               cx={50 + Math.cos(a) * 38.5}
               cy={50 + Math.sin(a) * 38.5}
               r="1.45"
-              fill="#f8eee6"
-              stroke="#e0c8b8"
-              strokeWidth="0.3"
+              fill="url(#studioWaxBead)"
             />
           );
         })}
-        <ellipse cx="36" cy="33" rx="18" ry="12" fill="rgba(255,255,255,0.42)" />
+        <ellipse
+          cx="36"
+          cy="33"
+          rx="18"
+          ry="12"
+          fill={preset.dark ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.42)"}
+        />
       </svg>
       <span
         className="absolute inset-0 flex items-center justify-center text-center leading-none"
         style={{
-          color: monogram ? "#E8C96A" : "#D4A63A",
-          fontFamily: monogram
-            ? "var(--font-cinzel), Cinzel, serif"
-            : "var(--font-great-vibes), 'Great Vibes', cursive",
-          fontWeight: monogram ? 600 : 400,
+          color: inkColor,
+          fontFamily,
+          fontWeight,
           fontSize: compact
             ? "0.72rem"
             : pipeMonogram
@@ -303,9 +480,11 @@ function SealLivePreview({ label }: { label: string }) {
                 ? "0.08em"
                 : "0.02em",
           textTransform: monogram ? "uppercase" : "none",
-          textShadow: "0 1px 0 rgba(255,248,230,0.7), 0 1px 2px rgba(80,40,20,0.35)",
+          textShadow: ink.textShadow,
+          WebkitTextStroke: ink.webkitTextStroke,
           padding: "12%",
           whiteSpace: monogram ? "nowrap" : /\s/.test(label) ? "pre-line" : "nowrap",
+          transform: sizeScale !== 1 ? `scale(${sizeScale})` : undefined,
         }}
       >
         {monogram

@@ -32,6 +32,7 @@ import { PetalFallReveal } from "@/components/invitation-os/reveal/petal-fall-re
 import { ReducedMotionGate, RevealKeyboardFallback } from "@/components/experience/reveal-accessibility";
 import { useReducedMotion } from "framer-motion";
 import { useState } from "react";
+import type { ResolvedSealStyle } from "@/lib/invitation/seal-design";
 
 interface OpeningExperienceRouterProps {
   experienceId: OpeningExperienceId;
@@ -42,6 +43,8 @@ interface OpeningExperienceRouterProps {
   enableSounds?: boolean;
   /** Wax-seal initials (envelope reveals). */
   sealInitials?: string;
+  /** Designed seal (color/material) + font/size/color overrides. */
+  sealStyle?: ResolvedSealStyle;
   onComplete: () => void;
   /** Fires on the reveal start gesture (e.g. curtain tap / envelope open) for audio unlock. */
   onBegin?: () => void;
@@ -68,6 +71,7 @@ export function OpeningExperienceRouter({
   musicEnabled,
   enableSounds,
   sealInitials,
+  sealStyle,
   onComplete,
   onBegin,
   embedded = false,
@@ -110,6 +114,7 @@ export function OpeningExperienceRouter({
         musicEnabled={musicEnabled}
         enableSounds={enableSounds}
         sealInitials={sealInitials}
+        sealStyle={sealStyle}
         onBegin={onBegin}
         onComplete={complete}
         embedded={embedded}
