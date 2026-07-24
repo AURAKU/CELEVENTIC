@@ -170,6 +170,7 @@ model User {
   taskComments               EventTaskComment[]
   clientRelationsAsOrganizer ClientRelationship[]  @relation("OrganizerClients")
   clientRelationsAsClient    ClientRelationship[]  @relation("ClientOrganizers")
+  videoAssets                VideoAsset[]
 
   @@index([role])
   @@index([status])
@@ -2913,9 +2914,12 @@ model EventMemoryUpload {
   approvedAt      DateTime?
   createdAt       DateTime                @default(now())
 
-  event      Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  guest      Guest? @relation(fields: [guestId], references: [id], onDelete: SetNull)
-  approvedBy User?  @relation("MemoryApprovals", fields: [approvedById], references: [id])
+  videoAssetId    String?                 @unique
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest      Guest?      @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  approvedBy User?       @relation("MemoryApprovals", fields: [approvedById], references: [id])
+  videoAsset VideoAsset? @relation(fields: [videoAssetId], references: [id], onDelete: SetNull)
 
   @@index([eventId, status])
   @@index([eventId, createdAt])
@@ -4178,4 +4182,103 @@ model EventAddon {
 
   @@index([eventId])
   @@map("event_addons")
+}
+
+// ─── Universal Video Upload & Processing (AWS S3 + MediaConvert) ────
+
+/// Business category driving size limits, ownership rules, and MediaConvert
+/// output presets. New categories can be added without breaking old assets.
+enum VideoCategory {
+  EVENT_SHORT
+  INVITATION_BACKGROUND
+  VENDOR_PORTFOLIO
+  GUESTBOOK
+  PREMIUM
+  ADMIN
+}
+
+/// Lifecycle of a video from browser selection through CDN-ready delivery.
+enum VideoUploadStatus {
+  UPLOADING
+  UPLOADED
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+  CANCELLED
+}
+
+/// Who initiated the upload — a signed-in platform user, or an anonymous
+/// guest holding a short-lived event upload token (guestbook uploads).
+enum VideoOwnerType {
+  USER
+  GUEST_TOKEN
+}
+
+model VideoAsset {
+  id       String            @id @default(cuid())
+  category VideoCategory
+  status   VideoUploadStatus @default(UPLOADING)
+  progress Int               @default(0)
+
+  ownerType VideoOwnerType @default(USER)
+  ownerId   String?
+  owner     User?          @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  /// Loosely-coupled context ids (not enforced FKs — categories vary widely).
+  eventId  String?
+  vendorId String?
+  orderId  String?
+  /// Arbitrary extra context: guest name/token, role (hero/background), mute flag, etc.
+  context  Json?
+
+  originalKey       String  @unique
+  originalFilename  String
+  originalMimeType  String
+  originalExtension String
+  sizeBytes         BigInt  @default(0)
+
+  detectedContainer  String?
+  detectedVideoCodec String?
+  detectedAudioCodec String?
+  durationSeconds    Float?
+  width              Int?
+  height             Int?
+
+  multipartUploadId String?
+  partSizeBytes     BigInt?
+  totalParts        Int?
+  /// [{ partNumber, etag, sizeBytes }] — persisted so uploads can resume after a refresh.
+  uploadedParts      Json?
+
+  mediaConvertJobId   String?
+  mediaConvertQueue   String?
+
+  processedMp4Url        String?
+  processedMp4Renditions Json?
+  hlsUrl                 String?
+  posterUrl              String?
+  thumbnailUrl           String?
+  thumbnailUrls          Json?
+
+  failureReason String?
+  attempts      Int     @default(0)
+
+  uploadedAt          DateTime?
+  queuedAt            DateTime?
+  processingStartedAt DateTime?
+  readyAt             DateTime?
+  cancelledAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  memoryUpload EventMemoryUpload?
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([category])
+  @@index([eventId])
+  @@index([vendorId])
+  @@index([createdAt])
+  @@map("video_assets")
 }

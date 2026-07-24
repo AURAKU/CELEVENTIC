@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
-import { MediaUploadVideo } from "@/components/media/media-upload-video";
+import { VideoUploader } from "@/components/media/video-uploader";
 import { uploadFormDataWithProgress } from "@/lib/media/upload-with-progress";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 
@@ -36,14 +36,13 @@ export function VendorPortfolioUpload({ onUploaded, disabled }: VendorPortfolioU
         buttonLabel="Upload portfolio image"
         hint="Add a portfolio photo — crop to showcase your best work."
       />
-      <MediaUploadVideo
-        uploadEndpoint="/api/vendor-os/media/upload"
-        maxVideoBytes={25 * 1024 * 1024}
+      <VideoUploader
+        category="VENDOR_PORTFOLIO"
         onUploaded={() => onUploaded?.()}
         onError={setError}
         disabled={disabled}
         buttonLabel="Upload portfolio video"
-        hint="Add a portfolio video reel (MP4 or WebM)."
+        hint="Add a portfolio video reel — up to 500MB. Automatically appears once processing finishes."
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>

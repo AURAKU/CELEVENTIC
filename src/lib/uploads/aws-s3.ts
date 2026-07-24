@@ -36,6 +36,7 @@ function resolvePublicBaseUrl(
   const raw =
     (cfgPublic && cfgPublic.trim()) ||
     trimEnv("AWS_CLOUDFRONT_URL") ||
+    trimEnv("AWS_CLOUDFRONT_DOMAIN") ||
     trimEnv("AWS_S3_PUBLIC_BASE_URL") ||
     trimEnv("AWS_S3_PUBLIC_URL") ||
     trimEnv("NEXT_PUBLIC_MEDIA_CDN_URL") ||
@@ -181,6 +182,17 @@ function getS3Client(cfg: AwsS3Config): S3Client {
   });
   cachedKey = key;
   return cachedClient;
+}
+
+/**
+ * Resolve config + a ready S3Client in one call. Used by the video multipart/presign
+ * pipeline, which needs direct access to the client for commands not covered by the
+ * simple put/get/delete helpers below (multipart, presigning, head).
+ */
+export async function getConfiguredS3Client(): Promise<{ client: S3Client; cfg: AwsS3Config } | null> {
+  const cfg = (await resolveAwsS3Config()) ?? getAwsS3Config();
+  if (!cfg) return null;
+  return { client: getS3Client(cfg), cfg };
 }
 
 function contentTypeForKey(key: string): string {

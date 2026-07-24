@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PaginationBar } from "@/components/ui/pagination";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
+import { VIDEO_ACCEPT_ATTR } from "@/lib/video/constants";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -331,7 +332,7 @@ export function InspirationEngineClient() {
               <input
                 id="insp-video-input"
                 type="file"
-                accept="video/mp4,video/webm"
+                accept={VIDEO_ACCEPT_ATTR}
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];

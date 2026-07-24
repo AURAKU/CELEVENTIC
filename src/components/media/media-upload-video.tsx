@@ -9,6 +9,7 @@ import {
   CLIENT_MAX_VIDEO_BYTES,
 } from "@/lib/media/upload-with-progress";
 import { UploadedMedia } from "@/components/media/uploaded-media";
+import { VIDEO_ACCEPT_ATTR } from "@/lib/video/constants";
 
 interface MediaUploadVideoProps {
   label?: string;
@@ -154,7 +155,7 @@ export function MediaUploadVideo({
       <input
         ref={inputRef}
         type="file"
-        accept="video/mp4,video/webm"
+        accept={VIDEO_ACCEPT_ATTR}
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];

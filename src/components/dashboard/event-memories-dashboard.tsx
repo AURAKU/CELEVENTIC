@@ -244,15 +244,22 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
               {items.map((item) => (
                 <Card key={item.id} className="overflow-hidden">
                   <div className="aspect-[4/5] bg-slate-100 relative">
-                    <UploadedMedia
-                      src={item.thumbnailUrl ?? item.mediaUrl}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      video={item.mediaType === "video"}
-                      controls={false}
-                      autoPlay={false}
-                      muted
-                    />
+                    {item.mediaType === "video" && !item.mediaUrl && !item.thumbnailUrl ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-slate-400 text-xs">
+                        <div className="h-4 w-4 rounded-full border-2 border-slate-300 border-t-slate-500 animate-spin" />
+                        Processing video…
+                      </div>
+                    ) : (
+                      <UploadedMedia
+                        src={item.thumbnailUrl ?? item.mediaUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        video={item.mediaType === "video"}
+                        controls={false}
+                        autoPlay={false}
+                        muted
+                      />
+                    )}
                     {tab === "PENDING" && (
                       <input
                         type="checkbox"

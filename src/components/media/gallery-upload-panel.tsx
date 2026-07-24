@@ -1,13 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { X, Images, Film, Loader2, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
+import { useState } from "react";
+import { X, Images, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
 import { UploadedMedia } from "@/components/media/uploaded-media";
+import { VideoUploader, type UploadedVideoResult } from "@/components/media/video-uploader";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
-import { uploadFormDataWithProgress, validateClientVideo } from "@/lib/media/upload-with-progress";
 import { isVideoUrl } from "@/lib/invitation/demo-gallery-assets";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,7 @@ export interface GalleryUploadPanelProps {
   description?: string;
   uploadEndpoint?: string;
   extraFormFields?: Record<string, string>;
+  orderId?: string;
 }
 
 export function GalleryUploadPanel({
@@ -32,10 +33,9 @@ export function GalleryUploadPanel({
   description = "Upload photos or videos — guests can swipe through and tap any item to open fullscreen on the invitation.",
   uploadEndpoint = "/api/invitations/upload",
   extraFormFields = { role: "gallery", buildMode: "template" },
+  orderId,
 }: GalleryUploadPanelProps) {
   const [error, setError] = useState("");
-  const [videoUploading, setVideoUploading] = useState(false);
-  const videoInputRef = useRef<HTMLInputElement>(null);
 
   function addUrl(url: string) {
     if (urls.length >= maxImages) {
@@ -59,31 +59,8 @@ export function GalleryUploadPanel({
     onChange(next);
   }
 
-  async function uploadVideo(file: File) {
-    const err = validateClientVideo(file);
-    if (err) {
-      setError(err);
-      return;
-    }
-    if (urls.length >= maxImages) {
-      setError(`Maximum ${maxImages} items.`);
-      return;
-    }
-    setVideoUploading(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      Object.entries(extraFormFields).forEach(([k, v]) => fd.append(k, v));
-      const { ok, json } = await uploadFormDataWithProgress(uploadEndpoint, fd);
-      if (!ok) throw new Error((json.error as string) || "Video upload failed");
-      const data = json.data as { url: string };
-      addUrl(data.url);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Video upload failed");
-    } finally {
-      setVideoUploading(false);
-    }
+  function onGalleryVideoUploaded(result: UploadedVideoResult) {
+    if (result.processedMp4Url) addUrl(result.processedMp4Url);
   }
 
   return (
@@ -163,7 +140,7 @@ export function GalleryUploadPanel({
       )}
 
       {urls.length < maxImages && (
-        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+        <div className="space-y-2 pt-1">
           <ImageUploadCropper
             defaultAspect="4:5"
             allowedAspects={CROP_PRESETS.gallery}
@@ -176,26 +153,15 @@ export function GalleryUploadPanel({
             hint="Crop to fit the invitation frame — object-cover keeps edges neat."
             className="flex-1"
           />
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2 min-h-[44px] shrink-0"
-            disabled={disabled || videoUploading}
-            onClick={() => videoInputRef.current?.click()}
-          >
-            {videoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Film className="h-4 w-4" />}
-            {videoUploading ? "Uploading…" : "Add video"}
-          </Button>
-          <input
-            ref={videoInputRef}
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void uploadVideo(f);
-              e.target.value = "";
-            }}
+          <VideoUploader
+            category="INVITATION_BACKGROUND"
+            orderId={orderId}
+            role="gallery"
+            buttonLabel="Add video"
+            hint="Add a video to the swipe gallery — up to 150MB."
+            disabled={disabled}
+            onUploaded={onGalleryVideoUploaded}
+            onError={setError}
           />
         </div>
       )}

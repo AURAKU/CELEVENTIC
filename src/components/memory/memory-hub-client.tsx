@@ -17,7 +17,7 @@ import { UploadedMedia } from "@/components/media/uploaded-media";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
-import { MediaUploadVideo } from "@/components/media/media-upload-video";
+import { VideoUploader, type UploadedVideoResult } from "@/components/media/video-uploader";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 import { Archive, Lock, ExternalLink } from "lucide-react";
 import { getClientAppUrl } from "@/lib/app-url";
@@ -302,11 +302,14 @@ function GalleryPanel({ eventId }: { eventId: string }) {
                 />
               )}
               {form.type === "video" && (
-                <MediaUploadVideo
+                <VideoUploader
+                  category="EVENT_SHORT"
+                  eventId={eventId}
                   previewUrl={form.url || null}
                   onClear={() => setForm({ ...form, url: "" })}
-                  onUploaded={(r) => setForm({ ...form, url: r.url })}
+                  onUploaded={(r: UploadedVideoResult) => setForm({ ...form, url: r.processedMp4Url ?? "" })}
                   buttonLabel="Upload video"
+                  hint="Event highlight video — up to 250MB, phone/DSLR/screen-recording friendly (incl. iPhone HEVC)."
                 />
               )}
               <Textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} placeholder="Caption" />
