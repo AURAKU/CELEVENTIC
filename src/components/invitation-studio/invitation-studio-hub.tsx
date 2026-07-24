@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -100,7 +101,7 @@ import {
   type StudioDevice,
 } from "@/components/invitation-studio/studio-toolbar";
 import { StudioScenesPanel } from "@/components/invitation-studio/studio-scenes-panel";
-import { StudioCanvas } from "@/components/invitation-studio/studio-canvas";
+import { StudioCanvas, STUDIO_DEVICE_STORAGE_KEY } from "@/components/invitation-studio/studio-canvas";
 import {
   StudioPropertiesPanel,
   PropSection,
@@ -272,7 +273,17 @@ export const InvitationStudioHub = forwardRef<
   },
   ref
 ) {
-  const [device, setDevice] = useState<StudioDevice>("mobile");
+  const [device, setDeviceState] = useState<StudioDevice>(() => {
+    if (typeof window === "undefined") return "mobile";
+    const stored = window.sessionStorage.getItem(STUDIO_DEVICE_STORAGE_KEY);
+    return stored === "mobile" || stored === "tablet" || stored === "desktop" ? stored : "mobile";
+  });
+  const setDevice = useCallback((next: StudioDevice) => {
+    setDeviceState(next);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(STUDIO_DEVICE_STORAGE_KEY, next);
+    }
+  }, []);
   const [leftTab, setLeftTab] = useState<"scenes" | "assets">("scenes");
   const [propCategory, setPropCategory] = useState<StudioPropCategory>("experience");
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
