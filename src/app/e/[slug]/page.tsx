@@ -10,9 +10,16 @@ import { formatDate, formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BrandMotto } from "@/components/brand/brand-motto";
-import { BRAND_MOTTO } from "@/lib/constants";
+import { BRAND_MOTTO, APP_NAME } from "@/lib/constants";
 import { resolveMediaUrl, shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
+import { resolveShareOgImage } from "@/lib/social/share-image";
+import { getServerAppUrl } from "@/lib/app-url";
 
+/**
+ * Share-card preview defaults to the QR center logo (falls back to the
+ * Celeventic official logo) so link previews match the branded QR guests
+ * scan — see `resolveShareOgImage`.
+ */
 export async function generateMetadata({
   params,
 }: {
@@ -21,9 +28,28 @@ export async function generateMetadata({
   const { slug } = await params;
   const site = await getPublicEventSite(slug);
   if (!site) return { title: "Event Not Found" };
+
+  const title = site.title;
+  const description = site.description ?? `Join ${site.hostName} for ${site.title} on Celeventic`;
+  const appUrl = await getServerAppUrl();
+  const ogImage = await resolveShareOgImage(site.id, appUrl);
+
   return {
-    title: site.title,
-    description: site.description ?? `Join ${site.hostName} for ${site.title} on Celeventic`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: APP_NAME,
+      images: [{ url: ogImage, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
   };
 }
 
