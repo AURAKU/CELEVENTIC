@@ -56,11 +56,11 @@ const HANDLES: { id: CropResizeHandle; className: string }[] = [
   { id: "w", className: "left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize" },
 ];
 
-function centeredFrame(aspect: CropAspectPreset): CropFrameRect {
-  const size = cropFrameSize(CONTAINER_W, CONTAINER_H, aspect);
+function centeredFrame(aspect: CropAspectPreset, containerW: number, containerH: number): CropFrameRect {
+  const size = cropFrameSize(containerW, containerH, aspect);
   return {
-    x: (CONTAINER_W - size.width) / 2,
-    y: (CONTAINER_H - size.height) / 2,
+    x: (containerW - size.width) / 2,
+    y: (containerH - size.height) / 2,
     width: size.width,
     height: size.height,
   };
@@ -80,10 +80,18 @@ export function ImageCropDialog({
   const [workingSrc, setWorkingSrc] = useState(imageSrc);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [frame, setFrame] = useState<CropFrameRect>(() => centeredFrame(defaultAspect));
+  const [frame, setFrame] = useState<CropFrameRect>(() => centeredFrame(defaultAspect, CONTAINER_W, CONTAINER_H));
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [applying, setApplying] = useState(false);
   const [transforming, setTransforming] = useState(false);
+  // Measured crop-surface size in real CSS px. The surface is styled to a
+  // 360x320 target but shrinks on narrow screens (dialog padding, small
+  // phones); without measuring, pointer deltas and the final pixel-crop math
+  // would assume 360x320 while the box actually renders smaller, so drags
+  // wouldn't track the cursor and the exported region wouldn't match what was
+  // visibly selected.
+  const [box, setBox] = useState({ w: CONTAINER_W, h: CONTAINER_H });
+  const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragMode | null>(null);
   const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
   const ownedUrls = useRef<string[]>([]);
@@ -96,12 +104,12 @@ export function ImageCropDialog({
 
   const ratio = cropAspectRatio(aspect);
   const shape = getCropShape(aspect);
-  const { containScale, coverScale } = getCropScales(natural.w, natural.h, CONTAINER_W, CONTAINER_H);
+  const { containScale, coverScale } = getCropScales(natural.w, natural.h, box.w, box.h);
   const scale = containScale * Math.max(zoom, 0.25);
   const renderedW = natural.w * scale;
   const renderedH = natural.h * scale;
   const minZoom = natural.w
-    ? minZoomToCoverFrame(natural.w, natural.h, CONTAINER_W, CONTAINER_H, frame.width, frame.height)
+    ? minZoomToCoverFrame(natural.w, natural.h, box.w, box.h, frame.width, frame.height)
     : 1;
   const maxZoom = Math.max(4, coverScale / Math.max(containScale, 0.001) + 1.5);
 
@@ -123,9 +131,15 @@ export function ImageCropDialog({
 
   useEffect(() => {
     if (!open) return;
+    // Measure the real rendered surface (it can be narrower than the 360px
+    // target on small screens) so the initial frame is centered correctly.
+    const rect = containerRef.current?.getBoundingClientRect();
+    const w = rect && rect.width > 0 ? rect.width : CONTAINER_W;
+    const h = rect && rect.height > 0 ? rect.height : CONTAINER_H;
+    setBox({ w, h });
     setAspect(defaultAspect);
     setWorkingSrc(imageSrc);
-    setFrame(centeredFrame(defaultAspect));
+    setFrame(centeredFrame(defaultAspect, w, h));
     setOffset({ x: 0, y: 0 });
     setZoom(1);
     ownedUrls.current = [];
@@ -141,14 +155,46 @@ export function ImageCropDialog({
     img.src = workingSrc;
   }, [workingSrc, open]);
 
+  // Track the crop surface across resizes/orientation changes (e.g. rotating
+  // a phone mid-crop) so drag math and the final export always match what's
+  // on screen — never trust the static 360x320 constants.
+  useEffect(() => {
+    if (!open) return;
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (!rect || rect.width <= 0 || rect.height <= 0) return;
+      setBox((prev) =>
+        Math.abs(prev.w - rect.width) < 0.5 && Math.abs(prev.h - rect.height) < 0.5
+          ? prev
+          : { w: rect.width, h: rect.height }
+      );
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [open]);
+
+  useEffect(() => {
+    // Keep the existing selection valid (rather than re-centering it) when
+    // the measured surface size changes after the initial mount.
+    const next = clampFrameRect(frameRef.current, box.w, box.h, null);
+    setFrame(next);
+    setOffset((o) =>
+      clampCropOffset(o.x, o.y, natural.w, natural.h, box.w, box.h, next.width, next.height, zoom, next.x, next.y)
+    );
+    // Only react to surface-size changes; frame/offset/zoom here are read via refs/latest state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [box.w, box.h]);
+
   // Cover the frame by default so dragging the image always moves visible content.
   useEffect(() => {
     if (!natural.w) return;
     const nextMin = minZoomToCoverFrame(
       natural.w,
       natural.h,
-      CONTAINER_W,
-      CONTAINER_H,
+      box.w,
+      box.h,
       frame.width,
       frame.height
     );
@@ -159,8 +205,8 @@ export function ImageCropDialog({
         prev.y,
         natural.w,
         natural.h,
-        CONTAINER_W,
-        CONTAINER_H,
+        box.w,
+        box.h,
         frame.width,
         frame.height,
         Math.max(zoom, nextMin),
@@ -173,15 +219,15 @@ export function ImageCropDialog({
   }, [natural.w, natural.h, aspect]);
 
   function resetFrameForAspect(next: CropAspectPreset) {
-    const nextFrame = centeredFrame(next);
+    const nextFrame = centeredFrame(next, box.w, box.h);
     setAspect(next);
     setFrame(nextFrame);
     if (natural.w) {
       const nextMin = minZoomToCoverFrame(
         natural.w,
         natural.h,
-        CONTAINER_W,
-        CONTAINER_H,
+        box.w,
+        box.h,
         nextFrame.width,
         nextFrame.height
       );
@@ -192,8 +238,8 @@ export function ImageCropDialog({
           0,
           natural.w,
           natural.h,
-          CONTAINER_W,
-          CONTAINER_H,
+          box.w,
+          box.h,
           nextFrame.width,
           nextFrame.height,
           nextMin,
@@ -211,15 +257,15 @@ export function ImageCropDialog({
         oy,
         natural.w,
         natural.h,
-        CONTAINER_W,
-        CONTAINER_H,
+        box.w,
+        box.h,
         f.width,
         f.height,
         z,
         f.x,
         f.y
       ),
-    [natural.w, natural.h]
+    [natural.w, natural.h, box.w, box.h]
   );
 
   const onPointerDown = useCallback(
@@ -263,8 +309,8 @@ export function ImageCropDialog({
             x: drag.frame.x + dx,
             y: drag.frame.y + dy,
           },
-          CONTAINER_W,
-          CONTAINER_H,
+          box.w,
+          box.h,
           null
         );
         setFrame(next);
@@ -276,16 +322,16 @@ export function ImageCropDialog({
         drag.handle,
         dx,
         dy,
-        CONTAINER_W,
-        CONTAINER_H,
+        box.w,
+        box.h,
         ratio
       );
       setFrame(next);
       const nextMin = minZoomToCoverFrame(
         natural.w,
         natural.h,
-        CONTAINER_W,
-        CONTAINER_H,
+        box.w,
+        box.h,
         next.width,
         next.height
       );
@@ -293,7 +339,7 @@ export function ImageCropDialog({
       if (nextZoom !== zoom) setZoom(nextZoom);
       setOffset(applyOffsetClamp(offset.x, offset.y, nextZoom, next));
     },
-    [natural.w, natural.h, zoom, offset.x, offset.y, ratio, applyOffsetClamp]
+    [natural.w, natural.h, zoom, offset.x, offset.y, ratio, applyOffsetClamp, box.w, box.h]
   );
 
   const onPointerUp = useCallback(() => {
@@ -335,7 +381,7 @@ export function ImageCropDialog({
       ownedUrls.current.push(next);
       setWorkingSrc(next);
       setOffset({ x: 0, y: 0 });
-      setFrame(centeredFrame(aspect));
+      setFrame(centeredFrame(aspect, box.w, box.h));
     } finally {
       setTransforming(false);
     }
@@ -361,8 +407,8 @@ export function ImageCropDialog({
       const crop = computePixelCrop(
         natural.w,
         natural.h,
-        CONTAINER_W,
-        CONTAINER_H,
+        box.w,
+        box.h,
         frame.width,
         frame.height,
         zoom,
@@ -439,6 +485,7 @@ export function ImageCropDialog({
           </div>
 
           <div
+            ref={containerRef}
             className="relative mx-auto bg-slate-900 rounded-xl overflow-hidden select-none touch-none"
             style={{ width: CONTAINER_W, height: CONTAINER_H, maxWidth: "100%" }}
             onPointerDown={(e) => onPointerDown(e, "pan")}
@@ -458,8 +505,8 @@ export function ImageCropDialog({
               style={{
                 width: renderedW,
                 height: renderedH,
-                left: (CONTAINER_W - renderedW) / 2 + offset.x,
-                top: (CONTAINER_H - renderedH) / 2 + offset.y,
+                left: (box.w - renderedW) / 2 + offset.x,
+                top: (box.h - renderedH) / 2 + offset.y,
               }}
             />
             <div

@@ -452,6 +452,6 @@ export const CROP_PRESETS = {
   gallery: ["1:1", "4:5", "9:16", "16:9", "5:7", "4:6", "3:1", "circle", "rounded-square", "free"] as CropAspectPreset[],
   logo: ["1:1", "circle", "rounded-square", "free"] as CropAspectPreset[],
   cover: ["4:5", "9:16", "16:9", "5:7", "4:6", "3:4", "free"] as CropAspectPreset[],
-  portrait: ["4:5", "5:7", "9:16", "1:1", "circle"] as CropAspectPreset[],
+  portrait: ["4:5", "5:7", "9:16", "1:1", "circle", "free"] as CropAspectPreset[],
   inspiration: ["free", "5:7", "4:5", "3:4", "9:16", "1:1", "16:9"] as CropAspectPreset[],
 } as const;
