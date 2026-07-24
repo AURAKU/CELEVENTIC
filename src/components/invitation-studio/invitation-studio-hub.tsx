@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -40,6 +41,7 @@ import {
   THANK_YOU_FONT_OPTIONS,
   resolveThankYouFontStack,
 } from "@/lib/invitation-theme/fonts";
+import type { FontId } from "@/lib/invitation-theme/theme-types";
 import { categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import {
@@ -99,7 +101,7 @@ import {
   type StudioDevice,
 } from "@/components/invitation-studio/studio-toolbar";
 import { StudioScenesPanel } from "@/components/invitation-studio/studio-scenes-panel";
-import { StudioCanvas } from "@/components/invitation-studio/studio-canvas";
+import { StudioCanvas, STUDIO_DEVICE_STORAGE_KEY } from "@/components/invitation-studio/studio-canvas";
 import {
   StudioPropertiesPanel,
   PropSection,
@@ -134,13 +136,10 @@ const ORNAMENT_OPTIONS = [
   { id: "none", label: "None" },
 ] as const;
 
-const FONT_OPTIONS = [
-  "Inter",
-  "Playfair Display",
-  "Cinzel",
-  "Cormorant Garamond",
-  "Great Vibes",
-];
+/** Heading/body live-bind to `--font-display` / `--font-sans` (scoped to the invite viewport) —
+ * registered FontIds only, so the studio pick always resolves to an already-loaded next/font.
+ * Script currently only feeds designConfig (visual wiring is a template-by-template follow-up). */
+const INVITE_FONT_OPTIONS = THANK_YOU_FONT_OPTIONS;
 const OPENING_CATEGORIES = [
   "envelope",
   "curtain",
@@ -274,7 +273,17 @@ export const InvitationStudioHub = forwardRef<
   },
   ref
 ) {
-  const [device, setDevice] = useState<StudioDevice>("mobile");
+  const [device, setDeviceState] = useState<StudioDevice>(() => {
+    if (typeof window === "undefined") return "mobile";
+    const stored = window.sessionStorage.getItem(STUDIO_DEVICE_STORAGE_KEY);
+    return stored === "mobile" || stored === "tablet" || stored === "desktop" ? stored : "mobile";
+  });
+  const setDevice = useCallback((next: StudioDevice) => {
+    setDeviceState(next);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(STUDIO_DEVICE_STORAGE_KEY, next);
+    }
+  }, []);
   const [leftTab, setLeftTab] = useState<"scenes" | "assets">("scenes");
   const [propCategory, setPropCategory] = useState<StudioPropCategory>("experience");
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
@@ -1160,16 +1169,21 @@ export const InvitationStudioHub = forwardRef<
                   title="Typography"
                   icon={<Type className="h-4 w-4 text-[#0B8A83]" />}
                 >
+                  <p className="text-[11px] text-slate-500">
+                    Heading &amp; body apply live across the invite. Script currently saves with
+                    your design and lands on templates progressively.
+                  </p>
                   <div className="grid gap-3">
                     {(["heading", "script", "body"] as const).map((role) => (
                       <div key={role} className="space-y-1">
                         <Label className="text-xs capitalize">{role}</Label>
                         <Select
-                          value={design.fonts?.[role] ?? "Inter"}
+                          value={design.fonts?.[role] ?? "cormorant"}
                           onValueChange={(v) =>
                             onChange({
                               ...design,
                               fonts: { ...design.fonts, [role]: v },
+                              experience: { ...experience, experienceCustomized: true },
                             })
                           }
                         >
@@ -1177,9 +1191,9 @@ export const InvitationStudioHub = forwardRef<
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {FONT_OPTIONS.map((f) => (
-                              <SelectItem key={f} value={f}>
-                                {f}
+                            {INVITE_FONT_OPTIONS.map((f) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                <span style={{ fontFamily: FONT_STACKS[f.id as FontId] }}>{f.label}</span>
                               </SelectItem>
                             ))}
                           </SelectContent>

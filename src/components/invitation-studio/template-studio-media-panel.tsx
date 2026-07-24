@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { ImageIcon, Images, Layout, Sparkles, Sunrise } from "lucide-react";
+import { ImageIcon, Images, Layout, Palette, Sparkles, Sunrise, Type } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { GalleryUploadPanel } from "@/components/media/gallery-upload-panel";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
 import { UploadedMedia } from "@/components/media/uploaded-media";
@@ -21,6 +29,14 @@ import {
 import { getMediaEntranceForLayout } from "@/lib/invitation/media-entrance-engine";
 import { MEDIA_ENTRANCE_OPTIONS } from "@/lib/invitation/media-entrance-engine";
 import { isVideoUrl } from "@/lib/invitation/demo-gallery-assets";
+import { FONT_STACKS, THANK_YOU_FONT_OPTIONS } from "@/lib/invitation-theme/fonts";
+import type { FontId } from "@/lib/invitation-theme/theme-types";
+
+const WELCOME_SCALE_OPTIONS: { id: "compact" | "cozy" | "spacious"; label: string }[] = [
+  { id: "compact", label: "Compact" },
+  { id: "cozy", label: "Cozy (default)" },
+  { id: "spacious", label: "Spacious" },
+];
 
 /** Studio copy for the pre-invite welcome photo — TM-specific wording only for that layout. */
 function introPhotoCopy(layout?: string): { title: string; hint: string; note: string } {
@@ -96,6 +112,7 @@ export function TemplateStudioMediaPanel({
   const entrance = getMediaEntranceForLayout(design.layout ?? "classic-gold");
   const entranceLabel = MEDIA_ENTRANCE_OPTIONS.find((o) => o.id === entrance)?.label ?? entrance;
   const [error, setError] = useState("");
+  const experience = design.experience ?? {};
 
   function setIntroPhoto(url: string) {
     onDesignChange(syncDesignIntroAtmosphere(design, url));
@@ -103,6 +120,18 @@ export function TemplateStudioMediaPanel({
 
   function clearIntroPhoto() {
     onDesignChange(syncDesignIntroAtmosphere(design, null));
+  }
+
+  function patchWelcomeTypography(patch: {
+    welcomeFontFamily?: string;
+    welcomeFontScale?: "compact" | "cozy" | "spacious";
+    welcomeTextColor?: string | null;
+    welcomeAccentColor?: string | null;
+  }) {
+    onDesignChange({
+      ...design,
+      experience: { ...experience, ...patch, experienceCustomized: true },
+    });
   }
 
   function setHero(url: string, type: "image" | "video") {
@@ -181,6 +210,119 @@ export function TemplateStudioMediaPanel({
           className="flex-1"
         />
         <p className="text-[11px] text-slate-500">{introCopy.note}</p>
+
+        <div className="mt-1 space-y-3 rounded-lg border border-slate-200/80 bg-slate-50/60 p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0F172A]">
+            <Type className="h-3.5 w-3.5 text-[#0B8A83]" />
+            Welcome text style
+          </div>
+          <p className="text-[11px] text-slate-500 -mt-1.5">
+            Brand, ceremony, names &amp; BEGIN on the welcome screen — live in the preview. Leave
+            colors on Auto to keep smart contrast against your photo.
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="space-y-1">
+              <Label className="text-xs">Font</Label>
+              <Select
+                value={experience.welcomeFontFamily ?? "auto"}
+                onValueChange={(v) =>
+                  patchWelcomeTypography({ welcomeFontFamily: v === "auto" ? undefined : v })
+                }
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto (template default)</SelectItem>
+                  {THANK_YOU_FONT_OPTIONS.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      <span style={{ fontFamily: FONT_STACKS[f.id as FontId] }}>{f.label}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Size</Label>
+              <Select
+                value={experience.welcomeFontScale ?? "cozy"}
+                onValueChange={(v) =>
+                  patchWelcomeTypography({ welcomeFontScale: v as "compact" | "cozy" | "spacious" })
+                }
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {WELCOME_SCALE_OPTIONS.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="space-y-1">
+              <Label className="text-xs flex items-center gap-1">
+                <Palette className="h-3 w-3 text-slate-400" /> Text color
+              </Label>
+              <div className="flex gap-1.5">
+                <input
+                  type="color"
+                  value={experience.welcomeTextColor ?? "#faf8f4"}
+                  onChange={(e) => patchWelcomeTypography({ welcomeTextColor: e.target.value })}
+                  className="h-8 w-9 shrink-0 cursor-pointer rounded border border-slate-200"
+                  aria-label="Welcome text color"
+                />
+                <Input
+                  value={experience.welcomeTextColor ?? ""}
+                  placeholder="Auto"
+                  onChange={(e) =>
+                    patchWelcomeTypography({ welcomeTextColor: e.target.value || null })
+                  }
+                  className="h-8 flex-1 text-xs"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs flex items-center gap-1">
+                <Palette className="h-3 w-3 text-slate-400" /> Accent color
+              </Label>
+              <div className="flex gap-1.5">
+                <input
+                  type="color"
+                  value={experience.welcomeAccentColor ?? "#d4a63a"}
+                  onChange={(e) => patchWelcomeTypography({ welcomeAccentColor: e.target.value })}
+                  className="h-8 w-9 shrink-0 cursor-pointer rounded border border-slate-200"
+                  aria-label="Welcome accent color"
+                />
+                <Input
+                  value={experience.welcomeAccentColor ?? ""}
+                  placeholder="Auto"
+                  onChange={(e) =>
+                    patchWelcomeTypography({ welcomeAccentColor: e.target.value || null })
+                  }
+                  className="h-8 flex-1 text-xs"
+                />
+              </div>
+            </div>
+          </div>
+          {(experience.welcomeTextColor || experience.welcomeAccentColor) && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-[11px] text-slate-500"
+              onClick={() =>
+                patchWelcomeTypography({ welcomeTextColor: null, welcomeAccentColor: null })
+              }
+            >
+              Reset colors to Auto contrast
+            </Button>
+          )}
+        </div>
       </MediaSection>
 
       <MediaSection

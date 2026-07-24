@@ -139,7 +139,6 @@ export function InvitationStudioPreview({
       <PremiumInviteWrapper
         skipReveal={enrichedDesign.studio?.revealMode === "none" || enrichedDesign.experience?.openingExperience === "none"}
         skipIntro
-        skipTapGate
         skipAnalytics
         musicEnabled={hasMusic}
         musicAutoplay={hasMusic}

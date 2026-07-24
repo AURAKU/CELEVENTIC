@@ -48,6 +48,7 @@ import { EventDayBanner } from "@/components/experience/event-day-banner";
 import { PostEventExperience } from "@/components/experience/post-event-experience";
 import { CinematicInvitationSpotlight } from "@/components/guest-portal/cinematic-invitation-spotlight";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
+import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 
 interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -301,6 +302,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           props.design?.colors?.background?.startsWith("radial")
             ? undefined
             : (props.design?.colors?.background ?? "#FAF8F4"),
+        fontFamily: "var(--font-sans)",
         ...(props.design?.studio?.headingSize
           ? { ["--inv-heading-size" as string]: `${props.design.studio.headingSize}px` }
           : {}),
@@ -309,6 +311,12 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           : {}),
         ...(props.design?.studio?.scriptSize
           ? { ["--inv-script-size" as string]: `${props.design.studio.scriptSize}px` }
+          : {}),
+        ...(props.design?.fonts?.heading
+          ? { ["--font-display" as string]: resolveThankYouFontStack(props.design.fonts.heading) }
+          : {}),
+        ...(props.design?.fonts?.body
+          ? { ["--font-sans" as string]: resolveThankYouFontStack(props.design.fonts.body) }
           : {}),
       }}
     >

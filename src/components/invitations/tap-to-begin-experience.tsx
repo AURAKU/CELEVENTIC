@@ -33,7 +33,21 @@ export interface TapToBeginExperienceProps {
   name2?: string | null;
   layoutSlug?: string;
   category?: string;
+  /** Studio welcome-typography override — resolved CSS font stack (unset keeps each line's template default). */
+  fontFamily?: string | null;
+  /** Studio welcome-typography override — overall text scale. */
+  fontScale?: "compact" | "cozy" | "spacious";
+  /** Studio welcome-typography override — manual body/ivory text color (bypasses smart auto-contrast). */
+  textColorOverride?: string | null;
+  /** Studio welcome-typography override — manual gold/script accent color (bypasses smart auto-contrast). */
+  accentColorOverride?: string | null;
 }
+
+const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale"]>, number> = {
+  compact: 0.88,
+  cozy: 1,
+  spacious: 1.15,
+};
 
 type EventBeat = {
   eyebrow?: string;
@@ -151,6 +165,10 @@ export function TapToBeginExperience({
   name2,
   layoutSlug,
   category,
+  fontFamily,
+  fontScale = "cozy",
+  textColorOverride,
+  accentColorOverride,
 }: TapToBeginExperienceProps) {
   const reduceMotion = useReducedMotion();
   const [exiting, setExiting] = useState(false);
@@ -187,11 +205,14 @@ export function TapToBeginExperience({
   // case on a light photo. Otherwise fall back to a known-legible gold per mode.
   const brandGoldCandidate =
     primaryColor && /gold|#d4a|#c4a|#8b69|#a183|#5c3d/i.test(primaryColor) ? primaryColor : undefined;
-  const gold = pickLegibleAccent(
-    brandGoldCandidate,
-    contrastMode,
-    contrastMode === "light" ? DEEP_GOLD_ON_LIGHT : CELEVENTIC_PALETTE.gold
-  );
+  const gold = accentColorOverride?.trim()
+    ? accentColorOverride.trim()
+    : pickLegibleAccent(
+        brandGoldCandidate,
+        contrastMode,
+        contrastMode === "light" ? DEEP_GOLD_ON_LIGHT : CELEVENTIC_PALETTE.gold
+      );
+  const scaleValue = FONT_SCALE_VALUES[fontScale] ?? 1;
 
   const beat = useMemo(
     () => resolveEventBeat({ ceremonyLabel, eventTitle, layoutSlug, category }),
@@ -268,6 +289,9 @@ export function TapToBeginExperience({
         {
           ["--tap-accent" as string]: accent,
           ["--tap-gold" as string]: gold,
+          ["--tap-scale" as string]: scaleValue,
+          ...(textColorOverride?.trim() ? { ["--tap-ivory" as string]: textColorOverride.trim() } : null),
+          ...(fontFamily?.trim() ? { ["--tap-font-family" as string]: fontFamily.trim() } : null),
           ...(exiting && backgroundColor
             ? {
                 background: `linear-gradient(180deg, #061018 0%, ${backgroundColor} 120%)`,

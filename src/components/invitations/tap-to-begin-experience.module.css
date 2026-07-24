@@ -121,8 +121,8 @@
 
 .brand {
   margin: 0 0 1.75rem;
-  font-family: var(--font-cormorant), "Cormorant Garamond", serif;
-  font-size: 0.72rem;
+  font-family: var(--tap-font-family, var(--font-cormorant), "Cormorant Garamond", serif);
+  font-size: calc(0.72rem * var(--tap-scale, 1));
   font-weight: 500;
   letter-spacing: 0.42em;
   text-transform: uppercase;
@@ -133,8 +133,8 @@
 .eventBeat {
   margin: 0;
   max-width: 18rem;
-  font-family: var(--font-cinzel), "Cinzel", serif;
-  font-size: clamp(0.95rem, 3.6vw, 1.15rem);
+  font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
+  font-size: calc(clamp(0.95rem, 3.6vw, 1.15rem) * var(--tap-scale, 1));
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -145,8 +145,8 @@
 
 .scriptBeat {
   margin: 0.35rem 0 0;
-  font-family: var(--font-great-vibes), "Great Vibes", cursive;
-  font-size: clamp(2rem, 8vw, 2.65rem);
+  font-family: var(--tap-font-family, var(--font-great-vibes), "Great Vibes", cursive);
+  font-size: calc(clamp(2rem, 8vw, 2.65rem) * var(--tap-scale, 1));
   font-weight: 400;
   letter-spacing: 0.02em;
   line-height: 1.05;
@@ -167,8 +167,8 @@
 
 .name {
   margin: 0;
-  font-family: var(--font-cinzel), "Cinzel", serif;
-  font-size: clamp(0.82rem, 2.8vw, 0.95rem);
+  font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
+  font-size: calc(clamp(0.82rem, 2.8vw, 0.95rem) * var(--tap-scale, 1));
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -179,16 +179,16 @@
 
 .amp {
   margin: 0;
-  font-family: var(--font-great-vibes), "Great Vibes", cursive;
-  font-size: 1.55rem;
+  font-family: var(--tap-font-family, var(--font-great-vibes), "Great Vibes", cursive);
+  font-size: calc(1.55rem * var(--tap-scale, 1));
   line-height: 1;
   color: color-mix(in srgb, var(--tap-gold) 70%, transparent);
 }
 
 .hostLine {
   margin: 1.1rem 0 0;
-  font-family: var(--font-cormorant), "Cormorant Garamond", serif;
-  font-size: 1.05rem;
+  font-family: var(--tap-font-family, var(--font-cormorant), "Cormorant Garamond", serif);
+  font-size: calc(1.05rem * var(--tap-scale, 1));
   font-style: italic;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -209,8 +209,8 @@
 
 .ctaWord {
   margin: 0;
-  font-family: var(--font-cinzel), "Cinzel", serif;
-  font-size: clamp(0.95rem, 3.2vw, 1.1rem);
+  font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
+  font-size: calc(clamp(0.95rem, 3.2vw, 1.1rem) * var(--tap-scale, 1));
   font-weight: 500;
   letter-spacing: 0.38em;
   text-transform: uppercase;
