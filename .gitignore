@@ -53,3 +53,6 @@ public/uploads/**
 # video backfill runtime state (manifests, audit logs, SQLite backups, rollback files) —
 # never committed; regenerated per run, may contain local file paths/DB content.
 /var/video-backfill/
+
+# celeventic-video-worker liveness heartbeat (src/lib/video/worker-heartbeat.ts) — runtime state, regenerated every tick.
+/var/video-worker/

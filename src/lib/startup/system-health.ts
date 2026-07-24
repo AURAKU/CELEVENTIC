@@ -1,4 +1,5 @@
 import { getAwsStorageHealth, isAwsS3Configured } from "@/lib/uploads/aws-s3";
+import { getVideoWorkerHealth } from "@/lib/video/worker-health";
 import { checkDatabaseHealth, type HealthStatus } from "./db-health";
 import {
   getEnvironmentHealthSummary,
@@ -50,6 +51,7 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
   const envSummary = getEnvironmentHealthSummary(envChecks);
   const storageSummary = getStorageEnvSummary();
   const db = await checkDatabaseHealth();
+  const videoWorker = await getVideoWorkerHealth();
 
   const authSecret = envChecks.find((c) => c.key === "NEXTAUTH_SECRET")?.present;
   const authUrl =
@@ -123,6 +125,22 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
         isAwsS3Configured()
           ? "Uploads route to S3 when credentials resolve"
           : "Uploads fall back to local disk /api/uploads",
+      ],
+    },
+    {
+      id: "video_worker",
+      label: "Video Processing Worker",
+      status: videoWorker.status,
+      message: videoWorker.message,
+      details: [
+        videoWorker.workerAlive
+          ? `Worker heartbeat: alive (${Math.round((videoWorker.heartbeatAgeMs ?? 0) / 1000)}s ago)`
+          : "Worker heartbeat: not detected",
+        `Pending video jobs: ${videoWorker.pendingJobs}`,
+        `Videos currently PROCESSING: ${videoWorker.stuckProcessingAssets}`,
+        videoWorker.lastCompletedAt
+          ? `Last completed job: ${videoWorker.lastCompletedAt}`
+          : "No video jobs completed yet",
       ],
     },
     {
