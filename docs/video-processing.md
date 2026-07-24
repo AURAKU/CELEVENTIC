@@ -7,10 +7,12 @@ the **original, unconverted** file URL. Browsers that can't decode HEVC/Dolby Vi
 non-Safari browsers, and even Safari for some Dolby Vision profiles) then fail to play the
 invitation's hero/background video on the live site.
 
-Production (Hostinger VPS) has no AWS MediaConvert configured, but already has a video
-converter installed at `/usr/local/bin/celeventic-process-video`. This fix adds a VPS-first
-FFmpeg processing engine and wires it into the invitations upload route so **every** uploaded
-video is converted to a browser-universal file before its URL is ever returned to the client.
+Production (Hostinger VPS) has no AWS MediaConvert configured. Invitation / local uploads
+transcode via the **adaptive TypeScript FFmpeg path** in `src/lib/video/video-processor.ts`
+(capability detection + HDR only when `zscale`+`tonemap` are available + plain scale fallback).
+An optional VPS converter at `/usr/local/bin/celeventic-process-video` may exist on the box,
+but it is **opt-in only** (`VIDEO_USE_EXTERNAL_CONVERTER=true`) — Hostinger should rely on
+adaptive ffmpeg by default so a binary that hard-requires `zscale` cannot fail uploads.
 
 ## Architecture
 
@@ -20,11 +22,12 @@ Browser (MediaUploader)
   ▼
 POST /api/invitations/upload  (src/app/api/invitations/upload/route.ts)
   │  1. sniff real container from bytes (never trust extension/MIME)
-  │  2. processVideoFile(buffer)             ─┐
-  │       a. try /usr/local/bin/celeventic-process-video (if present)
-  │       b. else ffprobe → decide remux-only vs full transcode → ffmpeg
+  │  2. queue → processQueuedVideoAssetLocalFfmpeg → processVideoFile(buffer)
+  │       a. adaptive ffprobe+ffmpeg (DEFAULT — capability detect + HDR fallback)
+  │       b. optional /usr/local/bin/celeventic-process-video ONLY if
+  │          VIDEO_USE_EXTERNAL_CONVERTER=true (any failure falls through to a)
   │       c. always produces: MP4 (H.264/AAC/yuv420p/faststart, ≤1080p,   │ src/lib/video/
-  │          correct orientation, HDR→SDR BT.709) + JPEG poster           │ video-processor.ts
+  │          correct orientation, HDR→SDR when zscale available) + poster │ video-processor.ts
   │  3. store original (private, `invitations/<userId>/originals/`)      ─┘
   │     + processed MP4 + poster (`invitations/<userId>/`) via
   │     storeUploadFile() — local disk or S3, whichever is configured
@@ -49,9 +52,11 @@ pipeline (`src/lib/video/processing.ts`) when `VIDEO_PROCESSOR=ffmpeg` — see b
   display-matrix/rotate-tag rotation during transcode — phone-shot portrait video plays upright
   everywhere, not just in players that respect the metadata tag).
 - **HDR/Dolby Vision → SDR**: when `ffprobe` reports a PQ (`smpte2084`) or HLG (`arib-std-b67`)
-  transfer function, a `zscale`/`tonemap`/`zscale` filter chain tone-maps to SDR BT.709 before
-  encoding. Requires an ffmpeg build with `zscale` (`libzimg`) — if missing, the run fails
-  loudly (upload is rejected with a clear error) rather than shipping a washed-out/broken file.
+  transfer function **and** the running ffmpeg registers both `zscale` and `tonemap`, a
+  `zscale`/`tonemap`/`zscale` filter chain tone-maps to SDR BT.709 before encoding. If either
+  filter is missing (or the HDR graph fails at runtime), we automatically use a plain
+  scale/format pipeline instead — the upload still succeeds (readable everywhere, just not
+  tone-mapped) rather than failing solely because an optional filter is unavailable.
 - **Poster**: one JPEG frame (~10% into the clip, capped at 3s), scaled to ≤1280px wide.
 
 ### Fast path: remux instead of re-encode
@@ -81,7 +86,8 @@ See `.env.example` for the full annotated list. Key ones:
 
 ```
 VIDEO_PROCESSOR=ffmpeg                 # or "mediaconvert" — blank auto-detects
-CELEVENTIC_VIDEO_CONVERTER_PATH=/usr/local/bin/celeventic-process-video
+# VIDEO_USE_EXTERNAL_CONVERTER=true    # OFF by default — Hostinger should use adaptive ffmpeg
+# CELEVENTIC_VIDEO_CONVERTER_PATH=/usr/local/bin/celeventic-process-video
 # FFMPEG_PATH=/usr/bin/ffmpeg          # override if not on PATH
 # FFPROBE_PATH=/usr/bin/ffprobe
 VIDEO_PROCESSOR_TIMEOUT_MS=900000      # 15 min hard kill per ffmpeg/converter run
@@ -106,16 +112,17 @@ VIDEO_PROCESSOR_CONCURRENCY=1          # v1 limitation — see below
    produces an HLS ladder for longer videos; the FFmpeg bridge produces a single progressive MP4
    only. `VideoPlayer` already falls back to progressive MP4 when no `hlsSrc` is provided, so
    playback still works — just without adaptive bitrate switching.
-4. **External converter contract is inferred, not confirmed.** No prior contract for
-   `/usr/local/bin/celeventic-process-video` existed in this codebase or its history. This
-   implementation calls it as
+4. **External converter is opt-in, not presence-based.**
+   `/usr/local/bin/celeventic-process-video` may exist on Hostinger, but it is only attempted
+   when `VIDEO_USE_EXTERNAL_CONVERTER=true|1|yes`. Default is the adaptive TypeScript
+   `ffprobe`+`ffmpeg` path (capability detection + HDR fallback). When opted in, this
+   implementation calls
    `celeventic-process-video --input <in> --output <out.mp4> --poster <poster.jpg> --max-width 1920 --max-height 1080`
-   and treats **any** failure (non-zero exit, missing/empty output, wrong flags, timeout) as
-   "unavailable" and transparently falls back to the direct `ffprobe`+`ffmpeg` path — so
-   playback correctness never depends on that binary's exact CLI surface. If the real
-   converter's contract differs, either adjust the invocation in
-   `src/lib/video/video-processor.ts` (`processVideoFile`) to match it, or simply leave it
-   unset/absent — the ffmpeg fallback alone fully satisfies the output contract above.
+   and treats **any** failure (non-zero exit, missing/empty/partial output, wrong flags,
+   timeout, zscale missing) as "unavailable": partial artifacts are cleared and processing
+   always falls through to adaptive ffmpeg — so playback correctness never depends on that
+   binary's exact CLI surface or filter graph. Leave the opt-in unset on Hostinger unless the
+   binary has been verified to work on that host's ffmpeg build.
 
 ## Deployment (VPS)
 
@@ -136,14 +143,21 @@ npx prisma db push
 rm -rf .next
 npm run build
 
-# Verify ffmpeg/ffprobe are present (or the converter binary):
-which ffmpeg ffprobe /usr/local/bin/celeventic-process-video
+# Verify ffmpeg/ffprobe are present (adaptive path — required on Hostinger):
+which ffmpeg ffprobe
+# Optional binary is ignored unless VIDEO_USE_EXTERNAL_CONVERTER=true:
+# which /usr/local/bin/celeventic-process-video
 
 pm2 restart celeventic --update-env
 # If also deploying the universal pipeline's async worker:
 pm2 restart celeventic-jobs-worker --update-env || pm2 start "npm run jobs:worker" --name celeventic-jobs-worker --update-env
 pm2 save
 ```
+
+**Hostinger note:** keep `VIDEO_USE_EXTERNAL_CONVERTER` unset/false so invitation upload →
+queue → `processQueuedVideoAssetLocalFfmpeg` → `processVideoFile` always hits adaptive ffmpeg
+(capability detection + zscale-safe HDR fallback). Do not enable the external binary unless it
+has been verified not to hard-fail on missing `zscale`.
 
 **Do not run `pm2 restart all`** — restart only `celeventic` (and `celeventic-jobs-worker` if
 present); leave any other apps on the box (e.g. Spark & Drive) untouched.

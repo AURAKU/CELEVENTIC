@@ -1,11 +1,16 @@
 /**
- * VPS-first video transcoding engine — server-only. Never import this from client code.
+ * Adaptive FFmpeg video transcoding engine — server-only. Never import this from client code.
  *
- * Production (Hostinger VPS) already ships a converter binary at
- * `/usr/local/bin/celeventic-process-video`. When present, we shell out to it (it already
- * encapsulates the ffmpeg/ffprobe invocation on that box). When absent (local dev, other
- * hosts, or if the binary fails), we fall back to calling `ffprobe` + `ffmpeg` directly with
- * the exact same output contract, so callers never need to know which path ran.
+ * Default path is the TypeScript `ffprobe` + `ffmpeg` pipeline with runtime capability detection
+ * (`ffmpeg-capabilities.ts`): HDR→SDR tonemap only when `zscale`+`tonemap` are registered, plain
+ * scale/format otherwise, with a one-shot runtime retry if the HDR graph fails unexpectedly.
+ *
+ * An optional Hostinger VPS binary (`/usr/local/bin/celeventic-process-video`) may hard-require
+ * `zscale` with no fallback. Because that binary's presence alone previously short-circuited the
+ * adaptive path on production, it is now **opt-in** via `VIDEO_USE_EXTERNAL_CONVERTER=true`.
+ * When enabled, any failure (including zscale filter missing, non-zero exit, empty/partial
+ * output) clears partial artifacts and always falls through to adaptive ffmpeg — never treated
+ * as success.
  *
  * Output contract (always, regardless of which path ran):
  *   - MP4 container, H.264 (yuv420p, "main" profile), AAC audio (or muted if the source has
@@ -40,7 +45,7 @@ import { mkdtemp, readFile, rm, writeFile, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { supportsFilter, type FfmpegCapabilities } from "@/lib/video/ffmpeg-capabilities";
+import { getFfmpegFullCapabilities, type FfmpegCapabilities, type FfmpegFullCapabilities } from "@/lib/video/ffmpeg-capabilities";
 
 const execFileAsync = promisify(execFile);
 
@@ -84,6 +89,23 @@ export function hasExternalConverter(): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Opt-in gate for the Hostinger VPS converter binary. Default is **off** so production always
+ * uses the adaptive TypeScript FFmpeg path (capability detection + HDR fallback) even when
+ * `/usr/local/bin/celeventic-process-video` exists on disk. Set `VIDEO_USE_EXTERNAL_CONVERTER`
+ * to `true` / `1` / `yes` only after verifying that binary's filter graph matches this host's
+ * ffmpeg build (notably: never hard-require `zscale` without a fallback).
+ */
+export function isExternalConverterOptedIn(): boolean {
+  const raw = process.env.VIDEO_USE_EXTERNAL_CONVERTER?.trim().toLowerCase();
+  return raw === "true" || raw === "1" || raw === "yes";
+}
+
+/** True only when the operator explicitly opted in *and* the binary is present on disk. */
+export function shouldAttemptExternalConverter(): boolean {
+  return isExternalConverterOptedIn() && hasExternalConverter();
 }
 
 export class VideoProcessingError extends Error {
@@ -460,9 +482,11 @@ function guessExtension(sourceExtHint: string | null | undefined): string {
 }
 
 /**
- * Runs the VPS converter binary if present, else ffprobe+ffmpeg. Always produces an
- * MP4 (H.264/AAC/yuv420p/faststart, <=1080p, corrected orientation, SDR) + JPEG poster,
- * or fails with a clear reason — never silently returns an unplayable/HEVC file.
+ * Runs adaptive ffprobe+ffmpeg by default. Optionally tries the VPS converter binary first
+ * when `VIDEO_USE_EXTERNAL_CONVERTER` is explicitly enabled — any external failure (including
+ * zscale missing, empty/partial output) clears artifacts and falls through to adaptive ffmpeg.
+ * Always produces an MP4 (H.264/AAC/yuv420p/faststart, <=1080p, corrected orientation, SDR) +
+ * JPEG poster, or fails with a clear reason — never silently returns an unplayable/HEVC file.
  *
  * `inputBuffer` is written to an isolated temp dir this function fully owns and cleans up;
  * the caller never needs to manage filesystem paths.
@@ -481,8 +505,9 @@ export async function processVideoFile(
   try {
     await writeFile(inputPath, inputBuffer);
 
-    // 1) Prefer the VPS-native converter when present.
-    if (hasExternalConverter()) {
+    // 1) Optional external converter — OFF by default. Presence of the Hostinger binary alone
+    // must never short-circuit the adaptive TS path (that binary may hard-require zscale).
+    if (shouldAttemptExternalConverter()) {
       try {
         await runProcess(
           getExternalConverterPath(),
@@ -499,14 +524,17 @@ export async function processVideoFile(
             metadata,
           };
         }
+        // Converter exited 0 but left empty/missing output — not success. Clear and fall through.
+        await clearPartialOutputs(outputPath, posterPath);
       } catch {
-        // Fall through to the ffmpeg path below — the external converter is a nice-to-have,
-        // not a hard dependency. This keeps upload success independent of that binary's
-        // exact CLI contract (which may evolve on the VPS without us knowing).
+        // Any error (zscale missing, wrong CLI, timeout, non-zero exit) — clear partial
+        // artifacts so we never treat a failed external convert as success, then fall through
+        // to adaptive ffmpeg below.
+        await clearPartialOutputs(outputPath, posterPath);
       }
     }
 
-    // 2) ffprobe + ffmpeg fallback (also the only path when no external converter exists).
+    // 2) Adaptive ffprobe + ffmpeg (default path; also the fallthrough after external failure).
     const inputProbe = await probeVideoFile(inputPath).catch(() => null);
     const remuxEligible = inputProbe ? isAlreadyBrowserCompatible(inputProbe) : false;
 
@@ -523,7 +551,8 @@ export async function processVideoFile(
           metadata: metadataFromProbe(inputProbe),
         };
       } catch {
-        // Remux failed (e.g. unusual edit lists) — fall back to a full transcode below.
+        // Remux failed (e.g. unusual edit lists) — clear partials and fall back to full transcode.
+        await clearPartialOutputs(outputPath, posterPath);
       }
     }
 
@@ -552,6 +581,11 @@ export async function processVideoFile(
     release();
     await rm(workDir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+/** Remove leftover output/poster files so a failed path cannot be mistaken for success later. */
+async function clearPartialOutputs(...paths: string[]): Promise<void> {
+  await Promise.all(paths.map((p) => rm(p, { force: true }).catch(() => {})));
 }
 
 async function fileNonEmpty(p: string): Promise<boolean> {

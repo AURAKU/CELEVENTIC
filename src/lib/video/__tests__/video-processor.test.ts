@@ -1,5 +1,10 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import os from "node:os";
+import path from "node:path";
 import {
   parseFfprobeJson,
   isAlreadyBrowserCompatible,
@@ -10,9 +15,14 @@ import {
   choosePosterSeekSeconds,
   hasExternalConverter,
   getExternalConverterPath,
+  isExternalConverterOptedIn,
+  shouldAttemptExternalConverter,
+  processVideoFile,
   Semaphore,
   type ProbeResult,
 } from "../video-processor";
+
+const execFileAsync = promisify(execFile);
 
 function probe(overrides: Partial<ProbeResult> = {}): ProbeResult {
   return {
@@ -264,11 +274,14 @@ describe("choosePosterSeekSeconds", () => {
 });
 
 describe("hasExternalConverter / getExternalConverterPath", () => {
-  const ORIGINAL = process.env.CELEVENTIC_VIDEO_CONVERTER_PATH;
+  const ORIGINAL_PATH = process.env.CELEVENTIC_VIDEO_CONVERTER_PATH;
+  const ORIGINAL_OPT_IN = process.env.VIDEO_USE_EXTERNAL_CONVERTER;
 
   afterEach(() => {
-    if (ORIGINAL === undefined) delete process.env.CELEVENTIC_VIDEO_CONVERTER_PATH;
-    else process.env.CELEVENTIC_VIDEO_CONVERTER_PATH = ORIGINAL;
+    if (ORIGINAL_PATH === undefined) delete process.env.CELEVENTIC_VIDEO_CONVERTER_PATH;
+    else process.env.CELEVENTIC_VIDEO_CONVERTER_PATH = ORIGINAL_PATH;
+    if (ORIGINAL_OPT_IN === undefined) delete process.env.VIDEO_USE_EXTERNAL_CONVERTER;
+    else process.env.VIDEO_USE_EXTERNAL_CONVERTER = ORIGINAL_OPT_IN;
   });
 
   it("defaults to the documented production path", () => {
@@ -284,6 +297,146 @@ describe("hasExternalConverter / getExternalConverterPath", () => {
   it("reports false for a path that doesn't exist (safe default in dev/CI without the binary)", () => {
     process.env.CELEVENTIC_VIDEO_CONVERTER_PATH = "/nonexistent/path/to/nothing";
     assert.equal(hasExternalConverter(), false);
+  });
+
+  it("is opted out by default — presence of the binary alone must not enable it", () => {
+    delete process.env.VIDEO_USE_EXTERNAL_CONVERTER;
+    assert.equal(isExternalConverterOptedIn(), false);
+    // Even if a real Hostinger-style path "exists" check were true, opt-in stays false.
+    assert.equal(shouldAttemptExternalConverter(), false);
+  });
+
+  it("opt-in accepts true/1/yes (case-insensitive) and rejects other values", () => {
+    process.env.VIDEO_USE_EXTERNAL_CONVERTER = "true";
+    assert.equal(isExternalConverterOptedIn(), true);
+    process.env.VIDEO_USE_EXTERNAL_CONVERTER = "1";
+    assert.equal(isExternalConverterOptedIn(), true);
+    process.env.VIDEO_USE_EXTERNAL_CONVERTER = "YES";
+    assert.equal(isExternalConverterOptedIn(), true);
+    process.env.VIDEO_USE_EXTERNAL_CONVERTER = "false";
+    assert.equal(isExternalConverterOptedIn(), false);
+    process.env.VIDEO_USE_EXTERNAL_CONVERTER = "maybe";
+    assert.equal(isExternalConverterOptedIn(), false);
+  });
+
+  it("shouldAttemptExternalConverter requires BOTH opt-in AND an existing binary", () => {
+    process.env.VIDEO_USE_EXTERNAL_CONVERTER = "true";
+    process.env.CELEVENTIC_VIDEO_CONVERTER_PATH = "/nonexistent/path/to/nothing";
+    assert.equal(shouldAttemptExternalConverter(), false);
+  });
+});
+
+describe("processVideoFile — adaptive default + external fallthrough", () => {
+  const ORIGINAL_PATH = process.env.CELEVENTIC_VIDEO_CONVERTER_PATH;
+  const ORIGINAL_OPT_IN = process.env.VIDEO_USE_EXTERNAL_CONVERTER;
+  const ORIGINAL_PROCESSOR_PATH = process.env.VIDEO_PROCESSOR_PATH;
+
+  afterEach(() => {
+    if (ORIGINAL_PATH === undefined) delete process.env.CELEVENTIC_VIDEO_CONVERTER_PATH;
+    else process.env.CELEVENTIC_VIDEO_CONVERTER_PATH = ORIGINAL_PATH;
+    if (ORIGINAL_OPT_IN === undefined) delete process.env.VIDEO_USE_EXTERNAL_CONVERTER;
+    else process.env.VIDEO_USE_EXTERNAL_CONVERTER = ORIGINAL_OPT_IN;
+    if (ORIGINAL_PROCESSOR_PATH === undefined) delete process.env.VIDEO_PROCESSOR_PATH;
+    else process.env.VIDEO_PROCESSOR_PATH = ORIGINAL_PROCESSOR_PATH;
+  });
+
+  async function makeTinyH264Mp4(): Promise<Buffer> {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-fixture-"));
+    const out = path.join(dir, "tiny.mp4");
+    try {
+      await execFileAsync(
+        process.env.FFMPEG_PATH?.trim() || "ffmpeg",
+        [
+          "-y",
+          "-f", "lavfi",
+          "-i", "color=c=black:s=320x240:d=0.5",
+          "-c:v", "libx264",
+          "-pix_fmt", "yuv420p",
+          "-movflags", "+faststart",
+          out,
+        ],
+        { timeout: 30_000 }
+      );
+      return await readFile(out);
+    } finally {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
+  async function writeFailingZscaleConverter(dir: string): Promise<string> {
+    // Mimics the Hostinger binary hard-failing on missing zscale while leaving a partial output
+    // behind — that partial must NOT be treated as success; adaptive ffmpeg must take over.
+    const scriptPath = path.join(dir, "celeventic-process-video");
+    const script = `#!/usr/bin/env bash
+set -euo pipefail
+OUTPUT=""
+POSTER=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output) OUTPUT="$2"; shift 2 ;;
+    --poster) POSTER="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+# Partial garbage left on disk before failing (the production failure mode).
+if [[ -n "\${OUTPUT}" ]]; then printf 'partial-corrupt' > "\${OUTPUT}"; fi
+if [[ -n "\${POSTER}" ]]; then printf 'partial-poster' > "\${POSTER}"; fi
+echo "No such filter: 'zscale'" >&2
+exit 1
+`;
+    await writeFile(scriptPath, script, { encoding: "utf8" });
+    await chmod(scriptPath, 0o755);
+    return scriptPath;
+  }
+
+  it("defaults to the adaptive ffmpeg path even when an external converter binary exists", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-ext-"));
+    try {
+      const converter = await writeFailingZscaleConverter(dir);
+      process.env.CELEVENTIC_VIDEO_CONVERTER_PATH = converter;
+      delete process.env.VIDEO_USE_EXTERNAL_CONVERTER;
+      delete process.env.VIDEO_PROCESSOR_PATH;
+
+      assert.equal(hasExternalConverter(), true, "fixture converter must exist on disk");
+      assert.equal(shouldAttemptExternalConverter(), false, "default must prefer adaptive ffmpeg");
+
+      const input = await makeTinyH264Mp4();
+      const result = await processVideoFile(input, { extensionHint: "mp4", timeoutMs: 60_000 });
+      assert.equal(result.success, true, result.error);
+      assert.ok(
+        result.method === "ffmpeg-remux" || result.method === "ffmpeg-transcode",
+        `expected adaptive ffmpeg method, got ${result.method}`
+      );
+      assert.ok(result.outputBuffer && result.outputBuffer.length > 0);
+    } finally {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+
+  it("falls through to adaptive ffmpeg when an opted-in external converter fails with zscale + partial output", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-fail-"));
+    try {
+      const converter = await writeFailingZscaleConverter(dir);
+      process.env.CELEVENTIC_VIDEO_CONVERTER_PATH = converter;
+      process.env.VIDEO_USE_EXTERNAL_CONVERTER = "true";
+      delete process.env.VIDEO_PROCESSOR_PATH;
+
+      assert.equal(shouldAttemptExternalConverter(), true);
+
+      const input = await makeTinyH264Mp4();
+      const result = await processVideoFile(input, { extensionHint: "mp4", timeoutMs: 60_000 });
+      assert.equal(result.success, true, result.error);
+      assert.notEqual(result.method, "external-converter", "failed external convert must not win");
+      assert.ok(
+        result.method === "ffmpeg-remux" || result.method === "ffmpeg-transcode",
+        `expected adaptive ffmpeg fallthrough, got ${result.method}`
+      );
+      // Must not have shipped the converter's partial garbage bytes.
+      assert.ok(result.outputBuffer && result.outputBuffer.length > 20);
+      assert.notEqual(result.outputBuffer!.subarray(0, 15).toString("utf8"), "partial-corrupt");
+    } finally {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
   });
 });
 
