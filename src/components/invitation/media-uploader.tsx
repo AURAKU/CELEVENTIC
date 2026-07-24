@@ -62,6 +62,16 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
       role: string;
       name: string;
       analysis?: UploadAnalysisResult;
+      video?: {
+        playbackUrl: string;
+        posterUrl: string | null;
+        thumbnailUrl: string | null;
+        originalUrl: string | null;
+        status: "READY" | "FAILED";
+        durationSeconds: number | null;
+        width: number | null;
+        height: number | null;
+      };
     };
   }
 
@@ -93,6 +103,17 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
         type: uploaded.type as MediaType,
         role: mediaRoleFromUpload(uploaded.role, file),
         name: uploaded.name,
+        ...(uploaded.video
+          ? {
+              posterUrl: uploaded.video.posterUrl,
+              thumbnailUrl: uploaded.video.thumbnailUrl,
+              originalUrl: uploaded.video.originalUrl,
+              status: uploaded.video.status,
+              durationSeconds: uploaded.video.durationSeconds,
+              width: uploaded.video.width,
+              height: uploaded.video.height,
+            }
+          : {}),
       });
       if (uploaded.analysis) {
         onAnalysis?.(uploaded.analysis);
