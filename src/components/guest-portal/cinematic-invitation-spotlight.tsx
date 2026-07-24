@@ -468,6 +468,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       className="overflow-hidden cinematic-spotlight-root inv-text-on-dark"
       style={{
         background: typeof bg === "string" && (bg.startsWith("rgba") || bg.startsWith("linear")) ? bg : bg,
+        fontFamily: "var(--font-sans)",
         ...(props.design?.studio?.headingSize
           ? { ["--inv-heading-size" as string]: `${props.design.studio.headingSize}px` }
           : {}),
@@ -476,6 +477,12 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           : {}),
         ...(props.design?.studio?.scriptSize
           ? { ["--inv-script-size" as string]: `${props.design.studio.scriptSize}px` }
+          : {}),
+        ...(props.design?.fonts?.heading
+          ? { ["--font-display" as string]: resolveThankYouFontStack(props.design.fonts.heading) }
+          : {}),
+        ...(props.design?.fonts?.body
+          ? { ["--font-sans" as string]: resolveThankYouFontStack(props.design.fonts.body) }
           : {}),
       }}
     >

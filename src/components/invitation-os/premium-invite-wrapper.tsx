@@ -28,6 +28,7 @@ import {
 } from "@/lib/experience-engine/soft-intro";
 import { getLayoutMediaPack } from "@/lib/invitation/layout-media-identity";
 import { introAtmosphereUrlFromDesign } from "@/lib/invitation/studio-media-utils";
+import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import {
   TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL,
   resolveSealInitials,
@@ -354,6 +355,12 @@ export function PremiumInviteWrapper({
         name2={visionBoard?.coupleName2}
         layoutSlug={enrichedDesign.layout}
         category={experience?.collectionId}
+        fontFamily={
+          experience?.welcomeFontFamily ? resolveThankYouFontStack(experience.welcomeFontFamily) : undefined
+        }
+        fontScale={experience?.welcomeFontScale}
+        textColorOverride={experience?.welcomeTextColor}
+        accentColorOverride={experience?.welcomeAccentColor}
       />
     );
   }
