@@ -74,6 +74,13 @@ export interface VideoUploaderProps {
   onError?: (message: string) => void;
   /** Show a camera-capture affordance for mobile guests (screen recorders / DSLR uploads should omit this). */
   allowCameraCapture?: boolean;
+  /**
+   * Pre-selected file that starts uploading immediately on mount, skipping the
+   * dropzone/picker UI entirely. Used by MultiVideoUploader to embed one
+   * VideoUploader instance per queued file, each getting the full pause/resume/
+   * retry/cancel machinery of a normal single upload "for free".
+   */
+  initialFile?: File | null;
 }
 
 const CONCURRENCY = 3;
@@ -100,6 +107,7 @@ export function VideoUploader({
   onUploaded,
   onError,
   allowCameraCapture,
+  initialFile,
 }: VideoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -137,6 +145,15 @@ export function VideoUploader({
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
   }, []);
+
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (initialFile && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      handleFile(initialFile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFile]);
 
   // Ticking counter for the "Preparing your video…" state — reassures the user something is
   // actively happening instead of a bare spinner sitting still for minutes.

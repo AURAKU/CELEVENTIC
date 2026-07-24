@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
 import { UploadedMedia } from "@/components/media/uploaded-media";
-import { VideoUploader, type UploadedVideoResult } from "@/components/media/video-uploader";
+import { MultiVideoUploader } from "@/components/media/multi-video-uploader";
+import { type UploadedVideoResult } from "@/components/media/video-uploader";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 import { isVideoUrl } from "@/lib/invitation/demo-gallery-assets";
 import { cn } from "@/lib/utils";
@@ -153,13 +154,14 @@ export function GalleryUploadPanel({
             hint="Free crop by default — drag to select any region, any size, or use the full image."
             className="flex-1"
           />
-          <VideoUploader
+          <MultiVideoUploader
             category="INVITATION_BACKGROUND"
             orderId={orderId}
             role="gallery"
-            buttonLabel="Add video"
-            hint="Add a video to the swipe gallery — up to 150MB."
+            buttonLabel="Add videos"
+            hint="Add one or more videos to the swipe gallery — up to 150MB each."
             disabled={disabled}
+            maxFiles={maxImages - urls.length}
             onUploaded={onGalleryVideoUploaded}
             onError={setError}
           />
