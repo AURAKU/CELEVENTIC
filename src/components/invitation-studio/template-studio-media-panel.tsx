@@ -244,14 +244,14 @@ export function TemplateStudioMediaPanel({
         )}
         <div className="flex flex-col sm:flex-row gap-2">
           <ImageUploadCropper
-            defaultAspect="16:9"
+            defaultAspect="free"
             allowedAspects={CROP_PRESETS.cover}
             extraFormFields={{ role: "background", buildMode: "template" }}
             onUploaded={(r) => setPageBackground(r.url, "image")}
             onError={setError}
             disabled={disabled}
             buttonLabel="Background image"
-            hint="16:9 wide crop for cinematic backgrounds."
+            hint="Freeform crop by default — drag to select any region, any size. Also feeds the soft-intro/opening backdrop (e.g. Traditional Marriage Ceremony)."
             className="flex-1"
           />
           {allowVideoBackground && (
