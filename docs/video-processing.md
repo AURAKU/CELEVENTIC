@@ -67,10 +67,13 @@ transcode.
 |---|---|---|---|
 | Invitations builder upload (confirmed bug) | `src/app/api/invitations/upload/route.ts` | **Synchronous** (v1) | Always `video-processor.ts` (FFmpeg) |
 | Universal S3 pipeline (Studio 2.0 hero/background/gallery, vendor portfolio, guestbook, event shorts) | `src/lib/video/processing.ts` → `processQueuedVideoAsset` | Async (`BackgroundJob` queue + `npm run jobs:worker`) | `VIDEO_PROCESSOR` env — `ffmpeg` (default when MediaConvert isn't configured) or `mediaconvert` |
+| Universal pipeline, **local-disk fallback** (same call sites as above, used automatically when S3 isn't configured/usable) | `src/app/api/uploads/video/local/route.ts` → `processLocalVideoUpload` in `src/lib/video/processing.ts` | **Synchronous** (no S3 round-trip needed — bytes already arrived in the request) | Always `video-processor.ts` (FFmpeg) |
 
-Both paths produce the same `VideoAsset`-shaped output contract (`processedMp4Url`,
+All three paths produce the same `VideoAsset`-shaped output contract (`processedMp4Url`,
 `posterUrl`, `thumbnailUrl`, `status`), so `VideoUploader`/`VideoPlayer` on the client don't
-need to know which engine ran.
+need to know which engine (or storage backend) ran. `src/lib/video/storage-strategy.ts` is the
+single decision point for "does this upload go to S3 or local disk?" — see
+`docs/ops/VIDEO-UPLOAD-DEPLOYMENT.md` for the operational picture.
 
 ## Environment variables
 

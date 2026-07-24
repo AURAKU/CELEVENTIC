@@ -7,6 +7,21 @@
 > `docs/video-processing.md` for the current architecture. This document remains accurate for
 > anyone who *does* configure AWS MediaConvert (`VIDEO_PROCESSOR=mediaconvert`) — both engines
 > share the same `VideoAsset` model and are selected via the `VIDEO_PROCESSOR` env var.
+>
+> ⚠️ **Update (2026-07-24, part 2) — S3-less local fallback:** Hostinger production currently
+> has **no AWS S3 credentials at all**, and the presign API used to hard-block every
+> `VideoUploader` upload (Studio, memory/guestbook, vendor portfolio, admin) with "Video
+> storage is not configured on this environment" once S3 wasn't ready — a dead end for
+> otherwise-valid videos. This is now automatic: `/api/uploads/video/presign` detects that S3
+> isn't usable (see `src/lib/video/storage-strategy.ts`) and returns `strategy: "local"`
+> instead of erroring; `VideoUploader` posts the raw file straight to
+> `/api/uploads/video/local`, which transcodes it synchronously with the same VPS FFmpeg
+> engine described above and stores the result on local disk via
+> `src/lib/uploads/file-storage.ts` (served from `/api/uploads/...`, same as the invitations
+> upload route). **No env change is required to get this** — it activates automatically
+> whenever S3 isn't configured. Set `VIDEO_LOCAL_FALLBACK_ENABLED=false` only if you
+> specifically want uploads to hard-fail instead of falling back (not recommended on Hostinger
+> today). See `docs/video-processing.md` for the full flow.
 
 # Universal Video Upload & Processing — Deployment Guide
 
@@ -151,9 +166,12 @@ receive uploads or run FFmpeg, so it's safe to run on the same VPS as the Next.j
 - **Stop processing without a deploy**: set `VIDEO_PROCESSING_ENABLED=false` and restart the
   app + worker — new uploads still accept and store files (status stays `QUEUED`) but no
   MediaConvert jobs are created until re-enabled; nothing is lost.
-- **Disable the new pipeline entirely**: set `MEDIA_STORAGE_PROVIDER` to anything other than
-  `s3` — the presign endpoint returns `503` and callers should fall back to prior behavior for
-  that surface (all call sites already handle `onError` from `VideoUploader`).
+- **Run without S3 entirely (supported, not just a rollback)**: leave `AWS_ACCESS_KEY_ID` /
+  `AWS_SECRET_ACCESS_KEY` / `AWS_S3_BUCKET` unset (or set `MEDIA_STORAGE_PROVIDER` to anything
+  other than `s3`) and every `VideoUploader` surface automatically uses the local-disk + VPS
+  FFmpeg fallback (`/api/uploads/video/local`) instead of failing — see the 2026-07-24 update
+  at the top of this doc. To restore the old hard-block-without-S3 behavior instead, set
+  `VIDEO_LOCAL_FALLBACK_ENABLED=false`.
 
 ## Format & codec support
 

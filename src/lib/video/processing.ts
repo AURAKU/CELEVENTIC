@@ -9,6 +9,7 @@ import {
   buildPublicVideoUrl,
   deleteVideoObject,
 } from "@/lib/video/s3-video";
+import { storeUploadFile } from "@/lib/uploads/file-storage";
 import { validateFinalSize, validateVideoSignature } from "@/lib/video/validation";
 import { parseMp4Metadata } from "@/lib/video/mp4-metadata";
 import { categoryMaxBytes, getVideoCategoryLimits } from "@/lib/video/limits";
@@ -134,6 +135,115 @@ export async function finalizeVideoUpload(assetId: string): Promise<VideoAsset> 
 
   await dispatchJob("video-process", { assetId: updated.id });
   return updated;
+}
+
+/**
+ * Local-disk + VPS FFmpeg fallback for the universal video pipeline — used automatically
+ * when S3 isn't configured/usable on this environment (see `storage-strategy.ts`), e.g.
+ * Hostinger production without AWS creds. Unlike the S3 path, the raw bytes are already in
+ * memory (the browser posted them straight to our API instead of to S3), so there is no
+ * separate "finalize then queue then worker polls" dance — everything happens synchronously
+ * in one call: validate → transcode with `processVideoFile` (ffmpeg) → store the processed
+ * MP4 + poster via `storeUploadFile` (local disk, or S3 if it becomes available mid-flight)
+ * → mark READY/FAILED. Idempotent: a duplicate call on an already-finalized asset is a no-op.
+ */
+export async function processLocalVideoUpload(assetId: string, buffer: Buffer): Promise<VideoAsset> {
+  const asset = await prisma.videoAsset.findUniqueOrThrow({ where: { id: assetId } });
+  if (asset.status !== "UPLOADING") {
+    return asset;
+  }
+
+  const limits = await getVideoCategoryLimits(asset.category as VideoCategory);
+  const maxBytes = categoryMaxBytes(limits);
+
+  const sizeCheck = validateFinalSize(buffer.length, Number(asset.sizeBytes), maxBytes);
+  if (!sizeCheck.valid) {
+    return failAsset(asset.id, sizeCheck.reason ?? "Upload failed size validation.");
+  }
+
+  const header = buffer.subarray(0, Math.min(buffer.length, 262_144));
+  const sigCheck = validateVideoSignature(header, asset.originalExtension);
+  if (!sigCheck.valid) {
+    return failAsset(asset.id, sigCheck.reason ?? "Uploaded file failed format verification.");
+  }
+
+  const mp4Meta = ["mp4", "mov", "m4v", "3gp", "3g2"].includes(asset.originalExtension)
+    ? parseMp4Metadata(header)
+    : { durationSeconds: null, width: null, height: null };
+
+  if (limits.maxDurationSeconds && mp4Meta.durationSeconds && mp4Meta.durationSeconds > limits.maxDurationSeconds) {
+    return failAsset(asset.id, `Video is too long for this category. Max ${Math.round(limits.maxDurationSeconds)}s.`);
+  }
+
+  const uploaded = await prisma.videoAsset.update({
+    where: { id: asset.id },
+    data: {
+      status: "PROCESSING",
+      sizeBytes: BigInt(buffer.length),
+      detectedContainer: sigCheck.detectedContainer,
+      detectedVideoCodec: sigCheck.detectedVideoCodec,
+      durationSeconds: mp4Meta.durationSeconds,
+      width: mp4Meta.width,
+      height: mp4Meta.height,
+      uploadedAt: new Date(),
+      queuedAt: new Date(),
+      processingStartedAt: new Date(),
+      attempts: { increment: 1 },
+    },
+  });
+
+  const sideEffect = await runPreQueueSideEffects(uploaded);
+  if (!sideEffect.ok) {
+    return failAsset(uploaded.id, sideEffect.reason);
+  }
+
+  try {
+    const result = await processVideoFile(buffer, { extensionHint: asset.originalExtension });
+    if (!result.success || !result.outputBuffer) {
+      throw new Error(result.error ?? "We couldn't process this video for playback.");
+    }
+
+    if (
+      limits.maxDurationSeconds &&
+      result.metadata.durationSeconds &&
+      result.metadata.durationSeconds > limits.maxDurationSeconds
+    ) {
+      throw new Error(`Video is too long for this category. Max ${Math.round(limits.maxDurationSeconds)}s.`);
+    }
+
+    const baseSubPath = `${(asset.category as string).toLowerCase()}/${asset.id}`;
+    const { url: processedMp4Url } = await storeUploadFile("videos", baseSubPath, "video.mp4", result.outputBuffer);
+
+    let posterUrl: string | null = null;
+    if (result.posterBuffer) {
+      const poster = await storeUploadFile("videos", baseSubPath, "poster.jpg", result.posterBuffer).catch(() => null);
+      posterUrl = poster?.url ?? null;
+    }
+
+    const updated = await prisma.videoAsset.update({
+      where: { id: asset.id },
+      data: {
+        status: "READY",
+        readyAt: new Date(),
+        processedMp4Url,
+        processedMp4Renditions: { original: processedMp4Url },
+        hlsUrl: null,
+        posterUrl,
+        thumbnailUrl: posterUrl,
+        thumbnailUrls: posterUrl ? [posterUrl] : [],
+        durationSeconds: result.metadata.durationSeconds ?? uploaded.durationSeconds,
+        width: result.metadata.width ?? uploaded.width,
+        height: result.metadata.height ?? uploaded.height,
+        detectedVideoCodec: result.metadata.hadHevc ? "hevc" : uploaded.detectedVideoCodec,
+      },
+      include: { memoryUpload: true },
+    });
+
+    await runReadySideEffects(updated);
+    return updated;
+  } catch (error) {
+    return failAsset(uploaded.id, error instanceof Error ? error.message : "Video processing failed.");
+  }
 }
 
 /**

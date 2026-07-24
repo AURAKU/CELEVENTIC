@@ -9,6 +9,7 @@ import { buildRawVideoKey, sanitizeDisplayFilename } from "@/lib/video/key-build
 import { isVideoCategory, MULTIPART_THRESHOLD_BYTES, PRESIGN_EXPIRY_SECONDS } from "@/lib/video/constants";
 import { EXTENSION_MIME_MAP } from "@/lib/video/constants";
 import { presignPutObject, isVideoStorageReady, VideoStorageNotConfiguredError } from "@/lib/video/s3-video";
+import { resolveVideoStorageStrategy, isLocalFallbackEnabled } from "@/lib/video/storage-strategy";
 import { vendorPlanService } from "@/services/vendor-os/vendor-plan.service";
 
 interface PresignRequestBody {
@@ -40,15 +41,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "filename, mimeType, and sizeBytes are required." }, { status: 400 });
   }
 
-  const provider = (process.env.MEDIA_STORAGE_PROVIDER ?? "s3").trim().toLowerCase();
-  if (provider !== "s3") {
-    return NextResponse.json(
-      { error: "The direct-to-cloud video pipeline is disabled on this environment (MEDIA_STORAGE_PROVIDER is not s3)." },
-      { status: 503 }
-    );
-  }
+  // Decide S3 vs. local-disk+FFmpeg fallback up front. Missing/incomplete S3 config is an
+  // environment gap, never a dead end for a legitimate upload — see storage-strategy.ts.
+  const decision = resolveVideoStorageStrategy({
+    providerEnv: process.env.MEDIA_STORAGE_PROVIDER,
+    s3Ready: await isVideoStorageReady(),
+    localFallbackEnabledEnv: process.env.VIDEO_LOCAL_FALLBACK_ENABLED,
+  });
 
-  if (!(await isVideoStorageReady())) {
+  if (decision.blocked) {
     return NextResponse.json(
       { error: "Video storage is not configured on this environment. Contact an administrator." },
       { status: 503 }
@@ -132,6 +133,21 @@ export async function POST(req: Request) {
     },
   });
 
+  // S3 not usable on this environment (or the operator forced local mode) — route the
+  // browser straight to the local-disk + VPS FFmpeg endpoint. The response shape mirrors
+  // the S3 strategies below so `VideoUploader` only needs one extra branch.
+  if (decision.strategy === "local") {
+    return NextResponse.json({
+      success: true,
+      data: {
+        assetId: asset.id,
+        strategy: "local",
+        key,
+        uploadUrl: "/api/uploads/video/local",
+      },
+    });
+  }
+
   const useMultipart = body.sizeBytes >= MULTIPART_THRESHOLD_BYTES;
 
   try {
@@ -158,6 +174,15 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
+    // Belt-and-suspenders: S3 looked ready moments ago but the actual presign call failed
+    // (transient creds/network issue) — degrade to the local fallback instead of failing the
+    // upload outright, unless the operator explicitly opted out of that fallback.
+    if (error instanceof VideoStorageNotConfiguredError && isLocalFallbackEnabled(process.env.VIDEO_LOCAL_FALLBACK_ENABLED)) {
+      return NextResponse.json({
+        success: true,
+        data: { assetId: asset.id, strategy: "local", key, uploadUrl: "/api/uploads/video/local" },
+      });
+    }
     await prisma.videoAsset.update({ where: { id: asset.id }, data: { status: "FAILED", failureReason: "Could not generate an upload URL." } });
     if (error instanceof VideoStorageNotConfiguredError) {
       return NextResponse.json({ error: error.message }, { status: 503 });
