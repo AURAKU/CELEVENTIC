@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Maximize2 } from "lucide-react";
 import { UploadedMedia } from "@/components/media/uploaded-media";
+import { VideoPlayer } from "@/components/media/video-player";
 import { InvitationMediaLightbox } from "@/components/invitation/invitation-media-lightbox";
 import { useInvitationMediaInteractive } from "@/components/invitation/invitation-media-context";
 import type { InvitationMediaAsset } from "@/types/invitation-design";
@@ -59,16 +60,30 @@ export function HeroMedia({
 
   const isVideo = heroType === "video";
 
-  const mediaNode = (
+  // Video plays through VideoPlayer (poster + FAILED/PROCESSING states + byte-range-friendly
+  // <video>) so a broken/still-processing upload never shows a blank or crashed frame to
+  // guests. Older assets (pre video-processor pipeline) have no `status`/`posterUrl` and
+  // simply default to READY with no poster — same visual result as before.
+  const mediaNode = isVideo ? (
+    <VideoPlayer
+      src={heroUrl}
+      poster={hero?.posterUrl ?? null}
+      status={hero?.status ?? "READY"}
+      className={cn("absolute inset-0 h-full w-full rounded-none", animClass)}
+      controls={false}
+      autoPlayMuted
+      loop
+      pauseOffscreen={false}
+      ariaLabel="Invitation hero video"
+    />
+  ) : (
     <UploadedMedia
       src={heroUrl}
       alt="Invitation"
       className={cn("absolute inset-0 h-full w-full object-cover object-center", animClass)}
-      video={isVideo}
-      fill={!isVideo}
-      sizes={!isVideo ? "(max-width: 768px) 100vw, 480px" : undefined}
+      fill
+      sizes="(max-width: 768px) 100vw, 480px"
       controls={false}
-      muted={isVideo}
     />
   );
 

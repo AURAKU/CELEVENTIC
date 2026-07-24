@@ -17,10 +17,11 @@ Celeventic = Celebrate + Event + Ticket
 | **API (Production)** | Laravel 11 API (`backend/`) — connects via `LARAVEL_API_URL` |
 | **Database** | PostgreSQL 16 + Prisma ORM (50+ models) |
 | **Cache** | Redis 7 (ioredis with in-memory fallback) |
-| **Queue** | Background jobs table + Laravel Redis queues |
+| **Queue** | Background jobs table (drained by `npm run jobs:worker`) + Laravel Redis queues |
 | **Auth** | NextAuth.js + 2FA (TOTP) + Google OAuth |
 | **Payments** | Paystack, Flutterwave, Hubtel adapters |
 | **Storage** | AWS S3 + CloudFront (local disk fallback in dev) |
+| **Video pipeline** | Direct-to-S3 multipart upload + AWS Elemental MediaConvert (HEVC/H.265-aware) — see [`docs/ops/VIDEO-UPLOAD-DEPLOYMENT.md`](docs/ops/VIDEO-UPLOAD-DEPLOYMENT.md) |
 | **Realtime** | Pusher-ready |
 | **Monitoring** | Sentry + PostHog ready |
 

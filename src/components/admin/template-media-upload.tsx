@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
-import { MediaUploadVideo } from "@/components/media/media-upload-video";
+import { VideoUploader, type UploadedVideoResult } from "@/components/media/video-uploader";
 import { uploadFormDataWithProgress } from "@/lib/media/upload-with-progress";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 
@@ -53,17 +53,21 @@ export function TemplateMediaUpload({
     );
   }
 
+  function onVideoUploaded(result: UploadedVideoResult) {
+    if (result.processedMp4Url) onUploaded(result.processedMp4Url);
+  }
+
   return (
     <div>
       <Label className="text-xs">{label}</Label>
-      <MediaUploadVideo
+      <VideoUploader
         className="mt-1"
-        uploadEndpoint="/api/admin/invitation-templates/upload"
-        extraFormFields={{ category }}
-        onUploaded={(r) => onUploaded(r.url)}
+        category="ADMIN"
+        role={category}
+        onUploaded={onVideoUploaded}
         onError={setError}
         buttonLabel="Upload video"
-        hint="Upload template preview or background video."
+        hint="Upload template preview, background, or motion reference — up to 5GB, processed automatically."
       />
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>

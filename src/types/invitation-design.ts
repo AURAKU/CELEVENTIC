@@ -31,6 +31,15 @@ export interface InvitationMediaAsset {
    */
   role: "hero" | "background" | "reference" | "attachment" | "intro";
   name?: string;
+  /** Video-only, additive metadata from the processing pipeline (src/lib/video/video-processor.ts). */
+  posterUrl?: string | null;
+  thumbnailUrl?: string | null;
+  /** Private original upload — never rendered directly, kept for reprocessing/audit. */
+  originalUrl?: string | null;
+  status?: "READY" | "PROCESSING" | "FAILED";
+  durationSeconds?: number | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 export interface InvitationDesignColors {

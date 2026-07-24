@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "assets.mixkit.co", pathname: "/**" },
       { protocol: "https", hostname: "**.amazonaws.com", pathname: "/**" },
       { protocol: "https", hostname: "**.cloudfront.net", pathname: "/**" },
+      // Video/media CDN (CloudFront distribution behind a custom domain — see .env.example AWS_CLOUDFRONT_DOMAIN)
+      { protocol: "https", hostname: "media.celeventic.com", pathname: "/**" },
     ],
   },
   async redirects() {
