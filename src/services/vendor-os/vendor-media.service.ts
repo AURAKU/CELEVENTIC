@@ -41,6 +41,14 @@ export class VendorMediaService {
     });
   }
 
+  /** Active (non-removed) portfolio media for the vendor's own management view, newest first. */
+  async listActiveMedia(vendorId: string) {
+    return prisma.vendorMedia.findMany({
+      where: { vendorId, status: "active" },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+  }
+
   async getUsage(vendorId: string) {
     const [limits, usage] = await Promise.all([
       vendorPlanService.getVendorLimits(vendorId),

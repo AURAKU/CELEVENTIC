@@ -27,14 +27,14 @@ export function VendorPortfolioUpload({ onUploaded, disabled }: VendorPortfolioU
   return (
     <div className="space-y-4">
       <ImageUploadCropper
-        defaultAspect="4:5"
+        defaultAspect="free"
         allowedAspects={CROP_PRESETS.gallery}
         onCustomUpload={uploadPortfolioImage}
         onUploaded={() => onUploaded?.()}
         onError={setError}
         disabled={disabled}
         buttonLabel="Upload portfolio image"
-        hint="Add a portfolio photo — crop to showcase your best work."
+        hint="Add a portfolio photo — drag to select any region, any shape, or use the full image."
       />
       <VideoUploader
         category="VENDOR_PORTFOLIO"

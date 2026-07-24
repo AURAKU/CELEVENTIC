@@ -7,6 +7,13 @@ import { playRevealSounds } from "@/lib/experience/reveal-sounds";
 import type { EnvelopeVisualTheme } from "@/lib/experience/opening-experiences";
 import { normalizeSealInitials } from "@/lib/invitation/vision-board";
 import { EmbroideredEnvelopeFace } from "@/components/experience/embroidered-envelope-face";
+import {
+  DEFAULT_RESOLVED_SEAL_STYLE,
+  sealInkStyle,
+  SEAL_FONT_STACKS,
+  SEAL_SIZE_SCALE,
+  type ResolvedSealStyle,
+} from "@/lib/invitation/seal-design";
 
 interface EnvelopeCollectionRevealProps {
   theme: EnvelopeVisualTheme;
@@ -17,6 +24,8 @@ interface EnvelopeCollectionRevealProps {
   enableSounds?: boolean;
   /** Couple initials on the wax seal (e.g. "C | J"). Falls back to theme.sealIcon / ✦. */
   sealInitials?: string;
+  /** Designed seal (color/material) + font/size/color overrides for the wax seal text. */
+  sealStyle?: ResolvedSealStyle;
   /** Fires on the open gesture — preferred music unlock path. */
   onBegin?: () => void;
   onComplete: () => void;
@@ -76,6 +85,7 @@ export function EnvelopeCollectionReveal({
   eventTitle,
   enableSounds,
   sealInitials,
+  sealStyle,
   onBegin,
   onComplete,
   children,
@@ -131,7 +141,13 @@ export function EnvelopeCollectionReveal({
   const stageBg = theme.stageBg ?? theme.bodyBg ?? DEFAULT_STAGE;
   const frameColor = theme.frameColor ?? (theme.royal ? DEFAULT_FRAME : `${theme.accent}`);
   const outerEdge = theme.outerEdgeColor ?? theme.borderColor ?? DEFAULT_OUTER;
-  const sealTextColor = theme.accent === "#757575" ? "#fff" : "#F5E6B8";
+  const resolvedSealStyle = sealStyle ?? DEFAULT_RESOLVED_SEAL_STYLE;
+  const defaultSealTextColor = theme.accent === "#757575" ? "#fff" : "#F5E6B8";
+  const sealTextColor = resolvedSealStyle.textColor || defaultSealTextColor;
+  const sealSizeScale = SEAL_SIZE_SCALE[resolvedSealStyle.size];
+  const sealFontFamily =
+    resolvedSealStyle.fontFamily !== "auto" ? SEAL_FONT_STACKS[resolvedSealStyle.fontFamily] : undefined;
+  const sealInk = sealInkStyle(sealTextColor, false, useInitialsGlyph);
   const stageBase = photoreal ? "#ebe2d6" : "#050a12";
 
   const finish = useCallback(() => {
@@ -258,6 +274,7 @@ export function EnvelopeCollectionReveal({
           flapDelayMs={flapDelayMs}
           openEase={openEase}
           fitContainer={staticPreview}
+          sealStyle={resolvedSealStyle}
         />
       ) : (
       <div
@@ -489,7 +506,12 @@ export function EnvelopeCollectionReveal({
                   fontSize: useInitialsGlyph
                     ? "clamp(1.2rem, 4.8vw, 1.75rem)"
                     : "clamp(1.25rem, 5vw, 1.8rem)",
-                  textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+                  fontFamily: sealFontFamily,
+                  textShadow: resolvedSealStyle.textColor
+                    ? sealInk.textShadow
+                    : "0 1px 2px rgba(0,0,0,0.4)",
+                  transform: sealSizeScale !== 1 ? `scale(${sealSizeScale})` : undefined,
+                  transformOrigin: "50% 50%",
                 }}
               >
                 {sealLabel}

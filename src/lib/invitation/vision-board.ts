@@ -1,4 +1,10 @@
 import type { ButtonStyle } from "@/lib/invitation-studio/studio-types";
+import {
+  DEFAULT_SEAL_DESIGN,
+  type SealDesignId,
+  type SealFontChoice,
+  type SealSizeId,
+} from "@/lib/invitation/seal-design";
 
 /** Editable copy + feature toggles for the Traditional Marriage Ceremony vision board. */
 export interface VisionBoardFeatureFlags {
@@ -31,6 +37,14 @@ export interface VisionBoardContent {
    * Traditional Marriage Ceremony defaults to "C | J".
    */
   sealInitials?: string;
+  /** Designed wax-seal visual style (color/material). Defaults to `classic-peach-pearl`. */
+  sealDesign?: SealDesignId;
+  /** Seal text font — "auto" keeps the smart monogram/word default. */
+  sealFontFamily?: SealFontChoice;
+  /** Seal text size. Defaults to "md". */
+  sealSize?: SealSizeId;
+  /** Seal text color override (hex). Empty/undefined uses the preset's default ink. */
+  sealTextColor?: string;
   weekday?: string;
   monthLabel?: string;
   dayNumber?: string;
@@ -190,6 +204,10 @@ export const DEFAULT_VISION_BOARD: Required<
   coupleName1: "OWURAKU AFARI",
   coupleName2: "FRANCISCA CHELSY SERWAAH OPOKU",
   sealInitials: TRADITIONAL_MARRIAGE_DEFAULT_SEAL,
+  sealDesign: DEFAULT_SEAL_DESIGN,
+  sealFontFamily: "auto",
+  sealSize: "md",
+  sealTextColor: "",
   weekday: "THURSDAY",
   monthLabel: "AUGUST",
   dayNumber: "13",

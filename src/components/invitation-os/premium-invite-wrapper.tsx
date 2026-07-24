@@ -28,11 +28,13 @@ import {
 } from "@/lib/experience-engine/soft-intro";
 import { getLayoutMediaPack } from "@/lib/invitation/layout-media-identity";
 import { introAtmosphereUrlFromDesign } from "@/lib/invitation/studio-media-utils";
+import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import {
   TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL,
   resolveSealInitials,
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
+import { resolveSealStyle } from "@/lib/invitation/seal-design";
 
 /**
  * Full opening pipeline (platform → template → reveal → invite):
@@ -354,6 +356,12 @@ export function PremiumInviteWrapper({
         name2={visionBoard?.coupleName2}
         layoutSlug={enrichedDesign.layout}
         category={experience?.collectionId}
+        fontFamily={
+          experience?.welcomeFontFamily ? resolveThankYouFontStack(experience.welcomeFontFamily) : undefined
+        }
+        fontScale={experience?.welcomeFontScale}
+        textColorOverride={experience?.welcomeTextColor}
+        accentColorOverride={experience?.welcomeAccentColor}
       />
     );
   }
@@ -365,6 +373,7 @@ export function PremiumInviteWrapper({
       coupleName2: visionBoard?.coupleName2,
       hostName: props.event.hostName,
     });
+    const sealStyle = resolveSealStyle(visionBoard);
     return (
       <>
         <InteractiveReveal
@@ -375,6 +384,7 @@ export function PremiumInviteWrapper({
           musicEnabled={Boolean(hasMusic)}
           enableSounds={experience?.enableRevealSounds}
           sealInitials={sealInitials}
+          sealStyle={sealStyle}
           embedded={Boolean(embedded)}
           autoOpen={Boolean(autoOpenReveal)}
           onBegin={() => {

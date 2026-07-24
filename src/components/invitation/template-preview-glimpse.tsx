@@ -19,6 +19,7 @@ import {
   resolveSealInitials,
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
+import { resolveSealStyle } from "@/lib/invitation/seal-design";
 
 const FRAME_WIDTH = 390;
 
@@ -84,6 +85,7 @@ export function TemplatePreviewGlimpse({
     coupleName2: visionBoard.coupleName2,
     hostName: preview.event.hostName,
   });
+  const sealStyle = resolveSealStyle(visionBoard);
 
   const coverUrl = preview.event.coverImageUrl ?? getDemoHeroUrl(layoutSlug, category);
   const eventWithCover = { ...preview.event, coverImageUrl: coverUrl };
@@ -105,6 +107,7 @@ export function TemplatePreviewGlimpse({
           hostName={preview.event.hostName}
           guestName={preview.guestName}
           sealInitials={sealInitials}
+          sealStyle={sealStyle}
           enableSounds={false}
           staticPreview
           onComplete={noop}

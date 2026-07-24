@@ -70,7 +70,7 @@ export function ImageCropDialog({
   open,
   imageSrc,
   fileName = "image.jpg",
-  defaultAspect = "4:5",
+  defaultAspect = "free",
   allowedAspects,
   onClose,
   onConfirm,

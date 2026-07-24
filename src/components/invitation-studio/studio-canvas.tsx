@@ -28,29 +28,78 @@ interface StudioCanvasProps {
   catalogSlug?: string | null;
 }
 
+/**
+ * Honest device widths — the canvas renders the real guest renderer natively at
+ * each width (never a scaled-down mockup), so CSS max-widths/breakpoints inside
+ * the invite reflow exactly as they would on that class of device. Each `maxW`
+ * is capped by the parent's `w-full`, so it also never overflows the available
+ * studio panel on smaller studio windows.
+ */
 const DEVICE_FRAME: Record<
   StudioDevice,
-  { maxW: string; label: string; radius: string; bezel: string }
+  { maxW: string; label: string; radius: string; bezel: string; screenRadius: string }
 > = {
   mobile: {
     maxW: "max-w-[390px]",
     label: "iPhone frame",
-    radius: "rounded-[2rem]",
-    bezel: "p-2 bg-slate-900 shadow-2xl",
+    radius: "rounded-[2.75rem]",
+    screenRadius: "rounded-[2.1rem]",
+    bezel: "p-[10px] bg-slate-900 shadow-2xl ring-1 ring-black/50",
   },
   tablet: {
-    maxW: "max-w-[720px]",
+    // iPad-portrait width — genuinely reflows the invite's own responsive CSS,
+    // not a stretched phone mockup.
+    maxW: "max-w-[768px]",
     label: "Tablet frame",
-    radius: "rounded-2xl",
-    bezel: "p-2.5 bg-slate-800 shadow-2xl",
+    radius: "rounded-[1.75rem]",
+    screenRadius: "rounded-[1.35rem]",
+    bezel: "p-3 bg-slate-800 shadow-2xl ring-1 ring-black/40",
   },
   desktop: {
-    maxW: "max-w-3xl",
-    label: "Desktop",
+    // Real desktop viewport width (not the old 768px alias) so the "Desktop"
+    // tab is visibly distinct from Tablet.
+    maxW: "max-w-[1180px]",
+    label: "Desktop frame",
     radius: "rounded-xl",
-    bezel: "p-1 bg-slate-700/80 shadow-xl",
+    screenRadius: "rounded-b-lg",
+    bezel: "bg-slate-800 shadow-2xl ring-1 ring-black/40",
   },
 };
+
+export const STUDIO_DEVICE_STORAGE_KEY = "celeventic-studio-device";
+
+function BrowserChrome() {
+  return (
+    <div className="flex items-center gap-2 rounded-t-xl bg-slate-700/90 px-3 py-2" aria-hidden>
+      <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+      <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+      <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+      <div className="ml-2 flex-1 truncate rounded-full bg-slate-900/60 px-3 py-1 text-center text-[10px] text-white/50">
+        your-event.celeventic.com
+      </div>
+    </div>
+  );
+}
+
+function DeviceNotch({ device }: { device: StudioDevice }) {
+  if (device === "mobile") {
+    return (
+      <div
+        className="absolute left-1/2 top-1.5 z-20 h-5 w-28 -translate-x-1/2 rounded-full bg-black"
+        aria-hidden
+      />
+    );
+  }
+  if (device === "tablet") {
+    return (
+      <div
+        className="absolute left-1/2 top-2 z-20 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-slate-950/70"
+        aria-hidden
+      />
+    );
+  }
+  return null;
+}
 
 function SnapGuideOverlay({ guideId }: { guideId?: string | null }) {
   if (!guideId || guideId === "none") return null;
@@ -111,16 +160,15 @@ export function StudioCanvas({
       <div className="relative z-[1] flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-4 py-6">
         <div
           className={cn(
-            "relative w-full transition-all duration-300 ease-out",
+            "relative w-full transition-[max-width] duration-300 ease-out",
             frame.maxW,
             frame.bezel,
             frame.radius
           )}
         >
-          <div className={cn("relative overflow-hidden bg-black", frame.radius)}>
-            {device === "mobile" && (
-              <div className="mx-auto mb-1 mt-1 h-1 w-16 rounded-full bg-white/20" aria-hidden />
-            )}
+          {device === "desktop" && <BrowserChrome />}
+          <div className={cn("relative overflow-hidden bg-black", frame.screenRadius)}>
+            <DeviceNotch device={device} />
             <InvitationStudioPreview
               design={design}
               event={event}
@@ -131,7 +179,18 @@ export function StudioCanvas({
               catalogSlug={catalogSlug}
             />
             <SnapGuideOverlay guideId={snapGuideId} />
-            <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-30 flex justify-center">
+            {device === "mobile" && (
+              <div
+                className="pointer-events-none absolute bottom-1.5 left-1/2 z-30 h-1 w-28 -translate-x-1/2 rounded-full bg-white/40"
+                aria-hidden
+              />
+            )}
+            <div
+              className={cn(
+                "pointer-events-none absolute left-2 right-2 z-30 flex justify-center",
+                device === "mobile" ? "bottom-6" : "bottom-2"
+              )}
+            >
               <span className="rounded-full bg-black/60 px-2.5 py-1 text-[9px] font-medium tracking-wide text-white/90 backdrop-blur-sm">
                 Preview-safe · RSVP & payments disabled
               </span>
