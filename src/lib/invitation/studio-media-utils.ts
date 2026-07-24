@@ -16,6 +16,27 @@ export function heroUrlFromDesign(design: InvitationDesignConfig): string | null
   return hero?.url ?? null;
 }
 
+/** The dedicated pre-invite welcome photo — soft-intro / "BEGIN" gate only. */
+export function introAtmosphereUrlFromDesign(design: InvitationDesignConfig): string | null {
+  const shot = design.media?.find((m) => m.role === "intro");
+  return shot?.url ?? null;
+}
+
+export function syncDesignIntroAtmosphere(
+  design: InvitationDesignConfig,
+  url: string | null
+): InvitationDesignConfig {
+  const rest = (design.media ?? []).filter((m) => m.role !== "intro");
+  if (!url) return { ...design, media: rest.length ? rest : undefined };
+  const asset: InvitationMediaAsset = {
+    url,
+    type: "image",
+    role: "intro",
+    name: "Pre-invite welcome photo",
+  };
+  return { ...design, media: [...rest, asset] };
+}
+
 export function pageBackgroundFromDesign(design: InvitationDesignConfig): ResolvedBackgroundMedia {
   const page = design.media?.find((m) => m.role === "background");
   if (!page) return { backgroundImageUrl: null, backgroundVideoUrl: null };

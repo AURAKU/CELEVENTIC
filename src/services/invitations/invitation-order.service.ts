@@ -26,6 +26,18 @@ function sanitizeOrderShareUrl<T extends { shareUrl?: string | null }>(order: T)
   return { ...order, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) };
 }
 
+/** Studio's dedicated pre-invite welcome photo (`design.media` role `"intro"`), if any. */
+function extractIntroImageUrl(designConfig: unknown): string | null {
+  if (!designConfig || typeof designConfig !== "object") return null;
+  const media = (designConfig as { media?: unknown }).media;
+  if (!Array.isArray(media)) return null;
+  const shot = media.find(
+    (m) => Boolean(m) && typeof m === "object" && (m as { role?: unknown }).role === "intro"
+  ) as { url?: unknown } | undefined;
+  const url = shot?.url;
+  return typeof url === "string" && url.trim() ? url.trim() : null;
+}
+
 export interface CreateOrderInput {
   userId: string;
   templateSlug: string;
@@ -245,7 +257,44 @@ export class InvitationOrderService {
       await productionWorkflowService.onAddonsSelected(orderId, addonSlugs);
     }
 
+    if (data.designConfig !== undefined && order.eventId) {
+      const previousIntro = extractIntroImageUrl(order.designConfig);
+      const nextIntro = extractIntroImageUrl(data.designConfig);
+      if (nextIntro !== previousIntro) {
+        await this.syncIntroImageToEventQr(order.eventId, previousIntro, nextIntro);
+      }
+    }
+
     return updated;
+  }
+
+  /**
+   * Mirror the Studio "welcome photo" (soft-intro / BEGIN screen) onto the
+   * event's branded QR center logo, sized up to the largest preset that stays
+   * safely scannable. Only follows the sync while the QR mark still matches
+   * what we last pushed here — a manual upload on the dedicated QR branding
+   * page always wins and stops future auto-sync from overwriting it.
+   */
+  private async syncIntroImageToEventQr(
+    eventId: string,
+    previousUrl: string | null,
+    nextUrl: string | null
+  ) {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { qrCenterImageUrl: true, qrLogoSize: true },
+    });
+    if (!event) return;
+    const stillAutoSynced = !event.qrCenterImageUrl || event.qrCenterImageUrl === previousUrl;
+    if (!stillAutoSynced) return;
+
+    await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        qrCenterImageUrl: nextUrl,
+        qrLogoSize: nextUrl ? (event.qrLogoSize ?? "bold") : null,
+      },
+    });
   }
 
   async getOrderForUser(orderId: string, userId: string) {
@@ -313,6 +362,11 @@ export class InvitationOrderService {
     const storedDesign = order.designConfig as Record<string, unknown> | null;
     const designConfig = mergeDesignConfig(baseDesign, storedDesign as never);
 
+    // Preserve the dedicated soft-intro / BEGIN-screen welcome photo — it lives
+    // outside the swipe gallery, so the gallery-derived media list below must
+    // not silently drop it.
+    const introAsset = designConfig.media?.find((m) => m.role === "intro");
+
     const gallery = (order.galleryUrls as string[] | null) ?? [];
     if (gallery.length > 0) {
       designConfig.media = gallery.map((url, i) => ({
@@ -320,7 +374,10 @@ export class InvitationOrderService {
         type: isVideoUrl(url) ? ("video" as const) : ("image" as const),
         role: i === 0 ? "hero" as const : "reference" as const,
       }));
+      if (introAsset) designConfig.media.push(introAsset);
     }
+
+    const introImageUrl = extractIntroImageUrl(designConfig);
 
     const hostName =
       order.coupleName1 && order.coupleName2
@@ -350,6 +407,11 @@ export class InvitationOrderService {
         dressCode: order.dressCode,
         contactPhone: order.contactPhone,
         coverImageUrl: gallery[0] ?? null,
+        // Mirror the welcome photo onto the branded QR center mark, sized up to
+        // the largest safely-scannable preset. Empty stays on the Celeventic
+        // default logo (see qrBrandingService.resolveCenterImageUrl).
+        qrCenterImageUrl: introImageUrl,
+        qrLogoSize: introImageUrl ? "bold" : null,
         isPublic: true,
         status: "PUBLISHED",
         organizerId: order.userId,
