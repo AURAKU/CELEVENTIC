@@ -1,5 +1,17 @@
 # Video processing — VPS FFmpeg (invitations + universal pipeline bridge)
 
+> ⚠️ **Update (2026-07-24) — videos stuck on "processing" forever, fixed end-to-end.** Root cause
+> was almost always `celeventic-video-worker` not running (or dead mid-transcode): Next.js only
+> ever *creates* `video-process` `BackgroundJob` rows, and that standalone worker process is the
+> only thing that drains them. Fixed with: stale-`PROCESSING`/`PENDING` recovery
+> (`src/lib/video/cleanup.ts`, `src/lib/queue.ts`), a worker liveness heartbeat
+> (`src/lib/video/worker-heartbeat.ts`) that correctly tells "not running" apart from "running but
+> busy with one large video", an in-process inline-fallback for small/medium files wired into the
+> status-poll route (`src/lib/video/inline-fallback.ts`) that self-heals when the worker is
+> confirmed down (including local/dev when you forget to start it), and an admin-visible worker
+> health tile (`src/lib/video/worker-health.ts`). See `docs/ops/VIDEO-UPLOAD-DEPLOYMENT.md`
+> ("part 5" update) for the full write-up, env vars, and how to verify it.
+
 ## Why this exists
 
 `src/app/api/invitations/upload/route.ts` accepted MOV/HEVC/etc. video uploads but returned

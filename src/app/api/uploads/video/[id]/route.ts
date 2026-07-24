@@ -3,7 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
 import { serializeVideoAsset } from "@/lib/video/serialize";
 import { deleteVideoAssetAndStorage } from "@/lib/video/cleanup";
+import { maybeKickStaleQueuedAsset } from "@/lib/video/inline-fallback";
 
+/**
+ * The video status poll route — `VideoUploader`/`MediaUploader` hit this every few seconds while
+ * an asset is QUEUED/PROCESSING. Also doubles as the self-healing checkpoint for stuck QUEUED
+ * assets (see `maybeKickStaleQueuedAsset`): every poll gives us a free, cheap opportunity to
+ * notice "this has been QUEUED a while and the worker heartbeat is gone" and either kick off an
+ * inline fallback transcode or fail fast with an actionable reason — without any dedicated cron.
+ */
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const url = new URL(req.url);
@@ -19,7 +27,8 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     throw error;
   }
 
-  return NextResponse.json({ success: true, data: serializeVideoAsset(asset) });
+  const current = await maybeKickStaleQueuedAsset(asset);
+  return NextResponse.json({ success: true, data: serializeVideoAsset(current) });
 }
 
 /**

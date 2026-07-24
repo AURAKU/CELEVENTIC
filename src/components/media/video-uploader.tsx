@@ -109,6 +109,7 @@ export function VideoUploader({
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialPreviewUrl ?? null);
   const [previewUnsupported, setPreviewUnsupported] = useState(false);
   const [fileMeta, setFileMeta] = useState<{ name: string; size: number } | null>(null);
+  const [processingElapsedSec, setProcessingElapsedSec] = useState(0);
 
   const objectUrlRef = useRef<string | null>(null);
   const pausedRef = useRef(false);
@@ -122,12 +123,31 @@ export function VideoUploader({
   const totalPartsRef = useRef(0);
   const partSizeRef = useRef(0);
   const contentTypeRef = useRef("application/octet-stream");
+  /**
+   * Set only when `pollUntilReady` gives up because of OUR client-side timeout — the upload
+   * already fully succeeded and the background worker may well finish it seconds later. Distinct
+   * from a real server-reported FAILED. `handleRetry` uses this to resume polling the SAME asset
+   * instead of re-uploading the whole file from scratch (which would silently orphan the
+   * still-processing original and create a duplicate `VideoAsset`).
+   */
+  const softTimeoutRef = useRef(false);
 
   useEffect(() => {
     return () => {
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
   }, []);
+
+  // Ticking counter for the "Preparing your video…" state — reassures the user something is
+  // actively happening instead of a bare spinner sitting still for minutes.
+  useEffect(() => {
+    if (phase !== "processing") {
+      setProcessingElapsedSec(0);
+      return;
+    }
+    const id = setInterval(() => setProcessingElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [phase]);
 
   const reportError = useCallback(
     (message: string) => {
@@ -144,6 +164,7 @@ export function VideoUploader({
     setProgress(0);
     cancelledRef.current = false;
     pausedRef.current = false;
+    softTimeoutRef.current = false;
     abortFnsRef.current.clear();
     uploadedPartsRef.current.clear();
     partBytesRef.current.clear();
@@ -158,6 +179,7 @@ export function VideoUploader({
 
   async function pollUntilReady(assetId: string) {
     setPhase("processing");
+    softTimeoutRef.current = false;
     const startedAt = Date.now();
     for (;;) {
       if (cancelledRef.current) return;
@@ -174,6 +196,7 @@ export function VideoUploader({
 
       const asset = res.data;
       if (asset.status === "READY") {
+        softTimeoutRef.current = false;
         setPhase("ready");
         onUploaded({
           assetId: asset.id,
@@ -187,11 +210,16 @@ export function VideoUploader({
         return;
       }
       if (asset.status === "FAILED" || asset.status === "CANCELLED") {
+        softTimeoutRef.current = false;
         reportError(asset.failureReason ?? "Video processing failed.");
         return;
       }
       if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
-        reportError("Video is taking longer than expected to process. It will finish in the background — check back shortly.");
+        // This is OUR client-side patience running out, not a server-reported failure — the
+        // upload is safely persisted and the worker may still finish it. Flag it so `handleRetry`
+        // resumes polling instead of re-uploading the whole file (see `softTimeoutRef`).
+        softTimeoutRef.current = true;
+        reportError("Video is taking longer than expected to process. It will finish in the background — tap Retry to check again.");
         return;
       }
       // QUEUED / UPLOADED / PROCESSING — keep polling.
@@ -403,6 +431,14 @@ export function VideoUploader({
   }
 
   function handleRetry() {
+    // A soft (client-side) timeout means the file already finished uploading and may still be
+    // processing in the background — resume polling the same asset instead of re-uploading the
+    // whole file again (which would orphan the original and create a duplicate VideoAsset).
+    if (softTimeoutRef.current && assetIdRef.current) {
+      setError(null);
+      void pollUntilReady(assetIdRef.current);
+      return;
+    }
     const file = fileRef.current;
     if (!file) return;
     void startUpload(file);
@@ -510,10 +546,22 @@ export function VideoUploader({
           {busy && (
             <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-brand-600 transition-all"
+                className={cn(
+                  "h-full bg-brand-600 transition-all",
+                  phase === "processing" && "animate-pulse"
+                )}
                 style={{ width: `${phase === "processing" || phase === "finalizing" ? 100 : progress}%` }}
               />
             </div>
+          )}
+          {phase === "processing" && (
+            <p className="text-xs text-slate-500">
+              {processingElapsedSec < 20
+                ? "Preparing your video for smooth playback…"
+                : processingElapsedSec < 90
+                  ? `Still preparing… (${processingElapsedSec}s) — bigger files take a bit longer.`
+                  : `Still working on it (${Math.round(processingElapsedSec / 60) || 1} min so far) — feel free to leave this page, we'll finish in the background.`}
+            </p>
           )}
           {error && (
             <p className="text-xs text-red-600 flex items-start gap-1">
@@ -534,7 +582,7 @@ export function VideoUploader({
             )}
             {phase === "failed" && (
               <Button type="button" size="sm" variant="outline" className="gap-1" onClick={handleRetry}>
-                <RotateCcw className="h-3.5 w-3.5" /> Retry
+                <RotateCcw className="h-3.5 w-3.5" /> {softTimeoutRef.current ? "Check again" : "Retry"}
               </Button>
             )}
             {(busy || phase === "paused" || phase === "failed") && (

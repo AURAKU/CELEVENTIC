@@ -46,6 +46,38 @@
 > plain fallback pipeline (logged to `pm2 logs`) instead of failing the upload. The (still
 > opt-in) external converter's output is now verified with `ffprobe`, not just "file is
 > non-empty", before ever being trusted.
+>
+> ⚠️ **Update (2026-07-24, part 5) — videos stuck on "processing" forever, fixed end-to-end:**
+> root cause was almost always **`celeventic-video-worker` not running** (or having crashed
+> mid-transcode) — Next.js only ever *creates* `video-process` `BackgroundJob` rows, and that
+> worker process is the only thing that ever drains them. Four independent fixes now cover this:
+> 1. **Stale-`PROCESSING` recovery** (`recoverStalledVideoProcessing` in `src/lib/video/cleanup.ts`,
+>    `recoverStalledJobs` in `src/lib/queue.ts`) — every worker tick resets a `VideoAsset`/`BackgroundJob`
+>    stuck `PROCESSING` past a stale threshold (default 20/30 min) back to `QUEUED`/`PENDING` and
+>    retries, or marks it `FAILED` with a clear reason past `VIDEO_MAX_PROCESSING_ATTEMPTS`.
+> 2. **Worker liveness heartbeat** (`src/lib/video/worker-heartbeat.ts`) — the worker writes a
+>    small JSON heartbeat file every tick (and after every job), so the app can tell "worker isn't
+>    running" apart from "worker is alive but busy with one large video" — a pure queue-depth
+>    check can't make that distinction.
+> 3. **In-process inline fallback** (`src/lib/video/inline-fallback.ts`) — wired into the status
+>    poll route (`GET /api/uploads/video/:id`), this self-heals a `VideoAsset` stuck `QUEUED`
+>    once the heartbeat confirms the worker isn't running: small/medium files (`<= VIDEO_INLINE_FALLBACK_MAX_MB`,
+>    default 200MB) are transcoded right there in the Next.js server process, fire-and-forget
+>    (never on the upload request thread, so this cannot reintroduce the `ECONNRESET` regression
+>    part 3 above fixed); larger files are marked `FAILED` with an actionable "worker not running"
+>    message instead of spinning forever. Also self-heals local dev when a developer forgets to
+>    run `npm run jobs:worker`.
+> 4. **Admin visibility** — `/admin` system health now has a "Video Processing Worker" tile
+>    (`src/lib/video/worker-health.ts`) that surfaces heartbeat status, pending-job backlog, and
+>    stuck-`PROCESSING` counts, instead of ops having to guess.
+>
+> Also: `ecosystem.config.js` (repo root) now defines both PM2 processes (`celeventic` +
+> `celeventic-video-worker`) so `pm2 start ecosystem.config.js --only celeventic-video-worker`
+> reliably starts the worker with the right cwd/restart policy — see "Deployment commands" below.
+> Frontend (`src/components/media/video-uploader.tsx`): the "Video is taking longer than expected…"
+> timeout is now a soft, resumable state — its Retry button re-polls the same upload instead of
+> re-uploading the whole file (which used to risk creating a duplicate asset), and a live elapsed-time
+> caption replaces the static "processing" spinner.
 
 # Universal Video Upload & Processing — Deployment Guide
 
@@ -153,6 +185,15 @@ VIDEO_PREMIUM_MAX_SIZE_MB=2048
 VIDEO_ADMIN_MAX_SIZE_MB=5120
 VIDEO_ABANDONED_UPLOAD_HOURS=24
 JOB_WORKER_TICK_MS=15000
+# Stale-processing / stale-job recovery, worker heartbeat, and in-process inline fallback — see
+# the "part 5" update above and .env.example for full docs on every var below:
+VIDEO_STALE_PROCESSING_MINUTES=20
+VIDEO_MAX_PROCESSING_ATTEMPTS=3
+JOB_STALE_MINUTES=30
+VIDEO_WORKER_HEARTBEAT_STALE_MS=90000
+VIDEO_INLINE_FALLBACK_ENABLED=true
+VIDEO_INLINE_FALLBACK_AFTER_MS=45000
+VIDEO_INLINE_FALLBACK_MAX_MB=200
 ```
 
 Category limits are also editable at runtime without a redeploy via the `AdminSetting` row
@@ -169,12 +210,26 @@ npx prisma generate
 npx prisma db push
 rm -rf .next && npm run build
 pm2 restart celeventic --update-env
-# Start (first time) or restart the queue worker as its own PM2 process. `celeventic-video-worker`
-# is the canonical process name going forward (matches the ops runbook in
+
+# Start (first time) or restart the queue worker. Two equivalent ways — pick one:
+#
+# (a) Using the repo's ecosystem.config.js (recommended — defines restart policy/memory limits
+#     for both processes in one place):
+pm2 start ecosystem.config.js --only celeventic-video-worker
+pm2 restart celeventic-video-worker --update-env   # on subsequent deploys, once it already exists
+#
+# (b) Ad-hoc, if you'd rather not adopt ecosystem.config.js yet. `celeventic-video-worker` is the
+# canonical process name going forward (matches the ops runbook in
 # docs/ops/HOSTINGER-VPS-HEVC-DOLBY-VISION-PROMPT.md); `celeventic-jobs-worker` from earlier
 # deploys keeps working unchanged if it's already running — no need to rename an existing process.
 pm2 start "npm run jobs:worker" --name celeventic-video-worker --update-env
 pm2 save
+
+# Verify the worker actually started and is draining the queue (not just that the PM2 process
+# exists — see the "part 5" update above for why a separate heartbeat check matters):
+pm2 logs celeventic-video-worker --lines 20   # expect "[jobs-worker] started — tick every ..."
+cat var/video-worker/heartbeat.json           # should have an `updatedAt` from the last few seconds
+# Or check /admin (System Health -> "Video Processing Worker" tile) — it reads the same heartbeat.
 
 # One-time (or re-runnable) backfill of pre-existing invitation videos to browser-universal MP4 —
 # see docs/video-processing.md#backfilling-pre-existing-videos for full details/flags:
@@ -182,10 +237,20 @@ npm run video:backfill:dry-run
 npm run video:backfill
 ```
 
+**Never run `pm2 restart all`** on this box — other unrelated apps (e.g. Spark & Drive) may share
+the same PM2 daemon. Always target `celeventic` and `celeventic-video-worker` by name.
+
 The worker (`celeventic-video-worker`, script: `scripts/video-jobs-worker.ts`, alias npm script:
 `npm run video:worker` / `npm run jobs:worker`) is a small, long-running Node process — it only
-makes AWS API calls (CreateJob/GetJob) and Prisma queries every `JOB_WORKER_TICK_MS`; it does not
-receive uploads or run FFmpeg itself, so it's safe to run on the same VPS as the Next.js app.
+makes AWS API calls (CreateJob/GetJob) and Prisma queries every `JOB_WORKER_TICK_MS` when
+`VIDEO_PROCESSOR=mediaconvert`. **On Hostinger it also runs real FFmpeg**: with the default
+`VIDEO_PROCESSOR=ffmpeg`, this same process is what actually transcodes every video (see
+`processQueuedVideoAssetLocalFfmpeg`/`processQueuedVideoAssetWithFfmpeg` in
+`src/lib/video/processing.ts`) — it's still safe to run on the same VPS as the Next.js app
+(`VIDEO_PROCESSOR_CONCURRENCY=1` by default bounds it to one transcode at a time), but it is NOT
+just a lightweight orchestrator on this deployment. If it isn't running, uploads still accept
+(202 QUEUED) but nothing ever transcodes them — see the "part 5" update above for how this is now
+detected (worker heartbeat) and self-healed (stale-job recovery, in-process inline fallback).
 
 ## Rollback
 
@@ -230,10 +295,17 @@ upscaled).
 ## Testing
 
 ```bash
-npm run test:video            # format/signature/HEVC/MediaConvert-plan unit tests (no AWS calls made)
-npm run test:video-pipeline   # real-DB integration: 202 queue -> worker (ffmpeg mocked) -> READY
+npm run test:video            # format/signature/HEVC/MediaConvert-plan/heartbeat unit tests (no AWS calls made)
+npm run test:video-pipeline   # real-DB integration: 202 queue -> worker -> READY, stale-processing/job
+                               # recovery, worker-health, and inline-fallback self-healing (see part 5)
 npm run test:currency         # currency seed-once / no-repeated-writes regression tests
 npm run test:uploads          # byte-range / form-data-file parsing unit tests
 npm run test:all              # everything above
 npm run build                 # full production build
 ```
+
+To verify the part-5 fix specifically after deploying: stop `celeventic-video-worker` (`pm2 stop
+celeventic-video-worker`), upload a small video, and confirm it still reaches `READY` within about
+a minute via the in-process inline fallback (check `/admin` system health — the "Video Processing
+Worker" tile should show critical/no-heartbeat while stopped). Then restart the worker
+(`pm2 start celeventic-video-worker`) and confirm the tile returns to healthy on the next upload.

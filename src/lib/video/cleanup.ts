@@ -1,12 +1,76 @@
 import { prisma } from "@/lib/prisma";
 import { abortMultipartUpload, deleteVideoObject, deleteVideoObjectsByPrefix } from "@/lib/video/s3-video";
 import { deleteUploadFile } from "@/lib/uploads/file-storage";
+import { dispatchJob } from "@/lib/queue";
 import { DEFAULT_ABANDONED_UPLOAD_HOURS } from "@/lib/video/constants";
 import type { VideoAsset } from "@prisma/client";
 
 function abandonedThresholdHours(): number {
   const raw = Number(process.env.VIDEO_ABANDONED_UPLOAD_HOURS);
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_ABANDONED_UPLOAD_HOURS;
+}
+
+const DEFAULT_STALE_PROCESSING_MINUTES = 20; // ffmpeg's own 15-min hard timeout (VIDEO_PROCESSOR_TIMEOUT_MS) + a 5-min buffer.
+const DEFAULT_MAX_PROCESSING_ATTEMPTS = 3;
+
+function staleProcessingThresholdMs(): number {
+  const raw = Number(process.env.VIDEO_STALE_PROCESSING_MINUTES);
+  const minutes = Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_STALE_PROCESSING_MINUTES;
+  return minutes * 60 * 1000;
+}
+
+function maxProcessingAttempts(): number {
+  const raw = Number(process.env.VIDEO_MAX_PROCESSING_ATTEMPTS);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : DEFAULT_MAX_PROCESSING_ATTEMPTS;
+}
+
+/**
+ * Recovers `VideoAsset` rows stuck in `PROCESSING` past a stale threshold — the #1 cause of
+ * "processing forever" reports: the `video-jobs-worker` process dies mid-transcode (OOM kill,
+ * `pm2 restart`, a VPS reboot, an ffmpeg child process that ignores SIGKILL just long enough to
+ * wedge the event loop) after flipping the row to `PROCESSING` but before it can ever reach
+ * `READY`/`FAILED`. `processQueuedVideoAsset` only ever acts on `QUEUED` assets, so without this
+ * sweep such a row — and the "Preparing your video…" spinner bound to it — would spin forever.
+ *
+ * Uses `processingStartedAt` (set precisely, every time processing begins) as the staleness
+ * clock, so this never misjudges a video that's still genuinely mid-transcode within ffmpeg's
+ * own `VIDEO_PROCESSOR_TIMEOUT_MS` budget.
+ *
+ * Retries (reset to `QUEUED`, re-dispatch the `video-process` job) while `attempts` — already
+ * incremented every time this asset entered `PROCESSING` — is under the cap; beyond that it's
+ * marked `FAILED` with an actionable, honest message instead of spinning forever.
+ */
+export async function recoverStalledVideoProcessing(batchSize = 25): Promise<{ requeued: number; failed: number }> {
+  const cutoff = new Date(Date.now() - staleProcessingThresholdMs());
+  const maxAttempts = maxProcessingAttempts();
+  const stale = await prisma.videoAsset.findMany({
+    where: { status: "PROCESSING", processingStartedAt: { lt: cutoff } },
+    take: batchSize,
+    orderBy: { processingStartedAt: "asc" },
+  });
+
+  let requeued = 0;
+  let failed = 0;
+  for (const asset of stale) {
+    if (asset.attempts < maxAttempts) {
+      await prisma.videoAsset.update({
+        where: { id: asset.id },
+        data: { status: "QUEUED", processingStartedAt: null },
+      });
+      await dispatchJob("video-process", { assetId: asset.id });
+      requeued++;
+    } else {
+      await prisma.videoAsset.update({
+        where: { id: asset.id },
+        data: {
+          status: "FAILED",
+          failureReason: `Video processing timed out after ${asset.attempts} attempt(s) — the worker may have restarted mid-job. Please re-upload the video.`,
+        },
+      });
+      failed++;
+    }
+  }
+  return { requeued, failed };
 }
 
 /**
