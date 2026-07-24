@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -17,6 +18,7 @@ import {
   Layers,
   Wind,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +42,11 @@ import {
   THANK_YOU_FONT_OPTIONS,
   resolveThankYouFontStack,
 } from "@/lib/invitation-theme/fonts";
+import {
+  INVITATION_FONT_PRESETS,
+  type InvitationFontPreset,
+} from "@/lib/invitation-theme/font-presets";
+import type { FontId } from "@/lib/invitation-theme/theme-types";
 import { categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import {
@@ -99,7 +106,7 @@ import {
   type StudioDevice,
 } from "@/components/invitation-studio/studio-toolbar";
 import { StudioScenesPanel } from "@/components/invitation-studio/studio-scenes-panel";
-import { StudioCanvas } from "@/components/invitation-studio/studio-canvas";
+import { StudioCanvas, STUDIO_DEVICE_STORAGE_KEY } from "@/components/invitation-studio/studio-canvas";
 import {
   StudioPropertiesPanel,
   PropSection,
@@ -134,13 +141,10 @@ const ORNAMENT_OPTIONS = [
   { id: "none", label: "None" },
 ] as const;
 
-const FONT_OPTIONS = [
-  "Inter",
-  "Playfair Display",
-  "Cinzel",
-  "Cormorant Garamond",
-  "Great Vibes",
-];
+/** Heading/body live-bind to `--font-display` / `--font-sans` (scoped to the invite viewport) —
+ * registered FontIds only, so the studio pick always resolves to an already-loaded next/font.
+ * Script currently only feeds designConfig (visual wiring is a template-by-template follow-up). */
+const INVITE_FONT_OPTIONS = THANK_YOU_FONT_OPTIONS;
 const OPENING_CATEGORIES = [
   "envelope",
   "curtain",
@@ -274,7 +278,17 @@ export const InvitationStudioHub = forwardRef<
   },
   ref
 ) {
-  const [device, setDevice] = useState<StudioDevice>("mobile");
+  const [device, setDeviceState] = useState<StudioDevice>(() => {
+    if (typeof window === "undefined") return "mobile";
+    const stored = window.sessionStorage.getItem(STUDIO_DEVICE_STORAGE_KEY);
+    return stored === "mobile" || stored === "tablet" || stored === "desktop" ? stored : "mobile";
+  });
+  const setDevice = useCallback((next: StudioDevice) => {
+    setDeviceState(next);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(STUDIO_DEVICE_STORAGE_KEY, next);
+    }
+  }, []);
   const [leftTab, setLeftTab] = useState<"scenes" | "assets">("scenes");
   const [propCategory, setPropCategory] = useState<StudioPropCategory>("experience");
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
@@ -310,6 +324,27 @@ export const InvitationStudioHub = forwardRef<
 
   function patchExperience(patch: Partial<EventExperienceConfig>) {
     onChange({ ...design, experience: { ...experience, ...patch } });
+  }
+
+  /** Applies a curated font-pairing preset across role-based fonts + the thank-you section. */
+  function applyFontPreset(preset: InvitationFontPreset) {
+    onChange({
+      ...design,
+      fonts: {
+        heading: preset.headingFont,
+        script: preset.scriptFont,
+        body: preset.bodyFont,
+        eyebrow: preset.eyebrowFont,
+        presetId: preset.id,
+      },
+      experience: {
+        ...experience,
+        thankYouFontFamily: preset.bodyFont,
+        thankYouEyebrowFontFamily: preset.eyebrowFont,
+        thankYouScriptFontFamily: preset.scriptFont,
+        experienceCustomized: true,
+      },
+    });
   }
 
   function setOpeningExperience(id: OpeningExperienceId) {
@@ -1157,19 +1192,80 @@ export const InvitationStudioHub = forwardRef<
                 </PropSection>
 
                 <PropSection
+                  title="Font pairing"
+                  icon={<Type className="h-4 w-4 text-[#0B8A83]" />}
+                >
+                  <p className="text-[11px] text-slate-500">
+                    One-click font presets — inspired by the Traditional Marriage thank-you card
+                    (tracked serif eyebrow, sweeping script, readable serif body). Applies to
+                    headings, script, body, and the thank-you section together.
+                  </p>
+                  <div className="grid gap-2.5">
+                    {INVITATION_FONT_PRESETS.map((preset) => {
+                      const isActive = (design.fonts?.presetId ?? "with-gratitude") === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => applyFontPreset(preset)}
+                          className={cn(
+                            "rounded-lg border px-3 py-2.5 text-left transition-colors",
+                            isActive
+                              ? "border-[#0B8A83] bg-[#0B8A83]/5 ring-1 ring-[#0B8A83]/40"
+                              : "border-slate-200 bg-white hover:border-[#0B8A83]/50"
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className="text-[10px] uppercase tracking-[0.28em] text-slate-500"
+                              style={{ fontFamily: FONT_STACKS[preset.eyebrowFont] }}
+                            >
+                              {preset.label}
+                            </span>
+                            {isActive && (
+                              <span className="text-[10px] font-medium text-[#0B8A83]">
+                                Applied
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className="mt-0.5 text-xl leading-none text-[#1f2937]"
+                            style={{ fontFamily: FONT_STACKS[preset.scriptFont] }}
+                          >
+                            Thank you
+                          </p>
+                          <p
+                            className="mt-1 text-xs leading-snug text-slate-600"
+                            style={{ fontFamily: FONT_STACKS[preset.bodyFont] }}
+                          >
+                            {preset.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PropSection>
+
+                <PropSection
                   title="Typography"
                   icon={<Type className="h-4 w-4 text-[#0B8A83]" />}
                 >
+                  <p className="text-[11px] text-slate-500">
+                    Fine-tune individual roles. Heading &amp; body apply live across the invite;
+                    script drives the Traditional Marriage thank-you title and lands on other
+                    templates progressively.
+                  </p>
                   <div className="grid gap-3">
                     {(["heading", "script", "body"] as const).map((role) => (
                       <div key={role} className="space-y-1">
                         <Label className="text-xs capitalize">{role}</Label>
                         <Select
-                          value={design.fonts?.[role] ?? "Inter"}
+                          value={design.fonts?.[role] ?? "cormorant"}
                           onValueChange={(v) =>
                             onChange({
                               ...design,
-                              fonts: { ...design.fonts, [role]: v },
+                              fonts: { ...design.fonts, [role]: v, presetId: undefined },
+                              experience: { ...experience, experienceCustomized: true },
                             })
                           }
                         >
@@ -1177,9 +1273,9 @@ export const InvitationStudioHub = forwardRef<
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {FONT_OPTIONS.map((f) => (
-                              <SelectItem key={f} value={f}>
-                                {f}
+                            {INVITE_FONT_OPTIONS.map((f) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                <span style={{ fontFamily: FONT_STACKS[f.id as FontId] }}>{f.label}</span>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1341,28 +1437,98 @@ export const InvitationStudioHub = forwardRef<
                     Shown in the invitation Thank You section (WITH GRATITUDE). Guests see this read-only.
                   </p>
                 </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Eyebrow font (“WITH GRATITUDE”)</Label>
+                    <Select
+                      value={experience.thankYouEyebrowFontFamily ?? "cormorant"}
+                      onValueChange={(v) =>
+                        patchExperience({
+                          thankYouEyebrowFontFamily: v,
+                          experienceCustomized: true,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {THANK_YOU_FONT_OPTIONS.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            <span style={{ fontFamily: FONT_STACKS[o.id] }}>{o.label}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Script font (“Thank you”)</Label>
+                    <Select
+                      value={experience.thankYouScriptFontFamily ?? "great-vibes"}
+                      onValueChange={(v) =>
+                        patchExperience({
+                          thankYouScriptFontFamily: v,
+                          experienceCustomized: true,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {THANK_YOU_FONT_OPTIONS.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            <span style={{ fontFamily: FONT_STACKS[o.id] }}>{o.label}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Body font (message)</Label>
+                    <Select
+                      value={experience.thankYouFontFamily ?? "cormorant"}
+                      onValueChange={(v) =>
+                        patchExperience({
+                          thankYouFontFamily: v,
+                          experienceCustomized: true,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {THANK_YOU_FONT_OPTIONS.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            <span style={{ fontFamily: FONT_STACKS[o.id] }}>{o.label}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="space-y-1">
-                  <Label>Thank you message font</Label>
-                  <Select
-                    value={experience.thankYouFontFamily ?? "cormorant"}
-                    onValueChange={(v) =>
-                      patchExperience({
-                        thankYouFontFamily: v,
-                        experienceCustomized: true,
-                      })
-                    }
+                  <p
+                    className="text-[10px] uppercase tracking-[0.32em] text-slate-500"
+                    style={{
+                      fontFamily: resolveThankYouFontStack(
+                        experience.thankYouEyebrowFontFamily ?? "cormorant"
+                      ),
+                    }}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {THANK_YOU_FONT_OPTIONS.map((o) => (
-                        <SelectItem key={o.id} value={o.id}>
-                          <span style={{ fontFamily: FONT_STACKS[o.id] }}>{o.label}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    With gratitude
+                  </p>
+                  <p
+                    className="text-2xl leading-none text-[#5C3D2E]"
+                    style={{
+                      fontFamily: resolveThankYouFontStack(
+                        experience.thankYouScriptFontFamily ?? "great-vibes"
+                      ),
+                    }}
+                  >
+                    Thank you
+                  </p>
                   {experience.thankYouMessage?.trim() ? (
                     <p
                       className="mt-2 rounded-lg border border-slate-200 bg-[#FAF8F4] px-3 py-2.5 text-sm leading-relaxed text-[#5C3D2E] whitespace-pre-line"

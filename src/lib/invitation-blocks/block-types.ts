@@ -206,4 +206,8 @@ export interface BlockRenderContext {
   thankYouMessage?: string | null;
   /** Host experience thank-you body font (FontId) */
   thankYouFontFamily?: string | null;
+  /** Host experience thank-you eyebrow font (FontId); unset keeps Cormorant default */
+  thankYouEyebrowFontFamily?: string | null;
+  /** Host experience thank-you script font (FontId); unset keeps Great Vibes default */
+  thankYouScriptFontFamily?: string | null;
 }

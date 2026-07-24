@@ -10,7 +10,17 @@
 export type MotionProfileId = "still" | "gentle-drift" | "layered-drift" | "solemn";
 
 /** Registered next/font ids only — arbitrary families would trigger runtime font fetches. */
-export type FontId = "playfair" | "cinzel" | "great-vibes" | "cormorant" | "poppins";
+export type FontId =
+  | "playfair"
+  | "cinzel"
+  | "great-vibes"
+  | "cormorant"
+  | "poppins"
+  | "marcellus"
+  | "eb-garamond"
+  | "jost"
+  | "alex-brush"
+  | "parisienne";
 
 export type LetterSpacingToken = "tight" | "normal" | "wide" | "grand";
 export type BackgroundTextureToken = "none" | "paper" | "linen" | "velvet-vignette";

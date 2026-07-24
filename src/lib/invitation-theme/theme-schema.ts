@@ -1,7 +1,18 @@
 import { z } from "zod";
 import type { InvitationThemeTokens } from "./theme-types";
 
-const fontIdSchema = z.enum(["playfair", "cinzel", "great-vibes", "cormorant", "poppins"]);
+const fontIdSchema = z.enum([
+  "playfair",
+  "cinzel",
+  "great-vibes",
+  "cormorant",
+  "poppins",
+  "marcellus",
+  "eb-garamond",
+  "jost",
+  "alex-brush",
+  "parisienne",
+]);
 
 export const invitationThemeSchema = z.object({
   id: z.string().min(1),

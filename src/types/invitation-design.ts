@@ -68,6 +68,10 @@ export interface InvitationDesignConfig {
     heading?: string;
     script?: string;
     body?: string;
+    /** Small tracked uppercase label font (e.g. Traditional Marriage "WITH GRATITUDE"). */
+    eyebrow?: string;
+    /** Id of the applied font preset from invitation-theme/font-presets, for Studio UI highlighting only. */
+    presetId?: string;
   };
   media?: InvitationMediaAsset[];
   animation?: "fade" | "parallax" | "ken-burns" | "none";
