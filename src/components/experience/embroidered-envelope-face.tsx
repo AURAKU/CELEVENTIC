@@ -6,6 +6,15 @@ import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import type { EnvelopeVisualTheme } from "@/lib/experience/opening-experiences";
 import { TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL } from "@/lib/invitation/vision-board";
 import { invitationFontVars } from "@/lib/invitation-fonts";
+import {
+  DEFAULT_RESOLVED_SEAL_STYLE,
+  getSealDesignPreset,
+  sealInkStyle,
+  SEAL_FONT_STACKS,
+  SEAL_FONT_WEIGHTS,
+  SEAL_SIZE_SCALE,
+  type ResolvedSealStyle,
+} from "@/lib/invitation/seal-design";
 
 interface EmbroideredEnvelopeFaceProps {
   theme: EnvelopeVisualTheme;
@@ -20,6 +29,8 @@ interface EmbroideredEnvelopeFaceProps {
   openEase: string;
   /** Size to parent tile (catalogue glimpse) instead of full viewport. */
   fitContainer?: boolean;
+  /** Designed seal (color/material) + font/size/color overrides. Defaults to classic peach pearl. */
+  sealStyle?: ResolvedSealStyle;
 }
 
 /**
@@ -116,6 +127,7 @@ export function EmbroideredEnvelopeFace({
   flapDelayMs,
   openEase,
   fitContainer = false,
+  sealStyle,
 }: EmbroideredEnvelopeFaceProps) {
   const faceArtUrl = theme.faceArtUrl ?? TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL;
   const envelopeAspect = useEnvelopeAspect(fitContainer);
@@ -394,6 +406,7 @@ export function EmbroideredEnvelopeFace({
               isOpening={isOpening}
               reduceMotion={reduceMotion}
               compact={fitContainer}
+              sealStyle={sealStyle}
             />
           </div>
         </div>
@@ -869,7 +882,11 @@ function isSealMonogram(label: string): boolean {
   return letters.length > 0 && letters.length <= 3 && /^[a-zA-ZÀ-ÿ]+$/.test(letters);
 }
 
-function sealTypography(label: string, compact: boolean): {
+function sealTypography(
+  label: string,
+  compact: boolean,
+  fontOverride?: Exclude<import("@/lib/invitation/seal-design").SealFontChoice, "auto"> | null
+): {
   fontSize: string;
   lineHeight: number;
   letterSpacing: string;
@@ -882,7 +899,22 @@ function sealTypography(label: string, compact: boolean): {
   const multiWord = /\s/.test(label.trim()) && !isSealMonogram(label);
   const monogram = isSealMonogram(label);
   const pipeMonogram = monogram && /\s*\|\s*/.test(label);
+  const overrideFamily = fontOverride ? SEAL_FONT_STACKS[fontOverride] : null;
+  const overrideWeight = fontOverride ? SEAL_FONT_WEIGHTS[fontOverride] : null;
+  const base = computeBaseSealTypography();
+  return overrideFamily && overrideWeight
+    ? { ...base, fontFamily: overrideFamily, fontWeight: overrideWeight }
+    : base;
 
+  function computeBaseSealTypography(): {
+    fontSize: string;
+    lineHeight: number;
+    letterSpacing: string;
+    maxWidth: string;
+    fontFamily: string;
+    fontWeight: number;
+    isMonogram: boolean;
+  } {
   if (monogram) {
     // Pipe-spaced 2-letter needs slightly tighter tracking so it fits the well
     const tracking = pipeMonogram
@@ -961,6 +993,7 @@ function sealTypography(label: string, compact: boolean): {
     fontWeight: 400,
     isMonogram: false,
   };
+  }
 }
 
 /**
@@ -974,14 +1007,26 @@ function PremiumWaxSeal({
   isOpening,
   reduceMotion,
   compact = false,
+  sealStyle,
 }: {
   sealLabel: string;
   isOpening: boolean;
   reduceMotion: boolean;
   compact?: boolean;
+  sealStyle?: ResolvedSealStyle;
 }) {
   const uid = useId().replace(/:/g, "");
-  const type = sealTypography(sealLabel, compact);
+  const resolvedStyle = sealStyle ?? DEFAULT_RESOLVED_SEAL_STYLE;
+  const preset = getSealDesignPreset(resolvedStyle.design);
+  const type = sealTypography(
+    sealLabel,
+    compact,
+    resolvedStyle.fontFamily === "auto" ? null : resolvedStyle.fontFamily
+  );
+  const sizeScale = SEAL_SIZE_SCALE[resolvedStyle.size];
+  const inkColor =
+    resolvedStyle.textColor || (type.isMonogram ? preset.monogramColor : preset.wordColor);
+  const ink = sealInkStyle(inkColor, Boolean(preset.dark), type.isMonogram);
   const waxDeep = `waxDeep-${uid}`;
   const waxFace = `waxFace-${uid}`;
   const waxRim = `waxRim-${uid}`;
@@ -1029,31 +1074,27 @@ function PremiumWaxSeal({
         aria-hidden
       >
         <defs>
-          {/* Soft peach depth — never bronze */}
+          {/* Deep poured base — preset-driven material color */}
           <radialGradient id={waxDeep} cx="48%" cy="55%" r="62%">
-            <stop offset="0%" stopColor="#e8b49a" />
-            <stop offset="55%" stopColor="#d49278" />
-            <stop offset="100%" stopColor="#c07860" />
+            {preset.deep.map((s, i) => (
+              <stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
           </radialGradient>
-          {/* Pearlescent peach face — luminous, creamy */}
+          {/* Luminous face — preset-driven material color */}
           <radialGradient id={waxFace} cx="34%" cy="28%" r="72%">
-            <stop offset="0%" stopColor="#fff6f0" />
-            <stop offset="16%" stopColor="#fbe4d6" />
-            <stop offset="38%" stopColor="#f0cbb8" />
-            <stop offset="62%" stopColor="#e8b49a" />
-            <stop offset="88%" stopColor="#d9a088" />
-            <stop offset="100%" stopColor="#c98a72" />
+            {preset.face.map((s, i) => (
+              <stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
           </radialGradient>
           <linearGradient id={waxRim} x1="18%" y1="10%" x2="82%" y2="90%">
-            <stop offset="0%" stopColor="#fff0e6" />
-            <stop offset="32%" stopColor="#f0cbb8" />
-            <stop offset="68%" stopColor="#d9a088" />
-            <stop offset="100%" stopColor="#c08a70" />
+            {preset.rim.map((s, i) => (
+              <stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
           </linearGradient>
           <radialGradient id={waxWell} cx="40%" cy="34%" r="68%">
-            <stop offset="0%" stopColor="#f2c4ae" />
-            <stop offset="45%" stopColor="#e0a888" />
-            <stop offset="100%" stopColor="#c88870" />
+            {preset.well.map((s, i) => (
+              <stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
           </radialGradient>
           <radialGradient id={glossGrad} cx="30%" cy="24%" r="48%">
             <stop offset="0%" stopColor="rgba(255,255,255,0.88)" />
@@ -1061,14 +1102,14 @@ function PremiumWaxSeal({
             <stop offset="100%" stopColor="rgba(255,255,255,0)" />
           </radialGradient>
           <radialGradient id={pearlSheen} cx="42%" cy="38%" r="55%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
-            <stop offset="50%" stopColor="rgba(255,230,210,0.12)" />
+            <stop offset="0%" stopColor={preset.dark ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.35)"} />
+            <stop offset="50%" stopColor={preset.dark ? "rgba(255,255,255,0.08)" : "rgba(255,230,210,0.12)"} />
             <stop offset="100%" stopColor="rgba(255,255,255,0)" />
           </radialGradient>
           <radialGradient id={beadGrad} cx="32%" cy="28%" r="68%">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="40%" stopColor="#f8eee6" />
-            <stop offset="100%" stopColor="#e0c8b8" />
+            {preset.bead.map((s, i) => (
+              <stop key={i} offset={s.offset} stopColor={s.color} />
+            ))}
           </radialGradient>
           <filter id={softShadow} x="-25%" y="-25%" width="150%" height="150%">
             <feDropShadow dx="1.1" dy="2.8" stdDeviation="2.2" floodColor="#8a5040" floodOpacity="0.36" />
@@ -1152,7 +1193,7 @@ function PremiumWaxSeal({
       <span
         className="relative z-[1] select-none text-center"
         style={{
-          color: type.isMonogram ? "#E8C96A" : "#D4A63A",
+          color: inkColor,
           fontSize: type.fontSize,
           lineHeight: type.lineHeight,
           letterSpacing: type.letterSpacing,
@@ -1161,12 +1202,8 @@ function PremiumWaxSeal({
           fontWeight: type.fontWeight,
           fontStyle: "normal",
           textTransform: type.isMonogram ? "uppercase" : "none",
-          WebkitTextStroke: type.isMonogram
-            ? "0.4px rgba(120, 70, 20, 0.4)"
-            : "0.3px rgba(120, 70, 20, 0.32)",
-          textShadow: type.isMonogram
-            ? "0 1px 0 rgba(255,248,230,0.9), 0 1.5px 3px rgba(70,30,12,0.5), 0 0 12px rgba(212,166,58,0.4)"
-            : "0 1px 0 rgba(255,248,230,0.85), 0 1px 3px rgba(80,40,20,0.5), 0 0 12px rgba(201,162,39,0.45)",
+          WebkitTextStroke: ink.webkitTextStroke,
+          textShadow: ink.textShadow,
           whiteSpace: type.isMonogram
             ? "nowrap"
             : /\s/.test(sealLabel.trim())
@@ -1174,6 +1211,8 @@ function PremiumWaxSeal({
               : "nowrap",
           wordBreak: "break-word",
           paddingInline: "4%",
+          transform: sizeScale !== 1 ? `scale(${sizeScale})` : undefined,
+          transformOrigin: "50% 50%",
         }}
       >
         {displayText}
