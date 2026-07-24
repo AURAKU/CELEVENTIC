@@ -13,7 +13,14 @@ import { VendorProfilePhotoUpload } from "@/components/vendor-os/vendor-profile-
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Store, MessageSquare, ExternalLink, Send, Calendar, Users, Package, Clock, Star, Receipt } from "lucide-react";
+import { Store, MessageSquare, ExternalLink, Send, Calendar, Users, Package, Clock, Star, Receipt, Trash2 } from "lucide-react";
+
+interface VendorMediaItem {
+  id: string;
+  url: string;
+  type: string;
+  caption?: string | null;
+}
 
 const SECTION_TO_TAB: Record<string, string> = {
   overview: "overview",
@@ -45,6 +52,8 @@ export default function VendorPortalClient() {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [portfolioMedia, setPortfolioMedia] = useState<VendorMediaItem[]>([]);
+  const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
 
   function loadLeads() {
     return fetch("/api/vendor-os/leads").then((r) => r.json()).then((leadsRes) => {
@@ -56,6 +65,25 @@ export default function VendorPortalClient() {
     return fetch("/api/marketplace/bookings").then((r) => r.json()).then((res) => {
       if (res.success) setBookings(res.data.items);
     });
+  }
+
+  function loadPortfolioMedia() {
+    return fetch("/api/vendor-os/media").then((r) => r.json()).then((res) => {
+      if (res.success) setPortfolioMedia(res.data);
+    });
+  }
+
+  async function deletePortfolioMedia(id: string) {
+    setDeletingMediaId(id);
+    try {
+      const res = await fetch(`/api/vendor-os/media/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setPortfolioMedia((prev) => prev.filter((m) => m.id !== id));
+        await refreshUsage();
+      }
+    } finally {
+      setDeletingMediaId(null);
+    }
   }
 
   useEffect(() => {
@@ -72,6 +100,7 @@ export default function VendorPortalClient() {
       if (bookingsRes.success) setBookings(bookingsRes.data.items);
       setLoading(false);
     });
+    void loadPortfolioMedia();
   }, []);
 
   useEffect(() => {
@@ -284,12 +313,51 @@ export default function VendorPortalClient() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="portfolio" className="mt-4">
+        <TabsContent value="portfolio" className="mt-4 space-y-4">
           <Card>
             <CardHeader><CardTitle className="text-base">Upload Portfolio</CardTitle></CardHeader>
             <CardContent>
-              <VendorPortfolioUpload onUploaded={() => void refreshUsage()} />
+              <VendorPortfolioUpload
+                onUploaded={() => {
+                  void refreshUsage();
+                  void loadPortfolioMedia();
+                }}
+              />
               <p className="text-xs text-slate-500 mt-3">Images up to 10MB · Videos up to 25MB</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-base">Your Portfolio</CardTitle></CardHeader>
+            <CardContent>
+              {portfolioMedia.length === 0 ? (
+                <p className="text-sm text-slate-500">No portfolio media yet — upload photos or videos above.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {portfolioMedia.map((m) => (
+                    <div key={m.id} className="relative rounded-lg border overflow-hidden aspect-square bg-slate-100 group">
+                      <UploadedMedia
+                        src={m.url}
+                        alt={m.caption ?? "Portfolio item"}
+                        className="w-full h-full object-cover"
+                        video={m.type === "video"}
+                        controls={m.type === "video"}
+                        autoPlay={false}
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="absolute top-1.5 right-1.5 h-7 w-7 opacity-90"
+                        onClick={() => void deletePortfolioMedia(m.id)}
+                        disabled={deletingMediaId === m.id}
+                        aria-label="Remove"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

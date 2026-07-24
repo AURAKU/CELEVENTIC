@@ -3,8 +3,10 @@ import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
   UploadPartCommand,
@@ -202,6 +204,35 @@ export async function deleteVideoObject(key: string): Promise<void> {
   } catch {
     // best-effort — also covers local-fallback assets, which never had an S3 object to begin
     // with (S3 isn't configured on this environment), so there's nothing to clean up there.
+  }
+}
+
+/**
+ * Deletes every object under a key prefix — used when removing a finished VideoAsset, since
+ * the exact processed-derivative keys vary by processing engine (single ffmpeg MP4+poster vs.
+ * MediaConvert's multi-rendition + HLS ladder + numbered thumbnail frames). Paginates through
+ * `ListObjectsV2` so it scales past the 1000-key `DeleteObjects` limit. Best-effort: silently
+ * no-ops when S3 isn't configured or the prefix doesn't exist — never blocks a delete request.
+ */
+export async function deleteVideoObjectsByPrefix(prefix: string): Promise<void> {
+  try {
+    const { client, cfg } = await requireS3();
+    let continuationToken: string | undefined;
+    do {
+      const page = await client.send(
+        new ListObjectsV2Command({ Bucket: cfg.bucket, Prefix: prefix, ContinuationToken: continuationToken })
+      );
+      const keys = (page.Contents ?? []).map((o) => o.Key).filter((k): k is string => Boolean(k));
+      for (let i = 0; i < keys.length; i += 1000) {
+        const batch = keys.slice(i, i + 1000);
+        await client.send(
+          new DeleteObjectsCommand({ Bucket: cfg.bucket, Delete: { Objects: batch.map((Key) => ({ Key })) } })
+        );
+      }
+      continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (continuationToken);
+  } catch {
+    // best-effort — covers unconfigured S3 and already-empty prefixes alike.
   }
 }
 
