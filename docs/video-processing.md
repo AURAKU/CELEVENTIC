@@ -62,11 +62,19 @@ pipeline (`src/lib/video/processing.ts`) when `VIDEO_PROCESSOR=ffmpeg` — see b
   (`force_original_aspect_ratio=decrease`), with a **portrait/landscape-aware** bounding box
   (`computeScaleBounds` in `video-processor.ts`) — a naive `min(1920,iw):min(1080,ih)` box alone
   would squeeze a 1080×1920 phone clip into a 1080×1080 square instead of preserving its native
-  portrait resolution; the box is swapped to `1080×1920` (accounting for `-autorotate`'s effect
-  on the *effective*, post-rotation orientation) whenever the source is portrait.
-- **Orientation**: baked into the pixels via ffmpeg's `-autorotate` (applies the container's
-  display-matrix/rotate-tag rotation during transcode — phone-shot portrait video plays upright
-  everywhere, not just in players that respect the metadata tag). No second `transpose`/`rotate`
+  portrait resolution; the box is swapped to `1080×1920` (accounting for ffmpeg's default
+  autorotate behavior's effect on the *effective*, post-rotation orientation) whenever the
+  source is portrait.
+- **Orientation**: baked into the pixels via ffmpeg's **default, always-on** demuxer autorotate
+  behavior (applies the container's display-matrix/rotate-tag rotation during transcode — phone-
+  shot portrait video plays upright everywhere, not just in players that respect the metadata
+  tag). We deliberately never pass an explicit `-autorotate` CLI flag — its exact grammar
+  (bare vs. `-autorotate 1` vs. `-noautorotate`) is not stable across ffmpeg versions/builds, and
+  on Ubuntu 24.04's ffmpeg 6.1.1 an explicit flag can be parsed as belonging to the wrong file
+  context ("Option autorotate ... cannot be applied to output url ... Error parsing options"),
+  aborting the transcode before a single frame is processed. Every ffmpeg build recent enough to
+  matter here already defaults autorotate to enabled, so omitting the flag keeps identical
+  behavior while sidestepping every version-specific parsing quirk. No second `transpose`/`rotate`
   filter is ever added on top, which would double-rotate the frame.
 - **HDR/Dolby Vision → SDR**: `buildVideoFilter()` in `video-processor.ts` is the single source of
   truth for this decision (three pipelines: `sdr`, `hdr-tonemap`, `hdr-fallback`). When `ffprobe`
@@ -240,10 +248,16 @@ ffmpeg/ffprobe to be installed and run in CI without any video tooling present.
 
 A full manual end-to-end smoke test of the backfill CLI (real ffmpeg, synthetic HEVC/rotated/
 corrupt fixtures, a sandboxed SQLite copy) was also run — see "Backfilling pre-existing videos"
-below for the exact repro. It caught and fixed two real ffmpeg-version-specific bugs (see git
-history): `-autorotate 1` is misparsed as a stray output argument on ffmpeg 7.x/8.x (must be
-passed as a bare flag), and Prisma's `$queryRawUnsafe` auto-deserializes `Json`-typed SQLite
-columns into objects (the backfill script's JSON-field updater must not assume a raw string).
+below for the exact repro. It caught and fixed real ffmpeg-version-specific bugs (see git
+history): an explicit `-autorotate` flag is misparsed differently across ffmpeg builds — a bare
+trailing value like `-autorotate 1` was treated as a stray positional output argument on ffmpeg
+7.x/8.x, and on Ubuntu 24.04's ffmpeg 6.1.1 an explicit `-autorotate` (in any form) could be
+parsed as belonging to the wrong file context ("Option autorotate ... cannot be applied to
+output url ... Error parsing options"). The durable fix is to never pass `-autorotate` at all —
+every ffmpeg build recent enough to matter already defaults it to enabled, so omitting the flag
+keeps identical rotation behavior while sidestepping every version-specific parsing quirk. Also
+fixed: Prisma's `$queryRawUnsafe` auto-deserializes `Json`-typed SQLite columns into objects (the
+backfill script's JSON-field updater must not assume a raw string).
 
 ## Backfilling pre-existing videos
 
