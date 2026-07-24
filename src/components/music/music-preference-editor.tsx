@@ -16,7 +16,11 @@ import {
   defaultTrimRange,
   validateMusicSelection,
 } from "@/lib/music/validate-selection";
-import { formatAudioTime } from "@/lib/music/trimmed-audio-playback";
+import {
+  formatAudioTime,
+  playTrimmedAudio,
+  seekTrimmedAudio,
+} from "@/lib/music/trimmed-audio-playback";
 
 interface MusicPreferenceEditorProps {
   value: MusicSelection | null;
@@ -57,6 +61,7 @@ export function MusicPreferenceEditor({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [previewPlaying, setPreviewPlaying] = useState(false);
+  const [previewPositionSec, setPreviewPositionSec] = useState(0);
   const previewRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -177,9 +182,11 @@ export function MusicPreferenceEditor({
   }
 
   function stopPreview() {
-    previewRef.current?.pause();
+    const audio = previewRef.current;
     previewRef.current = null;
+    audio?.pause();
     setPreviewPlaying(false);
+    setPreviewPositionSec(0);
   }
 
   function togglePreview() {
@@ -187,16 +194,32 @@ export function MusicPreferenceEditor({
       stopPreview();
       return;
     }
-    if (!trackUrl) return;
+    // Never let the "preview full-track" case happen: an invalid/untrimmed
+    // clip must not be playable from here — the Play button always previews
+    // the exact audible window guests will hear (startSec → endSec).
+    if (!trackUrl || !clipValid) return;
     stopPreview();
-    const audio = new Audio(trackUrl);
+    const audio = playTrimmedAudio(
+      { source: tab, url: trackUrl, startSec, endSec, volume, loop, fadeInSec, fadeOutSec },
+      {
+        volume,
+        loop,
+        fadeInSec,
+        fadeOutSec,
+        onProgress: (pos) => setPreviewPositionSec(pos),
+        onPlayStateChange: (playing) => setPreviewPlaying(playing),
+        onError: () => stopPreview(),
+      }
+    );
     previewRef.current = audio;
-    audio.currentTime = startSec;
-    audio.volume = 0.5;
-    audio.ontimeupdate = () => {
-      if (audio.currentTime >= endSec) audio.currentTime = startSec;
-    };
-    void audio.play().then(() => setPreviewPlaying(true)).catch(() => setPreviewPlaying(false));
+  }
+
+  /** Seek within the trimmed clip only — offset is clamped to [0, clipLen]. */
+  function seekPreview(offsetSec: number) {
+    const audio = previewRef.current;
+    if (!audio) return;
+    const clamped = seekTrimmedAudio(audio, { startSec, endSec }, offsetSec);
+    setPreviewPositionSec(clamped);
   }
 
   useEffect(() => () => stopPreview(), []);
@@ -295,6 +318,7 @@ export function MusicPreferenceEditor({
   }
 
   function adjustStart(sec: number) {
+    stopPreview();
     const next = Math.max(0, Math.min(sec, endSec - 1));
     let newEnd = endSec;
     setStartSec(next);
@@ -310,6 +334,7 @@ export function MusicPreferenceEditor({
   }
 
   function adjustEnd(sec: number) {
+    stopPreview();
     const maxEnd = durationSec > 0 ? durationSec : startSec + MUSIC_CLIP_MAX_SEC;
     let next = Math.min(sec, maxEnd);
     next = Math.max(next, startSec + 1);
@@ -440,7 +465,18 @@ export function MusicPreferenceEditor({
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
-              <Button type="button" size="sm" variant="outline" onClick={togglePreview} disabled={!clipValid}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={togglePreview}
+                disabled={!clipValid}
+                title={
+                  clipValid
+                    ? `Preview clip (${formatAudioTime(startSec)}–${formatAudioTime(endSec)}) — never the full track`
+                    : "Set a valid clip range to preview"
+                }
+              >
                 {previewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </Button>
               <Button type="button" size="sm" variant="ghost" onClick={clearSelection}>Clear</Button>
@@ -450,9 +486,14 @@ export function MusicPreferenceEditor({
           <div className="space-y-3">
             <div className="flex justify-between text-xs text-slate-600 mb-1">
               <span>Start: {formatAudioTime(startSec)}</span>
+              {previewPlaying && (
+                <span className="font-medium text-[#0B8A83]">
+                  Playing {formatAudioTime(previewPositionSec)} / {formatAudioTime(clipLen)}
+                </span>
+              )}
               <span>End: {formatAudioTime(endSec)}</span>
             </div>
-            {/* MVP waveform — trim window highlighted */}
+            {/* MVP waveform — trim window highlighted, live playhead while previewing */}
             <div
               className="relative h-10 w-full overflow-hidden rounded-md bg-slate-100"
               aria-hidden
@@ -481,9 +522,35 @@ export function MusicPreferenceEditor({
                     className="absolute top-0 bottom-0 w-0.5 bg-[#D4A63A]"
                     style={{ left: `${(endSec / durationSec) * 100}%` }}
                   />
+                  {previewPlaying && (
+                    <div
+                      className="absolute top-0 bottom-0 w-[2px] bg-slate-900 shadow-[0_0_4px_rgba(0,0,0,0.5)]"
+                      style={{ left: `${((startSec + previewPositionSec) / durationSec) * 100}%` }}
+                    />
+                  )}
                 </>
               )}
             </div>
+            {previewPlaying && (
+              <div className="flex items-center gap-2">
+                <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-slate-500">
+                  {formatAudioTime(previewPositionSec)}
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={clipLen}
+                  step={0.1}
+                  value={previewPositionSec}
+                  onChange={(e) => seekPreview(parseFloat(e.target.value))}
+                  className="w-full accent-[#0B8A83]"
+                  aria-label="Seek within clip"
+                />
+                <span className="w-9 shrink-0 text-[11px] tabular-nums text-slate-500">
+                  {formatAudioTime(clipLen)}
+                </span>
+              </div>
+            )}
             <div>
               <input
                 type="range"
@@ -533,6 +600,7 @@ export function MusicPreferenceEditor({
                   disabled={disabled}
                   onClick={() => {
                     setVolume(preset.value);
+                    if (previewRef.current) previewRef.current.volume = preset.value;
                     emitSelection({ volume: preset.value });
                   }}
                   className={cn(

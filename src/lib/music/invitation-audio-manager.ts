@@ -74,6 +74,13 @@ export function createInvitationAudioManager(
 
     trimHandler = () => {
       const targetVol = musicSelection?.volume ?? savedVolume;
+      // Seeks/drift outside the trimmed window (OS media keys, background tab
+      // throttling, scrub bars, etc.) must snap back into the clip — never
+      // let the guest hear audio before start or past end.
+      if (a.currentTime < start - 0.25) {
+        a.currentTime = start;
+        return;
+      }
       // Fade the clip tail so trimmed audio never hard-cuts.
       if (!muted && fadeOutSec > 0 && a.currentTime >= end - fadeOutSec && a.currentTime < end) {
         const remaining = Math.max(0, end - a.currentTime);
