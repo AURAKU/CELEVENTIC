@@ -27,6 +27,7 @@ import {
   type InvitePipelinePhase,
 } from "@/lib/experience-engine/soft-intro";
 import { getLayoutMediaPack } from "@/lib/invitation/layout-media-identity";
+import { introAtmosphereUrlFromDesign } from "@/lib/invitation/studio-media-utils";
 import {
   TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL,
   resolveSealInitials,
@@ -171,7 +172,11 @@ export function PremiumInviteWrapper({
       : (layoutMedia?.background ?? layoutMedia?.hero ?? null);
   const mediaHero =
     enrichedDesign.media?.find((m) => m.role === "hero" || m.role === "background")?.url ?? null;
+  // Studio's dedicated "pre-invite welcome photo" upload — soft-intro / BEGIN gate only,
+  // never the hero, gallery, or page background behind the rest of the invite.
+  const introImageUrl = introAtmosphereUrlFromDesign(enrichedDesign);
   const softAtmosphereUrl = resolveSoftIntroAtmosphere({
+    introImageUrl,
     backgroundImageUrl: props.backgroundImageUrl,
     coverImageUrl: props.event.coverImageUrl,
     mediaUrl: mediaHero,

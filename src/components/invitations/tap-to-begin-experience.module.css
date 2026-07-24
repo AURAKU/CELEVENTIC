@@ -9,6 +9,7 @@
   --tap-ivory: #faf8f4;
   --tap-gold: #d4a63a;
   --tap-accent: #0b8a83;
+  --tap-scrim-rgb: 4, 10, 16;
   --tap-exit-ms: 480ms;
   position: fixed;
   inset: 0;
@@ -33,6 +34,16 @@
 
 .root:focus-visible {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tap-gold) 55%, transparent);
+}
+
+/**
+ * Smart contrast — when the uploaded photo samples as visually "light", flip
+ * the scrim to a warm cream wash and the text tokens to deep ink/gold so
+ * every phrase still stands out, instead of assuming every photo is dark.
+ */
+.root[data-contrast="light"] {
+  --tap-ivory: #241a0d;
+  --tap-scrim-rgb: 250, 248, 244;
 }
 
 .hero {
@@ -65,8 +76,19 @@
   z-index: 1;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(4, 10, 16, 0.55) 0%, rgba(4, 10, 16, 0.18) 38%, rgba(4, 10, 16, 0.72) 100%),
-    radial-gradient(ellipse 60% 50% at 50% 42%, transparent 20%, rgba(4, 10, 16, 0.55) 100%);
+    linear-gradient(
+      180deg,
+      rgba(var(--tap-scrim-rgb), 0.55) 0%,
+      rgba(var(--tap-scrim-rgb), 0.18) 38%,
+      rgba(var(--tap-scrim-rgb), 0.72) 100%
+    ),
+    radial-gradient(ellipse 60% 50% at 50% 42%, transparent 20%, rgba(var(--tap-scrim-rgb), 0.55) 100%);
+}
+
+.root[data-contrast="light"] .heroImg {
+  /* Lighter photos keep their natural brightness — the cream scrim above
+     carries the legibility work instead of crushing the shot to near-black. */
+  filter: saturate(0.95) contrast(1.03) brightness(0.96);
 }
 
 .bokeh {

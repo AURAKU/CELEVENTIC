@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Film, ImageIcon, Images, Loader2, Layout, Sparkles } from "lucide-react";
+import { Film, ImageIcon, Images, Loader2, Layout, Sparkles, Sunrise } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { GalleryUploadPanel } from "@/components/media/gallery-upload-panel";
@@ -10,10 +10,34 @@ import { UploadedMedia } from "@/components/media/uploaded-media";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
 import { uploadFormDataWithProgress, validateClientVideo } from "@/lib/media/upload-with-progress";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
-import { heroUrlFromDesign, pageBackgroundFromDesign, syncDesignMediaHero, syncDesignPageBackground } from "@/lib/invitation/studio-media-utils";
+import {
+  heroUrlFromDesign,
+  introAtmosphereUrlFromDesign,
+  pageBackgroundFromDesign,
+  syncDesignIntroAtmosphere,
+  syncDesignMediaHero,
+  syncDesignPageBackground,
+} from "@/lib/invitation/studio-media-utils";
 import { getMediaEntranceForLayout } from "@/lib/invitation/media-entrance-engine";
 import { MEDIA_ENTRANCE_OPTIONS } from "@/lib/invitation/media-entrance-engine";
 import { isVideoUrl } from "@/lib/invitation/demo-gallery-assets";
+
+/** Studio copy for the pre-invite welcome photo — TM-specific wording only for that layout. */
+function introPhotoCopy(layout?: string): { title: string; hint: string; note: string } {
+  if (layout === "traditional-marriage-ceremony") {
+    return {
+      title: "Welcome photo (before the invite opens)",
+      hint:
+        "The very first screen guests see — full-bleed behind “CELEVENTIC · TRADITIONAL · Marriage Ceremony” and the BEGIN button, before the Traditional Marriage Ceremony invitation opens.",
+      note: "Shows only on this welcome/BEGIN screen — never used as the hero photo, gallery, or page background.",
+    };
+  }
+  return {
+    title: "Welcome photo (before the invite opens)",
+    hint: "The very first screen guests see, before your invitation opens — the soft-intro / “BEGIN” gate.",
+    note: "Shows only on this welcome/BEGIN screen — never used as the hero photo, gallery, or page background.",
+  };
+}
 
 interface TemplateStudioMediaPanelProps {
   design: InvitationDesignConfig;
@@ -62,6 +86,8 @@ export function TemplateStudioMediaPanel({
   allowVideoBackground = true,
 }: TemplateStudioMediaPanelProps) {
   const heroUrl = heroUrlFromDesign(design);
+  const introUrl = introAtmosphereUrlFromDesign(design);
+  const introCopy = introPhotoCopy(design.layout);
   const pageBg = pageBackgroundFromDesign(design);
   const pageBgUrl = pageBg.backgroundVideoUrl ?? pageBg.backgroundImageUrl;
   const entrance = getMediaEntranceForLayout(design.layout ?? "classic-gold");
@@ -71,6 +97,14 @@ export function TemplateStudioMediaPanel({
   const videoInputRef = useRef<HTMLInputElement>(null);
   const pageVideoInputRef = useRef<HTMLInputElement>(null);
   const [pageVideoUploading, setPageVideoUploading] = useState(false);
+
+  function setIntroPhoto(url: string) {
+    onDesignChange(syncDesignIntroAtmosphere(design, url));
+  }
+
+  function clearIntroPhoto() {
+    onDesignChange(syncDesignIntroAtmosphere(design, null));
+  }
 
   function setHero(url: string, type: "image" | "video") {
     onDesignChange(syncDesignMediaHero(design, url, type));
@@ -151,6 +185,44 @@ export function TemplateStudioMediaPanel({
           <span className="font-medium text-[#0B8A83]">{entranceLabel}</span> entrance).
         </p>
       </div>
+
+      <MediaSection icon={Sunrise} title={introCopy.title} hint={introCopy.hint}>
+        {introUrl ? (
+          <div className="relative rounded-xl overflow-hidden border aspect-video max-h-40 bg-slate-100">
+            <UploadedMedia
+              src={introUrl}
+              alt="Pre-invite welcome photo"
+              className="w-full h-full object-cover object-center"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="absolute top-2 right-2"
+              onClick={clearIntroPhoto}
+              disabled={disabled}
+            >
+              Remove
+            </Button>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400 italic">
+            No welcome photo yet — guests see the template&apos;s default atmosphere until you upload one.
+          </p>
+        )}
+        <ImageUploadCropper
+          defaultAspect="free"
+          allowedAspects={["free"]}
+          extraFormFields={{ role: "intro", buildMode: "template" }}
+          onUploaded={(r) => setIntroPhoto(r.url)}
+          onError={setError}
+          disabled={disabled}
+          buttonLabel={introUrl ? "Replace welcome photo" : "Upload welcome photo"}
+          hint="Any photo, any shape — drag to select the exact region, no fixed crop ratio."
+          className="flex-1"
+        />
+        <p className="text-[11px] text-slate-500">{introCopy.note}</p>
+      </MediaSection>
 
       <MediaSection
         icon={ImageIcon}

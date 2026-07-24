@@ -25,7 +25,11 @@ export type MediaType = "image" | "video" | "pdf";
 export interface InvitationMediaAsset {
   url: string;
   type: MediaType;
-  role: "hero" | "background" | "reference" | "attachment";
+  /**
+   * `intro` is the pre-invite welcome photo shown full-bleed behind the
+   * soft-intro / "BEGIN" gate — never the hero, gallery, or page background.
+   */
+  role: "hero" | "background" | "reference" | "attachment" | "intro";
   name?: string;
 }
 

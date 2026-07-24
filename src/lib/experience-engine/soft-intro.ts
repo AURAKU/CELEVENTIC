@@ -32,6 +32,8 @@ export interface SoftIntroGateInput {
 }
 
 export interface SoftIntroAtmosphereInput {
+  /** Dedicated pre-invite welcome photo (Studio "intro" upload) — always wins when set. */
+  introImageUrl?: string | null;
   backgroundImageUrl?: string | null;
   coverImageUrl?: string | null;
   mediaUrl?: string | null;
@@ -69,9 +71,10 @@ export function softIntroHoldMs(reducedMotion: boolean): number {
   return reducedMotion ? SOFT_INTRO_REDUCED_MOTION_MS : SOFT_INTRO_DURATION_MS;
 }
 
-/** Prefer live media, then cover, then layout identity art. */
+/** Prefer the dedicated intro photo, then live media, then cover, then layout identity art. */
 export function resolveSoftIntroAtmosphere(input: SoftIntroAtmosphereInput): string | null {
   const candidates = [
+    input.introImageUrl,
     input.backgroundImageUrl,
     input.coverImageUrl,
     input.mediaUrl,

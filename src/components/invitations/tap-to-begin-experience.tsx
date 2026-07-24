@@ -7,9 +7,16 @@ import { CELEVENTIC_PALETTE } from "@/lib/experience/celeventic-palette";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import { parseCoupleNames } from "@/lib/invitation-templates";
 import { resolveMediaUrl, shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
+import {
+  pickLegibleAccent,
+  sampleImageContrastMode,
+  type ImageContrastMode,
+} from "@/lib/media/image-contrast";
 import styles from "./tap-to-begin-experience.module.css";
 
 const EXIT_MS = 480;
+/** Deep warm gold — legible script/accent tone when the photo classifies as light. */
+const DEEP_GOLD_ON_LIGHT = "#8A5A12";
 
 export interface TapToBeginExperienceProps {
   onBegin: () => void;
@@ -152,10 +159,39 @@ export function TapToBeginExperience({
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const accent = accentColor ?? CELEVENTIC_PALETTE.teal;
-  const gold =
-    primaryColor && /gold|#d4a|#c4a|#8b69|#a183|#5c3d/i.test(primaryColor)
-      ? primaryColor
-      : CELEVENTIC_PALETTE.gold;
+
+  const hero = atmosphereUrl?.trim() ? resolveMediaUrl(atmosphereUrl) : null;
+
+  // Smart contrast — classify the uploaded photo (light vs dark) so overlay text
+  // always flips to a legible scheme instead of assuming every photo is dark.
+  // Defaults to "dark" (today's design) until sampling resolves, and stays "dark"
+  // when there's no photo at all (matches the built-in navy fallback backdrop).
+  const [contrastMode, setContrastMode] = useState<ImageContrastMode>("dark");
+  useEffect(() => {
+    let cancelled = false;
+    if (!hero) {
+      setContrastMode("dark");
+      return;
+    }
+    void sampleImageContrastMode(hero).then((mode) => {
+      if (!cancelled && mode) setContrastMode(mode);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hero]);
+
+  // A brand primaryColor only wins as the script/accent "gold" when it stays
+  // legible against the resolved photo — a deep bronze reads fine on paper but
+  // disappears (dark-on-dark) as accent text over a dark photo, and the mirror
+  // case on a light photo. Otherwise fall back to a known-legible gold per mode.
+  const brandGoldCandidate =
+    primaryColor && /gold|#d4a|#c4a|#8b69|#a183|#5c3d/i.test(primaryColor) ? primaryColor : undefined;
+  const gold = pickLegibleAccent(
+    brandGoldCandidate,
+    contrastMode,
+    contrastMode === "light" ? DEEP_GOLD_ON_LIGHT : CELEVENTIC_PALETTE.gold
+  );
 
   const beat = useMemo(
     () => resolveEventBeat({ ceremonyLabel, eventTitle, layoutSlug, category }),
@@ -168,7 +204,6 @@ export function TapToBeginExperience({
   );
 
   const beginLabel = resolveBeginLabel(layoutSlug, category);
-  const hero = atmosphereUrl?.trim() ? resolveMediaUrl(atmosphereUrl) : null;
   const showHostFallback =
     !couple && Boolean(hostName?.trim()) && hostName!.trim() !== eventTitle?.trim();
 
@@ -228,6 +263,7 @@ export function TapToBeginExperience({
       className={rootClass}
       onClick={beginExit}
       aria-label={ariaLabel}
+      data-contrast={contrastMode}
       style={
         {
           ["--tap-accent" as string]: accent,

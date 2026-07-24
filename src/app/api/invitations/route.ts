@@ -18,7 +18,7 @@ const designConfigSchema = z.object({
   media: z.array(z.object({
     url: z.string(),
     type: z.enum(["image", "video", "pdf"]),
-    role: z.enum(["hero", "background", "reference", "attachment"]),
+    role: z.enum(["hero", "background", "reference", "attachment", "intro"]),
     name: z.string().optional(),
   })).optional(),
   animation: z.enum(["fade", "parallax", "ken-burns", "none"]).optional(),
