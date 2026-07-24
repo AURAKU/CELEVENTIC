@@ -333,6 +333,40 @@ describe("buildTranscodeArgs", () => {
     });
     assert.ok(!hdrTonemapArgs.includes("-color_primaries"), "the tonemap filter chain already outputs bt709 pixels");
   });
+
+  it("[yuvj420p -> yuv420p range] tags -color_range tv for the sdr pipeline — format=yuv420p alone doesn't resolve a full-range MJPEG/yuvj420p source", () => {
+    const args = buildTranscodeArgs("in.mp4", "out.mp4", probe());
+    const idx = args.indexOf("-color_range");
+    assert.ok(idx !== -1, "-color_range must be present for the sdr pipeline");
+    assert.equal(args[idx + 1], "tv");
+  });
+
+  it("[yuvj420p -> yuv420p range] tags -color_range tv for the hdr-fallback pipeline too", () => {
+    const args = buildTranscodeArgs("in.mp4", "out.mp4", probe({ isHdr: true, videoCodec: "hevc" }), {
+      hasZscale: false,
+      hasTonemap: false,
+    });
+    const idx = args.indexOf("-color_range");
+    assert.ok(idx !== -1);
+    assert.equal(args[idx + 1], "tv");
+  });
+
+  it("[hdr-tonemap] does NOT add -color_range (the zscale chain already sets range via r=tv) — avoids double-tagging", () => {
+    const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ isHdr: true, videoCodec: "hevc" }), {
+      hasZscale: true,
+      hasTonemap: true,
+    });
+    assert.ok(!args.includes("-color_range"));
+  });
+
+  it("[even-dimensions override] an explicit filterOverride replaces the computed filter verbatim in the -vf arg, everything else (audio/color args) is unaffected", () => {
+    const p = probe({ hasAudio: true });
+    const overriddenFilter = "scale=100:200,format=yuv420p,scale=trunc(iw/2)*2:trunc(ih/2)*2";
+    const args = buildTranscodeArgs("in.mp4", "out.mp4", p, { hasZscale: true, hasTonemap: true }, overriddenFilter);
+    const vfIdx = args.indexOf("-vf");
+    assert.equal(args[vfIdx + 1], overriddenFilter);
+    assert.ok(args.includes("aac"), "audio decision must still follow the real probe, unaffected by the filter override");
+  });
 });
 
 describe("buildRemuxArgs / buildPosterArgs", () => {
@@ -577,6 +611,134 @@ exit 0
     const result = await processVideoFile(garbage, { extensionHint: "mp4", timeoutMs: 30_000 });
     assert.equal(result.success, false);
     assert.match(result.error ?? "", /valid.*video stream/i);
+  });
+});
+
+describe("even output dimensions — the exact reported bug: '[libx264] width not divisible by 2 (883x1920)' on a 1206x2622 portrait source", () => {
+  it("end-to-end: transcodeWithHdrFallback on a REAL 1206x2622 portrait clip produces even width/height (884x1920), not the previously-crashing odd 883", async (t) => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-even-dims-"));
+    const inputPath = path.join(dir, "portrait-1206x2622.mp4");
+    const outputPath = path.join(dir, "out.mp4");
+    try {
+      await execFileAsync(
+        process.env.FFMPEG_PATH?.trim() || "ffmpeg",
+        [
+          "-y",
+          "-f", "lavfi",
+          "-i", "testsrc=size=1206x2622:duration=1:rate=5",
+          "-c:v", "libx264",
+          "-pix_fmt", "yuv420p",
+          inputPath,
+        ],
+        { timeout: 30_000 }
+      ).catch(() => t.skip("ffmpeg unavailable/unable to generate the 1206x2622 fixture on this machine"));
+
+      const portraitProbe = probe({ width: 1206, height: 2622, isHdr: false });
+      const fullCaps = { hasZscale: false, hasTonemap: false, hasLibx264: true, hasAac: true, hasHevcDecoder: true };
+
+      // Before the `force_divisible_by=2` fix this threw: "[libx264] width not divisible by 2
+      // (883x1920)" — must not throw now, and the retry-on-divisibility safety net in
+      // `runTranscodeAttempt` must never even need to engage.
+      await transcodeWithHdrFallback(inputPath, outputPath, portraitProbe, 30_000, fullCaps);
+
+      const { stdout } = await execFileAsync(process.env.FFPROBE_PATH?.trim() || "ffprobe", [
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=p=0",
+        outputPath,
+      ]);
+      const [w, h] = stdout.trim().split(",").map(Number);
+      assert.ok(Number.isFinite(w) && Number.isFinite(h), "output must report real dimensions");
+      assert.equal(w % 2, 0, `output width ${w} must be even — libx264 requires it`);
+      assert.equal(h % 2, 0, `output height ${h} must be even — libx264 requires it`);
+      assert.equal(h, 1920, "long edge must be capped at 1920");
+      assert.ok(w < h, "must remain portrait");
+    } finally {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+
+  it("[belt-and-suspenders retry] when ffmpeg reports 'width not divisible by 2' despite force_divisible_by=2 (e.g. a future regression or exotic build), transcodeWithHdrFallback retries once with the even-dimensions safety filter appended and still succeeds", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-divisibility-retry-"));
+    const inputPath = path.join(dir, "in.mp4");
+    const outputPath = path.join(dir, "out.mp4");
+    const fakeFfmpegPath = path.join(dir, "fake-ffmpeg-divisibility.sh");
+    const originalFfmpegPath = process.env.FFMPEG_PATH;
+    try {
+      await writeFile(inputPath, await makeTinyH264Mp4());
+
+      // A fake `ffmpeg` that deterministically reproduces the exact reported failure UNLESS the
+      // `-vf` value contains the safety-net filter appended by `withEvenDimensionsSafety` — this
+      // isolates and proves the RETRY mechanism itself, independently of whether the primary
+      // `force_divisible_by=2` fix already prevents the failure from happening at all.
+      await writeFile(
+        fakeFfmpegPath,
+        [
+          "#!/bin/bash",
+          "found=0",
+          'for arg in "$@"; do',
+          '  if [[ "$arg" == *"trunc(iw/2)*2"* ]]; then found=1; fi',
+          "done",
+          'if [[ "$found" -eq 1 ]]; then',
+          '  exec ffmpeg "$@"',
+          "else",
+          '  echo "[libx264 @ 0x0] width not divisible by 2 (883x1920)" >&2',
+          '  echo "Error while opening encoder - maybe incorrect parameters such as bit_rate, rate, width or height." >&2',
+          "  exit 1",
+          "fi",
+          "",
+        ].join("\n"),
+        { encoding: "utf8" }
+      );
+      await chmod(fakeFfmpegPath, 0o755);
+      process.env.FFMPEG_PATH = fakeFfmpegPath;
+
+      const fullCaps = { hasZscale: false, hasTonemap: false, hasLibx264: true, hasAac: true, hasHevcDecoder: true };
+      await transcodeWithHdrFallback(inputPath, outputPath, probe(), 30_000, fullCaps);
+
+      const { stat } = await import("node:fs/promises");
+      const st = await stat(outputPath);
+      assert.ok(st.size > 0, "the retried attempt must still produce a valid, non-empty output");
+    } finally {
+      if (originalFfmpegPath === undefined) delete process.env.FFMPEG_PATH;
+      else process.env.FFMPEG_PATH = originalFfmpegPath;
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+});
+
+describe("processVideoFile — friendly, non-leaking error messages", () => {
+  it("never exposes raw ffmpeg/ffprobe stderr (temp paths, filter-graph syntax) in the user-facing error — only the deliberately-worded preflight message", async () => {
+    // Genuinely undecodable input reaches the SAME preflight message this module has always used
+    // (already asserted elsewhere) — proving the sanitizer passes short, deliberate messages
+    // through untouched, it does not rewrite everything into one generic sentence.
+    const garbage = Buffer.from("this is not a video file at all, just some plain text bytes");
+    const result = await processVideoFile(garbage, { extensionHint: "mp4", timeoutMs: 30_000 });
+    assert.equal(result.success, false);
+    assert.match(result.error ?? "", /valid.*video stream/i);
+    assert.doesNotMatch(result.error ?? "", /\/tmp\/|\/private\/|Command failed|stderr/i);
+  });
+
+  it("collapses the generic '<bin> failed: <raw stderr>' leak into one short, friendly sentence instead of shipping ffmpeg internals to the client", async () => {
+    // A corrupt-but-plausible-looking MP4 header reliably drives ffmpeg into the generic
+    // "<bin> failed: ..." branch (not one of the deliberately-worded preflight checks) for at
+    // least one of ffprobe/ffmpeg's calls in the pipeline.
+    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-friendly-error-"));
+    try {
+      // Valid MP4 box structure (ftyp) followed by garbage — enough for some demuxers to start
+      // "reading" a video stream and then fail deep inside decode/filter, exercising the raw
+      // runProcess failure path rather than the early "no valid stream" preflight check.
+      const bogus = Buffer.concat([
+        Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]),
+        Buffer.alloc(4096, 0xff),
+      ]);
+      const result = await processVideoFile(bogus, { extensionHint: "mp4", timeoutMs: 30_000 });
+      if (result.success) return; // some ffmpeg builds tolerate this fixture — not what this test targets
+      assert.doesNotMatch(result.error ?? "", /\/tmp\/|\/private\/|Command failed|libavformat|libavcodec/i);
+    } finally {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
   });
 });
 
