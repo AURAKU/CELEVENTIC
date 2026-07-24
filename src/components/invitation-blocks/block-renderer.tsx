@@ -1,6 +1,7 @@
 "use client";
 
 import { BlockView } from "@/components/invitation-blocks/block-views";
+import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import type { InvitationBlockDto, BlockRenderContext } from "@/lib/invitation-blocks/block-types";
 
 interface BlockRendererProps {
@@ -19,7 +20,11 @@ export function BlockRenderer({ blocks, context, previewOnly }: BlockRendererPro
   return (
     <div className="space-y-6 sm:space-y-8">
       {visible.map((block) => (
-        <BlockView key={block.id} block={block} ctx={context} />
+        // Isolate each block — a malformed asset or media state in one block (e.g. a
+        // still-processing/failed video) must never take down the rest of the invitation.
+        <ClientErrorBoundary key={block.id} fallback={null}>
+          <BlockView block={block} ctx={context} />
+        </ClientErrorBoundary>
       ))}
     </div>
   );
