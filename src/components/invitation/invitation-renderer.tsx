@@ -14,6 +14,7 @@ import { TraditionalMarriageCeremonyTemplate } from "./templates/traditional-mar
 import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
 import { InvitationMediaProvider } from "./invitation-media-context";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
+import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
 export type InvitationRendererProps = InvitationRenderProps & {
   interactiveMedia?: boolean;
@@ -55,7 +56,17 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
 
   return (
     <div className="invitation-copy-root">
-      <InvitationMediaProvider interactive={interactiveMedia}>{content}</InvitationMediaProvider>
+      {/* Template-level isolation — a broken layout/media config must degrade to a
+          friendly message instead of crashing the whole guest-facing page. */}
+      <ClientErrorBoundary
+        fallback={
+          <div className="flex min-h-[50vh] items-center justify-center px-4 py-16 text-center text-sm text-slate-500">
+            This invitation couldn&apos;t be displayed right now. Please refresh the page.
+          </div>
+        }
+      >
+        <InvitationMediaProvider interactive={interactiveMedia}>{content}</InvitationMediaProvider>
+      </ClientErrorBoundary>
       {props.admissionManualCode && (
         <div className="px-4 pb-6 -mt-2">
           <ManualGateCodeReveal code={props.admissionManualCode} variant="invite" />
