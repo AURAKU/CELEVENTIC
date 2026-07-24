@@ -28,6 +28,7 @@
         "smoke-test:pages": "node scripts/smoke-test-local.mjs && node scripts/smoke-test-authed-pages.mjs",
         "test:auth": "tsx --test src/lib/auth/__tests__/*.test.ts",
         "test:video": "tsx --test src/lib/video/__tests__/*.test.ts",
+        "test:uploads": "tsx --test src/app/api/uploads/__tests__/*.test.ts",
         "test:experience-engine": "tsx --test src/lib/experience-engine/__tests__/*.test.ts",
         "db:studio": "prisma studio",
         "brand:assets": "node scripts/setup-brand-assets.mjs",

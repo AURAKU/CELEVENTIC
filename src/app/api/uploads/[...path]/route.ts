@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import { readUploadFile } from "@/lib/uploads/file-storage";
+import { parseRange } from "@/lib/uploads/range";
 
 const MIME: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -26,8 +27,13 @@ function resolveMime(relative: string, ext: string): string {
   return MIME[ext] ?? "application/octet-stream";
 }
 
+/**
+ * Serves uploaded media with HTTP Range support (206 Partial Content) — required for video
+ * seeking / fast-start playback when a file is stored on local disk (S3/CloudFront already
+ * support Range natively; this route is the local-storage fallback, see file-storage.ts).
+ */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path: segments } = await params;
@@ -38,10 +44,29 @@ export async function GET(
   }
 
   const ext = path.extname(relative).toLowerCase();
+  const contentType = resolveMime(relative, ext);
+  const range = parseRange(req.headers.get("range"), buffer.length);
+
+  if (range) {
+    const chunk = buffer.subarray(range.start, range.end + 1);
+    return new NextResponse(new Uint8Array(chunk), {
+      status: 206,
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=86400",
+        "Accept-Ranges": "bytes",
+        "Content-Range": `bytes ${range.start}-${range.end}/${buffer.length}`,
+        "Content-Length": String(chunk.length),
+      },
+    });
+  }
+
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      "Content-Type": resolveMime(relative, ext),
+      "Content-Type": contentType,
       "Cache-Control": "public, max-age=86400",
+      "Accept-Ranges": "bytes",
+      "Content-Length": String(buffer.length),
     },
   });
 }
