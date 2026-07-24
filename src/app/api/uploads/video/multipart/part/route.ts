@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
 import { checkUploadRateLimit } from "@/lib/video/quota";
-import { presignUploadPart, listUploadedParts } from "@/lib/video/s3-video";
+import { presignUploadPart, listUploadedParts, VideoStorageNotConfiguredError } from "@/lib/video/s3-video";
 import { PRESIGN_EXPIRY_SECONDS } from "@/lib/video/constants";
 
 interface PartRequestBody {
@@ -40,15 +40,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   }
 
-  if (body.partNumber === undefined) {
-    const parts = await listUploadedParts(asset.originalKey, asset.multipartUploadId);
-    return NextResponse.json({ success: true, data: { parts } });
-  }
+  try {
+    if (body.partNumber === undefined) {
+      const parts = await listUploadedParts(asset.originalKey, asset.multipartUploadId);
+      return NextResponse.json({ success: true, data: { parts } });
+    }
 
-  if (!Number.isInteger(body.partNumber) || body.partNumber < 1 || body.partNumber > (asset.totalParts ?? 10_000)) {
-    return NextResponse.json({ error: "Invalid part number." }, { status: 400 });
-  }
+    if (!Number.isInteger(body.partNumber) || body.partNumber < 1 || body.partNumber > (asset.totalParts ?? 10_000)) {
+      return NextResponse.json({ error: "Invalid part number." }, { status: 400 });
+    }
 
-  const url = await presignUploadPart(asset.originalKey, asset.multipartUploadId, body.partNumber, PRESIGN_EXPIRY_SECONDS);
-  return NextResponse.json({ success: true, data: { url, partNumber: body.partNumber, expiresInSeconds: PRESIGN_EXPIRY_SECONDS } });
+    const url = await presignUploadPart(asset.originalKey, asset.multipartUploadId, body.partNumber, PRESIGN_EXPIRY_SECONDS);
+    return NextResponse.json({ success: true, data: { url, partNumber: body.partNumber, expiresInSeconds: PRESIGN_EXPIRY_SECONDS } });
+  } catch (error) {
+    if (error instanceof VideoStorageNotConfiguredError) {
+      return NextResponse.json(
+        { error: "Video storage is not available for this upload session. Please retry the upload." },
+        { status: 503 }
+      );
+    }
+    throw error;
+  }
 }

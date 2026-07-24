@@ -113,13 +113,26 @@ export function PublicMemoriesGallery({
               >
                 {item.mediaType === "video" ? (
                   <>
-                    <video
-                      src={item.thumbnailUrl ?? item.mediaUrl}
-                      className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
+                    {item.thumbnailUrl ? (
+                      // Poster JPEG — cheap to render at grid scale, no video metadata fetch
+                      // needed just to show a thumbnail. Never point a <video> src at a JPEG.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.thumbnailUrl}
+                        alt={item.caption ?? "Video memory"}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <video
+                        src={item.mediaUrl}
+                        poster={item.thumbnailUrl ?? undefined}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    )}
                     <span className="absolute top-2 right-2 rounded-full bg-black/50 p-1">
                       <Play className="h-3 w-3 text-white fill-white" />
                     </span>
