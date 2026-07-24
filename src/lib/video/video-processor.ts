@@ -329,29 +329,98 @@ export function isAlreadyBrowserCompatible(probe: ProbeResult): boolean {
  */
 const ASSUME_HDR_CAPABLE: FfmpegCapabilities = { hasZscale: true, hasTonemap: true };
 
+/** Which filter pipeline `buildVideoFilter` chose — surfaced so callers can log/tag/tune output args. */
+export type VideoFilterPipeline = "sdr" | "hdr-tonemap" | "hdr-fallback";
+
+export interface VideoFilterResult {
+  /** The `-vf` filter-graph string to pass to ffmpeg. */
+  filter: string;
+  /** Which pipeline was chosen — never mix reasoning about this outside this one function. */
+  pipeline: VideoFilterPipeline;
+}
+
 /**
- * Builds the `-vf` filter chain: scale to <=1080p (never upscale) + orientation + yuv420p, and
- * — only when the source is HDR *and* the running ffmpeg registers both `zscale` and `tonemap`
- * (see `ffmpeg-capabilities.ts`) — an HDR->SDR BT.709 tonemap stage. When either filter is
- * missing, we silently use the plain scale/format chain instead of throwing: the HDR source
- * still ships (correct, just not tone-mapped) rather than failing the whole upload over an
- * optional filter some ffmpeg builds (e.g. Homebrew macOS without `libzimg`) don't ship.
+ * Computes the scale bounding box (max width, max height) for the `-vf scale=...` expression,
+ * correctly swapped for portrait vs landscape sources — the old `min(1920,iw):min(1080,ih)`
+ * bound alone silently mis-scaled portrait (phone) video: a 1080x1920 clip was constrained to a
+ * 1080x1080 box (both caps applied against the *wrong* axis for that orientation), shrinking it
+ * to ~608x1080 instead of shipping at its native 1080x1920.
+ *
+ * `probe.width`/`probe.height` are the raw (pre-rotation) stream dimensions ffprobe reports;
+ * `-autorotate` swaps them for a 90°/270° rotation before our filter chain ever sees the frame,
+ * so the bounding box must be picked against the *effective* (post-rotation) orientation, not
+ * the raw one — otherwise a portrait phone video with a 90° rotation tag would incorrectly get
+ * landscape bounds.
  */
-export function buildVideoFilterChain(probe: ProbeResult, caps: FfmpegCapabilities = ASSUME_HDR_CAPABLE): string {
-  const scale = `scale='min(${MAX_OUTPUT_WIDTH},iw)':'min(${MAX_OUTPUT_HEIGHT},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`;
+export function computeScaleBounds(probe: Pick<ProbeResult, "width" | "height" | "rotation">): {
+  maxWidth: number;
+  maxHeight: number;
+} {
+  const rotated = probe.rotation === 90 || probe.rotation === 270;
+  const effectiveWidth = rotated ? probe.height : probe.width;
+  const effectiveHeight = rotated ? probe.width : probe.height;
+
+  if (effectiveWidth == null || effectiveHeight == null) {
+    // Unknown dimensions (ffprobe couldn't read them) — fall back to a safe symmetric box at the
+    // long-edge cap. `force_original_aspect_ratio=decrease` never upscales and never distorts,
+    // so this is always safe: it just guarantees neither dimension exceeds the long-edge cap.
+    return { maxWidth: MAX_OUTPUT_WIDTH, maxHeight: MAX_OUTPUT_WIDTH };
+  }
+
+  const isPortrait = effectiveHeight > effectiveWidth;
+  return isPortrait
+    ? { maxWidth: MAX_OUTPUT_HEIGHT, maxHeight: MAX_OUTPUT_WIDTH }
+    : { maxWidth: MAX_OUTPUT_WIDTH, maxHeight: MAX_OUTPUT_HEIGHT };
+}
+
+/**
+ * SINGLE SOURCE OF TRUTH for the `-vf` filter chain. Every caller (transcode, tests, any future
+ * bridge) must go through this function — never hand-build a filter string elsewhere — so there
+ * is exactly one place that decides scale bounds and HDR handling.
+ *
+ * Pipelines:
+ *   - "sdr":          scale (portrait/landscape-aware, never upscale) + yuv420p. No zscale/tonemap
+ *                      ever, regardless of capabilities — SDR sources never need them.
+ *   - "hdr-tonemap":  HDR source AND the running ffmpeg registers both `zscale` and `tonemap` —
+ *                      full PQ/HLG → linear → BT.709 tonemap chain down to SDR.
+ *   - "hdr-fallback":  HDR source but `zscale`/`tonemap` unavailable (e.g. Homebrew macOS ffmpeg
+ *                      without `libzimg`) — ships the same scale/yuv420p chain as "sdr" (no
+ *                      zscale/tonemap/gbrpf32le at all, so it can never throw "No such filter").
+ *                      `buildTranscodeArgs` additionally stamps explicit BT.709 color metadata
+ *                      on the output for this pipeline so players don't inherit/guess a stale
+ *                      HDR color tag from the source — the source still ships (readable
+ *                      everywhere, just not tone-mapped) instead of failing the whole upload
+ *                      over an optional filter some ffmpeg builds don't ship.
+ */
+export function buildVideoFilter(probe: ProbeResult, caps: FfmpegCapabilities = ASSUME_HDR_CAPABLE): VideoFilterResult {
+  const { maxWidth, maxHeight } = computeScaleBounds(probe);
+  const scale = `scale='min(${maxWidth},iw)':'min(${maxHeight},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`;
+
   if (probe.isHdr && caps.hasZscale && caps.hasTonemap) {
     // Tone-map HDR (PQ/HLG, e.g. Dolby Vision/HDR10 iPhone footage) down to SDR BT.709.
-    return [
-      scale,
-      "zscale=t=linear:npl=100",
-      "format=gbrpf32le",
-      "zscale=p=bt709",
-      "tonemap=tonemap=hable:desat=0",
-      "zscale=t=bt709:m=bt709:r=tv",
-      "format=yuv420p",
-    ].join(",");
+    return {
+      pipeline: "hdr-tonemap",
+      filter: [
+        scale,
+        "zscale=t=linear:npl=100",
+        "format=gbrpf32le",
+        "zscale=p=bt709",
+        "tonemap=tonemap=hable:desat=0",
+        "zscale=t=bt709:m=bt709:r=tv",
+        "format=yuv420p",
+      ].join(","),
+    };
   }
-  return `${scale},format=yuv420p`;
+
+  return {
+    pipeline: probe.isHdr ? "hdr-fallback" : "sdr",
+    filter: `${scale},format=yuv420p`,
+  };
+}
+
+/** Back-compat string-only wrapper around `buildVideoFilter` — kept for existing call sites/tests. */
+export function buildVideoFilterChain(probe: ProbeResult, caps: FfmpegCapabilities = ASSUME_HDR_CAPABLE): string {
+  return buildVideoFilter(probe, caps).filter;
 }
 
 export function buildTranscodeArgs(
@@ -360,24 +429,34 @@ export function buildTranscodeArgs(
   probe: ProbeResult,
   caps: FfmpegCapabilities = ASSUME_HDR_CAPABLE
 ): string[] {
+  const { filter, pipeline } = buildVideoFilter(probe, caps);
+
   // `-autorotate` is a boolean CLI flag — some ffmpeg builds (7.x+) parse a bare trailing value
   // like `-autorotate 1` as a *separate* positional output argument (not the flag's value),
   // which corrupts the whole command line ("Error parsing options for output file 1"). Passing
   // the flag with no value enables it (the documented default anyway) and works identically
-  // across ffmpeg versions that support the option at all.
+  // across ffmpeg versions that support the option at all. It also means the source's display-
+  // matrix/rotate-tag rotation is baked in by the demuxer BEFORE our `-vf` filter chain runs —
+  // never add a second explicit `transpose`/`rotate` filter here, or the video double-rotates.
   const args: string[] = ["-y", "-autorotate", "-i", inputPath];
   args.push("-map", "0:v:0");
   if (probe.hasAudio) args.push("-map", "0:a:0?");
-  args.push("-vf", buildVideoFilterChain(probe, caps));
+  args.push("-vf", filter);
   args.push(
     "-c:v", "libx264",
     "-profile:v", "main",
     "-level", "4.0",
     "-preset", "veryfast",
     "-crf", "21",
-    "-pix_fmt", "yuv420p",
-    "-movflags", "+faststart"
+    "-pix_fmt", "yuv420p"
   );
+  if (pipeline === "hdr-fallback") {
+    // We didn't actually tone-map (zscale/tonemap unavailable) — stamp explicit BT.709 tags on
+    // the *output* so players never inherit/guess a stale PQ/HLG color tag from the source and
+    // render it washed-out/broken; the pixels are the plain scale/format chain's output either way.
+    args.push("-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709");
+  }
+  args.push("-movflags", "+faststart");
   if (probe.hasAudio) {
     args.push("-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "48000");
   } else {
@@ -415,32 +494,46 @@ export function choosePosterSeekSeconds(durationSeconds: number | null): number 
  * extra after the first call (cached in `ffmpeg-capabilities.ts`), but SDR sources skip it
  * entirely since the result would never change which filter chain they get.
  */
-async function resolveHdrCapabilities(probe: ProbeResult): Promise<FfmpegCapabilities> {
+async function resolveHdrCapabilities(probe: ProbeResult, fullCaps: FfmpegFullCapabilities): Promise<FfmpegCapabilities> {
   if (!probe.isHdr) return { hasZscale: false, hasTonemap: false };
-  const [hasZscale, hasTonemap] = await Promise.all([supportsFilter("zscale"), supportsFilter("tonemap")]);
-  return { hasZscale, hasTonemap };
+  return { hasZscale: fullCaps.hasZscale, hasTonemap: fullCaps.hasTonemap };
+}
+
+/** True for any ffmpeg stderr/message that indicates an optional filter is unavailable at runtime. */
+function isFilterUnavailableError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /No such filter|Cannot find a matching stream|zscale|tonemap/i.test(message);
 }
 
 /**
  * Runs the real transcode, choosing the HDR zscale/tonemap pipeline only when both filters are
  * confirmed available; otherwise (or for SDR sources) uses the plain scale/format fallback. If
  * the zscale/tonemap pipeline is attempted but fails unexpectedly at runtime (e.g. a build with a
- * broken/partial `libzimg`), automatically retries once with the fallback pipeline instead of
- * failing the whole upload — an HDR source that ships un-tone-mapped beats one that doesn't ship
- * at all.
+ * broken/partial `libzimg`, or a filter that registers but errors at graph-init time), the
+ * incomplete output is removed and the run automatically retries exactly once with the
+ * `hdr-fallback` pipeline instead of failing the whole upload — an HDR source that ships
+ * un-tone-mapped beats one that doesn't ship at all. The retry is logged (not silent) so ops can
+ * see it happening in `pm2 logs`.
  */
-async function transcodeWithHdrFallback(
+export async function transcodeWithHdrFallback(
   inputPath: string,
   outputPath: string,
   probe: ProbeResult,
-  timeoutMs: number
+  timeoutMs: number,
+  fullCaps: FfmpegFullCapabilities
 ): Promise<void> {
-  const caps = await resolveHdrCapabilities(probe);
+  const caps = await resolveHdrCapabilities(probe, fullCaps);
   const attemptingHdrPipeline = probe.isHdr && caps.hasZscale && caps.hasTonemap;
   try {
     await runProcess(getFfmpegBin(), buildTranscodeArgs(inputPath, outputPath, probe, caps), timeoutMs);
   } catch (error) {
     if (!attemptingHdrPipeline) throw error; // already ran the safe fallback — nothing left to retry
+    console.warn(
+      `[video-processor] HDR tonemap pipeline failed (${isFilterUnavailableError(error) ? "filter error" : "runtime error"}); ` +
+        `removing incomplete output and retrying once with the plain scale/format fallback.`,
+      error instanceof Error ? error.message : error
+    );
+    await rm(outputPath, { force: true }).catch(() => {});
     const fallbackCaps: FfmpegCapabilities = { hasZscale: false, hasTonemap: false };
     await runProcess(getFfmpegBin(), buildTranscodeArgs(inputPath, outputPath, probe, fallbackCaps), timeoutMs);
   }
@@ -481,6 +574,11 @@ function guessExtension(sourceExtHint: string | null | undefined): string {
   return clean || "bin";
 }
 
+/** True when `ffprobe` found an actual, decodable video stream — never trust a probe result blindly. */
+function hasValidVideoStream(probe: ProbeResult | null): probe is ProbeResult {
+  return Boolean(probe && probe.videoCodec);
+}
+
 /**
  * Runs adaptive ffprobe+ffmpeg by default. Optionally tries the VPS converter binary first
  * when `VIDEO_USE_EXTERNAL_CONVERTER` is explicitly enabled — any external failure (including
@@ -514,8 +612,13 @@ export async function processVideoFile(
           ["--input", inputPath, "--output", outputPath, "--poster", posterPath, "--max-width", String(MAX_OUTPUT_WIDTH), "--max-height", String(MAX_OUTPUT_HEIGHT)],
           timeoutMs
         );
-        if (await fileNonEmpty(outputPath)) {
-          const metadata = await deriveMetadata(inputPath, outputPath);
+        // Never trust "exited 0 and left a non-empty file" alone — a converter that hard-fails
+        // partway through (e.g. its own internal zscale filter missing) can still leave a
+        // truncated/corrupt MP4 behind. Verify the output is a genuinely decodable video with
+        // `ffprobe` before ever treating this as success.
+        const outputProbe = await probeVideoFile(outputPath).catch(() => null);
+        if (hasValidVideoStream(outputProbe) && (await fileNonEmpty(outputPath))) {
+          const metadata = await deriveMetadata(inputPath, outputPath, outputProbe);
           return {
             success: true,
             method: "external-converter",
@@ -524,21 +627,42 @@ export async function processVideoFile(
             metadata,
           };
         }
-        // Converter exited 0 but left empty/missing output — not success. Clear and fall through.
+        // Converter exited 0 but left empty/missing/unverifiable (not really a video) output —
+        // never treat that as success. Clear it and fall through to adaptive ffmpeg.
+        console.warn("[video-processor] external converter produced no verifiable output; falling back to adaptive ffmpeg.");
         await clearPartialOutputs(outputPath, posterPath);
-      } catch {
+      } catch (error) {
         // Any error (zscale missing, wrong CLI, timeout, non-zero exit) — clear partial
         // artifacts so we never treat a failed external convert as success, then fall through
         // to adaptive ffmpeg below.
+        console.warn(
+          "[video-processor] external converter failed; falling back to adaptive ffmpeg.",
+          error instanceof Error ? error.message : error
+        );
         await clearPartialOutputs(outputPath, posterPath);
       }
     }
 
     // 2) Adaptive ffprobe + ffmpeg (default path; also the fallthrough after external failure).
     const inputProbe = await probeVideoFile(inputPath).catch(() => null);
-    const remuxEligible = inputProbe ? isAlreadyBrowserCompatible(inputProbe) : false;
+    if (!hasValidVideoStream(inputProbe)) {
+      throw new VideoProcessingError(
+        "Could not detect a valid, decodable video stream in the uploaded file."
+      );
+    }
 
-    if (remuxEligible && inputProbe) {
+    const fullCaps = await getFfmpegFullCapabilities();
+    if (inputProbe.isHevc && !fullCaps.hasHevcDecoder) {
+      // Fail fast with an actionable message instead of letting ffmpeg die deep inside the
+      // transcode with an opaque "Unknown decoder" error.
+      throw new VideoProcessingError(
+        "This server's ffmpeg build cannot decode HEVC/H.265 sources. Install an ffmpeg build with HEVC decoding support."
+      );
+    }
+
+    const remuxEligible = isAlreadyBrowserCompatible(inputProbe);
+
+    if (remuxEligible) {
       try {
         await runProcess(getFfmpegBin(), buildRemuxArgs(inputPath, outputPath), timeoutMs);
         const posterSeek = choosePosterSeekSeconds(inputProbe.durationSeconds);
@@ -556,9 +680,8 @@ export async function processVideoFile(
       }
     }
 
-    const probe = inputProbe ?? (await probeVideoFile(inputPath));
-    await transcodeWithHdrFallback(inputPath, outputPath, probe, timeoutMs);
-    const posterSeek = choosePosterSeekSeconds(probe.durationSeconds);
+    await transcodeWithHdrFallback(inputPath, outputPath, inputProbe, timeoutMs, fullCaps);
+    const posterSeek = choosePosterSeekSeconds(inputProbe.durationSeconds);
     await runProcess(getFfmpegBin(), buildPosterArgs(outputPath, posterPath, posterSeek), Math.min(timeoutMs, 60_000));
 
     return {
@@ -566,7 +689,7 @@ export async function processVideoFile(
       method: "ffmpeg-transcode",
       outputBuffer: await readFile(outputPath),
       posterBuffer: (await fileNonEmpty(posterPath)) ? await readFile(posterPath) : null,
-      metadata: metadataFromProbe(probe),
+      metadata: metadataFromProbe(inputProbe),
     };
   } catch (error) {
     return {
@@ -609,10 +732,14 @@ function metadataFromProbe(probe: ProbeResult): ProcessedVideoMetadata {
 }
 
 /** Metadata for the external-converter path: probe the *input* for hadHevc/hadHdr flags, the *output* for final dimensions/duration. */
-async function deriveMetadata(inputPath: string, outputPath: string): Promise<ProcessedVideoMetadata> {
+async function deriveMetadata(
+  inputPath: string,
+  outputPath: string,
+  precomputedOutputProbe?: ProbeResult | null
+): Promise<ProcessedVideoMetadata> {
   const [inputProbe, outputProbe] = await Promise.all([
     probeVideoFile(inputPath).catch(() => null),
-    probeVideoFile(outputPath).catch(() => null),
+    precomputedOutputProbe !== undefined ? Promise.resolve(precomputedOutputProbe) : probeVideoFile(outputPath).catch(() => null),
   ]);
   return {
     durationSeconds: outputProbe?.durationSeconds ?? inputProbe?.durationSeconds ?? null,

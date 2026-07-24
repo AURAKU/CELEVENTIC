@@ -37,6 +37,15 @@
 > (`VideoUploader`, `MediaUploader`) poll `GET /api/uploads/video/:id` until it's `READY`, then
 > switch to `processedMp4Url`/`playbackUrl`. See `docs/video-processing.md` for the full
 > request/poll contract.
+>
+> ⚠️ **Update (2026-07-24, part 4) — portrait scaling + HDR retry hardening:** `buildVideoFilter()`
+> is now the single source of truth for the `-vf` chain (three pipelines: `sdr` / `hdr-tonemap` /
+> `hdr-fallback`), with a portrait/landscape-aware scale bounding box (a phone-shot 1080×1920 clip
+> no longer gets squeezed into a 1080×1080 box). If the HDR `zscale`/`tonemap` graph is attempted
+> but fails at runtime, the partial output is deleted and the transcode retries once with the
+> plain fallback pipeline (logged to `pm2 logs`) instead of failing the upload. The (still
+> opt-in) external converter's output is now verified with `ffprobe`, not just "file is
+> non-empty", before ever being trusted.
 
 # Universal Video Upload & Processing — Deployment Guide
 
