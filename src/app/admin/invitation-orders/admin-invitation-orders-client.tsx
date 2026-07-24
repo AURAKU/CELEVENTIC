@@ -263,7 +263,7 @@ export function AdminInvitationOrdersClient() {
                     <div>
                       <Label className="text-xs">Design preview</Label>
                       <ImageUploadCropper
-                        defaultAspect="3:4"
+                        defaultAspect="free"
                         buttonLabel="Upload preview from device"
                         hint="Import invitation preview, crop, then send to customer."
                         previewUrl={previewUrl || null}

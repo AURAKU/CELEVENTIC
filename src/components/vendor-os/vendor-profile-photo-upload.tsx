@@ -45,7 +45,7 @@ export function VendorProfilePhotoUpload({ profileImage, onUpdated, disabled }: 
   return (
     <div className="space-y-2">
       <ImageUploadCropper
-        defaultAspect="1:1"
+        defaultAspect="free"
         allowedAspects={CROP_PRESETS.logo}
         previewUrl={preview}
         onCustomUpload={uploadProfilePhoto}

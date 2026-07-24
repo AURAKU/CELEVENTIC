@@ -256,7 +256,7 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
           open
           imageSrc={cropSrc}
           fileName={cropName}
-          defaultAspect="3:4"
+          defaultAspect="free"
           allowedAspects={CROP_PRESETS.gallery}
           onClose={() => {
             if (cropSrc.startsWith("blob:")) URL.revokeObjectURL(cropSrc);

@@ -293,7 +293,7 @@ function GalleryPanel({ eventId }: { eventId: string }) {
               </Select>
               {form.type === "photo" && (
                 <ImageUploadCropper
-                  defaultAspect="4:5"
+                  defaultAspect="free"
                   allowedAspects={CROP_PRESETS.gallery}
                   previewUrl={form.url || null}
                   onClear={() => setForm({ ...form, url: "" })}

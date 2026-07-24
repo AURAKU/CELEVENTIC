@@ -212,14 +212,14 @@ export function TemplateStudioMediaPanel({
         )}
         <div className="flex flex-col sm:flex-row gap-2">
           <ImageUploadCropper
-            defaultAspect="4:5"
+            defaultAspect="free"
             allowedAspects={CROP_PRESETS.cover}
             extraFormFields={{ role: "hero", buildMode: "template" }}
             onUploaded={(r) => setHero(r.url, "image")}
             onError={setError}
             disabled={disabled}
             buttonLabel="Upload hero photo"
-            hint="4:5 portrait crop — fits hero frame neatly."
+            hint="Any photo, any shape — drag to select the exact region, or use the full image. 4:5 portrait is available as an optional preset, never locked."
             className="flex-1"
           />
         </div>

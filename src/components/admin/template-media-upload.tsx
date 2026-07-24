@@ -44,7 +44,7 @@ export function TemplateMediaUpload({
         <Label className="text-xs">{label}</Label>
         <ImageUploadCropper
           className="mt-1"
-          defaultAspect="5:7"
+          defaultAspect="free"
           allowedAspects={CROP_PRESETS.cover}
           onCustomUpload={uploadBlob}
           onUploaded={(r) => onUploaded(r.url)}

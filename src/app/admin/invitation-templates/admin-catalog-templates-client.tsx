@@ -301,7 +301,7 @@ export function AdminCatalogTemplatesClient() {
             <div className="sm:col-span-2">
               <Label>Preview image</Label>
               <ImageUploadCropper
-                defaultAspect="3:4"
+                defaultAspect="free"
                 uploadEndpoint="/api/admin/invitation-templates/upload"
                 extraFormFields={{ category: "preview" }}
                 buttonLabel="Import preview image"
@@ -313,7 +313,7 @@ export function AdminCatalogTemplatesClient() {
             <div className="sm:col-span-2">
               <Label>Background image</Label>
               <ImageUploadCropper
-                defaultAspect="3:4"
+                defaultAspect="free"
                 uploadEndpoint="/api/admin/invitation-templates/upload"
                 extraFormFields={{ category: "background" }}
                 buttonLabel="Import background image"
@@ -325,7 +325,7 @@ export function AdminCatalogTemplatesClient() {
             <div className="sm:col-span-2">
               <Label>Inspiration media (image)</Label>
               <ImageUploadCropper
-                defaultAspect="4:5"
+                defaultAspect="free"
                 uploadEndpoint="/api/admin/invitation-templates/upload"
                 extraFormFields={{ category: "inspiration" }}
                 buttonLabel="Import inspiration artwork"

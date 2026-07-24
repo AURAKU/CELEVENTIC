@@ -264,7 +264,7 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
                 <div className="space-y-1">
                   <Label>Host / couple photo</Label>
                   <ImageUploadCropper
-                    defaultAspect="1:1"
+                    defaultAspect="free"
                     allowedAspects={CROP_PRESETS.portrait}
                     previewUrl={form.hostPhotoUrl || null}
                     onClear={() => setForm({ ...form, hostPhotoUrl: "" })}
@@ -275,7 +275,7 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
                 <div className="space-y-1">
                   <Label>Thank-you flyer</Label>
                   <ImageUploadCropper
-                    defaultAspect="4:6"
+                    defaultAspect="free"
                     allowedAspects={CROP_PRESETS.cover}
                     previewUrl={form.flyerUrl || null}
                     onClear={() => setForm({ ...form, flyerUrl: "" })}
