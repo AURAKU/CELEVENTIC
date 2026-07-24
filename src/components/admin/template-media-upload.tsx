@@ -12,6 +12,8 @@ interface TemplateMediaUploadProps {
   category: string;
   accept?: string;
   onUploaded: (url: string) => void;
+  previewUrl?: string | null;
+  onClear?: () => void;
 }
 
 export function TemplateMediaUpload({
@@ -19,6 +21,8 @@ export function TemplateMediaUpload({
   category,
   accept = "video/*",
   onUploaded,
+  previewUrl,
+  onClear,
 }: TemplateMediaUploadProps) {
   const [error, setError] = useState("");
   const isImage = accept.includes("image");
@@ -47,6 +51,8 @@ export function TemplateMediaUpload({
           onError={setError}
           buttonLabel="Upload image"
           hint="Upload and crop template artwork."
+          previewUrl={previewUrl ?? null}
+          onClear={onClear}
         />
         {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
       </div>
@@ -64,6 +70,8 @@ export function TemplateMediaUpload({
         className="mt-1"
         category="ADMIN"
         role={category}
+        previewUrl={previewUrl ?? null}
+        onClear={onClear}
         onUploaded={onVideoUploaded}
         onError={setError}
         buttonLabel="Upload video"

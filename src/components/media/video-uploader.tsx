@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Upload, Loader2, X, Video, Pause, Play, RotateCcw, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Upload, Loader2, X, Video, Pause, Play, RotateCcw, AlertTriangle, CheckCircle2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -428,6 +428,45 @@ export function VideoUploader({
     onClear?.();
   }
 
+  /**
+   * Removes a finished (or pre-existing) video — the counterpart to `handleCancel` for videos
+   * that already reached "ready" (cancel deliberately refuses those; see the cancel API route).
+   * Matches the delete/remove affordance images already get via `ImageUploadCropper`'s `onClear`
+   * button. Best-effort server-side cleanup: only fires the DELETE call when we actually know
+   * the asset id from a completed upload in this session — a bare pre-existing `previewUrl`
+   * (no local assetId) just clears the field, same as image removal does.
+   */
+  async function handleRemove() {
+    const assetId = assetIdRef.current;
+    cancelledRef.current = true;
+    pausedRef.current = false;
+    abortInFlight();
+
+    if (assetId && phase === "ready") {
+      try {
+        const qs = guestToken ? `?guestToken=${encodeURIComponent(guestToken)}` : "";
+        await fetch(`/api/uploads/video/${encodeURIComponent(assetId)}${qs}`, { method: "DELETE" });
+      } catch {
+        /* best-effort — the reference is cleared from the UI either way */
+      }
+    }
+
+    setPhase("idle");
+    setProgress(0);
+    setError(null);
+    setFileMeta(null);
+    setPreviewUnsupported(false);
+    fileRef.current = null;
+    assetIdRef.current = null;
+    uploadIdRef.current = null;
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setPreviewUrl(null);
+    onClear?.();
+  }
+
   const busy = phase === "uploading" || phase === "finalizing" || phase === "processing";
 
   return (
@@ -454,7 +493,7 @@ export function VideoUploader({
               className="w-full max-h-48 rounded-lg object-cover bg-black"
               muted
               playsInline
-              controls={phase === "ready"}
+              controls={phase === "ready" || phase === "idle"}
               onError={() => setPreviewUnsupported(true)}
             />
           )}
@@ -499,9 +538,21 @@ export function VideoUploader({
                 <X className="h-3.5 w-3.5" /> Cancel
               </Button>
             )}
-            {phase === "ready" && (
+            {(phase === "ready" || phase === "idle") && (
               <Button type="button" size="sm" variant="outline" className="gap-1" onClick={() => inputRef.current?.click()} disabled={disabled}>
                 <Upload className="h-3.5 w-3.5" /> Replace video
+              </Button>
+            )}
+            {(phase === "ready" || phase === "idle") && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="gap-1 text-red-600"
+                onClick={handleRemove}
+                disabled={disabled}
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Remove
               </Button>
             )}
           </div>

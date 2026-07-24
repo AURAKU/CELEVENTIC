@@ -289,7 +289,7 @@ export function AdminCatalogTemplatesClient() {
       {message && <p className="text-sm text-[#0B8A83]">{message}</p>}
 
       {showForm && (
-        <Card>
+        <Card key={editId ?? "new"}>
           <CardContent className="pt-6 grid sm:grid-cols-2 gap-4">
             <div><Label>Slug</Label><Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} disabled={!!editId} /></div>
             <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
@@ -338,9 +338,30 @@ export function AdminCatalogTemplatesClient() {
             <div><Label>Package Availability</Label><Input value={form.packageSlugs} onChange={(e) => setForm({ ...form, packageSlugs: e.target.value })} placeholder="starter,celebration" /></div>
             <div><Label>Languages (comma-separated)</Label><Input value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} placeholder="en,fr" /></div>
             <div className="sm:col-span-2 grid sm:grid-cols-2 gap-4 border-t pt-4">
-              <TemplateMediaUpload label="Upload preview video" category="preview" accept="video/*" onUploaded={(url) => setForm({ ...form, previewVideoUrl: url })} />
-              <TemplateMediaUpload label="Upload background video" category="background" accept="video/*" onUploaded={(url) => setForm({ ...form, backgroundVideoUrl: url })} />
-              <TemplateMediaUpload label="Upload motion reference" category="motion" accept="video/*" onUploaded={(url) => setForm({ ...form, motionReferenceUrl: url })} />
+              <TemplateMediaUpload
+                label="Upload preview video"
+                category="preview"
+                accept="video/*"
+                previewUrl={form.previewVideoUrl || null}
+                onClear={() => setForm({ ...form, previewVideoUrl: "" })}
+                onUploaded={(url) => setForm({ ...form, previewVideoUrl: url })}
+              />
+              <TemplateMediaUpload
+                label="Upload background video"
+                category="background"
+                accept="video/*"
+                previewUrl={form.backgroundVideoUrl || null}
+                onClear={() => setForm({ ...form, backgroundVideoUrl: "" })}
+                onUploaded={(url) => setForm({ ...form, backgroundVideoUrl: url })}
+              />
+              <TemplateMediaUpload
+                label="Upload motion reference"
+                category="motion"
+                accept="video/*"
+                previewUrl={form.motionReferenceUrl || null}
+                onClear={() => setForm({ ...form, motionReferenceUrl: "" })}
+                onUploaded={(url) => setForm({ ...form, motionReferenceUrl: url })}
+              />
             </div>
             <div className="sm:col-span-2 border-t pt-4">
               <GalleryUploadPanel
