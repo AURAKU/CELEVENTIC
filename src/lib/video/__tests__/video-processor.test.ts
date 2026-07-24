@@ -297,23 +297,59 @@ describe("buildTranscodeArgs", () => {
     assert.ok(!args.includes("aac"));
   });
 
-  it("relies on -autorotate to bake in phone display-matrix rotation", () => {
-    const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation: 90 }));
-    const idx = args.indexOf("-autorotate");
-    assert.ok(idx !== -1);
-    // Bare flag (no trailing "1") — some ffmpeg builds (7.x+) misparse `-autorotate 1` as a
-    // stray positional output argument instead of the flag's boolean value. See video-processor.ts.
-    assert.equal(args[idx + 1], "-i");
+  it("never passes -autorotate — ffmpeg 6.1.1/Ubuntu (and other builds) can misparse it as belonging to the wrong file context ('Option autorotate ... cannot be applied to output url ... Error parsing options'); default demuxer autorotate (already enabled) bakes in rotation instead", () => {
+    for (const rotation of [0, 90, 180, 270] as const) {
+      const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation }));
+      assert.ok(!args.includes("-autorotate"), `must not include -autorotate for rotation=${rotation}`);
+    }
   });
 
-  it("never adds a second explicit rotate/transpose filter — -autorotate already bakes in rotation (no double-rotate)", () => {
+  it("-i immediately follows -y — no flag is interposed between them that could be misparsed", () => {
+    const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation: 90 }));
+    assert.equal(args[0], "-y");
+    assert.equal(args[1], "-i");
+    assert.equal(args[2], "in.mov");
+  });
+
+  it("never adds an explicit rotate/transpose filter — relies solely on ffmpeg's default (always-on) demuxer autorotate behavior, never a second explicit filter (no double-rotate)", () => {
     const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation: 90, width: 1920, height: 1080 }));
     const vfIdx = args.indexOf("-vf");
     assert.ok(vfIdx !== -1);
     const filter = args[vfIdx + 1];
     assert.doesNotMatch(filter, /transpose|rotate=/);
-    // Still relies on -autorotate exactly once as the only rotation mechanism.
-    assert.equal(args.filter((a) => a === "-autorotate").length, 1);
+    assert.ok(!args.includes("-autorotate"));
+  });
+
+  it("[iPhone HEVC .mov, portrait, with rotation metadata] never includes -autorotate and encodes AAC audio", () => {
+    const args = buildTranscodeArgs(
+      "/tmp/celeventic-video-xyz/input.mov",
+      "/tmp/celeventic-video-xyz/output.mp4",
+      probe({ videoCodec: "hevc", isHevc: true, width: 1080, height: 1920, rotation: 90, hasAudio: true, audioCodec: "aac" })
+    );
+    assert.ok(!args.includes("-autorotate"));
+    assert.ok(args.includes("aac"));
+    assert.ok(!args.includes("-an"));
+  });
+
+  it("[Android .mp4, landscape, no rotation] never includes -autorotate and encodes AAC audio", () => {
+    const args = buildTranscodeArgs(
+      "/tmp/celeventic-video-xyz/input.mp4",
+      "/tmp/celeventic-video-xyz/output.mp4",
+      probe({ videoCodec: "h264", width: 1920, height: 1080, rotation: 0, hasAudio: true, audioCodec: "aac" })
+    );
+    assert.ok(!args.includes("-autorotate"));
+    assert.ok(args.includes("aac"));
+  });
+
+  it("[Android .mp4, silent source] never includes -autorotate and mutes (-an) instead of failing", () => {
+    const args = buildTranscodeArgs(
+      "/tmp/celeventic-video-xyz/input.mp4",
+      "/tmp/celeventic-video-xyz/output.mp4",
+      probe({ videoCodec: "h264", width: 1920, height: 1080, rotation: 0, hasAudio: false, audioCodec: null })
+    );
+    assert.ok(!args.includes("-autorotate"));
+    assert.ok(args.includes("-an"));
+    assert.ok(!args.includes("aac"));
   });
 
   it("stamps explicit BT.709 color metadata on the output only for the hdr-fallback pipeline", () => {

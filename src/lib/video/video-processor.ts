@@ -347,10 +347,11 @@ export interface VideoFilterResult {
  * to ~608x1080 instead of shipping at its native 1080x1920.
  *
  * `probe.width`/`probe.height` are the raw (pre-rotation) stream dimensions ffprobe reports;
- * `-autorotate` swaps them for a 90°/270° rotation before our filter chain ever sees the frame,
- * so the bounding box must be picked against the *effective* (post-rotation) orientation, not
- * the raw one — otherwise a portrait phone video with a 90° rotation tag would incorrectly get
- * landscape bounds.
+ * ffmpeg's default demuxer-level autorotate behavior (enabled out of the box, no explicit CLI
+ * flag needed — see `buildTranscodeArgs`) swaps them for a 90°/270° rotation before our filter
+ * chain ever sees the frame, so the bounding box must be picked against the *effective*
+ * (post-rotation) orientation, not the raw one — otherwise a portrait phone video with a 90°
+ * rotation tag would incorrectly get landscape bounds.
  */
 export function computeScaleBounds(probe: Pick<ProbeResult, "width" | "height" | "rotation">): {
   maxWidth: number;
@@ -449,14 +450,16 @@ export function buildTranscodeArgs(
   const { filter: computedFilter, pipeline } = buildVideoFilter(probe, caps);
   const filter = filterOverride ?? computedFilter;
 
-  // `-autorotate` is a boolean CLI flag — some ffmpeg builds (7.x+) parse a bare trailing value
-  // like `-autorotate 1` as a *separate* positional output argument (not the flag's value),
-  // which corrupts the whole command line ("Error parsing options for output file 1"). Passing
-  // the flag with no value enables it (the documented default anyway) and works identically
-  // across ffmpeg versions that support the option at all. It also means the source's display-
-  // matrix/rotate-tag rotation is baked in by the demuxer BEFORE our `-vf` filter chain runs —
+  // Deliberately NOT passing `-autorotate` at all. It is redundant (every ffmpeg build that
+  // recognizes the option already defaults it to enabled) and its exact CLI grammar is not
+  // stable across ffmpeg versions/builds: on Ubuntu 24.04's ffmpeg 6.1.1 an explicit
+  // `-autorotate` (bare or with a value) can be parsed as belonging to the wrong file context,
+  // producing "Option autorotate ... cannot be applied to output url ... Error parsing
+  // options" and aborting the whole transcode before a single frame is processed. Omitting the
+  // flag entirely sidesteps every version-specific parsing quirk while keeping the exact same
+  // behavior (rotation still gets baked in by the demuxer before our `-vf` filter chain runs) —
   // never add a second explicit `transpose`/`rotate` filter here, or the video double-rotates.
-  const args: string[] = ["-y", "-autorotate", "-i", inputPath];
+  const args: string[] = ["-y", "-i", inputPath];
   args.push("-map", "0:v:0");
   if (probe.hasAudio) args.push("-map", "0:a:0?");
   args.push("-vf", filter);
