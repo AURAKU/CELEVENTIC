@@ -11,6 +11,11 @@ export const FONT_STACKS: Record<FontId, string> = {
   "great-vibes": "var(--font-great-vibes), 'Great Vibes', cursive",
   cormorant: "var(--font-cormorant), 'Cormorant Garamond', serif",
   poppins: "var(--font-sans, 'Poppins'), ui-sans-serif, system-ui, sans-serif",
+  marcellus: "var(--font-marcellus), 'Marcellus', serif",
+  "eb-garamond": "var(--font-eb-garamond), 'EB Garamond', serif",
+  jost: "var(--font-jost), 'Jost', ui-sans-serif, sans-serif",
+  "alex-brush": "var(--font-alex-brush), 'Alex Brush', cursive",
+  parisienne: "var(--font-parisienne), 'Parisienne', cursive",
 };
 
 /** Human-readable family name for legacy `design.fonts` consumers. */
@@ -20,6 +25,11 @@ export const FONT_DISPLAY_NAMES: Record<FontId, string> = {
   "great-vibes": "Great Vibes",
   cormorant: "Cormorant Garamond",
   poppins: "Poppins",
+  marcellus: "Marcellus",
+  "eb-garamond": "EB Garamond",
+  jost: "Jost",
+  "alex-brush": "Alex Brush",
+  parisienne: "Parisienne",
 };
 
 /** Curated font choices for Traditional Marriage / invitation thank-you body copy. */
@@ -29,6 +39,11 @@ export const THANK_YOU_FONT_OPTIONS: { id: FontId; label: string }[] = [
   { id: "playfair", label: "Playfair Display" },
   { id: "cinzel", label: "Cinzel" },
   { id: "poppins", label: "Poppins" },
+  { id: "marcellus", label: "Marcellus" },
+  { id: "eb-garamond", label: "EB Garamond" },
+  { id: "jost", label: "Jost" },
+  { id: "alex-brush", label: "Alex Brush" },
+  { id: "parisienne", label: "Parisienne" },
 ];
 
 export const DEFAULT_THANK_YOU_FONT: FontId = "cormorant";

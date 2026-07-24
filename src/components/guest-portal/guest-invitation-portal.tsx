@@ -179,6 +179,13 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     buttonActions: experience?.buttonActions,
   });
 
+  const thankYouMessage = experience?.thankYouMessage;
+  const thankYouFontFamily = experience?.thankYouFontFamily ?? props.design?.fonts?.body;
+  const thankYouEyebrowFontFamily =
+    experience?.thankYouEyebrowFontFamily ?? props.design?.fonts?.eyebrow;
+  const thankYouScriptFontFamily =
+    experience?.thankYouScriptFontFamily ?? props.design?.fonts?.script;
+
   const blockContext: BlockRenderContext = {
     eventTitle: displayEvent.title,
     hostName: displayEvent.hostName,
@@ -201,7 +208,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     seatLookupUrl: props.seatLookupUrl ?? undefined,
     layout: props.design.layout,
     thankYouMessage: experience?.thankYouMessage,
-    thankYouFontFamily: experience?.thankYouFontFamily,
+    thankYouFontFamily: thankYouFontFamily,
+    thankYouEyebrowFontFamily: thankYouEyebrowFontFamily,
+    thankYouScriptFontFamily: thankYouScriptFontFamily,
   };
 
   const useBlocks = props.blocks && props.blocks.length > 0;
@@ -212,8 +221,6 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   const journeyChapters = experience?.journeyChapters ?? DEFAULT_JOURNEY;
   const scheduleItems = experience?.scheduleItems;
   const displaySchedule = scheduleItems?.length ? scheduleItems : (hubTabs.includes("timeline") ? DEFAULT_SCHEDULE_SAMPLES : []);
-  const thankYouMessage = experience?.thankYouMessage;
-  const thankYouFontFamily = experience?.thankYouFontFamily;
   const accent = props.design?.colors?.accent ?? "#0B8A83";
   const secondary = props.design?.colors?.secondary ?? "#D4A63A";
   const lifecyclePhase = resolveEventLifecycle(props.event.startDateRaw);
@@ -756,6 +763,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               <TraditionalMarriageThankYou
                 message={thankYouMessage}
                 fontFamily={thankYouFontFamily}
+                eyebrowFontFamily={thankYouEyebrowFontFamily}
+                scriptFontFamily={thankYouScriptFontFamily}
               />
             ) : (
               <div className="rounded-2xl border border-[#D4A63A]/25 bg-gradient-to-br from-white to-[#FAF8F4] p-8 text-center shadow-sm">

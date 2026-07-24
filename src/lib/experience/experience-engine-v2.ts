@@ -535,6 +535,8 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
       themePresetId: userExp.themePresetId,
       thankYouMessage: userExp.thankYouMessage,
       thankYouFontFamily: userExp.thankYouFontFamily,
+      thankYouEyebrowFontFamily: userExp.thankYouEyebrowFontFamily,
+      thankYouScriptFontFamily: userExp.thankYouScriptFontFamily,
       typographyPackId: userExp.typographyPackId ?? typographyPack?.id,
       backgroundPackId: userExp.backgroundPackId ?? backgroundPack?.id,
       openingExperience: userExp.openingExperience ?? dnaExperience.openingExperience,

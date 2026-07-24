@@ -392,6 +392,8 @@ export function BlockView({ block, ctx }: BlockViewProps) {
               "Your presence is a blessing. We are deeply honoured to share this sacred day with you."
             }
             fontFamily={ctx.thankYouFontFamily}
+            eyebrowFontFamily={ctx.thankYouEyebrowFontFamily}
+            scriptFontFamily={ctx.thankYouScriptFontFamily}
           />
         );
       }

@@ -8,11 +8,20 @@ import {
 } from "@/lib/invitation-theme/fonts";
 import type { FontId } from "@/lib/invitation-theme/theme-types";
 
+/** Eyebrow ("WITH GRATITUDE") default — preserves the original TM look when unset. */
+const DEFAULT_EYEBROW_FONT: FontId = "cormorant";
+/** Script ("Thank you") default — preserves the original TM look when unset. */
+const DEFAULT_SCRIPT_FONT: FontId = "great-vibes";
+
 export interface TraditionalMarriageThankYouProps {
   /** Optional host/studio message; falls back to editorial default */
   message?: string | null;
   /** Body font — curated invitation FontId (Cormorant, Great Vibes, etc.) */
   fontFamily?: FontId | string | null;
+  /** Eyebrow ("With gratitude") font — curated invitation FontId; defaults to Cormorant. */
+  eyebrowFontFamily?: FontId | string | null;
+  /** Script ("Thank you") font — curated invitation FontId; defaults to Great Vibes. */
+  scriptFontFamily?: FontId | string | null;
   className?: string;
 }
 
@@ -22,15 +31,20 @@ const DEFAULT_MESSAGE =
 /**
  * Traditional Marriage closing — Great Vibes / Cormorant linen editorial.
  * Replaces the generic slate “Thank You” slab card.
- * Hosts edit body + font via experience.thankYouMessage / thankYouFontFamily.
+ * Hosts edit body + fonts via experience.thankYouMessage / thankYouFontFamily /
+ * thankYouEyebrowFontFamily / thankYouScriptFontFamily (or a Studio font preset).
  */
 export function TraditionalMarriageThankYou({
   message,
   fontFamily,
+  eyebrowFontFamily,
+  scriptFontFamily,
   className,
 }: TraditionalMarriageThankYouProps) {
   const body = message?.trim() || DEFAULT_MESSAGE;
   const bodyFont = resolveThankYouFontStack(fontFamily ?? DEFAULT_THANK_YOU_FONT);
+  const eyebrowFont = resolveThankYouFontStack(eyebrowFontFamily ?? DEFAULT_EYEBROW_FONT);
+  const scriptFont = resolveThankYouFontStack(scriptFontFamily ?? DEFAULT_SCRIPT_FONT);
   const isScript = fontFamily === "great-vibes";
 
   return (
@@ -69,15 +83,15 @@ export function TraditionalMarriageThankYou({
 
       <div className="relative space-y-2.5">
         <p
-          className="font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.36em] uppercase"
-          style={{ color: PALETTE.bronzeDeep }}
+          className="text-[11px] tracking-[0.36em] uppercase"
+          style={{ color: PALETTE.bronzeDeep, fontFamily: eyebrowFont }}
         >
           With gratitude
         </p>
         <h2
           id="tm-thank-you-heading"
-          className="font-[family-name:var(--font-great-vibes)] text-[2.5rem] sm:text-[2.85rem] leading-none"
-          style={{ color: PALETTE.bronze }}
+          className="text-[2.5rem] sm:text-[2.85rem] leading-none"
+          style={{ color: PALETTE.bronze, fontFamily: scriptFont }}
         >
           Thank you
         </h2>

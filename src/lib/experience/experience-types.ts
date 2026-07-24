@@ -252,6 +252,10 @@ export interface EventExperienceConfig {
   thankYouMessage?: string;
   /** Body font for invite thank-you section (TM linen editorial + guests). FontId from invitation theme. */
   thankYouFontFamily?: string;
+  /** Eyebrow label font for invite thank-you section (e.g. TM "WITH GRATITUDE"). FontId from invitation theme; unset keeps Cormorant default. */
+  thankYouEyebrowFontFamily?: string;
+  /** Script display font for invite thank-you section (e.g. TM "Thank you"). FontId from invitation theme; unset keeps Great Vibes default. */
+  thankYouScriptFontFamily?: string;
   /** Font family for the welcome / tap-to-begin gate text stack (brand, eyebrow, script, names, BEGIN). FontId from invitation theme; unset keeps each line's own template default. */
   welcomeFontFamily?: string;
   /** Overall text scale for the welcome / tap-to-begin gate — keeps proportions, nudges size. */
