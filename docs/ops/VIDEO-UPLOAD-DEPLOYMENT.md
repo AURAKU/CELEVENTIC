@@ -1,12 +1,14 @@
 > ⚠️ **Update (2026-07-24):** production Hostinger does **not** have AWS MediaConvert
-> configured and already has an FFmpeg-based converter installed on the VPS
-> (`/usr/local/bin/celeventic-process-video`). The invitations upload route
-> (`src/app/api/invitations/upload`) and, when `VIDEO_PROCESSOR=ffmpeg` (the default when
-> MediaConvert isn't configured), the universal S3 pipeline below now transcode via
-> `src/lib/video/video-processor.ts` (VPS FFmpeg) instead of MediaConvert. See
-> `docs/video-processing.md` for the current architecture. This document remains accurate for
-> anyone who *does* configure AWS MediaConvert (`VIDEO_PROCESSOR=mediaconvert`) — both engines
-> share the same `VideoAsset` model and are selected via the `VIDEO_PROCESSOR` env var.
+> configured. The invitations upload route (`src/app/api/invitations/upload`) and, when
+> `VIDEO_PROCESSOR=ffmpeg` (the default when MediaConvert isn't configured), the universal
+> pipeline below now transcode via `src/lib/video/video-processor.ts` using the **adaptive
+> TypeScript FFmpeg path** (capability detection + HDR fallback). An optional VPS binary
+> (`/usr/local/bin/celeventic-process-video`) may exist on the box but is **opt-in only** via
+> `VIDEO_USE_EXTERNAL_CONVERTER=true` — leave it unset on Hostinger so missing `zscale` in that
+> binary cannot fail uploads. See `docs/video-processing.md` for the current architecture.
+> This document remains accurate for anyone who *does* configure AWS MediaConvert
+> (`VIDEO_PROCESSOR=mediaconvert`) — both engines share the same `VideoAsset` model and are
+> selected via the `VIDEO_PROCESSOR` env var.
 >
 > ⚠️ **Update (2026-07-24, part 2) — S3-less local fallback:** Hostinger production currently
 > has **no AWS S3 credentials at all**, and the presign API used to hard-block every
