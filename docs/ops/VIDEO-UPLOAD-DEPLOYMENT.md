@@ -1,3 +1,13 @@
+> ⚠️ **Update (2026-07-24):** production Hostinger does **not** have AWS MediaConvert
+> configured and already has an FFmpeg-based converter installed on the VPS
+> (`/usr/local/bin/celeventic-process-video`). The invitations upload route
+> (`src/app/api/invitations/upload`) and, when `VIDEO_PROCESSOR=ffmpeg` (the default when
+> MediaConvert isn't configured), the universal S3 pipeline below now transcode via
+> `src/lib/video/video-processor.ts` (VPS FFmpeg) instead of MediaConvert. See
+> `docs/video-processing.md` for the current architecture. This document remains accurate for
+> anyone who *does* configure AWS MediaConvert (`VIDEO_PROCESSOR=mediaconvert`) — both engines
+> share the same `VideoAsset` model and are selected via the `VIDEO_PROCESSOR` env var.
+
 # Universal Video Upload & Processing — Deployment Guide
 
 Architecture: **Browser → Celeventic presign API → direct multipart PUT to S3 → upload-complete

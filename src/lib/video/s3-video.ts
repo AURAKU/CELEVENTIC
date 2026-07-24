@@ -151,6 +151,33 @@ export async function headVideoObject(key: string): Promise<VideoHeadInfo> {
   }
 }
 
+/** Fetch a whole object — used by the FFmpeg (VPS) processing path to download the raw upload for transcoding. */
+export async function getFullVideoObject(key: string): Promise<Buffer | null> {
+  const { client, cfg } = await requireS3();
+  try {
+    const out = await client.send(new GetObjectCommand({ Bucket: cfg.bucket, Key: key }));
+    if (!out.Body) return null;
+    const bytes = await out.Body.transformToByteArray();
+    return Buffer.from(bytes);
+  } catch {
+    return null;
+  }
+}
+
+/** Upload a processed output (MP4 / poster JPEG) back to the video bucket — used by the FFmpeg processing path. */
+export async function putVideoObject(key: string, buffer: Buffer, contentType: string): Promise<void> {
+  const { client, cfg } = await requireS3();
+  await client.send(
+    new PutObjectCommand({
+      Bucket: cfg.bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+      CacheControl: "public, max-age=31536000, immutable",
+    })
+  );
+}
+
 /** Fetch a byte range of the object — used for magic-byte signature sniffing and MP4 metadata parsing. */
 export async function getVideoObjectRange(key: string, start: number, endInclusive: number): Promise<Buffer | null> {
   const { client, cfg } = await requireS3();

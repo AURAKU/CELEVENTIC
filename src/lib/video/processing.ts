@@ -4,6 +4,8 @@ import type { VideoAsset } from "@prisma/client";
 import {
   headVideoObject,
   getVideoObjectRange,
+  getFullVideoObject,
+  putVideoObject,
   buildPublicVideoUrl,
   deleteVideoObject,
 } from "@/lib/video/s3-video";
@@ -17,9 +19,26 @@ import {
   isMediaConvertConfigured,
   isVideoProcessingEnabled,
 } from "@/lib/video/mediaconvert";
+import { processVideoFile } from "@/lib/video/video-processor";
 import { vendorMediaService } from "@/services/vendor-os/vendor-media.service";
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
 import type { VideoCategory } from "@/lib/video/constants";
+
+/**
+ * Which engine transcodes queued videos for the universal (S3-backed) upload pipeline.
+ * "mediaconvert" — AWS Elemental MediaConvert (multi-rendition + HLS, requires AWS creds).
+ * "ffmpeg"       — VPS-local ffmpeg via `src/lib/video/video-processor.ts` (single MP4 + poster,
+ *                  no HLS/ABR in v1 — see docs/video-processing.md). This is what Hostinger
+ *                  production uses today.
+ * Explicit `VIDEO_PROCESSOR` env wins; otherwise auto-detect based on what's configured.
+ */
+export type VideoProcessorMode = "ffmpeg" | "mediaconvert";
+
+export function getVideoProcessorMode(): VideoProcessorMode {
+  const explicit = process.env.VIDEO_PROCESSOR?.trim().toLowerCase();
+  if (explicit === "ffmpeg" || explicit === "mediaconvert") return explicit;
+  return isMediaConvertConfigured() ? "mediaconvert" : "ffmpeg";
+}
 
 export class DuplicateFinalizationError extends Error {
   constructor() {
@@ -163,6 +182,14 @@ export async function processQueuedVideoAsset(assetId: string): Promise<void> {
     // Ops has intentionally paused processing platform-wide — leave QUEUED for a later run.
     return;
   }
+
+  const mode = getVideoProcessorMode();
+
+  if (mode === "ffmpeg") {
+    await processQueuedVideoAssetWithFfmpeg(asset);
+    return;
+  }
+
   if (!isMediaConvertConfigured()) {
     // Environment gap, not a defect in this video — leave QUEUED so it self-heals once
     // AWS_MEDIACONVERT_ROLE_ARN (and friends) are set, per the docs in .env.example.
@@ -197,6 +224,72 @@ export async function processQueuedVideoAsset(assetId: string): Promise<void> {
       data: {
         status: "FAILED",
         failureReason: error instanceof Error ? error.message : "MediaConvert job submission failed.",
+      },
+    });
+  }
+}
+
+/**
+ * VPS bridge: same QUEUED -> READY/FAILED contract as the MediaConvert path above, but runs
+ * ffmpeg locally on this box instead of submitting an AWS job. Used automatically when
+ * `VIDEO_PROCESSOR=ffmpeg` (or MediaConvert isn't configured) — i.e. production Hostinger.
+ * v1 limitation: single MP4 rendition + poster, no HLS/ABR ladder (see docs/video-processing.md).
+ */
+async function processQueuedVideoAssetWithFfmpeg(asset: VideoAsset): Promise<void> {
+  await prisma.videoAsset.update({
+    where: { id: asset.id },
+    data: { status: "PROCESSING", processingStartedAt: new Date(), attempts: { increment: 1 } },
+  });
+
+  try {
+    const original = await getFullVideoObject(asset.originalKey);
+    if (!original) {
+      throw new Error("Could not download the original upload from storage for processing.");
+    }
+
+    const result = await processVideoFile(original, { extensionHint: asset.originalExtension });
+    if (!result.success || !result.outputBuffer) {
+      throw new Error(result.error ?? "ffmpeg processing failed.");
+    }
+
+    const prefix = `processed/videos/${(asset.category as string).toLowerCase()}/${asset.id}`;
+    const mp4Key = `${prefix}/mp4/video.mp4`;
+    await putVideoObject(mp4Key, result.outputBuffer, "video/mp4");
+    const processedMp4Url = await buildPublicVideoUrl(mp4Key);
+
+    let posterUrl: string | null = null;
+    if (result.posterBuffer) {
+      const posterKey = `${prefix}/images/poster.jpg`;
+      await putVideoObject(posterKey, result.posterBuffer, "image/jpeg");
+      posterUrl = await buildPublicVideoUrl(posterKey);
+    }
+
+    const updated = await prisma.videoAsset.update({
+      where: { id: asset.id },
+      data: {
+        status: "READY",
+        readyAt: new Date(),
+        processedMp4Url,
+        processedMp4Renditions: { original: processedMp4Url },
+        hlsUrl: null,
+        posterUrl,
+        thumbnailUrl: posterUrl,
+        thumbnailUrls: posterUrl ? [posterUrl] : [],
+        durationSeconds: result.metadata.durationSeconds ?? asset.durationSeconds,
+        width: result.metadata.width ?? asset.width,
+        height: result.metadata.height ?? asset.height,
+        detectedVideoCodec: result.metadata.hadHevc ? "hevc" : asset.detectedVideoCodec,
+      },
+      include: { memoryUpload: true },
+    });
+
+    await runReadySideEffects(updated);
+  } catch (error) {
+    await prisma.videoAsset.update({
+      where: { id: asset.id },
+      data: {
+        status: "FAILED",
+        failureReason: error instanceof Error ? error.message : "Video processing failed.",
       },
     });
   }
