@@ -423,13 +423,31 @@ export function buildVideoFilterChain(probe: ProbeResult, caps: FfmpegCapabiliti
   return buildVideoFilter(probe, caps).filter;
 }
 
+/**
+ * Belt-and-suspenders safety net for `transcodeWithHdrFallback`'s divisibility retry (see
+ * `runTranscodeAttempt` below). `buildVideoFilter`'s `scale=...:force_divisible_by=2` already
+ * guarantees even output dimensions for every source aspect ratio — this is only ever reached if
+ * a future filter-graph change drops that option, or an exotic ffmpeg build ignores it.
+ * `trunc(iw/2)*2` unconditionally floors both axes to the nearest even number as its own final
+ * step, independent of anything upstream, so appending it alone is enough to guarantee an
+ * encodable output.
+ */
+function withEvenDimensionsSafety(filter: string): string {
+  return `${filter},scale=trunc(iw/2)*2:trunc(ih/2)*2`;
+}
+
 export function buildTranscodeArgs(
   inputPath: string,
   outputPath: string,
   probe: ProbeResult,
-  caps: FfmpegCapabilities = ASSUME_HDR_CAPABLE
+  caps: FfmpegCapabilities = ASSUME_HDR_CAPABLE,
+  /** Overrides the `-vf` value `buildVideoFilter` would have computed — used only by the
+   *  divisibility-error retry path in `runTranscodeAttempt` to append the safety filter above
+   *  without duplicating every other arg-building decision (audio, BT.709 tags, etc). */
+  filterOverride?: string
 ): string[] {
-  const { filter, pipeline } = buildVideoFilter(probe, caps);
+  const { filter: computedFilter, pipeline } = buildVideoFilter(probe, caps);
+  const filter = filterOverride ?? computedFilter;
 
   // `-autorotate` is a boolean CLI flag — some ffmpeg builds (7.x+) parse a bare trailing value
   // like `-autorotate 1` as a *separate* positional output argument (not the flag's value),
@@ -450,6 +468,15 @@ export function buildTranscodeArgs(
     "-crf", "21",
     "-pix_fmt", "yuv420p"
   );
+  if (pipeline === "sdr" || pipeline === "hdr-fallback") {
+    // `format=yuv420p` relabels the pixel format but does not itself resolve a full-range source
+    // (e.g. `yuvj420p`, common from MJPEG/some phone or screen-recording encoders) down to the
+    // limited ("tv") range `yuv420p` implies — without this, full-range source data can get
+    // reinterpreted as limited range by players, washing out blacks/whites. The "hdr-tonemap"
+    // pipeline already sets range via its own `zscale=t=bt709:m=bt709:r=tv` step and must not be
+    // double-tagged here.
+    args.push("-color_range", "tv");
+  }
   if (pipeline === "hdr-fallback") {
     // We didn't actually tone-map (zscale/tonemap unavailable) — stamp explicit BT.709 tags on
     // the *output* so players never inherit/guess a stale PQ/HLG color tag from the source and
@@ -506,6 +533,53 @@ function isFilterUnavailableError(error: unknown): boolean {
 }
 
 /**
+ * Matches the libx264 "odd dimension" family of encoder-open failures — e.g.
+ * `width not divisible by 2 (883x1920)` / `height not divisible by 2 (...)` — plus the generic
+ * "Error while opening encoder" line ffmpeg emits right after it. This should be unreachable in
+ * normal operation now that `buildVideoFilter`'s scale expression always carries
+ * `force_divisible_by=2`, but is kept as a real, tested retry path (not just a comment) so a
+ * future filter-graph edit that drops that option, or an exotic ffmpeg build that ignores it,
+ * degrades to a retry instead of a hard user-facing failure.
+ */
+function isDivisibilityError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /not\s+divisible\s+by\s*2/i.test(message);
+}
+
+/**
+ * Runs one transcode attempt with the given capabilities. If ffmpeg fails specifically because
+ * the computed output width/height was odd (see `isDivisibilityError`), the partial output is
+ * discarded and this retries exactly once with `withEvenDimensionsSafety` appended to the same
+ * filter, which unconditionally floors both axes to an even number regardless of how the
+ * upstream filter expression computed them. Any other error propagates immediately — this is not
+ * a generic retry-everything loop.
+ */
+async function runTranscodeAttempt(
+  inputPath: string,
+  outputPath: string,
+  probe: ProbeResult,
+  caps: FfmpegCapabilities,
+  timeoutMs: number
+): Promise<void> {
+  try {
+    await runProcess(getFfmpegBin(), buildTranscodeArgs(inputPath, outputPath, probe, caps), timeoutMs);
+  } catch (error) {
+    if (!isDivisibilityError(error)) throw error;
+    console.warn(
+      "[video-processor] ffmpeg reported a non-even output dimension despite force_divisible_by=2 — removing incomplete output and retrying once with a forced-even safety filter appended.",
+      error instanceof Error ? error.message : error
+    );
+    await rm(outputPath, { force: true }).catch(() => {});
+    const { filter } = buildVideoFilter(probe, caps);
+    await runProcess(
+      getFfmpegBin(),
+      buildTranscodeArgs(inputPath, outputPath, probe, caps, withEvenDimensionsSafety(filter)),
+      timeoutMs
+    );
+  }
+}
+
+/**
  * Runs the real transcode, choosing the HDR zscale/tonemap pipeline only when both filters are
  * confirmed available; otherwise (or for SDR sources) uses the plain scale/format fallback. If
  * the zscale/tonemap pipeline is attempted but fails unexpectedly at runtime (e.g. a build with a
@@ -513,7 +587,8 @@ function isFilterUnavailableError(error: unknown): boolean {
  * incomplete output is removed and the run automatically retries exactly once with the
  * `hdr-fallback` pipeline instead of failing the whole upload — an HDR source that ships
  * un-tone-mapped beats one that doesn't ship at all. The retry is logged (not silent) so ops can
- * see it happening in `pm2 logs`.
+ * see it happening in `pm2 logs`. Independently, EITHER attempt also self-heals a "not divisible
+ * by 2" encoder-open failure via `runTranscodeAttempt`'s own retry (see there).
  */
 export async function transcodeWithHdrFallback(
   inputPath: string,
@@ -525,7 +600,7 @@ export async function transcodeWithHdrFallback(
   const caps = await resolveHdrCapabilities(probe, fullCaps);
   const attemptingHdrPipeline = probe.isHdr && caps.hasZscale && caps.hasTonemap;
   try {
-    await runProcess(getFfmpegBin(), buildTranscodeArgs(inputPath, outputPath, probe, caps), timeoutMs);
+    await runTranscodeAttempt(inputPath, outputPath, probe, caps, timeoutMs);
   } catch (error) {
     if (!attemptingHdrPipeline) throw error; // already ran the safe fallback — nothing left to retry
     console.warn(
@@ -535,7 +610,7 @@ export async function transcodeWithHdrFallback(
     );
     await rm(outputPath, { force: true }).catch(() => {});
     const fallbackCaps: FfmpegCapabilities = { hasZscale: false, hasTonemap: false };
-    await runProcess(getFfmpegBin(), buildTranscodeArgs(inputPath, outputPath, probe, fallbackCaps), timeoutMs);
+    await runTranscodeAttempt(inputPath, outputPath, probe, fallbackCaps, timeoutMs);
   }
 }
 
@@ -577,6 +652,26 @@ function guessExtension(sourceExtHint: string | null | undefined): string {
 /** True when `ffprobe` found an actual, decodable video stream — never trust a probe result blindly. */
 function hasValidVideoStream(probe: ProbeResult | null): probe is ProbeResult {
   return Boolean(probe && probe.videoCodec);
+}
+
+/**
+ * `runProcess`'s generic failure path (`` `${bin} failed: ${err.message}\n${stderrTail}` ``,
+ * see above) appends up to 2000 raw characters of ffmpeg/ffprobe stderr — internal filter-graph
+ * syntax, absolute temp-file paths, binary names. `ProcessVideoResult.error` is persisted
+ * verbatim as `VideoAsset.failureReason` and shipped straight to guest/admin clients (rendered
+ * on-screen), so that raw text must never cross this boundary. Every OTHER `VideoProcessingError`
+ * thrown in this module (timeout, missing binary, no valid video stream, no HEVC decoder, etc.)
+ * is already a short, deliberately-worded, user-appropriate sentence with no ffmpeg internals —
+ * those pass through unchanged.
+ */
+const RAW_TOOL_FAILURE_PATTERN = /^\S+ failed: /;
+
+function toFriendlyProcessingError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  if (!RAW_TOOL_FAILURE_PATTERN.test(raw)) return raw;
+
+  console.error("[video-processor] processVideoFile failed (raw ffmpeg/ffprobe output suppressed from the user-facing message):", raw);
+  return "We couldn't process this video for playback. Please try a different file or format, or contact support if this keeps happening.";
 }
 
 /**
@@ -698,7 +793,7 @@ export async function processVideoFile(
       outputBuffer: null,
       posterBuffer: null,
       metadata: EMPTY_METADATA,
-      error: error instanceof Error ? error.message : "Video processing failed.",
+      error: toFriendlyProcessingError(error),
     };
   } finally {
     release();
