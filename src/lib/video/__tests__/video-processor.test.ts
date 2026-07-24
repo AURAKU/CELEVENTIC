@@ -8,6 +8,8 @@ import path from "node:path";
 import {
   parseFfprobeJson,
   isAlreadyBrowserCompatible,
+  computeScaleBounds,
+  buildVideoFilter,
   buildVideoFilterChain,
   buildTranscodeArgs,
   buildRemuxArgs,
@@ -18,6 +20,7 @@ import {
   isExternalConverterOptedIn,
   shouldAttemptExternalConverter,
   processVideoFile,
+  transcodeWithHdrFallback,
   Semaphore,
   type ProbeResult,
 } from "../video-processor";
@@ -204,6 +207,68 @@ describe("buildVideoFilterChain", () => {
   });
 });
 
+describe("computeScaleBounds — portrait/landscape-aware, never the old symmetric-only bound", () => {
+  it("uses landscape bounds (1920 wide x 1080 tall box) for a landscape source", () => {
+    assert.deepEqual(computeScaleBounds({ width: 1920, height: 1080, rotation: 0 }), { maxWidth: 1920, maxHeight: 1080 });
+  });
+
+  it("swaps to portrait bounds (1080 wide x 1920 tall box) for a portrait source — the bug this fixes", () => {
+    // A naive min(1920,iw):min(1080,ih) box would squeeze a 1080x1920 phone clip into a
+    // 1080x1080 square (shrinking it to ~608x1080) instead of preserving its native 1080x1920.
+    assert.deepEqual(computeScaleBounds({ width: 1080, height: 1920, rotation: 0 }), { maxWidth: 1080, maxHeight: 1920 });
+  });
+
+  it("uses the POST-rotation orientation, not the raw stream orientation, for a 90°-rotated source", () => {
+    // Raw stream is landscape (1920x1080) but a 90° rotation tag means the displayed frame is
+    // portrait (1080x1920) — the bounding box must follow the displayed orientation.
+    assert.deepEqual(computeScaleBounds({ width: 1920, height: 1080, rotation: 90 }), { maxWidth: 1080, maxHeight: 1920 });
+    assert.deepEqual(computeScaleBounds({ width: 1920, height: 1080, rotation: 270 }), { maxWidth: 1080, maxHeight: 1920 });
+  });
+
+  it("a 180° rotation does not change orientation (still landscape)", () => {
+    assert.deepEqual(computeScaleBounds({ width: 1920, height: 1080, rotation: 180 }), { maxWidth: 1920, maxHeight: 1080 });
+  });
+
+  it("falls back to a safe symmetric long-edge box when dimensions are unknown", () => {
+    assert.deepEqual(computeScaleBounds({ width: null, height: null, rotation: 0 }), { maxWidth: 1920, maxHeight: 1920 });
+  });
+});
+
+describe("buildVideoFilter — single source of truth for the -vf chain and pipeline choice", () => {
+  it("reports pipeline 'sdr' for a non-HDR source, with no zscale/tonemap regardless of capabilities", () => {
+    const { pipeline, filter } = buildVideoFilter(probe(), { hasZscale: true, hasTonemap: true });
+    assert.equal(pipeline, "sdr");
+    assert.doesNotMatch(filter, /zscale|tonemap/);
+  });
+
+  it("reports pipeline 'hdr-tonemap' when HDR and both filters are available", () => {
+    const { pipeline, filter } = buildVideoFilter(probe({ isHdr: true, videoCodec: "hevc" }), { hasZscale: true, hasTonemap: true });
+    assert.equal(pipeline, "hdr-tonemap");
+    assert.match(filter, /zscale=t=linear/);
+  });
+
+  it("reports pipeline 'hdr-fallback' when HDR but zscale/tonemap are unavailable — never throws", () => {
+    const { pipeline, filter } = buildVideoFilter(probe({ isHdr: true, videoCodec: "hevc" }), { hasZscale: false, hasTonemap: false });
+    assert.equal(pipeline, "hdr-fallback");
+    assert.doesNotMatch(filter, /zscale|tonemap|gbrpf32le/);
+  });
+
+  it("uses portrait-aware scale bounds for a portrait HDR source in the fallback pipeline", () => {
+    const { filter } = buildVideoFilter(probe({ isHdr: true, videoCodec: "hevc", width: 1080, height: 1920 }), {
+      hasZscale: false,
+      hasTonemap: false,
+    });
+    assert.match(filter, /min\(1080,iw\)/);
+    assert.match(filter, /min\(1920,ih\)/);
+  });
+
+  it("buildVideoFilterChain (back-compat wrapper) returns exactly buildVideoFilter(...).filter", () => {
+    const p = probe({ isHdr: true, videoCodec: "hevc" });
+    const caps = { hasZscale: true, hasTonemap: false };
+    assert.equal(buildVideoFilterChain(p, caps), buildVideoFilter(p, caps).filter);
+  });
+});
+
 describe("buildTranscodeArgs", () => {
   it("never uses a shell — returns a flat argv array with the input/output paths as literal args", () => {
     const args = buildTranscodeArgs("/tmp/in.mov", "/tmp/out.mp4", probe());
@@ -239,6 +304,34 @@ describe("buildTranscodeArgs", () => {
     // Bare flag (no trailing "1") — some ffmpeg builds (7.x+) misparse `-autorotate 1` as a
     // stray positional output argument instead of the flag's boolean value. See video-processor.ts.
     assert.equal(args[idx + 1], "-i");
+  });
+
+  it("never adds a second explicit rotate/transpose filter — -autorotate already bakes in rotation (no double-rotate)", () => {
+    const args = buildTranscodeArgs("in.mov", "out.mp4", probe({ rotation: 90, width: 1920, height: 1080 }));
+    const vfIdx = args.indexOf("-vf");
+    assert.ok(vfIdx !== -1);
+    const filter = args[vfIdx + 1];
+    assert.doesNotMatch(filter, /transpose|rotate=/);
+    // Still relies on -autorotate exactly once as the only rotation mechanism.
+    assert.equal(args.filter((a) => a === "-autorotate").length, 1);
+  });
+
+  it("stamps explicit BT.709 color metadata on the output only for the hdr-fallback pipeline", () => {
+    const hdrFallbackArgs = buildTranscodeArgs("in.mov", "out.mp4", probe({ isHdr: true, videoCodec: "hevc" }), {
+      hasZscale: false,
+      hasTonemap: false,
+    });
+    assert.ok(hdrFallbackArgs.includes("-color_primaries"));
+    assert.ok(hdrFallbackArgs.includes("-colorspace"));
+
+    const sdrArgs = buildTranscodeArgs("in.mov", "out.mp4", probe());
+    assert.ok(!sdrArgs.includes("-color_primaries"));
+
+    const hdrTonemapArgs = buildTranscodeArgs("in.mov", "out.mp4", probe({ isHdr: true, videoCodec: "hevc" }), {
+      hasZscale: true,
+      hasTonemap: true,
+    });
+    assert.ok(!hdrTonemapArgs.includes("-color_primaries"), "the tonemap filter chain already outputs bt709 pixels");
   });
 });
 
@@ -326,6 +419,30 @@ describe("hasExternalConverter / getExternalConverterPath", () => {
   });
 });
 
+/** Shared real-ffmpeg fixture — a genuinely valid, tiny H.264 MP4 — used by several suites below. */
+async function makeTinyH264Mp4(): Promise<Buffer> {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-fixture-"));
+  const out = path.join(dir, "tiny.mp4");
+  try {
+    await execFileAsync(
+      process.env.FFMPEG_PATH?.trim() || "ffmpeg",
+      [
+        "-y",
+        "-f", "lavfi",
+        "-i", "color=c=black:s=320x240:d=0.5",
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        out,
+      ],
+      { timeout: 30_000 }
+    );
+    return await readFile(out);
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 describe("processVideoFile — adaptive default + external fallthrough", () => {
   const ORIGINAL_PATH = process.env.CELEVENTIC_VIDEO_CONVERTER_PATH;
   const ORIGINAL_OPT_IN = process.env.VIDEO_USE_EXTERNAL_CONVERTER;
@@ -339,29 +456,6 @@ describe("processVideoFile — adaptive default + external fallthrough", () => {
     if (ORIGINAL_PROCESSOR_PATH === undefined) delete process.env.VIDEO_PROCESSOR_PATH;
     else process.env.VIDEO_PROCESSOR_PATH = ORIGINAL_PROCESSOR_PATH;
   });
-
-  async function makeTinyH264Mp4(): Promise<Buffer> {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-fixture-"));
-    const out = path.join(dir, "tiny.mp4");
-    try {
-      await execFileAsync(
-        process.env.FFMPEG_PATH?.trim() || "ffmpeg",
-        [
-          "-y",
-          "-f", "lavfi",
-          "-i", "color=c=black:s=320x240:d=0.5",
-          "-c:v", "libx264",
-          "-pix_fmt", "yuv420p",
-          "-movflags", "+faststart",
-          out,
-        ],
-        { timeout: 30_000 }
-      );
-      return await readFile(out);
-    } finally {
-      await rm(dir, { recursive: true, force: true }).catch(() => {});
-    }
-  }
 
   async function writeFailingZscaleConverter(dir: string): Promise<string> {
     // Mimics the Hostinger binary hard-failing on missing zscale while leaving a partial output
@@ -434,6 +528,80 @@ exit 1
       // Must not have shipped the converter's partial garbage bytes.
       assert.ok(result.outputBuffer && result.outputBuffer.length > 20);
       assert.notEqual(result.outputBuffer!.subarray(0, 15).toString("utf8"), "partial-corrupt");
+    } finally {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+
+  async function writeConverterThatExitsZeroWithGarbage(dir: string): Promise<string> {
+    // Simulates a converter that reports success (exit 0, non-empty file) but the file is not
+    // actually a valid video — must be caught by ffprobe validation, not just a non-empty check.
+    const scriptPath = path.join(dir, "celeventic-process-video");
+    const script = `#!/usr/bin/env bash
+set -euo pipefail
+OUTPUT=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output) OUTPUT="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+if [[ -n "\${OUTPUT}" ]]; then printf 'not-actually-a-video-just-bytes' > "\${OUTPUT}"; fi
+exit 0
+`;
+    await writeFile(scriptPath, script, { encoding: "utf8" });
+    await chmod(scriptPath, 0o755);
+    return scriptPath;
+  }
+
+  it("does not trust a non-empty external-converter output alone — verifies with ffprobe and falls through if invalid", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-garbage-"));
+    try {
+      const converter = await writeConverterThatExitsZeroWithGarbage(dir);
+      process.env.CELEVENTIC_VIDEO_CONVERTER_PATH = converter;
+      process.env.VIDEO_USE_EXTERNAL_CONVERTER = "true";
+      delete process.env.VIDEO_PROCESSOR_PATH;
+
+      const input = await makeTinyH264Mp4();
+      const result = await processVideoFile(input, { extensionHint: "mp4", timeoutMs: 60_000 });
+      assert.equal(result.success, true, result.error);
+      assert.notEqual(result.method, "external-converter", "exit-0-with-garbage must not be trusted as success");
+      assert.ok(result.method === "ffmpeg-remux" || result.method === "ffmpeg-transcode");
+    } finally {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+
+  it("fails clearly (never crashes) when the input has no valid, decodable video stream", async () => {
+    const garbage = Buffer.from("this is not a video file at all, just some plain text bytes");
+    const result = await processVideoFile(garbage, { extensionHint: "mp4", timeoutMs: 30_000 });
+    assert.equal(result.success, false);
+    assert.match(result.error ?? "", /valid.*video stream/i);
+  });
+});
+
+describe("transcodeWithHdrFallback — retries once, cleans up partial output, never fails the whole upload", () => {
+  it("reproduces the exact production bug (HDR pipeline attempted, zscale missing) and recovers via retry", async () => {
+    // This is the literal repro for 'No such filter: zscale' on macOS ffmpeg 8.1.2 / any build
+    // without libzimg: force the HDR pipeline to be *attempted* (as if capabilities incorrectly
+    // reported zscale/tonemap available) against whatever ffmpeg is actually installed on this
+    // machine. On a build that truly lacks zscale, the first attempt fails and this function
+    // must remove the partial output and retry with the plain scale/format pipeline instead of
+    // throwing. On a build that does have zscale (e.g. Ubuntu VPS), the first attempt just
+    // succeeds directly — either way, the function must resolve with valid output.
+    const dir = await mkdtemp(path.join(os.tmpdir(), "celeventic-vp-hdr-retry-"));
+    const inputPath = path.join(dir, "in.mp4");
+    const outputPath = path.join(dir, "out.mp4");
+    try {
+      await writeFile(inputPath, await makeTinyH264Mp4());
+      const hdrProbe = probe({ isHdr: true, videoCodec: "hevc", colorTransfer: "smpte2084" });
+      const fullCaps = { hasZscale: true, hasTonemap: true, hasLibx264: true, hasAac: true, hasHevcDecoder: true };
+
+      await transcodeWithHdrFallback(inputPath, outputPath, hdrProbe, 60_000, fullCaps);
+
+      const { stat } = await import("node:fs/promises");
+      const st = await stat(outputPath);
+      assert.ok(st.size > 0, "must produce a non-empty output even after a mid-flight zscale failure");
     } finally {
       await rm(dir, { recursive: true, force: true }).catch(() => {});
     }

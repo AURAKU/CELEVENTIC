@@ -47,17 +47,33 @@ pipeline (`src/lib/video/processing.ts`) when `VIDEO_PROCESSOR=ffmpeg` — see b
 - **Fast start**: `+faststart` — the `moov` atom is relocated to the front so playback (and
   byte-range seeking) can start before the whole file downloads.
 - **Resolution**: capped at 1920×1080 on the long edge, **never upscaled** past the source
-  (`force_original_aspect_ratio=decrease`).
-- **Orientation**: baked into the pixels via ffmpeg's `-autorotate 1` (applies the container's
+  (`force_original_aspect_ratio=decrease`), with a **portrait/landscape-aware** bounding box
+  (`computeScaleBounds` in `video-processor.ts`) — a naive `min(1920,iw):min(1080,ih)` box alone
+  would squeeze a 1080×1920 phone clip into a 1080×1080 square instead of preserving its native
+  portrait resolution; the box is swapped to `1080×1920` (accounting for `-autorotate`'s effect
+  on the *effective*, post-rotation orientation) whenever the source is portrait.
+- **Orientation**: baked into the pixels via ffmpeg's `-autorotate` (applies the container's
   display-matrix/rotate-tag rotation during transcode — phone-shot portrait video plays upright
-  everywhere, not just in players that respect the metadata tag).
-- **HDR/Dolby Vision → SDR**: when `ffprobe` reports a PQ (`smpte2084`) or HLG (`arib-std-b67`)
-  transfer function **and** the running ffmpeg registers both `zscale` and `tonemap`, a
-  `zscale`/`tonemap`/`zscale` filter chain tone-maps to SDR BT.709 before encoding. If either
-  filter is missing (or the HDR graph fails at runtime), we automatically use a plain
-  scale/format pipeline instead — the upload still succeeds (readable everywhere, just not
-  tone-mapped) rather than failing solely because an optional filter is unavailable.
+  everywhere, not just in players that respect the metadata tag). No second `transpose`/`rotate`
+  filter is ever added on top, which would double-rotate the frame.
+- **HDR/Dolby Vision → SDR**: `buildVideoFilter()` in `video-processor.ts` is the single source of
+  truth for this decision (three pipelines: `sdr`, `hdr-tonemap`, `hdr-fallback`). When `ffprobe`
+  reports a PQ (`smpte2084`) or HLG (`arib-std-b67`) transfer function **and** the running ffmpeg
+  registers both `zscale` and `tonemap`, a `zscale`/`tonemap`/`zscale` filter chain (`hdr-tonemap`)
+  tone-maps to SDR BT.709 before encoding. If either filter is missing (`hdr-fallback`), we use
+  the plain scale/format pipeline instead (no `zscale`/`tonemap`/`gbrpf32le` at all) and stamp
+  explicit BT.709 color metadata (`-color_primaries/-color_trc/-colorspace bt709`) on the output
+  so players never guess a stale HDR tag — the upload still succeeds (readable everywhere, just
+  not tone-mapped) rather than failing solely because an optional filter is unavailable. If the
+  `hdr-tonemap` graph is attempted but fails unexpectedly at **runtime** (e.g. a build with a
+  broken/partial `libzimg`), the incomplete output file is removed and the transcode retries
+  exactly once with the `hdr-fallback` pipeline (logged via `console.warn` for `pm2 logs`
+  visibility) instead of failing the whole upload.
 - **Poster**: one JPEG frame (~10% into the clip, capped at 3s), scaled to ≤1280px wide.
+- **Preflight validation**: `ffprobe` output is checked for an actual decodable video stream
+  before any transcode is attempted (never trust a probe blindly), and HEVC sources are checked
+  against `ffmpeg-capabilities.ts`'s `hasHevcDecoder` so a build with no HEVC decoder fails fast
+  with a clear message instead of dying deep inside an opaque ffmpeg decode error.
 
 ### Fast path: remux instead of re-encode
 
@@ -70,9 +86,14 @@ transcode.
 
 | Path | File | Sync/Async | Engine selection |
 |---|---|---|---|
-| Invitations builder upload (confirmed bug) | `src/app/api/invitations/upload/route.ts` | **Synchronous** (v1) | Always `video-processor.ts` (FFmpeg) |
+| Invitations builder upload | `src/app/api/invitations/upload/route.ts` → `createAndQueueLocalVideoAsset` | **Async (v2)** — `202 Accepted`, `BackgroundJob` queue + `npm run jobs:worker` | Always `processVideoFile` in `video-processor.ts` (adaptive ffmpeg by default) |
 | Universal S3 pipeline (Studio 2.0 hero/background/gallery, vendor portfolio, guestbook, event shorts) | `src/lib/video/processing.ts` → `processQueuedVideoAsset` | Async (`BackgroundJob` queue + `npm run jobs:worker`) | `VIDEO_PROCESSOR` env — `ffmpeg` (default when MediaConvert isn't configured) or `mediaconvert` |
-| Universal pipeline, **local-disk fallback** (same call sites as above, used automatically when S3 isn't configured/usable) | `src/app/api/uploads/video/local/route.ts` → `processLocalVideoUpload` in `src/lib/video/processing.ts` | **Synchronous** (no S3 round-trip needed — bytes already arrived in the request) | Always `video-processor.ts` (FFmpeg) |
+| Universal pipeline, **local-disk fallback** (used automatically when S3 isn't configured/usable) | `src/app/api/uploads/video/local/route.ts` → `queueLocalVideoUpload` in `src/lib/video/processing.ts` | **Async (v2)** — same `202` + queue/worker pattern as above (ECONNRESET fix) | Always `processVideoFile` in `video-processor.ts` (adaptive ffmpeg by default) |
+
+The invitations route and the local-fallback route both funnel through the exact same
+`processQueuedVideoAssetLocalFfmpeg` → `processVideoFile` call chain in the background worker —
+there is only ever one place (`buildVideoFilter` in `video-processor.ts`) that decides the FFmpeg
+filter graph, so there's nothing to keep in sync between the two entry points.
 
 All three paths produce the same `VideoAsset`-shaped output contract (`processedMp4Url`,
 `posterUrl`, `thumbnailUrl`, `status`), so `VideoUploader`/`VideoPlayer` on the client don't
