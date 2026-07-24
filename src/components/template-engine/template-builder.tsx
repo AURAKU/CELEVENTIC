@@ -107,7 +107,7 @@ export function TemplateBuilder({ initialSchema, onSave, onDuplicate, saving }: 
         <div>
           <Label>Background image</Label>
           <ImageUploadCropper
-            defaultAspect="3:4"
+            defaultAspect="free"
             buttonLabel="Import background"
             hint="Upload and crop a background image from your device."
             previewUrl={schema.canvas.backgroundImage ?? null}
@@ -172,7 +172,7 @@ export function TemplateBuilder({ initialSchema, onSave, onDuplicate, saving }: 
             )}
             {(selected.type === "image" || selected.type === "logo") && (
               <ImageUploadCropper
-                defaultAspect={selected.type === "logo" ? "1:1" : "4:5"}
+                defaultAspect="free"
                 buttonLabel={selected.type === "logo" ? "Upload logo" : "Upload image"}
                 hint="Import from device, then crop to frame."
                 previewUrl={selected.content ?? null}

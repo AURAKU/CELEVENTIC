@@ -142,7 +142,7 @@ export function GalleryUploadPanel({
       {urls.length < maxImages && (
         <div className="space-y-2 pt-1">
           <ImageUploadCropper
-            defaultAspect="4:5"
+            defaultAspect="free"
             allowedAspects={CROP_PRESETS.gallery}
             extraFormFields={extraFormFields}
             uploadEndpoint={uploadEndpoint}
@@ -150,7 +150,7 @@ export function GalleryUploadPanel({
             onError={setError}
             disabled={disabled}
             buttonLabel={urls.length === 0 ? "Upload gallery photo" : "Add photo"}
-            hint="Crop to fit the invitation frame — object-cover keeps edges neat."
+            hint="Free crop by default — drag to select any region, any size, or use the full image."
             className="flex-1"
           />
           <VideoUploader

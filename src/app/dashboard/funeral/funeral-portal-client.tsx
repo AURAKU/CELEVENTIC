@@ -262,7 +262,7 @@ export function FuneralPortalClient() {
                     <div key={key}><Label>{label}</Label><Textarea value={form[key as keyof typeof form]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={2} /></div>
                   ))}
                   <div><Label>Memorial Photo</Label>
-                    <ImageUploadCropper defaultAspect="1:1" allowedAspects={CROP_PRESETS.portrait} previewUrl={form.photoUrl || null} onClear={() => setForm({ ...form, photoUrl: "" })} onUploaded={(r) => setForm({ ...form, photoUrl: r.url })} buttonLabel="Upload portrait" hint="Upload a dignified memorial portrait." />
+                    <ImageUploadCropper defaultAspect="free" allowedAspects={CROP_PRESETS.portrait} previewUrl={form.photoUrl || null} onClear={() => setForm({ ...form, photoUrl: "" })} onUploaded={(r) => setForm({ ...form, photoUrl: r.url })} buttonLabel="Upload portrait" hint="Upload a dignified memorial portrait — free crop by default." />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div>

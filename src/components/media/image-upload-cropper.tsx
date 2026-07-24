@@ -47,7 +47,7 @@ interface ImageUploadCropperProps {
 export function ImageUploadCropper({
   label,
   hint = "Upload from your device — crop and frame before saving.",
-  defaultAspect = "4:5",
+  defaultAspect = "free",
   allowedAspects,
   uploadEndpoint = "/api/invitations/upload",
   extraFormFields,
