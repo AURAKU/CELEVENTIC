@@ -121,11 +121,13 @@ export async function completeMultipartUpload(
 }
 
 export async function abortMultipartUpload(key: string, uploadId: string): Promise<void> {
-  const { client, cfg } = await requireS3();
   try {
+    const { client, cfg } = await requireS3();
     await client.send(new AbortMultipartUploadCommand({ Bucket: cfg.bucket, Key: key, UploadId: uploadId }));
   } catch {
     // Best-effort — S3 auto-expires incomplete multipart uploads via lifecycle rules too.
+    // Also covers callers on environments without S3 configured (local-fallback assets never
+    // have a multipartUploadId, but stay defensive).
   }
 }
 
@@ -194,11 +196,12 @@ export async function getVideoObjectRange(key: string, start: number, endInclusi
 }
 
 export async function deleteVideoObject(key: string): Promise<void> {
-  const { client, cfg } = await requireS3();
   try {
+    const { client, cfg } = await requireS3();
     await client.send(new DeleteObjectCommand({ Bucket: cfg.bucket, Key: key }));
   } catch {
-    // best-effort
+    // best-effort — also covers local-fallback assets, which never had an S3 object to begin
+    // with (S3 isn't configured on this environment), so there's nothing to clean up there.
   }
 }
 

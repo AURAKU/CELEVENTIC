@@ -38,6 +38,48 @@ export function xhrPutWithProgress(
   });
 }
 
+/**
+ * POST a FormData body (used by the local-disk fallback upload) with upload progress and an
+ * `uploadComplete` hook — fires once all bytes are sent, while the server is still processing
+ * (transcoding) and the response hasn't arrived yet, so the caller can flip its UI from
+ * "uploading" to "processing" instead of looking stuck at 100%.
+ */
+export function xhrPostFormWithProgress<T>(
+  url: string,
+  form: FormData,
+  onProgress: (loaded: number, total: number) => void,
+  registerAbort: (abort: () => void) => void,
+  onUploadComplete?: () => void
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    registerAbort(() => xhr.abort());
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(e.loaded, e.total);
+    };
+    xhr.upload.onload = () => onUploadComplete?.();
+
+    xhr.onload = () => {
+      let json: unknown = {};
+      try {
+        json = JSON.parse(xhr.responseText);
+      } catch {
+        /* non-JSON error body — fall through to status-based handling below */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(json as T);
+      } else {
+        reject(new Error((json as { error?: string })?.error ?? `Upload failed with status ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onabort = () => reject(new DOMException("Upload aborted", "AbortError"));
+    xhr.send(form);
+  });
+}
+
 export async function postJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",

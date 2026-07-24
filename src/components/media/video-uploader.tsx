@@ -11,7 +11,13 @@ import {
   type AllowedVideoExtension,
 } from "@/lib/video/constants";
 import { extractExtension } from "@/lib/video/validation";
-import { xhrPutWithProgress, postJson, formatBytes, runWithConcurrency } from "@/lib/video/upload-client";
+import {
+  xhrPutWithProgress,
+  xhrPostFormWithProgress,
+  postJson,
+  formatBytes,
+  runWithConcurrency,
+} from "@/lib/video/upload-client";
 
 export interface UploadedVideoResult {
   assetId: string;
@@ -24,7 +30,7 @@ export interface UploadedVideoResult {
 }
 
 interface PresignResponse {
-  data: { assetId: string; strategy: "single" | "multipart"; uploadUrl?: string; key: string };
+  data: { assetId: string; strategy: "single" | "multipart" | "local"; uploadUrl?: string; key: string };
 }
 interface MultipartCreateResponse {
   data: { uploadId: string; partSizeBytes: number; totalParts: number };
@@ -258,6 +264,50 @@ export function VideoUploader({
     await postJson("/api/uploads/video/multipart/complete", { assetId: assetIdRef.current, guestToken, parts });
   }
 
+  /**
+   * S3 isn't configured/usable on this environment — presign already told us to route the
+   * raw bytes straight to our own server instead of a presigned S3 PUT. One request carries
+   * the whole file; the server transcodes with FFmpeg synchronously and the response already
+   * contains the final READY/FAILED asset, so there's no separate poll step on this path.
+   */
+  async function uploadLocalFallback(file: File) {
+    setPhase("uploading");
+    const form = new FormData();
+    form.append("assetId", assetIdRef.current!);
+    if (guestToken) form.append("guestToken", guestToken);
+    form.append("file", file);
+
+    const res = await xhrPostFormWithProgress<AssetResponse>(
+      "/api/uploads/video/local",
+      form,
+      (loaded, total) => setProgress(Math.min(99, Math.round((loaded / total) * 100))),
+      (abort) => abortFnsRef.current.add(abort),
+      () => setPhase("processing")
+    );
+
+    const asset = res.data;
+    if (asset.status === "READY") {
+      setPhase("ready");
+      setProgress(100);
+      onUploaded({
+        assetId: asset.id,
+        status: asset.status,
+        processedMp4Url: asset.processedMp4Url,
+        hlsUrl: asset.hlsUrl,
+        posterUrl: asset.posterUrl,
+        thumbnailUrl: asset.thumbnailUrl,
+        durationSeconds: asset.durationSeconds,
+      });
+      return;
+    }
+    if (asset.status === "FAILED" || asset.status === "CANCELLED") {
+      reportError(asset.failureReason ?? "Video processing failed.");
+      return;
+    }
+    // Defensive: server queued instead of finishing synchronously — fall back to polling.
+    await pollUntilReady(asset.id);
+  }
+
   async function startUpload(file: File) {
     resetForNewFile();
     fileRef.current = file;
@@ -283,6 +333,11 @@ export function VideoUploader({
         context: { role, mute },
       });
       assetIdRef.current = presign.data.assetId;
+
+      if (presign.data.strategy === "local") {
+        await uploadLocalFallback(file);
+        return;
+      }
 
       if (presign.data.strategy === "single") {
         await uploadSingle(file, presign.data.uploadUrl!);
