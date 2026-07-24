@@ -9,6 +9,7 @@ import type { UploadAnalysisResult } from "@/services/invitations/invitation-ins
 import { ImageCropDialog } from "@/components/media/image-crop-dialog";
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import { readImageDimensions, CROP_PRESETS } from "@/lib/image/crop-utils";
+import { ALLOWED_VIDEO_EXTENSIONS } from "@/lib/video/constants";
 
 type MediaRole = InvitationMediaAsset["role"];
 
@@ -176,7 +177,7 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
         <input
           ref={inputRef}
           type="file"
-          accept="image/*,.jfif,.pdf,video/mp4,video/webm"
+          accept={`image/*,.jfif,.pdf,video/*,${ALLOWED_VIDEO_EXTENSIONS.map((e) => `.${e}`).join(",")}`}
           multiple
           className="hidden"
           onChange={(e) => void handleFiles(e.target.files)}

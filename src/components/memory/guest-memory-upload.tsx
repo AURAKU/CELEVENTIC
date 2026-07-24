@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { uploadFormDataWithProgress } from "@/lib/media/upload-with-progress";
+import { VideoUploader, type UploadedVideoResult } from "@/components/media/video-uploader";
 
 interface GuestMemoryUploadProps {
   token: string;
@@ -46,17 +47,17 @@ export function GuestMemoryUpload({
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
 
+  function checkCanUpload(): string | null {
+    if (!windowOpen) return "Upload window is closed for this event.";
+    if (!consent) return "Please accept the consent checkbox.";
+    if (!allowAnonymousUploads && !name.trim()) return "Please enter your name.";
+    return null;
+  }
+
   async function uploadFile(file: File) {
-    if (!windowOpen) {
-      setError("Upload window is closed for this event.");
-      return;
-    }
-    if (!consent) {
-      setError("Please accept the consent checkbox.");
-      return;
-    }
-    if (!allowAnonymousUploads && !name.trim()) {
-      setError("Please enter your name.");
+    const gate = checkCanUpload();
+    if (gate) {
+      setError(gate);
       return;
     }
 
@@ -85,6 +86,14 @@ export function GuestMemoryUpload({
       setProgress(0);
     }
   }
+
+  function onVideoUploaded(_result: UploadedVideoResult) {
+    setSuccess(true);
+    setCaption("");
+    setError("");
+  }
+
+  const videoUploadGate = checkCanUpload();
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
@@ -158,9 +167,9 @@ export function GuestMemoryUpload({
           )}
         >
           <Upload className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-          <p className="text-sm text-slate-600 mb-1">Drag & drop or select files</p>
+          <p className="text-sm text-slate-600 mb-1">Drag & drop a photo, or select one</p>
           <p className="text-xs text-slate-400 mb-4">
-            Up to {maxPhotosPerGuest} photos & {maxVideosPerGuest} videos · Images {maxImageSizeMb}MB · Videos {maxVideoSizeMb}MB
+            Up to {maxPhotosPerGuest} photos · Images {maxImageSizeMb}MB
           </p>
           <Button
             type="button"
@@ -169,7 +178,7 @@ export function GuestMemoryUpload({
             onClick={() => inputRef.current?.click()}
           >
             {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {uploading ? `Uploading ${progress}%` : "Select files"}
+            {uploading ? `Uploading ${progress}%` : "Select photo"}
           </Button>
           {uploading && (
             <div className="mt-3 h-1.5 bg-slate-200 rounded-full overflow-hidden max-w-xs mx-auto">
@@ -181,7 +190,7 @@ export function GuestMemoryUpload({
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+          accept="image/jpeg,image/png,image/webp"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -189,6 +198,25 @@ export function GuestMemoryUpload({
             e.target.value = "";
           }}
         />
+
+        <div className="pt-1 border-t border-slate-100">
+          <p className="text-xs text-slate-400 mb-2 mt-3">
+            Up to {maxVideosPerGuest} videos · {maxVideoSizeMb}MB each · phone, DSLR, WhatsApp/TikTok/Instagram exports and screen
+            recordings all work (including iPhone HEVC)
+          </p>
+          <VideoUploader
+            category="GUESTBOOK"
+            guestToken={token}
+            guestName={name || undefined}
+            guestPhone={phone || undefined}
+            disabled={!!videoUploadGate}
+            allowCameraCapture
+            buttonLabel="Select video"
+            hint={videoUploadGate ?? "Drag & drop or select a video to share."}
+            onUploaded={onVideoUploaded}
+            onError={setError}
+          />
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>

@@ -1,14 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Film, ImageIcon, Images, Loader2, Layout, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ImageIcon, Images, Layout, Sparkles } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { GalleryUploadPanel } from "@/components/media/gallery-upload-panel";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
 import { UploadedMedia } from "@/components/media/uploaded-media";
+import { VideoUploader, type UploadedVideoResult } from "@/components/media/video-uploader";
 import { CROP_PRESETS } from "@/lib/image/crop-utils";
-import { uploadFormDataWithProgress, validateClientVideo } from "@/lib/media/upload-with-progress";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { heroUrlFromDesign, pageBackgroundFromDesign, syncDesignMediaHero, syncDesignPageBackground } from "@/lib/invitation/studio-media-utils";
 import { getMediaEntranceForLayout } from "@/lib/invitation/media-entrance-engine";
@@ -23,6 +23,8 @@ interface TemplateStudioMediaPanelProps {
   disabled?: boolean;
   maxGalleryImages?: number;
   allowVideoBackground?: boolean;
+  /** When editing a live customer order, ownership is double-checked against this order. */
+  orderId?: string;
 }
 
 function MediaSection({
@@ -60,6 +62,7 @@ export function TemplateStudioMediaPanel({
   disabled,
   maxGalleryImages = 30,
   allowVideoBackground = true,
+  orderId,
 }: TemplateStudioMediaPanelProps) {
   const heroUrl = heroUrlFromDesign(design);
   const pageBg = pageBackgroundFromDesign(design);
@@ -67,10 +70,6 @@ export function TemplateStudioMediaPanel({
   const entrance = getMediaEntranceForLayout(design.layout ?? "classic-gold");
   const entranceLabel = MEDIA_ENTRANCE_OPTIONS.find((o) => o.id === entrance)?.label ?? entrance;
   const [error, setError] = useState("");
-  const [videoUploading, setVideoUploading] = useState(false);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  const pageVideoInputRef = useRef<HTMLInputElement>(null);
-  const [pageVideoUploading, setPageVideoUploading] = useState(false);
 
   function setHero(url: string, type: "image" | "video") {
     onDesignChange(syncDesignMediaHero(design, url, type));
@@ -83,28 +82,8 @@ export function TemplateStudioMediaPanel({
     onDesignChange(syncDesignMediaHero(design, null));
   }
 
-  async function uploadHeroVideo(file: File) {
-    const err = validateClientVideo(file);
-    if (err) {
-      setError(err);
-      return;
-    }
-    setVideoUploading(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("role", "hero");
-      fd.append("buildMode", "template");
-      const { ok, json } = await uploadFormDataWithProgress("/api/invitations/upload", fd);
-      if (!ok) throw new Error((json.error as string) || "Video upload failed");
-      const data = json.data as { url: string };
-      setHero(data.url, "video");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Video upload failed");
-    } finally {
-      setVideoUploading(false);
-    }
+  function onHeroVideoUploaded(result: UploadedVideoResult) {
+    if (result.processedMp4Url) setHero(result.processedMp4Url, "video");
   }
 
   function clearPageBackground() {
@@ -115,28 +94,8 @@ export function TemplateStudioMediaPanel({
     onDesignChange(syncDesignPageBackground(design, url, type));
   }
 
-  async function uploadPageBackgroundVideo(file: File) {
-    const err = validateClientVideo(file);
-    if (err) {
-      setError(err);
-      return;
-    }
-    setPageVideoUploading(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("role", "background");
-      fd.append("buildMode", "template");
-      const { ok, json } = await uploadFormDataWithProgress("/api/invitations/upload", fd);
-      if (!ok) throw new Error((json.error as string) || "Video upload failed");
-      const data = json.data as { url: string };
-      setPageBackground(data.url, "video");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Video upload failed");
-    } finally {
-      setPageVideoUploading(false);
-    }
+  function onPageBackgroundVideoUploaded(result: UploadedVideoResult) {
+    if (result.processedMp4Url) setPageBackground(result.processedMp4Url, "video");
   }
 
   return (
@@ -191,28 +150,17 @@ export function TemplateStudioMediaPanel({
             hint="4:5 portrait crop — fits hero frame neatly."
             className="flex-1"
           />
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2 min-h-[44px]"
-            disabled={disabled || videoUploading}
-            onClick={() => videoInputRef.current?.click()}
-          >
-            {videoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Film className="h-4 w-4" />}
-            Hero video
-          </Button>
-          <input
-            ref={videoInputRef}
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void uploadHeroVideo(f);
-              e.target.value = "";
-            }}
-          />
         </div>
+        <VideoUploader
+          category="INVITATION_BACKGROUND"
+          orderId={orderId}
+          role="hero"
+          buttonLabel="Hero video"
+          hint="Phone, DSLR, or exported clip — up to 150MB. Processed automatically for smooth playback."
+          disabled={disabled}
+          onUploaded={onHeroVideoUploaded}
+          onError={setError}
+        />
       </MediaSection>
 
       <MediaSection
@@ -254,32 +202,20 @@ export function TemplateStudioMediaPanel({
             hint="16:9 wide crop for cinematic backgrounds."
             className="flex-1"
           />
-          {allowVideoBackground && (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2 min-h-[44px]"
-                disabled={disabled || pageVideoUploading}
-                onClick={() => pageVideoInputRef.current?.click()}
-              >
-                {pageVideoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Film className="h-4 w-4" />}
-                Background video
-              </Button>
-              <input
-                ref={pageVideoInputRef}
-                type="file"
-                accept="video/mp4,video/webm,video/quicktime"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void uploadPageBackgroundVideo(f);
-                  e.target.value = "";
-                }}
-              />
-            </>
-          )}
         </div>
+        {allowVideoBackground && (
+          <VideoUploader
+            category="INVITATION_BACKGROUND"
+            orderId={orderId}
+            role="background"
+            mute
+            buttonLabel="Background video"
+            hint="Loop-friendly background clip — up to 150MB, muted automatically for ambient playback."
+            disabled={disabled}
+            onUploaded={onPageBackgroundVideoUploaded}
+            onError={setError}
+          />
+        )}
       </MediaSection>
 
       <GalleryUploadPanel
@@ -287,6 +223,7 @@ export function TemplateStudioMediaPanel({
         onChange={onGalleryChange}
         disabled={disabled}
         maxImages={maxGalleryImages}
+        orderId={orderId}
         title="Swipe gallery"
         description="Ordered slots for the interactive gallery — guests swipe between items and tap any photo or video to open fullscreen."
       />

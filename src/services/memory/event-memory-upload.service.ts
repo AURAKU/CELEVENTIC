@@ -13,6 +13,8 @@ export interface CreateGuestUploadInput {
   thumbnailUrl?: string | null;
   caption?: string;
   consentGiven: boolean;
+  /** Links this row to the async VideoAsset pipeline — populated for video uploads still processing. */
+  videoAssetId?: string;
 }
 
 export class EventMemoryUploadService {
@@ -57,6 +59,7 @@ export class EventMemoryUploadService {
         thumbnailUrl: input.thumbnailUrl,
         caption: input.caption,
         consentGiven: input.consentGiven,
+        videoAssetId: input.videoAssetId,
         status,
         approvedAt: status === "APPROVED" ? new Date() : undefined,
       },
