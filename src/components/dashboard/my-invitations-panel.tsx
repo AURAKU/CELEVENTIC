@@ -19,8 +19,8 @@ interface OrderRow {
   packageSlug: string;
   totalAmountGhs: string | number;
   shareUrl: string | null;
-  template: { name: string };
-  package: { name: string };
+  template: { name: string } | null;
+  package: { name: string } | null;
   payment: { status: string; reference: string } | null;
 }
 
@@ -90,8 +90,8 @@ export function MyInvitationsPanel() {
               <Card key={order.id}>
                 <CardHeader className="flex flex-row items-start justify-between gap-4">
                   <div>
-                    <CardTitle className="text-lg">{order.eventTitle ?? order.template.name}</CardTitle>
-                    <p className="text-sm text-slate-500 mt-1">{order.template.name} · {order.package.name}</p>
+                    <CardTitle className="text-lg">{order.eventTitle ?? order.template?.name ?? "Your Invitation"}</CardTitle>
+                    <p className="text-sm text-slate-500 mt-1">{order.template?.name ?? "—"} · {order.package?.name ?? "—"}</p>
                   </div>
                   <Badge variant={statusColor(order.status) as "success" | "secondary" | "outline"}>{order.status}</Badge>
                 </CardHeader>

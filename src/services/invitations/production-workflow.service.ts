@@ -34,6 +34,7 @@ export class ProductionWorkflowService {
       where: { id: orderId },
       include: {
         package: true,
+        template: true,
         assignedDesigner: { select: { id: true, name: true, email: true } },
         revisions: {
           orderBy: { revisionNumber: "desc" },
