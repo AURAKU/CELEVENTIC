@@ -105,7 +105,8 @@ export function AdminInvitationOrdersClient() {
     if (selected?.id === id) {
       const res = await fetch(`/api/admin/invitation-orders?search=${selected.eventTitle ?? ""}`);
       const d = await res.json();
-      const updated = d.data?.find((o: AdminOrder) => o.id === id);
+      const list = Array.isArray(d.data) ? d.data : d.data?.items;
+      const updated = (list ?? []).find((o: AdminOrder) => o.id === id);
       if (updated) setSelected({ ...updated, addonSlugs: Array.isArray(updated.addonSlugs) ? updated.addonSlugs : null });
     }
   }

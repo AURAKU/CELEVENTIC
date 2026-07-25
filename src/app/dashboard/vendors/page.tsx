@@ -34,7 +34,16 @@ export default function VendorsPage() {
 
   useEffect(() => {
     const url = category ? `/api/vendors?category=${encodeURIComponent(category)}` : "/api/vendors";
-    fetch(url).then((r) => r.json()).then((d) => { if (d.success) setVendors(d.data); });
+    fetch(url)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.success) return;
+        // /api/vendors returns a paginated shape ({ vendors, total, page, ... }); guard
+        // against a plain array too in case the response shape changes upstream.
+        const list = Array.isArray(d.data) ? d.data : Array.isArray(d.data?.vendors) ? d.data.vendors : [];
+        setVendors(list);
+      })
+      .catch(() => setVendors([]));
   }, [category]);
 
   async function requestBooking(vendorId: string) {
@@ -98,7 +107,7 @@ export default function VendorsPage() {
                   <Star className="h-4 w-4 text-gold-400 fill-gold-400" />
                   <span>{Number(v.rating).toFixed(1)}</span>
                 </div>
-                {v.services[0] && (
+                {v.services?.[0] && (
                   <p className="text-sm text-slate-600">From {formatCurrency(v.services[0].priceFrom)}</p>
                 )}
                 {bookingVendor === v.id ? (
