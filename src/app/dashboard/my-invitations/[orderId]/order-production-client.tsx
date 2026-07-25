@@ -21,7 +21,7 @@ interface RevisionRow {
   adminResponse: string | null;
   amountGhs: string | number | null;
   customerApproved: boolean;
-  comments: { id: string; content: string; isAdmin: boolean; user: { name: string }; createdAt: string }[];
+  comments: { id: string; content: string; isAdmin: boolean; user: { name: string } | null; createdAt: string }[];
 }
 
 interface ProductionData {
@@ -39,8 +39,8 @@ interface ProductionData {
     eventTitle: string | null;
     status: string;
     shareUrl: string | null;
-    package: { name: string };
-    template: { name: string };
+    package: { name: string } | null;
+    template: { name: string } | null;
     revisions: RevisionRow[];
   };
 }
@@ -59,11 +59,21 @@ export function OrderProductionClient({ params }: { params: Promise<{ orderId: s
   const [comment, setComment] = useState("");
   const [activeRevision, setActiveRevision] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    const res = await fetch(`/api/invitation-orders/${orderId}/production`);
-    const d = await res.json();
-    if (d.success) setData(d.data);
+    try {
+      const res = await fetch(`/api/invitation-orders/${orderId}/production`);
+      const d = await res.json();
+      if (d.success) {
+        setData(d.data);
+        setError(null);
+      } else {
+        setError(d.error ?? "We couldn't load this invitation.");
+      }
+    } catch {
+      setError("We couldn't load this invitation. Check your connection and try again.");
+    }
   }
 
   useEffect(() => { load(); }, [orderId]);
@@ -96,7 +106,7 @@ export function OrderProductionClient({ params }: { params: Promise<{ orderId: s
     const res = await fetch(`/api/invitation-revisions/${revisionId}/pay`, { method: "POST" });
     const d = await res.json();
     setLoading(false);
-    if (d.success && d.data.authorizationUrl) {
+    if (d.success && d.data?.authorizationUrl) {
       window.location.href = d.data.authorizationUrl;
     }
   }
@@ -112,6 +122,20 @@ export function OrderProductionClient({ params }: { params: Promise<{ orderId: s
     load();
   }
 
+  if (error) {
+    return (
+      <div className="max-w-md space-y-4">
+        <p className="text-slate-600">{error}</p>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => { setError(null); load(); }}>Try again</Button>
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/dashboard/my-invitations">Back to My Invitations</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) return <p className="text-slate-500">Loading production status...</p>;
 
   const stageIndex = STAGES.indexOf(data.workflowStage);
@@ -123,8 +147,8 @@ export function OrderProductionClient({ params }: { params: Promise<{ orderId: s
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold">{data.order.eventTitle ?? data.order.template.name}</h1>
-        <p className="text-slate-500 mt-1">{data.order.package.name} · {data.workflowType.replace(/_/g, " ")}</p>
+        <h1 className="text-2xl font-bold">{data.order.eventTitle ?? data.order.template?.name ?? "Your Invitation"}</h1>
+        <p className="text-slate-500 mt-1">{data.order.package?.name ?? "Package"} · {data.workflowType.replace(/_/g, " ")}</p>
       </div>
 
       <Card>
@@ -252,7 +276,7 @@ export function OrderProductionClient({ params }: { params: Promise<{ orderId: s
                 <div className="space-y-1 pt-2 border-t">
                   {r.comments.map((c) => (
                     <p key={c.id} className="text-xs text-slate-500">
-                      <strong>{c.isAdmin ? "Designer" : c.user.name}:</strong> {c.content}
+                      <strong>{c.isAdmin ? "Designer" : c.user?.name ?? "Customer"}:</strong> {c.content}
                     </p>
                   ))}
                 </div>
