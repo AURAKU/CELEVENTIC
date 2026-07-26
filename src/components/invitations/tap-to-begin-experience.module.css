@@ -119,14 +119,34 @@
   animation: tap-stage-rise 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/**
+ * Legibility backdrop — a soft blurred plate under the copy so busy, multi-color
+ * patterned art (e.g. kente/Ankara welcome photos) can never "eat" the text.
+ * Blurring flattens the pattern's hue noise instead of fighting it with contrast
+ * alone. On by default for known patterned templates; studio-toggleable elsewhere.
+ */
+.stage.plate {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--tap-scrim-rgb), 0.58) 0%,
+    rgba(var(--tap-scrim-rgb), 0.46) 100%
+  );
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  border-radius: 1.75rem;
+  border: 1px solid color-mix(in srgb, var(--tap-ivory) 12%, transparent);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+  padding: 2.1rem 1.85rem;
+}
+
 .brand {
   margin: 0 0 1.75rem;
   font-family: var(--tap-font-family, var(--font-cormorant), "Cormorant Garamond", serif);
-  font-size: calc(0.72rem * var(--tap-scale, 1));
+  font-size: calc(0.8rem * var(--tap-scale, 1));
   font-weight: 500;
-  letter-spacing: 0.42em;
+  letter-spacing: 0.4em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--tap-ivory) 48%, transparent);
+  color: color-mix(in srgb, var(--tap-ivory) 52%, transparent);
   animation: tap-line-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
 }
 
@@ -134,19 +154,20 @@
   margin: 0;
   max-width: 18rem;
   font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
-  font-size: calc(clamp(0.95rem, 3.6vw, 1.15rem) * var(--tap-scale, 1));
+  font-size: calc(clamp(1.08rem, 4.2vw, 1.32rem) * var(--tap-scale, 1));
   font-weight: 600;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   line-height: 1.35;
   color: color-mix(in srgb, var(--tap-ivory) 88%, var(--tap-gold) 12%);
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.3);
   animation: tap-line-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
 }
 
 .scriptBeat {
   margin: 0.35rem 0 0;
   font-family: var(--tap-font-family, var(--font-great-vibes), "Great Vibes", cursive);
-  font-size: calc(clamp(2rem, 8vw, 2.65rem) * var(--tap-scale, 1));
+  font-size: calc(clamp(2.25rem, 8.8vw, 2.9rem) * var(--tap-scale, 1));
   font-weight: 400;
   letter-spacing: 0.02em;
   line-height: 1.05;
@@ -168,11 +189,12 @@
 .name {
   margin: 0;
   font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
-  font-size: calc(clamp(0.82rem, 2.8vw, 0.95rem) * var(--tap-scale, 1));
+  font-size: calc(clamp(0.94rem, 3.2vw, 1.1rem) * var(--tap-scale, 1));
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--tap-ivory) 82%, transparent);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
   max-width: 17rem;
   line-height: 1.4;
 }
@@ -180,7 +202,7 @@
 .amp {
   margin: 0;
   font-family: var(--tap-font-family, var(--font-great-vibes), "Great Vibes", cursive);
-  font-size: calc(1.55rem * var(--tap-scale, 1));
+  font-size: calc(1.65rem * var(--tap-scale, 1));
   line-height: 1;
   color: color-mix(in srgb, var(--tap-gold) 70%, transparent);
 }
@@ -188,7 +210,7 @@
 .hostLine {
   margin: 1.1rem 0 0;
   font-family: var(--tap-font-family, var(--font-cormorant), "Cormorant Garamond", serif);
-  font-size: calc(1.05rem * var(--tap-scale, 1));
+  font-size: calc(1.15rem * var(--tap-scale, 1));
   font-style: italic;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -203,32 +225,60 @@
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.85rem;
   animation: tap-line-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.75s both;
+}
+
+/**
+ * Pill affordance — a lone word floating over a photo reads as decorative
+ * type, not a control. The bordered chip + breathing glow + explicit verb
+ * ("Tap to begin") make the gesture unmistakable on first glance, on any device.
+ */
+.ctaChip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1.7rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--tap-gold) 45%, transparent);
+  background: color-mix(in srgb, var(--tap-ivory) 7%, transparent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--tap-gold) 32%, transparent);
+  animation: tap-chip-glow 2.6s ease-in-out infinite;
+}
+
+.ctaTapMark {
+  display: inline-flex;
+  color: var(--tap-gold);
+  opacity: 0.92;
 }
 
 .ctaWord {
   margin: 0;
   font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
-  font-size: calc(clamp(0.95rem, 3.2vw, 1.1rem) * var(--tap-scale, 1));
+  font-size: calc(clamp(0.92rem, 3.4vw, 1.1rem) * var(--tap-scale, 1));
   font-weight: 500;
-  letter-spacing: 0.38em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--tap-ivory);
-  text-indent: 0.38em;
+  white-space: nowrap;
 }
 
-.ctaRule {
-  display: block;
-  width: 3.25rem;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--tap-gold) 85%, transparent),
-    transparent
-  );
-  animation: tap-rule-breathe 2.4s ease-in-out infinite;
+/** Desktop-only whisper — mouse/keyboard guests get the Enter shortcut spelled out. */
+.ctaHint {
+  display: none;
+  margin: 0;
+  font-family: var(--tap-font-family, var(--font-cormorant), "Cormorant Garamond", serif);
+  font-size: calc(0.78rem * var(--tap-scale, 1));
+  font-style: italic;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--tap-ivory) 58%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ctaHint {
+    display: block;
+  }
 }
 
 .exiting {
@@ -254,7 +304,7 @@
 .static .names,
 .static .hostLine,
 .static .cta,
-.static .ctaRule {
+.static .ctaChip {
   animation: none;
 }
 
@@ -315,15 +365,13 @@
   }
 }
 
-@keyframes tap-rule-breathe {
+@keyframes tap-chip-glow {
   0%,
   100% {
-    opacity: 0.45;
-    transform: scaleX(0.85);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--tap-gold) 32%, transparent);
   }
   50% {
-    opacity: 1;
-    transform: scaleX(1);
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--tap-gold) 0%, transparent);
   }
 }
 
@@ -357,7 +405,7 @@
   .names,
   .hostLine,
   .cta,
-  .ctaRule,
+  .ctaChip,
   .exiting,
   .exiting .heroImg,
   .exiting .heroFallback,

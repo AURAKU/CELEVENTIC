@@ -32,10 +32,17 @@ import { isVideoUrl } from "@/lib/invitation/demo-gallery-assets";
 import { FONT_STACKS, THANK_YOU_FONT_OPTIONS } from "@/lib/invitation-theme/fonts";
 import type { FontId } from "@/lib/invitation-theme/theme-types";
 
-const WELCOME_SCALE_OPTIONS: { id: "compact" | "cozy" | "spacious"; label: string }[] = [
+const WELCOME_SCALE_OPTIONS: { id: "compact" | "cozy" | "spacious" | "bold"; label: string }[] = [
   { id: "compact", label: "Compact" },
   { id: "cozy", label: "Cozy (default)" },
   { id: "spacious", label: "Spacious" },
+  { id: "bold", label: "Bold (max legibility)" },
+];
+
+const WELCOME_SCRIM_OPTIONS: { id: "auto" | "on" | "off"; label: string }[] = [
+  { id: "auto", label: "Auto (recommended)" },
+  { id: "on", label: "Always on" },
+  { id: "off", label: "Always off" },
 ];
 
 /** Studio copy for the pre-invite welcome photo — TM-specific wording only for that layout. */
@@ -44,14 +51,14 @@ function introPhotoCopy(layout?: string): { title: string; hint: string; note: s
     return {
       title: "Welcome photo (before the invite opens)",
       hint:
-        "The very first screen guests see — full-bleed behind “CELEVENTIC · TRADITIONAL · Marriage Ceremony” and the BEGIN button, before the Traditional Marriage Ceremony invitation opens.",
-      note: "Shows only on this welcome/BEGIN screen — never used as the hero photo, gallery, or page background.",
+        "The very first screen guests see — full-bleed behind “CELEVENTIC · TRADITIONAL · Marriage Ceremony” and the “Tap to Begin” button, before the Traditional Marriage Ceremony invitation opens.",
+      note: "Shows only on this welcome/Tap-to-Begin screen — never used as the hero photo, gallery, or page background.",
     };
   }
   return {
     title: "Welcome photo (before the invite opens)",
-    hint: "The very first screen guests see, before your invitation opens — the soft-intro / “BEGIN” gate.",
-    note: "Shows only on this welcome/BEGIN screen — never used as the hero photo, gallery, or page background.",
+    hint: "The very first screen guests see, before your invitation opens — the soft-intro / “Tap to Begin” gate.",
+    note: "Shows only on this welcome/Tap-to-Begin screen — never used as the hero photo, gallery, or page background.",
   };
 }
 
@@ -124,9 +131,10 @@ export function TemplateStudioMediaPanel({
 
   function patchWelcomeTypography(patch: {
     welcomeFontFamily?: string;
-    welcomeFontScale?: "compact" | "cozy" | "spacious";
+    welcomeFontScale?: "compact" | "cozy" | "spacious" | "bold";
     welcomeTextColor?: string | null;
     welcomeAccentColor?: string | null;
+    welcomeScrim?: "auto" | "on" | "off";
   }) {
     onDesignChange({
       ...design,
@@ -217,8 +225,8 @@ export function TemplateStudioMediaPanel({
             Welcome text style
           </div>
           <p className="text-[11px] text-slate-500 -mt-1.5">
-            Brand, ceremony, names &amp; BEGIN on the welcome screen — live in the preview. Leave
-            colors on Auto to keep smart contrast against your photo.
+            Brand, ceremony, names &amp; the “Tap to Begin” CTA on the welcome screen — live in the
+            preview. Leave colors on Auto to keep smart contrast against your photo.
           </p>
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
@@ -247,7 +255,9 @@ export function TemplateStudioMediaPanel({
               <Select
                 value={experience.welcomeFontScale ?? "cozy"}
                 onValueChange={(v) =>
-                  patchWelcomeTypography({ welcomeFontScale: v as "compact" | "cozy" | "spacious" })
+                  patchWelcomeTypography({
+                    welcomeFontScale: v as "compact" | "cozy" | "spacious" | "bold",
+                  })
                 }
               >
                 <SelectTrigger className="h-8 text-xs">
@@ -322,6 +332,31 @@ export function TemplateStudioMediaPanel({
               Reset colors to Auto contrast
             </Button>
           )}
+          <div className="space-y-1">
+            <Label className="text-xs">Legibility backdrop</Label>
+            <Select
+              value={experience.welcomeScrim ?? "auto"}
+              onValueChange={(v) =>
+                patchWelcomeTypography({ welcomeScrim: v as "auto" | "on" | "off" })
+              }
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {WELCOME_SCRIM_OPTIONS.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-slate-500">
+              A soft blurred plate behind the welcome text. Auto turns it on for
+              busy, patterned welcome photos (like Traditional Marriage kente
+              art) so text always stays readable.
+            </p>
+          </div>
         </div>
       </MediaSection>
 

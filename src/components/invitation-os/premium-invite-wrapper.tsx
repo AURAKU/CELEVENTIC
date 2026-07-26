@@ -417,6 +417,7 @@ export function PremiumInviteWrapper({
         fontScale={experience?.welcomeFontScale}
         textColorOverride={experience?.welcomeTextColor}
         accentColorOverride={experience?.welcomeAccentColor}
+        scrim={experience?.welcomeScrim}
       />
     );
   }

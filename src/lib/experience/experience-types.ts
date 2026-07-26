@@ -260,12 +260,19 @@ export interface EventExperienceConfig {
   thankYouScriptFontFamily?: string;
   /** Font family for the welcome / tap-to-begin gate text stack (brand, eyebrow, script, names, BEGIN). FontId from invitation theme; unset keeps each line's own template default. */
   welcomeFontFamily?: string;
-  /** Overall text scale for the welcome / tap-to-begin gate — keeps proportions, nudges size. */
-  welcomeFontScale?: "compact" | "cozy" | "spacious";
+  /** Overall text scale for the welcome / tap-to-begin gate — keeps proportions, nudges size. "bold" is the max-legibility tier for busy/patterned welcome art. */
+  welcomeFontScale?: "compact" | "cozy" | "spacious" | "bold";
   /** Manual body/ivory text color override for the welcome gate. Unset keeps smart auto-contrast against the welcome photo. */
   welcomeTextColor?: string | null;
   /** Manual gold/script accent color override for the welcome gate. Unset keeps smart auto-contrast against the welcome photo. */
   welcomeAccentColor?: string | null;
+  /**
+   * Legibility backdrop (blurred plate) behind the welcome gate copy, so busy
+   * multi-color patterned welcome photos (e.g. kente/Ankara) never swallow the
+   * text. "auto" (default, unset) turns it on for templates known to use
+   * patterned welcome art; "on"/"off" let a host override per invitation.
+   */
+  welcomeScrim?: "auto" | "on" | "off";
   /** Gallery / media display style in guest invitation */
   slideshowStyle?: SlideshowStyleId | string;
   typographyPackId?: string;
