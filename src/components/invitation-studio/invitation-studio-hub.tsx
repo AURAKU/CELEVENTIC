@@ -30,7 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getUniqueTemplatePresets } from "@/lib/invitation-templates";
+import {
+  getUniqueTemplatePresets,
+  CATALOG_DNA_EXPERIENCE_KEYS,
+  CATALOG_DNA_STUDIO_KEYS,
+} from "@/lib/invitation-templates";
 import {
   getInvitationTheme,
   WEDDING_THEME_IDS,
@@ -319,12 +323,30 @@ export const InvitationStudioHub = forwardRef<
     onChange({ ...design, ...patch });
   }
 
+  /**
+   * A control bound to catalog ceremony DNA has to claim the design as
+   * customized, otherwise `applyCatalogCreativeIdentity` reinstates the SKU
+   * default when the guest page renders and the host's edit never goes live.
+   */
   function patchStudio(patch: Partial<typeof studio>) {
-    onChange({ ...design, studio: { ...studio, ...patch } });
+    const touchesDna = CATALOG_DNA_STUDIO_KEYS.some((key) => key in patch);
+    onChange({
+      ...design,
+      studio: { ...studio, ...patch },
+      ...(touchesDna ? { experience: { ...experience, experienceCustomized: true } } : {}),
+    });
   }
 
   function patchExperience(patch: Partial<EventExperienceConfig>) {
-    onChange({ ...design, experience: { ...experience, ...patch } });
+    const touchesDna = CATALOG_DNA_EXPERIENCE_KEYS.some((key) => key in patch);
+    onChange({
+      ...design,
+      experience: {
+        ...experience,
+        ...patch,
+        ...(touchesDna ? { experienceCustomized: true } : {}),
+      },
+    });
   }
 
   /** Applies a curated font-pairing preset across role-based fonts + the thank-you section. */

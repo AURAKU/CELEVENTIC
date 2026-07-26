@@ -18,14 +18,7 @@ import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { useStudioHistory } from "@/hooks/use-studio-history";
 import { useStudioAutosave } from "@/hooks/use-studio-autosave";
 import { hasFullPackageAccess } from "@/lib/access/package-access";
-
-const UNLOCKED = new Set([
-  "PAID",
-  "IN_PRODUCTION",
-  "APPROVED",
-  "PUBLISHED",
-  "REVISION_REQUESTED",
-]);
+import { isStudioUnlocked, isLiveInvitation } from "@/lib/invitation/studio-access";
 
 export default function StudioPage() {
   const router = useRouter();
@@ -73,7 +66,7 @@ export default function StudioPage() {
       if (!d.success || cancelled) return;
       const status = d.data.status as string;
 
-      if (!UNLOCKED.has(status)) {
+      if (!isStudioUnlocked(status)) {
         if (hasFullPackageAccess(session?.user?.role)) {
           const unlock = await fetch(`/api/invitation-orders/${orderId}/checkout`, {
             method: "POST",
@@ -237,13 +230,21 @@ export default function StudioPage() {
   }
 
   const catalogSlug = (order.templateSlug as string) ?? null;
+  const isLive = isLiveInvitation({
+    status: order.status as string | null,
+    shareUrl: order.shareUrl as string | null,
+  });
 
   return (
     <MvpShell
       step={5}
       variant="workspace"
       title="Invitation Studio"
-      subtitle="Design the guest experience — live preview matches publish"
+      subtitle={
+        isLive
+          ? "This invitation is live — every saved change updates the guest link"
+          : "Design the guest experience — live preview matches publish"
+      }
     >
       <InvitationStudioHub
         ref={hubRef}

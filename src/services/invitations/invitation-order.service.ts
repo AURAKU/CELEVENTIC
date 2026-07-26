@@ -10,8 +10,14 @@ import { emailTemplateService } from "@/services/i18n/email-template.service";
 import { invitationBlockService } from "@/services/invitations/invitation-block.service";
 import { productionWorkflowService } from "@/services/invitations/production-workflow.service";
 import { productionNotificationService } from "@/services/invitations/production-notification.service";
-import type { InvitationLanguageMode } from "@prisma/client";
+import {
+  publishedInvitationSyncService,
+  type PublishedSyncScope,
+} from "@/services/invitations/published-invitation-sync.service";
+import type { InvitationLanguageMode, UserRole } from "@prisma/client";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
+import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
+import { hasFullPackageAccess } from "@/lib/access/package-access";
 import { isVideoUrl } from "@/lib/invitation/theme-media-assets";
 import type { Prisma } from "@prisma/client";
 import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
@@ -36,6 +42,37 @@ function extractIntroImageUrl(designConfig: unknown): string | null {
   ) as { url?: unknown } | undefined;
   const url = shot?.url;
   return typeof url === "string" && url.trim() ? url.trim() : null;
+}
+
+/** Order fields that change what a guest sees under "event details". */
+const DETAIL_FIELDS = [
+  "hostName",
+  "coupleName1",
+  "coupleName2",
+  "deceasedName",
+  "eventTitle",
+  "eventDate",
+  "eventTime",
+  "venueName",
+  "landmark",
+  "mapsLink",
+  "dressCode",
+  "contactPhone",
+  "contactEmail",
+  "story",
+] as const;
+
+/**
+ * Narrow a Studio save down to the live records it can actually affect.
+ * Autosave fires on a ~2s debounce, so a font tweak must not trigger a full
+ * media + block reconciliation.
+ */
+function resolveSyncScope(data: UpdateOrderDetailsInput): PublishedSyncScope | null {
+  const scope: PublishedSyncScope = {};
+  if (data.designConfig !== undefined) scope.design = true;
+  if (data.galleryUrls !== undefined) scope.media = true;
+  if (DETAIL_FIELDS.some((field) => data[field] !== undefined)) scope.details = true;
+  return Object.keys(scope).length > 0 ? scope : null;
 }
 
 export interface CreateOrderInput {
@@ -177,8 +214,13 @@ export class InvitationOrderService {
     });
   }
 
-  async updateOrder(orderId: string, userId: string, data: UpdateOrderDetailsInput) {
-    const order = await this.getOrderForUser(orderId, userId);
+  async updateOrder(
+    orderId: string,
+    userId: string,
+    data: UpdateOrderDetailsInput,
+    actorRole?: UserRole | string | null
+  ) {
+    const order = await this.getOrderForActor(orderId, userId, actorRole);
     const addonSlugs = data.addonSlugs ?? (order.addonSlugs as string[] | null) ?? [];
     const pricing = await pricingService.calculateOrderPricing(
       order.packageSlug,
@@ -265,6 +307,17 @@ export class InvitationOrderService {
       }
     }
 
+    const scope = resolveSyncScope(data);
+    if (scope) {
+      // Section blocks derive their copy from the order, so refresh the
+      // untouched ones before the snapshot is pushed to the live invitation.
+      if (scope.details || scope.media) {
+        await invitationBlockService.refreshDerivedContent(orderId, order, updated);
+        scope.blocks = true;
+      }
+      await publishedInvitationSyncService.syncQuietly(orderId, scope);
+    }
+
     return updated;
   }
 
@@ -300,6 +353,27 @@ export class InvitationOrderService {
   async getOrderForUser(orderId: string, userId: string) {
     const order = await prisma.invitationOrder.findFirst({
       where: { id: orderId, userId },
+      include: { template: true, package: true, payment: true, languageVersions: true },
+    });
+    if (!order) throw new Error("Order not found");
+    return sanitizeOrderShareUrl(order);
+  }
+
+  /**
+   * Owner-or-admin load. Platform admins support hosts directly inside Studio —
+   * including on already-published invitations — so they must be able to reach
+   * an order they do not own. Everyone else stays scoped to their own orders.
+   */
+  async getOrderForActor(
+    orderId: string,
+    actorUserId: string,
+    actorRole?: UserRole | string | null
+  ) {
+    if (!hasFullPackageAccess(actorRole)) {
+      return this.getOrderForUser(orderId, actorUserId);
+    }
+    const order = await prisma.invitationOrder.findUnique({
+      where: { id: orderId },
       include: { template: true, package: true, payment: true, languageVersions: true },
     });
     if (!order) throw new Error("Order not found");
@@ -356,27 +430,8 @@ export class InvitationOrderService {
       }
     }
 
-    const catalog = getCatalogTemplate(order.templateSlug);
-    const layoutSlug = catalog?.layoutSlug ?? "classic-gold";
-    const baseDesign = getDefaultDesignConfig(order.templateSlug);
-    const storedDesign = order.designConfig as Record<string, unknown> | null;
-    const designConfig = mergeDesignConfig(baseDesign, storedDesign as never);
-
-    // Preserve the dedicated soft-intro / BEGIN-screen welcome photo — it lives
-    // outside the swipe gallery, so the gallery-derived media list below must
-    // not silently drop it.
-    const introAsset = designConfig.media?.find((m) => m.role === "intro");
-
+    const designConfig = buildPublishedDesignConfig(order);
     const gallery = (order.galleryUrls as string[] | null) ?? [];
-    if (gallery.length > 0) {
-      designConfig.media = gallery.map((url, i) => ({
-        url,
-        type: isVideoUrl(url) ? ("video" as const) : ("image" as const),
-        role: i === 0 ? "hero" as const : "reference" as const,
-      }));
-      if (introAsset) designConfig.media.push(introAsset);
-    }
-
     const introImageUrl = extractIntroImageUrl(designConfig);
 
     const hostName =

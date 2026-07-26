@@ -36,7 +36,14 @@ function resolveDesign(invitation: {
   return mergeDesignConfig(base, templateConfig as Partial<InvitationDesignConfig> | undefined);
 }
 
-export const revalidate = 60;
+/**
+ * Published invitations stay editable in Studio, so the guest page must never
+ * serve a cached snapshot: a host who fixes a venue or swaps a photo expects
+ * the very next guest tap to show it. Rendering per request keeps that promise
+ * even if the route later stops reading `searchParams`.
+ */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 /**
  * Share-card preview defaults to the QR center logo (the mark guests see at

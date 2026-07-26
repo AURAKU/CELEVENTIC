@@ -17,6 +17,7 @@ import {
   Archive, Truck, MessageSquare, User, Package, CreditCard, ExternalLink,
 } from "lucide-react";
 import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
+import { isStudioUnlocked } from "@/lib/invitation/studio-access";
 
 interface Designer { id: string; name: string; email: string | null }
 interface AdminOrder {
@@ -214,13 +215,26 @@ export function AdminInvitationOrdersClient() {
                     )}
                     <p>Workflow: {selected.workflowType?.replace(/_/g, " ") ?? "—"} · {selected.workflowStage?.replace(/_/g, " ") ?? selected.productionStatus}</p>
                     <p>Revisions: {selected.revisionsUsed} / {selected.package.revisions}</p>
-                    {selected.shareUrl && (
-                      <Button size="sm" variant="outline" asChild>
-                        <a href={selected.shareUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-3 w-3" /> View Published
-                        </a>
-                      </Button>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {selected.shareUrl && (
+                        <Button size="sm" variant="outline" asChild>
+                          <a href={selected.shareUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3 w-3" /> View Published
+                          </a>
+                        </Button>
+                      )}
+                      {isStudioUnlocked(selected.status) && (
+                        <Button size="sm" variant="outline" asChild>
+                          <a
+                            href={`/invitations/create/${selected.id}/studio`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="h-3 w-3" /> Edit in Studio
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                   </TabsContent>
 
                   <TabsContent value="actions" className="space-y-3 mt-4">

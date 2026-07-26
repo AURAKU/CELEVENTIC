@@ -401,6 +401,25 @@ export function mergeDesignConfig(
  * unless the host marked experienceCustomized. Colors, fonts, and media stay
  * as stored — no destructive migration.
  */
+/**
+ * Experience fields that a catalog SKU owns. While a host has not customized
+ * the ceremony DNA these follow the registry, which means any Studio control
+ * bound to one of them MUST also flip `experienceCustomized` — otherwise the
+ * host's choice is silently reverted on the live guest page.
+ */
+export const CATALOG_DNA_EXPERIENCE_KEYS = [
+  "introVariant",
+  "openingExperience",
+  "sceneTransition",
+  "outroExperience",
+  "typographyPackId",
+  "slideshowStyle",
+  "countdownStyle",
+] as const;
+
+/** Same rule, for the `studio` half of the design config. */
+export const CATALOG_DNA_STUDIO_KEYS = ["buttonStyle"] as const;
+
 export function applyCatalogCreativeIdentity(
   design: InvitationDesignConfig,
   catalogSlug?: string | null
@@ -408,30 +427,23 @@ export function applyCatalogCreativeIdentity(
   if (!catalogSlug || design.experience?.experienceCustomized) return design;
   const catalogDefaults = getDefaultDesignConfig(catalogSlug);
 
-  return {
-    ...design,
-    experience: {
-      ...design.experience,
-      introVariant:
-        catalogDefaults.experience?.introVariant ?? design.experience?.introVariant,
-      openingExperience:
-        catalogDefaults.experience?.openingExperience ?? design.experience?.openingExperience,
-      sceneTransition:
-        catalogDefaults.experience?.sceneTransition ?? design.experience?.sceneTransition,
-      outroExperience:
-        catalogDefaults.experience?.outroExperience ?? design.experience?.outroExperience,
-      typographyPackId:
-        catalogDefaults.experience?.typographyPackId ?? design.experience?.typographyPackId,
-      slideshowStyle:
-        catalogDefaults.experience?.slideshowStyle ?? design.experience?.slideshowStyle,
-      countdownStyle:
-        catalogDefaults.experience?.countdownStyle ?? design.experience?.countdownStyle,
-    },
-    studio: {
-      ...design.studio,
-      buttonStyle: catalogDefaults.studio?.buttonStyle ?? design.studio?.buttonStyle,
-    },
-  };
+  const experience = { ...design.experience };
+  for (const key of CATALOG_DNA_EXPERIENCE_KEYS) {
+    const fromCatalog = catalogDefaults.experience?.[key];
+    if (fromCatalog !== undefined) {
+      (experience as Record<string, unknown>)[key] = fromCatalog;
+    }
+  }
+
+  const studio = { ...design.studio };
+  for (const key of CATALOG_DNA_STUDIO_KEYS) {
+    const fromCatalog = catalogDefaults.studio?.[key];
+    if (fromCatalog !== undefined) {
+      (studio as Record<string, unknown>)[key] = fromCatalog;
+    }
+  }
+
+  return { ...design, experience, studio };
 }
 
 export function parseCoupleNames(title: string, hostName: string) {
