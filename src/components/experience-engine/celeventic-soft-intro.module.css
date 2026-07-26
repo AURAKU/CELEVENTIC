@@ -297,6 +297,36 @@
   border: 0;
 }
 
+/* —— Honest, discoverable skip affordance (never a silent auto-skip) —— */
+.skipButton {
+  position: absolute;
+  right: max(1rem, calc(env(safe-area-inset-right, 0px) + 0.75rem));
+  bottom: max(1.1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+  z-index: 4;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(250, 248, 244, 0.22);
+  background: rgba(4, 10, 16, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: rgba(250, 248, 244, 0.75);
+  font-family: var(--font-sans, inherit);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  touch-action: manipulation;
+  cursor: pointer;
+  animation: soft-copy-in 0.4s ease both;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.skipButton:hover,
+.skipButton:focus-visible {
+  background: rgba(4, 10, 16, 0.55);
+  color: var(--soft-ivory);
+  outline: none;
+}
+
 /* —— Keyframes —— */
 @keyframes soft-ken-burns {
   from {
@@ -469,6 +499,7 @@
   .eventTitle,
   .cta,
   .ctaDot,
+  .skipButton,
   .exiting,
   .exiting .atmospherePlate,
   .exiting .stage,

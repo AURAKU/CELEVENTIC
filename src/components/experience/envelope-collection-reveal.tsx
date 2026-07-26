@@ -75,6 +75,17 @@ function resolveSealLabel(sealInitials: string | undefined, theme: EnvelopeVisua
   return theme.sealIcon ?? "✦";
 }
 
+/** Minimal ripple glyph — reads as "tap here" without a generic stock hand/cursor icon. */
+function EnvelopeTapGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <circle cx="12" cy="12" r="3.1" fill="currentColor" />
+      <circle cx="12" cy="12" r="7.4" stroke="currentColor" strokeWidth="1.3" opacity="0.55" />
+      <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="1.1" opacity="0.28" />
+    </svg>
+  );
+}
+
 /**
  * Full-viewport immersive envelope — teal→navy stage, cyan frame, gold edges,
  * navy body, mustard flap, wax seal with initials. No instructional copy:
@@ -529,13 +540,52 @@ export function EnvelopeCollectionReveal({
       </div>
       )}
 
-      {/* Full-area hit target — seal/envelope IS the control; no copy stack */}
+      {/*
+        Guided tap affordance — the envelope/seal itself IS the control, but a
+        guest who has never seen this ceremony before shouldn't have to guess
+        that it's interactive. Uses the theme's own copy ("Tap the seal to
+        open", "Press the wax seal", ...) so every envelope variant stays on
+        brand instead of one generic instruction.
+      */}
+      {!staticPreview && !shouldAutoOpen && (
+        <div
+          className="absolute inset-x-0 z-30 flex justify-center pointer-events-none px-6"
+          style={{
+            bottom: "max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 2rem))",
+            opacity: isOpening ? 0 : 1,
+            transition: "opacity 260ms ease",
+          }}
+          aria-hidden
+        >
+          <span
+            className={`inline-flex items-center gap-2 rounded-full border backdrop-blur-sm px-4 py-2 ${
+              reduceMotion ? "" : "inv-tap-hint-pulse"
+            }`}
+            style={{
+              borderColor: `color-mix(in srgb, ${theme.accent} 55%, transparent)`,
+              background: "rgba(4, 10, 16, 0.4)",
+              color: theme.accent,
+              fontFamily: "var(--font-cinzel), 'Cinzel', serif",
+              fontSize: "0.62rem",
+              fontWeight: 600,
+              letterSpacing: "0.26em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <EnvelopeTapGlyph />
+            {theme.label || "Tap to open"}
+          </span>
+        </div>
+      )}
+
+      {/* Full-area hit target — seal/envelope IS the control; the chip above just labels it */}
       {!staticPreview && !shouldAutoOpen && phase === "idle" && (
         <button
           type="button"
           onClick={beginOpen}
           className="absolute inset-0 z-40 touch-manipulation bg-transparent border-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-12px] focus-visible:outline-[#D4A63A]/85"
-          aria-label="Open invitation"
+          aria-label={theme.label ? `${theme.label} — open invitation` : "Tap to open invitation"}
         />
       )}
     </div>

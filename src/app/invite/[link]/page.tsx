@@ -98,8 +98,15 @@ export default async function InvitePage({
 }) {
   const { link } = await params;
   const { guest: guestToken } = await searchParams;
-  const appBaseUrl = await getServerAppUrl();
-  const invitation = await invitationService.getInvitationByLink(link);
+  // These two reads are independent (env/host lookup vs. DB lookup) — run them
+  // together instead of serially so the very first await in this request
+  // isn't paying for both round trips back-to-back. Every millisecond shaved
+  // here shrinks the window guests spend looking at the branded load-up
+  // (`loading.tsx`) before their invitation actually paints.
+  const [appBaseUrl, invitation] = await Promise.all([
+    getServerAppUrl(),
+    invitationService.getInvitationByLink(link),
+  ]);
 
   if (!invitation) notFound();
 
@@ -109,9 +116,38 @@ export default async function InvitePage({
   }
 
   const event = invitation.event;
-  const personalizedGuest = guestToken
-    ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
-    : null;
+
+  // Guest personalization, the order/design record, custom blocks, and the
+  // memory-vault links are all independent reads keyed off `invitation.id` /
+  // `event.id` — fetch them concurrently rather than as a serial waterfall.
+  const [personalizedGuest, order, blocks, memoryLinks] = await Promise.all([
+    guestToken
+      ? invitationService.getGuestForInvitation(invitation.id, guestToken)
+      : Promise.resolve(null),
+    prisma.invitationOrder.findFirst({
+      where: { invitationId: invitation.id },
+      include: {
+        languageVersions: true,
+        template: {
+          include: {
+            defaultMusicTrack: {
+              select: {
+                id: true,
+                title: true,
+                artist: true,
+                url: true,
+                durationSec: true,
+                isActive: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    invitationBlockService.getBlocksForInvitation(invitation.id),
+    // Always provision Album QR for published invites so guests can upload/view live.
+    ensureEventMemoryLinks(event.id),
+  ]);
 
   let qrDataUrl = "";
   let admissionQrDataUrl = "";
@@ -125,8 +161,11 @@ export default async function InvitePage({
 
   if (personalizedGuest) {
     guestQrToken = personalizedGuest.qrToken;
-    qrDataUrl = await qrService.generateBrandedVerifyQr(event.id, personalizedGuest.qrToken);
-    const admission = await qrService.getGuestAdmissionQr(personalizedGuest.id);
+    const [generatedQrDataUrl, admission] = await Promise.all([
+      qrService.generateBrandedVerifyQr(event.id, personalizedGuest.qrToken),
+      qrService.getGuestAdmissionQr(personalizedGuest.id),
+    ]);
+    qrDataUrl = generatedQrDataUrl;
     if (admission) {
       admissionQrDataUrl = admission.dataUrl;
       admissionQrToken = admission.token;
@@ -141,27 +180,6 @@ export default async function InvitePage({
   };
 
   const galleryUrls = event.media?.map((m) => m.url) ?? [];
-
-  const order = await prisma.invitationOrder.findFirst({
-    where: { invitationId: invitation.id },
-    include: {
-      languageVersions: true,
-      template: {
-        include: {
-          defaultMusicTrack: {
-            select: {
-              id: true,
-              title: true,
-              artist: true,
-              url: true,
-              durationSec: true,
-              isActive: true,
-            },
-          },
-        },
-      },
-    },
-  });
 
   const orderDesign = order?.designConfig as Partial<InvitationDesignConfig> | null;
   const catalogSlug = order?.templateSlug ?? order?.template?.slug ?? invitation.template?.slug ?? null;
@@ -209,12 +227,8 @@ export default async function InvitePage({
     {} as Partial<Record<AppLocale, { eventTitle?: string | null; story?: string | null; dressCode?: string | null; venueName?: string | null; landmark?: string | null; hostName?: string | null }>>
   );
 
-  const blocks = await invitationBlockService.getBlocksForInvitation(invitation.id);
-
   const musicAddon = order ? addonFulfillmentService.hasFeature(order, "guest_music") : false;
   const memoryVaultAddon = order ? addonFulfillmentService.hasFeature(order, "memory_vault") : false;
-  // Always provision Album QR for published invites so guests can upload/view live
-  const memoryLinks = await ensureEventMemoryLinks(event.id);
   const memoryVault = memoryVaultAddon || Boolean(memoryLinks);
   const qrCheckin = order ? addonFulfillmentService.hasFeature(order, "qr_checkin") : false;
   const seatingPlan = order ? addonFulfillmentService.hasFeature(order, "seating_plan") : false;

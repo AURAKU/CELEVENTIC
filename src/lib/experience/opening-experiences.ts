@@ -167,7 +167,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
       sealGradient: "linear-gradient(145deg, #F5E6B8 0%, #D4A63A 48%, #A8892E 100%)",
       borderColor: "rgba(212,166,58,0.7)",
       accent: "#D4A63A",
-      label: "Open invitation",
+      label: "Tap to open",
       royal: true,
     },
   },
@@ -190,7 +190,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
         "radial-gradient(circle at 32% 26%, #f8e4d6 0%, #f0cbb8 28%, #e8b49a 52%, #d9a088 78%, #c98a72 100%)",
       borderColor: "rgba(200, 140, 110, 0.5)",
       accent: "#C9A227",
-      label: "Open invitation",
+      label: "Tap to open",
     },
   },
   {

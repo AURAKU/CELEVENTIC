@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import Image from "next/image";
 import { useReducedMotion } from "framer-motion";
 import { BRAND_MOTTO } from "@/lib/constants";
-import { CELEVENTIC_LOGO_FULL, CELEVENTIC_PALETTE } from "@/lib/experience/celeventic-palette";
+import {
+  CELEVENTIC_LOGO_FULL,
+  CELEVENTIC_PALETTE,
+  INTRO_SKIP_AVAILABLE_MS,
+} from "@/lib/experience/celeventic-palette";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import {
   SOFT_INTRO_EXIT_MS,
@@ -35,6 +39,12 @@ export interface CeleventicSoftIntroProps {
   atmosphereUrl?: string | null;
   accentColor?: string;
   secondaryColor?: string;
+  /**
+   * Returning guest who has already completed the opening once — hold the
+   * branded beat briefly rather than the full first-visit duration, but
+   * never skip it entirely (guests should never feel "nothing happened").
+   */
+  quickHold?: boolean;
 }
 
 /**
@@ -48,9 +58,11 @@ export function CeleventicSoftIntro({
   atmosphereUrl,
   accentColor = CELEVENTIC_PALETTE.teal,
   secondaryColor = CELEVENTIC_PALETTE.gold,
+  quickHold = false,
 }: CeleventicSoftIntroProps) {
   const reduceMotion = useReducedMotion();
   const [exiting, setExiting] = useState(false);
+  const [canSkip, setCanSkip] = useState(false);
   const completed = useRef(false);
   const exitingRef = useRef(false);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,15 +89,23 @@ export function CeleventicSoftIntro({
   }, [finish, reduceMotion]);
 
   useEffect(() => {
-    const hold = softIntroHoldMs(Boolean(reduceMotion));
+    const hold = softIntroHoldMs(Boolean(reduceMotion), quickHold);
     const auto = setTimeout(() => beginExit(), hold);
     // Hard fallback so a stuck exit never blanks the guest forever.
     const fallback = setTimeout(finish, SOFT_INTRO_FALLBACK_MS);
+    // A visible, honest "Skip intro" affordance — never an invisible/silent
+    // auto-skip. It only ever advances this one beat forward (never past
+    // Tap to Begin or the envelope, which stay gesture-gated on purpose).
+    const skipReveal =
+      hold > INTRO_SKIP_AVAILABLE_MS
+        ? setTimeout(() => setCanSkip(true), INTRO_SKIP_AVAILABLE_MS)
+        : null;
     return () => {
       clearTimeout(auto);
       clearTimeout(fallback);
+      if (skipReveal) clearTimeout(skipReveal);
     };
-  }, [beginExit, finish, reduceMotion]);
+  }, [beginExit, finish, reduceMotion, quickHold]);
 
   useEffect(() => {
     return () => {
@@ -206,6 +226,19 @@ export function CeleventicSoftIntro({
         </div>
         <p className={styles.motto}>{BRAND_MOTTO}</p>
       </div>
+
+      {canSkip && !exiting && (
+        <button
+          type="button"
+          className={styles.skipButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            beginExit();
+          }}
+        >
+          Skip intro
+        </button>
+      )}
     </div>
   );
 }

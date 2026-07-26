@@ -1,9 +1,13 @@
 /**
  * Opening-ceremony visit memory.
  *
- * A guest should experience the full cinematic opening once. On every later
- * visit to the same link the invitation itself should be there immediately —
- * the ceremony is then only available on demand through "Replay opening".
+ * Tap to Begin and the envelope/gate reveal are never silently skipped —
+ * every visit gets the full ceremony, first time or not. What this memory
+ * changes is more modest: a guest who has already completed the ceremony
+ * once gets a shorter branded preload beat (instead of the full first-visit
+ * hold) plus a visible, opt-in "Skip intro" control on that beat, so repeat
+ * guests can move along faster themselves without the app deciding for them
+ * or ever jumping them straight into mid-invitation.
  *
  * Stored per invitation + guest so a shared device still gives each named
  * guest their own first-time reveal.

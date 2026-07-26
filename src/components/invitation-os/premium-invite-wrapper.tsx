@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuestInvitationPortal } from "@/components/guest-portal/guest-invitation-portal";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
 import { CeleventicIntroExperience } from "@/components/invitations/CeleventicIntroExperience";
@@ -42,9 +42,6 @@ import {
   openingMemoryKey,
   rememberOpeningSeen,
 } from "@/lib/experience/opening-visit-memory";
-
-/** Runs before paint on the client so a remembered guest never sees the intro flash. */
-const useBeforePaintEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * Full opening pipeline (platform → template → reveal → invite):
@@ -240,12 +237,27 @@ export function PremiumInviteWrapper({
     [props.invitation.id, props.guestId]
   );
 
-  // Returning guest: land on the invitation itself, ceremony stays on "Replay".
-  useBeforePaintEffect(() => {
-    if (!remembersVisits) return;
-    if (!hasSeenOpening(ceremonyMemoryKey)) return;
-    setPhase("portal");
-  }, [ceremonyMemoryKey, remembersVisits]);
+  /**
+   * Returning guest — someone who has already completed the full ceremony
+   * (Tap to Begin + envelope/curtain reveal) on this device before.
+   *
+   * They still get every beat of the ceremony again on this visit — Tap to
+   * Begin and the envelope/gate are never silently skipped, first visit or
+   * not. The only thing this flag changes is the branded preload: it holds
+   * briefly (`quickHold`) instead of the full first-visit duration, and
+   * surfaces an honest, visible "Skip intro" control on that beat so a
+   * repeat guest can choose to move along faster themselves, rather than
+   * the app deciding for them.
+   *
+   * This is a lazy `useState` initializer rather than an effect so it never
+   * changes what gets rendered for the very first paint (that's always
+   * `resolveInitialInvitePhase`, i.e. the soft intro) — no server/client
+   * markup mismatch, it only tunes a duration/control for a phase the guest
+   * is already looking at.
+   */
+  const [isReturningGuest, setIsReturningGuest] = useState(
+    () => remembersVisits && hasSeenOpening(ceremonyMemoryKey)
+  );
 
   useEffect(() => {
     if (!remembersVisits || phase !== "portal") return;
@@ -289,7 +301,11 @@ export function PremiumInviteWrapper({
   }, [audioManager, wantsAutoplay]);
 
   function afterSoftIntro() {
-    // Curtain path: soft-intro → reveal (closed curtain). Else: DNA intro / tap / reveal.
+    // Tap to Begin and the envelope/curtain reveal are never silently
+    // skipped — not on first visit, not on a return visit. A returning
+    // guest only ever gets a shorter preload beat (`quickHold`, wired below)
+    // plus an honest, visible "Skip intro" control on that beat; the
+    // ceremony itself always continues normally from here.
     setPhase(phaseAfterSoftIntro(pipelineFlags));
   }
 
@@ -329,6 +345,9 @@ export function PremiumInviteWrapper({
   // "Replay the opening" inside a template restarts the ceremony, not the page.
   useEffect(() => {
     return onInvitationReplay(() => {
+      // An explicit replay request always plays the full ceremony again,
+      // even for a guest who'd otherwise get the quick returning-guest path.
+      setIsReturningGuest(false);
       if (showReveal) {
         setPhase("reveal");
         return;
@@ -377,6 +396,7 @@ export function PremiumInviteWrapper({
         atmosphereUrl={softAtmosphereUrl}
         accentColor={softAccent}
         secondaryColor={softSecondary}
+        quickHold={isReturningGuest}
       />
     );
   }
