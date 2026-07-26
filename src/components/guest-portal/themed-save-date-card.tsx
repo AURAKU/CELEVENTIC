@@ -4,6 +4,7 @@ import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
 import type { CalendarStyleId } from "@/lib/invitation/calendar-style-engine";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import { cn } from "@/lib/utils";
+import { EVENT_TIME_ZONE } from "@/lib/constants";
 
 export interface ThemedSaveDateCardProps {
   event: CalendarEventInput;
@@ -17,12 +18,13 @@ export interface ThemedSaveDateCardProps {
 function useDateParts(startDateRaw: string) {
   const d = new Date(startDateRaw);
   if (Number.isNaN(d.getTime())) return null;
+  const zone = { timeZone: EVENT_TIME_ZONE } as const;
   return {
-    month: d.toLocaleString("en", { month: "short" }).toUpperCase(),
-    day: d.getDate(),
-    weekday: d.toLocaleString("en", { weekday: "long" }),
-    year: d.getFullYear(),
-    time: d.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
+    month: d.toLocaleString("en", { ...zone, month: "short" }).toUpperCase(),
+    day: Number(d.toLocaleString("en", { ...zone, day: "numeric" })),
+    weekday: d.toLocaleString("en", { ...zone, weekday: "long" }),
+    year: Number(d.toLocaleString("en", { ...zone, year: "numeric" })),
+    time: d.toLocaleTimeString("en", { ...zone, hour: "numeric", minute: "2-digit", hour12: true }),
   };
 }
 
