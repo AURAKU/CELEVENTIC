@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { GuestInvitationPortal } from "@/components/guest-portal/guest-invitation-portal";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
 import { CeleventicIntroExperience } from "@/components/invitations/CeleventicIntroExperience";
@@ -35,6 +35,16 @@ import {
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
 import { resolveSealStyle } from "@/lib/invitation/seal-design";
+import { mergeWeddingBoard, type WeddingBoardContent } from "@/lib/invitation/wedding-board";
+import { onInvitationReplay } from "@/lib/experience/replay-invitation";
+import {
+  hasSeenOpening,
+  openingMemoryKey,
+  rememberOpeningSeen,
+} from "@/lib/experience/opening-visit-memory";
+
+/** Runs before paint on the client so a remembered guest never sees the intro flash. */
+const useBeforePaintEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * Full opening pipeline (platform → template → reveal → invite):
@@ -187,11 +197,23 @@ export function PremiumInviteWrapper({
 
   const visionBoard = (enrichedDesign.studio as { visionBoard?: VisionBoardContent } | undefined)
     ?.visionBoard;
+  const isBlushGateLayout = enrichedDesign.layout === "forever-afaris-wedding";
+  const weddingBoard = useMemo(
+    () =>
+      isBlushGateLayout
+        ? mergeWeddingBoard(
+            (enrichedDesign.studio as { weddingBoard?: WeddingBoardContent } | undefined)
+              ?.weddingBoard
+          )
+        : null,
+    [enrichedDesign.studio, isBlushGateLayout]
+  );
   // Prefer ceremony wording from content once — never restate on tap-to-begin.
   const softIntroTitle =
     (visionBoard?.eyebrow && visionBoard?.scriptTitle
       ? `${visionBoard.eyebrow} ${visionBoard.scriptTitle}`
       : null) ||
+    weddingBoard?.scriptTitle?.trim() ||
     enrichedDesign.introText?.trim() ||
     props.event.title?.trim() ||
     undefined;
@@ -208,6 +230,27 @@ export function PremiumInviteWrapper({
   );
   const tracked = useRef(false);
   const audioStarted = useRef(false);
+
+  const isPreviewInvite =
+    isPreviewInvitationId(props.invitation.id) || props.invitation.uniqueLink === "preview";
+  // Hosts reviewing a preview or thumbnail must always get the full ceremony.
+  const remembersVisits = !skipAnalytics && !embedded && !isPreviewInvite;
+  const ceremonyMemoryKey = useMemo(
+    () => openingMemoryKey(props.invitation.id, props.guestId),
+    [props.invitation.id, props.guestId]
+  );
+
+  // Returning guest: land on the invitation itself, ceremony stays on "Replay".
+  useBeforePaintEffect(() => {
+    if (!remembersVisits) return;
+    if (!hasSeenOpening(ceremonyMemoryKey)) return;
+    setPhase("portal");
+  }, [ceremonyMemoryKey, remembersVisits]);
+
+  useEffect(() => {
+    if (!remembersVisits || phase !== "portal") return;
+    rememberOpeningSeen(ceremonyMemoryKey);
+  }, [ceremonyMemoryKey, phase, remembersVisits]);
 
   useEffect(() => {
     if (tracked.current || skipAnalytics) return;
@@ -282,6 +325,18 @@ export function PremiumInviteWrapper({
       void startAudio();
     }
   }, [phase, hasMusic, wantsAutoplay, startAudio]);
+
+  // "Replay the opening" inside a template restarts the ceremony, not the page.
+  useEffect(() => {
+    return onInvitationReplay(() => {
+      if (showReveal) {
+        setPhase("reveal");
+        return;
+      }
+      setPhase(resolveInitialInvitePhase(pipelineFlags));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showReveal, skipSoftIntro, skipIntro, introEnabled, needsTapGate]);
 
   const showAudioControls = Boolean(
     audioManager && hasMusic && (phase === "portal" || phase === "reveal" || phase === "tap-to-begin")
@@ -367,13 +422,27 @@ export function PremiumInviteWrapper({
   }
 
   if (phase === "reveal") {
-    const sealInitials = resolveSealInitials(visionBoard?.sealInitials, {
-      layout: enrichedDesign.layout,
-      coupleName1: visionBoard?.coupleName1,
-      coupleName2: visionBoard?.coupleName2,
-      hostName: props.event.hostName,
-    });
+    const sealInitials = resolveSealInitials(
+      visionBoard?.sealInitials ?? weddingBoard?.sealMonogram,
+      {
+        layout: enrichedDesign.layout,
+        coupleName1: visionBoard?.coupleName1 ?? weddingBoard?.coupleName1,
+        coupleName2: visionBoard?.coupleName2 ?? weddingBoard?.coupleName2,
+        hostName: props.event.hostName,
+      }
+    );
     const sealStyle = resolveSealStyle(visionBoard);
+    const openingCopy = weddingBoard
+      ? {
+          monogram: weddingBoard.sealMonogram,
+          instruction: weddingBoard.openingInstruction,
+          gateWord: weddingBoard.gateWord,
+          coupleLine: [weddingBoard.coupleName1, weddingBoard.coupleName2]
+            .filter(Boolean)
+            .map((n) => n.split(" ")[0])
+            .join(" & "),
+        }
+      : undefined;
     return (
       <>
         <InteractiveReveal
@@ -385,6 +454,7 @@ export function PremiumInviteWrapper({
           enableSounds={experience?.enableRevealSounds}
           sealInitials={sealInitials}
           sealStyle={sealStyle}
+          openingCopy={openingCopy}
           embedded={Boolean(embedded)}
           autoOpen={Boolean(autoOpenReveal)}
           onBegin={() => {

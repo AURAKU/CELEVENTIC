@@ -238,6 +238,14 @@ export const REVEAL_MECHANIC_CONTRACTS: Record<RevealMechanicId, InteractiveReve
     gestureHint: "Let the petals fall",
     keyboardLabel: "Reveal invitation",
   },
+  "blush-gate": {
+    mechanic: "blush-gate",
+    openingExperience: "blush-gate",
+    supportsKeyboardFallback: true,
+    supportsReducedMotion: true,
+    gestureHint: "Press the wax seal",
+    keyboardLabel: "Open the gate and enter",
+  },
   none: {
     mechanic: "none",
     openingExperience: "none",
@@ -288,6 +296,7 @@ const OPENING_TO_MECHANIC: Partial<Record<OpeningExperienceId, RevealMechanicId>
   "ring-box": "ring-box",
   archway: "archway",
   "petal-fall": "petal-fall",
+  "blush-gate": "blush-gate",
   none: "none",
 };
 

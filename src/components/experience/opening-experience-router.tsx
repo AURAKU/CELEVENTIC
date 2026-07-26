@@ -29,6 +29,10 @@ import { SatinBowReveal } from "@/components/invitation-os/reveal/satin-bow-reve
 import { RingBoxReveal } from "@/components/invitation-os/reveal/ring-box-reveal";
 import { ArchwayReveal } from "@/components/invitation-os/reveal/archway-reveal";
 import { PetalFallReveal } from "@/components/invitation-os/reveal/petal-fall-reveal";
+import {
+  BlushGateReveal,
+  type BlushGateOpeningCopy,
+} from "@/components/invitation-os/reveal/blush-gate-reveal";
 import { ReducedMotionGate, RevealKeyboardFallback } from "@/components/experience/reveal-accessibility";
 import { useReducedMotion } from "framer-motion";
 import { useState } from "react";
@@ -45,6 +49,8 @@ interface OpeningExperienceRouterProps {
   sealInitials?: string;
   /** Designed seal (color/material) + font/size/color overrides. */
   sealStyle?: ResolvedSealStyle;
+  /** Editable opening copy for ceremonies that render template-authored text. */
+  openingCopy?: BlushGateOpeningCopy;
   onComplete: () => void;
   /** Fires on the reveal start gesture (e.g. curtain tap / envelope open) for audio unlock. */
   onBegin?: () => void;
@@ -72,6 +78,7 @@ export function OpeningExperienceRouter({
   enableSounds,
   sealInitials,
   sealStyle,
+  openingCopy,
   onComplete,
   onBegin,
   embedded = false,
@@ -82,6 +89,8 @@ export function OpeningExperienceRouter({
   const reducedMotion = useReducedMotion();
   const isCurtain = experienceId.startsWith("curtain-");
   const isEnvelope = isEnvelopeExperience(experienceId);
+  /** Owns a reduced-motion path internally (short, dignified open). */
+  const isBlushGate = experienceId === "blush-gate";
 
   function complete() {
     setRevealed(true);
@@ -94,7 +103,7 @@ export function OpeningExperienceRouter({
 
   // Curtain + envelope ceremonies handle reduced-motion internally (short dignified open).
   // All other ceremonies collapse to a static keyboard-first gate.
-  if (reducedMotion && !isCurtain && !isEnvelope) {
+  if (reducedMotion && !isCurtain && !isEnvelope && !isBlushGate) {
     return <ReducedMotionGate eventTitle={eventTitle} guestName={guestName} onComplete={complete} />;
   }
 
@@ -133,6 +142,23 @@ export function OpeningExperienceRouter({
         hostName={hostName}
         onComplete={complete}
       />
+    );
+  }
+
+  if (experienceId === "blush-gate") {
+    return (
+      <>
+        <BlushGateReveal
+          guestName={guestName}
+          eventTitle={eventTitle}
+          hostName={hostName}
+          copy={{ ...openingCopy, monogram: openingCopy?.monogram ?? sealInitials }}
+          autoOpen={autoOpen}
+          onBegin={onBegin}
+          onComplete={complete}
+        />
+        <RevealKeyboardFallback onComplete={complete} />
+      </>
     );
   }
 

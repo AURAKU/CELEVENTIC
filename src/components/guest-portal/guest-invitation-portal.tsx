@@ -266,12 +266,19 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   }
 
   const isTraditionalMarriage = props.design.layout === "traditional-marriage-ceremony";
+  const isForeverAfaris = props.design.layout === "forever-afaris-wedding";
+  /**
+   * Templates that render their own complete guest journey. The portal keeps
+   * its system sections (pass, wishes) but must not repeat hero, details,
+   * countdown, venue, gallery, RSVP, or the closing scene.
+   */
+  const templateOwnsJourney = isTraditionalMarriage || isForeverAfaris;
 
   const cinematicMode =
     props.cinematicMode !== false &&
     props.fullScreen !== false &&
     !useBlocks &&
-    !isTraditionalMarriage;
+    !templateOwnsJourney;
 
   if (cinematicMode) {
     return (
@@ -344,7 +351,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           />
         </div>
       )}
-      {!isTraditionalMarriage &&
+      {!templateOwnsJourney &&
         !hiddenLayers.has("background") &&
         (props.backgroundVideoUrl || props.backgroundImageUrl) && (
         <div
@@ -384,7 +391,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           memoryAlbumUrl={props.memoryAlbumUrl}
           memoryUploadQrImageUrl={props.memoryUploadQrImageUrl}
           interactiveMedia
-          contactEmail={isTraditionalMarriage ? props.contactEmail : undefined}
+          galleryUrls={isForeverAfaris ? props.galleryUrls : undefined}
+          contactEmail={templateOwnsJourney ? props.contactEmail : undefined}
           hasGiftsSection={isTraditionalMarriage && hubTabs.includes("gifts")}
           hasTimelineSection={
             isTraditionalMarriage &&
@@ -393,8 +401,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           }
         />
 
-        {/* Traditional Marriage owns its own journey chrome — hide duplicate portal action rail */}
-        {!isTraditionalMarriage &&
+        {/* Journey-owning templates supply their own chrome — hide the duplicate action rail */}
+        {!templateOwnsJourney &&
           !useBlocks &&
           !hiddenLayers.has("actions") &&
           primaryActions.length > 0 && (
@@ -428,8 +436,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
-          {/* Vision-board invite already shows guest name + full card copy — skip duplicate portal chrome */}
-          {!isTraditionalMarriage && (
+          {/* Journey-owning templates already show the guest name and full card copy */}
+          {!templateOwnsJourney && (
             <PortalSection id="welcome">
               <div className="text-center space-y-2">
                 <p className="text-xs uppercase tracking-[0.3em] text-[#0B8A83]">Welcome</p>
@@ -445,7 +453,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
-          {!isTraditionalMarriage && !useBlocks && props.event.startDateRaw && (
+          {!templateOwnsJourney && !useBlocks && props.event.startDateRaw && (
             <PortalSection delay={75} id="save-date">
               <SaveDateCalendarCard
                 accentColor={accent}
@@ -462,9 +470,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
-          {!isTraditionalMarriage && hubMode === "storybook" ? (
+          {!templateOwnsJourney && hubMode === "storybook" ? (
             <StorybookJourney chapters={experience?.journeyChapters ?? STORYBOOK_JOURNEY} accentColor={accent} />
-          ) : !isTraditionalMarriage && hubMode === "journey" ? (
+          ) : !templateOwnsJourney && hubMode === "journey" ? (
             <JourneyFlow chapters={journeyChapters}>
               {(chapter) => (
                 <div className="rounded-2xl border bg-white/90 p-6 text-center">
@@ -481,7 +489,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           ) : (
             <>
-              {hubTabs.includes("countdown") && !hiddenLayers.has("countdown") && (
+              {hubTabs.includes("countdown") && !isForeverAfaris && !hiddenLayers.has("countdown") && (
               <PortalSection delay={100} id="countdown">
                 <Countdown
                   target={props.event.startDateRaw ?? props.event.startDate}
@@ -496,13 +504,13 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               </PortalSection>
               )}
 
-              {hubTabs.includes("timeline") && displaySchedule.length > 0 && (
+              {hubTabs.includes("timeline") && !isForeverAfaris && displaySchedule.length > 0 && (
               <PortalSection delay={120} id="schedule">
                 <EventScheduleSection items={displaySchedule} accentColor={accent} />
               </PortalSection>
               )}
 
-              {hubTabs.includes("story") && displayEvent.description && !isTraditionalMarriage && (
+              {hubTabs.includes("story") && displayEvent.description && !templateOwnsJourney && (
                 <PortalSection delay={150} id="story">
                   <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 shadow-sm">
                     <h2 className="font-display text-lg font-bold text-[#0F172A]">{t("invite.our_story")}</h2>
@@ -522,7 +530,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 </PortalSection>
               ))}
 
-              {!isTraditionalMarriage && (
+              {!templateOwnsJourney && (
               <PortalSection delay={200} id="details">
                 <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 space-y-4 shadow-sm">
                   <h2 className="font-display text-lg font-bold text-[#0F172A]">Event Details</h2>
@@ -539,7 +547,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               </PortalSection>
               )}
 
-              {hubTabs.includes("venue") && (props.event.mapsLink || displayEvent.venueName) && (
+              {hubTabs.includes("venue") && !isForeverAfaris && (props.event.mapsLink || displayEvent.venueName) && (
                 <PortalSection delay={210} id="venue-map">
                   <VenueMapEmbed
                     mapsLink={props.event.mapsLink}
@@ -566,7 +574,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 </PortalSection>
               )}
 
-              {hubTabs.includes("gallery") && props.galleryUrls && props.galleryUrls.length > 0 && (
+              {hubTabs.includes("gallery") && !isForeverAfaris && props.galleryUrls && props.galleryUrls.length > 0 && (
                 <PortalSection delay={250} id={isTraditionalMarriage ? undefined : "gallery"}>
                   {isTraditionalMarriage ? (
                     <TraditionalMarriageGallerySection
@@ -601,7 +609,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </>
           )}
 
-          {showRsvp && !useBlocks && !isTraditionalMarriage && (
+          {showRsvp && !useBlocks && !templateOwnsJourney && (
             <PortalSection delay={300} id="rsvp">
               <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 shadow-sm">
                 <h2 className="font-display text-lg font-bold text-[#0F172A] mb-4">{t("rsvp.title")}</h2>
@@ -617,7 +625,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
           {/* TM: reach-hosts lives in Kindly Respond; block CONTACT_HOST is suppressed for TM */}
           {(props.event.contactPhone || props.contactEmail) &&
-            !isTraditionalMarriage &&
+            !templateOwnsJourney &&
             !(useBlocks && blocksHaveContact) && (
             <PortalSection delay={350} id="contact">
               <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 text-center shadow-sm">
@@ -730,7 +738,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           </PortalSection>
           )}
 
-          {(hubTabs.includes("memory") || props.memoryUploadUrl || props.memoryVaultEnabled) && (
+          {!isForeverAfaris &&
+            (hubTabs.includes("memory") || props.memoryUploadUrl || props.memoryVaultEnabled) && (
           <PortalSection delay={430} id="memory">
             <InvitationMemoryAlbumCard
               eventTitle={props.memoryAlbumTitle?.trim() || displayEvent.title}
@@ -756,8 +765,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
-          {/* TM + block thank-you: single editorial close. Skip generic portal slab when blocks already closed. */}
-          {!(isTraditionalMarriage && blocksHaveThankYou) && (
+          {/* Journey-owning templates close themselves — never stack a second thank-you slab. */}
+          {!isForeverAfaris && !(isTraditionalMarriage && blocksHaveThankYou) && (
           <PortalSection delay={440} id="thank-you">
             {isTraditionalMarriage ? (
               <TraditionalMarriageThankYou
@@ -779,7 +788,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
         </div>
 
-        {!isTraditionalMarriage &&
+        {!templateOwnsJourney &&
           !props.embedded &&
           props.event.startDateRaw &&
           hubTabs.includes("countdown") &&

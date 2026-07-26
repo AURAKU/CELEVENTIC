@@ -28,6 +28,12 @@ import {
   shouldSuppressGuestSideEffect,
 } from "../preview-mode";
 import {
+  openingMemoryKey,
+  hasSeenOpening,
+  rememberOpeningSeen,
+  forgetOpeningSeen,
+} from "@/lib/experience/opening-visit-memory";
+import {
   shouldShowSoftIntro,
   resolveInitialInvitePhase,
   phaseAfterSoftIntro,
@@ -366,5 +372,50 @@ describe("soft-intro gate", () => {
     };
     assert.equal(resolveInitialInvitePhase(flags), "soft-intro");
     assert.equal(phaseAfterSoftIntro(flags), "reveal");
+  });
+});
+
+describe("opening visit memory", () => {
+  function withStorage<T>(run: () => T): T {
+    const store = new Map<string, string>();
+    const globalRef = globalThis as { window?: unknown };
+    const previous = globalRef.window;
+    globalRef.window = {
+      localStorage: {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+        removeItem: (k: string) => void store.delete(k),
+      },
+    };
+    try {
+      return run();
+    } finally {
+      if (previous === undefined) delete globalRef.window;
+      else globalRef.window = previous;
+    }
+  }
+
+  it("scopes the key per invitation and guest", () => {
+    assert.notEqual(openingMemoryKey("inv_1", "g_1"), openingMemoryKey("inv_1", "g_2"));
+    assert.notEqual(openingMemoryKey("inv_1", "g_1"), openingMemoryKey("inv_2", "g_1"));
+    assert.equal(openingMemoryKey("inv_1", null), openingMemoryKey("inv_1", undefined));
+  });
+
+  it("remembers a seen opening and can forget it for replay", () => {
+    withStorage(() => {
+      const key = openingMemoryKey("inv_1", "g_1");
+      assert.equal(hasSeenOpening(key), false);
+      rememberOpeningSeen(key);
+      assert.equal(hasSeenOpening(key), true);
+      // A different guest on the same device still gets their first reveal.
+      assert.equal(hasSeenOpening(openingMemoryKey("inv_1", "g_2")), false);
+      forgetOpeningSeen(key);
+      assert.equal(hasSeenOpening(key), false);
+    });
+  });
+
+  it("treats unavailable storage as never seen instead of throwing", () => {
+    assert.equal(hasSeenOpening(openingMemoryKey("inv_1", "g_1")), false);
+    assert.doesNotThrow(() => rememberOpeningSeen(openingMemoryKey("inv_1", "g_1")));
   });
 });

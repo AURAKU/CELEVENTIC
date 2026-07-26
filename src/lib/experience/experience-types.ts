@@ -39,6 +39,7 @@ export type OpeningExperienceId =
   | "ring-box"
   | "archway"
   | "petal-fall"
+  | "blush-gate"
   | "none";
 
 export type OutroExperienceId =
@@ -183,7 +184,8 @@ export type IntroVariantId =
   | "vine-grow"
   | "chapel-glow"
   | "folio-open"
-  | "foil-rise";
+  | "foil-rise"
+  | "swan-glide";
 
 export interface JourneyChapter {
   id: string;

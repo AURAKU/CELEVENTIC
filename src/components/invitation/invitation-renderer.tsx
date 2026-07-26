@@ -11,6 +11,7 @@ import { PassportLuxeTemplate } from "./templates/passport-luxe";
 import { GlassAcrylicTemplate } from "./templates/glass-acrylic";
 import { FloralGardenTemplate } from "./templates/floral-garden";
 import { TraditionalMarriageCeremonyTemplate } from "./templates/traditional-marriage-ceremony";
+import { ForeverAfarisWeddingTemplate } from "./templates/forever-afaris-wedding";
 import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
 import { InvitationMediaProvider } from "./invitation-media-context";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
@@ -23,6 +24,8 @@ export type InvitationRendererProps = InvitationRenderProps & {
   /** Portal section presence — quiet journey links (traditional marriage) */
   hasGiftsSection?: boolean;
   hasTimelineSection?: boolean;
+  /** Guest-facing gallery URLs for templates that render their own gallery */
+  galleryUrls?: string[];
 };
 
 export function InvitationRenderer({ interactiveMedia = false, ...props }: InvitationRendererProps) {
@@ -32,6 +35,8 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
     switch (props.design.layout) {
       case "traditional-marriage-ceremony":
         return <TraditionalMarriageCeremonyTemplate {...props} />;
+      case "forever-afaris-wedding":
+        return <ForeverAfarisWeddingTemplate {...props} />;
       case "passport-luxe":
         return <PassportLuxeTemplate {...props} />;
       case "glass-acrylic":

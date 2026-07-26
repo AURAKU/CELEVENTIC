@@ -84,6 +84,7 @@ import {
 } from "@/lib/experience/experience-engine-v2";
 import { TemplateStudioMediaPanel } from "@/components/invitation-studio/template-studio-media-panel";
 import { MusicPreferenceEditor } from "@/components/music/music-preference-editor";
+import { WeddingBoardStudioPanel } from "@/components/invitation-studio/wedding-board-studio-panel";
 import { VisionBoardStudioPanel } from "@/components/invitation-studio/vision-board-studio-panel";
 import type { MusicSelection } from "@/lib/music/music-types";
 import {
@@ -1699,6 +1700,12 @@ export const InvitationStudioHub = forwardRef<
                   <VisionBoardStudioPanel
                     value={studio.visionBoard}
                     onChange={(visionBoard) => patchStudio({ visionBoard })}
+                  />
+                )}
+                {design.layout === "forever-afaris-wedding" && (
+                  <WeddingBoardStudioPanel
+                    value={studio.weddingBoard}
+                    onChange={(weddingBoard) => patchStudio({ weddingBoard })}
                   />
                 )}
               </PropSection>

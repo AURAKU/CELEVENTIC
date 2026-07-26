@@ -6,6 +6,7 @@ import { OpeningExperienceRouter } from "@/components/experience/opening-experie
 import { getRevealContractForOpening } from "@/lib/experience-engine/interactive-reveal-contract";
 import { lockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import type { ResolvedSealStyle } from "@/lib/invitation/seal-design";
+import type { BlushGateOpeningCopy } from "@/components/invitation-os/reveal/blush-gate-reveal";
 
 interface InteractiveRevealProps {
   openingExperience: OpeningExperienceId;
@@ -18,6 +19,8 @@ interface InteractiveRevealProps {
   sealInitials?: string;
   /** Designed seal (color/material) + font/size/color overrides. */
   sealStyle?: ResolvedSealStyle;
+  /** Editable opening copy for template-authored ceremonies (e.g. Blush Gate). */
+  openingCopy?: BlushGateOpeningCopy;
   onComplete: () => void;
   /** User gesture that starts the reveal (audio unlock). */
   onBegin?: () => void;
@@ -42,6 +45,7 @@ export function InteractiveReveal({
   enableSounds = true,
   sealInitials,
   sealStyle,
+  openingCopy,
   onComplete,
   onBegin,
   embedded = false,
@@ -76,6 +80,7 @@ export function InteractiveReveal({
         enableSounds={enableSounds}
         sealInitials={sealInitials}
         sealStyle={sealStyle}
+        openingCopy={openingCopy}
         onComplete={onComplete}
         onBegin={onBegin}
         embedded={embedded}

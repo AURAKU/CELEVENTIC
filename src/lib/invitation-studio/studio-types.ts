@@ -29,6 +29,7 @@ export type ButtonStyle =
 export type ButtonPosition = "bottom" | "center" | "floating";
 
 import type { VisionBoardContent } from "@/lib/invitation/vision-board";
+import type { WeddingBoardContent } from "@/lib/invitation/wedding-board";
 
 export interface InvitationStudioConfig {
   revealMode?: RevealMode;
@@ -43,6 +44,8 @@ export interface InvitationStudioConfig {
   secondaryLabel?: string;
   /** Traditional Marriage / vision-board editable copy + feature toggles */
   visionBoard?: VisionBoardContent;
+  /** Forever Afaris luxury wedding — editable copy, programme, RSVP + toggles */
+  weddingBoard?: WeddingBoardContent;
 }
 
 export const REVEAL_MODE_OPTIONS: { id: RevealMode; label: string; description: string }[] = [
