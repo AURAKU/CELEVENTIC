@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { invitationOrderService } from "@/services/invitations/invitation-order.service";
 import { invitationBlockService } from "@/services/invitations/invitation-block.service";
+import { publishedInvitationSyncService } from "@/services/invitations/published-invitation-sync.service";
 
 export async function GET(
   _req: Request,
@@ -15,10 +16,10 @@ export async function GET(
 
   const { id } = await params;
   try {
-    await invitationOrderService.getOrderForUser(id, session.user.id);
+    await invitationOrderService.getOrderForActor(id, session.user.id, session.user.role);
     await invitationBlockService.ensureBlocksForOrder(id);
     const blocks = await invitationBlockService.getBlocksForOrder(id);
-    const order = await invitationOrderService.getOrderForUser(id, session.user.id);
+    const order = await invitationOrderService.getOrderForActor(id, session.user.id, session.user.role);
     const available = await invitationBlockService.getAvailableBlockTypes(order.eventType);
     return NextResponse.json({ success: true, data: { blocks, available } });
   } catch (error) {
@@ -47,9 +48,10 @@ export async function POST(
 
   const { id } = await params;
   try {
-    await invitationOrderService.getOrderForUser(id, session.user.id);
+    await invitationOrderService.getOrderForActor(id, session.user.id, session.user.role);
     const body = createSchema.parse(await req.json());
     const block = await invitationBlockService.createBlock(id, body);
+    await publishedInvitationSyncService.syncQuietly(id, { blocks: true });
     return NextResponse.json({ success: true, data: block }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

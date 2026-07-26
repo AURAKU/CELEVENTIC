@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { invitationOrderService } from "@/services/invitations/invitation-order.service";
 import { invitationBlockService } from "@/services/invitations/invitation-block.service";
+import { publishedInvitationSyncService } from "@/services/invitations/published-invitation-sync.service";
 
 const schema = z.object({ blockIds: z.array(z.string()) });
 
@@ -17,9 +18,10 @@ export async function POST(
 
   const { id } = await params;
   try {
-    await invitationOrderService.getOrderForUser(id, session.user.id);
+    await invitationOrderService.getOrderForActor(id, session.user.id, session.user.role);
     const { blockIds } = schema.parse(await req.json());
     const blocks = await invitationBlockService.reorderBlocks(id, blockIds);
+    await publishedInvitationSyncService.syncQuietly(id, { blocks: true });
     return NextResponse.json({ success: true, data: blocks });
   } catch {
     return NextResponse.json({ error: "Reorder failed" }, { status: 400 });

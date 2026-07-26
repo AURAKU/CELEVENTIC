@@ -57,7 +57,11 @@ export async function GET(
 
   const { id } = await params;
   try {
-    const order = await invitationOrderService.getOrderForUser(id, session.user.id);
+    const order = await invitationOrderService.getOrderForActor(
+      id,
+      session.user.id,
+      session.user.role
+    );
     return NextResponse.json({ success: true, data: order });
   } catch {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -98,7 +102,12 @@ export async function PATCH(
       return NextResponse.json({ success: true, data: order });
     }
 
-    const order = await invitationOrderService.updateOrder(id, session.user.id, data);
+    const order = await invitationOrderService.updateOrder(
+      id,
+      session.user.id,
+      data,
+      session.user.role
+    );
     return NextResponse.json({ success: true, data: order });
   } catch (error) {
     if (error instanceof z.ZodError) {

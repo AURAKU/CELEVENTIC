@@ -22,7 +22,7 @@ export async function POST(
   const { id } = await params;
 
   try {
-    let order = await invitationOrderService.getOrderForUser(id, session.user.id);
+    let order = await invitationOrderService.getOrderForActor(id, session.user.id, session.user.role);
 
     if (!order.eventTitle || !order.eventDate) {
       return NextResponse.json({ error: "Complete event details before publishing" }, { status: 400 });
@@ -48,7 +48,7 @@ export async function POST(
         data: { status: "PAID", workflowStage: "PAYMENT_SUCCESSFUL", totalAmountGhs: 0 },
       });
       await addonFulfillmentService.fulfillOrderAddons(order.id);
-      order = await invitationOrderService.getOrderForUser(id, session.user.id);
+      order = await invitationOrderService.getOrderForActor(id, session.user.id, session.user.role);
     }
 
     if (order.shareUrl && order.invitationId) {

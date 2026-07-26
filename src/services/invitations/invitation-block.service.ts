@@ -77,6 +77,29 @@ function mapBlock(row: {
   };
 }
 
+function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** Order fields that block copy is generated from. */
+export interface BlockContentSource {
+  eventTitle?: string | null;
+  hostName?: string | null;
+  coupleName1?: string | null;
+  coupleName2?: string | null;
+  deceasedName?: string | null;
+  eventDate?: Date | null;
+  eventTime?: string | null;
+  venueName?: string | null;
+  landmark?: string | null;
+  mapsLink?: string | null;
+  dressCode?: string | null;
+  story?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  galleryUrls?: unknown;
+}
+
 const blockInclude = {
   contents: true,
   media: { orderBy: { sortOrder: "asc" as const } },
@@ -107,23 +130,7 @@ export class InvitationBlockService {
 
   private buildContentFromOrder(
     blockType: string,
-    order: {
-      eventTitle?: string | null;
-      hostName?: string | null;
-      coupleName1?: string | null;
-      coupleName2?: string | null;
-      deceasedName?: string | null;
-      eventDate?: Date | null;
-      eventTime?: string | null;
-      venueName?: string | null;
-      landmark?: string | null;
-      mapsLink?: string | null;
-      dressCode?: string | null;
-      story?: string | null;
-      contactPhone?: string | null;
-      contactEmail?: string | null;
-      galleryUrls?: unknown;
-    }
+    order: BlockContentSource
   ): BlockContentJson {
     const gallery = (order.galleryUrls as string[] | null) ?? [];
     const dateIso = order.eventDate?.toISOString();
@@ -226,6 +233,58 @@ export class InvitationBlockService {
     }
 
     return blocks;
+  }
+
+  /**
+   * Re-derive block copy after the host edits event details.
+   *
+   * Blocks are seeded from the order once, then become hand-editable. A block
+   * is only refreshed while its stored content still matches exactly what the
+   * *previous* order state would have generated — the moment a host writes
+   * their own copy, that block stops following the order.
+   */
+  async refreshDerivedContent(
+    orderId: string,
+    previous: BlockContentSource,
+    next: BlockContentSource
+  ) {
+    const blocks = await prisma.invitationBlock.findMany({
+      where: { invitationOrderId: orderId },
+      include: { galleryItems: { orderBy: { sortOrder: "asc" } } },
+    });
+    if (blocks.length === 0) return;
+
+    const previousGallery = (previous.galleryUrls as string[] | null) ?? [];
+    const nextGallery = (next.galleryUrls as string[] | null) ?? [];
+    const galleryChanged = !sameJson(previousGallery, nextGallery);
+
+    for (const block of blocks) {
+      const before = this.buildContentFromOrder(block.blockType, previous);
+      const after = this.buildContentFromOrder(block.blockType, next);
+
+      if (!sameJson(before, after) && sameJson(block.contentJson ?? {}, before)) {
+        await prisma.invitationBlock.update({
+          where: { id: block.id },
+          data: { contentJson: after as object },
+        });
+      }
+
+      const isGalleryBlock =
+        block.blockType === "GALLERY" || block.blockType === "MEMORIAL_GALLERY";
+      if (!isGalleryBlock || !galleryChanged) continue;
+
+      // Same rule for gallery items: only follow the order while the block
+      // still mirrors the previous upload list.
+      const currentUrls = block.galleryItems.map((g) => g.url);
+      if (!sameJson(currentUrls, previousGallery)) continue;
+
+      await prisma.invitationGalleryItem.deleteMany({ where: { blockId: block.id } });
+      if (nextGallery.length > 0) {
+        await prisma.invitationGalleryItem.createMany({
+          data: nextGallery.map((url, i) => ({ blockId: block.id, url, sortOrder: i })),
+        });
+      }
+    }
   }
 
   async getBlocksForOrder(orderId: string) {

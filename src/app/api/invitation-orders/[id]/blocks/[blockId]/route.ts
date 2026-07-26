@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { invitationOrderService } from "@/services/invitations/invitation-order.service";
 import { invitationBlockService } from "@/services/invitations/invitation-block.service";
+import { publishedInvitationSyncService } from "@/services/invitations/published-invitation-sync.service";
 
 const patchSchema = z.object({
   title: z.string().optional(),
@@ -29,9 +30,10 @@ export async function PATCH(
 
   const { id, blockId } = await params;
   try {
-    await invitationOrderService.getOrderForUser(id, session.user.id);
+    await invitationOrderService.getOrderForActor(id, session.user.id, session.user.role);
     const body = patchSchema.parse(await req.json());
     const block = await invitationBlockService.updateBlock(blockId, id, body);
+    await publishedInvitationSyncService.syncQuietly(id, { blocks: true });
     return NextResponse.json({ success: true, data: block });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -52,8 +54,9 @@ export async function DELETE(
 
   const { id, blockId } = await params;
   try {
-    await invitationOrderService.getOrderForUser(id, session.user.id);
+    await invitationOrderService.getOrderForActor(id, session.user.id, session.user.role);
     await invitationBlockService.deleteBlock(blockId, id);
+    await publishedInvitationSyncService.syncQuietly(id, { blocks: true });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Delete failed" }, { status: 500 });

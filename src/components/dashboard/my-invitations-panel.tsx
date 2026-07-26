@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaginationBar } from "@/components/ui/pagination";
 import { formatCurrency } from "@/lib/utils";
 import { usePagination } from "@/hooks/use-pagination";
+import { isStudioUnlocked, isLiveInvitation } from "@/lib/invitation/studio-access";
 
 interface OrderRow {
   id: string;
@@ -118,12 +119,30 @@ export function MyInvitationsPanel() {
                     <Button size="sm" variant="outline" asChild>
                       <Link href={`/dashboard/my-invitations/${order.id}`}>Production Tracker</Link>
                     </Button>
-                    {order.status === "DRAFT" && (
-                      <Button size="sm" asChild>
-                        <Link href={`/invitations/create/${order.id}/details`}>Continue Editing</Link>
-                      </Button>
+                    {isStudioUnlocked(order.status) ? (
+                      <>
+                        <Button size="sm" asChild>
+                          <Link href={`/invitations/create/${order.id}/studio`}>
+                            {isLiveInvitation(order) ? "Edit Live Invitation" : "Open Studio"}
+                          </Link>
+                        </Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/invitations/create/${order.id}/details`}>Edit Details</Link>
+                        </Button>
+                      </>
+                    ) : (
+                      order.status === "DRAFT" && (
+                        <Button size="sm" asChild>
+                          <Link href={`/invitations/create/${order.id}/details`}>Continue Editing</Link>
+                        </Button>
+                      )
                     )}
                   </div>
+                  {isLiveInvitation(order) && (
+                    <p className="text-xs text-slate-500">
+                      Published — saved changes appear on the guest link right away.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}
