@@ -28,10 +28,15 @@ export const QR_DEFAULT_LOGO_SIZE: QrLogoSizePreset = "balanced";
 export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
 
 /**
- * Bump when compositing geometry / center-resolution changes so disk-cached
- * PNGs regenerate (contain fit + Celeventic default, not cover-photo fallback).
+ * Bump when compositing geometry / center-resolution changes, OR when the
+ * *encoded* verify URL logic changes, so disk-cached PNGs regenerate (the
+ * cache key doesn't include the encoded URL — see `qr-cache.ts` — only the
+ * token/size/center/logoSize, so a stale PNG baked from an old resolved app
+ * URL would otherwise keep being served forever). Bumped for the localhost
+ * URL-leak fix so any already-published invitation's cached admission/verify
+ * QR gets regenerated against the current live domain on next request.
  */
-export const QR_COMPOSITE_CACHE_VERSION = "v3-contain-brand-default";
+export const QR_COMPOSITE_CACHE_VERSION = "v4-no-localhost-verify-url";
 
 /** Default Celeventic QR center mark (public asset; contain-fitted in generator) */
 export const CELEVENTIC_OFFICIAL_LOGO = "/brand/logo-full.png";
