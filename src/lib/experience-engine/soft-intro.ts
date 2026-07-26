@@ -12,6 +12,15 @@ export const SOFT_INTRO_REDUCED_MOTION_MS = 800;
 export const SOFT_INTRO_EXIT_MS = 560;
 export const SOFT_INTRO_FALLBACK_MS = 5200;
 
+/**
+ * Returning guest short hold — a guest who has already completed the full
+ * ceremony once still gets a real, visible branded beat (never an instant
+ * jump straight into mid-invitation), just shorter than the first-visit hold
+ * since they don't need the full cinematic sell again.
+ */
+export const SOFT_INTRO_RETURN_HOLD_MS = 900;
+export const SOFT_INTRO_RETURN_REDUCED_MOTION_MS = 400;
+
 /** Optional shared begin label — tap gate owns the visible CTA. Soft intro is silent skip. */
 export const SOFT_INTRO_CTA = "Begin";
 
@@ -66,8 +75,15 @@ export function phaseAfterSoftIntro(input: SoftIntroGateInput): InvitePipelinePh
   return "portal";
 }
 
-/** Hold duration before auto-advance; reduced-motion gets a short static brand hold. */
-export function softIntroHoldMs(reducedMotion: boolean): number {
+/**
+ * Hold duration before auto-advance; reduced-motion gets a short static brand
+ * hold. `quick` shortens the hold further for a returning guest who has
+ * already completed the opening once — still a real, visible beat, just brief.
+ */
+export function softIntroHoldMs(reducedMotion: boolean, quick = false): number {
+  if (quick) {
+    return reducedMotion ? SOFT_INTRO_RETURN_REDUCED_MOTION_MS : SOFT_INTRO_RETURN_HOLD_MS;
+  }
   return reducedMotion ? SOFT_INTRO_REDUCED_MOTION_MS : SOFT_INTRO_DURATION_MS;
 }
 

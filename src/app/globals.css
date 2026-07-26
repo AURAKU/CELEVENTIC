@@ -976,6 +976,16 @@
   animation: inv-seal-pulse-peach 2.8s ease-in-out infinite;
 }
 
+/** Guided "tap here" chip on envelope/seal openings — gentle breathing, never a hard blink. */
+@keyframes inv-tap-hint-pulse {
+  0%, 100% { opacity: 0.82; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}
+
+.inv-tap-hint-pulse {
+  animation: inv-tap-hint-pulse 2.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .inv-envelope-glow {
     animation: none;
@@ -983,7 +993,8 @@
 
   .inv-envelope-breathe,
   .inv-seal-pulse,
-  .inv-seal-pulse-peach {
+  .inv-seal-pulse-peach,
+  .inv-tap-hint-pulse {
     animation: none !important;
   }
 }
