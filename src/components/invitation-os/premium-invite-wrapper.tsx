@@ -458,6 +458,18 @@ export function PremiumInviteWrapper({
           monogram: weddingBoard.sealMonogram,
           instruction: weddingBoard.openingInstruction,
           gateWord: weddingBoard.gateWord,
+          addressLine: weddingBoard.envelopeAddressLine,
+          envelopeStyle: weddingBoard.envelopeStyle,
+          gateStyle: weddingBoard.gateStyle,
+          sealColor: weddingBoard.sealColor,
+          sealMotif: weddingBoard.sealMotif,
+          haptics: weddingBoard.haptics,
+          palette: {
+            accentColor: weddingBoard.accentColor,
+            blushColor: weddingBoard.blushColor,
+            inkColor: weddingBoard.inkColor,
+            canvasColor: weddingBoard.canvasColor,
+          },
           coupleLine: [weddingBoard.coupleName1, weddingBoard.coupleName2]
             .filter(Boolean)
             .map((n) => n.split(" ")[0])
@@ -478,6 +490,7 @@ export function PremiumInviteWrapper({
           openingCopy={openingCopy}
           embedded={Boolean(embedded)}
           autoOpen={Boolean(autoOpenReveal)}
+          allowSkip={isReturningGuest}
           onBegin={() => {
             void startAudio();
           }}

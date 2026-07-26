@@ -505,6 +505,8 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       "Gallery",
       "Dress Code",
       "Guest Welcome",
+      "Memory",
+      "Music",
     ],
     tier: "luxury",
     tags: ["Luxury", "Romantic", "Floral", "Cinematic", "European"],
@@ -519,7 +521,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       visualLanguage:
         "embossed blush peony paper, champagne foil, ornamental golden gate, botanical line art, editorial serif and script pairing",
       revealMechanic:
-        "press the champagne wax seal — flaps unfold, the inner card rises, the golden gate parts",
+        "tap or swipe the champagne wax seal — the wax breaks, the flaps unfold in depth, the inner card rises, and an ornate golden gate is built and parted from the centre",
       audioMood: "romantic strings and violin",
       outroType: "gate closes over a gratitude scene",
     },

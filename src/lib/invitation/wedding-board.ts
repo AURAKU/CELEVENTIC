@@ -1,6 +1,6 @@
 /**
- * Editable copy + feature toggles for the "Forever Afaris" luxury wedding
- * template (layout `forever-afaris-wedding`).
+ * Editable copy, design choices and feature toggles for the "Forever Afaris"
+ * luxury wedding template (layout `forever-afaris-wedding`).
  *
  * Mirrors the Traditional Marriage vision-board pattern
  * (see src/lib/invitation/vision-board.ts): a single serialisable config object
@@ -13,8 +13,12 @@
 export interface WeddingBoardFeatureFlags {
   /** Personalised "Invited guest" greeting from the guest link */
   guestWelcome?: boolean;
+  /** Hero portrait framed in a lace/botanical arch (uses the hero upload) */
+  heroPortrait?: boolean;
   /** Live countdown to the ceremony */
   countdown?: boolean;
+  /** Full personalised greeting scene addressed to the named guest */
+  greeting?: boolean;
   /** Programme / order-of-day timeline */
   programme?: boolean;
   /** Venue block + Google Maps CTA */
@@ -27,6 +31,8 @@ export interface WeddingBoardFeatureFlags {
   story?: boolean;
   /** Optional gallery strip (uses design.media hero/gallery assets) */
   gallery?: boolean;
+  /** Scratch-to-reveal keepsake message */
+  scratch?: boolean;
   /** Kindly Respond (RSVP) section */
   rsvp?: boolean;
   /** Closing / appreciation scene */
@@ -50,6 +56,69 @@ export interface WeddingBoardProgrammeItem {
   description?: string;
 }
 
+/** Envelope paper treatment shown in the opening ceremony. */
+export type WeddingEnvelopeStyle =
+  | "blush-floral"
+  | "ivory-lace"
+  | "champagne-botanical"
+  | "rose-watercolour";
+
+/** Gate architecture rebuilt in SVG for the reveal. */
+export type WeddingGateStyle = "golden-baroque" | "ivory-arch" | "botanical-trellis";
+
+/** Wax colour poured for the seal. */
+export type WeddingSealColor =
+  | "champagne"
+  | "rose-gold"
+  | "blush"
+  | "ivory"
+  | "emerald"
+  | "burgundy";
+
+/** Relief pressed into the wax. */
+export type WeddingSealMotif = "monogram" | "swan" | "rose" | "laurel";
+
+/**
+ * Every scene the invitation body can render, in the order the ceremony was
+ * designed to flow. Hosts may reorder or hide any of them.
+ */
+export type WeddingSectionId =
+  | "hero"
+  | "family"
+  | "details"
+  | "countdown"
+  | "greeting"
+  | "programme"
+  | "venue"
+  | "dressCode"
+  | "guestPolicy"
+  | "rsvp"
+  | "story"
+  | "gallery"
+  | "scratch"
+  | "memory"
+  | "closing";
+
+export const WEDDING_SECTION_ORDER: WeddingSectionId[] = [
+  "hero",
+  "family",
+  "details",
+  "countdown",
+  "greeting",
+  "programme",
+  "venue",
+  "dressCode",
+  "guestPolicy",
+  "rsvp",
+  "story",
+  "gallery",
+  "scratch",
+  "memory",
+  "closing",
+];
+
+const SECTION_ID_SET = new Set<string>(WEDDING_SECTION_ORDER);
+
 export interface WeddingBoardContent {
   // — Opening ceremony —
   /** Hint shown under the wax seal ("Tap to open") */
@@ -58,6 +127,28 @@ export interface WeddingBoardContent {
   sealMonogram?: string;
   /** Word revealed as the gate opens (e.g. "Forever") */
   gateWord?: string;
+  /** Line addressed on the envelope face, above the seal */
+  envelopeAddressLine?: string;
+  /** Paper treatment of the envelope */
+  envelopeStyle?: WeddingEnvelopeStyle;
+  /** Architecture of the gate that parts into the invitation */
+  gateStyle?: WeddingGateStyle;
+  /** Wax colour of the seal */
+  sealColor?: WeddingSealColor;
+  /** Relief pressed into the wax */
+  sealMotif?: WeddingSealMotif;
+  /** Fire a short vibration on the seal break (supported devices only) */
+  haptics?: boolean;
+
+  // — Palette (blank = template default) —
+  /** Champagne accent — seals, rules, gate filigree */
+  accentColor?: string;
+  /** Blush wash behind the envelope and section fills */
+  blushColor?: string;
+  /** Deep ink for headings */
+  inkColor?: string;
+  /** Page canvas / ivory */
+  canvasColor?: string;
 
   // — Hero announcement —
   eyebrow?: string;
@@ -69,6 +160,8 @@ export interface WeddingBoardContent {
   coupleName2?: string;
   invitationCopy?: string;
   hashtag?: string;
+  /** Caption printed under the hero portrait */
+  heroCaption?: string;
 
   // — Event details —
   displayDate?: string;
@@ -86,6 +179,12 @@ export interface WeddingBoardContent {
   /** ISO date-time the countdown targets; falls back to the event start date */
   countdownTarget?: string;
   countdownExpiredMessage?: string;
+
+  // — Personalised greeting —
+  greetingHeading?: string;
+  greetingBody?: string;
+  /** Used when a guest opens a link with no name attached */
+  greetingFallbackName?: string;
 
   // — Programme —
   programmeHeading?: string;
@@ -107,6 +206,11 @@ export interface WeddingBoardContent {
   // — Optional gallery —
   galleryHeading?: string;
 
+  // — Scratch to reveal —
+  scratchHeading?: string;
+  scratchPrompt?: string;
+  scratchMessage?: string;
+
   // — RSVP —
   rsvpHeading?: string;
   rsvpContacts?: WeddingBoardRsvpContact[];
@@ -115,12 +219,15 @@ export interface WeddingBoardContent {
   closingHeading?: string;
   closingMessage?: string;
   closingSignature?: string;
+  replayLabel?: string;
 
   // — Memory Vault —
   memoryHeading?: string;
   memoryBody?: string;
   memoryCta?: string;
 
+  /** Host-chosen scene order; unknown/missing ids fall back to the design order */
+  sectionOrder?: WeddingSectionId[];
   features?: WeddingBoardFeatureFlags;
 }
 
@@ -134,16 +241,28 @@ export const FOREVER_AFARIS_DEFAULT_SEAL = "J | C";
 export const DEFAULT_WEDDING_BOARD: Required<
   Omit<
     WeddingBoardContent,
-    "features" | "rsvpContacts" | "programmeItems"
+    "features" | "rsvpContacts" | "programmeItems" | "sectionOrder"
   >
 > & {
   rsvpContacts: WeddingBoardRsvpContact[];
   programmeItems: WeddingBoardProgrammeItem[];
+  sectionOrder: WeddingSectionId[];
   features: Required<WeddingBoardFeatureFlags>;
 } = {
   openingInstruction: "Tap the seal to open",
   sealMonogram: FOREVER_AFARIS_DEFAULT_SEAL,
   gateWord: "Forever",
+  envelopeAddressLine: "You are cordially invited",
+  envelopeStyle: "blush-floral",
+  gateStyle: "golden-baroque",
+  sealColor: "champagne",
+  sealMotif: "monogram",
+  haptics: true,
+
+  accentColor: "",
+  blushColor: "",
+  inkColor: "",
+  canvasColor: "",
 
   eyebrow: "TOGETHER WITH THEIR FAMILIES",
   scriptTitle: "The Wedding",
@@ -154,6 +273,7 @@ export const DEFAULT_WEDDING_BOARD: Required<
   invitationCopy:
     "Joyfully request the honor of your presence at the ceremony of their marriage",
   hashtag: "#TheForeverAfaris",
+  heroCaption: "",
 
   displayDate: "AUGUST • 15 • 2026",
   weekday: "SATURDAY",
@@ -168,6 +288,11 @@ export const DEFAULT_WEDDING_BOARD: Required<
   countdownHeading: "Counting Down To Forever",
   countdownTarget: "2026-08-15T14:00:00",
   countdownExpiredMessage: "Today we say I do",
+
+  greetingHeading: "A Note For You",
+  greetingBody:
+    "Of all the people we could have shared this day with, we chose you. Thank you for standing with us as we begin forever.",
+  greetingFallbackName: "Our Treasured Guest",
 
   programmeHeading: "Order Of The Day",
   programmeItems: [
@@ -193,6 +318,11 @@ export const DEFAULT_WEDDING_BOARD: Required<
 
   galleryHeading: "Moments",
 
+  scratchHeading: "A Little Secret",
+  scratchPrompt: "Scratch to reveal",
+  scratchMessage:
+    "Save the first dance for us — and stay for the champagne tower at sunset.",
+
   rsvpHeading: "R.S.V.P",
   rsvpContacts: [
     { name: "JUSTINE KUFFOUR", phone: "+233 595 968 686" },
@@ -203,6 +333,7 @@ export const DEFAULT_WEDDING_BOARD: Required<
   closingMessage:
     "Your presence is the greatest gift. We look forward to celebrating this beautiful day with you.",
   closingSignature: "Jeffery & Francisca",
+  replayLabel: "Replay opening",
 
   familyHeading: "Together With Their Families",
   memoryHeading: "Memory Vault",
@@ -210,15 +341,19 @@ export const DEFAULT_WEDDING_BOARD: Required<
     "Every photo and video you capture belongs in our album. Upload yours and we will treasure it forever.",
   memoryCta: "Add your memories",
 
+  sectionOrder: WEDDING_SECTION_ORDER,
   features: {
     guestWelcome: true,
+    heroPortrait: true,
     countdown: true,
+    greeting: true,
     programme: true,
     location: true,
     dressCode: true,
     guestPolicy: true,
     story: true,
     gallery: true,
+    scratch: false,
     rsvp: true,
     closing: true,
     familyIntro: true,
@@ -227,6 +362,22 @@ export const DEFAULT_WEDDING_BOARD: Required<
 };
 
 export type ResolvedWeddingBoard = typeof DEFAULT_WEDDING_BOARD;
+
+/**
+ * Keep a host's ordering while guaranteeing every scene has a slot: known ids
+ * are honoured in the order given, anything the host never touched keeps its
+ * designed position at the end.
+ */
+export function normaliseSectionOrder(order?: WeddingSectionId[] | null): WeddingSectionId[] {
+  if (!order?.length) return WEDDING_SECTION_ORDER;
+  const seen = new Set<WeddingSectionId>();
+  const kept = order.filter((id): id is WeddingSectionId => {
+    if (!SECTION_ID_SET.has(id) || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+  return [...kept, ...WEDDING_SECTION_ORDER.filter((id) => !seen.has(id))];
+}
 
 /** Merge host-edited copy over the premium defaults (arrays fall back whole). */
 export function mergeWeddingBoard(
@@ -241,6 +392,7 @@ export function mergeWeddingBoard(
     programmeItems: partial?.programmeItems?.length
       ? partial.programmeItems
       : DEFAULT_WEDDING_BOARD.programmeItems,
+    sectionOrder: normaliseSectionOrder(partial?.sectionOrder),
     features: {
       ...DEFAULT_WEDDING_BOARD.features,
       ...partial?.features,

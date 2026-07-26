@@ -28,6 +28,11 @@ interface InteractiveRevealProps {
   embedded?: boolean;
   /** Start envelope/curtain open immediately (preview tap gesture already happened). */
   autoOpen?: boolean;
+  /**
+   * Guest has completed this ceremony before — reveals may offer a visible,
+   * opt-in way to move along faster. Never skips anything on its own.
+   */
+  allowSkip?: boolean;
   children: ReactNode;
 }
 
@@ -50,6 +55,7 @@ export function InteractiveReveal({
   onBegin,
   embedded = false,
   autoOpen = false,
+  allowSkip = false,
   children,
 }: InteractiveRevealProps) {
   const contract = getRevealContractForOpening(openingExperience);
@@ -85,6 +91,7 @@ export function InteractiveReveal({
         onBegin={onBegin}
         embedded={embedded}
         autoOpen={autoOpen}
+        allowSkip={allowSkip}
       >
         {children}
       </OpeningExperienceRouter>
