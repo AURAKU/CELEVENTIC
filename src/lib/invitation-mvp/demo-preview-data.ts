@@ -7,13 +7,23 @@ import { getDemoGalleryUrls, getDemoHeroUrl, getDemoBackgroundUrl, resolveEventT
 import { syncDesignPageBackground } from "@/lib/invitation/studio-media-utils";
 import { getLayoutVisualProfile } from "@/lib/experience/layout-visual-profiles";
 import { getLayoutEnabledTabs } from "@/lib/invitation/layout-template-signatures";
+import { EVENT_TIME_ZONE } from "@/lib/constants";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { InvitationDesignConfig, InvitationEventData } from "@/types/invitation-design";
 
-const FUTURE_DATE = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+/**
+ * Demo previews render on the server and hydrate on the client, so this date has to
+ * resolve to the same instant in both runtimes. A clock offset (`Date.now() + 90d`) is
+ * evaluated once per runtime — at build/boot on the server, at bundle load in the
+ * browser — so the two drift apart and the rendered time fails hydration. Anchoring to
+ * a fixed UTC slot in the following calendar year keeps the date plausibly upcoming
+ * while only ever changing on a year boundary.
+ */
+const FUTURE_DATE = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 5, 14, 16, 0, 0));
 
 function formatDemoDate(d: Date) {
   return d.toLocaleDateString("en-US", {
+    timeZone: EVENT_TIME_ZONE,
     weekday: "long",
     year: "numeric",
     month: "long",

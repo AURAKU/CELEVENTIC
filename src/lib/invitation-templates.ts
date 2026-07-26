@@ -9,6 +9,7 @@ import {
   getCreativeButtonFamily,
 } from "@/lib/invitation/template-creative-registry";
 import { DEFAULT_WEDDING_BOARD } from "@/lib/invitation/wedding-board";
+import { EVENT_TIME_ZONE } from "@/lib/constants";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -460,14 +461,15 @@ export function parseCoupleNames(title: string, hostName: string) {
 
 export function formatInvitationDateParts(dateStr: string) {
   const d = new Date(dateStr);
+  const zone = { timeZone: EVENT_TIME_ZONE } as const;
   return {
-    day: d.getDate(),
-    month: d.toLocaleString("en", { month: "long" }),
-    monthShort: d.toLocaleString("en", { month: "short" }),
-    year: d.getFullYear(),
-    time: d.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit", hour12: true }),
-    weekday: d.toLocaleString("en", { weekday: "long" }),
-    formatted: new Intl.DateTimeFormat("en-GH", { dateStyle: "medium", timeStyle: "short" }).format(d),
+    day: Number(d.toLocaleString("en", { ...zone, day: "numeric" })),
+    month: d.toLocaleString("en", { ...zone, month: "long" }),
+    monthShort: d.toLocaleString("en", { ...zone, month: "short" }),
+    year: Number(d.toLocaleString("en", { ...zone, year: "numeric" })),
+    time: d.toLocaleTimeString("en", { ...zone, hour: "numeric", minute: "2-digit", hour12: true }),
+    weekday: d.toLocaleString("en", { ...zone, weekday: "long" }),
+    formatted: new Intl.DateTimeFormat("en-GH", { ...zone, dateStyle: "medium", timeStyle: "short" }).format(d),
   };
 }
 

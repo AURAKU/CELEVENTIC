@@ -12,6 +12,29 @@ import { APP_NAME } from "@/lib/constants";
  * — e.g. a bad media asset or malformed block — degrades gracefully instead of
  * escalating to `global-error.tsx` (which nukes the entire document).
  */
+/**
+ * A chunk that fails to load means the browser is holding asset URLs from a build
+ * that no longer exists — the page is only broken until it re-fetches the current
+ * manifest, so recover automatically rather than blaming the user's page.
+ */
+const STALE_ASSET_ERROR =
+  /ChunkLoadError|Loading chunk \S+ failed|Loading CSS chunk|Failed to fetch dynamically imported module|Importing a module script failed/i;
+
+const RELOAD_ONCE_KEY = "celeventic:stale-asset-reload";
+
+function recoverFromStaleAssets(error: Error): boolean {
+  if (!STALE_ASSET_ERROR.test(`${error.name} ${error.message}`)) return false;
+  try {
+    // One attempt per session — a reload loop is worse than the error card.
+    if (window.sessionStorage.getItem(RELOAD_ONCE_KEY)) return false;
+    window.sessionStorage.setItem(RELOAD_ONCE_KEY, "1");
+  } catch {
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
+
 export default function Error({
   error,
   reset,
@@ -21,6 +44,7 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error("[route-error]", error);
+    recoverFromStaleAssets(error);
   }, [error]);
 
   return (
@@ -33,6 +57,9 @@ export default function Error({
         <p className="mt-2 text-sm leading-relaxed text-slate-500">
           This page hit an unexpected error. The rest of {APP_NAME} is unaffected — try again, or head back home.
         </p>
+        {error.digest && (
+          <p className="mt-3 font-mono text-[11px] text-slate-400">Ref {error.digest}</p>
+        )}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
           <Button type="button" onClick={() => reset()} className="gap-2">
             <RefreshCw className="h-4 w-4" /> Try again
