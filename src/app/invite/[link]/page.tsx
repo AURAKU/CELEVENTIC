@@ -19,6 +19,7 @@ import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { resolveShareOgImage } from "@/lib/social/share-image";
+import { buildShareDescription } from "@/lib/social/share-description";
 import { APP_NAME } from "@/lib/constants";
 
 function resolveDesign(invitation: {
@@ -64,9 +65,9 @@ export async function generateMetadata({
 
   const event = invitation.event;
   const title = `${event.title} · You're invited`;
-  const description =
-    event.description?.trim() ||
-    `${event.hostName ? `${event.hostName} invites you` : "You're invited"} to ${event.title} on Celeventic.`;
+  // Always lead with the couple/host name rather than `event.description`
+  // (the host's free-form "our story" text) — see `buildShareDescription`.
+  const description = buildShareDescription({ hostName: event.hostName, title: event.title });
   const appUrl = await getServerAppUrl();
   const ogImage = await resolveShareOgImage(event.id, appUrl);
 

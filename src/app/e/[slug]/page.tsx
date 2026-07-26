@@ -13,6 +13,7 @@ import { BrandMotto } from "@/components/brand/brand-motto";
 import { BRAND_MOTTO, APP_NAME } from "@/lib/constants";
 import { resolveMediaUrl, shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { resolveShareOgImage } from "@/lib/social/share-image";
+import { buildShareDescription } from "@/lib/social/share-description";
 import { getServerAppUrl } from "@/lib/app-url";
 
 /**
@@ -30,7 +31,9 @@ export async function generateMetadata({
   if (!site) return { title: "Event Not Found" };
 
   const title = site.title;
-  const description = site.description ?? `Join ${site.hostName} for ${site.title} on Celeventic`;
+  // Always lead with the couple/host name rather than `site.description`
+  // (the host's free-form "our story" text) — see `buildShareDescription`.
+  const description = buildShareDescription({ hostName: site.hostName, title: site.title });
   const appUrl = await getServerAppUrl();
   const ogImage = await resolveShareOgImage(site.id, appUrl);
 
