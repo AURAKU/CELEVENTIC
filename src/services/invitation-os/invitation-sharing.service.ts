@@ -1,4 +1,21 @@
-import { getAppUrlFromEnv } from "@/lib/app-url";
+import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
+
+/**
+ * `sharePath` is meant to be a relative path (e.g. `/invite/abc`), but a
+ * caller passing an already-absolute URL used to get it blindly concatenated
+ * onto `appUrl` — producing a mangled double-URL like
+ * `https://www.celeventic.com/https://www.celeventic.com/invite/abc` (or,
+ * worse, leaking a stale `http://localhost:3000/...` share link if the
+ * absolute value hadn't been sanitized upstream). Normalize defensively here
+ * so this builder is safe regardless of what a caller passes.
+ */
+function resolveShareLink(sharePath: string, appUrl: string): string {
+  if (/^https?:\/\//i.test(sharePath)) {
+    return sanitizePublicUrl(sharePath, appUrl);
+  }
+  const path = sharePath.startsWith("/") ? sharePath : `/${sharePath}`;
+  return `${appUrl}${path}`;
+}
 
 export interface WhatsAppSharePack {
   generalText: string;
@@ -19,7 +36,7 @@ export class InvitationSharingService {
     language?: "en" | "fr" | "both";
   }): WhatsAppSharePack {
     const appUrl = getAppUrlFromEnv();
-    const link = `${appUrl}${options.sharePath.startsWith("/") ? "" : "/"}${options.sharePath}`;
+    const link = resolveShareLink(options.sharePath, appUrl);
     const dateLine = options.eventDate
       ? new Date(options.eventDate).toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric", year: "numeric" })
       : "Date TBA";

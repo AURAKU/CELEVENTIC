@@ -56,9 +56,14 @@ export class ProductionWorkflowService {
     const included = order.package.revisions;
     const used = order.revisionsUsed;
     const remaining = Math.max(0, included - used);
+    // Guard against legacy/dev-seeded `shareUrl` values that point at localhost —
+    // this summary feeds the customer-facing "Your Invitation Link" card directly.
+    const safeOrder = order.shareUrl
+      ? { ...order, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) }
+      : order;
 
     return {
-      order,
+      order: safeOrder,
       workflowType: order.workflowType,
       workflowStage: order.workflowStage,
       includedRevisions: included,
