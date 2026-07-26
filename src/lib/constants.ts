@@ -20,6 +20,14 @@ export const BRAND = {
 
 export const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"] as const;
 
+/**
+ * Every event date/time is presented in the host's local time, not the viewer's.
+ * Formatting must pass this explicitly: `Intl` otherwise falls back to the runtime
+ * timezone, which differs between the Node server and the guest's browser and
+ * desynchronises server-rendered markup from the hydrating client.
+ */
+export const EVENT_TIME_ZONE = "Africa/Accra";
+
 export const EVENT_TYPES = [
   { value: "WEDDING", label: "Wedding" },
   { value: "FUNERAL", label: "Funeral" },
