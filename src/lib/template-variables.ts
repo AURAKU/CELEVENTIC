@@ -1,4 +1,5 @@
 import type { TemplateRenderContext } from "@/types/template-engine";
+import { EVENT_TIME_ZONE } from "@/lib/constants";
 
 const VAR_MAP: Record<string, keyof TemplateRenderContext> = {
   "{{guest_name}}": "guest_name",
@@ -36,8 +37,8 @@ export function buildRenderContextFromEvent(event: {
   return {
     event_title: event.title,
     host_name: event.hostName,
-    event_date: d.toLocaleDateString("en-GH", { dateStyle: "full" }),
-    event_time: d.toLocaleTimeString("en-GH", { hour: "numeric", minute: "2-digit" }),
+    event_date: d.toLocaleDateString("en-GH", { timeZone: EVENT_TIME_ZONE, dateStyle: "full" }),
+    event_time: d.toLocaleTimeString("en-GH", { timeZone: EVENT_TIME_ZONE, hour: "numeric", minute: "2-digit" }),
     venue: event.venueName ?? "",
     landmark: event.landmark ?? "",
     dress_code: event.dressCode ?? "",
