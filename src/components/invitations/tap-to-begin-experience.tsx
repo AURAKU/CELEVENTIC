@@ -36,18 +36,37 @@ export interface TapToBeginExperienceProps {
   /** Studio welcome-typography override — resolved CSS font stack (unset keeps each line's template default). */
   fontFamily?: string | null;
   /** Studio welcome-typography override — overall text scale. */
-  fontScale?: "compact" | "cozy" | "spacious";
+  fontScale?: "compact" | "cozy" | "spacious" | "bold";
   /** Studio welcome-typography override — manual body/ivory text color (bypasses smart auto-contrast). */
   textColorOverride?: string | null;
   /** Studio welcome-typography override — manual gold/script accent color (bypasses smart auto-contrast). */
   accentColorOverride?: string | null;
+  /**
+   * Legibility backdrop behind the welcome copy — a blurred plate that keeps text
+   * readable over busy, multi-color patterned art (e.g. kente/Ankara photos).
+   * "auto" (default) turns it on for templates known to use patterned welcome art;
+   * "on"/"off" let the studio override that per invitation.
+   */
+  scrim?: "auto" | "on" | "off";
 }
 
 const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale"]>, number> = {
-  compact: 0.88,
+  compact: 0.92,
   cozy: 1,
-  spacious: 1.15,
+  spacious: 1.2,
+  bold: 1.4,
 };
+
+/** Templates whose welcome art is a busy, multi-color pattern (kente/Ankara, etc.) — legibility plate defaults on. */
+function isPatternedWelcomeLayout(layoutSlug?: string, category?: string): boolean {
+  const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
+  return (
+    hay.includes("traditional-marriage") ||
+    hay.includes("kente") ||
+    hay.includes("ankara") ||
+    hay.includes("kitenge")
+  );
+}
 
 type EventBeat = {
   eyebrow?: string;
@@ -92,7 +111,8 @@ function titleCase(s: string): string {
     .join(" ");
 }
 
-function resolveBeginLabel(layoutSlug?: string, category?: string): string {
+/** The bare action verb ("Begin"/"Enter") — used to build the visible CTA and aria-label. */
+function resolveBeginVerb(layoutSlug?: string, category?: string): string {
   const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
   if (
     hay.includes("memorial") ||
@@ -137,6 +157,17 @@ function resolveNames(
   return null;
 }
 
+/** Minimal ripple glyph — reads as "tap here" without a generic stock hand/cursor icon. */
+function TapGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="3.1" fill="currentColor" />
+      <circle cx="12" cy="12" r="7.4" stroke="currentColor" strokeWidth="1.3" opacity="0.55" />
+      <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="1.1" opacity="0.28" />
+    </svg>
+  );
+}
+
 const ORBS = [
   { left: "12%", top: "18%", size: 7, color: "gold", delay: "0s" },
   { left: "78%", top: "22%", size: 5, color: "accent", delay: "0.4s" },
@@ -169,6 +200,7 @@ export function TapToBeginExperience({
   fontScale = "cozy",
   textColorOverride,
   accentColorOverride,
+  scrim = "auto",
 }: TapToBeginExperienceProps) {
   const reduceMotion = useReducedMotion();
   const [exiting, setExiting] = useState(false);
@@ -224,7 +256,12 @@ export function TapToBeginExperience({
     [name1, name2, eventTitle, hostName, layoutSlug, category]
   );
 
-  const beginLabel = resolveBeginLabel(layoutSlug, category);
+  // A lone "BEGIN" floating over a photo reads as decorative type, not a control —
+  // guests need the verb ("tap") spelled out so the gesture is obvious on first look.
+  const beginVerb = resolveBeginVerb(layoutSlug, category);
+  const ctaText = `Tap to ${beginVerb}`;
+  const scrimActive = scrim === "on" || (scrim === "auto" && isPatternedWelcomeLayout(layoutSlug, category));
+  const stageClass = [styles.stage, scrimActive ? styles.plate : ""].filter(Boolean).join(" ");
   const showHostFallback =
     !couple && Boolean(hostName?.trim()) && hostName!.trim() !== eventTitle?.trim();
 
@@ -274,9 +311,9 @@ export function TapToBeginExperience({
     .filter(Boolean)
     .join(" ");
 
-  const ariaLabel = `${beginLabel} — ${beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")}${
-    couple ? `, ${couple.name1} and ${couple.name2}` : ""
-  }`;
+  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation — ${
+    beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")
+  }${couple ? `, ${couple.name1} and ${couple.name2}` : ""}`;
 
   return (
     <button
@@ -345,7 +382,7 @@ export function TapToBeginExperience({
         </div>
       ) : null}
 
-      <div className={styles.stage}>
+      <div className={stageClass}>
         <p className={styles.brand}>Celeventic</p>
 
         {beat.eyebrow && beat.script ? (
@@ -368,8 +405,15 @@ export function TapToBeginExperience({
         ) : null}
 
         <div className={styles.cta}>
-          <p className={styles.ctaWord}>{beginLabel}</p>
-          {!reduceMotion && !exiting ? <span className={styles.ctaRule} aria-hidden /> : null}
+          <span className={styles.ctaChip}>
+            <span className={styles.ctaTapMark} aria-hidden>
+              <TapGlyph />
+            </span>
+            <span className={styles.ctaWord}>{ctaText}</span>
+          </span>
+          <span className={styles.ctaHint} aria-hidden>
+            or press Enter
+          </span>
         </div>
       </div>
     </button>
