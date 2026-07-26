@@ -47,6 +47,7 @@ const LAYOUT_ENTRANCE: Record<InvitationLayoutSlug, MediaEntranceId> = {
   "royal-emerald-wedding": "curtain-unveil",
   "midnight-velvet-reception": "slide-left",
   "kente-heritage-union": "drum-pulse",
+  "forever-afaris-wedding": "bloom",
   "traditional-marriage-ceremony": "curtain-unveil",
   "floral-garden-romance": "bloom",
   "passport-destination-wedding": "passport-flip",

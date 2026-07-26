@@ -275,6 +275,13 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
     category: "interactive",
   },
   {
+    id: "blush-gate",
+    label: "Blush gate",
+    description:
+      "Blush floral envelope → champagne wax seal → flaps unfold → the golden gate opens from the centre",
+    category: "palace",
+  },
+  {
     id: "archway",
     label: "Palace archway",
     description: "Emerald cathedral gates — tap to enter",
@@ -317,7 +324,14 @@ export function mapOpeningToLegacyRevealMode(id: OpeningExperienceId): RevealMod
   if (id === "flip-reveal" || id === "zoom-reveal" || id === "magazine-page-turn" || id === "ring-box")
     return "passport";
   if (id === "candle-light") return "curtain";
-  if (id === "satin-bow" || id === "archway" || id === "palace-entrance") return "envelope";
+  if (
+    id === "satin-bow" ||
+    id === "archway" ||
+    id === "palace-entrance" ||
+    id === "blush-gate"
+  ) {
+    return "envelope";
+  }
   return "envelope";
 }
 

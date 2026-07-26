@@ -55,7 +55,8 @@ export type CreativeUniverseId =
   | "gilded-classic"
   | "custom-media"
   | "lily-serenity"
-  | "royal-mourning";
+  | "royal-mourning"
+  | "blush-gate-romance";
 
 /** Canonical invitation section ids used by hub / sequence builders. */
 export type CreativeSectionId =
@@ -210,6 +211,7 @@ const LAYOUT_UNIVERSE: Partial<Record<InvitationLayoutSlug, CreativeUniverseId>>
   "midnight-velvet-reception": "editorial-love-story",
   "kente-heritage-union": "heritage-textile",
   "traditional-marriage-ceremony": "heritage-textile",
+  "forever-afaris-wedding": "blush-gate-romance",
   "floral-garden-romance": "botanical-romance",
   "passport-destination-wedding": "passport-destination",
   "crystal-acrylic-luxury": "crystal-glass",

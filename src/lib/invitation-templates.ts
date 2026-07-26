@@ -8,6 +8,7 @@ import {
   getCreativeExperienceOverrides,
   getCreativeButtonFamily,
 } from "@/lib/invitation/template-creative-registry";
+import { DEFAULT_WEDDING_BOARD } from "@/lib/invitation/wedding-board";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -228,6 +229,40 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
           showArtBackdrop: true,
           liveTypography: false,
         },
+      },
+    },
+  },
+  {
+    slug: "forever-afaris-wedding",
+    name: "The Forever Afaris",
+    description:
+      "Luxury cinematic wedding invite — blush floral envelope, champagne wax seal, golden gate reveal, live countdown, RSVP & maps",
+    category: "wedding",
+    preview: { gradient: "from-rose-100 via-orange-50 to-amber-50", accent: "#C7A35A" },
+    config: {
+      layout: "forever-afaris-wedding",
+      colors: {
+        primary: "#3A2A2E",
+        secondary: "#C7A35A",
+        accent: "#D99A93",
+        background: "#FBF6EF",
+        text: "#3A2A2E",
+      },
+      fonts: { heading: "Cinzel", script: "Great Vibes", body: "Cormorant Garamond" },
+      animation: "fade",
+      ornament: "floral",
+      introText: "Together With Their Families",
+      studio: {
+        // The Blush Gate ceremony (envelope → wax seal → gate) runs in the
+        // shared reveal pipeline, so the invitation body never repeats it.
+        revealMode: "envelope",
+        buttonStyle: "wax-seal",
+        fullScreen: true,
+        headingSize: 26,
+        bodySize: 13,
+        scriptSize: 30,
+        rsvpLabel: "R.S.V.P",
+        weddingBoard: DEFAULT_WEDDING_BOARD,
       },
     },
   },

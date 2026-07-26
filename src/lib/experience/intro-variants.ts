@@ -209,6 +209,12 @@ export const INTRO_VARIANTS: Record<IntroVariantId, IntroVariantMeta> = {
     tagline: "Ivory and foil rising…",
     showHud: false,
   },
+  "swan-glide": {
+    id: "swan-glide",
+    label: "Swan Glide",
+    tagline: "Two swans, one gate, one forever…",
+    showHud: false,
+  },
 };
 
 export const INTRO_VARIANT_OPTIONS = Object.values(INTRO_VARIANTS);

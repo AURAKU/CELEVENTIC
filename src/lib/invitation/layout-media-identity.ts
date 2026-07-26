@@ -162,6 +162,18 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     ],
     video: "https://assets.mixkit.co/videos/preview/mixkit-pink-flowers-blowing-in-the-wind-4494-large.mp4",
   },
+  "forever-afaris-wedding": {
+    hero: u("1519671482749-fd09be7ccebf", 900),
+    background: uBg("1522413452208-996ff3f3e740"),
+    gallery: [
+      u("1519671482749-fd09be7ccebf"),
+      u("1522413452208-996ff3f3e740"),
+      u("1523438885200-e635ba2c371e"),
+      u("1511285560929-80b456fea0bc"),
+      u("1465495976277-4387d4b0b4c6"),
+    ],
+    video: "https://assets.mixkit.co/videos/preview/mixkit-white-flowers-in-the-wind-1191-large.mp4",
+  },
   "floral-garden-romance": {
     hero: u("1465142134349-bc99b30851d7", 900),
     background: uBg("1522673607200-164d1b6ce486"),

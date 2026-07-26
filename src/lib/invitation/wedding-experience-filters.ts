@@ -52,6 +52,7 @@ export const WEDDING_ALLOWED_OPENINGS: ReadonlySet<OpeningExperienceId> = new Se
   "ring-box",
   "archway",
   "petal-fall",
+  "blush-gate",
   "none",
 ]);
 

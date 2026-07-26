@@ -18,7 +18,8 @@ export type InvitationLayoutSlug =
   | "memorial-candle-tribute"
   | "neon-celebration-party"
   | "corporate-prestige-summit"
-  | "traditional-marriage-ceremony";
+  | "traditional-marriage-ceremony"
+  | "forever-afaris-wedding";
 
 export type MediaType = "image" | "video" | "pdf";
 

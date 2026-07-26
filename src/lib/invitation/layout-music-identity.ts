@@ -179,6 +179,17 @@ export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProf
     fadeInSec: 1.2,
     fadeOutSec: 0.8,
   },
+  "forever-afaris-wedding": {
+    trackId: "layout-forever-afaris-wedding",
+    title: "Forever — Strings Romance",
+    category: "wedding",
+    bundledFile: "violin-elegance",
+    startSec: 0,
+    endSec: 88,
+    volume: 0.44,
+    fadeInSec: 2,
+    fadeOutSec: 1.4,
+  },
   "traditional-marriage-ceremony": {
     trackId: "layout-traditional-marriage-ceremony",
     title: "Traditional Marriage Drums",
