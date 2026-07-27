@@ -1102,3 +1102,43 @@
     animation: none !important;
   }
 }
+
+/* ─── Personalised Place Card (shared invitation feature) ───────── */
+.inv-place-card-fade {
+  animation: inv-fade-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.inv-place-card-shimmer {
+  animation: inv-fade-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Slow sheen across the card face. Drawn on a pseudo-element so it never
+   affects contrast of the text underneath. */
+.inv-place-card-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 58%
+  );
+  background-size: 260% 100%;
+  animation: inv-place-card-sheen 6.5s ease-in-out infinite;
+}
+
+@keyframes inv-place-card-sheen {
+  0%, 100% { background-position: 180% 0; }
+  50% { background-position: -80% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-place-card-fade,
+  .inv-place-card-shimmer,
+  .inv-place-card-shimmer::after {
+    animation: none !important;
+  }
+}

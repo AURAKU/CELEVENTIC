@@ -16,6 +16,7 @@ import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-temp
 import { InvitationMediaProvider } from "./invitation-media-context";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
+import { PlaceCard } from "@/components/invitation/place-card";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
 export type InvitationRendererProps = InvitationRenderProps & {
@@ -73,6 +74,19 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
       >
         <InvitationMediaProvider interactive={interactiveMedia}>{content}</InvitationMediaProvider>
       </ClientErrorBoundary>
+      {/* Personalised place card. One shared implementation for every template,
+          placed directly above the entry pass so a guest reads who the
+          invitation is for and how many it admits before they reach the QR. */}
+      {props.placeCard && (
+        <ClientErrorBoundary fallback={null}>
+          <PlaceCard
+            config={props.placeCard.config}
+            recipient={props.placeCard.recipient}
+            party={props.placeCard.party}
+            design={props.design}
+          />
+        </ClientErrorBoundary>
+      )}
       {/* Closing section of every invitation. The entry pass supersedes the
           standalone gate code — showing both would give a guest two different
           numbers to read out at the door. */}

@@ -14,7 +14,31 @@ import type { ResolvedAdmissionSettings } from "@/lib/admission/admission-settin
  * a real pass without ever putting the signing secret on a phone at the gate.
  */
 
-export const OFFLINE_PACKAGE_VERSION = 1;
+/**
+ * v2 adds per-member seats, the remaining count, and a short admission history
+ * so an offline gate can run partial group admission — and explain a party's
+ * held seats — with no network. Devices still holding a v1 package keep
+ * working: every v2 field is optional on read and derived when absent.
+ */
+export const OFFLINE_PACKAGE_VERSION = 2;
+
+export interface OfflinePartyMember {
+  id: string;
+  name: string;
+  plusOnes: number;
+  admitted: boolean;
+  /** Seat held for this member, when the event has assigned one. */
+  table?: string | null;
+  seat?: string | null;
+}
+
+/** One line of the append-only ledger, trimmed for the gate's storage budget. */
+export interface OfflineHistoryEntry {
+  /** ISO timestamp. */
+  at: string;
+  action: string;
+  qty: number;
+}
 
 export interface OfflinePassRecord {
   /** sha256 of the signed token — the device's local lookup key. */
@@ -27,13 +51,21 @@ export interface OfflinePassRecord {
   p: number;
   /** Heads already admitted when the package was built. */
   a: number;
+  /** Heads still to arrive. Derived from `p - a`; carried so the gate never has
+   *  to recompute an allowance it might get wrong. */
+  r?: number;
   status: string;
   expiresAt: string | null;
   /** Party roster for partial arrivals. */
-  members: { id: string; name: string; plusOnes: number; admitted: boolean }[];
+  members: OfflinePartyMember[];
   table: string | null;
   seat: string | null;
+  /** Most recent admission activity, newest first. */
+  history?: OfflineHistoryEntry[];
 }
+
+/** Ledger rows carried per pass. Enough to explain a party, small enough to cache. */
+const HISTORY_PER_PASS = 5;
 
 export interface OfflinePackage {
   version: number;
@@ -88,6 +120,7 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
       admittedCount: true,
       status: true,
       expiresAt: true,
+      invitationId: true,
       invitation: {
         select: {
           guests: {
@@ -105,6 +138,31 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
     },
   });
 
+  // One grouped read rather than a query per pass — a 2,000-guest gate pack
+  // must not become 2,000 round trips.
+  const history = await prisma.admissionEvent.findMany({
+    where: { invitationId: { in: passes.map((p) => p.invitationId) } },
+    orderBy: { createdAt: "desc" },
+    take: passes.length * HISTORY_PER_PASS,
+    select: {
+      invitationId: true,
+      action: true,
+      admittedQuantity: true,
+      createdAt: true,
+    },
+  });
+  const historyByInvitation = new Map<string, OfflineHistoryEntry[]>();
+  for (const row of history) {
+    const list = historyByInvitation.get(row.invitationId) ?? [];
+    if (list.length >= HISTORY_PER_PASS) continue;
+    list.push({
+      at: row.createdAt.toISOString(),
+      action: row.action,
+      qty: row.admittedQuantity,
+    });
+    historyByInvitation.set(row.invitationId, list);
+  }
+
   const issuedAt = new Date();
   const records: OfflinePassRecord[] = passes.map((p) => {
     const seating = p.invitation.guests.find((g) => g.seatingAssignment)?.seatingAssignment;
@@ -114,6 +172,7 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
       n: p.displayName,
       p: p.partySize,
       a: p.admittedCount,
+      r: Math.max(0, p.partySize - p.admittedCount),
       status: p.status,
       expiresAt: p.expiresAt ? p.expiresAt.toISOString() : null,
       members: p.invitation.guests.map((g) => ({
@@ -121,9 +180,14 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
         name: g.name,
         plusOnes: Math.max(0, g.plusOnes ?? 0),
         admitted: g.status === "CHECKED_IN",
+        table: settings.showTableOnPass
+          ? (g.seatingAssignment?.tableNumber ?? null)
+          : null,
+        seat: settings.showSeatOnPass ? (g.seatingAssignment?.seatLabel ?? null) : null,
       })),
       table: settings.showTableOnPass ? (seating?.tableNumber ?? null) : null,
       seat: settings.showSeatOnPass ? (seating?.seatLabel ?? null) : null,
+      history: historyByInvitation.get(p.invitationId) ?? [],
     };
   });
 

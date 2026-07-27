@@ -6,6 +6,11 @@ import { invitationService } from "@/services/invitations/invitation.service";
 import { seatingService } from "@/services/seating/seating.service";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import { resolveInvitationFeatures } from "@/services/invitation-features/feature-resolver";
+import {
+  describeHeldSeats,
+  resolveSeatingContinuity,
+  type SeatingContinuity,
+} from "@/lib/admission/seating-continuity";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { PortalStatusPoller } from "./portal-status-poller";
@@ -94,6 +99,36 @@ export default async function EventDayPortal({
   const showSeat =
     features.find((f) => f.key === "SEATING_REVEAL")?.enabled ?? true;
 
+  // Seating continuity — a part-arrived group sees the seats that are live now
+  // and is told, in plain words, that the rest are still being held.
+  let continuity: SeatingContinuity | null = null;
+  if (unlocked && showSeat && isGroup) {
+    const partyGuests = await prisma.guest.findMany({
+      where: { invitationId: invitation.id },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        seatingAssignment: { select: { tableNumber: true, seatLabel: true, zone: true } },
+      },
+    });
+    continuity = resolveSeatingContinuity(
+      partyGuests
+        .filter((g) => g.seatingAssignment)
+        .map((g) => ({
+          guestId: g.id,
+          guestName: g.name,
+          tableNumber: g.seatingAssignment!.tableNumber,
+          seatLabel: g.seatingAssignment!.seatLabel,
+          zone: g.seatingAssignment!.zone,
+          admitted: g.status === "CHECKED_IN",
+        })),
+      summary?.allowance ?? 1,
+      summary?.admittedCount ?? 0
+    );
+  }
+
   return (
     <main
       className="min-h-[100dvh] w-full px-5 py-10"
@@ -114,6 +149,7 @@ export default async function EventDayPortal({
             allowance={summary?.allowance ?? 1}
             seat={showSeat ? seat : null}
             showSeat={showSeat}
+            continuity={continuity}
             link={invitation.uniqueLink}
             colors={colors}
           />
@@ -178,6 +214,7 @@ function UnlockedState({
   allowance,
   seat,
   showSeat,
+  continuity,
   link,
   colors,
 }: {
@@ -189,9 +226,11 @@ function UnlockedState({
   allowance: number;
   seat: { tableNumber: string; seatLabel: string | null; zone: string | null } | null;
   showSeat: boolean;
+  continuity: SeatingContinuity | null;
   link: string;
   colors: InvitationDesignConfig["colors"];
 }) {
+  const heldCopy = continuity ? describeHeldSeats(continuity) : null;
   return (
     <section className="flex flex-col items-center text-center" aria-live="polite">
       <p className="text-[11px] uppercase tracking-[0.32em]" style={{ color: colors.secondary }}>
@@ -209,10 +248,18 @@ function UnlockedState({
       </p>
 
       {isGroup && (
-        <p className="mt-5 text-sm font-medium" style={{ color: colors.primary }}>
-          {admittedCount} of {allowance} members have arrived
-          {remainingCount > 0 ? ` · ${remainingCount} remaining` : ""}
-        </p>
+        <div className="mt-5 space-y-1" aria-live="polite">
+          <p className="text-sm font-medium" style={{ color: colors.primary }}>
+            {admittedCount} of {allowance} in your party {admittedCount === 1 ? "has" : "have"}{" "}
+            arrived
+          </p>
+          {remainingCount > 0 && (
+            <p className="text-xs" style={{ color: colors.text, opacity: 0.75 }}>
+              {remainingCount} {remainingCount === 1 ? "place is" : "places are"} still open on
+              this invitation — the rest of your party can arrive at any time with the same pass.
+            </p>
+          )}
+        </div>
       )}
 
       {/* My Seat — gated by the shared feature layer (SEATING_REVEAL) */}
@@ -240,9 +287,26 @@ function UnlockedState({
               </p>
             )}
           </div>
+        ) : continuity?.revealed.length ? (
+          <div className="mt-2 space-y-1">
+            {continuity.revealed.map((s) => (
+              <p key={s.guestId} className="text-sm" style={{ color: colors.primary }}>
+                <span className="font-medium">{s.guestName}</span> — Table {s.tableNumber}
+                {s.seatLabel ? `, Seat ${s.seatLabel}` : ""}
+              </p>
+            ))}
+          </div>
         ) : (
           <p className="mt-2 text-sm" style={{ color: colors.text, opacity: 0.8 }}>
             Your table will be shown here once seating is assigned. Please ask an usher for guidance.
+          </p>
+        )}
+
+        {/* Places held for the rest of the party. Reassurance, not a warning:
+            nobody loses a seat because they arrived later than the others. */}
+        {heldCopy && (
+          <p className="mt-3 text-xs" style={{ color: colors.text, opacity: 0.75 }}>
+            {heldCopy}
           </p>
         )}
       </div>

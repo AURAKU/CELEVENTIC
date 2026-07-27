@@ -17,6 +17,8 @@ const admitSchema = z
     gate: z.string().max(80).optional(),
     /** Evaluate without writing — powers the confirm-before-admit flow. */
     dryRun: z.boolean().optional(),
+    /** The operator answered the "how many now?" prompt. */
+    quantityConfirmed: z.boolean().optional(),
   })
   .refine((v) => Boolean(v.token || v.code), {
     message: "A pass QR or admission code is required",
@@ -77,6 +79,7 @@ export async function POST(req: Request) {
     gate: data.gate ?? null,
     deviceInfo: deviceInfo(req),
     dryRun: data.dryRun,
+    quantityConfirmed: data.quantityConfirmed,
   });
 
   await createAuditLog({
@@ -110,6 +113,7 @@ export async function POST(req: Request) {
         : null,
       party: result.party,
       seating: result.seating,
+      seatingContinuity: result.seatingContinuity,
       eventTitle: result.eventTitle,
     },
   });

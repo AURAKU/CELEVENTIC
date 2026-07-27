@@ -26,6 +26,10 @@ import {
   type AdmissionDecision,
 } from "@/lib/admission/pass-decision";
 import { applyPassAdmission } from "@/services/admission/admission.service";
+import {
+  resolveSeatingContinuity,
+  type SeatingContinuity,
+} from "@/lib/admission/seating-continuity";
 
 /**
  * Guest Entry Pass lifecycle.
@@ -387,6 +391,11 @@ export interface AdmitInput {
   deviceInfo?: string | null;
   /** Preview only — evaluate and log, but never write an admission. */
   dryRun?: boolean;
+  /**
+   * The operator has answered "how many are arriving now". Suppresses the
+   * quantity prompt so the admit writes on this call.
+   */
+  quantityConfirmed?: boolean;
   /** Replaying an offline record; timestamps come from the device. */
   offlineCreatedAt?: Date | null;
 }
@@ -398,6 +407,8 @@ export interface AdmitResult {
   /** Party roster for the scanner's partial-arrival UI. */
   party: { id: string; name: string; plusOnes: number; admitted: boolean }[];
   seating: { tableNumber: string; seatLabel: string | null } | null;
+  /** Which of the party's seats are live and which are still held. */
+  seatingContinuity: SeatingContinuity | null;
   eventTitle: string | null;
 }
 
@@ -427,6 +438,7 @@ export async function admitByPass(input: AdmitInput): Promise<AdmitResult> {
       invitationId: null,
       party: [],
       seating: null,
+      seatingContinuity: null,
       eventTitle: null,
     };
   }
@@ -451,7 +463,13 @@ export async function admitByPass(input: AdmitInput): Promise<AdmitResult> {
       lastAdmittedAt: pass.lastAdmittedAt,
     },
     settings,
-    { eventId: input.eventId, now, requestedQuantity, source }
+    {
+      eventId: input.eventId,
+      now,
+      requestedQuantity,
+      source,
+      quantityConfirmed: input.quantityConfirmed,
+    }
   );
 
   if (input.dryRun || decision.admitQuantity === 0) {
@@ -486,7 +504,13 @@ export async function admitByPass(input: AdmitInput): Promise<AdmitResult> {
             lastAdmittedAt: fresh.lastAdmittedAt,
           },
           settings,
-          { eventId: input.eventId, now, requestedQuantity, source }
+          {
+            eventId: input.eventId,
+            now,
+            requestedQuantity,
+            source,
+            quantityConfirmed: input.quantityConfirmed,
+          }
         )
       : decision;
     await logScan(input, fresh ?? pass, "ALREADY_USED");
@@ -554,7 +578,9 @@ async function loadPassContext(
           name: true,
           plusOnes: true,
           status: true,
-          seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+          seatingAssignment: {
+            select: { tableNumber: true, seatLabel: true, zone: true },
+          },
         },
         orderBy: { createdAt: "asc" },
       },
@@ -562,12 +588,33 @@ async function loadPassContext(
   });
 
   if (!invitation) {
-    return { invitationId: pass.invitationId, party: [], seating: null, eventTitle: null };
+    return {
+      invitationId: pass.invitationId,
+      party: [],
+      seating: null,
+      seatingContinuity: null,
+      eventTitle: null,
+    };
   }
 
   const seatingSource = invitation.guests.find((g) => g.seatingAssignment)?.seatingAssignment;
   const revealSeating =
     !settings.hideSeatingUntilAdmitted || pass.admittedCount > 0;
+
+  const continuity = resolveSeatingContinuity(
+    invitation.guests
+      .filter((g) => g.seatingAssignment)
+      .map((g) => ({
+        guestId: g.id,
+        guestName: g.name,
+        tableNumber: g.seatingAssignment!.tableNumber,
+        seatLabel: g.seatingAssignment!.seatLabel,
+        zone: g.seatingAssignment!.zone,
+        admitted: g.status === "CHECKED_IN",
+      })),
+    pass.partySize,
+    pass.admittedCount
+  );
 
   return {
     invitationId: invitation.id,
@@ -581,6 +628,7 @@ async function loadPassContext(
       seatingSource && revealSeating
         ? { tableNumber: seatingSource.tableNumber, seatLabel: seatingSource.seatLabel }
         : null,
+    seatingContinuity: revealSeating ? continuity : null,
     eventTitle: invitation.event.title,
   };
 }

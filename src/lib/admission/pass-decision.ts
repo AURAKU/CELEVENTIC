@@ -61,6 +61,11 @@ export interface AdmissionContext {
   offline?: boolean;
   /** Age of the cached offline package, in minutes. */
   offlinePackageAgeMinutes?: number;
+  /**
+   * True when the operator has already answered "how many are arriving now".
+   * Suppresses the quantity prompt so a confirmed admit writes immediately.
+   */
+  quantityConfirmed?: boolean;
 }
 
 export interface AdmissionDecision {
@@ -75,6 +80,16 @@ export interface AdmissionDecision {
   resultingStatus: GuestPassStatus;
   /** True when the scanner must ask the operator to confirm before writing. */
   requiresConfirmation: boolean;
+  /** Total heads this pass may admit. */
+  allowance: number;
+  /** Heads still to arrive before this scan. */
+  remaining: number;
+  /**
+   * True when the operator must be asked "how many are arriving now?" before
+   * anything is written. Only ever set for a party with more than one place
+   * still open, and never when a safe auto rule (fast admission) is on.
+   */
+  requiresQuantityConfirmation: boolean;
 }
 
 function deny(
@@ -83,6 +98,7 @@ function deny(
   pass: PassSnapshot,
   tone: AdmissionTone = "red"
 ): AdmissionDecision {
+  const allowance = Math.max(0, pass.partySize);
   return {
     outcome: reason === "NEEDS_REVIEW" ? "REVIEW" : "DENY",
     tone,
@@ -91,8 +107,31 @@ function deny(
     admitQuantity: 0,
     resultingAdmittedCount: pass.admittedCount,
     resultingStatus: pass.status,
-  requiresConfirmation: false,
+    requiresConfirmation: false,
+    allowance,
+    remaining: Math.max(0, allowance - Math.max(0, pass.admittedCount)),
+    requiresQuantityConfirmation: false,
   };
+}
+
+/**
+ * Should the gate stop and ask how many of the party are arriving now?
+ *
+ * Yes for any group with more than one place still open — that is the whole
+ * point of partial admission. No for a single guest (nothing to choose), no
+ * once the operator has answered, and no when the organiser turned on the safe
+ * auto rule (fast admission), which admits the remainder in one tap.
+ */
+export function needsQuantityPrompt(
+  remaining: number,
+  settings: Pick<ResolvedAdmissionSettings, "allowPartialArrival" | "fastAdmissionMode">,
+  ctx: Pick<AdmissionContext, "quantityConfirmed" | "requestedQuantity">
+): boolean {
+  if (remaining <= 1) return false;
+  if (ctx.quantityConfirmed) return false;
+  if (typeof ctx.requestedQuantity === "number") return false;
+  if (settings.fastAdmissionMode) return false;
+  return settings.allowPartialArrival;
 }
 
 /** Effective validity window: explicit pass expiry, then the event window. */
@@ -194,6 +233,9 @@ export function decideAdmission(
           resultingAdmittedCount: alreadyIn,
           resultingStatus: "ADMITTED",
           requiresConfirmation: settings.requireScannerConfirmation && !settings.fastAdmissionMode,
+          allowance,
+          remaining,
+          requiresQuantityConfirmation: false,
         };
       }
       return deny(
@@ -214,6 +256,9 @@ export function decideAdmission(
         resultingAdmittedCount: alreadyIn,
         resultingStatus: "ADMITTED",
         requiresConfirmation: false,
+        allowance,
+        remaining,
+        requiresQuantityConfirmation: false,
       };
     }
 
@@ -229,6 +274,30 @@ export function decideAdmission(
       resultingAdmittedCount: alreadyIn,
       resultingStatus: "ADMITTED",
       requiresConfirmation: false,
+      allowance,
+      remaining,
+      requiresQuantityConfirmation: false,
+    };
+  }
+
+  // A group with places still open is asked "how many are arriving now?" before
+  // anything is written. Nothing is admitted on this pass of the engine — the
+  // operator's answer comes back as an explicit `requestedQuantity`.
+  if (needsQuantityPrompt(remaining, settings, ctx)) {
+    return {
+      outcome: "PARTIAL_ADMIT",
+      tone: "amber",
+      reason: "OK_PARTIAL",
+      message:
+        `This invitation admits ${allowance}. ${remaining} ` +
+        `${remaining === 1 ? "place is" : "places are"} still open — how many are arriving now?`,
+      admitQuantity: 0,
+      resultingAdmittedCount: alreadyIn,
+      resultingStatus: alreadyIn > 0 ? "PARTIALLY_ADMITTED" : "ACTIVE",
+      requiresConfirmation: true,
+      allowance,
+      remaining,
+      requiresQuantityConfirmation: true,
     };
   }
 
@@ -267,7 +336,11 @@ export function decideAdmission(
     admitQuantity: requested,
     resultingAdmittedCount: resulting,
     resultingStatus: complete ? "ADMITTED" : "PARTIALLY_ADMITTED",
-    requiresConfirmation: settings.requireScannerConfirmation && !settings.fastAdmissionMode,
+    requiresConfirmation:
+      settings.requireScannerConfirmation && !settings.fastAdmissionMode && !ctx.quantityConfirmed,
+    allowance,
+    remaining,
+    requiresQuantityConfirmation: false,
   };
 }
 
@@ -285,5 +358,8 @@ export function notFoundDecision(source: AdmissionContext["source"]): AdmissionD
     resultingAdmittedCount: 0,
     resultingStatus: "ACTIVE",
     requiresConfirmation: false,
+    allowance: 0,
+    remaining: 0,
+    requiresQuantityConfirmation: false,
   };
 }

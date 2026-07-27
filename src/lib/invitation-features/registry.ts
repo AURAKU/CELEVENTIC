@@ -13,6 +13,7 @@ import { FeatureKey } from "@/lib/blueprints/feature-keys";
  * invitations render identically until an organiser overrides something.
  */
 export const GuestFeatureKey = {
+  PLACE_CARD: "PLACE_CARD",
   ENTRY_PASS: "ENTRY_PASS",
   MANUAL_ADMISSION_CODE: "MANUAL_ADMISSION_CODE",
   PARTY_ADMISSION: "PARTY_ADMISSION",
@@ -50,6 +51,11 @@ export interface InvitationFeatureDefault {
 
 /** Platform defaults — layer 1 of the inheritance chain. */
 export const INVITATION_FEATURE_DEFAULTS: Record<GuestFeatureKey, InvitationFeatureDefault> = {
+  // Guest-only (no entitlement gate): a place card is stationery, not admission
+  // hardware, so it must work on events that never turn QR admission on. It is
+  // on by default but its own `visibility` config keeps it to personalised
+  // views, so generic share links are unchanged.
+  PLACE_CARD: { key: "PLACE_CARD", label: "Place Card", postAdmissionOnly: false, enabledByDefault: true, defaultOrder: 5, version: 1 },
   RSVP: { key: "RSVP", label: "RSVP", postAdmissionOnly: false, enabledByDefault: true, defaultOrder: 10, entitlementKey: FeatureKey.RSVP, version: 1 },
   COUNTDOWN: { key: "COUNTDOWN", label: "Countdown", postAdmissionOnly: false, enabledByDefault: true, defaultOrder: 20, version: 1 },
   MAP_DIRECTIONS: { key: "MAP_DIRECTIONS", label: "Directions", postAdmissionOnly: false, enabledByDefault: true, defaultOrder: 30, version: 1 },

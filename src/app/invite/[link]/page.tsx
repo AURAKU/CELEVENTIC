@@ -23,6 +23,7 @@ import { resolveShareOgImage } from "@/lib/social/share-image";
 import { buildShareDescription } from "@/lib/social/share-description";
 import { APP_NAME } from "@/lib/constants";
 import { getInvitationPassView } from "@/services/admission/guest-pass.service";
+import { resolvePlaceCard } from "@/services/invitation-features/place-card.service";
 import type { GuestEntryPassData } from "@/types/invitation-design";
 
 function resolveDesign(invitation: {
@@ -309,6 +310,17 @@ export default async function InvitePage({
     }
   }
 
+  // Personalised place card — resolved for every published invitation, on every
+  // template, from the shared feature layer. A failure here must never take the
+  // invitation down, so it degrades to "no place card".
+  const placeCard = await resolvePlaceCard(
+    invitation.id,
+    personalizedGuest?.name ?? null
+  ).catch((error) => {
+    console.error("[invite] place card unavailable", error);
+    return null;
+  });
+
   const catalogTemplate = order?.template;
   const revealMode = design.studio?.revealMode;
   const resolvedBackground = resolveBackgroundMedia(design, catalogTemplate);
@@ -354,6 +366,7 @@ export default async function InvitePage({
       admissionQrToken={admissionQrToken || null}
       admissionManualCode={admissionManualCode || null}
       entryPass={entryPass}
+      placeCard={placeCard}
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       seatQrDataUrl={seatQrDataUrl || null}
