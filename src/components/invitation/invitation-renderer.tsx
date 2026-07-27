@@ -15,6 +15,7 @@ import { ForeverAfarisWeddingTemplate } from "./templates/forever-afaris-wedding
 import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
 import { InvitationMediaProvider } from "./invitation-media-context";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
+import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
 export type InvitationRendererProps = InvitationRenderProps & {
@@ -72,10 +73,43 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
       >
         <InvitationMediaProvider interactive={interactiveMedia}>{content}</InvitationMediaProvider>
       </ClientErrorBoundary>
-      {props.admissionManualCode && (
-        <div className="px-4 pb-6 -mt-2">
-          <ManualGateCodeReveal code={props.admissionManualCode} variant="invite" />
-        </div>
+      {/* Closing section of every invitation. The entry pass supersedes the
+          standalone gate code — showing both would give a guest two different
+          numbers to read out at the door. */}
+      {props.entryPass ? (
+        <ClientErrorBoundary
+          fallback={
+            <div className="px-4 pb-8 text-center text-sm text-slate-500">
+              Your entry pass couldn&apos;t be displayed. Refresh the page, or show this
+              invitation at the entrance.
+            </div>
+          }
+        >
+          <GuestEntryPass
+            token={props.entryPass.token}
+            code={props.entryPass.code}
+            displayName={props.entryPass.displayName}
+            eventName={props.event.title}
+            eventDate={props.event.startDate}
+            venueName={props.event.venueName}
+            partySize={props.entryPass.partySize}
+            admittedCount={props.entryPass.admittedCount}
+            status={props.entryPass.status}
+            tableNumber={props.entryPass.tableNumber}
+            seatLabel={props.entryPass.seatLabel}
+            instructions={props.entryPass.instructions}
+            allowDownload={props.entryPass.allowDownload}
+            allowPrint={props.entryPass.allowPrint}
+            showPartySize={props.entryPass.showPartySize}
+            layout={props.design.layout}
+          />
+        </ClientErrorBoundary>
+      ) : (
+        props.admissionManualCode && (
+          <div className="px-4 pb-6 -mt-2">
+            <ManualGateCodeReveal code={props.admissionManualCode} variant="invite" />
+          </div>
+        )
       )}
     </div>
   );

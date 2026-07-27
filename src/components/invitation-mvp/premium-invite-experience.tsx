@@ -5,7 +5,7 @@ import { Share2, Clock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvitationRenderer } from "@/components/invitation/invitation-renderer";
 import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
-import type { InvitationDesignConfig } from "@/types/invitation-design";
+import type { GuestEntryPassData, InvitationDesignConfig } from "@/types/invitation-design";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { BlockRenderer } from "@/components/invitation-blocks/block-renderer";
 import type { AppLocale } from "@/lib/i18n/constants";
@@ -66,6 +66,12 @@ export interface PremiumInviteExperienceProps {
   eventId?: string;
   /** Catalog template slug (Studio 2.0 viral-footer attribution) */
   templateSlug?: string;
+  /**
+   * Guest Entry Pass. Present only when the event has QR admission enabled and
+   * the invite was opened with a guest token — absent means the invitation
+   * renders exactly as it did before the pass system.
+   */
+  entryPass?: GuestEntryPassData | null;
 }
 
 function Countdown({ target, begunLabel, label }: { target: string; begunLabel: string; label: string }) {
@@ -159,6 +165,7 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
         guestId={props.guestId}
         guestName={props.guestName}
         qrDataUrl={props.qrDataUrl}
+        entryPass={props.entryPass}
       />
 
       <section className="mx-auto max-w-2xl px-4 py-10 space-y-6">

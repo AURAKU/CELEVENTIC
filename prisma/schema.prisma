@@ -80,96 +80,96 @@ enum WorkspacePermissionScope {
 }
 
 model User {
-  id             String     @id @default(cuid())
-  email          String?    @unique
-  phone          String?    @unique
-  passwordHash   String?
-  name           String
-  avatarUrl      String?
-  role           UserRole   @default(ORGANIZER)
-  status         UserStatus @default(ACTIVE)
-  accountType    AccountType?
-  username       String?    @unique
-  companyName    String?
-  onboardingCompletedAt DateTime?
-  organizationId String?
-  emailVerified  DateTime?
-  phoneVerified  DateTime?
-  isVerified     Boolean    @default(false)
+  id                     String       @id @default(cuid())
+  email                  String?      @unique
+  phone                  String?      @unique
+  passwordHash           String?
+  name                   String
+  avatarUrl              String?
+  role                   UserRole     @default(ORGANIZER)
+  status                 UserStatus   @default(ACTIVE)
+  accountType            AccountType?
+  username               String?      @unique
+  companyName            String?
+  onboardingCompletedAt  DateTime?
+  organizationId         String?
+  emailVerified          DateTime?
+  phoneVerified          DateTime?
+  isVerified             Boolean      @default(false)
   lastLoginAt            DateTime?
   sessionInvalidatedAt   DateTime?
   acceptedTermsVersion   String?
   acceptedPrivacyVersion String?
   cookieConsent          String?
   consentTimestamp       DateTime?
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
 
-  organization     Organization?  @relation(fields: [organizationId], references: [id])
-  accounts         Account[]
-  sessions         Session[]
-  events           Event[]
-  guests           Guest[]
-  tickets          Ticket[]
-  ticketOrders     TicketOrder[]
-  payments         Payment[]
-  campaigns        Campaign[]
-  vendors          Vendor[]
-  auditLogs        AuditLog[]
-  notifications    Notification[]
-  messagesSent     UserMessage[]  @relation("MessagesSent")
-  messagesReceived UserMessage[]  @relation("MessagesReceived")
-  contributions    Contribution[]
-  vendorBookings   VendorBooking[]
-  vendorQuotesSent VendorQuote[]        @relation("QuoteOrganizer")
-  marketplaceDisputesOpened MarketplaceDispute[] @relation("DisputeOpenedBy")
-  venueBookings    VenueBooking[]
-  qrScans          QrScan[]
-  offlineDevices   OfflineDevice[]
-  twoFactor        TwoFactorAuth?
-  flyerDesigns       FlyerDesign[]
-  inspirationUploads InspirationUpload[]
-  eventStaff         EventStaff[]
-  vendorReviews         VendorReview[]
-  vendorFavorites       VendorFavorite[]
-  vendorLeadsSubmitted  VendorLead[]
-  vendorClaimRequests   VendorClaimRequest[]
-  venueProfiles         Venue[]              @relation("VenueOwner")
-  designTemplates    DesignTemplate[]  @relation("TemplateCreator")
-  designedTemplates  DesignTemplate[]  @relation("TemplateDesigner")
-  designerProfile    DesignerProfile?
-  templateFavorites  TemplateFavorite[]
-  templatePurchases  TemplatePurchase[]
-  designExports      DesignExport[]
-  aiDesignRequests   AiDesignRequest[]
-  invitationOrders       InvitationOrder[]
-  assignedInvitationOrders InvitationOrder[] @relation("OrderDesigner")
-  musicTracksUploaded    InvitationMusicTrack[] @relation("MusicTrackCreator")
-  languagePreference     UserLanguagePreference?
-  generatedDesigns   GeneratedDesign[]
-  eventPlans         EventPlan[]
-  memoryVaults       MemoryVault[]
-  memoryApprovals    EventMemoryUpload[] @relation("MemoryApprovals")
-  aiRequests         AiRequest[]
-  walletTransactions       WalletTransaction[]    @relation("WalletTransactionCreator")
-  consentRecords           UserConsentRecord[]
-  revisionComments         RevisionComment[]
-  productionAssignments    ProductionAssignment[] @relation("ProductionDesigner")
-  funeralFamilyMemberships FuneralFamilyMember[]
-  inspirationSources       InspirationSource[]
-  inspirationAuditLogs     InspirationAuditLog[]
-  organizerProfile         OrganizerProfile?
-  eventCollaborations      EventCollaborator[]
-  workspaceInvitationsSent WorkspaceInvitation[] @relation("WorkspaceInviter")
-  workspaceInvitationsRecv WorkspaceInvitation[] @relation("WorkspaceInvitee")
-  organizationMemberships  OrganizationMember[]
-  eventTasksCreated        EventTask[]           @relation("TaskCreator")
-  eventTasksAssigned       EventTask[]           @relation("TaskAssignee")
+  organization               Organization?            @relation(fields: [organizationId], references: [id])
+  accounts                   Account[]
+  sessions                   Session[]
+  events                     Event[]
+  guests                     Guest[]
+  tickets                    Ticket[]
+  ticketOrders               TicketOrder[]
+  payments                   Payment[]
+  campaigns                  Campaign[]
+  vendors                    Vendor[]
+  auditLogs                  AuditLog[]
+  notifications              Notification[]
+  messagesSent               UserMessage[]            @relation("MessagesSent")
+  messagesReceived           UserMessage[]            @relation("MessagesReceived")
+  contributions              Contribution[]
+  vendorBookings             VendorBooking[]
+  vendorQuotesSent           VendorQuote[]            @relation("QuoteOrganizer")
+  marketplaceDisputesOpened  MarketplaceDispute[]     @relation("DisputeOpenedBy")
+  venueBookings              VenueBooking[]
+  qrScans                    QrScan[]
+  offlineDevices             OfflineDevice[]
+  twoFactor                  TwoFactorAuth?
+  flyerDesigns               FlyerDesign[]
+  inspirationUploads         InspirationUpload[]
+  eventStaff                 EventStaff[]
+  vendorReviews              VendorReview[]
+  vendorFavorites            VendorFavorite[]
+  vendorLeadsSubmitted       VendorLead[]
+  vendorClaimRequests        VendorClaimRequest[]
+  venueProfiles              Venue[]                  @relation("VenueOwner")
+  designTemplates            DesignTemplate[]         @relation("TemplateCreator")
+  designedTemplates          DesignTemplate[]         @relation("TemplateDesigner")
+  designerProfile            DesignerProfile?
+  templateFavorites          TemplateFavorite[]
+  templatePurchases          TemplatePurchase[]
+  designExports              DesignExport[]
+  aiDesignRequests           AiDesignRequest[]
+  invitationOrders           InvitationOrder[]
+  assignedInvitationOrders   InvitationOrder[]        @relation("OrderDesigner")
+  musicTracksUploaded        InvitationMusicTrack[]   @relation("MusicTrackCreator")
+  languagePreference         UserLanguagePreference?
+  generatedDesigns           GeneratedDesign[]
+  eventPlans                 EventPlan[]
+  memoryVaults               MemoryVault[]
+  memoryApprovals            EventMemoryUpload[]      @relation("MemoryApprovals")
+  aiRequests                 AiRequest[]
+  walletTransactions         WalletTransaction[]      @relation("WalletTransactionCreator")
+  consentRecords             UserConsentRecord[]
+  revisionComments           RevisionComment[]
+  productionAssignments      ProductionAssignment[]   @relation("ProductionDesigner")
+  funeralFamilyMemberships   FuneralFamilyMember[]
+  inspirationSources         InspirationSource[]
+  inspirationAuditLogs       InspirationAuditLog[]
+  organizerProfile           OrganizerProfile?
+  eventCollaborations        EventCollaborator[]
+  workspaceInvitationsSent   WorkspaceInvitation[]    @relation("WorkspaceInviter")
+  workspaceInvitationsRecv   WorkspaceInvitation[]    @relation("WorkspaceInvitee")
+  organizationMemberships    OrganizationMember[]
+  eventTasksCreated          EventTask[]              @relation("TaskCreator")
+  eventTasksAssigned         EventTask[]              @relation("TaskAssignee")
   eventActivityLogs          EventActivityLog[]
   chatMessagesSent           EventChatMessage[]
   taskComments               EventTaskComment[]
-  clientRelationsAsOrganizer ClientRelationship[]  @relation("OrganizerClients")
-  clientRelationsAsClient    ClientRelationship[]  @relation("ClientOrganizers")
+  clientRelationsAsOrganizer ClientRelationship[]     @relation("OrganizerClients")
+  clientRelationsAsClient    ClientRelationship[]     @relation("ClientOrganizers")
   videoAssets                VideoAsset[]
   giftCampaignsCreated       EventGiftCampaign[]      @relation("EventGiftCampaignCreator")
   giftPaymentsMade           EventGiftPayment[]       @relation("EventGiftPaymentGuest")
@@ -253,98 +253,102 @@ enum PricingType {
 }
 
 model Event {
-  id              String      @id @default(cuid())
-  slug            String      @unique
-  title           String
-  eventType       EventType
-  hostName        String
-  description     String?    
-  startDate       DateTime
-  endDate         DateTime?
-  venueName       String?
-  landmark        String?
-  mapsLink        String?
-  contactPhone    String?
-  dressCode       String?
-  expectedGuests  Int?
-  pricingType     PricingType @default(FREE)
-  coverImageUrl   String?
-  logoUrl         String?
-  qrCenterImageUrl String?
+  id                   String      @id @default(cuid())
+  slug                 String      @unique
+  title                String
+  eventType            EventType
+  hostName             String
+  /// Shared Invitation Feature Layer schema version for forward-safe migrations.
+  featureConfigVersion Int         @default(1)
+  description          String?
+  startDate            DateTime
+  endDate              DateTime?
+  venueName            String?
+  landmark             String?
+  mapsLink             String?
+  contactPhone         String?
+  dressCode            String?
+  expectedGuests       Int?
+  pricingType          PricingType @default(FREE)
+  coverImageUrl        String?
+  logoUrl              String?
+  qrCenterImageUrl     String?
   /// Center logo inset size on branded QRs: subtle | balanced | bold
-  qrLogoSize      String?
+  qrLogoSize           String?
   /// Default invitation music track from the platform library
-  defaultMusicTrackId String?
-  themeId         String?
-  packageId       String?
-  organizationId  String?
-  city            String?
-  region          String?
-  country         String?     @default("GH")
-  latitude        Decimal?   
-  longitude       Decimal?   
-  isPublic        Boolean     @default(false)
-  isFeatured      Boolean     @default(false)
-  status          EventStatus @default(DRAFT)
-  organizerId     String
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  defaultMusicTrackId  String?
+  themeId              String?
+  packageId            String?
+  organizationId       String?
+  city                 String?
+  region               String?
+  country              String?     @default("GH")
+  latitude             Decimal?
+  longitude            Decimal?
+  isPublic             Boolean     @default(false)
+  isFeatured           Boolean     @default(false)
+  status               EventStatus @default(DRAFT)
+  organizerId          String
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 
-  organizer      User           @relation(fields: [organizerId], references: [id])
-  organization   Organization?  @relation(fields: [organizationId], references: [id])
-  package        EventPackage?  @relation(fields: [packageId], references: [id])
-  theme          EventTemplate? @relation("EventTheme", fields: [themeId], references: [id])
-  defaultMusicTrack InvitationMusicTrack? @relation("EventDefaultMusic", fields: [defaultMusicTrackId], references: [id], onDelete: SetNull)
-  invitations    Invitation[]
-  guests         Guest[]
-  tickets        Ticket[]
-  ticketOrders   TicketOrder[]
-  qrCodes        QrCode[]
-  qrScans        QrScan[]
-  campaigns      Campaign[]
-  contributions  Contribution[]
-  memories       EventMemory[]
-  media          EventMedia[]
-  offlineDevices OfflineDevice[]
-  flyerDesigns   FlyerDesign[]
-  inspirationUploads InspirationUpload[]
-  inspirationSources InspirationSource[]
-  gates          EventGate[]
-  staff          EventStaff[]
-  seatingPlans   SeatingPlan[]
-  expenses       EventExpense[]
-  wallet         Wallet?
-  fraudLogs      FraudDetectionLog[]
-  reminders      ReminderSchedule[]
-  eventPlans     EventPlan[]
-  funeralProfile FuneralProfile?
-  tributeMessages TributeMessage[]
-  funeralPrograms FuneralProgram[]
-  virtualCandles VirtualCandle[]
-  memorialTimeline MemorialTimelineEntry[]
-  memorialGuestbook MemorialGuestbookEntry[]
-  guestWishes    InvitationGuestWish[]
-  memorialLivestreams MemorialLivestream[]
-  memorialMediaItems MemorialMediaItem[]
+  organizer            User                     @relation(fields: [organizerId], references: [id])
+  organization         Organization?            @relation(fields: [organizationId], references: [id])
+  package              EventPackage?            @relation(fields: [packageId], references: [id])
+  theme                EventTemplate?           @relation("EventTheme", fields: [themeId], references: [id])
+  defaultMusicTrack    InvitationMusicTrack?    @relation("EventDefaultMusic", fields: [defaultMusicTrackId], references: [id], onDelete: SetNull)
+  invitations          Invitation[]
+  guests               Guest[]
+  tickets              Ticket[]
+  ticketOrders         TicketOrder[]
+  qrCodes              QrCode[]
+  qrScans              QrScan[]
+  campaigns            Campaign[]
+  contributions        Contribution[]
+  memories             EventMemory[]
+  media                EventMedia[]
+  offlineDevices       OfflineDevice[]
+  flyerDesigns         FlyerDesign[]
+  inspirationUploads   InspirationUpload[]
+  inspirationSources   InspirationSource[]
+  gates                EventGate[]
+  staff                EventStaff[]
+  seatingPlans         SeatingPlan[]
+  expenses             EventExpense[]
+  wallet               Wallet?
+  fraudLogs            FraudDetectionLog[]
+  reminders            ReminderSchedule[]
+  eventPlans           EventPlan[]
+  funeralProfile       FuneralProfile?
+  tributeMessages      TributeMessage[]
+  funeralPrograms      FuneralProgram[]
+  virtualCandles       VirtualCandle[]
+  memorialTimeline     MemorialTimelineEntry[]
+  memorialGuestbook    MemorialGuestbookEntry[]
+  guestWishes          InvitationGuestWish[]
+  memorialLivestreams  MemorialLivestream[]
+  memorialMediaItems   MemorialMediaItem[]
   funeralFamilyMembers FuneralFamilyMember[]
-  legacyArchive LegacyArchive?
-  memoryVault    MemoryVault?
-  thankYouPage   ThankYouPage?
-  memorySettings EventMemorySettings?
-  memoryUploads  EventMemoryUpload[]
-  memoryTokens   EventMemoryToken[]
-  collaborators  EventCollaborator[]
+  legacyArchive        LegacyArchive?
+  memoryVault          MemoryVault?
+  thankYouPage         ThankYouPage?
+  memorySettings       EventMemorySettings?
+  memoryUploads        EventMemoryUpload[]
+  memoryTokens         EventMemoryToken[]
+  collaborators        EventCollaborator[]
   workspaceInvitations WorkspaceInvitation[]
-  activityLogs   EventActivityLog[]
-  tasks          EventTask[]
-  chatChannels   EventChatChannel[]
-  workspace      EventWorkspace?
-  enabledFeatures EventEnabledFeature[]
-  addons         EventAddon[]
-  giftCampaigns     EventGiftCampaign[]
-  giftPayments      EventGiftPayment[]
-  giftWallet        EventWalletAccount?
-  giftLedgerEntries EventWalletLedgerEntry[]
+  activityLogs         EventActivityLog[]
+  tasks                EventTask[]
+  chatChannels         EventChatChannel[]
+  workspace            EventWorkspace?
+  enabledFeatures      EventEnabledFeature[]
+  addons               EventAddon[]
+  giftCampaigns        EventGiftCampaign[]
+  giftPayments         EventGiftPayment[]
+  giftWallet           EventWalletAccount?
+  giftLedgerEntries    EventWalletLedgerEntry[]
+  admissionSettings    EventAdmissionSettings?
+  guestPasses          GuestPass[]
 
   @@index([organizerId])
   @@index([organizationId])
@@ -360,8 +364,8 @@ model EventPackage {
   id              String   @id @default(cuid())
   name            String
   slug            String   @unique
-  description     String? 
-  price           Decimal 
+  description     String?
+  price           Decimal
   currency        String   @default("GHS")
   guestLimit      Int      @default(100)
   invitationLimit Int      @default(50)
@@ -375,26 +379,26 @@ model EventPackage {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  events Event[]
+  events          Event[]
   packageFeatures EventPackageFeature[]
 
   @@map("event_packages")
 }
 
 model EventTemplate {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  category    String
-  eventType   EventType?
+  id                  String     @id @default(cuid())
+  name                String
+  slug                String     @unique
+  category            String
+  eventType           EventType?
   supportedEventTypes Json?
-  previewUrl  String?
-  config      Json?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  previewUrl          String?
+  config              Json?
+  isActive            Boolean    @default(true)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
-  themedEvents Event[] @relation("EventTheme")
+  themedEvents Event[]      @relation("EventTheme")
   invitations  Invitation[]
 
   @@index([category])
@@ -446,19 +450,43 @@ model Invitation {
   name         String
   slug         String           @unique
   templateId   String?
-  message      String?         
+  message      String?
   designConfig Json?
   status       InvitationStatus @default(DRAFT)
   uniqueLink   String           @unique
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
-  event    Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  template EventTemplate? @relation(fields: [templateId], references: [id])
-  guests   Guest[]
-  blocks   InvitationBlock[]
-  guestWishes InvitationGuestWish[]
-  giftCampaigns EventGiftCampaign[]
+  // ─── Post-Admission Guest Experience (Phase 1) ───
+  // Additive + feature-flagged: existing invitations keep current behaviour
+  // until an organiser turns `postAdmissionEnabled` on.
+  admissionState       AdmissionState @default(NOT_ADMITTED)
+  /// Quantity admitted so far (guests + plus-ones). Recomputed atomically from
+  /// the append-only AdmissionEvent trail — never trusted from the client.
+  admittedCount        Int            @default(0)
+  /// Total party allowance; when null it is derived from guests + plusOnes.
+  admissionAllowance   Int?
+  postAdmissionEnabled Boolean        @default(false)
+  /// Bumping this invalidates every previously issued portal token (relock).
+  portalTokenVersion   Int            @default(0)
+  portalConfig         Json?
+
+  // ─── Shared Invitation Feature Layer ───
+  // Sparse per-invitation feature overrides: { [FeatureKey]: { enabled?, order?, config? } }.
+  // Absent keys inherit from event config → platform defaults. Additive; existing
+  // invitations render exactly as before until an override is written.
+  featureConfig  Json?
+  featureVersion Int       @default(1)
+  lastMigratedAt DateTime?
+
+  event           Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  template        EventTemplate?        @relation(fields: [templateId], references: [id])
+  guests          Guest[]
+  blocks          InvitationBlock[]
+  guestWishes     InvitationGuestWish[]
+  giftCampaigns   EventGiftCampaign[]
+  admissionEvents AdmissionEvent[]
+  guestPasses     GuestPass[]
 
   @@index([eventId])
   @@map("invitations")
@@ -476,36 +504,36 @@ model GuestGroup {
 }
 
 model Guest {
-  id            String      @id @default(cuid())
-  eventId       String
-  invitationId  String?
-  groupId       String?
-  userId        String?
-  name          String
-  email         String?
-  phone         String?
-  status        GuestStatus @default(INVITED)
-  qrToken       String      @unique @default(cuid())
+  id             String      @id @default(cuid())
+  eventId        String
+  invitationId   String?
+  groupId        String?
+  userId         String?
+  name           String
+  email          String?
+  phone          String?
+  status         GuestStatus @default(INVITED)
+  qrToken        String      @unique @default(cuid())
   /// Event-scoped 4-digit gate code for manual admit when scanning isn't possible
-  manualCode    String?
-  plusOnes      Int         @default(0)
-  notes            String?
-  inviteOpenedAt   DateTime?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  manualCode     String?
+  plusOnes       Int         @default(0)
+  notes          String?
+  inviteOpenedAt DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  invitation Invitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
-  group      GuestGroup? @relation(fields: [groupId], references: [id])
-  user       User?       @relation(fields: [userId], references: [id])
-  rsvps      Rsvp[]
-  qrCodes    QrCode[]
-  qrScans    QrScan[]
-  tickets    Ticket[]
+  event             Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitation        Invitation?           @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  group             GuestGroup?           @relation(fields: [groupId], references: [id])
+  user              User?                 @relation(fields: [userId], references: [id])
+  rsvps             Rsvp[]
+  qrCodes           QrCode[]
+  qrScans           QrScan[]
+  tickets           Ticket[]
   seatingAssignment SeatingAssignment?
-  memoryUploads EventMemoryUpload[]
-  guestWishes   InvitationGuestWish[]
-  giftPayments  EventGiftPayment[]
+  memoryUploads     EventMemoryUpload[]
+  guestWishes       InvitationGuestWish[]
+  giftPayments      EventGiftPayment[]
 
   @@unique([eventId, manualCode])
   @@index([eventId])
@@ -524,6 +552,64 @@ model Rsvp {
   guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
 
   @@map("rsvps")
+}
+
+// ─── Admission State (Post-Admission Guest Experience) ──────────
+
+enum AdmissionState {
+  NOT_ADMITTED
+  PARTIALLY_ADMITTED
+  ADMITTED
+  ADMISSION_RESET
+  EXITED
+  REVOKED
+  EXPIRED
+  MANUAL_REVIEW
+}
+
+enum AdmissionAction {
+  ADMIT
+  PARTIAL_ADMIT
+  ADMIT_REMAINING
+  RESET_INDIVIDUAL
+  RESET_PARTIAL
+  RESET_ENTIRE_INVITATION
+  READMIT
+  EXIT
+  REENTER
+  REVOKE
+  RESTORE
+  CORRECTION
+}
+
+/// Append-only admission ledger. Never deleted on reset — a reset appends a
+/// RESET_* row. `admittedCount` on Invitation is the recomputed projection of
+/// this trail. `scannerUserId`/`organiserId`/`guestId` are kept as scalars (no
+/// FK relation) so the audit row survives actor/guest deletion.
+model AdmissionEvent {
+  id                     String          @id @default(cuid())
+  eventId                String
+  invitationId           String
+  guestId                String?
+  partyMemberId          String?
+  action                 AdmissionAction
+  admittedQuantity       Int             @default(0)
+  previousAdmittedCount  Int             @default(0)
+  resultingAdmittedCount Int             @default(0)
+  scannerDeviceId        String?
+  scannerUserId          String?
+  organiserId            String?
+  reason                 String?
+  notes                  String?
+  offlineCreatedAt       DateTime?
+  syncedAt               DateTime?
+  createdAt              DateTime        @default(now())
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([invitationId, createdAt])
+  @@index([eventId, createdAt])
+  @@map("admission_events")
 }
 
 // ─── Ticketing ──────────────────────────────────────────────────
@@ -565,10 +651,10 @@ model Ticket {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  guest  Guest?  @relation(fields: [guestId], references: [id])
-  user   User?   @relation(fields: [userId], references: [id])
-  orders TicketOrder[]
+  event   Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest   Guest?        @relation(fields: [guestId], references: [id])
+  user    User?         @relation(fields: [userId], references: [id])
+  orders  TicketOrder[]
   qrCodes QrCode[]
   qrScans QrScan[]
 
@@ -585,7 +671,7 @@ model TicketOrder {
   buyerEmail  String?
   buyerPhone  String?
   quantity    Int          @default(1)
-  totalAmount Decimal     
+  totalAmount Decimal
   currency    String       @default("GHS")
   status      TicketStatus @default(PENDING)
   promoCode   String?
@@ -630,36 +716,36 @@ enum PaymentPurpose {
 }
 
 model Payment {
-  id                  String          @id @default(cuid())
-  userId              String?
-  reference           String          @unique
-  provider            PaymentProvider
-  purpose             PaymentPurpose
-  amount              Decimal
-  currency            String          @default("GHS")
-  baseCurrency        String          @default("GHS")
-  baseAmount          Decimal?
-  displayCurrency     String?
-  displayAmount       Decimal?
-  exchangeRate        Decimal?
-  idempotencyKey      String?         @unique
-  status              PaymentStatus   @default(PENDING)
-  metadata            Json?
-  ticketOrderId       String?
-  campaignId          String?
-  invitationOrderId   String?         @unique
-  vendorBookingId     String?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  id                String          @id @default(cuid())
+  userId            String?
+  reference         String          @unique
+  provider          PaymentProvider
+  purpose           PaymentPurpose
+  amount            Decimal
+  currency          String          @default("GHS")
+  baseCurrency      String          @default("GHS")
+  baseAmount        Decimal?
+  displayCurrency   String?
+  displayAmount     Decimal?
+  exchangeRate      Decimal?
+  idempotencyKey    String?         @unique
+  status            PaymentStatus   @default(PENDING)
+  metadata          Json?
+  ticketOrderId     String?
+  campaignId        String?
+  invitationOrderId String?         @unique
+  vendorBookingId   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  user              User?                @relation(fields: [userId], references: [id])
-  ticketOrder       TicketOrder?         @relation(fields: [ticketOrderId], references: [id])
-  campaign          Campaign?            @relation(fields: [campaignId], references: [id])
-  invitationOrder   InvitationOrder?     @relation(fields: [invitationOrderId], references: [id])
-  vendorBooking     VendorBooking?       @relation(fields: [vendorBookingId], references: [id])
-  logs              PaymentLog[]
-  currencyLogs      PaymentCurrencyLog[]
-  revisionPayment   RevisionPayment?
+  user            User?                @relation(fields: [userId], references: [id])
+  ticketOrder     TicketOrder?         @relation(fields: [ticketOrderId], references: [id])
+  campaign        Campaign?            @relation(fields: [campaignId], references: [id])
+  invitationOrder InvitationOrder?     @relation(fields: [invitationOrderId], references: [id])
+  vendorBooking   VendorBooking?       @relation(fields: [vendorBookingId], references: [id])
+  logs            PaymentLog[]
+  currencyLogs    PaymentCurrencyLog[]
+  revisionPayment RevisionPayment?
 
   @@index([status])
   @@index([reference])
@@ -690,20 +776,20 @@ enum QrScanResult {
 }
 
 model QrCode {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   eventId   String
   guestId   String?
   ticketId  String?
-  token     String   @unique
+  token     String    @unique
   type      String
   expiresAt DateTime?
-  isRevoked Boolean  @default(false)
+  isRevoked Boolean   @default(false)
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  guest  Guest?  @relation(fields: [guestId], references: [id])
-  ticket Ticket? @relation(fields: [ticketId], references: [id])
+  event  Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest  Guest?   @relation(fields: [guestId], references: [id])
+  ticket Ticket?  @relation(fields: [ticketId], references: [id])
   scans  QrScan[]
 
   @@index([token])
@@ -711,41 +797,45 @@ model QrCode {
 }
 
 model QrScan {
-  id         String       @id @default(cuid())
-  eventId    String
-  qrCodeId   String?
-  guestId    String?
-  ticketId   String?
-  scannedBy  String?
-  gate       String?
-  result     QrScanResult
-  deviceInfo String?
-  createdAt  DateTime     @default(now())
+  id          String       @id @default(cuid())
+  eventId     String
+  qrCodeId    String?
+  guestId     String?
+  ticketId    String?
+  /// Set when the scan resolved to an invitation-level Guest Entry Pass.
+  guestPassId String?
+  scannedBy   String?
+  gate        String?
+  result      QrScanResult
+  deviceInfo  String?
+  createdAt   DateTime     @default(now())
 
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  qrCode    QrCode?  @relation(fields: [qrCodeId], references: [id])
-  guest     Guest?   @relation(fields: [guestId], references: [id])
-  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
-  scanner   User?    @relation(fields: [scannedBy], references: [id])
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  qrCode    QrCode?    @relation(fields: [qrCodeId], references: [id])
+  guest     Guest?     @relation(fields: [guestId], references: [id])
+  ticket    Ticket?    @relation(fields: [ticketId], references: [id])
+  scanner   User?      @relation(fields: [scannedBy], references: [id])
+  guestPass GuestPass? @relation(fields: [guestPassId], references: [id], onDelete: SetNull)
 
   @@index([eventId])
+  @@index([guestPassId])
   @@map("qr_scans")
 }
 
 // ─── Offline QR ─────────────────────────────────────────────────
 
 model OfflineDevice {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   eventId      String
   userId       String
   deviceName   String
-  deviceToken  String   @unique
-  isAuthorized Boolean  @default(true)
+  deviceToken  String    @unique
+  isAuthorized Boolean   @default(true)
   lastSyncAt   DateTime?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
-  event    Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user     User              @relation(fields: [userId], references: [id])
+  event    Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id])
   checkins OfflineCheckin[]
   syncLogs OfflineSyncLog[]
 
@@ -754,30 +844,44 @@ model OfflineDevice {
 }
 
 model OfflineCheckin {
-  id           String   @id @default(cuid())
-  deviceId     String
-  guestId      String?
-  ticketId     String?
-  qrToken      String
-  result       QrScanResult
-  checkedInAt  DateTime @default(now())
-  synced       Boolean  @default(false)
-  syncedAt     DateTime?
+  id          String       @id @default(cuid())
+  deviceId    String
+  guestId     String?
+  ticketId    String?
+  guestPassId String?
+  qrToken     String
+  result      QrScanResult
+  checkedInAt DateTime     @default(now())
+  synced      Boolean      @default(false)
+  syncedAt    DateTime?
 
-  device OfflineDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  /// Client-generated id so a retried sync can never double-admit a party.
+  clientRecordId   String? @unique
+  /// Heads admitted by this offline record (group/partial arrivals).
+  admittedQuantity Int     @default(1)
+  /// True when reconciliation found the online state already moved past this
+  /// record — the party is queued for organiser review, never silently accepted.
+  conflict         Boolean @default(false)
+  conflictReason   String?
+  /// True when the operator typed the admission code instead of scanning.
+  usedManualCode   Boolean @default(false)
+
+  device    OfflineDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  guestPass GuestPass?    @relation(fields: [guestPassId], references: [id], onDelete: SetNull)
 
   @@index([deviceId])
+  @@index([guestPassId])
   @@map("offline_checkins")
 }
 
 model OfflineSyncLog {
-  id         String   @id @default(cuid())
-  deviceId   String
-  action     String
-  records    Int      @default(0)
-  conflicts  Int      @default(0)
-  payload    Json?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  deviceId  String
+  action    String
+  records   Int      @default(0)
+  conflicts Int      @default(0)
+  payload   Json?
+  createdAt DateTime @default(now())
 
   device OfflineDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
@@ -816,7 +920,7 @@ model Campaign {
   userId      String
   name        String
   channel     CampaignChannel
-  message     String         
+  message     String
   status      CampaignStatus  @default(DRAFT)
   guestTier   Int             @default(50)
   totalCost   Decimal         @default(0)
@@ -843,7 +947,7 @@ model CampaignMessage {
   sentAt     DateTime?
   createdAt  DateTime      @default(now())
 
-  campaign Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   logs     MessageLog[]
 
   @@map("campaign_messages")
@@ -973,25 +1077,25 @@ model VendorCategory {
 }
 
 model VendorPlan {
-  id                   String   @id @default(cuid())
-  slug                 String   @unique
-  name                 String
-  priceGhs             Decimal  @default(0)
-  currency             String   @default("GHS")
-  durationDays         Int      @default(365)
-  imageLimit           Int      @default(10)
-  videoLimit           Int      @default(2)
-  storageLimitMb       Int      @default(500)
-  categoryLimit        Int      @default(2)
-  portfolioEventLimit  Int      @default(5)
-  verifiedBadge        Boolean  @default(false)
-  featuredSearch       Boolean  @default(false)
-  advancedAnalytics    Boolean  @default(false)
-  priorityLeads        Boolean  @default(false)
-  isActive             Boolean  @default(true)
-  sortOrder            Int      @default(0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  name                String
+  priceGhs            Decimal  @default(0)
+  currency            String   @default("GHS")
+  durationDays        Int      @default(365)
+  imageLimit          Int      @default(10)
+  videoLimit          Int      @default(2)
+  storageLimitMb      Int      @default(500)
+  categoryLimit       Int      @default(2)
+  portfolioEventLimit Int      @default(5)
+  verifiedBadge       Boolean  @default(false)
+  featuredSearch      Boolean  @default(false)
+  advancedAnalytics   Boolean  @default(false)
+  priorityLeads       Boolean  @default(false)
+  isActive            Boolean  @default(true)
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   vendors       Vendor[]
   subscriptions VendorSubscription[]
@@ -1039,26 +1143,26 @@ model Vendor {
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
 
-  user                  User                       @relation(fields: [userId], references: [id])
-  plan                  VendorPlan?                @relation(fields: [planId], references: [id])
-  services              VendorService[]
-  bookings              VendorBooking[]
-  quotes                VendorQuote[]
-  payouts               VendorPayout[]
-  reviews               VendorReview[]
-  socialLinks           VendorSocialLink[]
-  media                 VendorMedia[]
-  rateCards             VendorRateCard[]
-  eventReferences       VendorEventReference[]
-  availability          VendorAvailability[]
-  leads                 VendorLead[]
-  verificationRequests  VendorVerificationRequest[]
-  favorites             VendorFavorite[]
-  claimRequests         VendorClaimRequest[]
-  categoryAssignments   VendorCategoryAssignment[]
-  analyticsEvents       VendorAnalyticsEvent[]
-  subscriptions         VendorSubscription[]
-  portfolioCases        EventPortfolioCase[]
+  user                 User                        @relation(fields: [userId], references: [id])
+  plan                 VendorPlan?                 @relation(fields: [planId], references: [id])
+  services             VendorService[]
+  bookings             VendorBooking[]
+  quotes               VendorQuote[]
+  payouts              VendorPayout[]
+  reviews              VendorReview[]
+  socialLinks          VendorSocialLink[]
+  media                VendorMedia[]
+  rateCards            VendorRateCard[]
+  eventReferences      VendorEventReference[]
+  availability         VendorAvailability[]
+  leads                VendorLead[]
+  verificationRequests VendorVerificationRequest[]
+  favorites            VendorFavorite[]
+  claimRequests        VendorClaimRequest[]
+  categoryAssignments  VendorCategoryAssignment[]
+  analyticsEvents      VendorAnalyticsEvent[]
+  subscriptions        VendorSubscription[]
+  portfolioCases       EventPortfolioCase[]
 
   @@index([category])
   @@index([city])
@@ -1134,18 +1238,18 @@ model VendorRateCard {
 }
 
 model VendorEventReference {
-  id              String   @id @default(cuid())
-  vendorId        String
-  eventTitle      String
-  eventType       String?
-  location        String?
-  eventYear       Int?
-  roleProvided    String?
-  testimonial     String?
+  id                String   @id @default(cuid())
+  vendorId          String
+  eventTitle        String
+  eventType         String?
+  location          String?
+  eventYear         Int?
+  roleProvided      String?
+  testimonial       String?
   celeventicEventId String?
-  isPublished     Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
+  isPublished       Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
 
   vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   media  VendorMedia[]
@@ -1189,8 +1293,8 @@ model VendorLead {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
-  vendor    Vendor @relation(fields: [vendorId], references: [id])
-  organizer User   @relation(fields: [organizerId], references: [id])
+  vendor    Vendor         @relation(fields: [vendorId], references: [id])
+  organizer User           @relation(fields: [organizerId], references: [id])
   messages  UserMessage[]
   quotes    VendorQuote[]
   booking   VendorBooking?
@@ -1201,20 +1305,20 @@ model VendorLead {
 }
 
 model VendorQuote {
-  id              String            @id @default(cuid())
-  leadId          String
-  vendorId        String
-  organizerId     String
-  status          VendorQuoteStatus @default(DRAFT)
-  currentVersion  Int               @default(1)
-  title           String?
-  currency        String            @default("GHS")
-  expiresAt       DateTime?
-  acceptedAt      DateTime?
-  declinedAt      DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  deletedAt       DateTime?
+  id             String            @id @default(cuid())
+  leadId         String
+  vendorId       String
+  organizerId    String
+  status         VendorQuoteStatus @default(DRAFT)
+  currentVersion Int               @default(1)
+  title          String?
+  currency       String            @default("GHS")
+  expiresAt      DateTime?
+  acceptedAt     DateTime?
+  declinedAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
 
   lead      VendorLead           @relation(fields: [leadId], references: [id])
   vendor    Vendor               @relation(fields: [vendorId], references: [id])
@@ -1284,18 +1388,18 @@ model VendorFavorite {
 }
 
 model VendorClaimRequest {
-  id           String   @id @default(cuid())
-  vendorId     String
-  userId       String
-  proofEmail   String?
-  proofPhone   String?
-  proofDocUrl  String?
-  socialProof  String?
-  status       String   @default("pending")
-  reviewedBy   String?
-  reviewedAt   DateTime?
-  notes        String?
-  createdAt    DateTime @default(now())
+  id          String    @id @default(cuid())
+  vendorId    String
+  userId      String
+  proofEmail  String?
+  proofPhone  String?
+  proofDocUrl String?
+  socialProof String?
+  status      String    @default("pending")
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
 
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id])
@@ -1349,48 +1453,48 @@ model VendorService {
 }
 
 model VendorBooking {
-  id                 String              @id @default(cuid())
-  vendorId           String
-  organizerId        String
-  leadId             String?             @unique
-  quoteId            String?             @unique
-  eventId            String?
-  serviceName        String?
-  eventType          String?
-  eventDate          DateTime?
-  location           String?
-  guestCount         Int?
-  agreedAmount       Decimal
-  depositAmount      Decimal?
-  remainingAmount    Decimal?
-  currency           String              @default("GHS")
-  platformCommission Decimal?
-  status             VendorBookingStatus @default(INQUIRY)
-  deliverables       Json?
-  cancellationTerms  String?
-  refundTerms        String?
-  contractVersion    Int                 @default(1)
+  id                  String              @id @default(cuid())
+  vendorId            String
+  organizerId         String
+  leadId              String?             @unique
+  quoteId             String?             @unique
+  eventId             String?
+  serviceName         String?
+  eventType           String?
+  eventDate           DateTime?
+  location            String?
+  guestCount          Int?
+  agreedAmount        Decimal
+  depositAmount       Decimal?
+  remainingAmount     Decimal?
+  currency            String              @default("GHS")
+  platformCommission  Decimal?
+  status              VendorBookingStatus @default(INQUIRY)
+  deliverables        Json?
+  cancellationTerms   String?
+  refundTerms         String?
+  contractVersion     Int                 @default(1)
   organizerAcceptedAt DateTime?
-  vendorAcceptedAt   DateTime?
-  completedAt        DateTime?
-  cancelledAt        DateTime?
-  cancelReason       String?
-  notes              String?
-  threadId           String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  deletedAt          DateTime?
+  vendorAcceptedAt    DateTime?
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+  cancelReason        String?
+  notes               String?
+  threadId            String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
 
-  vendor     Vendor                    @relation(fields: [vendorId], references: [id])
-  organizer  User                      @relation(fields: [organizerId], references: [id])
-  lead       VendorLead?               @relation(fields: [leadId], references: [id])
-  quote      VendorQuote?              @relation(fields: [quoteId], references: [id])
-  payments   Payment[]
+  vendor      Vendor               @relation(fields: [vendorId], references: [id])
+  organizer   User                 @relation(fields: [organizerId], references: [id])
+  lead        VendorLead?          @relation(fields: [leadId], references: [id])
+  quote       VendorQuote?         @relation(fields: [quoteId], references: [id])
+  payments    Payment[]
   escrowHolds EscrowHold[]
-  milestones BookingMilestone[]
-  disputes   MarketplaceDispute[]
-  reviews    VendorReview[]
-  payouts    VendorPayout[]
+  milestones  BookingMilestone[]
+  disputes    MarketplaceDispute[]
+  reviews     VendorReview[]
+  payouts     VendorPayout[]
 
   @@index([vendorId, status])
   @@index([organizerId, status])
@@ -1399,18 +1503,18 @@ model VendorBooking {
 }
 
 model BookingMilestone {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   bookingId   String
   title       String
   amount      Decimal
   dueDate     DateTime?
-  status      String   @default("pending")
-  sortOrder   Int      @default(0)
+  status      String    @default("pending")
+  sortOrder   Int       @default(0)
   evidenceUrl String?
   vendorNotes String?
   approvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   booking VendorBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
@@ -1419,20 +1523,20 @@ model BookingMilestone {
 }
 
 model EscrowHold {
-  id              String           @id @default(cuid())
-  bookingId       String
-  paymentId       String?          @unique
-  amount          Decimal
-  currency        String           @default("GHS")
-  commissionAmount Decimal         @default(0)
-  netVendorAmount Decimal          @default(0)
-  status          EscrowHoldStatus @default(PENDING_PAYMENT)
-  fundedAt        DateTime?
-  releasedAt      DateTime?
-  frozenAt        DateTime?
-  frozenReason    String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  bookingId        String
+  paymentId        String?          @unique
+  amount           Decimal
+  currency         String           @default("GHS")
+  commissionAmount Decimal          @default(0)
+  netVendorAmount  Decimal          @default(0)
+  status           EscrowHoldStatus @default(PENDING_PAYMENT)
+  fundedAt         DateTime?
+  releasedAt       DateTime?
+  frozenAt         DateTime?
+  frozenReason     String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   booking  VendorBooking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   releases EscrowRelease[]
@@ -1442,12 +1546,12 @@ model EscrowHold {
 }
 
 model EscrowRelease {
-  id          String   @id @default(cuid())
-  holdId      String
-  amount      Decimal
-  reason      String?
-  releasedBy  String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  holdId     String
+  amount     Decimal
+  reason     String?
+  releasedBy String?
+  createdAt  DateTime @default(now())
 
   hold EscrowHold @relation(fields: [holdId], references: [id], onDelete: Cascade)
 
@@ -1456,18 +1560,18 @@ model EscrowRelease {
 }
 
 model VendorPayout {
-  id          String             @id @default(cuid())
-  bookingId   String
-  vendorId    String
-  amount      Decimal
-  currency    String             @default("GHS")
-  status      VendorPayoutStatus @default(PENDING)
-  eligibleAt  DateTime?
-  paidAt      DateTime?
-  reference   String?
-  notes       String?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  id         String             @id @default(cuid())
+  bookingId  String
+  vendorId   String
+  amount     Decimal
+  currency   String             @default("GHS")
+  status     VendorPayoutStatus @default(PENDING)
+  eligibleAt DateTime?
+  paidAt     DateTime?
+  reference  String?
+  notes      String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
 
   booking VendorBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   vendor  Vendor        @relation(fields: [vendorId], references: [id])
@@ -1498,50 +1602,50 @@ model MarketplaceDispute {
 }
 
 model MarketplaceCommissionRule {
-  id              String   @id @default(cuid())
-  key             String   @unique
-  label           String
-  commissionPercent Decimal @default(10)
-  isActive        Boolean  @default(true)
-  categorySlug    String?
-  vendorId        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(cuid())
+  key               String   @unique
+  label             String
+  commissionPercent Decimal  @default(10)
+  isActive          Boolean  @default(true)
+  categorySlug      String?
+  vendorId          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@map("marketplace_commission_rules")
 }
 
 model Venue {
-  id            String   @id @default(cuid())
-  ownerId       String?
-  slug          String?  @unique
-  name          String
-  description   String?
-  capacity      Int
-  location      String
-  address       String?
-  city          String?
-  region        String?
-  priceFrom     Decimal
-  priceTo       Decimal?
-  currency      String   @default("GHS")
-  mapsLink      String?
-  photos        Json?
-  coverImage    String?
-  amenities     Json?
-  hasParking    Boolean  @default(false)
-  hasGenerator  Boolean  @default(false)
-  hasAc         Boolean  @default(false)
-  hasSecurity   Boolean  @default(false)
-  isFeatured    Boolean  @default(false)
-  isVerified    Boolean  @default(false)
-  rating        Decimal  @default(0)
-  reviewCount   Int      @default(0)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  ownerId      String?
+  slug         String?  @unique
+  name         String
+  description  String?
+  capacity     Int
+  location     String
+  address      String?
+  city         String?
+  region       String?
+  priceFrom    Decimal
+  priceTo      Decimal?
+  currency     String   @default("GHS")
+  mapsLink     String?
+  photos       Json?
+  coverImage   String?
+  amenities    Json?
+  hasParking   Boolean  @default(false)
+  hasGenerator Boolean  @default(false)
+  hasAc        Boolean  @default(false)
+  hasSecurity  Boolean  @default(false)
+  isFeatured   Boolean  @default(false)
+  isVerified   Boolean  @default(false)
+  rating       Decimal  @default(0)
+  reviewCount  Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  owner        User?              @relation("VenueOwner", fields: [ownerId], references: [id])
+  owner        User?               @relation("VenueOwner", fields: [ownerId], references: [id])
   bookings     VenueBooking[]
   availability VenueAvailability[]
 
@@ -1608,18 +1712,18 @@ model AdminVendorSetting {
 // ─── Advertising ────────────────────────────────────────────────
 
 model Advertisement {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
   imageUrl    String?
   linkUrl     String?
   type        String
-  price       Decimal 
+  price       Decimal
   duration    Int
-  isActive    Boolean  @default(true)
+  isActive    Boolean   @default(true)
   startsAt    DateTime?
   endsAt      DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   placements AdPlacement[]
 
@@ -1658,8 +1762,8 @@ model Wallet {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  event        Event?              @relation(fields: [eventId], references: [id])
-  transactions WalletTransaction[]
+  event         Event?              @relation(fields: [eventId], references: [id])
+  transactions  WalletTransaction[]
   eventExpenses EventExpense[]
 
   @@map("wallets")
@@ -1670,7 +1774,7 @@ model WalletTransaction {
   walletId    String
   eventId     String?
   type        String
-  amount      Decimal 
+  amount      Decimal
   currency    String   @default("GHS")
   source      String   @default("manual")
   reference   String?
@@ -1689,17 +1793,17 @@ model WalletTransaction {
 }
 
 model Contribution {
-  id            String               @id @default(cuid())
+  id            String              @id @default(cuid())
   eventId       String
   userId        String?
   contributor   String
   amount        Decimal
-  currency      String               @default("GHS")
+  currency      String              @default("GHS")
   message       String?
-  purpose       ContributionPurpose  @default(FAMILY_SUPPORT)
-  paymentMethod String               @default("PAYSTACK")
-  isAnonymous   Boolean              @default(false)
-  createdAt     DateTime             @default(now())
+  purpose       ContributionPurpose @default(FAMILY_SUPPORT)
+  paymentMethod String              @default("PAYSTACK")
+  isAnonymous   Boolean             @default(false)
+  createdAt     DateTime            @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id])
@@ -1715,7 +1819,7 @@ model EventMemory {
   eventId   String
   type      String
   url       String?
-  content   String? 
+  content   String?
   author    String?
   createdAt DateTime @default(now())
 
@@ -1724,7 +1828,9 @@ model EventMemory {
   @@map("event_memories")
 }
 
-/** Guest wishes left on digital invitations — visible to every guest for the event */
+/**
+ * Guest wishes left on digital invitations — visible to every guest for the event
+ */
 model InvitationGuestWish {
   id           String   @id @default(cuid())
   eventId      String
@@ -1859,9 +1965,9 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users  User[]
-  events Event[]
-  members OrganizationMember[]
+  users                User[]
+  events               Event[]
+  members              OrganizationMember[]
   workspaceInvitations WorkspaceInvitation[]
 
   @@map("organizations")
@@ -2071,14 +2177,14 @@ enum ReminderStatus {
 }
 
 model ReminderSchedule {
-  id          String         @id @default(cuid())
+  id          String          @id @default(cuid())
   eventId     String
   campaignId  String?
   channel     CampaignChannel
-  message     String        
+  message     String
   scheduledAt DateTime
-  status      ReminderStatus @default(SCHEDULED)
-  createdAt   DateTime       @default(now())
+  status      ReminderStatus  @default(SCHEDULED)
+  createdAt   DateTime        @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -2090,31 +2196,31 @@ model ReminderSchedule {
 // ─── Vendor Reviews ─────────────────────────────────────────────
 
 model VendorReview {
-  id              String   @id @default(cuid())
-  vendorId        String
-  userId          String
-  leadId          String?
-  bookingId       String?
-  rating          Int
-  comment         String?
-  eventType       String?
-  serviceQuality  Int?
-  communication   Int?
-  valueRating     Int?
-  timeliness      Int?
-  wouldRecommend  Boolean?
-  isVerified      Boolean  @default(false)
-  status          String   @default("published")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  vendorId       String
+  userId         String
+  leadId         String?
+  bookingId      String?
+  rating         Int
+  comment        String?
+  eventType      String?
+  serviceQuality Int?
+  communication  Int?
+  valueRating    Int?
+  timeliness     Int?
+  wouldRecommend Boolean?
+  isVerified     Boolean  @default(false)
+  status         String   @default("published")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   vendor  Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   user    User           @relation(fields: [userId], references: [id])
   booking VendorBooking? @relation(fields: [bookingId], references: [id])
 
+  @@unique([bookingId, userId])
   @@index([vendorId])
   @@index([bookingId])
-  @@unique([bookingId, userId])
   @@map("vendor_reviews")
 }
 
@@ -2125,7 +2231,7 @@ model EventExpense {
   eventId     String
   walletId    String?
   category    String
-  amount      Decimal 
+  amount      Decimal
   description String?
   createdAt   DateTime @default(now())
 
@@ -2249,11 +2355,11 @@ model DesignTemplate {
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
 
-  designer        User?              @relation("TemplateDesigner", fields: [designerId], references: [id])
-  createdBy       User               @relation("TemplateCreator", fields: [createdById], references: [id])
-  favorites       TemplateFavorite[]
-  purchases       TemplatePurchase[]
-  exports         DesignExport[]
+  designer         User?              @relation("TemplateDesigner", fields: [designerId], references: [id])
+  createdBy        User               @relation("TemplateCreator", fields: [createdById], references: [id])
+  favorites        TemplateFavorite[]
+  purchases        TemplatePurchase[]
+  exports          DesignExport[]
   generatedDesigns GeneratedDesign[]
 
   @@index([category])
@@ -2389,31 +2495,31 @@ model AiDesignRequest {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
-  user              User              @relation(fields: [userId], references: [id])
-  generatedDesigns  GeneratedDesign[]
+  user             User              @relation(fields: [userId], references: [id])
+  generatedDesigns GeneratedDesign[]
 
   @@index([userId])
   @@map("ai_design_requests")
 }
 
 model GeneratedDesign {
-  id           String              @id @default(cuid())
-  userId       String
-  eventId      String?
-  templateId   String?
-  aiRequestId  String?
-  productType  TemplateProductType
-  name         String
-  config       Json
-  previewUrl   String?
-  status       DesignStatus        @default(DRAFT)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id          String              @id @default(cuid())
+  userId      String
+  eventId     String?
+  templateId  String?
+  aiRequestId String?
+  productType TemplateProductType
+  name        String
+  config      Json
+  previewUrl  String?
+  status      DesignStatus        @default(DRAFT)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
-  user       User             @relation(fields: [userId], references: [id])
-  template   DesignTemplate?  @relation(fields: [templateId], references: [id])
-  aiRequest  AiDesignRequest? @relation(fields: [aiRequestId], references: [id])
-  versions   DesignVersion[]
+  user      User             @relation(fields: [userId], references: [id])
+  template  DesignTemplate?  @relation(fields: [templateId], references: [id])
+  aiRequest AiDesignRequest? @relation(fields: [aiRequestId], references: [id])
+  versions  DesignVersion[]
 
   @@index([userId])
   @@index([eventId])
@@ -2646,35 +2752,35 @@ enum LegacyArchiveVisibility {
 }
 
 model FuneralProfile {
-  id               String        @id @default(cuid())
-  eventId          String        @unique
-  deceasedName     String
-  dateOfBirth      DateTime?
-  dateOfPassing    DateTime?
-  age              Int?
-  biography        String?
-  familyName       String?
-  familyInformation String?
-  lifeJourney      String?
-  achievements     String?
-  education        String?
-  career           String?
-  faithJourney     String?
-  legacyMessage    String?
-  photoUrl         String?
-  theme            String        @default("midnight-ivory")
-  templateSlug     String?
-  revealStyle      String?
+  id                      String                  @id @default(cuid())
+  eventId                 String                  @unique
+  deceasedName            String
+  dateOfBirth             DateTime?
+  dateOfPassing           DateTime?
+  age                     Int?
+  biography               String?
+  familyName              String?
+  familyInformation       String?
+  lifeJourney             String?
+  achievements            String?
+  education               String?
+  career                  String?
+  faithJourney            String?
+  legacyMessage           String?
+  photoUrl                String?
+  theme                   String                  @default("midnight-ivory")
+  templateSlug            String?
+  revealStyle             String?
   invitationAudioCategory String?
-  privacyStatus    PrivacyStatus @default(PUBLIC)
-  burialVenue      String?
-  burialDirections String?
-  livestreamUrl    String?
-  familyContacts   Json?
-  preferredLanguages Json?
-  legacyVisibility LegacyArchiveVisibility @default(FAMILY_ONLY)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  privacyStatus           PrivacyStatus           @default(PUBLIC)
+  burialVenue             String?
+  burialDirections        String?
+  livestreamUrl           String?
+  familyContacts          Json?
+  preferredLanguages      Json?
+  legacyVisibility        LegacyArchiveVisibility @default(FAMILY_ONLY)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -2780,15 +2886,15 @@ model FuneralFamilyMember {
 }
 
 model MemorialMediaItem {
-  id             String              @id @default(cuid())
+  id             String            @id @default(cuid())
   eventId        String
   kind           MemorialMediaKind
   url            String
   caption        String?
   author         String?
-  approvalStatus ApprovalStatus      @default(PENDING)
-  sortOrder      Int                 @default(0)
-  createdAt      DateTime            @default(now())
+  approvalStatus ApprovalStatus    @default(PENDING)
+  sortOrder      Int               @default(0)
+  createdAt      DateTime          @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -2924,7 +3030,7 @@ model EventMemoryUpload {
   approvedAt      DateTime?
   createdAt       DateTime                @default(now())
 
-  videoAssetId    String?                 @unique
+  videoAssetId String? @unique
 
   event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   guest      Guest?      @relation(fields: [guestId], references: [id], onDelete: SetNull)
@@ -3041,7 +3147,7 @@ model InvitationCatalogTemplate {
   backgroundVideoUrl  String?
   motionReferenceUrl  String?
   inspirationMediaUrl String?
-  defaultGalleryUrls Json?
+  defaultGalleryUrls  Json?
   priceGhs            Decimal?
   languages           Json?
   isPremium           Boolean  @default(false)
@@ -3049,21 +3155,21 @@ model InvitationCatalogTemplate {
   isActive            Boolean  @default(true)
   sortOrder           Int      @default(0)
   // Studio 2.0 — templates as content: blueprint × theme × motif × motion
-  tier                String?  // "free" | "premium" | "luxury" (zod-validated)
-  tags                Json?    // style tags: ["royal", "gold", "minimal"]
-  colorFamily         String?  // "gold" | "emerald" | "monochrome" | …
+  tier                String? // "free" | "premium" | "luxury" (zod-validated)
+  tags                Json? // style tags: ["royal", "gold", "minimal"]
+  colorFamily         String? // "gold" | "emerald" | "monochrome" | …
   hasParallax         Boolean  @default(false)
-  blueprintId         String?  // src/lib/invite-blueprints registry id
-  themeId             String?  // src/lib/invitation-theme registry id
+  blueprintId         String? // src/lib/invite-blueprints registry id
+  themeId             String? // src/lib/invitation-theme registry id
   motifPackId         String?
-  motionProfileId     String?  // "still" | "gentle-drift"
-  performanceClass    String?  // "light" | "standard"
+  motionProfileId     String? // "still" | "gentle-drift"
+  performanceClass    String? // "light" | "standard"
   /// Default library track for invitations using this catalog template
   defaultMusicTrackId String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  orders InvitationOrder[]
+  orders            InvitationOrder[]
   defaultMusicTrack InvitationMusicTrack? @relation("CatalogTemplateDefaultMusic", fields: [defaultMusicTrackId], references: [id], onDelete: SetNull)
 
   @@index([category])
@@ -3074,29 +3180,29 @@ model InvitationCatalogTemplate {
 }
 
 model InvitationProductPackage {
-  id                        String   @id @default(cuid())
-  name                      String
-  slug                      String   @unique
-  description               String?
-  tagline                   String?
-  bestFor                   String?
-  priceGhs                  Decimal
-  revisions                 Int      @default(1)
-  deliveryDays              Int      @default(3)
-  features                  Json?
+  id                       String   @id @default(cuid())
+  name                     String
+  slug                     String   @unique
+  description              String?
+  tagline                  String?
+  bestFor                  String?
+  priceGhs                 Decimal
+  revisions                Int      @default(1)
+  deliveryDays             Int      @default(3)
+  features                 Json?
   /// Event types this package applies to. Null/empty = all event types.
-  eventTypes                Json?
-  designerAssist            Boolean  @default(false)
-  paymentRequiredToPublish  Boolean  @default(true)
-  isPopular                 Boolean  @default(false)
-  isBestValue               Boolean  @default(false)
-  isActive                  Boolean  @default(true)
-  sortOrder                 Int      @default(0)
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  eventTypes               Json?
+  designerAssist           Boolean  @default(false)
+  paymentRequiredToPublish Boolean  @default(true)
+  isPopular                Boolean  @default(false)
+  isBestValue              Boolean  @default(false)
+  isActive                 Boolean  @default(true)
+  sortOrder                Int      @default(0)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  orders  InvitationOrder[]
-  prices  PackagePrice[]
+  orders InvitationOrder[]
+  prices PackagePrice[]
 
   @@map("invitation_product_packages")
 }
@@ -3141,24 +3247,24 @@ model AddonFulfillmentRequest {
 }
 
 model InvitationMusicTrack {
-  id          String   @id @default(cuid())
-  title       String
-  artist      String?
-  category    String   @default("general")
-  url         String
+  id           String   @id @default(cuid())
+  title        String
+  artist       String?
+  category     String   @default("general")
+  url          String
   /// Original full upload when url is a trimmed clip
-  sourceUrl   String?
-  durationSec Float?
+  sourceUrl    String?
+  durationSec  Float?
   clipStartSec Float?
   clipEndSec   Float?
-  isPremium   Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isPremium    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  createdBy User? @relation("MusicTrackCreator", fields: [createdById], references: [id])
+  createdBy        User?                       @relation("MusicTrackCreator", fields: [createdById], references: [id])
   catalogTemplates InvitationCatalogTemplate[] @relation("CatalogTemplateDefaultMusic")
   events           Event[]                     @relation("EventDefaultMusic")
 
@@ -3167,53 +3273,53 @@ model InvitationMusicTrack {
 }
 
 model InvitationOrder {
-  id                 String                     @id @default(cuid())
-  userId             String
-  templateSlug       String
-  packageSlug        String
-  status             InvitationMvpStatus        @default(DRAFT)
-  productionStatus   InvitationProductionStatus @default(NOT_STARTED)
-  workflowType       InvitationWorkflowType     @default(SELF_SERVICE)
-  workflowStage      InvitationWorkflowStage    @default(PACKAGE_SELECTED)
-  previewUrl         String?
-  previewVideoUrl    String?
-  extraRevisionPriceGhs Decimal                 @default(79)
-  eventType          String
-  hostName           String?
-  coupleName1        String?
-  coupleName2        String?
-  deceasedName       String?
-  eventTitle         String?
-  eventDate          DateTime?
-  eventTime          String?
-  venueName          String?
-  landmark           String?
-  mapsLink           String?
-  dressCode          String?
-  contactPhone       String?
-  contactEmail       String?
-  story              String?
-  galleryUrls        Json?
-  musicPreference    String?
-  musicSelection     Json?
-  rsvpRequired       Boolean                    @default(true)
-  guestCount         Int?
-  addonSlugs         Json?
-  designConfig       Json?
-  sections           Json?
-  invitationId       String?
-  eventId            String?
-  totalAmountGhs     Decimal                    @default(0)
-  displayCurrency    String                     @default("GHS")
-  displayAmount      Decimal?
-  exchangeRate       Decimal?
-  currency           String                     @default("GHS")
-  shareUrl           String?
-  languageMode         InvitationLanguageMode     @default(EN_FR)
-  assignedDesignerId   String?
-  adminNotes           String?
-  revisionsUsed        Int                        @default(0)
-  missingInfoRequest   String?
+  id                     String                     @id @default(cuid())
+  userId                 String
+  templateSlug           String
+  packageSlug            String
+  status                 InvitationMvpStatus        @default(DRAFT)
+  productionStatus       InvitationProductionStatus @default(NOT_STARTED)
+  workflowType           InvitationWorkflowType     @default(SELF_SERVICE)
+  workflowStage          InvitationWorkflowStage    @default(PACKAGE_SELECTED)
+  previewUrl             String?
+  previewVideoUrl        String?
+  extraRevisionPriceGhs  Decimal                    @default(79)
+  eventType              String
+  hostName               String?
+  coupleName1            String?
+  coupleName2            String?
+  deceasedName           String?
+  eventTitle             String?
+  eventDate              DateTime?
+  eventTime              String?
+  venueName              String?
+  landmark               String?
+  mapsLink               String?
+  dressCode              String?
+  contactPhone           String?
+  contactEmail           String?
+  story                  String?
+  galleryUrls            Json?
+  musicPreference        String?
+  musicSelection         Json?
+  rsvpRequired           Boolean                    @default(true)
+  guestCount             Int?
+  addonSlugs             Json?
+  designConfig           Json?
+  sections               Json?
+  invitationId           String?
+  eventId                String?
+  totalAmountGhs         Decimal                    @default(0)
+  displayCurrency        String                     @default("GHS")
+  displayAmount          Decimal?
+  exchangeRate           Decimal?
+  currency               String                     @default("GHS")
+  shareUrl               String?
+  languageMode           InvitationLanguageMode     @default(EN_FR)
+  assignedDesignerId     String?
+  adminNotes             String?
+  revisionsUsed          Int                        @default(0)
+  missingInfoRequest     String?
   archivedAt             DateTime?
   portfolioConsent       Boolean                    @default(false)
   termsAcceptedVersion   String?
@@ -3225,12 +3331,12 @@ model InvitationOrder {
   createdAt              DateTime                   @default(now())
   updatedAt              DateTime                   @updatedAt
 
-  user              User                        @relation(fields: [userId], references: [id])
-  template          InvitationCatalogTemplate   @relation(fields: [templateSlug], references: [slug])
-  package           InvitationProductPackage    @relation(fields: [packageSlug], references: [slug])
-  assignedDesigner  User?                       @relation("OrderDesigner", fields: [assignedDesignerId], references: [id])
-  payment           Payment?
-  languageVersions  InvitationLanguageVersion[]
+  user                  User                        @relation(fields: [userId], references: [id])
+  template              InvitationCatalogTemplate   @relation(fields: [templateSlug], references: [slug])
+  package               InvitationProductPackage    @relation(fields: [packageSlug], references: [slug])
+  assignedDesigner      User?                       @relation("OrderDesigner", fields: [assignedDesignerId], references: [id])
+  payment               Payment?
+  languageVersions      InvitationLanguageVersion[]
   blocks                InvitationBlock[]
   revisions             InvitationRevision[]
   productionAssignments ProductionAssignment[]
@@ -3277,25 +3383,25 @@ enum InvitationRevisionStatus {
 }
 
 model InvitationRevision {
-  id                String                   @id @default(cuid())
-  invitationOrderId String
-  revisionNumber    Int
-  revisionType      RevisionType             @default(MINOR)
-  changeCategory    RevisionChangeCategory   @default(OTHER)
-  status            InvitationRevisionStatus @default(REQUESTED)
-  notes             String?
-  adminNotes        String?
-  adminResponse     String?
-  isExtraPaid       Boolean                  @default(false)
-  amountGhs         Decimal?
-  customerApproved  Boolean                  @default(false)
+  id                 String                   @id @default(cuid())
+  invitationOrderId  String
+  revisionNumber     Int
+  revisionType       RevisionType             @default(MINOR)
+  changeCategory     RevisionChangeCategory   @default(OTHER)
+  status             InvitationRevisionStatus @default(REQUESTED)
+  notes              String?
+  adminNotes         String?
+  adminResponse      String?
+  isExtraPaid        Boolean                  @default(false)
+  amountGhs          Decimal?
+  customerApproved   Boolean                  @default(false)
   customerApprovedAt DateTime?
-  requestedAt       DateTime                 @default(now())
-  completedAt       DateTime?
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  requestedAt        DateTime                 @default(now())
+  completedAt        DateTime?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
 
-  invitationOrder InvitationOrder    @relation(fields: [invitationOrderId], references: [id], onDelete: Cascade)
+  invitationOrder InvitationOrder      @relation(fields: [invitationOrderId], references: [id], onDelete: Cascade)
   comments        RevisionComment[]
   payments        RevisionPayment[]
   approvals       InvitationApproval[]
@@ -3538,8 +3644,8 @@ model InvitationBlock {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  invitation      Invitation?      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  invitationOrder InvitationOrder? @relation(fields: [invitationOrderId], references: [id], onDelete: Cascade)
+  invitation      Invitation?              @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  invitationOrder InvitationOrder?         @relation(fields: [invitationOrderId], references: [id], onDelete: Cascade)
   contents        InvitationBlockContent[]
   media           InvitationMedia[]
   galleryItems    InvitationGalleryItem[]
@@ -3648,18 +3754,18 @@ model UserConsentRecord {
 // ─── InvitationOS Analytics ───────────────────────────────────────
 
 model InvitationAnalyticsEvent {
-  id             String   @id @default(cuid())
-  eventType      String
-  orderId        String?
-  invitationId   String?
-  guestId        String?
-  userId         String?
-  templateSlug   String?
-  packageSlug    String?
-  addonSlug      String?
-  revenueGhs     Decimal?
-  metadata       Json?
-  createdAt      DateTime @default(now())
+  id           String   @id @default(cuid())
+  eventType    String
+  orderId      String?
+  invitationId String?
+  guestId      String?
+  userId       String?
+  templateSlug String?
+  packageSlug  String?
+  addonSlug    String?
+  revenueGhs   Decimal?
+  metadata     Json?
+  createdAt    DateTime @default(now())
 
   @@index([eventType, createdAt])
   @@index([orderId])
@@ -3740,8 +3846,8 @@ model InspirationSource {
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
 
-  user               User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event              Event?                        @relation(fields: [eventId], references: [id])
+  user               User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event              Event?                         @relation(fields: [eventId], references: [id])
   analysis           InspirationAnalysis?
   media              InspirationMedia[]
   generatedTemplates InspirationGeneratedTemplate[]
@@ -3801,19 +3907,19 @@ model InspirationGeneratedTemplate {
 }
 
 model StudioProject {
-  id                   String   @id @default(cuid())
-  userId               String
-  sourceId             String?
-  name                 String
-  productType          String
-  config               Json
-  audioConfig          Json?
-  designTemplateId     String?
-  status               String   @default("DRAFT")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id               String   @id @default(cuid())
+  userId           String
+  sourceId         String?
+  name             String
+  productType      String
+  config           Json
+  audioConfig      Json?
+  designTemplateId String?
+  status           String   @default("DRAFT")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  source             InspirationSource?           @relation(fields: [sourceId], references: [id])
+  source             InspirationSource?             @relation(fields: [sourceId], references: [id])
   generatedTemplates InspirationGeneratedTemplate[]
 
   @@index([userId])
@@ -3897,30 +4003,30 @@ model WorkspaceRolePermission {
 }
 
 model OrganizerProfile {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  slug                  String   @unique
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  slug                  String    @unique
   headline              String?
   bio                   String?
   specialties           Json?
   location              String?
   city                  String?
   region                String?
-  country               String?  @default("GH")
+  country               String?   @default("GH")
   coverImageUrl         String?
   portfolio             Json?
   packages              Json?
-  isVerified            Boolean  @default(false)
-  isPublic              Boolean  @default(true)
-  rating                Decimal  @default(0)
-  reviewCount           Int      @default(0)
-  completedEventsCount  Int      @default(0)
-  responseRate          Decimal  @default(0)
+  isVerified            Boolean   @default(false)
+  isPublic              Boolean   @default(true)
+  rating                Decimal   @default(0)
+  reviewCount           Int       @default(0)
+  completedEventsCount  Int       @default(0)
+  responseRate          Decimal   @default(0)
   averageResponseTime   Int?
-  onboardingStep        Int      @default(0)
+  onboardingStep        Int       @default(0)
   onboardingCompletedAt DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -4003,16 +4109,16 @@ model OrganizationMember {
 }
 
 model ClientRelationship {
-  id           String    @id @default(cuid())
-  organizerId  String
-  clientId     String
-  eventsCount  Int       @default(0)
-  lastEventAt  DateTime?
-  rating       Decimal?
-  review       String?
-  isRecommended Boolean  @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  organizerId   String
+  clientId      String
+  eventsCount   Int       @default(0)
+  lastEventAt   DateTime?
+  rating        Decimal?
+  review        String?
+  isRecommended Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   organizer User @relation("OrganizerClients", fields: [organizerId], references: [id], onDelete: Cascade)
   client    User @relation("ClientOrganizers", fields: [clientId], references: [id], onDelete: Cascade)
@@ -4055,9 +4161,9 @@ model EventTask {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
-  event      Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  assignedTo User? @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  createdBy  User  @relation("TaskCreator", fields: [createdById], references: [id])
+  event      Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignedTo User?              @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User               @relation("TaskCreator", fields: [createdById], references: [id])
   comments   EventTaskComment[]
 
   @@index([eventId, status])
@@ -4131,14 +4237,14 @@ model EventBlueprintConfig {
 }
 
 model EventWorkspace {
-  id            String      @id @default(cuid())
-  eventId       String      @unique
+  id            String    @id @default(cuid())
+  eventId       String    @unique
   eventType     EventType
-  stage         String      @default("DRAFT")
+  stage         String    @default("DRAFT")
   navigation    Json?
   configuration Json?
-  provisionedAt DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  provisionedAt DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   event    Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
   features EventEnabledFeature[]
@@ -4242,11 +4348,11 @@ model VideoAsset {
   /// Arbitrary extra context: guest name/token, role (hero/background), mute flag, etc.
   context  Json?
 
-  originalKey       String  @unique
+  originalKey       String @unique
   originalFilename  String
   originalMimeType  String
   originalExtension String
-  sizeBytes         BigInt  @default(0)
+  sizeBytes         BigInt @default(0)
 
   detectedContainer  String?
   detectedVideoCodec String?
@@ -4259,10 +4365,10 @@ model VideoAsset {
   partSizeBytes     BigInt?
   totalParts        Int?
   /// [{ partNumber, etag, sizeBytes }] — persisted so uploads can resume after a refresh.
-  uploadedParts      Json?
+  uploadedParts     Json?
 
-  mediaConvertJobId   String?
-  mediaConvertQueue   String?
+  mediaConvertJobId String?
+  mediaConvertQueue String?
 
   processedMp4Url        String?
   processedMp4Renditions Json?
@@ -4293,11 +4399,13 @@ model VideoAsset {
   @@map("video_assets")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Event Gift Wallet — private cash gifting for events.
-// Additive only: nothing above is altered beyond back-relations and the
-// EVENT_GIFT payment purpose. The ledger is the source of truth for money.
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Event Gift Wallet & Cash Gifts ─────────────────────────────
+//
+// Private premium gifting: a guest sends a cash gift to the couple/host from a
+// digital invitation or a printed gift QR. Guests only ever see their own
+// payment and receipt — contributor names, amounts, and event totals are
+// organiser-only. All money is stored in integer minor units (pesewas for GHS)
+// so no floating point arithmetic ever touches a balance.
 
 enum EventGiftType {
   WEDDING_GIFT
@@ -4322,6 +4430,8 @@ enum EventGiftCampaignStatus {
   ARCHIVED
 }
 
+/// EVENT_GIFT_QR      — one shared gift QR for the whole event (print + digital)
+/// PERSONALISED_GIFT_QR — per-guest links that prefill the guest identity
 enum EventGiftQrMode {
   EVENT_GIFT_QR
   PERSONALISED_GIFT_QR
@@ -4352,6 +4462,9 @@ enum EventWalletAccountStatus {
   CLOSED
 }
 
+/// Ledger entry types. Credits are positive minor units, debits negative.
+/// Reversals/refunds are always written as new compensating entries — a
+/// financial row is never mutated or deleted.
 enum EventWalletLedgerType {
   GIFT_CREDIT
   GIFT_REVERSAL
@@ -4575,4 +4688,155 @@ model EventWalletLedgerEntry {
   @@index([giftPaymentId])
   @@index([type])
   @@map("event_wallet_ledger_entries")
+}
+
+// ─── Guest Entry Pass (QR Admission) ────────────────────────────
+//
+// Additive layer on top of the existing QrCode/QrScan gate stack. A GuestPass
+// is the *invitation-level* admission artefact guests see at the bottom of a
+// published invite: one signed QR + one human-readable code per invitation,
+// with a party-size allowance the gate can never exceed.
+//
+// Security posture: the QR payload is a signed opaque token that is never
+// stored. Only its SHA-256 digest lives in `tokenHash`, so a database leak
+// cannot mint a working pass. Regeneration bumps `tokenVersion` and marks the
+// previous row REISSUED, which keeps old printed passes recognisable (and
+// refusable) at the gate instead of silently "not found".
+
+enum GuestPassStatus {
+  ACTIVE
+  PARTIALLY_ADMITTED
+  ADMITTED
+  EXPIRED
+  REVOKED
+  REISSUED
+  PENDING_SYNC
+  CONFLICT
+  MANUAL_REVIEW
+}
+
+/// How the gate reacts when an already-admitted pass is presented again.
+enum AdmissionDuplicatePolicy {
+  BLOCK
+  WARN
+  ALLOW
+}
+
+/// When the Post-Admission Guest Experience portal unlocks for a party.
+enum PortalUnlockPolicy {
+  ON_FIRST_ADMISSION
+  ON_FULL_ADMISSION
+  MANUAL
+}
+
+/// Per-event admission policy. Every field has a safe default so events that
+/// never open this panel behave exactly as they did before the pass system.
+model EventAdmissionSettings {
+  id      String @id @default(cuid())
+  eventId String @unique
+
+  // ─ Core toggles ─
+  qrAdmissionEnabled      Boolean @default(false)
+  qrRequiredForEntry      Boolean @default(true)
+  manualCodeEnabled       Boolean @default(true)
+  /// 4 by default; auto-promoted to 6 when the 4-digit space can't cover the guest list.
+  manualCodeLength        Int     @default(4)
+  offlineAdmissionEnabled Boolean @default(true)
+
+  // ─ Pass presentation ─
+  displayPassOnInvitation  Boolean @default(true)
+  allowPassDownload        Boolean @default(true)
+  allowPassPrint           Boolean @default(true)
+  showPartySizeOnPass      Boolean @default(true)
+  showTableOnPass          Boolean @default(false)
+  showSeatOnPass           Boolean @default(false)
+  hideSeatingUntilAdmitted Boolean @default(true)
+  passInstructions         String?
+
+  // ─ Arrival behaviour ─
+  allowPartialArrival  Boolean @default(true)
+  allowSeparateArrival Boolean @default(true)
+  allowReEntry         Boolean @default(false)
+  reEntryWindowMinutes Int?
+
+  // ─ Gate operation ─
+  requireScannerConfirmation Boolean @default(false)
+  fastAdmissionMode          Boolean @default(false)
+  requireOperatorAuth        Boolean @default(true)
+
+  // ─ Validity windows (null → derive from event start using the lead/trail hours) ─
+  validFrom                DateTime?
+  validUntil               DateTime?
+  validityLeadHours        Int       @default(12)
+  validityTrailHours       Int       @default(12)
+  offlinePackageTtlMinutes Int       @default(720)
+
+  // ─ Abuse controls ─
+  manualCodeAttemptLimit         Int                      @default(10)
+  manualCodeAttemptWindowSeconds Int                      @default(300)
+  duplicatePolicy                AdmissionDuplicatePolicy @default(BLOCK)
+  portalUnlockPolicy             PortalUnlockPolicy       @default(ON_FIRST_ADMISSION)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_admission_settings")
+}
+
+model GuestPass {
+  id           String  @id @default(cuid())
+  eventId      String
+  invitationId String
+  /// Optional guest-group anchor for group/table passes.
+  groupId      String?
+
+  /// SHA-256 digest of the signed pass token. The token itself is never persisted.
+  tokenHash    String @unique
+  /// Non-secret nonce the token is re-derived from. Useless without
+  /// ADMISSION_PASS_SECRET, so a database dump cannot mint a working pass,
+  /// yet the invitation can still re-render the QR on every view.
+  tokenNonce   String @unique
+  /// Non-secret leading fragment kept for support lookups and offline indexing.
+  tokenPrefix  String
+  /// Incremented on every regeneration; the previous row is marked REISSUED.
+  tokenVersion Int    @default(1)
+
+  /// Human-readable admission code, unique within the event.
+  code       String
+  codeLength Int    @default(4)
+
+  status        GuestPassStatus @default(ACTIVE)
+  displayName   String
+  /// Total heads this pass may admit. Never exceeded, online or offline.
+  partySize     Int             @default(1)
+  /// Heads admitted so far — authoritative for the invitation projection.
+  admittedCount Int             @default(0)
+  /// Optimistic-concurrency guard for atomic admits under parallel scanners.
+  revision      Int             @default(0)
+
+  issuedAt        DateTime  @default(now())
+  firstAdmittedAt DateTime?
+  lastAdmittedAt  DateTime?
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  revokedReason   String?
+  /// Points at the pass this one replaced, so the audit trail survives reissues.
+  reissuedFromId  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event           Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitation      Invitation       @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  scans           QrScan[]
+  offlineCheckins OfflineCheckin[]
+
+  @@unique([eventId, code])
+  @@unique([invitationId, tokenVersion])
+  @@index([eventId, status])
+  @@index([invitationId, status])
+  @@index([tokenPrefix])
+  @@map("guest_passes")
 }

@@ -386,6 +386,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           qrDataUrl={props.qrDataUrl}
           admissionManualCode={props.admissionManualCode}
           admissionQrDataUrl={props.admissionQrDataUrl}
+          entryPass={props.entryPass}
           seatTable={props.seatTable}
           seatLabel={props.seatLabel}
           memoryUploadUrl={props.memoryUploadUrl}
