@@ -58,6 +58,8 @@ interface OpeningExperienceRouterProps {
   embedded?: boolean;
   /** Catalogue tap already unlocked audio — open without a second seal tap. */
   autoOpen?: boolean;
+  /** Returning guest — reveals may offer a visible, opt-in skip control. */
+  allowSkip?: boolean;
   children: React.ReactNode;
 }
 
@@ -83,6 +85,7 @@ export function OpeningExperienceRouter({
   onBegin,
   embedded = false,
   autoOpen = false,
+  allowSkip = false,
   children,
 }: OpeningExperienceRouterProps) {
   const [revealed, setRevealed] = useState(false);
@@ -154,6 +157,7 @@ export function OpeningExperienceRouter({
           hostName={hostName}
           copy={{ ...openingCopy, monogram: openingCopy?.monogram ?? sealInitials }}
           autoOpen={autoOpen}
+          allowSkip={allowSkip}
           onBegin={onBegin}
           onComplete={complete}
         />

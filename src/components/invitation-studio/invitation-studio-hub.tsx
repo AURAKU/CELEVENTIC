@@ -1727,7 +1727,16 @@ export const InvitationStudioHub = forwardRef<
                 {design.layout === "forever-afaris-wedding" && (
                   <WeddingBoardStudioPanel
                     value={studio.weddingBoard}
-                    onChange={(weddingBoard) => patchStudio({ weddingBoard })}
+                    onChange={(weddingBoard) =>
+                      onChange({
+                        ...design,
+                        studio: { ...studio, weddingBoard },
+                        // The board carries the ceremony itself (envelope paper,
+                        // wax, gate) — claim the design so the catalog SKU never
+                        // reinstates its own opening over the host's.
+                        experience: { ...experience, experienceCustomized: true },
+                      })
+                    }
                   />
                 )}
               </PropSection>
