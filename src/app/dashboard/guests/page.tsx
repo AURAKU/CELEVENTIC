@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PaginationBar } from "@/components/ui/pagination";
-import { Users, Plus, MessageCircle, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Users, Plus, MessageCircle, ExternalLink, Upload } from "lucide-react";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { usePagination } from "@/hooks/use-pagination";
@@ -106,9 +107,16 @@ export default function GuestsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Guest CRM</h1>
-        <p className="page-subtitle">Track invited, opened, RSVP, check-in — share via WhatsApp with one tap.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Guest CRM</h1>
+          <p className="page-subtitle">Track invited, opened, RSVP, check-in — share via WhatsApp with one tap.</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/guests/import">
+            <Upload className="h-4 w-4" /> Bulk import
+          </Link>
+        </Button>
       </div>
 
       <Card><CardContent className="p-4"><EventPicker events={events} value={eventId} onChange={setEventId} loading={eventsLoading} /></CardContent></Card>
