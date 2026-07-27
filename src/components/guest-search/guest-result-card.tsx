@@ -22,6 +22,13 @@ import { Label } from "@/components/ui/label";
 import { PartyAllowanceField } from "./party-allowance-field";
 import { describeAllowance } from "@/lib/guest-search/party-allowance";
 import type { SearchResultCard } from "@/lib/guest-search/types";
+import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
+
+function publicInviteUrl(url: string): string {
+  const base = getClientAppUrl();
+  if (isLocalHost(url) && !isLocalHost(base)) return sanitizePublicUrl(url, base);
+  return url;
+}
 
 /**
  * One search result.
@@ -63,14 +70,15 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
     };
   }, [menuOpen]);
 
-  const whatsAppText = `Dear ${card.name},\n\nYou are personally invited. Open your invitation:\n${card.inviteUrl}`;
+  const shareUrl = publicInviteUrl(card.inviteUrl);
+  const whatsAppText = `Dear ${card.name},\n\nYou are personally invited. Open your invitation:\n${shareUrl}`;
   const emailBody = card.admissionCode
     ? `${whatsAppText}\n\nYour admission code: ${card.admissionCode}`
     : whatsAppText;
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(card.inviteUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -188,7 +196,7 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
                 </MenuItem>
                 <MenuItem
                   icon={Download}
-                  href={`/api/qr/image?data=${encodeURIComponent(card.inviteUrl)}&mode=pass&size=1024&download=1`}
+                  href={`/api/qr/image?data=${encodeURIComponent(shareUrl)}&mode=pass&size=1024&download=1`}
                 >
                   Download QR
                 </MenuItem>

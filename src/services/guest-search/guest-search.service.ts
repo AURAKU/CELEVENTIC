@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getAppUrlFromEnv } from "@/lib/app-url";
+import { getServerAppUrl } from "@/lib/app-url";
 import {
   CANDIDATE_LIMIT,
   parseSearchQuery,
@@ -229,7 +229,7 @@ export async function searchGuests(options: SearchOptions): Promise<SearchRespon
     return { query: query.raw, results: [], total: 0, truncated: false, tookMs: 0 };
   }
 
-  const appUrl = getAppUrlFromEnv();
+  const appUrl = await getServerAppUrl();
   const baseWhere: Prisma.InvitationWhereInput = {
     eventId: options.eventId,
     ...(options.includeArchived ? {} : { archivedAt: null }),
@@ -297,6 +297,6 @@ export async function getResultCard(
   return toCard(
     row,
     { score: 0, field: "name", reason: row.name },
-    getAppUrlFromEnv()
+    await getServerAppUrl()
   );
 }

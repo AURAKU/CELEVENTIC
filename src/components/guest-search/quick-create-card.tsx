@@ -26,6 +26,14 @@ import type {
   QuickInviteResult,
   SearchResultCard,
 } from "@/lib/guest-search/types";
+import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
+
+/** Absolute invite URL safe for copy/WhatsApp/email — never localhost on live. */
+function publicInviteUrl(url: string): string {
+  const base = getClientAppUrl();
+  if (isLocalHost(url) && !isLocalHost(base)) return sanitizePublicUrl(url, base);
+  return url;
+}
 
 /**
  * Create Personalised Invitation.
@@ -172,7 +180,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <UserPlus className="h-4 w-4" /> Create personalised invitation
+          <UserPlus className="h-4 w-4" /> Create Personalised Invitation
         </CardTitle>
       </CardHeader>
 
@@ -205,9 +213,6 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
               disabled={!eventId}
               required
             />
-            <p className="text-xs text-slate-500">
-              A name is enough. Phone and email only decide how the invitation is delivered.
-            </p>
           </div>
 
           <PartyAllowanceField
@@ -225,7 +230,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="quick-phone">Phone (optional)</Label>
+              <Label htmlFor="quick-phone">Phone number — optional</Label>
               <Input
                 id="quick-phone"
                 value={phone}
@@ -244,7 +249,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="quick-email">Email (optional)</Label>
+              <Label htmlFor="quick-email">Email address — optional</Label>
               <Input
                 id="quick-email"
                 type="email"
@@ -305,14 +310,14 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
               onClick={() => setPreviewOpen((open) => !open)}
               disabled={!preview}
             >
-              <Eye className="h-4 w-4" /> {previewOpen ? "Hide preview" : "Preview"}
+              <Eye className="h-4 w-4" /> {previewOpen ? "Hide preview" : "Preview Invitation"}
             </Button>
             <Button type="submit" disabled={!canSubmit} className="flex-1 sm:flex-none">
               {submitting
                 ? "Creating…"
                 : needsAcknowledgement
                   ? "Create anyway"
-                  : "Create invitation"}
+                  : "Create Invitation"}
             </Button>
           </div>
         </form>
@@ -333,10 +338,14 @@ function CreatedSummary({
   onCopy: (url: string) => void;
   onDismiss: () => void;
 }) {
-  const whatsAppText = `Dear ${result.name},\n\nYou are personally invited. Open your invitation:\n${result.inviteUrl}`;
+  const shareUrl = publicInviteUrl(result.inviteUrl);
+  const whatsAppText = `Dear ${result.name},\n\nYou are personally invited. Open your invitation:\n${shareUrl}`;
   const emailBody = `${whatsAppText}${
     result.admissionCode ? `\n\nYour admission code: ${result.admissionCode}` : ""
   }`;
+  const qrHref = result.qrImageUrl.includes("localhost")
+    ? `/api/qr/image?data=${encodeURIComponent(shareUrl)}&mode=pass&size=1024&download=1`
+    : `${result.qrImageUrl}&download=1`;
 
   return (
     <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
@@ -360,7 +369,7 @@ function CreatedSummary({
       </div>
 
       <div className="mt-2.5 flex flex-wrap gap-1.5">
-        <Button size="sm" variant="outline" onClick={() => onCopy(result.inviteUrl)}>
+        <Button size="sm" variant="outline" onClick={() => onCopy(shareUrl)}>
           <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Copy link"}
         </Button>
         <Button size="sm" variant="outline" asChild>
@@ -380,7 +389,7 @@ function CreatedSummary({
           </a>
         </Button>
         <Button size="sm" variant="outline" asChild>
-          <a href={`${result.qrImageUrl}&download=1`} target="_blank" rel="noopener noreferrer">
+          <a href={qrHref} target="_blank" rel="noopener noreferrer">
             <Download className="h-3.5 w-3.5" /> QR
           </a>
         </Button>

@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
-import { getAppUrlFromEnv } from "@/lib/app-url";
+import { getServerAppUrl } from "@/lib/app-url";
 import { cleanName, nameKey, stripTitles } from "@/lib/guest-import/name";
 import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact";
 import { clampPartySize, suggestAllowance } from "@/lib/guest-search/party-allowance";
@@ -355,7 +355,9 @@ export async function createQuickInvitation(
     },
   });
 
-  const appUrl = getAppUrlFromEnv();
+  // Prefer request host so live Hostinger never mints localhost share links
+  // even if NEXT_PUBLIC_APP_URL was left pointing at a local tunnel.
+  const appUrl = await getServerAppUrl();
   const invitePath = `/invite/${created.invitation.uniqueLink}?guest=${created.qrToken}`;
   const inviteUrl = `${appUrl}${invitePath}`;
 
