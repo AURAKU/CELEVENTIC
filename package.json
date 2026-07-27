@@ -19,7 +19,6 @@
         "db:seed": "tsx prisma/seed.ts",
         "db:seed-wave1": "tsx scripts/seed-wave1-catalog.ts",
         "invitation-features:backfill": "tsx scripts/backfill-invitation-features.ts",
-        "test:admission": "tsx --test src/lib/admission/__tests__/*.test.ts",
         "test:invitation-features": "tsx --test src/lib/invitation-features/__tests__/*.test.ts",
         "db:seed-music": "tsx scripts/seed-music-library.ts",
         "music:sync": "tsx scripts/sync-music-assets.ts",
