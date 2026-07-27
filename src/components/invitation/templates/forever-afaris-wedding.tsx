@@ -136,7 +136,10 @@ function WeddingCountdown({
     return () => clearInterval(id);
   }, [target, valid]);
 
-  if (!valid) return null;
+  // Null until mount (and when the ISO is unusable) — SSR and the first
+  // client paint both render nothing, so the ticking numbers never hydrate
+  // against a different clock.
+  if (!valid || !parts) return null;
 
   const cells: [number, string][] = [
     [parts.days, "Days"],
