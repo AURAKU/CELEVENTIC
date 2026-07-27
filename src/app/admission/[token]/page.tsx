@@ -12,6 +12,10 @@ import { BrandedQrImage } from "@/components/qr/branded-qr-image";
 import { resolveShareOgImage } from "@/lib/social/share-image";
 import { getServerAppUrl } from "@/lib/app-url";
 import { APP_NAME } from "@/lib/constants";
+import { formatDate } from "@/lib/utils";
+import { hashPassToken, verifyPassTokenSignature } from "@/lib/admission/pass-token";
+import { getEventAdmissionSettings } from "@/services/admission/guest-pass.service";
+import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
 
 /**
  * Share-card preview defaults to the QR center logo (falls back to the
@@ -24,16 +28,20 @@ export async function generateMetadata({
   params: Promise<{ token: string }>;
 }): Promise<Metadata> {
   const { token } = await params;
-  const qrCode = await prisma.qrCode.findUnique({
-    where: { token },
-    select: { event: { select: { id: true, title: true, hostName: true } } },
-  });
-  if (!qrCode?.event) return { title: "Admission Pass" };
+  const passEvent = await resolvePassEvent(token);
+  const qrCode = passEvent
+    ? null
+    : await prisma.qrCode.findUnique({
+        where: { token },
+        select: { event: { select: { id: true, title: true, hostName: true } } },
+      });
+  const event = passEvent ?? qrCode?.event;
+  if (!event) return { title: "Admission Pass" };
 
-  const title = `${qrCode.event.title} · Admission Pass`;
-  const description = `${qrCode.event.hostName ? `${qrCode.event.hostName}'s` : "Your"} digital admission pass on Celeventic.`;
+  const title = `${event.title} · Admission Pass`;
+  const description = `${event.hostName ? `${event.hostName}'s` : "Your"} digital admission pass on Celeventic.`;
   const appUrl = await getServerAppUrl();
-  const ogImage = await resolveShareOgImage(qrCode.event.id, appUrl);
+  const ogImage = await resolveShareOgImage(event.id, appUrl);
 
   return {
     title,
@@ -43,7 +51,7 @@ export async function generateMetadata({
       description,
       type: "website",
       siteName: APP_NAME,
-      images: [{ url: ogImage, alt: qrCode.event.title }],
+      images: [{ url: ogImage, alt: event.title }],
     },
     twitter: {
       card: "summary_large_image",
@@ -54,8 +62,62 @@ export async function generateMetadata({
   };
 }
 
+/** Resolve the event behind a Guest Entry Pass token, if this is one. */
+async function resolvePassEvent(token: string) {
+  if (!verifyPassTokenSignature(token)) return null;
+  const pass = await prisma.guestPass.findUnique({
+    where: { tokenHash: hashPassToken(token) },
+    select: { event: { select: { id: true, title: true, hostName: true } } },
+  });
+  return pass?.event ?? null;
+}
+
 export default async function AdmissionPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+
+  // Guest Entry Pass tokens are signed and resolve to the invitation-level pass.
+  // Legacy per-guest/ticket QR tokens fall through to the original lookup below.
+  if (verifyPassTokenSignature(token)) {
+    const pass = await prisma.guestPass.findUnique({
+      where: { tokenHash: hashPassToken(token) },
+      include: {
+        event: { select: { title: true, venueName: true, startDate: true } },
+        invitation: { select: { uniqueLink: true, guests: { select: { qrToken: true }, take: 1 } } },
+      },
+    });
+    if (!pass) notFound();
+
+    const settings = await getEventAdmissionSettings(pass.eventId);
+    const guestToken = pass.invitation.guests[0]?.qrToken;
+
+    return (
+      <AdmissionShell>
+        <GuestEntryPass
+          token={token}
+          code={pass.code}
+          displayName={pass.displayName}
+          eventName={pass.event.title}
+          eventDate={formatDate(pass.event.startDate)}
+          venueName={pass.event.venueName}
+          partySize={pass.partySize}
+          admittedCount={pass.admittedCount}
+          status={pass.status}
+          instructions={settings.passInstructions}
+          allowDownload={settings.allowPassDownload}
+          allowPrint={settings.allowPassPrint}
+          showPartySize={settings.showPartySizeOnPass}
+          preset="minimal"
+          className="px-0 pb-0 pt-0"
+        />
+        <Link
+          href={`/invite/${pass.invitation.uniqueLink}${guestToken ? `?guest=${guestToken}` : ""}`}
+          className="mt-4 inline-block text-sm text-[#0B8A83] hover:underline"
+        >
+          View Invitation
+        </Link>
+      </AdmissionShell>
+    );
+  }
 
   const qrCode = await prisma.qrCode.findUnique({
     where: { token },

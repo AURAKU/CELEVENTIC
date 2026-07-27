@@ -97,6 +97,27 @@ export interface InvitationEventData {
   coverImageUrl?: string | null;
 }
 
+/**
+ * Guest Entry Pass payload rendered at the bottom of a published invitation.
+ * Present only when the event has QR admission enabled and the invite has been
+ * personalised for a guest/party.
+ */
+export interface GuestEntryPassData {
+  /** Signed, opaque pass token — the QR payload. Never a database id. */
+  token: string;
+  code: string;
+  displayName: string;
+  partySize: number;
+  admittedCount: number;
+  status: string;
+  instructions?: string | null;
+  tableNumber?: string | null;
+  seatLabel?: string | null;
+  allowDownload: boolean;
+  allowPrint: boolean;
+  showPartySize: boolean;
+}
+
 export interface InvitationRenderProps {
   invitation: {
     id: string;
@@ -123,4 +144,6 @@ export interface InvitationRenderProps {
   memoryAlbumUrl?: string | null;
   /** QR image for Album upload */
   memoryUploadQrImageUrl?: string | null;
+  /** Guest Entry Pass — rendered as the closing section of the invitation. */
+  entryPass?: GuestEntryPassData | null;
 }

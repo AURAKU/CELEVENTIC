@@ -18,9 +18,12 @@ import { resolveBackgroundMedia } from "@/lib/invitation/studio-media-utils";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
+import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { resolveShareOgImage } from "@/lib/social/share-image";
 import { buildShareDescription } from "@/lib/social/share-description";
 import { APP_NAME } from "@/lib/constants";
+import { getInvitationPassView } from "@/services/admission/guest-pass.service";
+import type { GuestEntryPassData } from "@/types/invitation-design";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -265,9 +268,56 @@ export default async function InvitePage({
     }
   }
 
+  // Guest Entry Pass — only for events that turned QR admission on. Issuance is
+  // idempotent, so the first personalised view of an invite mints the pass and
+  // every later view re-renders the same one.
+  let entryPass: GuestEntryPassData | null = null;
+  if (personalizedGuest) {
+    try {
+      const passView = await getInvitationPassView(invitation.id);
+      if (
+        passView &&
+        passView.settings.qrAdmissionEnabled &&
+        passView.settings.displayPassOnInvitation
+      ) {
+        entryPass = {
+          token: passView.token,
+          code: passView.pass.code,
+          displayName: personalizedGuest.name?.trim() || passView.pass.displayName,
+          partySize: passView.pass.partySize,
+          admittedCount: passView.pass.admittedCount,
+          status: passView.pass.status,
+          instructions: passView.settings.passInstructions,
+          tableNumber:
+            passView.settings.showTableOnPass &&
+            (!passView.settings.hideSeatingUntilAdmitted || passView.pass.admittedCount > 0)
+              ? seatTable
+              : null,
+          seatLabel:
+            passView.settings.showSeatOnPass &&
+            (!passView.settings.hideSeatingUntilAdmitted || passView.pass.admittedCount > 0)
+              ? seatLabel
+              : null,
+          allowDownload: passView.settings.allowPassDownload,
+          allowPrint: passView.settings.allowPassPrint,
+          showPartySize: passView.settings.showPartySizeOnPass,
+        };
+      }
+    } catch (error) {
+      // A pass failure must never take down a published invitation.
+      console.error("[invite] entry pass unavailable", error);
+    }
+  }
+
   const catalogTemplate = order?.template;
   const revealMode = design.studio?.revealMode;
   const resolvedBackground = resolveBackgroundMedia(design, catalogTemplate);
+
+  // Gift Wallet placement — null unless the event has a live campaign with
+  // invitation placement on, so invites without gifting are untouched.
+  const giftPlacement = await giftCampaignService
+    .resolveInvitePlacement(event.id, { guestQrToken })
+    .catch(() => null);
 
   return (
     <PremiumInviteWrapper
@@ -303,6 +353,7 @@ export default async function InvitePage({
       admissionQrDataUrl={admissionQrDataUrl || null}
       admissionQrToken={admissionQrToken || null}
       admissionManualCode={admissionManualCode || null}
+      entryPass={entryPass}
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       seatQrDataUrl={seatQrDataUrl || null}
@@ -318,6 +369,12 @@ export default async function InvitePage({
       memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
       memoryUploadQrImageUrl={memoryLinks?.uploadQrImageUrl ?? null}
       memoryAlbumTitle={memoryLinks?.eventTitle ?? null}
+      giftUrl={giftPlacement?.giftUrl ?? null}
+      giftQrImageUrl={giftPlacement?.qrImageUrl ?? null}
+      giftTitle={giftPlacement?.title ?? null}
+      giftSubtitle={giftPlacement?.subtitle ?? null}
+      giftCtaLabel={giftPlacement?.ctaLabel ?? null}
+      giftPrivacyNote={giftPlacement?.privacyNote ?? null}
       eventId={event.id}
       contactEmail={order?.contactEmail ?? null}
       seatingEnabled={seatingPlan && Boolean(seatQrDataUrl && seatLookupUrl)}

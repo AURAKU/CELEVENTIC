@@ -1,0 +1,179 @@
+/**
+ * Gift Experience motion + surface styling.
+ *
+ * Ornamentation is deliberately restrained: a ribbon sweep, a slow petal drift,
+ * a gilded hairline. Nothing here ever animates in a way that could read as
+ * "payment complete" — success visuals live only on the confirmed screen.
+ * Every animation is switched off wholesale under prefers-reduced-motion.
+ */
+
+.gift-shell {
+  min-height: 100dvh;
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--gift-color-surface-alt) 0%, transparent 60%),
+    var(--gift-color-surface);
+  color: var(--gift-color-ink);
+  font-family: var(--gift-font-body);
+}
+
+.gift-display {
+  font-family: var(--gift-font-display);
+  letter-spacing: 0.01em;
+}
+
+.gift-script {
+  font-family: var(--gift-font-script);
+}
+
+.gift-card {
+  background: color-mix(in srgb, var(--gift-color-surface) 92%, white);
+  border: 1px solid var(--gift-color-border);
+  border-radius: var(--gift-radius);
+  box-shadow: 0 18px 48px -28px rgb(0 0 0 / 35%);
+}
+
+.gift-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--gift-color-accent) 35%,
+    var(--gift-color-accent) 65%,
+    transparent
+  );
+  opacity: 0.55;
+}
+
+.gift-cta {
+  background: var(--gift-color-accent);
+  color: var(--gift-color-on-accent);
+  border-radius: calc(var(--gift-radius) * 0.7);
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.gift-cta:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.gift-cta:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.gift-cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gift-chip {
+  border: 1px solid var(--gift-color-border);
+  border-radius: calc(var(--gift-radius) * 0.6);
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.gift-chip[data-selected="true"] {
+  border-color: var(--gift-color-accent);
+  background: color-mix(in srgb, var(--gift-color-accent) 12%, transparent);
+}
+
+.gift-step-enter {
+  animation: gift-step-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes gift-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Ribbon sweep across the gift box on the landing screen. */
+.gift-ribbon {
+  position: relative;
+  overflow: hidden;
+}
+
+.gift-ribbon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    color-mix(in srgb, var(--gift-color-accent) 45%, white) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  animation: gift-ribbon-sweep 5.5s ease-in-out 1.2s infinite;
+  pointer-events: none;
+}
+
+@keyframes gift-ribbon-sweep {
+  0%,
+  70% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* Petals only appear on the confirmed thank-you screen. */
+.gift-petal {
+  position: absolute;
+  top: -8%;
+  width: 10px;
+  height: 14px;
+  border-radius: 60% 40% 55% 45%;
+  background: color-mix(in srgb, var(--gift-color-accent) 55%, white);
+  opacity: 0;
+  animation: gift-petal-fall 9s linear infinite;
+}
+
+@keyframes gift-petal-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotate(0deg);
+  }
+  10% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(110vh) rotate(320deg);
+  }
+}
+
+.gift-pending-pulse {
+  animation: gift-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes gift-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-step-enter,
+  .gift-ribbon::after,
+  .gift-petal,
+  .gift-pending-pulse {
+    animation: none !important;
+  }
+
+  .gift-petal {
+    display: none;
+  }
+
+  .gift-cta {
+    transition: none;
+  }
+}

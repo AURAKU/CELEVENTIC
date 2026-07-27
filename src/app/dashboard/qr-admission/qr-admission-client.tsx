@@ -17,6 +17,8 @@ import { EventPicker } from "@/components/dashboard/event-picker";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { QrCameraScanner, QrFileReaderHost, scanQrFromFile, playScanFeedback, QrImageScanError } from "@/components/qr/qr-camera-scanner";
 import { AdmissionScanFeedback, type AdmissionFeedbackStatus } from "@/components/qr/admission-scan-feedback";
+import { EntryPassGate } from "@/components/admission/entry-pass-gate";
+import { AdmissionSettingsPanel } from "@/components/admission/admission-settings-panel";
 import { PaginationBar } from "@/components/ui/pagination";
 import { useEventContext } from "@/hooks/use-event-context";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -600,6 +602,18 @@ export function QrAdmissionClient() {
           )}
         </CardContent>
       </Card>
+
+      {eventId && <AdmissionSettingsPanel eventId={eventId} />}
+
+      {/* Invitation-level Guest Entry Pass gate. Shares this page's camera and
+          audit ledger; adds party rosters, admission codes, and offline queueing. */}
+      {eventId && (
+        <EntryPassGate
+          eventId={eventId}
+          eventTitle={selectedEventTitle ?? undefined}
+          gate={gate || undefined}
+        />
+      )}
 
       {stats && eventId && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

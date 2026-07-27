@@ -7,6 +7,7 @@ import { QR_DEFAULT_SIZE } from "@/lib/qr/qr-constants";
 import { parseQrToken } from "@/lib/qr/parse-qr-payload";
 import { ensureGuestManualCode, isManualAdmissionCode } from "@/lib/qr/manual-code";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
+import { syncAdmissionAfterCheckIn } from "@/services/admission/admission.service";
 
 export type QrAdmissionStatus =
   | "valid"
@@ -456,6 +457,20 @@ export class QrService {
         where: { id: qrCode.guestId },
         data: { status: "CHECKED_IN" },
       });
+      // Post-Admission Guest Experience: recompute the invitation admission
+      // projection + append the immutable admission event. Best-effort — the
+      // scan already succeeded, so this never throws back into check-in.
+      const admittedGuest = await prisma.guest.findUnique({
+        where: { id: qrCode.guestId },
+        select: { invitationId: true },
+      });
+      if (admittedGuest?.invitationId) {
+        await syncAdmissionAfterCheckIn({
+          invitationId: admittedGuest.invitationId,
+          guestId: qrCode.guestId,
+          scannerUserId: scannedBy ?? null,
+        });
+      }
     }
 
     if (qrCode.ticketId) {

@@ -18,6 +18,24 @@ export class PaymentProviderError extends Error {
   }
 }
 
+/**
+ * Full provider-side truth about a transaction. Used where a status flag is not
+ * enough — a gift may only be credited once the amount, currency and reference
+ * the provider reports match what we asked for.
+ */
+export interface ProviderVerification {
+  status: "success" | "failed" | "pending";
+  reference: string;
+  /** Integer minor units as reported by the provider. */
+  amountMinor: number;
+  currency: string;
+  channel: string | null;
+  paidAt: string | null;
+  feesMinor: number;
+  gatewayResponse: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
 export interface PaymentProviderAdapter {
   initializePayment(params: PaymentInitRequest & { reference: string }): Promise<PaymentInitResponse>;
   verifyWebhook(payload: unknown, signature: string): Promise<boolean>;
@@ -27,6 +45,8 @@ export interface PaymentProviderAdapter {
     payload: unknown,
     headers: Headers
   ): Promise<{ reference: string | null; successful: boolean } | null>;
+  /** Amount/currency-accurate verification for money that credits a wallet */
+  verifyTransactionDetailed?(reference: string): Promise<ProviderVerification>;
 }
 
 function requireSecret(provider: string, secret: string | null): string {
@@ -62,8 +82,9 @@ class PaystackAdapter implements PaymentProviderAdapter {
         amount: Math.round(params.amount * 100),
         currency: params.currency ?? "GHS",
         reference: params.reference,
-        callback_url: callbackUrl,
+        callback_url: params.callbackUrl || callbackUrl,
         metadata: params.metadata,
+        ...(params.channels?.length ? { channels: params.channels } : {}),
       }),
     });
 
@@ -107,9 +128,77 @@ class PaystackAdapter implements PaymentProviderAdapter {
   async parseWebhook(payload: unknown): Promise<{ reference: string | null; successful: boolean } | null> {
     const body = payload as { event?: string; data?: { reference?: string } };
     if (!body?.data) return null;
+
+    // Only charge outcomes decide a payment's status. Dispute, refund and
+    // transfer events carry their reference in a different shape, and treating
+    // them as a charge here used to risk flipping a settled payment to FAILED.
+    if (body.event !== "charge.success" && body.event !== "charge.failed") {
+      return null;
+    }
+
     return {
       reference: body.data.reference ?? null,
       successful: body.event === "charge.success",
+    };
+  }
+
+  /**
+   * Authoritative verification straight from Paystack. Minor units are returned
+   * untouched so callers can compare them byte-for-byte against what they
+   * charged — never round-trip money through a float here.
+   */
+  async verifyTransactionDetailed(reference: string): Promise<ProviderVerification> {
+    const secretKey = requireSecret("Paystack", await this.secretKey());
+    const res = await fetch(
+      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+      { headers: { Authorization: `Bearer ${secretKey}` } }
+    );
+
+    const body = (await res.json()) as {
+      status?: boolean;
+      message?: string;
+      data?: {
+        status?: string;
+        reference?: string;
+        amount?: number;
+        currency?: string;
+        channel?: string;
+        paid_at?: string;
+        fees?: number;
+        gateway_response?: string;
+        metadata?: Record<string, unknown> | string;
+      };
+    };
+
+    if (!res.ok || !body.data) {
+      throw new PaymentProviderError(body.message || "Paystack verification failed");
+    }
+
+    const raw = body.data.status;
+    const status: ProviderVerification["status"] =
+      raw === "success" ? "success" : raw === "abandoned" || raw === "failed" ? "failed" : "pending";
+
+    let metadata: Record<string, unknown> | null = null;
+    if (body.data.metadata && typeof body.data.metadata === "object") {
+      metadata = body.data.metadata as Record<string, unknown>;
+    } else if (typeof body.data.metadata === "string") {
+      try {
+        metadata = JSON.parse(body.data.metadata) as Record<string, unknown>;
+      } catch {
+        metadata = null;
+      }
+    }
+
+    return {
+      status,
+      reference: body.data.reference ?? reference,
+      amountMinor: Math.trunc(Number(body.data.amount ?? 0)),
+      currency: (body.data.currency ?? "GHS").toUpperCase(),
+      channel: body.data.channel ?? null,
+      paidAt: body.data.paid_at ?? null,
+      feesMinor: Math.trunc(Number(body.data.fees ?? 0)),
+      gatewayResponse: body.data.gateway_response ?? null,
+      metadata,
     };
   }
 }
@@ -377,6 +466,8 @@ export class PaymentService {
       invitationOrderId?: string;
       vendorBookingId?: string;
       idempotencyKey?: string;
+      /** Use a caller-supplied reference so a pending domain record can be written first */
+      reference?: string;
       commerce?: {
         baseCurrency: string;
         baseAmount: number;
@@ -408,7 +499,7 @@ export class PaymentService {
       }
     }
 
-    const reference = `CEV-${generateToken(16)}`;
+    const reference = relations?.reference ?? `CEV-${generateToken(16)}`;
     const baseAmount = relations?.commerce?.baseAmount ?? request.amount;
     const payCurrency = relations?.commerce?.baseCurrency ?? request.currency ?? "GHS";
 
@@ -516,6 +607,11 @@ export class PaymentService {
         ticketOrderId: payment.ticketOrderId,
         campaignId: payment.campaignId,
       });
+    } else if (payment.purpose === "EVENT_GIFT") {
+      // Gifts need an explicit terminal state so the guest's pending screen can
+      // stop waiting instead of spinning until it times out.
+      const { giftPaymentService } = await import("@/services/gifts/gift-payment.service");
+      await giftPaymentService.markFailedFromProvider(payment.reference, status);
     }
 
     return payment;
@@ -533,6 +629,29 @@ export class PaymentService {
     if (payment.ticketOrderId) {
       const { ticketService } = await import("@/services/tickets/ticket.service");
       await ticketService.confirmPurchase(payment.ticketOrderId);
+    }
+
+    if (payment.purpose === "EVENT_GIFT") {
+      // Gift money is credited by the gift service, which re-verifies the
+      // transaction with the provider before touching the ledger. It must not
+      // fall through to walletService.settlePayment or the gift would be
+      // counted twice.
+      const { giftPaymentService } = await import("@/services/gifts/gift-payment.service");
+      const gift = await prisma.eventGiftPayment.findUnique({
+        where: { paymentId: payment.id },
+        select: { reference: true },
+      });
+      if (gift) {
+        try {
+          await giftPaymentService.fulfilFromProvider(gift.reference, "payment_webhook");
+        } catch (error) {
+          // A mismatch parks the gift as DISPUTED for a human to look at. We
+          // swallow it here so the provider gets a 200 and stops retrying a
+          // delivery that will never succeed.
+          console.error("[gifts.fulfil]", gift.reference, error);
+        }
+      }
+      return;
     }
 
     if (payment.purpose === "CONTRIBUTION") {

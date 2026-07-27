@@ -75,6 +75,10 @@ export interface PaymentInitRequest {
   email: string;
   purpose: string;
   metadata?: Record<string, unknown>;
+  /** Restrict the provider checkout to specific channels, e.g. ["mobile_money"] */
+  channels?: string[];
+  /** Override the provider redirect target for this transaction only */
+  callbackUrl?: string;
 }
 
 export interface PaymentInitResponse {
