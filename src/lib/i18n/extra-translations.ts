@@ -223,6 +223,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "dashboard", key: "nav_venues", enValue: "Venues", frValue: "Lieux" },
   { namespace: "dashboard", key: "nav_wallet", enValue: "Event Wallet", frValue: "Portefeuille événement" },
   { namespace: "dashboard", key: "nav_contributions", enValue: "Contributions", frValue: "Contributions" },
+  { namespace: "dashboard", key: "nav_gifts", enValue: "Gift Wallet", frValue: "Portefeuille cadeaux" },
   { namespace: "dashboard", key: "nav_funeral", enValue: "FuneralOS", frValue: "FuneralOS" },
   { namespace: "dashboard", key: "nav_memory", enValue: "Memory Vault", frValue: "Coffre-fort souvenirs" },
   { namespace: "dashboard", key: "nav_settings", enValue: "Settings", frValue: "Paramètres" },

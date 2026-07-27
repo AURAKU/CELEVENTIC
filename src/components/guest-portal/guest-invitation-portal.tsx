@@ -16,6 +16,7 @@ import { SaveDateCalendarCard } from "@/components/guest-portal/save-date-calend
 import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
 import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
 import { GiftQrBox } from "@/components/guest-portal/gift-qr-box";
+import { GiftInviteCard } from "@/components/gifts/gift-invite-card";
 import { InvitationMemoryAlbumCard } from "@/components/guest-portal/invitation-memory-album-card";
 import { useGuestPortalActions } from "@/hooks/use-guest-portal-actions";
 import { buildWhatsAppUrl, buildEmailUrl, isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
@@ -722,18 +723,32 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             />
           </PortalSection>
 
-          {hubTabs.includes("gifts") && (
+          {(hubTabs.includes("gifts") || props.giftUrl) && (
           <PortalSection delay={420} id="gifts">
-            <GiftQrBox
-              qrDataUrl={props.qrDataUrl}
-              qrToken={props.guestQrToken}
-              accentColor={secondary}
-            />
-            {!props.qrDataUrl && (
-              <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 text-center shadow-sm mt-4">
-                <h2 className="font-display text-lg font-bold text-[#0F172A] mb-2">Gifts & Contributions</h2>
-                <p className="text-sm text-slate-600">Your presence is the greatest gift. Contact the host for registry details.</p>
-              </div>
+            {props.giftUrl ? (
+              <GiftInviteCard
+                giftUrl={props.giftUrl}
+                qrImageUrl={props.giftQrImageUrl}
+                title={props.giftTitle ?? "Send a Gift"}
+                subtitle={props.giftSubtitle ?? ""}
+                ctaLabel={props.giftCtaLabel ?? "Send a Gift"}
+                privacyNote={props.giftPrivacyNote ?? "Your gift is private."}
+                accentColor={accent}
+              />
+            ) : (
+              <>
+                <GiftQrBox
+                  qrDataUrl={props.qrDataUrl}
+                  qrToken={props.guestQrToken}
+                  accentColor={secondary}
+                />
+                {!props.qrDataUrl && (
+                  <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 text-center shadow-sm mt-4">
+                    <h2 className="font-display text-lg font-bold text-[#0F172A] mb-2">Gifts & Contributions</h2>
+                    <p className="text-sm text-slate-600">Your presence is the greatest gift. Contact the host for registry details.</p>
+                  </div>
+                )}
+              </>
             )}
           </PortalSection>
           )}
