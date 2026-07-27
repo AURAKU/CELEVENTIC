@@ -1,3 +1,5 @@
+import type { PlaceCardViewData } from "@/lib/invitation-features/place-card";
+
 export type InvitationLayoutSlug =
   | "classic-gold"
   | "arch-green"
@@ -146,4 +148,10 @@ export interface InvitationRenderProps {
   memoryUploadQrImageUrl?: string | null;
   /** Guest Entry Pass — rendered as the closing section of the invitation. */
   entryPass?: GuestEntryPassData | null;
+  /**
+   * Personalised Place Card — rendered above the entry pass on every template.
+   * Resolved server-side by `resolvePlaceCard`; null when the organiser turned
+   * it off or the invitation has nobody assigned to it.
+   */
+  placeCard?: PlaceCardViewData | null;
 }

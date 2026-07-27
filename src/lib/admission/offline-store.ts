@@ -137,7 +137,26 @@ export function projectLocalState(
     const pass = byHash.get(hash);
     if (!pass) continue;
     pass.a = Math.min(pass.p, pass.a + item.quantity);
+    pass.r = Math.max(0, pass.p - pass.a);
     pass.status = pass.a >= pass.p ? "ADMITTED" : "PARTIALLY_ADMITTED";
+
+    // Named members the operator ticked off show as admitted straight away, so
+    // a second scan at the same gate does not offer them again.
+    if (item.guestIds?.length) {
+      const chosen = new Set(item.guestIds);
+      pass.members = pass.members.map((m) =>
+        chosen.has(m.id) ? { ...m, admitted: true } : m
+      );
+    }
+
+    pass.history = [
+      {
+        at: item.capturedAt,
+        action: pass.a >= pass.p ? "ADMIT" : "PARTIAL_ADMIT",
+        qty: item.quantity,
+      },
+      ...(pass.history ?? []),
+    ].slice(0, 5);
   }
 
   return byHash;

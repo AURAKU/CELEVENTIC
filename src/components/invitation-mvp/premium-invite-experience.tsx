@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { InvitationRenderer } from "@/components/invitation/invitation-renderer";
 import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
 import type { GuestEntryPassData, InvitationDesignConfig } from "@/types/invitation-design";
+import type { PlaceCardViewData } from "@/lib/invitation-features/place-card";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { BlockRenderer } from "@/components/invitation-blocks/block-renderer";
 import type { AppLocale } from "@/lib/i18n/constants";
@@ -72,6 +73,11 @@ export interface PremiumInviteExperienceProps {
    * renders exactly as it did before the pass system.
    */
   entryPass?: GuestEntryPassData | null;
+  /**
+   * Personalised place card. Resolved server-side; absent means the organiser
+   * turned the feature off or nobody is assigned to this invitation.
+   */
+  placeCard?: PlaceCardViewData | null;
 }
 
 function Countdown({ target, begunLabel, label }: { target: string; begunLabel: string; label: string }) {
@@ -166,6 +172,7 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
         guestName={props.guestName}
         qrDataUrl={props.qrDataUrl}
         entryPass={props.entryPass}
+        placeCard={props.placeCard}
       />
 
       <section className="mx-auto max-w-2xl px-4 py-10 space-y-6">

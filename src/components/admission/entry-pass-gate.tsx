@@ -8,6 +8,8 @@ import {
   CloudUpload,
   Keyboard,
   Loader2,
+  Minus,
+  Plus,
   ShieldAlert,
   Users,
   Wifi,
@@ -26,6 +28,10 @@ import { cn } from "@/lib/utils";
 import { extractPassToken } from "@/lib/admission/pass-token-format";
 import { formatAdmissionCode, normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import type { AdmissionDecision } from "@/lib/admission/pass-decision";
+import {
+  describeHeldSeats,
+  type SeatingContinuity,
+} from "@/lib/admission/seating-continuity";
 import {
   clearPackage,
   dequeue,
@@ -54,6 +60,7 @@ interface GateResult {
   admittedCount: number;
   party: PartyMember[];
   seating: { tableNumber: string; seatLabel: string | null } | null;
+  seatingContinuity?: SeatingContinuity | null;
   offline: boolean;
 }
 
@@ -92,6 +99,8 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
   const [result, setResult] = useState<GateResult | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [pendingScan, setPendingScan] = useState<{ token?: string; code?: string } | null>(null);
+  /** Operator's answer to "how many are arriving now?". */
+  const [arrivingNow, setArrivingNow] = useState(1);
 
   const [online, setOnline] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
@@ -237,11 +246,23 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
   }, [deviceId, eventId, refreshQueue]);
 
   const admitOffline = useCallback(
-    async (input: { token?: string; code?: string; quantity?: number; guestIds?: string[] }) => {
+    async (input: {
+      token?: string;
+      code?: string;
+      quantity?: number;
+      guestIds?: string[];
+      /** Look the pass up and show the party, but queue nothing yet. */
+      preview?: boolean;
+    }): Promise<GateResult | null> => {
       if (!pkg || !localState) {
         setError("No offline guest list on this device. Download it while you have signal.");
-        return;
+        return null;
       }
+
+      const show = (result: GateResult) => {
+        setResult(result);
+        return result;
+      };
 
       const tokenHash = input.token ? await hashTokenInBrowser(input.token) : null;
       const code = input.code ? normalizeAdmissionCode(input.code) : null;
@@ -251,7 +272,7 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
 
       if (!pass || !hash) {
         playScanFeedback(false);
-        setResult({
+        return show({
           decision: {
             outcome: "DENY",
             tone: "red",
@@ -261,6 +282,9 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
             resultingAdmittedCount: 0,
             resultingStatus: "ACTIVE",
             requiresConfirmation: false,
+            allowance: 0,
+            remaining: 0,
+            requiresQuantityConfirmation: false,
           },
           passCode: null,
           displayName: null,
@@ -270,15 +294,13 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
           seating: null,
           offline: true,
         });
-        return;
       }
 
       const remaining = Math.max(0, pass.p - pass.a);
-      const requested = Math.max(1, input.quantity ?? remaining);
 
       if (remaining === 0) {
         playScanFeedback(false);
-        setResult({
+        return show({
           decision: {
             outcome: "ALREADY_ADMITTED",
             tone: pkg.settings.duplicatePolicy === "BLOCK" ? "red" : "amber",
@@ -288,6 +310,9 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
             resultingAdmittedCount: pass.a,
             resultingStatus: "ADMITTED",
             requiresConfirmation: false,
+            allowance: pass.p,
+            remaining: 0,
+            requiresQuantityConfirmation: false,
           },
           passCode: pass.c,
           displayName: pass.n,
@@ -297,12 +322,48 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
           seating: pass.table ? { tableNumber: pass.table, seatLabel: pass.seat } : null,
           offline: true,
         });
-        return;
       }
+
+      // Offline runs the same "how many now?" rule as the online gate, so a
+      // party of three cannot be silently admitted in full at a dark gate.
+      const promptForQuantity =
+        input.preview === true &&
+        remaining > 1 &&
+        input.quantity == null &&
+        !(input.guestIds?.length) &&
+        pkg.settings.allowPartialArrival &&
+        !pkg.settings.fastAdmissionMode;
+
+      if (promptForQuantity) {
+        return show({
+          decision: {
+            outcome: "PARTIAL_ADMIT",
+            tone: "amber",
+            reason: "OK_PARTIAL",
+            message: `This invitation admits ${pass.p}. ${remaining} places are still open — how many are arriving now?`,
+            admitQuantity: 0,
+            resultingAdmittedCount: pass.a,
+            resultingStatus: pass.a > 0 ? "PARTIALLY_ADMITTED" : "ACTIVE",
+            requiresConfirmation: true,
+            allowance: pass.p,
+            remaining,
+            requiresQuantityConfirmation: true,
+          },
+          passCode: pass.c,
+          displayName: pass.n,
+          partySize: pass.p,
+          admittedCount: pass.a,
+          party: pass.members,
+          seating: pass.table ? { tableNumber: pass.table, seatLabel: pass.seat } : null,
+          offline: true,
+        });
+      }
+
+      const requested = Math.max(1, input.quantity ?? remaining);
 
       if (requested > remaining) {
         playScanFeedback(false);
-        setResult({
+        return show({
           decision: {
             outcome: "DENY",
             tone: "amber",
@@ -312,6 +373,9 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
             resultingAdmittedCount: pass.a,
             resultingStatus: "PARTIALLY_ADMITTED",
             requiresConfirmation: false,
+            allowance: pass.p,
+            remaining,
+            requiresQuantityConfirmation: false,
           },
           passCode: pass.c,
           displayName: pass.n,
@@ -321,7 +385,6 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
           seating: null,
           offline: true,
         });
-        return;
       }
 
       const record: QueuedAdmission = {
@@ -343,7 +406,7 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
 
       const resulting = pass.a + requested;
       playScanFeedback(true);
-      setResult({
+      return show({
         decision: {
           outcome: resulting >= pass.p ? "ADMIT" : "PARTIAL_ADMIT",
           tone: "green",
@@ -356,6 +419,9 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
           resultingAdmittedCount: resulting,
           resultingStatus: resulting >= pass.p ? "ADMITTED" : "PARTIALLY_ADMITTED",
           requiresConfirmation: false,
+          allowance: pass.p,
+          remaining: Math.max(0, pass.p - resulting),
+          requiresQuantityConfirmation: false,
         },
         passCode: pass.c,
         displayName: pass.n,
@@ -376,7 +442,8 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
       quantity?: number;
       guestIds?: string[];
       dryRun?: boolean;
-    }) => {
+      quantityConfirmed?: boolean;
+    }): Promise<GateResult | null> => {
       setBusy(true);
       setError("");
       try {
@@ -389,12 +456,16 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
         if (!json.data) {
           setError(json.error ?? "Admission failed");
           playScanFeedback(false);
-          return;
+          return null;
         }
 
         const data = json.data;
-        playScanFeedback(data.decision.tone === "green");
-        setResult({
+        // A pending quantity prompt is not a failure — stay quiet until the
+        // operator answers rather than buzzing the gate twice per party.
+        if (!data.decision.requiresQuantityConfirmation) {
+          playScanFeedback(data.decision.tone === "green");
+        }
+        const next: GateResult = {
           decision: data.decision,
           passCode: data.pass?.code ?? null,
           displayName: data.pass?.displayName ?? null,
@@ -402,16 +473,73 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
           admittedCount: data.pass?.admittedCount ?? 0,
           party: data.party ?? [],
           seating: data.seating ?? null,
+          seatingContinuity: data.seatingContinuity ?? null,
           offline: false,
-        });
+        };
+        setResult(next);
+        return next;
       } catch {
         setError("Network problem. Switch on offline mode to keep admitting.");
         playScanFeedback(false);
+        return null;
       } finally {
         setBusy(false);
       }
     },
     [eventId, gate]
+  );
+
+  /**
+   * One entry point for both the camera and the keypad.
+   *
+   * A single-guest pass admits on the spot — there is nothing to ask. Anything
+   * larger is previewed first so the operator can say how many of the party
+   * have actually turned up, unless fast admission is on.
+   */
+  const beginAdmission = useCallback(
+    async (source: { token?: string; code?: string }) => {
+      setArrivingNow(1);
+
+      if (usingOffline) {
+        const preview = await admitOffline({ ...source, preview: true });
+        if (preview?.decision.requiresQuantityConfirmation) {
+          setPendingScan(source);
+          setArrivingNow(Math.min(1, preview.decision.remaining) || 1);
+        } else {
+          setPendingScan(null);
+        }
+        return;
+      }
+
+      if (fastMode) {
+        await admitOnline({ ...source, quantityConfirmed: true });
+        setPendingScan(null);
+        return;
+      }
+
+      const preview = await admitOnline({ ...source, dryRun: true });
+      if (!preview) return;
+
+      if (preview.decision.requiresQuantityConfirmation) {
+        setPendingScan(source);
+        setArrivingNow(1);
+        return;
+      }
+
+      // Single guest, or a remainder of one: no question worth asking.
+      if (
+        preview.decision.admitQuantity > 0 &&
+        !preview.decision.requiresConfirmation &&
+        preview.decision.remaining <= 1
+      ) {
+        await admitOnline({ ...source, quantityConfirmed: true });
+        setPendingScan(null);
+        return;
+      }
+
+      setPendingScan(source);
+    },
+    [admitOffline, admitOnline, fastMode, usingOffline]
   );
 
   const handleScan = useCallback(
@@ -430,18 +558,9 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
       }
 
       setSelectedMembers([]);
-      if (usingOffline) {
-        await admitOffline({ token });
-        return;
-      }
-      if (fastMode) {
-        await admitOnline({ token });
-        return;
-      }
-      setPendingScan({ token });
-      await admitOnline({ token, dryRun: true });
+      await beginAdmission({ token });
     },
-    [admitOffline, admitOnline, fastMode, usingOffline]
+    [beginAdmission]
   );
 
   const submitManualCode = useCallback(async () => {
@@ -452,16 +571,9 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
     }
     setSelectedMembers([]);
     setError("");
-    if (usingOffline) {
-      await admitOffline({ code });
-    } else if (fastMode) {
-      await admitOnline({ code });
-    } else {
-      setPendingScan({ code });
-      await admitOnline({ code, dryRun: true });
-    }
+    await beginAdmission({ code });
     setManualCode("");
-  }, [admitOffline, admitOnline, fastMode, manualCode, usingOffline]);
+  }, [beginAdmission, manualCode]);
 
   const confirmAdmission = useCallback(
     async (quantity?: number) => {
@@ -470,17 +582,33 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
       if (usingOffline) {
         await admitOffline({ ...pendingScan, quantity, guestIds });
       } else {
-        await admitOnline({ ...pendingScan, quantity, guestIds });
+        await admitOnline({ ...pendingScan, quantity, guestIds, quantityConfirmed: true });
       }
       setPendingScan(null);
       setSelectedMembers([]);
+      setArrivingNow(1);
     },
     [admitOffline, admitOnline, pendingScan, selectedMembers, usingOffline]
   );
 
+  const remaining = result ? Math.max(0, result.partySize - result.admittedCount) : 0;
+  const awaitingQuantity =
+    Boolean(pendingScan) && Boolean(result?.decision.requiresQuantityConfirmation);
   const awaitingConfirm =
     Boolean(pendingScan) && result !== null && result.decision.admitQuantity > 0;
-  const remaining = result ? Math.max(0, result.partySize - result.admittedCount) : 0;
+
+  // Ticking named members off overrides the counter: their plus-ones are part
+  // of the head count, so the two must never be added together.
+  const selectedHeads = useMemo(
+    () =>
+      result?.party
+        .filter((m) => selectedMembers.includes(m.id))
+        .reduce((sum, m) => sum + 1 + Math.max(0, m.plusOnes), 0) ?? 0,
+    [result, selectedMembers]
+  );
+  const namedUnadmitted = result?.party.filter((m) => !m.admitted).length ?? 0;
+  /** Heads with no name on the guest list — admitted purely as a quantity. */
+  const unnamedCompanions = Math.max(0, remaining - namedUnadmitted);
 
   return (
     <Card className={cn("border-slate-200", className)}>
@@ -649,10 +777,146 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
                   )}
                   {result.offline && <Badge variant="secondary">Queued offline</Badge>}
                 </div>
+                {result.seatingContinuity && (
+                  <SeatingContinuityNote continuity={result.seatingContinuity} />
+                )}
               </div>
             </div>
 
-            {awaitingConfirm && (
+            {awaitingQuantity && (
+              <div className="mt-4 space-y-3 border-t border-black/10 pt-3">
+                <fieldset>
+                  <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wide">
+                    How many are arriving now?
+                  </legend>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      aria-label="One fewer guest"
+                      disabled={arrivingNow <= 1 || selectedMembers.length > 0}
+                      onClick={() => setArrivingNow((n) => Math.max(1, n - 1))}
+                    >
+                      <Minus className="h-4 w-4" aria-hidden />
+                    </Button>
+                    <output
+                      aria-live="polite"
+                      className="min-w-[3.5rem] rounded-lg border border-black/10 bg-white px-3 py-1.5 text-center text-xl font-semibold tabular-nums"
+                    >
+                      {selectedMembers.length ? selectedHeads : arrivingNow}
+                    </output>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      aria-label="One more guest"
+                      disabled={arrivingNow >= remaining || selectedMembers.length > 0}
+                      onClick={() => setArrivingNow((n) => Math.min(remaining, n + 1))}
+                    >
+                      <Plus className="h-4 w-4" aria-hidden />
+                    </Button>
+                    <span className="text-xs opacity-80">of {remaining} still to arrive</span>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {Array.from({ length: Math.min(remaining, 8) }, (_, i) => i + 1).map((n) => (
+                      <Button
+                        key={n}
+                        type="button"
+                        size="sm"
+                        variant={!selectedMembers.length && arrivingNow === n ? "default" : "outline"}
+                        disabled={selectedMembers.length > 0}
+                        onClick={() => setArrivingNow(n)}
+                        className="min-w-[2.25rem] px-2"
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {namedUnadmitted > 0 && result.party.length > 1 && (
+                  <fieldset>
+                    <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wide">
+                      Or tick who has arrived
+                    </legend>
+                    <div className="flex flex-wrap gap-2">
+                      {result.party.map((member) => (
+                        <label
+                          key={member.id}
+                          className={cn(
+                            "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs",
+                            member.admitted
+                              ? "cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : selectedMembers.includes(member.id)
+                                ? "border-slate-900 bg-slate-900 text-white"
+                                : "border-slate-300 bg-white text-slate-700"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            disabled={member.admitted}
+                            checked={selectedMembers.includes(member.id)}
+                            onChange={(e) =>
+                              setSelectedMembers((prev) =>
+                                e.target.checked
+                                  ? [...prev, member.id]
+                                  : prev.filter((id) => id !== member.id)
+                              )
+                            }
+                          />
+                          {member.name}
+                          {member.plusOnes > 0 && ` +${member.plusOnes}`}
+                          {member.admitted && " ✓"}
+                        </label>
+                      ))}
+                    </div>
+                    {unnamedCompanions > 0 && (
+                      <p className="mt-2 text-xs opacity-80">
+                        {unnamedCompanions} companion{unnamedCompanions === 1 ? "" : "s"} on this
+                        pass {unnamedCompanions === 1 ? "is" : "are"} not named — use the counter
+                        above for {unnamedCompanions === 1 ? "them" : "those"}.
+                      </p>
+                    )}
+                  </fieldset>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() =>
+                      void confirmAdmission(selectedMembers.length ? undefined : arrivingNow)
+                    }
+                    disabled={busy}
+                  >
+                    Admit {selectedMembers.length ? selectedHeads : arrivingNow}
+                  </Button>
+                  {remaining > 1 && !selectedMembers.length && (
+                    <Button
+                      variant="outline"
+                      onClick={() => void confirmAdmission(remaining)}
+                      disabled={busy}
+                    >
+                      Admit all {remaining}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setPendingScan(null);
+                      setResult(null);
+                      setSelectedMembers([]);
+                      setArrivingNow(1);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!awaitingQuantity && awaitingConfirm && (
               <div className="mt-4 space-y-3 border-t border-black/10 pt-3">
                 {result.party.length > 1 && (
                   <fieldset>
@@ -720,5 +984,36 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * What the gate tells an operator about a part-arrived party's seats: which
+ * seats are live now, and what is still being held for the ones still to come.
+ */
+function SeatingContinuityNote({ continuity }: { continuity: SeatingContinuity }) {
+  const held = describeHeldSeats(continuity);
+  if (!continuity.revealed.length && !held) return null;
+
+  return (
+    <div className="mt-2 space-y-1 text-xs">
+      {continuity.revealed.length > 0 && (
+        <p>
+          <span className="font-semibold">Seat now:</span>{" "}
+          {continuity.revealed
+            .map((s) =>
+              s.seatLabel ? `${s.guestName} — Table ${s.tableNumber}, Seat ${s.seatLabel}` : `${s.guestName} — Table ${s.tableNumber}`
+            )
+            .join(" · ")}
+        </p>
+      )}
+      {held && <p className="opacity-80">{held}</p>}
+      {continuity.unseatedCount > 0 && (
+        <p className="opacity-80">
+          {continuity.unseatedCount} of this party {continuity.unseatedCount === 1 ? "has" : "have"}{" "}
+          no seat assigned — seat them at the host desk.
+        </p>
+      )}
+    </div>
   );
 }

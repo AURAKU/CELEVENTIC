@@ -170,6 +170,79 @@ export async function syncAdmissionAfterCheckIn(params: {
   }
 }
 
+/**
+ * Force the invitation's admitted head count to an exact number.
+ *
+ * Both views of the truth are written together — the pass (authoritative) and
+ * the guest rows (what the legacy dashboards read) — so the projection lands on
+ * the requested figure instead of re-deriving the old one. Guests are flipped
+ * in list order, which keeps a correction stable and repeatable.
+ */
+async function applyExactAdmittedCount(
+  tx: Tx,
+  invitationId: string,
+  target: number
+): Promise<number> {
+  const invitation = await tx.invitation.findUnique({
+    where: { id: invitationId },
+    include: {
+      guests: {
+        select: { id: true, status: true, plusOnes: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+  if (!invitation) throw new Error(`Invitation ${invitationId} not found`);
+
+  const pass = await livePass(tx, invitationId);
+  const allowance = Math.max(
+    computeAllowance(invitation.guests, invitation.admissionAllowance),
+    pass?.partySize ?? 0
+  );
+  const clamped = Math.max(0, Math.min(Math.trunc(target), allowance));
+
+  const admit: string[] = [];
+  const release: string[] = [];
+  let heads = 0;
+  for (const guest of invitation.guests) {
+    const cost = 1 + Math.max(0, guest.plusOnes ?? 0);
+    if (heads + cost <= clamped) {
+      heads += cost;
+      admit.push(guest.id);
+    } else {
+      release.push(guest.id);
+    }
+  }
+
+  if (admit.length) {
+    await tx.guest.updateMany({
+      where: { id: { in: admit }, invitationId, status: { not: "CHECKED_IN" } },
+      data: { status: "CHECKED_IN" },
+    });
+  }
+  if (release.length) {
+    await tx.guest.updateMany({
+      where: { id: { in: release }, invitationId, status: "CHECKED_IN" },
+      data: { status: "INVITED" },
+    });
+  }
+
+  if (pass) {
+    await tx.guestPass.update({
+      where: { id: pass.id },
+      data: {
+        admittedCount: clamped,
+        revision: { increment: 1 },
+        status:
+          clamped <= 0 ? "ACTIVE" : clamped >= allowance ? "ADMITTED" : "PARTIALLY_ADMITTED",
+        ...(clamped <= 0 ? { firstAdmittedAt: null, lastAdmittedAt: null } : {}),
+      },
+    });
+  }
+
+  return clamped;
+}
+
 export type ResetScope = "individual" | "selected" | "entire";
 
 export interface ResetAdmissionInput {
@@ -298,6 +371,202 @@ export async function resetAdmission(
   });
 
   return result;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Organiser corrections                                                      */
+/* -------------------------------------------------------------------------- */
+
+export type CorrectionAction =
+  | "undo_last"
+  | "correct_quantity"
+  | "readmit"
+  | "move_seat"
+  | "restore_seat";
+
+export interface CorrectAdmissionInput {
+  invitationId: string;
+  action: CorrectionAction;
+  actorUserId: string;
+  reason: string;
+  notes?: string | null;
+  /** `correct_quantity` — the exact number of heads that should be inside. */
+  quantity?: number;
+  /** `move_seat` / `restore_seat` — the member being seated. Omit to move all. */
+  guestId?: string | null;
+  /** `move_seat` / `restore_seat` — destination. */
+  tableNumber?: string | null;
+  seatLabel?: string | null;
+}
+
+const CORRECTION_ACTION: Record<CorrectionAction, AdmissionAction> = {
+  undo_last: "CORRECTION",
+  correct_quantity: "CORRECTION",
+  readmit: "READMIT",
+  move_seat: "CORRECTION",
+  restore_seat: "RESTORE",
+};
+
+/**
+ * Organiser corrections on an admitted party.
+ *
+ * Every branch is append-only: the ledger keeps the mistaken row *and* the
+ * correction, so "what actually happened at the door" is always reconstructable.
+ * The portal relocks only when a correction brings the admitted count back to
+ * zero, which is the same rule a reset uses.
+ */
+export async function correctAdmission(
+  input: CorrectAdmissionInput
+): Promise<AdmissionSummary> {
+  const { invitationId, action, actorUserId } = input;
+  if (!input.reason?.trim()) throw new Error("A reason is required to correct admission");
+
+  const summary = await prisma.$transaction(async (tx) => {
+    const invitation = await tx.invitation.findUnique({
+      where: { id: invitationId },
+      include: { guests: { select: { id: true, plusOnes: true } } },
+    });
+    if (!invitation) throw new Error(`Invitation ${invitationId} not found`);
+
+    const pass = await livePass(tx, invitationId);
+    const allowance = Math.max(
+      computeAllowance(invitation.guests, invitation.admissionAllowance),
+      pass?.partySize ?? 0
+    );
+    const current = Math.max(invitation.admittedCount, pass?.admittedCount ?? 0);
+
+    let target = current;
+
+    switch (action) {
+      case "undo_last": {
+        // Undo the most recent *admitting* row. Reversals and resets are
+        // skipped so pressing undo twice walks back two real admissions
+        // rather than undoing the previous undo.
+        const last = await tx.admissionEvent.findFirst({
+          where: {
+            invitationId,
+            action: { in: ["ADMIT", "PARTIAL_ADMIT", "ADMIT_REMAINING", "READMIT"] },
+            admittedQuantity: { gt: 0 },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!last) throw new Error("There is no admission to undo on this invitation");
+        target = Math.max(0, current - last.admittedQuantity);
+        break;
+      }
+      case "correct_quantity": {
+        if (typeof input.quantity !== "number" || input.quantity < 0) {
+          throw new Error("A corrected quantity is required");
+        }
+        if (input.quantity > allowance) {
+          throw new Error(
+            `This invitation admits ${allowance}. Widen the party allowance before admitting more.`
+          );
+        }
+        target = input.quantity;
+        break;
+      }
+      case "readmit":
+        target = allowance;
+        break;
+      case "move_seat":
+      case "restore_seat": {
+        if (!input.tableNumber?.trim()) {
+          throw new Error("A destination table is required");
+        }
+        const guestIds = input.guestId
+          ? [input.guestId]
+          : invitation.guests.map((g) => g.id);
+
+        // A restore needs a plan to attach to. Reuse the party's existing plan
+        // when there is one; otherwise fall back to the event's only plan.
+        const anchor = await tx.seatingAssignment.findFirst({
+          where: { guestId: { in: invitation.guests.map((g) => g.id) } },
+          select: { seatingPlanId: true },
+        });
+        const seatingPlanId =
+          anchor?.seatingPlanId ??
+          (await tx.seatingPlan.findFirst({
+            where: { eventId: invitation.eventId },
+            select: { id: true },
+          }))?.id;
+        if (!seatingPlanId) throw new Error("This event has no seating plan to restore into");
+
+        for (const guestId of guestIds) {
+          await tx.seatingAssignment.upsert({
+            where: { guestId },
+            create: {
+              seatingPlanId,
+              guestId,
+              tableNumber: input.tableNumber,
+              seatLabel: input.seatLabel ?? null,
+            },
+            update: {
+              tableNumber: input.tableNumber,
+              // Moving a whole group to a table clears per-seat labels, which
+              // would otherwise point at seats on the old table.
+              seatLabel: input.guestId ? (input.seatLabel ?? null) : null,
+            },
+          });
+        }
+        break;
+      }
+    }
+
+    if (target !== current) {
+      await applyExactAdmittedCount(tx, invitationId, target);
+    }
+
+    return recomputeProjection(tx, invitationId, {
+      action: CORRECTION_ACTION[action],
+      guestId: input.guestId ?? null,
+      organiserId: actorUserId,
+      reason: input.reason,
+      notes: input.notes ?? null,
+      wasReset: target === 0 && target !== current,
+    });
+  });
+
+  await createAuditLog({
+    userId: actorUserId,
+    action: "UPDATE",
+    entity: "admission",
+    entityId: invitationId,
+    details: {
+      kind: "admission_correction",
+      correction: action,
+      reason: input.reason,
+      notes: input.notes ?? null,
+      quantity: input.quantity ?? null,
+      guestId: input.guestId ?? null,
+      tableNumber: input.tableNumber ?? null,
+      seatLabel: input.seatLabel ?? null,
+      resultingAdmittedCount: summary.admittedCount,
+    },
+  });
+
+  return summary;
+}
+
+/** Append-only admission history for the organiser's correction panel. */
+export async function getAdmissionHistory(invitationId: string, limit = 50) {
+  return prisma.admissionEvent.findMany({
+    where: { invitationId },
+    orderBy: { createdAt: "desc" },
+    take: Math.min(Math.max(1, limit), 200),
+    select: {
+      id: true,
+      action: true,
+      admittedQuantity: true,
+      previousAdmittedCount: true,
+      resultingAdmittedCount: true,
+      reason: true,
+      notes: true,
+      scannerDeviceId: true,
+      offlineCreatedAt: true,
+      createdAt: true,
+    },
+  });
 }
 
 /** Server-verified admission summary for the portal / dashboard. */

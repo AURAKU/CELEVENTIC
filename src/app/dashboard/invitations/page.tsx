@@ -23,6 +23,7 @@ import { getUniqueTemplatePresets, getTemplatePreset } from "@/lib/invitation-te
 import type { InvitationDesignConfig, InvitationMediaAsset } from "@/types/invitation-design";
 import type { UploadAnalysisResult } from "@/services/invitations/invitation-inspiration.service";
 import { InspirationInsights } from "@/components/invitation/inspiration-insights";
+import { PlaceCardEditorPanel } from "@/components/invitation/place-card-editor-panel";
 import { getClientAppUrl } from "@/lib/app-url";
 import { PaginationBar } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
@@ -115,6 +116,7 @@ function InvitationStudioContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [placeCardFor, setPlaceCardFor] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [draftReady, setDraftReady] = useState(false);
   const [restoredFromDraft, setRestoredFromDraft] = useState(false);
@@ -437,21 +439,38 @@ function InvitationStudioContent() {
           <CardContent className="space-y-3">
             {invitations.map((inv) => {
               const shareUrl = `${appUrl}/invite/${inv.uniqueLink}`;
+              const placeCardOpen = placeCardFor === inv.id;
               return (
-                <div key={inv.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{inv.name}</p>
-                    <p className="text-xs text-slate-500">{inv._count.guests} guests</p>
+                <div key={inv.id} className="space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <p className="font-medium">{inv.name}</p>
+                      <p className="text-xs text-slate-500">{inv._count.guests} guests</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{inv.status}</Badge>
+                      <Button
+                        size="sm"
+                        variant={placeCardOpen ? "secondary" : "ghost"}
+                        onClick={() => setPlaceCardFor(placeCardOpen ? null : inv.id)}
+                        aria-expanded={placeCardOpen}
+                      >
+                        Place card
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => copyLink(shareUrl)}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={shareUrl} target="_blank" rel="noopener noreferrer">View</a>
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{inv.status}</Badge>
-                    <Button size="sm" variant="ghost" onClick={() => copyLink(shareUrl)}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={shareUrl} target="_blank" rel="noopener noreferrer">View</a>
-                    </Button>
-                  </div>
+                  {placeCardOpen && (
+                    <PlaceCardEditorPanel
+                      invitationId={inv.id}
+                      partySize={Math.max(1, inv._count.guests)}
+                    />
+                  )}
                 </div>
               );
             })}
