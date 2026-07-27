@@ -23,6 +23,7 @@ import { PartyAllowanceField } from "./party-allowance-field";
 import { describeAllowance } from "@/lib/guest-search/party-allowance";
 import type { SearchResultCard } from "@/lib/guest-search/types";
 import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
+import { copyText } from "@/lib/clipboard";
 
 function publicInviteUrl(url: string): string {
   const base = getClientAppUrl();
@@ -77,13 +78,14 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
     : whatsAppText;
 
   async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
+    const ok = await copyText(shareUrl);
+    if (ok) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setError("Could not copy the link.");
+      setTimeout(() => setCopied(false), 2500);
+      setError("");
+      return;
     }
+    setError("Could not copy automatically — tap the link field and copy it.");
   }
 
   async function runLifecycle(action: string, confirmMessage?: string) {
