@@ -1,14 +1,19 @@
-import { randomBytes } from "node:crypto";
 import type {
   GuestImportBatch,
   GuestImportRow,
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/utils";
 import { createAuditLog } from "@/lib/audit";
 import { dispatchJob } from "@/lib/queue";
 import { ensureInvitationPass } from "@/services/admission/guest-pass.service";
+import {
+  allocateInvitationSlug,
+  featureConfigFor,
+  newUniqueLink,
+  resolveGuestGroupId,
+  tryAllocateManualCode,
+} from "@/services/invitations/personalised-invitation";
 import {
   GENERATION_CHUNK_SIZE,
   mergeImportOptions,
@@ -40,7 +45,6 @@ import { queueBatchDeliveries } from "./delivery.service";
  */
 
 const MAX_ROW_ATTEMPTS = 3;
-const SLUG_ATTEMPTS = 6;
 
 export interface ChunkResult {
   batchId: string;
@@ -48,67 +52,6 @@ export interface ChunkResult {
   failed: number;
   remaining: number;
   status: GuestImportBatch["status"];
-}
-
-/** Crypto-random invite link — the link is a bearer secret, not a slug. */
-function newUniqueLink(): string {
-  return randomBytes(24).toString("base64url");
-}
-
-async function allocateSlug(eventId: string, name: string): Promise<string> {
-  const stem = slugify(name).slice(0, 60) || "invitation";
-  for (let attempt = 0; attempt < SLUG_ATTEMPTS; attempt++) {
-    const candidate = `${stem}-${randomBytes(4).toString("hex")}`;
-    const taken = await prisma.invitation.findUnique({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-    if (!taken) return candidate;
-  }
-  return `${stem}-${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
-}
-
-/**
- * Feature overrides stamped on generated invitations.
- *
- * Written as explicit per-invitation overrides rather than event-level flips so
- * a bulk import can never change how the organiser's *existing* invitations
- * behave — only the ones it creates.
- */
-function featureConfigFor(options: ImportOptions): Prisma.InputJsonValue | undefined {
-  const config: Record<string, unknown> = {};
-  if (options.enablePlaceCard) config.PLACE_CARD = { enabled: true };
-  if (options.issueEntryPass) {
-    config.ENTRY_PASS = { enabled: true };
-    config.MANUAL_ADMISSION_CODE = { enabled: true };
-    config.PARTY_ADMISSION = { enabled: true };
-  }
-  return Object.keys(config).length > 0 ? (config as Prisma.InputJsonValue) : undefined;
-}
-
-/** A 4-digit gate code is best-effort: the pass code is the real credential. */
-async function tryAllocateManualCode(eventId: string): Promise<string | null> {
-  try {
-    const { allocateManualAdmissionCode } = await import("@/lib/qr/manual-code");
-    return await allocateManualAdmissionCode(eventId);
-  } catch {
-    // Space exhausted on a very large event — GuestPass.code auto-widens to 6
-    // digits and covers manual admission, so this is not worth failing a row.
-    return null;
-  }
-}
-
-async function resolveGroupId(
-  tx: Prisma.TransactionClient,
-  eventId: string,
-  groupName: string | null
-): Promise<string | null> {
-  if (!groupName?.trim()) return null;
-  const name = groupName.trim();
-  const existing = await tx.guestGroup.findFirst({ where: { eventId, name }, select: { id: true } });
-  if (existing) return existing.id;
-  const created = await tx.guestGroup.create({ data: { eventId, name } });
-  return created.id;
 }
 
 async function resolveSeatingPlanId(
@@ -163,7 +106,7 @@ async function generateRow(
   let guestId = row.guestId;
 
   if (!invitationId) {
-    const slug = await allocateSlug(eventId, row.name);
+    const slug = await allocateInvitationSlug(row.name);
     const created = await prisma.$transaction(async (tx) => {
       const invitation = await tx.invitation.create({
         data: {
@@ -180,7 +123,7 @@ async function generateRow(
         },
       });
 
-      const groupId = await resolveGroupId(tx, eventId, row.groupName);
+      const groupId = await resolveGuestGroupId(tx, eventId, row.groupName);
 
       // Named members become real guest rows so the scanner can tick people
       // off individually; the remainder rides as plus-ones on the primary.

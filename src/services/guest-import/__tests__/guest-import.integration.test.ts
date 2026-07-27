@@ -173,14 +173,18 @@ describe("name-only import", () => {
     assert.equal(invitations.length, 12);
     const links = new Set(invitations.map((i) => i.uniqueLink));
     const slugs = new Set(invitations.map((i) => i.slug));
-    const passCodes = new Set(invitations.map((i) => i.guestPasses[0]?.code));
+    const issuedCodes = invitations.map((i) => i.guestPasses[0]?.code);
+    const passCodes = new Set(issuedCodes);
     const gateCodes = new Set(invitations.map((i) => i.guests[0]?.manualCode));
 
     assert.equal(links.size, 12, "every invite link is unique");
     assert.equal(slugs.size, 12, "every slug is unique");
     assert.equal(passCodes.size, 12, "every admission code is unique");
     assert.equal(gateCodes.size, 12, "every manual gate code is unique");
-    assert.ok(!passCodes.has(null) && !passCodes.has(undefined));
+    assert.ok(
+      issuedCodes.every((code) => Boolean(code)),
+      "every invitation was issued an admission code"
+    );
   });
 });
 

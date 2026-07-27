@@ -12,6 +12,9 @@ import { Users, Plus, MessageCircle, ExternalLink, Upload } from "lucide-react";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { usePagination } from "@/hooks/use-pagination";
+import { SmartGuestSearch } from "@/components/guest-search/smart-guest-search";
+import { QuickCreateCard } from "@/components/guest-search/quick-create-card";
+import type { SearchResultCard } from "@/lib/guest-search/types";
 
 interface Guest {
   id: string;
@@ -39,6 +42,9 @@ export default function GuestsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [filter, setFilter] = useState<string>("all");
+  // Invitations created in this session, pinned above search results so the
+  // organiser can hand over a link without hunting for it again.
+  const [recentlyCreated, setRecentlyCreated] = useState<SearchResultCard[]>([]);
 
   const loadGuests = useCallback(async () => {
     if (!eventId) return;
@@ -62,6 +68,17 @@ export default function GuestsPage() {
   useEffect(() => {
     resetPage();
   }, [filter, eventId, resetPage]);
+
+  useEffect(() => {
+    setRecentlyCreated([]);
+  }, [eventId]);
+
+  const upsertRecent = useCallback((card: SearchResultCard) => {
+    setRecentlyCreated((current) => [
+      card,
+      ...current.filter((existing) => existing.invitationId !== card.invitationId),
+    ]);
+  }, []);
 
   async function addGuest(e: React.FormEvent) {
     e.preventDefault();
@@ -120,6 +137,28 @@ export default function GuestsPage() {
       </div>
 
       <Card><CardContent className="p-4"><EventPicker events={events} value={eventId} onChange={setEventId} loading={eventsLoading} /></CardContent></Card>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="space-y-3 lg:col-span-3">
+          <SmartGuestSearch
+            eventId={eventId}
+            recentlyCreated={recentlyCreated}
+            onCardChanged={(card) => {
+              upsertRecent(card);
+              loadGuests();
+            }}
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <QuickCreateCard
+            eventId={eventId}
+            onCreated={(card) => {
+              upsertRecent(card);
+              loadGuests();
+            }}
+          />
+        </div>
+      </div>
 
       {eventId && stats.total > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">

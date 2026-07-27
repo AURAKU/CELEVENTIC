@@ -37,6 +37,8 @@ describe("event date formatting is timezone-pinned", () => {
       startDate: INSTANT,
     });
 
+    assert.ok(ctx.event_time, "an event with a start date must render a time");
+    assert.ok(ctx.event_date, "an event with a start date must render a date");
     assert.equal(ctx.event_time.toUpperCase(), "4:00 PM");
     assert.match(ctx.event_date, /14 June 2027/);
   });
