@@ -125,7 +125,9 @@ function WeddingCountdown({
 }) {
   const target = useMemo(() => new Date(targetIso).getTime(), [targetIso]);
   const valid = Number.isFinite(target);
-  const [parts, setParts] = useState(() => (valid ? diffParts(target) : null));
+  // Start empty so SSR and the first client paint agree — ticking numbers
+  // only appear after mount, which avoids a React #418 text mismatch.
+  const [parts, setParts] = useState<ReturnType<typeof diffParts> | null>(null);
 
   useEffect(() => {
     if (!valid) return;
@@ -134,6 +136,9 @@ function WeddingCountdown({
     return () => clearInterval(id);
   }, [target, valid]);
 
+  // Null until mount (and when the ISO is unusable) — SSR and the first
+  // client paint both render nothing, so the ticking numbers never hydrate
+  // against a different clock.
   if (!valid || !parts) return null;
 
   const cells: [number, string][] = [
