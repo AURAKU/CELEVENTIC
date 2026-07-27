@@ -27,6 +27,7 @@ import type {
   SearchResultCard,
 } from "@/lib/guest-search/types";
 import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
+import { copyText } from "@/lib/clipboard";
 
 /** Absolute invite URL safe for copy/WhatsApp/email — never localhost on live. */
 function publicInviteUrl(url: string): string {
@@ -69,6 +70,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copyHint, setCopyHint] = useState("");
 
   const nameRef = useRef<HTMLInputElement>(null);
 
@@ -153,9 +155,12 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
         return;
       }
 
-      setCreated(json.data.invitation as QuickInviteResult);
+      const invitation = json.data.invitation as QuickInviteResult;
+      setCreated(invitation);
       if (json.data.card) onCreated(json.data.card as SearchResultCard);
       reset();
+      // Hand the link over immediately — organisers create then paste into WhatsApp.
+      void copyLink(publicInviteUrl(invitation.inviteUrl));
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
     } finally {
@@ -164,13 +169,15 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
   }
 
   async function copyLink(url: string) {
-    try {
-      await navigator.clipboard.writeText(url);
+    setCopyHint("");
+    const ok = await copyText(url);
+    if (ok) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setError("Could not copy — long-press the link to copy it manually.");
+      setTimeout(() => setCopied(false), 2500);
+      return;
     }
+    // Keep the invite link visible/selectable — never block sharing on clipboard quirks.
+    setCopyHint("Select the link below and copy it, or use WhatsApp / Email.");
   }
 
   const canSubmit = Boolean(eventId) && name.trim().length >= 2 && !submitting;
@@ -189,8 +196,12 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
           <CreatedSummary
             result={created}
             copied={copied}
+            copyHint={copyHint}
             onCopy={copyLink}
-            onDismiss={() => setCreated(null)}
+            onDismiss={() => {
+              setCreated(null);
+              setCopyHint("");
+            }}
           />
         )}
 
@@ -330,11 +341,13 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
 function CreatedSummary({
   result,
   copied,
+  copyHint,
   onCopy,
   onDismiss,
 }: {
   result: QuickInviteResult;
   copied: boolean;
+  copyHint: string;
   onCopy: (url: string) => void;
   onDismiss: () => void;
 }) {
@@ -357,6 +370,7 @@ function CreatedSummary({
           <p className="mt-0.5 text-xs text-brand-700">
             Admits {result.partySize} {result.partySize === 1 ? "person" : "people"}
             {result.admissionCode ? ` · code ${result.admissionCode}` : ""}
+            {copied ? " · link copied" : ""}
           </p>
         </div>
         <button
@@ -368,10 +382,28 @@ function CreatedSummary({
         </button>
       </div>
 
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        <Button size="sm" variant="outline" onClick={() => onCopy(shareUrl)}>
-          <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Copy link"}
+      <div className="mt-2.5 flex gap-2">
+        <Input
+          readOnly
+          value={shareUrl}
+          aria-label="Invitation link"
+          onFocus={(e) => e.currentTarget.select()}
+          onClick={(e) => e.currentTarget.select()}
+          className="h-9 flex-1 truncate bg-white font-mono text-xs"
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="shrink-0"
+          onClick={() => void onCopy(shareUrl)}
+        >
+          <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Copy"}
         </Button>
+      </div>
+      {copyHint ? <p className="mt-1.5 text-xs text-amber-700">{copyHint}</p> : null}
+
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
         <Button size="sm" variant="outline" asChild>
           <a
             href={`https://wa.me/?text=${encodeURIComponent(whatsAppText)}`}
