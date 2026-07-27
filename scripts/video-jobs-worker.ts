@@ -30,8 +30,22 @@ import { processJobs, recoverStalledJobs } from "@/lib/queue";
 import { pollActiveVideoProcessingJobs } from "@/lib/video/processing";
 import { cleanupAbandonedVideoUploads, recoverStalledVideoProcessing } from "@/lib/video/cleanup";
 import { writeWorkerHeartbeat } from "@/lib/video/worker-heartbeat";
+import {
+  GENERAL_PASS_QUEUE,
+  GUEST_IMPORT_DELIVERY_QUEUE,
+  GUEST_IMPORT_QUEUE,
+} from "@/services/guest-import/queues";
 
-const QUEUES = ["video-process", "inspiration-analyze", "campaign-send"] as const;
+const QUEUES = [
+  "video-process",
+  "inspiration-analyze",
+  "campaign-send",
+  // Bulk Guest Import — chunked, self-requeuing jobs. Each tick drains a few
+  // chunks; a batch that still has rows left simply re-appears next tick.
+  GUEST_IMPORT_QUEUE,
+  GUEST_IMPORT_DELIVERY_QUEUE,
+  GENERAL_PASS_QUEUE,
+] as const;
 const TICK_MS = Number(process.env.JOB_WORKER_TICK_MS) || 15_000;
 const CLEANUP_EVERY_N_TICKS = 20; // ~5 minutes at the default 15s tick
 

@@ -101,6 +101,26 @@ async function allocateCode(tx: Tx, eventId: string, length: number): Promise<st
   );
 }
 
+/**
+ * Next token version for an invitation.
+ *
+ * Counts *every* pass ever issued, including revoked and reissued ones, not
+ * just the live one. Those rows are deliberately kept so an old printout is
+ * recognised and refused at the gate rather than reading as an unknown QR —
+ * which means the version number they occupy is taken, and reusing it would
+ * collide on `(invitationId, tokenVersion)`. Reached whenever a pass is
+ * revoked and later reinstated: a lost phone replaced, or an archived
+ * invitation restored.
+ */
+async function nextTokenVersion(tx: Tx, invitationId: string): Promise<number> {
+  const latest = await tx.guestPass.findFirst({
+    where: { invitationId },
+    orderBy: { tokenVersion: "desc" },
+    select: { tokenVersion: true },
+  });
+  return (latest?.tokenVersion ?? 0) + 1;
+}
+
 /** Code length for this event: organiser setting, widened if the list demands it. */
 async function resolveEventCodeLength(
   tx: Tx,
@@ -185,7 +205,7 @@ export async function ensureInvitationPass(
         tokenHash: hashPassToken(token),
         tokenNonce: nonce,
         tokenPrefix: passTokenPrefix(token),
-        tokenVersion: 1,
+        tokenVersion: await nextTokenVersion(tx, invitationId),
         code,
         codeLength: length,
         displayName: invitation.name,
@@ -246,12 +266,15 @@ export async function regenerateInvitationPass(
   const groupId = invitation.guests.find((g) => g.groupId)?.groupId ?? null;
 
   const result = await prisma.$transaction(async (tx) => {
+    // The most recent pass of any status. Admitted heads carry forward from it
+    // even when it was revoked, so reinstating a withdrawn pass cannot let a
+    // party that is already inside walk in for a second time.
     const previous = await tx.guestPass.findFirst({
-      where: { invitationId, status: { in: ACTIVE_STATUSES } },
+      where: { invitationId },
       orderBy: { tokenVersion: "desc" },
     });
 
-    if (previous) {
+    if (previous && ACTIVE_STATUSES.includes(previous.status)) {
       await tx.guestPass.update({
         where: { id: previous.id },
         data: { status: "REISSUED", revokedAt: new Date(), revokedReason: reason },

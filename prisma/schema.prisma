@@ -174,6 +174,8 @@ model User {
   giftCampaignsCreated       EventGiftCampaign[]      @relation("EventGiftCampaignCreator")
   giftPaymentsMade           EventGiftPayment[]       @relation("EventGiftPaymentGuest")
   giftLedgerEntriesCreated   EventWalletLedgerEntry[] @relation("EventWalletLedgerCreator")
+  guestImportBatches         GuestImportBatch[]       @relation("GuestImportBatchCreator")
+  generalPassBatches         GeneralPassBatch[]       @relation("GeneralPassBatchCreator")
 
   @@index([role])
   @@index([status])
@@ -349,6 +351,8 @@ model Event {
   giftLedgerEntries    EventWalletLedgerEntry[]
   admissionSettings    EventAdmissionSettings?
   guestPasses          GuestPass[]
+  guestImportBatches   GuestImportBatch[]
+  generalPassBatches   GeneralPassBatch[]
 
   @@index([organizerId])
   @@index([organizationId])
@@ -479,16 +483,33 @@ model Invitation {
   featureVersion Int       @default(1)
   lastMigratedAt DateTime?
 
-  event           Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  template        EventTemplate?        @relation(fields: [templateId], references: [id])
-  guests          Guest[]
-  blocks          InvitationBlock[]
-  guestWishes     InvitationGuestWish[]
-  giftCampaigns   EventGiftCampaign[]
-  admissionEvents AdmissionEvent[]
-  guestPasses     GuestPass[]
+  // ─── Bulk Guest Import & General Passes ───
+  // Provenance so an import can be rolled back precisely and a general pass is
+  // distinguishable from a personalised one without a second invitation stack.
+  importBatchId      String?
+  generalPassBatchId String?
+  /// True for unnamed general-admission passes (Method A/B). Personalised
+  /// invitations — including name-only imports — stay false.
+  isGeneralPass      Boolean   @default(false)
+  /// Soft archive: hidden from organiser lists, link refuses to serve.
+  archivedAt         DateTime?
+
+  event            Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  template         EventTemplate?            @relation(fields: [templateId], references: [id])
+  guests           Guest[]
+  blocks           InvitationBlock[]
+  guestWishes      InvitationGuestWish[]
+  giftCampaigns    EventGiftCampaign[]
+  admissionEvents  AdmissionEvent[]
+  guestPasses      GuestPass[]
+  importBatch      GuestImportBatch?         @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  generalPassBatch GeneralPassBatch?         @relation(fields: [generalPassBatchId], references: [id], onDelete: SetNull)
+  importRows       GuestImportRow[]
+  generalPassRegistrations GeneralPassRegistration[]
 
   @@index([eventId])
+  @@index([importBatchId])
+  @@index([generalPassBatchId])
   @@map("invitations")
 }
 
@@ -522,6 +543,14 @@ model Guest {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
+  // ─── Bulk Guest Import ───
+  /// Which bulk import created this row (null for manually added guests).
+  importBatchId  String?
+  /// Party shape the organiser confirmed at import time.
+  partyType      GuestPartyType @default(INDIVIDUAL)
+  /// Soft archive: excluded from counts, lists and delivery.
+  archivedAt     DateTime?
+
   event             Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
   invitation        Invitation?           @relation(fields: [invitationId], references: [id], onDelete: SetNull)
   group             GuestGroup?           @relation(fields: [groupId], references: [id])
@@ -534,10 +563,13 @@ model Guest {
   memoryUploads     EventMemoryUpload[]
   guestWishes       InvitationGuestWish[]
   giftPayments      EventGiftPayment[]
+  importBatch       GuestImportBatch?     @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  importRows        GuestImportRow[]
 
   @@unique([eventId, manualCode])
   @@index([eventId])
   @@index([status])
+  @@index([importBatchId])
   @@map("guests")
 }
 
@@ -4839,4 +4871,324 @@ model GuestPass {
   @@index([invitationId, status])
   @@index([tokenPrefix])
   @@map("guest_passes")
+}
+
+// ─── Bulk Guest Import & General Invitation Passes ──────────────
+//
+// One import batch owns the rows an organiser pasted or uploaded. Rows are
+// reviewed, decided on, then generated in resumable background batches into
+// the *existing* Invitation / Guest / GuestPass stack — never a parallel one.
+
+/// How a batch turns names (or a quantity) into admissible invitations.
+enum GuestImportMode {
+  /// Named guests → one personalised invitation each.
+  PERSONALISED
+  /// Method A: N unique unnamed passes, minted up front.
+  GENERAL_FIXED
+  /// Method B: one shareable registration link that *issues* a unique pass
+  /// per registrant. The shared link is never itself an entry credential.
+  GENERAL_OPEN
+}
+
+enum GuestImportSource {
+  PASTE_LINES
+  PASTE_TABLE
+  CSV
+  XLSX
+  MANUAL
+  TEMPLATE
+  API
+}
+
+enum GuestImportStatus {
+  /// Parsed and validated; awaiting organiser review. Nothing created yet.
+  DRAFT
+  /// Organiser confirmed; queued for generation.
+  READY
+  GENERATING
+  /// Some rows generated, some failed — resumable.
+  PARTIAL
+  COMPLETED
+  FAILED
+  CANCELLED
+  ROLLED_BACK
+}
+
+enum GuestImportRowStatus {
+  READY
+  NEEDS_REVIEW
+  DUPLICATE
+  INVALID
+  SKIPPED
+  GENERATING
+  GENERATED
+  FAILED
+}
+
+/// What the organiser decided for a row. Duplicates are never silently merged.
+enum GuestImportRowDecision {
+  CREATE
+  SKIP
+  MERGE_INTO_EXISTING
+  UPDATE_EXISTING
+}
+
+/// Party shape suggested from the name and confirmed by the organiser.
+enum GuestPartyType {
+  INDIVIDUAL
+  COUPLE
+  PLUS_GUEST
+  FAMILY
+  GROUP
+}
+
+enum GuestImportDeliveryChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  /// No send — the organiser will share the link themselves.
+  LINK_ONLY
+}
+
+enum GuestImportDeliveryStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+  /// Name-only guest with no phone or email — expected, not an error.
+  SKIPPED_NO_CONTACT
+  CANCELLED
+}
+
+model GuestImportBatch {
+  id          String  @id @default(cuid())
+  eventId     String
+  createdById String?
+  label       String?
+
+  mode   GuestImportMode   @default(PERSONALISED)
+  source GuestImportSource @default(PASTE_LINES)
+  status GuestImportStatus @default(DRAFT)
+
+  fileName String?
+  /// Header cells detected in the upload, feeding the mapping UI.
+  detectedHeaders Json?
+  /// Confirmed column index → canonical field mapping.
+  columnMapping   Json?
+  /// Organiser choices: template, allowance defaults, QR/place card/seating
+  /// toggles, delivery channels, duplicate policy.
+  options         Json?
+
+  totalRows     Int @default(0)
+  readyRows     Int @default(0)
+  reviewRows    Int @default(0)
+  duplicateRows Int @default(0)
+  invalidRows   Int @default(0)
+  skippedRows   Int @default(0)
+  generatedRows Int @default(0)
+  failedRows    Int @default(0)
+  /// Sum of party allowances actually generated — the true head count.
+  generatedHeads Int @default(0)
+
+  confirmedAt    DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  rolledBackAt   DateTime?
+  rollbackReason String?
+  error          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event          Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy      User?              @relation("GuestImportBatchCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  rows           GuestImportRow[]
+  deliveries     GuestImportDelivery[]
+  generalBatches GeneralPassBatch[]
+  invitations    Invitation[]
+  guests         Guest[]
+
+  @@index([eventId, status])
+  @@index([eventId, createdAt])
+  @@map("guest_import_batches")
+}
+
+model GuestImportRow {
+  id       String @id @default(cuid())
+  batchId  String
+  /// Stable position in the source. Makes generation idempotent on resume.
+  rowIndex Int
+
+  /// Verbatim source cells — kept so a re-map never needs a re-upload, and so
+  /// an audit can show exactly what the organiser pasted.
+  raw Json
+
+  // ─ Normalised, organiser-editable values ─
+  /// The only required field. Everything else may be absent.
+  name        String
+  email       String?
+  /// Normalised (Ghana-aware) phone.
+  phone       String?
+  /// Exactly as typed, before normalisation.
+  rawPhone    String?
+  partyType   GuestPartyType @default(INDIVIDUAL)
+  /// Total heads this invitation admits.
+  partySize   Int            @default(1)
+  /// Named party members beyond the primary guest.
+  memberNames Json?
+  groupName   String?
+  tableNumber String?
+  seatLabel   String?
+  notes       String?
+
+  status   GuestImportRowStatus   @default(READY)
+  decision GuestImportRowDecision @default(CREATE)
+  /// [{ code, severity, field, message }] — machine-readable findings.
+  issues   Json?
+
+  /// Duplicate anchors: within this batch, or against what already exists.
+  duplicateOfRowIndex     Int?
+  duplicateOfGuestId      String?
+  duplicateOfInvitationId String?
+  /// Set when the organiser explicitly resolved a review/duplicate row.
+  reviewedAt              DateTime?
+
+  // ─ Generation results ─
+  invitationId String?
+  guestId      String?
+  guestPassId  String?
+  generatedAt  DateTime?
+  attempts     Int       @default(0)
+  error        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  batch      GuestImportBatch      @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  invitation Invitation?           @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  guest      Guest?                @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  deliveries GuestImportDelivery[]
+
+  @@unique([batchId, rowIndex])
+  @@index([batchId, status])
+  @@index([invitationId])
+  @@map("guest_import_rows")
+}
+
+enum GeneralPassMethod {
+  /// Method A — mint a fixed number of unique passes now.
+  FIXED_QUANTITY
+  /// Method B — publish a registration link that issues a unique pass each time.
+  OPEN_REGISTRATION
+}
+
+enum GeneralPassBatchStatus {
+  DRAFT
+  GENERATING
+  ACTIVE
+  CLOSED
+  REVOKED
+  FAILED
+}
+
+model GeneralPassBatch {
+  id            String  @id @default(cuid())
+  eventId       String
+  importBatchId String?
+  createdById   String?
+
+  label  String
+  method GeneralPassMethod      @default(FIXED_QUANTITY)
+  status GeneralPassBatchStatus @default(DRAFT)
+
+  /// FIXED_QUANTITY: how many passes to mint.
+  quantity    Int @default(0)
+  issuedCount Int @default(0)
+  /// Heads each issued pass admits.
+  partySize   Int @default(1)
+
+  /// OPEN_REGISTRATION: secret path segment for the public registration page.
+  /// Holding this link lets someone *request* a pass; it never admits anyone.
+  registrationToken String?   @unique
+  registrationOpen  Boolean   @default(true)
+  maxRegistrations  Int?
+  requireName       Boolean   @default(true)
+  requireContact    Boolean   @default(false)
+  closesAt          DateTime?
+
+  /// Human-facing label stem for issued passes, e.g. "Guest" → "Guest 014".
+  passLabelPrefix String  @default("Guest")
+  /// Copy the organiser wants shown on the registration page.
+  welcomeMessage  String?
+
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event         Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  importBatch   GuestImportBatch?         @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  createdBy     User?                     @relation("GeneralPassBatchCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  invitations   Invitation[]
+  registrations GeneralPassRegistration[]
+
+  @@index([eventId, status])
+  @@map("general_pass_batches")
+}
+
+/// One accepted open-registration request. Kept separately from the issued
+/// invitation so abuse review and analytics never have to mine invite rows.
+model GeneralPassRegistration {
+  id           String @id @default(cuid())
+  batchId      String
+  invitationId String
+
+  name      String?
+  contact   String?
+  /// Salted hash — never the raw address.
+  ipHash    String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  batch      GeneralPassBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  invitation Invitation       @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, createdAt])
+  @@index([batchId, ipHash])
+  @@map("general_pass_registrations")
+}
+
+model GuestImportDelivery {
+  id           String  @id @default(cuid())
+  batchId      String
+  rowId        String?
+  invitationId String?
+  guestId      String?
+
+  channel   GuestImportDeliveryChannel
+  status    GuestImportDeliveryStatus  @default(QUEUED)
+  /// Phone or email actually dialled — resolved at queue time.
+  recipient String?
+  guestName String?
+  subject   String?
+  body      String?
+
+  attempts    Int     @default(0)
+  maxAttempts Int     @default(3)
+  lastError   String?
+  provider    String?
+
+  queuedAt DateTime  @default(now())
+  sentAt   DateTime?
+  failedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  batch GuestImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  row   GuestImportRow?  @relation(fields: [rowId], references: [id], onDelete: SetNull)
+
+  @@index([batchId, status])
+  @@index([status, queuedAt])
+  @@map("guest_import_deliveries")
 }
