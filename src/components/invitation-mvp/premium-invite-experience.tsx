@@ -52,6 +52,17 @@ export interface PremiumInviteExperienceProps {
   memoryUploadQrImageUrl?: string | null;
   /** Optional override for Album card title (demo event name) */
   memoryAlbumTitle?: string | null;
+  /**
+   * Gift Wallet placement. Present only when the event has a live gift campaign
+   * with invitation placement enabled — absent means the invite renders exactly
+   * as it did before gifting existed.
+   */
+  giftUrl?: string | null;
+  giftQrImageUrl?: string | null;
+  giftTitle?: string | null;
+  giftSubtitle?: string | null;
+  giftCtaLabel?: string | null;
+  giftPrivacyNote?: string | null;
   eventId?: string;
   /** Catalog template slug (Studio 2.0 viral-footer attribution) */
   templateSlug?: string;

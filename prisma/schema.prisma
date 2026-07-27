@@ -171,6 +171,9 @@ model User {
   clientRelationsAsOrganizer ClientRelationship[]  @relation("OrganizerClients")
   clientRelationsAsClient    ClientRelationship[]  @relation("ClientOrganizers")
   videoAssets                VideoAsset[]
+  giftCampaignsCreated       EventGiftCampaign[]      @relation("EventGiftCampaignCreator")
+  giftPaymentsMade           EventGiftPayment[]       @relation("EventGiftPaymentGuest")
+  giftLedgerEntriesCreated   EventWalletLedgerEntry[] @relation("EventWalletLedgerCreator")
 
   @@index([role])
   @@index([status])
@@ -338,6 +341,10 @@ model Event {
   workspace      EventWorkspace?
   enabledFeatures EventEnabledFeature[]
   addons         EventAddon[]
+  giftCampaigns     EventGiftCampaign[]
+  giftPayments      EventGiftPayment[]
+  giftWallet        EventWalletAccount?
+  giftLedgerEntries EventWalletLedgerEntry[]
 
   @@index([organizerId])
   @@index([organizationId])
@@ -451,6 +458,7 @@ model Invitation {
   guests   Guest[]
   blocks   InvitationBlock[]
   guestWishes InvitationGuestWish[]
+  giftCampaigns EventGiftCampaign[]
 
   @@index([eventId])
   @@map("invitations")
@@ -497,6 +505,7 @@ model Guest {
   seatingAssignment SeatingAssignment?
   memoryUploads EventMemoryUpload[]
   guestWishes   InvitationGuestWish[]
+  giftPayments  EventGiftPayment[]
 
   @@unique([eventId, manualCode])
   @@index([eventId])
@@ -617,6 +626,7 @@ enum PaymentPurpose {
   CONTRIBUTION
   INVITATION_ORDER
   INVITATION_REVISION
+  EVENT_GIFT
 }
 
 model Payment {
@@ -4281,4 +4291,288 @@ model VideoAsset {
   @@index([vendorId])
   @@index([createdAt])
   @@map("video_assets")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Event Gift Wallet — private cash gifting for events.
+// Additive only: nothing above is altered beyond back-relations and the
+// EVENT_GIFT payment purpose. The ledger is the source of truth for money.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum EventGiftType {
+  WEDDING_GIFT
+  CASH_GIFT
+  BRIDAL_SHOWER_GIFT
+  BABY_GIFT
+  BIRTHDAY_GIFT
+  ANNIVERSARY_GIFT
+  GRADUATION_GIFT
+  HOUSEWARMING_GIFT
+  NAMING_CEREMONY_GIFT
+  THANKSGIVING_GIFT
+  FUNERAL_SUPPORT
+  GENERAL_GIFT
+}
+
+enum EventGiftCampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+enum EventGiftQrMode {
+  EVENT_GIFT_QR
+  PERSONALISED_GIFT_QR
+}
+
+enum EventGiftPaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  ABANDONED
+  REVERSED
+  REFUNDED
+  DISPUTED
+}
+
+enum EventGiftChannel {
+  MOBILE_MONEY
+  CARD
+  BANK_TRANSFER
+  USSD
+  UNKNOWN
+}
+
+enum EventWalletAccountStatus {
+  ACTIVE
+  FROZEN
+  CLOSED
+}
+
+enum EventWalletLedgerType {
+  GIFT_CREDIT
+  GIFT_REVERSAL
+  REFUND_DEBIT
+  DISPUTE_HOLD
+  DISPUTE_RELEASE
+  FEE_DEBIT
+  ADJUSTMENT_CREDIT
+  ADJUSTMENT_DEBIT
+  WITHDRAWAL_DEBIT
+  WITHDRAWAL_REVERSAL
+}
+
+model EventGiftCampaign {
+  id                String                  @id @default(cuid())
+  eventId           String
+  invitationId      String?
+  invitationOrderId String?
+  createdById       String?
+  /// Unguessable public token used in /gift/{publicToken}
+  publicToken       String                  @unique
+  giftType          EventGiftType           @default(WEDDING_GIFT)
+  status            EventGiftCampaignStatus @default(DRAFT)
+  qrMode            EventGiftQrMode         @default(EVENT_GIFT_QR)
+
+  // Organiser-editable copy (never uses "donation" wording by default)
+  title           String  @default("Send a Gift")
+  subtitle        String?
+  description     String?
+  ctaLabel        String  @default("Send a Gift")
+  thankYouTitle   String?
+  thankYouMessage String?
+  coverImageUrl   String?
+
+  currency            String  @default("GHS")
+  /// JSON array of integer minor-unit suggestions, e.g. [5000, 10000, 20000]
+  suggestedAmounts    Json?
+  minAmountMinor      Int     @default(500)
+  maxAmountMinor      Int?
+  allowCustomAmount   Boolean @default(true)
+  allowGuestMessage   Boolean @default(true)
+  requireGuestName    Boolean @default(true)
+  requireGuestContact Boolean @default(true)
+  allowAnonymous      Boolean @default(true)
+
+  /// Privacy is non-negotiable for public/guest surfaces; these flags exist so
+  /// the organiser view can be reasoned about explicitly, never to open guests up.
+  hideTotalsFromGuests     Boolean @default(true)
+  showContributorsToGuests Boolean @default(false)
+
+  /// Render the gift section inside the digital invitation. Turning this off
+  /// keeps the campaign live for the printed QR and the shared link only.
+  showOnInvitation Boolean @default(true)
+
+  /// INVITATION — inherit the invitation template theme; PRESET — use themePresetId
+  themeSource   String    @default("INVITATION")
+  themePresetId String?
+  closesAt      DateTime?
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  event      Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitation Invitation?        @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  createdBy  User?              @relation("EventGiftCampaignCreator", fields: [createdById], references: [id])
+  payments   EventGiftPayment[]
+
+  @@index([eventId, status])
+  @@index([publicToken])
+  @@index([invitationId])
+  @@map("event_gift_campaigns")
+}
+
+model EventGiftPayment {
+  id             String  @id @default(cuid())
+  campaignId     String
+  eventId        String
+  guestId        String?
+  userId         String?
+  /// Our canonical provider reference (also the Paystack transaction reference)
+  reference      String  @unique
+  /// Link back to the core Payment row so existing reporting keeps working
+  paymentId      String? @unique
+  idempotencyKey String? @unique
+
+  provider            PaymentProvider  @default(PAYSTACK)
+  channel             EventGiftChannel @default(MOBILE_MONEY)
+  /// Requested mobile money network hint: mtn | vodafone (Telecel) | airteltigo
+  providerChannelHint String?
+
+  giftType       EventGiftType          @default(WEDDING_GIFT)
+  status         EventGiftPaymentStatus @default(PENDING)
+  currency       String                 @default("GHS")
+  amountMinor    Int
+  feeMinor       Int                    @default(0)
+  netAmountMinor Int
+
+  guestName    String?
+  guestEmail   String?
+  guestPhone   String?
+  guestMessage String?
+  isAnonymous  Boolean @default(false)
+
+  authorizationUrl  String?
+  providerReference String?
+  providerStatus    String?
+  failureReason     String?
+  paidAt            DateTime?
+  verifiedAt        DateTime?
+  failedAt          DateTime?
+
+  reconciledAt   DateTime?
+  reconciledById String?
+  organiserNote  String?
+
+  refundedAt        DateTime?
+  refundAmountMinor Int?
+  refundReason      String?
+  refundedById      String?
+
+  ipHash    String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign      EventGiftCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  event         Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest         Guest?                   @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  user          User?                    @relation("EventGiftPaymentGuest", fields: [userId], references: [id], onDelete: SetNull)
+  receipt       EventGiftReceipt?
+  ledgerEntries EventWalletLedgerEntry[]
+
+  @@index([campaignId, status])
+  @@index([eventId, createdAt])
+  @@index([status])
+  @@index([userId])
+  @@index([guestId])
+  @@map("event_gift_payments")
+}
+
+model EventGiftReceipt {
+  id               String    @id @default(cuid())
+  giftPaymentId    String    @unique
+  receiptNumber    String    @unique
+  /// SHA-256 of the issued signed receipt token — the token itself is never stored
+  tokenFingerprint String    @unique
+  /// Immutable snapshot of everything rendered on the receipt at issue time
+  snapshot         Json
+  issuedAt         DateTime  @default(now())
+  revokedAt        DateTime?
+  viewCount        Int       @default(0)
+  lastViewedAt     DateTime?
+  emailedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  giftPayment EventGiftPayment @relation(fields: [giftPaymentId], references: [id], onDelete: Cascade)
+
+  @@index([receiptNumber])
+  @@map("event_gift_receipts")
+}
+
+model EventWalletAccount {
+  id       String                   @id @default(cuid())
+  eventId  String                   @unique
+  currency String                   @default("GHS")
+  status   EventWalletAccountStatus @default(ACTIVE)
+
+  /// Cached projections of the ledger. The ledger is the source of truth; these
+  /// are recomputed inside the same transaction that appends an entry.
+  balanceMinor           Int @default(0)
+  availableMinor         Int @default(0)
+  reservedMinor          Int @default(0)
+  lifetimeGiftMinor      Int @default(0)
+  lifetimeRefundMinor    Int @default(0)
+  lifetimeWithdrawnMinor Int @default(0)
+  giftCount              Int @default(0)
+
+  lastLedgerAt DateTime?
+  frozenReason String?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  event         Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ledgerEntries EventWalletLedgerEntry[]
+
+  @@map("event_wallet_accounts")
+}
+
+model EventWalletLedgerEntry {
+  id                String                @id @default(cuid())
+  accountId         String
+  eventId           String
+  type              EventWalletLedgerType
+  /// "CREDIT" | "DEBIT" — mirrors the sign of amountMinor for readable queries
+  direction         String
+  /// Signed integer minor units: positive for credits, negative for debits
+  amountMinor       Int
+  currency          String                @default("GHS")
+  balanceAfterMinor Int
+  /// Guarantees exactly-once fulfilment even if a webhook is delivered twice
+  idempotencyKey    String                @unique
+  giftPaymentId     String?
+  /// Compensating entries point back at the entry they reverse
+  relatedEntryId    String?
+  source            String                @default("system")
+  description       String?
+  createdById       String?
+  metadata          Json?
+  createdAt         DateTime              @default(now())
+
+  account     EventWalletAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  giftPayment EventGiftPayment?  @relation(fields: [giftPaymentId], references: [id], onDelete: SetNull)
+  createdBy   User?              @relation("EventWalletLedgerCreator", fields: [createdById], references: [id])
+
+  @@index([accountId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([giftPaymentId])
+  @@index([type])
+  @@map("event_wallet_ledger_entries")
 }

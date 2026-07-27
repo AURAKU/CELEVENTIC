@@ -16,6 +16,51 @@ function webhookSignature(headers: Headers, provider: PaymentProvider): string {
   }
 }
 
+/**
+ * Marks a gift as disputed or reversed when Paystack reports a chargeback or a
+ * completed refund. Returns the handled event name, or null when the payload is
+ * not a gift lifecycle event so the caller can fall through to the normal path.
+ */
+async function handleGiftLifecycleEvent(
+  body: unknown,
+  provider: PaymentProvider
+): Promise<string | null> {
+  if (provider !== "PAYSTACK") return null;
+
+  const payload = body as {
+    event?: string;
+    data?: {
+      reference?: string;
+      transaction?: { reference?: string };
+      transaction_reference?: string;
+      status?: string;
+    };
+  };
+
+  const event = payload.event;
+  if (!event) return null;
+
+  const disputeEvents = ["charge.dispute.create", "charge.dispute.remind"];
+  const refundEvents = ["refund.processed", "refund.failed", "refund.pending"];
+  if (![...disputeEvents, ...refundEvents].includes(event)) return null;
+
+  const reference =
+    payload.data?.transaction?.reference ??
+    payload.data?.transaction_reference ??
+    payload.data?.reference ??
+    null;
+  if (!reference) return event;
+
+  const { giftLifecycleService } = await import("@/services/gifts/gift-lifecycle.service");
+  if (disputeEvents.includes(event)) {
+    await giftLifecycleService.markDisputed(reference, event);
+  } else if (event === "refund.processed") {
+    await giftLifecycleService.markProviderRefunded(reference);
+  }
+
+  return event;
+}
+
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
@@ -42,6 +87,14 @@ export async function POST(req: Request) {
 
     if (!valid) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
+    // Gift-specific lifecycle events (disputes, provider-side refunds) carry
+    // their reference in a different shape from a charge and never flow through
+    // the generic status path.
+    const giftHandled = await handleGiftLifecycleEvent(body, provider);
+    if (giftHandled) {
+      return NextResponse.json({ received: true, provider, handled: giftHandled });
     }
 
     const parsed = adapter.parseWebhook

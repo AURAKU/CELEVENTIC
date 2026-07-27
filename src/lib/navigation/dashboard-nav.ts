@@ -40,6 +40,7 @@ import {
   Plug,
   Lock,
   Plus,
+  Gift,
 } from "lucide-react";
 
 export type WorkspaceId = "organizer" | "vendor" | "funeral" | "admin";
@@ -130,6 +131,7 @@ export const ORGANIZER_NAV: NavSection[] = [
     labelKey: "dashboard.nav_section_finance",
     items: [
       { href: "/dashboard/wallet?view=overview", labelKey: "dashboard.nav_wallet", icon: Wallet },
+      { href: "/dashboard/gifts", labelKey: "dashboard.nav_gifts", icon: Gift },
       { href: "/dashboard/contributions", labelKey: "dashboard.nav_contributions", icon: CreditCard },
       { href: "/dashboard/invitations?tab=store", labelKey: "dashboard.nav_orders", icon: Package },
       { href: "/dashboard/wallet?view=payouts", labelKey: "dashboard.nav_payouts", icon: Banknote },
