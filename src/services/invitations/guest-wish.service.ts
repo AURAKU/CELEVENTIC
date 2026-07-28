@@ -1,3 +1,4 @@
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 
@@ -8,6 +9,31 @@ export type CreateGuestWishInput = {
   authorName: string;
   message: string;
 };
+
+export type GuestWishPublic = {
+  id: string;
+  authorName: string;
+  message: string;
+  createdAt: Date;
+  guestId: string | null;
+};
+
+function hashAuthorToken(token: string): string {
+  return createHash("sha256").update(token.trim()).digest("hex");
+}
+
+function mintAuthorToken(): { token: string; hash: string } {
+  const token = randomBytes(24).toString("base64url");
+  return { token, hash: hashAuthorToken(token) };
+}
+
+export function authorTokenMatches(storedHash: string | null | undefined, token: string): boolean {
+  if (!storedHash || !token.trim()) return false;
+  const incoming = Buffer.from(hashAuthorToken(token), "utf8");
+  const expected = Buffer.from(storedHash, "utf8");
+  if (incoming.length !== expected.length) return false;
+  return timingSafeEqual(incoming, expected);
+}
 
 export class GuestWishService {
   async listForEvent(eventId: string, page = 1, limit = 50) {
@@ -35,7 +61,7 @@ export class GuestWishService {
     return paginatedResult(items, total, p, take);
   }
 
-  async create(input: CreateGuestWishInput) {
+  async create(input: CreateGuestWishInput): Promise<GuestWishPublic & { deleteToken: string }> {
     const authorName = input.authorName.trim().slice(0, 80);
     const message = input.message.trim().slice(0, 1000);
     if (!authorName) throw new Error("Please enter your name");
@@ -63,13 +89,16 @@ export class GuestWishService {
       if (!guest) throw new Error("Guest not found for this event");
     }
 
-    return prisma.invitationGuestWish.create({
+    const { token, hash } = mintAuthorToken();
+
+    const wish = await prisma.invitationGuestWish.create({
       data: {
         eventId: input.eventId,
         invitationId: input.invitationId,
         guestId: input.guestId,
         authorName,
         message,
+        authorTokenHash: hash,
       },
       select: {
         id: true,
@@ -79,6 +108,8 @@ export class GuestWishService {
         guestId: true,
       },
     });
+
+    return { ...wish, deleteToken: token };
   }
 
   async getById(id: string) {
@@ -91,11 +122,12 @@ export class GuestWishService {
         message: true,
         createdAt: true,
         guestId: true,
+        authorTokenHash: true,
       },
     });
   }
 
-  /** Permanently remove a wish (moderation hard-delete). */
+  /** Permanently remove a wish (author or moderator hard-delete). */
   async hardDelete(id: string) {
     return prisma.invitationGuestWish.delete({
       where: { id },

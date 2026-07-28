@@ -200,7 +200,7 @@ export function WeddingBoardStudioPanel({
         </Field>
         <label className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm sm:col-span-2">
           <span>
-            Vibrate when the seal breaks
+            Vibrate when the seal lifts
             <span className="ml-1 text-xs text-slate-400">(supported phones only)</span>
           </span>
           <Switch

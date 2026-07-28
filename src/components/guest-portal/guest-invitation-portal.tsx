@@ -60,6 +60,7 @@ interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   admissionManualCode?: string | null;
   guestQrToken?: string | null;
   seatLookupUrl?: string | null;
+  companionUrl?: string | null;
   seatQrDataUrl?: string | null;
   fullScreen?: boolean;
   /** Embedded inside a preview frame — no min-h-screen */
@@ -432,6 +433,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 eventTitle={displayEvent.title}
                 venueName={displayEvent.venueName}
                 seatLookupUrl={props.seatLookupUrl}
+                companionUrl={props.companionUrl}
                 mapsLink={props.event.mapsLink}
                 accentColor={accent}
               />

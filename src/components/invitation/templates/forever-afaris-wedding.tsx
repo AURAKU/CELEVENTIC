@@ -351,26 +351,35 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
   const heroPortrait = useMemo(() => {
     const hero = (design.media ?? []).find(
-      (m) => m.type === "image" && (m.role === "hero" || m.role === "background")
+      (m) => m.type === "image" && m.role === "hero"
     );
     return hero?.url ?? event.coverImageUrl ?? null;
   }, [design.media, event.coverImageUrl]);
 
   const galleryImages = useMemo(() => {
+    // Gallery is reference assets + portal gallery only — never the hero portrait,
+    // welcome intro, or page background.
+    const reserved = new Set(
+      [heroPortrait, event.coverImageUrl].filter((url): url is string => Boolean(url))
+    );
+    for (const asset of design.media ?? []) {
+      if (asset.role === "intro" || asset.role === "background" || asset.role === "hero") {
+        if (asset.url) reserved.add(asset.url);
+      }
+    }
+
     const fromMedia = (design.media ?? [])
-      .filter((m) => m.type === "image" && (m.role === "hero" || m.role === "reference"))
+      .filter((m) => m.type === "image" && m.role === "reference")
       .map((m) => ({ url: m.url, name: m.name }));
     const fromPortal = (props.galleryUrls ?? []).map((url) => ({ url, name: undefined }));
-    // The portrait already leads the hero — don't print it twice in the strip.
-    const seen = new Set<string>(
-      features.heroPortrait && heroPortrait ? [heroPortrait] : []
-    );
+
+    const seen = new Set<string>();
     return [...fromMedia, ...fromPortal].filter((item) => {
-      if (!item.url || seen.has(item.url)) return false;
+      if (!item.url || reserved.has(item.url) || seen.has(item.url)) return false;
       seen.add(item.url);
       return true;
     });
-  }, [design.media, props.galleryUrls, features.heroPortrait, heroPortrait]);
+  }, [design.media, props.galleryUrls, heroPortrait, event.coverImageUrl]);
 
   const countdownTarget =
     board.countdownTarget?.trim() || event.startDateRaw || event.startDate;

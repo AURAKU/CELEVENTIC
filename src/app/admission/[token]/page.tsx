@@ -82,13 +82,24 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
       where: { tokenHash: hashPassToken(token) },
       include: {
         event: { select: { title: true, venueName: true, startDate: true } },
-        invitation: { select: { uniqueLink: true, guests: { select: { qrToken: true }, take: 1 } } },
+        invitation: {
+          select: {
+            uniqueLink: true,
+            postAdmissionEnabled: true,
+            guests: { select: { qrToken: true }, take: 1 },
+          },
+        },
       },
     });
     if (!pass) notFound();
 
     const settings = await getEventAdmissionSettings(pass.eventId);
     const guestToken = pass.invitation.guests[0]?.qrToken;
+    const inviteHref = `/invite/${pass.invitation.uniqueLink}${guestToken ? `?guest=${guestToken}` : ""}`;
+    const companionHref = pass.invitation.postAdmissionEnabled
+      ? `/invite/${pass.invitation.uniqueLink}/event-day${guestToken ? `?guest=${guestToken}` : ""}`
+      : null;
+    const admitted = pass.admittedCount > 0;
 
     return (
       <AdmissionShell>
@@ -109,12 +120,19 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
           preset="minimal"
           className="px-0 pb-0 pt-0"
         />
-        <Link
-          href={`/invite/${pass.invitation.uniqueLink}${guestToken ? `?guest=${guestToken}` : ""}`}
-          className="mt-4 inline-block text-sm text-[#0B8A83] hover:underline"
-        >
-          View Invitation
-        </Link>
+        <div className="mt-5 flex flex-col items-center gap-2">
+          <Link href={inviteHref} className="text-sm text-[#0B8A83] hover:underline">
+            View Invitation
+          </Link>
+          {companionHref && (
+            <Link
+              href={companionHref}
+              className="inline-flex items-center justify-center rounded-full bg-[#0B8A83] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#097870]"
+            >
+              {admitted ? "Open your Event Companion" : "Event Companion (unlocks on arrival)"}
+            </Link>
+          )}
+        </div>
       </AdmissionShell>
     );
   }

@@ -317,10 +317,10 @@ describe("soft-intro gate", () => {
     assert.equal(resolveInitialInvitePhase({ introEnabled: true, needsTapGate: true, showReveal: true }), "soft-intro");
   });
 
-  it("gates reveal behind soft intro then DNA intro", () => {
+  it("gates reveal behind brand video intro then tap gate", () => {
     const flags = { introEnabled: true, needsTapGate: true, showReveal: true };
     assert.equal(resolveInitialInvitePhase(flags), "soft-intro");
-    assert.equal(phaseAfterSoftIntro(flags), "intro");
+    assert.equal(phaseAfterSoftIntro(flags), "tap-to-begin");
   });
 
   it("skips soft intro when skipIntro is set (thumbnail preview pattern)", () => {
@@ -331,11 +331,20 @@ describe("soft-intro gate", () => {
     );
   });
 
-  it("allows explicit skipSoftIntro override while keeping DNA intro", () => {
+  it("never resumes DNA intro after soft intro — brand video is the only intro", () => {
     assert.equal(shouldShowSoftIntro({ skipSoftIntro: true, skipIntro: false }), false);
     assert.equal(
-      resolveInitialInvitePhase({ skipSoftIntro: true, skipIntro: false, introEnabled: true }),
-      "intro"
+      resolveInitialInvitePhase({
+        skipSoftIntro: true,
+        skipIntro: false,
+        introEnabled: true,
+        needsTapGate: true,
+      }),
+      "tap-to-begin"
+    );
+    assert.equal(
+      phaseAfterSoftIntro({ introEnabled: true, needsTapGate: false, showReveal: true }),
+      "reveal"
     );
   });
 

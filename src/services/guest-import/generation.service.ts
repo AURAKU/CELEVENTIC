@@ -477,12 +477,20 @@ export async function generateBatchChunk(batchId: string): Promise<ChunkResult> 
 }
 
 /**
- * Job entry point. Processes one chunk and re-queues itself while work remains,
- * which keeps every tick short and makes a worker restart a no-op beyond the
- * chunk that was in flight.
+ * Job entry point. Processes as many chunks as fit in a short time budget, then
+ * re-queues itself while work remains. Keeps each claim responsive (worker tick
+ * / inline kick) without waiting a full 15s between every 25-row slice.
  */
 export async function runGuestImportJob(batchId: string): Promise<void> {
-  const result = await generateBatchChunk(batchId);
+  const budgetRaw = Number(process.env.GUEST_IMPORT_JOB_BUDGET_MS);
+  const budgetMs = Number.isFinite(budgetRaw) && budgetRaw > 0 ? budgetRaw : 20_000;
+  const started = Date.now();
+
+  let result = await generateBatchChunk(batchId);
+  while (result.remaining > 0 && Date.now() - started < budgetMs) {
+    result = await generateBatchChunk(batchId);
+  }
+
   if (result.remaining > 0) {
     await dispatchJob(GUEST_IMPORT_QUEUE, { batchId }, 5);
   }

@@ -75,10 +75,31 @@ describe("published design snapshot", () => {
     assert.deepEqual(urls, ["/a.jpg", "/b.mp4", "/welcome.jpg"]);
     assert.equal(design.media?.[0].role, "hero");
     assert.equal(design.media?.[1].type, "video");
+    assert.equal(design.media?.[1].role, "reference");
     assert.equal(design.media?.[2].role, "intro");
   });
 
-  it("drops a removed image from the snapshot", () => {
+  it("keeps a dedicated invitation hero separate from the gallery", () => {
+    const design = buildPublishedDesignConfig({
+      templateSlug: TRADITIONAL,
+      designConfig: {
+        media: [
+          { url: "/hero.jpg", type: "image", role: "hero", name: "Hero photo" },
+          { url: "/welcome.jpg", type: "image", role: "intro" },
+        ],
+      },
+      galleryUrls: ["/hero.jpg", "/gallery-a.jpg", "/gallery-b.jpg"],
+    });
+
+    const byRole = Object.fromEntries((design.media ?? []).map((m) => [m.role, m.url]));
+    assert.equal(byRole.hero, "/hero.jpg");
+    assert.equal(byRole.intro, "/welcome.jpg");
+    const refs = (design.media ?? []).filter((m) => m.role === "reference").map((m) => m.url);
+    assert.deepEqual(refs, ["/gallery-a.jpg", "/gallery-b.jpg"]);
+    assert.ok(!refs.includes("/hero.jpg"), "hero must not become a gallery slide");
+  });
+
+  it("preserves a dedicated hero when the gallery list changes", () => {
     const design = buildPublishedDesignConfig({
       templateSlug: TRADITIONAL,
       designConfig: { media: [{ url: "/a.jpg", type: "image", role: "hero" }] },
@@ -86,8 +107,9 @@ describe("published design snapshot", () => {
     });
 
     const urls = design.media?.map((m) => m.url) ?? [];
-    assert.ok(!urls.includes("/a.jpg"));
-    assert.deepEqual(urls, ["/b.jpg"]);
+    assert.deepEqual(urls, ["/a.jpg", "/b.jpg"]);
+    assert.equal(design.media?.[0].role, "hero");
+    assert.equal(design.media?.[1].role, "reference");
   });
 });
 

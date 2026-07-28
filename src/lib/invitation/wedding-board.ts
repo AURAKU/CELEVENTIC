@@ -29,7 +29,7 @@ export interface WeddingBoardFeatureFlags {
   guestPolicy?: boolean;
   /** Optional couple story section */
   story?: boolean;
-  /** Optional gallery strip (uses design.media hero/gallery assets) */
+  /** Optional gallery strip (reference / gallery uploads only — never the hero portrait) */
   gallery?: boolean;
   /** Scratch-to-reveal keepsake message */
   scratch?: boolean;
@@ -137,7 +137,7 @@ export interface WeddingBoardContent {
   sealColor?: WeddingSealColor;
   /** Relief pressed into the wax */
   sealMotif?: WeddingSealMotif;
-  /** Fire a short vibration on the seal break (supported devices only) */
+  /** Fire a soft vibration when the seal lifts (supported devices only) */
   haptics?: boolean;
 
   // — Palette (blank = template default) —
@@ -249,7 +249,7 @@ export const DEFAULT_WEDDING_BOARD: Required<
   sectionOrder: WeddingSectionId[];
   features: Required<WeddingBoardFeatureFlags>;
 } = {
-  openingInstruction: "Tap the seal to open",
+  openingInstruction: "Lift the seal to open",
   sealMonogram: FOREVER_AFARIS_DEFAULT_SEAL,
   gateWord: "Forever",
   envelopeAddressLine: "You are cordially invited",

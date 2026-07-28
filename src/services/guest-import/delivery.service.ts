@@ -246,7 +246,15 @@ async function batchOwner(batchId: string): Promise<string | null> {
 }
 
 export async function runDeliveryJob(batchId: string): Promise<void> {
-  const result = await processDeliveryChunk(batchId);
+  const budgetRaw = Number(process.env.GUEST_IMPORT_JOB_BUDGET_MS);
+  const budgetMs = Number.isFinite(budgetRaw) && budgetRaw > 0 ? budgetRaw : 20_000;
+  const started = Date.now();
+
+  let result = await processDeliveryChunk(batchId);
+  while (result.remaining > 0 && Date.now() - started < budgetMs) {
+    result = await processDeliveryChunk(batchId);
+  }
+
   if (result.remaining > 0) {
     await dispatchJob(GUEST_IMPORT_DELIVERY_QUEUE, { batchId }, 5);
   }

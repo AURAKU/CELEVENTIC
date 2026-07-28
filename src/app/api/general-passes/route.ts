@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authorizeEvent, errorResponse, guardRate } from "@/lib/guest-import/api-auth";
+import { maybeKickGeneralPassBatch } from "@/lib/guest-import/inline-kick";
 import {
   createGeneralPassBatch,
   listGeneralPassBatches,
@@ -36,6 +37,13 @@ export async function GET(req: Request) {
 
   const { page, limit } = parsePaginationFromUrl(req.url);
   const data = await listGeneralPassBatches(eventId, { page, limit });
+
+  // Resume any fixed-quantity batches stuck GENERATING without a worker.
+  for (const batch of data.items) {
+    if (batch.method === "FIXED_QUANTITY" && batch.status === "GENERATING") {
+      void maybeKickGeneralPassBatch(batch.id);
+    }
+  }
 
   return NextResponse.json({
     success: true,
@@ -75,6 +83,10 @@ export async function POST(req: Request) {
       passLabelPrefix: body.passLabelPrefix,
       welcomeMessage: body.welcomeMessage ?? null,
     });
+
+    if (batch.method === "FIXED_QUANTITY") {
+      void maybeKickGeneralPassBatch(batch.id);
+    }
 
     return NextResponse.json(
       {

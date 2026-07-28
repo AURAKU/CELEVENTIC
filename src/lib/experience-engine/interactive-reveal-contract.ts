@@ -243,8 +243,8 @@ export const REVEAL_MECHANIC_CONTRACTS: Record<RevealMechanicId, InteractiveReve
     openingExperience: "blush-gate",
     supportsKeyboardFallback: true,
     supportsReducedMotion: true,
-    gestureHint: "Press the wax seal",
-    keyboardLabel: "Open the gate and enter",
+    gestureHint: "Lift the wax seal",
+    keyboardLabel: "Lift the seal and open the gate",
   },
   none: {
     mechanic: "none",

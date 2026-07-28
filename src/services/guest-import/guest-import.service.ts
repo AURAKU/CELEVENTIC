@@ -560,7 +560,9 @@ export class GuestImportService {
       deliveries,
       percent: batch.totalRows > 0 ? Math.round((done / batch.totalRows) * 100) : 0,
       remaining: batch.status === "DRAFT" ? 0 : pending,
-      finished: ["COMPLETED", "FAILED", "CANCELLED", "ROLLED_BACK"].includes(batch.status),
+      finished: ["COMPLETED", "PARTIAL", "FAILED", "CANCELLED", "ROLLED_BACK"].includes(
+        batch.status
+      ),
     };
   }
 

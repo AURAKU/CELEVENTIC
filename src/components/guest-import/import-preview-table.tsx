@@ -44,9 +44,11 @@ interface Props {
   batchId: string;
   editable: boolean;
   onChanged?: () => void;
+  /** Bump to force a reload (e.g. while generation progress updates). */
+  refreshKey?: number | string;
 }
 
-export function ImportPreviewTable({ batchId, editable, onChanged }: Props) {
+export function ImportPreviewTable({ batchId, editable, onChanged, refreshKey }: Props) {
   const [rows, setRows] = useState<ImportRowView[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -75,7 +77,7 @@ export function ImportPreviewTable({ batchId, editable, onChanged }: Props) {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   useEffect(() => {
     setPage(1);
