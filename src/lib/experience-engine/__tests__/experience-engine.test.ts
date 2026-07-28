@@ -331,6 +331,19 @@ describe("soft-intro gate", () => {
     );
   });
 
+  it("plays brand MP4 when skipSoftIntro is explicitly false even if skipIntro is true", () => {
+    assert.equal(shouldShowSoftIntro({ skipIntro: true, skipSoftIntro: false }), true);
+    assert.equal(
+      resolveInitialInvitePhase({
+        skipIntro: true,
+        skipSoftIntro: false,
+        needsTapGate: false,
+        showReveal: true,
+      }),
+      "soft-intro"
+    );
+  });
+
   it("never resumes DNA intro after soft intro — brand video is the only intro", () => {
     assert.equal(shouldShowSoftIntro({ skipSoftIntro: true, skipIntro: false }), false);
     assert.equal(
