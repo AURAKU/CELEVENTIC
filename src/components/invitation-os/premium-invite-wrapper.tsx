@@ -7,6 +7,7 @@ import { TapToBeginExperience } from "@/components/invitations/tap-to-begin-expe
 import { InvitationAudioControls } from "@/components/invitations/invitation-audio-controls";
 import { isDarkColor } from "@/lib/invitation-theme/color-utils";
 import { CeleventicSoftIntro } from "@/components/experience-engine/celeventic-soft-intro";
+import { AdmissionCompanionHandoff } from "@/components/admission/admission-companion-handoff";
 import { InteractiveReveal } from "@/components/experience-engine/interactive-reveal";
 import { SceneErrorBoundary } from "@/components/experience-engine/scene-error-boundary";
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
@@ -69,6 +70,8 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   guestQrToken?: string | null;
   seatLookupUrl?: string | null;
   companionUrl?: string | null;
+  /** Poll admission and jump to companion the moment the gate admits this invite. */
+  watchAdmissionHandoff?: boolean;
   seatQrDataUrl?: string | null;
   fullScreen?: boolean;
   embedded?: boolean;
@@ -119,6 +122,7 @@ export function PremiumInviteWrapper({
   skipSoftIntro,
   skipAnalytics = false,
   autoOpenReveal = false,
+  watchAdmissionHandoff = false,
   ...props
 }: PremiumInviteWrapperProps) {
   const enrichedDesign = useMemo(
@@ -197,15 +201,26 @@ export function PremiumInviteWrapper({
         : null,
     [enrichedDesign.studio, isBlushGateLayout]
   );
-  // Prefer ceremony wording from content once — never restate on tap-to-begin.
-  const softIntroTitle =
-    (visionBoard?.eyebrow && visionBoard?.scriptTitle
-      ? `${visionBoard.eyebrow} ${visionBoard.scriptTitle}`
-      : null) ||
-    weddingBoard?.scriptTitle?.trim() ||
-    enrichedDesign.introText?.trim() ||
-    props.event.title?.trim() ||
-    undefined;
+  // Tap-to-begin: couple names only — ceremony titles/phrases live once on the invitation body.
+  const softIntroTitle = (() => {
+    if (weddingBoard) {
+      const c1 = weddingBoard.coupleName1?.trim();
+      const c2 = weddingBoard.coupleName2?.trim();
+      if (c1 && c2) {
+        const short = [c1.split(/\s+/)[0], c2.split(/\s+/)[0]].filter(Boolean).join(" & ");
+        return short || weddingBoard.closingSignature?.trim() || undefined;
+      }
+      return weddingBoard.closingSignature?.trim() || props.event.title?.trim() || undefined;
+    }
+    if (visionBoard?.coupleName1?.trim() && visionBoard?.coupleName2?.trim()) {
+      const short = [visionBoard.coupleName1, visionBoard.coupleName2]
+        .map((n) => n.trim().split(/\s+/)[0])
+        .filter(Boolean)
+        .join(" & ");
+      return short || props.event.title?.trim() || undefined;
+    }
+    return enrichedDesign.introText?.trim() || props.event.title?.trim() || undefined;
+  })();
 
   const softAccent =
     themeColors?.accent ??
@@ -396,45 +411,64 @@ export function PremiumInviteWrapper({
     setPhase("portal");
   }, [phase, needsTapGate, showReveal, startAudio]);
 
+  const admissionHandoff =
+    watchAdmissionHandoff &&
+    !embedded &&
+    props.companionUrl &&
+    props.invitation.uniqueLink ? (
+      <AdmissionCompanionHandoff
+        link={props.invitation.uniqueLink}
+        companionHref={props.companionUrl}
+        enabled
+      />
+    ) : null;
+
   // 1) Canonical Celeventic brand video intro → 2) tap gate / reveal…
   if (phase === "soft-intro") {
     return (
-      <CeleventicSoftIntro
-        onComplete={afterSoftIntro}
-        accentColor={softAccent}
-        secondaryColor={softSecondary}
-        quickHold={isReturningGuest}
-      />
+      <>
+        {admissionHandoff}
+        <CeleventicSoftIntro
+          onComplete={afterSoftIntro}
+          accentColor={softAccent}
+          secondaryColor={softSecondary}
+          quickHold={isReturningGuest}
+          embedded={Boolean(embedded)}
+        />
+      </>
     );
   }
 
   if (phase === "intro") {
-    return null;
+    return admissionHandoff;
   }
 
   if (phase === "tap-to-begin") {
     return (
-      <TapToBeginExperience
-        onBegin={handleTapBegin}
-        eventTitle={props.event.title}
-        hostName={props.event.hostName}
-        accentColor={themeColors?.accent ?? softAccent}
-        primaryColor={themeColors?.primary ?? themeColors?.secondary}
-        backgroundColor={themeColors?.background}
-        atmosphereUrl={softAtmosphereUrl}
-        ceremonyLabel={softIntroTitle}
-        name1={visionBoard?.coupleName1}
-        name2={visionBoard?.coupleName2}
-        layoutSlug={enrichedDesign.layout}
-        category={experience?.collectionId}
-        fontFamily={
-          experience?.welcomeFontFamily ? resolveThankYouFontStack(experience.welcomeFontFamily) : undefined
-        }
-        fontScale={experience?.welcomeFontScale}
-        textColorOverride={experience?.welcomeTextColor}
-        accentColorOverride={experience?.welcomeAccentColor}
-        scrim={experience?.welcomeScrim}
-      />
+      <>
+        {admissionHandoff}
+        <TapToBeginExperience
+          onBegin={handleTapBegin}
+          eventTitle={props.event.title}
+          hostName={props.event.hostName}
+          accentColor={themeColors?.accent ?? softAccent}
+          primaryColor={themeColors?.primary ?? themeColors?.secondary}
+          backgroundColor={themeColors?.background}
+          atmosphereUrl={softAtmosphereUrl}
+          ceremonyLabel={softIntroTitle}
+          name1={visionBoard?.coupleName1}
+          name2={visionBoard?.coupleName2}
+          layoutSlug={enrichedDesign.layout}
+          category={experience?.collectionId}
+          fontFamily={
+            experience?.welcomeFontFamily ? resolveThankYouFontStack(experience.welcomeFontFamily) : undefined
+          }
+          fontScale={experience?.welcomeFontScale}
+          textColorOverride={experience?.welcomeTextColor}
+          accentColorOverride={experience?.welcomeAccentColor}
+          scrim={experience?.welcomeScrim}
+        />
+      </>
     );
   }
 
@@ -474,6 +508,7 @@ export function PremiumInviteWrapper({
       : undefined;
     return (
       <>
+        {admissionHandoff}
         <InteractiveReveal
           openingExperience={openingExperience}
           guestName={props.guestName}
@@ -503,6 +538,7 @@ export function PremiumInviteWrapper({
 
   return (
     <>
+      {admissionHandoff}
       {portal}
       {showAudioControls && audioManager && (
         <InvitationAudioControls manager={audioManager} embedded={embedded} />

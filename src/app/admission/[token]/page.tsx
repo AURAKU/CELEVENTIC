@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Ticket } from "lucide-react";
 import { AgiFooter } from "@/components/agi-engine/agi-badge";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { qrService } from "@/services/qr/qr.service";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
 import { resolveShareOgImage } from "@/lib/social/share-image";
@@ -16,6 +16,8 @@ import { formatDate } from "@/lib/utils";
 import { hashPassToken, verifyPassTokenSignature } from "@/lib/admission/pass-token";
 import { getEventAdmissionSettings } from "@/services/admission/guest-pass.service";
 import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
+import { buildEventCompanionHref } from "@/lib/admission/event-companion";
+import { getInvitationAdmission } from "@/services/admission/admission.service";
 
 /**
  * Share-card preview defaults to the QR center logo (falls back to the
@@ -84,6 +86,7 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
         event: { select: { title: true, venueName: true, startDate: true } },
         invitation: {
           select: {
+            id: true,
             uniqueLink: true,
             postAdmissionEnabled: true,
             guests: { select: { qrToken: true }, take: 1 },
@@ -95,10 +98,19 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
 
     const settings = await getEventAdmissionSettings(pass.eventId);
     const guestToken = pass.invitation.guests[0]?.qrToken;
-    const inviteHref = `/invite/${pass.invitation.uniqueLink}${guestToken ? `?guest=${guestToken}` : ""}`;
     const companionHref = pass.invitation.postAdmissionEnabled
-      ? `/invite/${pass.invitation.uniqueLink}/event-day${guestToken ? `?guest=${guestToken}` : ""}`
+      ? buildEventCompanionHref(pass.invitation.uniqueLink, guestToken)
       : null;
+
+    // Already admitted → Event Companion is the home surface (until reset).
+    if (companionHref && pass.admittedCount > 0) {
+      const summary = await getInvitationAdmission(pass.invitation.id);
+      if (summary?.canAccessPortal) {
+        redirect(companionHref);
+      }
+    }
+
+    const inviteHref = `/invite/${pass.invitation.uniqueLink}${guestToken ? `?guest=${guestToken}` : ""}`;
     const admitted = pass.admittedCount > 0;
 
     return (

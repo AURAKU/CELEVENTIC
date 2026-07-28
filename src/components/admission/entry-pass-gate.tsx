@@ -1,8 +1,8 @@
 "use client";
 
+import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Camera,
   CheckCircle2,
   CloudDownload,
   CloudUpload,
@@ -23,11 +23,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { QrCameraScanner, playScanFeedback } from "@/components/qr/qr-camera-scanner";
+import { playScanFeedback } from "@/components/qr/qr-camera-scanner";
 import { cn } from "@/lib/utils";
 import { extractPassToken } from "@/lib/admission/pass-token-format";
 import { formatAdmissionCode, normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import type { AdmissionDecision } from "@/lib/admission/pass-decision";
+import { QR_SCAN_SAME_CODE_MS } from "@/lib/qr/qr-constants";
 import {
   describeHeldSeats,
   type SeatingContinuity,
@@ -69,6 +70,13 @@ interface EntryPassGateProps {
   eventTitle?: string;
   gate?: string;
   className?: string;
+  /**
+   * When true (default on the unified QR Admission page), this panel does not
+   * mount its own camera — the parent scanner routes entry-pass QR payloads here.
+   */
+  hideCamera?: boolean;
+  /** Parent registers a scan handler so one camera serves pass + legacy QR. */
+  scanHandlerRef?: MutableRefObject<((text: string) => void) | null>;
 }
 
 const TONE_STYLES: Record<AdmissionDecision["tone"], string> = {
@@ -84,15 +92,17 @@ function ToneIcon({ tone }: { tone: AdmissionDecision["tone"] }) {
 }
 
 /**
- * The Guest Entry Pass gate.
- *
- * Reuses the platform's existing camera scanner and audit ledger; what it adds
- * is the pass-aware flow — party rosters for partial arrivals, the manual
- * admission code, and an offline mode that queues admissions in IndexedDB and
- * reconciles them when the signal comes back.
+ * Guest Entry Pass gate — party rosters, admission codes, offline queue.
+ * Camera scanning lives on the parent QR Admission page (one scanner for all).
  */
-export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPassGateProps) {
-  const [cameraOpen, setCameraOpen] = useState(false);
+export function EntryPassGate({
+  eventId,
+  eventTitle,
+  gate,
+  className,
+  hideCamera = true,
+  scanHandlerRef,
+}: EntryPassGateProps) {
   const [manualCode, setManualCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -104,7 +114,8 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
 
   const [online, setOnline] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
-  const [fastMode, setFastMode] = useState(false);
+  /** Fast mode default on — entrance queues must not wait on dry-run confirms. */
+  const [fastMode, setFastMode] = useState(true);
   const [pkg, setPkg] = useState<OfflinePackage | null>(null);
   const [queue, setQueue] = useState<QueuedAdmission[]>([]);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -544,24 +555,36 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
 
   const handleScan = useCallback(
     async (text: string) => {
-      // The camera fires continuously; ignore the same code within 2.5s so a
-      // guest holding still doesn't get scanned three times.
       const now = Date.now();
-      if (lastScanRef.current?.text === text && now - lastScanRef.current.at < 2500) return;
+      // Align with camera same-code window so the unified scanner does not double-fire.
+      if (lastScanRef.current?.text === text && now - lastScanRef.current.at < QR_SCAN_SAME_CODE_MS) return;
       lastScanRef.current = { text, at: now };
 
       const token = extractPassToken(text);
       if (!token) {
+        // Parent unified scanner falls through to legacy check-in for non-pass QR.
+        // If this panel was called directly, surface a clear message.
         setError("That QR isn't a Celeventic entry pass.");
         playScanFeedback(false);
         return;
       }
 
       setSelectedMembers([]);
+      setError("");
       await beginAdmission({ token });
     },
     [beginAdmission]
   );
+
+  useEffect(() => {
+    if (!scanHandlerRef) return;
+    scanHandlerRef.current = (text: string) => {
+      void handleScan(text);
+    };
+    return () => {
+      scanHandlerRef.current = null;
+    };
+  }, [scanHandlerRef, handleScan]);
 
   const submitManualCode = useCallback(async () => {
     const code = normalizeAdmissionCode(manualCode);
@@ -693,22 +716,13 @@ export function EntryPassGate({ eventId, eventTitle, gate, className }: EntryPas
         )}
         {syncMessage && <p className="text-xs text-emerald-700">{syncMessage}</p>}
 
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setCameraOpen((v) => !v)} variant={cameraOpen ? "secondary" : "default"}>
-            <Camera className="mr-1.5 h-4 w-4" aria-hidden />
-            {cameraOpen ? "Stop camera" : "Scan pass"}
-          </Button>
-        </div>
-
-        {cameraOpen && (
-          <QrCameraScanner
-            active={cameraOpen}
-            onScan={handleScan}
-            onError={(m) => setError(m)}
-            screenScanMode
-            showScreenScanToggle
-          />
-        )}
+        {hideCamera ? (
+          <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+            Use the <span className="font-medium text-slate-800">single camera above</span> to scan
+            Guest Entry Pass QR codes. Pass tokens are admitted here automatically; legacy guest QR
+            codes still use the check-in panel.
+          </p>
+        ) : null}
 
         <div className="space-y-1.5">
           <Label htmlFor="entry-pass-code" className="text-xs">

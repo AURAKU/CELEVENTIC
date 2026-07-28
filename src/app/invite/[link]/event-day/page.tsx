@@ -13,7 +13,10 @@ import {
 } from "@/lib/admission/seating-continuity";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
+import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
+import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { PortalStatusPoller } from "./portal-status-poller";
+import type { ResolvedFeature } from "@/lib/invitation-features/registry";
 
 // Admission is verified per request on the server — never cached, never trusted
 // from the client (spec §21, §27).
@@ -69,7 +72,19 @@ export default async function EventDayPortal({
       postAdmissionEnabled: true,
       designConfig: true,
       template: { select: { slug: true, config: true } },
-      event: { select: { title: true, status: true, startDate: true, venueName: true } },
+      event: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startDate: true,
+          venueName: true,
+          landmark: true,
+          mapsLink: true,
+          dressCode: true,
+          contactPhone: true,
+        },
+      },
     },
   });
 
@@ -98,6 +113,17 @@ export default async function EventDayPortal({
   const features = unlocked ? await resolveInvitationFeatures(invitation.id) : [];
   const showSeat =
     features.find((f) => f.key === "SEATING_REVEAL")?.enabled ?? true;
+
+  const memoryLinks =
+    unlocked && features.some((f) => f.key === "MEMORY_VAULT" && f.enabled)
+      ? await ensureEventMemoryLinks(invitation.event.id).catch(() => null)
+      : null;
+  const giftPlacement =
+    unlocked && features.some((f) => f.key === "GIFT_WALLET" && f.enabled)
+      ? await giftCampaignService
+          .resolveInvitePlacement(invitation.event.id, { guestQrToken: guestToken ?? null })
+          .catch(() => null)
+      : null;
 
   // Seating continuity — a part-arrived group sees the seats that are live now
   // and is told, in plain words, that the rest are still being held.
@@ -150,8 +176,13 @@ export default async function EventDayPortal({
             seat={showSeat ? seat : null}
             showSeat={showSeat}
             continuity={continuity}
-            link={invitation.uniqueLink}
             colors={colors}
+            features={features}
+            event={invitation.event}
+            memoryUploadUrl={memoryLinks?.uploadUrl ?? null}
+            memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
+            giftUrl={giftPlacement?.giftUrl ?? null}
+            giftTitle={giftPlacement?.title ?? null}
           />
         )}
       </div>
@@ -215,8 +246,13 @@ function UnlockedState({
   seat,
   showSeat,
   continuity,
-  link,
   colors,
+  features,
+  event,
+  memoryUploadUrl,
+  memoryAlbumUrl,
+  giftUrl,
+  giftTitle,
 }: {
   eventTitle: string;
   guestName: string | null;
@@ -227,10 +263,26 @@ function UnlockedState({
   seat: { tableNumber: string; seatLabel: string | null; zone: string | null } | null;
   showSeat: boolean;
   continuity: SeatingContinuity | null;
-  link: string;
   colors: InvitationDesignConfig["colors"];
+  features: ResolvedFeature[];
+  event: {
+    venueName: string | null;
+    landmark: string | null;
+    mapsLink: string | null;
+    dressCode: string | null;
+    contactPhone: string | null;
+  };
+  memoryUploadUrl: string | null;
+  memoryAlbumUrl: string | null;
+  giftUrl: string | null;
+  giftTitle: string | null;
 }) {
   const heldCopy = continuity ? describeHeldSeats(continuity) : null;
+  const enabled = (key: ResolvedFeature["key"]) =>
+    features.some((f) => f.key === key && f.enabled);
+  const showDirections = Boolean(event.mapsLink || event.venueName);
+  const showHelp = enabled("GUEST_HELP") && Boolean(event.contactPhone);
+
   return (
     <section className="flex flex-col items-center text-center" aria-live="polite">
       <p className="text-[11px] uppercase tracking-[0.32em]" style={{ color: colors.secondary }}>
@@ -302,8 +354,6 @@ function UnlockedState({
           </p>
         )}
 
-        {/* Places held for the rest of the party. Reassurance, not a warning:
-            nobody loses a seat because they arrived later than the others. */}
         {heldCopy && (
           <p className="mt-3 text-xs" style={{ color: colors.text, opacity: 0.75 }}>
             {heldCopy}
@@ -312,13 +362,114 @@ function UnlockedState({
       </div>
       )}
 
-      <Link
-        href={`/invite/${encodeURIComponent(link)}`}
-        className="mt-8 inline-flex items-center gap-2 rounded-full px-6 py-3 text-[11px] uppercase tracking-[0.22em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-        style={{ border: `1px solid ${colors.secondary}`, color: colors.primary }}
-      >
-        Return to invitation
-      </Link>
+      {(showDirections || event.dressCode) && (
+        <div
+          className="mt-4 w-full rounded-2xl px-6 py-5 text-left"
+          style={{ background: `${colors.primary}08`, border: `1px solid ${colors.secondary}33` }}
+        >
+          <h2 className="text-[11px] uppercase tracking-[0.24em]" style={{ color: colors.secondary }}>
+            Today&apos;s details
+          </h2>
+          {event.venueName && (
+            <p className="mt-2 text-sm font-medium" style={{ color: colors.primary }}>
+              {event.venueName}
+            </p>
+          )}
+          {event.landmark && (
+            <p className="mt-1 text-xs" style={{ color: colors.text, opacity: 0.75 }}>
+              {event.landmark}
+            </p>
+          )}
+          {event.dressCode && (
+            <p className="mt-2 text-sm" style={{ color: colors.text }}>
+              Dress code · {event.dressCode}
+            </p>
+          )}
+          {event.mapsLink && (
+            <Link
+              href={event.mapsLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex text-[11px] uppercase tracking-[0.18em] underline underline-offset-4"
+              style={{ color: colors.secondary }}
+            >
+              Open directions
+            </Link>
+          )}
+        </div>
+      )}
+
+      <div className="mt-4 flex w-full flex-col gap-3">
+        {enabled("MEMORY_VAULT") && (memoryUploadUrl || memoryAlbumUrl) && (
+          <div
+            className="rounded-2xl px-5 py-4 text-left"
+            style={{ border: `1px solid ${colors.secondary}44` }}
+          >
+            <p className="text-[11px] uppercase tracking-[0.22em]" style={{ color: colors.secondary }}>
+              Memory Vault
+            </p>
+            <p className="mt-1 text-sm" style={{ color: colors.text }}>
+              Share photos and videos from your lens.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {memoryUploadUrl && (
+                <Link
+                  href={memoryUploadUrl}
+                  className="text-[11px] uppercase tracking-[0.16em] underline underline-offset-4"
+                  style={{ color: colors.primary }}
+                >
+                  Add memories
+                </Link>
+              )}
+              {memoryAlbumUrl && (
+                <Link
+                  href={memoryAlbumUrl}
+                  className="text-[11px] uppercase tracking-[0.16em] underline underline-offset-4"
+                  style={{ color: colors.primary }}
+                >
+                  View album
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
+        {enabled("GIFT_WALLET") && giftUrl && (
+          <div
+            className="rounded-2xl px-5 py-4 text-left"
+            style={{ border: `1px solid ${colors.secondary}44` }}
+          >
+            <p className="text-[11px] uppercase tracking-[0.22em]" style={{ color: colors.secondary }}>
+              {giftTitle || "Send a Gift"}
+            </p>
+            <Link
+              href={giftUrl}
+              className="mt-2 inline-flex text-[11px] uppercase tracking-[0.16em] underline underline-offset-4"
+              style={{ color: colors.primary }}
+            >
+              Open Gift Wallet
+            </Link>
+          </div>
+        )}
+
+        {showHelp && event.contactPhone && (
+          <div
+            className="rounded-2xl px-5 py-4 text-left"
+            style={{ border: `1px solid ${colors.secondary}44` }}
+          >
+            <p className="text-[11px] uppercase tracking-[0.22em]" style={{ color: colors.secondary }}>
+              Need help?
+            </p>
+            <a
+              href={`tel:${event.contactPhone.replace(/\s/g, "")}`}
+              className="mt-2 inline-flex text-sm font-medium"
+              style={{ color: colors.primary }}
+            >
+              Call host · {event.contactPhone}
+            </a>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

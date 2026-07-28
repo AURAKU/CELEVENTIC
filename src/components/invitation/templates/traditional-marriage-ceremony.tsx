@@ -80,10 +80,15 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
       : DEFAULT_VISION_BOARD.dressCodeLine);
   const mapsHref = event.mapsLink || props.mapsLink || null;
   const passQr = admissionQrDataUrl || qrDataUrl;
+  const hasEntryPass = Boolean(props.entryPass);
+  /** Entry pass owns the gate QR — never draw a second code on the card. */
+  const showCardQr = Boolean(features.qr && passQr && !hasEntryPass);
   const organizerPhone = event.contactPhone?.trim() || null;
   const organizerEmail = contactEmail?.trim() || null;
   const showReachHosts = Boolean(organizerPhone || organizerEmail);
   const showRespondSection = Boolean(features.rsvp || showReachHosts);
+  /** RSVP form owns the heading; card still lists coordinator phones once. */
+  const showCardRsvpContacts = board.rsvpContacts.length > 0;
   const seatDisplay =
     seatTable || seatLabel
       ? [seatTable ? `Table ${seatTable}` : null, seatLabel ? (/^seat\b/i.test(seatLabel) ? seatLabel : `Seat ${seatLabel}`) : null]
@@ -108,8 +113,8 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
         color: PALETTE.ink,
       }}
     >
-      {/* Invited guest name — personalized per guest link; hidden when unknown */}
-      {features.guestWelcome && invitedGuestName && (
+      {/* Invited guest name — personalized per guest link; Place Card owns identity when present */}
+      {features.guestWelcome && invitedGuestName && !props.placeCard && (
         <div
           className="w-full max-w-[420px] mb-3 rounded-2xl bg-white/70 border px-4 py-3 text-center shadow-sm backdrop-blur-sm"
           style={{ borderColor: PALETTE.border }}
@@ -261,20 +266,20 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
             {/* Live footer — mirrors card: location + RSVP + hashtag (single copy only) */}
             <div className="mt-7 grid grid-cols-2 gap-3 items-start text-left">
               <div className="flex flex-col items-start gap-2">
-                {features.qr && passQr ? (
+                {showCardQr ? (
                   <Image
-                    src={passQr}
+                    src={passQr!}
                     alt="Location / admission QR"
                     width={88}
                     height={88}
                     className="rounded-sm bg-white p-1 border border-black/10"
                     unoptimized
                   />
-                ) : (
+                ) : features.qr && !hasEntryPass ? (
                   <div className="w-[88px] h-[88px] rounded-sm bg-white/80 border border-dashed border-[#C4A484] flex items-center justify-center text-[9px] text-center px-1" style={{ color: PALETTE.bronzeDeep }}>
                     QR on guest link
                   </div>
-                )}
+                ) : null}
                 {features.location && mapsHref && !staticPreview ? (
                   <Link
                     href={mapsHref}
@@ -296,22 +301,28 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
               </div>
 
               <div className="space-y-1 pt-0.5">
-                <p
-                  className="font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.28em] uppercase"
-                  style={{ color: PALETTE.ink }}
-                >
-                  {board.rsvpHeading}
-                </p>
-                {board.rsvpContacts.map((c) => (
-                  <a
-                    key={`${c.name}-${c.phone}`}
-                    href={`tel:${c.phone.replace(/\s/g, "")}`}
-                    className="block font-[family-name:var(--font-cormorant)] text-[9px] sm:text-[10px] tracking-[0.06em] uppercase leading-snug hover:opacity-80"
-                    style={{ color: PALETTE.ink }}
-                  >
-                    {c.name} - {c.phone}
-                  </a>
-                ))}
+                {showCardRsvpContacts ? (
+                  <>
+                    {!showRespondSection && (
+                      <p
+                        className="font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.28em] uppercase"
+                        style={{ color: PALETTE.ink }}
+                      >
+                        {board.rsvpHeading}
+                      </p>
+                    )}
+                    {board.rsvpContacts.map((c) => (
+                      <a
+                        key={`${c.name}-${c.phone}`}
+                        href={`tel:${c.phone.replace(/\s/g, "")}`}
+                        className="block font-[family-name:var(--font-cormorant)] text-[9px] sm:text-[10px] tracking-[0.06em] uppercase leading-snug hover:opacity-80"
+                        style={{ color: PALETTE.ink }}
+                      >
+                        {c.name} - {c.phone}
+                      </a>
+                    ))}
+                  </>
+                ) : null}
               </div>
             </div>
 
@@ -326,16 +337,16 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
           </div>
         )}
 
-        {/* Art mode: slim system strip only — no repeated invitation wording */}
-        {useExactArt && (features.qr || features.admissionCode) && (
+        {/* Art mode: slim system strip only when entry pass is absent */}
+        {useExactArt && !hasEntryPass && (features.qr || features.admissionCode) && (
           <div
             className="px-5 py-4 flex flex-wrap items-center justify-center gap-4 border-t"
             style={{ borderColor: `${PALETTE.border}99`, backgroundColor: PALETTE.peach }}
           >
-            {features.qr && passQr && (
+            {showCardQr && (
               <div className="flex flex-col items-center gap-1">
                 <Image
-                  src={passQr}
+                  src={passQr!}
                   alt="Guest admission QR"
                   width={72}
                   height={72}

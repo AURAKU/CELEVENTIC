@@ -17,6 +17,7 @@ import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
 import {
+  distinctInvitationPhrase,
   mergeWeddingBoard,
   type ResolvedWeddingBoard,
   type WeddingBoardContent,
@@ -336,6 +337,8 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   const weekday = board.weekday || dateParts.weekday?.toUpperCase() || "";
   const timeLabel = board.timeLabel || dateParts.time || "";
   const venueName = board.venueName || event.venueName || "";
+  // Hero eyebrow is the single announcement phrase — family heading only if distinct.
+  const familyHeading = distinctInvitationPhrase(board.familyHeading, board.eyebrow);
 
   const mapsHref =
     board.mapUrl?.trim() ||
@@ -391,7 +394,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   const scenes: Partial<Record<WeddingSectionId, React.ReactNode>> = {
     hero: (
       <Reveal as="section" className="text-center">
-        {features.guestWelcome && invitedGuestName && (
+        {features.guestWelcome && invitedGuestName && !props.placeCard && (
           <div
             className="mx-auto mb-6 inline-flex flex-col rounded-2xl px-6 py-3"
             style={{ background: `${C.linen}cc`, border: `1px solid ${C.border}` }}
@@ -459,28 +462,23 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         >
           {board.invitationCopy}
         </p>
-
-        {board.hashtag && (
-          <p
-            className="mt-5 font-[family-name:var(--font-cinzel)] text-sm font-bold tracking-wide"
-            style={{ color: C.gold }}
-          >
-            {board.hashtag}
-          </p>
-        )}
       </Reveal>
     ),
 
     family:
       features.familyIntro && board.familyIntro ? (
         <Reveal as="section" className="text-center">
-          {board.familyHeading && (
+          {familyHeading ? (
             <h2 className="text-[12px] uppercase tracking-[0.34em]" style={{ color: C.gold }}>
-              {board.familyHeading}
+              {familyHeading}
             </h2>
-          )}
+          ) : null}
           <p
-            className="mx-auto mt-4 max-w-[24rem] font-[family-name:var(--font-cormorant)] text-[13.5px] leading-relaxed"
+            className={
+              familyHeading
+                ? "mx-auto mt-4 max-w-[24rem] font-[family-name:var(--font-cormorant)] text-[13.5px] leading-relaxed"
+                : "mx-auto max-w-[24rem] font-[family-name:var(--font-cormorant)] text-[13.5px] leading-relaxed"
+            }
             style={{ color: C.cocoa }}
           >
             {board.familyIntro}
@@ -514,11 +512,16 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           </div>
         </div>
 
-        <p className="mt-5 font-[family-name:var(--font-cinzel)] text-sm tracking-[0.14em]" style={{ color: C.ink }}>
-          {venueName}
-        </p>
+        {!features.location && venueName ? (
+          <p className="mt-5 font-[family-name:var(--font-cinzel)] text-sm tracking-[0.14em]" style={{ color: C.ink }}>
+            {venueName}
+          </p>
+        ) : null}
         {board.receptionText && (
-          <p className="mt-2 font-[family-name:var(--font-great-vibes)] text-2xl" style={{ color: C.goldDeep }}>
+          <p
+            className={`${!features.location && venueName ? "mt-2" : "mt-5"} font-[family-name:var(--font-great-vibes)] text-2xl`}
+            style={{ color: C.goldDeep }}
+          >
             {board.receptionText}
           </p>
         )}
@@ -547,14 +550,19 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <h2 className="font-[family-name:var(--font-great-vibes)] text-3xl" style={{ color: C.goldDeep }}>
             {board.greetingHeading}
           </h2>
-          <p
-            className="mt-3 font-[family-name:var(--font-cinzel)] text-base tracking-[0.1em]"
-            style={{ color: C.ink }}
-            data-invite-field="greeting-name"
-          >
-            {greetedName}
-          </p>
-          <div className="mx-auto mt-3 h-px w-12" style={{ background: C.gold }} />
+          {/* Guest name already shown in welcome — never repeat it here. */}
+          {!(features.guestWelcome && invitedGuestName) && (
+            <>
+              <p
+                className="mt-3 font-[family-name:var(--font-cinzel)] text-base tracking-[0.1em]"
+                style={{ color: C.ink }}
+                data-invite-field="greeting-name"
+              >
+                {greetedName}
+              </p>
+              <div className="mx-auto mt-3 h-px w-12" style={{ background: C.gold }} />
+            </>
+          )}
           <p
             className="mx-auto mt-4 max-w-[23rem] font-[family-name:var(--font-cormorant)] text-[14px] italic leading-relaxed"
             style={{ color: C.cocoa }}
