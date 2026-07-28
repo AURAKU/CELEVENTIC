@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
@@ -97,12 +97,20 @@ export default async function EventDayPortal({
   const summary = await getInvitationAdmission(invitation.id);
   const unlocked = Boolean(summary?.canAccessPortal);
 
+  // Companion is admit-only — never a pre-arrival teaser. Guests who have not
+  // been scanned / manually checked in return to the invitation ceremony.
+  if (!unlocked) {
+    const inviteHref = guestToken
+      ? `/invite/${encodeURIComponent(link)}?guest=${encodeURIComponent(guestToken)}`
+      : `/invite/${encodeURIComponent(link)}`;
+    redirect(inviteHref);
+  }
+
   // Guest personalisation (name + seating) only after admission — never leak
-  // seating on the locked screen.
-  const guest =
-    unlocked && guestToken
-      ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
-      : null;
+  // seating before the gate confirms arrival.
+  const guest = guestToken
+    ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
+    : null;
   const seating = guest ? await seatingService.lookupByGuestId(guest.id) : null;
   const seat = seating?.assignment ?? null;
 
@@ -110,25 +118,23 @@ export default async function EventDayPortal({
   const isGroup = (summary?.allowance ?? 1) > 1;
 
   // Shared feature layer governs which post-admission sections show + their order.
-  const features = unlocked ? await resolveInvitationFeatures(invitation.id) : [];
+  const features = await resolveInvitationFeatures(invitation.id);
   const showSeat =
     features.find((f) => f.key === "SEATING_REVEAL")?.enabled ?? true;
 
-  const memoryLinks =
-    unlocked && features.some((f) => f.key === "MEMORY_VAULT" && f.enabled)
-      ? await ensureEventMemoryLinks(invitation.event.id).catch(() => null)
-      : null;
-  const giftPlacement =
-    unlocked && features.some((f) => f.key === "GIFT_WALLET" && f.enabled)
-      ? await giftCampaignService
-          .resolveInvitePlacement(invitation.event.id, { guestQrToken: guestToken ?? null })
-          .catch(() => null)
-      : null;
+  const memoryLinks = features.some((f) => f.key === "MEMORY_VAULT" && f.enabled)
+    ? await ensureEventMemoryLinks(invitation.event.id).catch(() => null)
+    : null;
+  const giftPlacement = features.some((f) => f.key === "GIFT_WALLET" && f.enabled)
+    ? await giftCampaignService
+        .resolveInvitePlacement(invitation.event.id, { guestQrToken: guestToken ?? null })
+        .catch(() => null)
+    : null;
 
   // Seating continuity — a part-arrived group sees the seats that are live now
   // and is told, in plain words, that the rest are still being held.
   let continuity: SeatingContinuity | null = null;
-  if (unlocked && showSeat && isGroup) {
+  if (showSeat && isGroup) {
     const partyGuests = await prisma.guest.findMany({
       where: { invitationId: invitation.id },
       orderBy: { createdAt: "asc" },
@@ -160,81 +166,33 @@ export default async function EventDayPortal({
       className="min-h-[100dvh] w-full px-5 py-10"
       style={{ background: colors.background, color: colors.text }}
     >
-      <PortalStatusPoller link={invitation.uniqueLink} initialUnlocked={unlocked} />
+      <PortalStatusPoller link={invitation.uniqueLink} initialUnlocked />
 
       <div className="mx-auto w-full max-w-[520px]">
-        {!unlocked ? (
-          <LockedState eventTitle={invitation.event.title} link={invitation.uniqueLink} colors={colors} />
-        ) : (
-          <UnlockedState
-            eventTitle={invitation.event.title}
-            guestName={guestName}
-            isGroup={isGroup}
-            admittedCount={summary?.admittedCount ?? 1}
-            remainingCount={summary?.remainingCount ?? 0}
-            allowance={summary?.allowance ?? 1}
-            seat={showSeat ? seat : null}
-            showSeat={showSeat}
-            continuity={continuity}
-            colors={colors}
-            features={features}
-            event={invitation.event}
-            memoryUploadUrl={memoryLinks?.uploadUrl ?? null}
-            memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
-            giftUrl={giftPlacement?.giftUrl ?? null}
-            giftTitle={giftPlacement?.title ?? null}
-          />
-        )}
+        <UnlockedState
+          eventTitle={invitation.event.title}
+          guestName={guestName}
+          isGroup={isGroup}
+          admittedCount={summary?.admittedCount ?? 1}
+          remainingCount={summary?.remainingCount ?? 0}
+          allowance={summary?.allowance ?? 1}
+          seat={showSeat ? seat : null}
+          showSeat={showSeat}
+          continuity={continuity}
+          colors={colors}
+          features={features}
+          event={invitation.event}
+          memoryUploadUrl={memoryLinks?.uploadUrl ?? null}
+          memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
+          giftUrl={giftPlacement?.giftUrl ?? null}
+          giftTitle={giftPlacement?.title ?? null}
+        />
       </div>
     </main>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-
-function LockedState({
-  eventTitle,
-  link,
-  colors,
-}: {
-  eventTitle: string;
-  link: string;
-  colors: InvitationDesignConfig["colors"];
-}) {
-  return (
-    <section className="flex flex-col items-center text-center" aria-live="polite">
-      <div
-        className="mb-6 flex h-16 w-16 items-center justify-center rounded-full"
-        style={{ border: `1.5px solid ${colors.secondary}`, color: colors.secondary }}
-        aria-hidden
-      >
-        {/* Simple lock glyph — no essential info conveyed by motion alone */}
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <rect x="5" y="11" width="14" height="9" rx="2" />
-          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-        </svg>
-      </div>
-      <h1 className="text-2xl font-semibold" style={{ color: colors.primary }}>
-        Your Event Companion Unlocks on Arrival
-      </h1>
-      <p className="mt-4 max-w-[24rem] text-sm leading-relaxed" style={{ color: colors.text }}>
-        Once your invitation is scanned and your arrival is confirmed, you&apos;ll gain access to your
-        seating details, event programme, Memory Vault, Gift Wallet and other event-day features for{" "}
-        <span style={{ color: colors.secondary }}>{eventTitle}</span>.
-      </p>
-      <p className="mt-3 text-xs" style={{ color: colors.text, opacity: 0.7 }}>
-        This page refreshes automatically the moment you&apos;re admitted.
-      </p>
-      <Link
-        href={`/invite/${encodeURIComponent(link)}`}
-        className="mt-8 inline-flex items-center gap-2 rounded-full px-6 py-3 text-[11px] uppercase tracking-[0.22em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-        style={{ background: colors.secondary, color: colors.background }}
-      >
-        Return to invitation
-      </Link>
-    </section>
-  );
-}
 
 function UnlockedState({
   eventTitle,

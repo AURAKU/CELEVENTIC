@@ -1,9 +1,9 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import {
   buildEventCompanionHref,
   shouldOpenEventCompanionOnly,
-} from "../event-companion";
+} from "@/lib/admission/event-companion";
 
 describe("event companion routing", () => {
   it("builds companion href with optional guest token", () => {
