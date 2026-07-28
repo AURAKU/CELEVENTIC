@@ -7,10 +7,11 @@ import { VineBorder } from "../shared/invitation-ornaments";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function ArchGreenTemplate({ invitation, event, design, guestId, guestName, qrDataUrl }: InvitationRenderProps) {
+export function ArchGreenTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
+  const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: "#0f1a14" }}>
@@ -58,7 +59,7 @@ export function ArchGreenTemplate({ invitation, event, design, guestId, guestNam
               {event.landmark && <p className="text-xs inv-muted-on-dark mt-1">{event.landmark}</p>}
             </div>
           )}
-          {qrDataUrl && (
+          {showCardQr && qrDataUrl && (
             <div className="flex justify-center pt-2">
               <Image src={qrDataUrl} alt="QR" width={100} height={100} className="rounded bg-white/10 p-1"  unoptimized />
             </div>

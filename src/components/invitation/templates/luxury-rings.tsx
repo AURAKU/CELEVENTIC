@@ -8,10 +8,11 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestName, qrDataUrl }: InvitationRenderProps) {
+export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
+  const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "radial-gradient(ellipse at center, #1a1a1a 0%, #000 100%)" }}>
@@ -45,7 +46,7 @@ export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestN
             <p className="text-xs inv-muted-on-dark">{date.time}</p>
             {event.venueName && <p className="text-sm tracking-wider">{event.venueName}</p>}
             {event.contactPhone && <p className="text-xs inv-muted-on-dark">RSVP {event.contactPhone}</p>}
-            {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />}
+            {showCardQr && qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />}
             <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} textColor={colors.text} variant="dark" />
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} variant="dark" />
           </div>

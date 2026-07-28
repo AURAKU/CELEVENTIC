@@ -9,6 +9,7 @@ import { CountdownDisplay } from "@/components/experience/countdown-display";
 import { InvitationGalleryDisplay } from "@/components/invitation/invitation-gallery-display";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
+import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
 import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
 import { SaveDateCalendarCard } from "@/components/guest-portal/save-date-calendar-card";
 import { CalendarActionsMenu } from "@/components/guest-portal/calendar-actions-menu";
@@ -346,15 +347,38 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     const showAdmissionPass = !hasEntryPass && Boolean(props.admissionQrDataUrl);
     const showInviteQr = !hasEntryPass && !showAdmissionPass && Boolean(props.qrDataUrl);
     const showSeatPass = Boolean(props.seatQrDataUrl && props.seatLookupUrl);
-    if (showAdmissionPass || showInviteQr || showSeatPass) {
+    // Entry pass is the single admission surface on cinematic live invites —
+    // never hide QR without mounting GuestEntryPass (most templates use this path).
+    if (hasEntryPass || showAdmissionPass || showInviteQr || showSeatPass) {
       list.push({
         id: "pass",
-        durationMs: slideMs + 2000,
+        durationMs: slideMs + (hasEntryPass ? 4000 : 2000),
         content: (
           <div className="max-w-sm mx-auto px-6 text-center space-y-6">
             <p className="text-xs uppercase tracking-[0.35em]" style={{ color: accent }}>
               Your Pass
             </p>
+            {hasEntryPass && props.entryPass && (
+              <GuestEntryPass
+                token={props.entryPass.token}
+                code={props.entryPass.code}
+                displayName={props.entryPass.displayName}
+                eventName={props.event.title}
+                eventDate={props.event.startDate}
+                venueName={props.event.venueName}
+                partySize={props.entryPass.partySize}
+                admittedCount={props.entryPass.admittedCount}
+                status={props.entryPass.status}
+                tableNumber={props.entryPass.tableNumber}
+                seatLabel={props.entryPass.seatLabel}
+                instructions={props.entryPass.instructions}
+                allowDownload={props.entryPass.allowDownload}
+                allowPrint={props.entryPass.allowPrint}
+                showPartySize={props.entryPass.showPartySize}
+                layout={props.design.layout}
+                className="text-left shadow-2xl"
+              />
+            )}
             {showAdmissionPass && props.admissionQrDataUrl && (
               <>
                 <BrandedQrImage
