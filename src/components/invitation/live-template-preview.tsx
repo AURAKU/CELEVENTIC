@@ -376,17 +376,9 @@ export function LiveTemplatePreview({
             compact={compactPoster}
             hasMusic={hasMusic}
             label={tapCopy.label}
-            subtitle={
-              autoOpenOnActivate && hasMusic
-                ? `${tapCopy.subtitle ?? "Opens as guests see it"} · music begins`
-                : tapCopy.subtitle
-            }
+            subtitle={tapCopy.subtitle}
             onOpen={openPreview}
-            aria-label={
-              autoOpenOnActivate
-                ? `Tap to open live ${tapCopy.label.replace(/^Tap to open\s*/i, "").trim() || "opening"} preview`
-                : "Tap to open live template preview"
-            }
+            aria-label="Tap to open live template preview"
           />
         </>
       ) : (

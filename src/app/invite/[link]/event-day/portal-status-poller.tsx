@@ -4,19 +4,16 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * Lightweight admission-status poller (no real-time transport exists in the
- * repo yet — see discovery). Polls the no-store status endpoint and calls
- * router.refresh() when the unlock state flips, so the server component re-renders
- * with the locked/unlocked view. Stops polling on terminal states and pauses
- * while the tab is hidden.
+ * Polls admission status while the companion is open. If the organiser resets
+ * admission, send the guest back to the invitation — the companion is admit-only.
  */
 export function PortalStatusPoller({
   link,
-  initialUnlocked,
+  initialUnlocked = true,
   intervalMs = 8000,
 }: {
   link: string;
-  initialUnlocked: boolean;
+  initialUnlocked?: boolean;
   intervalMs?: number;
 }) {
   const router = useRouter();
@@ -42,13 +39,18 @@ export function PortalStatusPoller({
             unlocked?: boolean;
             state?: string;
           };
+          if (data.unlocked === false) {
+            stopped.current = true;
+            router.replace(`/invite/${encodeURIComponent(link)}`);
+            return;
+          }
           if (typeof data.unlocked === "boolean" && data.unlocked !== lastUnlocked.current) {
             lastUnlocked.current = data.unlocked;
             router.refresh();
           }
-          // Terminal states never change again — stop polling.
           if (data.state === "REVOKED" || data.state === "EXPIRED") {
             stopped.current = true;
+            router.replace(`/invite/${encodeURIComponent(link)}`);
             return;
           }
         }
