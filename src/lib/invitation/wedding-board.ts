@@ -151,9 +151,14 @@ export interface WeddingBoardContent {
   canvasColor?: string;
 
   // — Hero announcement —
+  /** Single announcement phrase (e.g. “TOGETHER WITH THEIR FAMILIES”) — shown once in the hero */
   eyebrow?: string;
   scriptTitle?: string;
-  /** Heading above the family introduction */
+  /**
+   * Optional distinct heading for the family scene only.
+   * Leave blank to avoid repeating the hero eyebrow — defaults and merges strip
+   * any phrase that matches `eyebrow` (case/spacing insensitive).
+   */
   familyHeading?: string;
   familyIntro?: string;
   coupleName1?: string;
@@ -335,7 +340,8 @@ export const DEFAULT_WEDDING_BOARD: Required<
   closingSignature: "Jeffery & Francisca",
   replayLabel: "Replay opening",
 
-  familyHeading: "Together With Their Families",
+  // Empty on purpose: hero `eyebrow` already carries “Together with their families”.
+  familyHeading: "",
   memoryHeading: "Memory Vault",
   memoryBody:
     "Every photo and video you capture belongs in our album. Upload yours and we will treasure it forever.",
@@ -364,6 +370,44 @@ export const DEFAULT_WEDDING_BOARD: Required<
 export type ResolvedWeddingBoard = typeof DEFAULT_WEDDING_BOARD;
 
 /**
+ * Fold invitation display phrases for duplicate detection: case, whitespace,
+ * and common punctuation differences do not count as distinct copy.
+ */
+export function normalizeInvitationPhrase(value: string | null | undefined): string {
+  return (value ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+/** True when two phrases read as the same announcement line to a guest. */
+export function invitationPhrasesMatch(
+  a: string | null | undefined,
+  b: string | null | undefined
+): boolean {
+  const left = normalizeInvitationPhrase(a);
+  const right = normalizeInvitationPhrase(b);
+  return Boolean(left) && left === right;
+}
+
+/**
+ * Return `candidate` only when it is non-empty and not a duplicate of any
+ * phrase already shown on the invitation (typically the hero eyebrow).
+ */
+export function distinctInvitationPhrase(
+  candidate: string | null | undefined,
+  ...against: Array<string | null | undefined>
+): string {
+  const trimmed = (candidate ?? "").trim();
+  if (!trimmed) return "";
+  if (against.some((phrase) => invitationPhrasesMatch(trimmed, phrase))) return "";
+  return trimmed;
+}
+
+/**
  * Keep a host's ordering while guaranteeing every scene has a slot: known ids
  * are honoured in the order given, anything the host never touched keeps its
  * designed position at the end.
@@ -383,7 +427,7 @@ export function normaliseSectionOrder(order?: WeddingSectionId[] | null): Weddin
 export function mergeWeddingBoard(
   partial?: WeddingBoardContent | null
 ): ResolvedWeddingBoard {
-  return {
+  const merged: ResolvedWeddingBoard = {
     ...DEFAULT_WEDDING_BOARD,
     ...partial,
     rsvpContacts: partial?.rsvpContacts?.length
@@ -398,4 +442,10 @@ export function mergeWeddingBoard(
       ...partial?.features,
     },
   };
+
+  // One announcement phrase on the live invite: never echo the hero eyebrow
+  // as a second family-section heading (covers legacy saved boards).
+  merged.familyHeading = distinctInvitationPhrase(merged.familyHeading, merged.eyebrow);
+
+  return merged;
 }

@@ -8,10 +8,11 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function ClassicGoldTemplate({ invitation, event, design, guestId, guestName, qrDataUrl }: InvitationRenderProps) {
+export function ClassicGoldTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
+  const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: "#f5f3ef" }}>
@@ -64,7 +65,7 @@ export function ClassicGoldTemplate({ invitation, event, design, guestId, guestN
             <p className="text-xs inv-muted-on-light">RSVP: {event.contactPhone}</p>
           )}
           {event.dressCode && <p className="text-xs inv-muted-on-light">Dress Code: {event.dressCode}</p>}
-          {qrDataUrl && (
+          {showCardQr && qrDataUrl && (
             <div className="flex justify-center pt-2">
               <Image src={qrDataUrl} alt="QR Code" width={120} height={120} className="rounded"  unoptimized />
             </div>

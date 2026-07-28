@@ -181,7 +181,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       fonts: { heading: "Cinzel", script: "Great Vibes", body: "Cormorant Garamond" },
       animation: "fade",
       ornament: "floral",
-      introText: "Traditional Marriage Ceremony",
+      introText: "",
       media: [
         {
           url: "/templates/traditional-marriage-ceremony.png",
@@ -252,10 +252,11 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       fonts: { heading: "Cinzel", script: "Great Vibes", body: "Cormorant Garamond" },
       animation: "fade",
       ornament: "floral",
-      introText: "Together With Their Families",
+      introText: "",
       studio: {
         // The Blush Gate ceremony (envelope → wax seal → gate) runs in the
         // shared reveal pipeline, so the invitation body never repeats it.
+        // Announcement phrase lives once on weddingBoard.eyebrow — not introText.
         revealMode: "envelope",
         buttonStyle: "wax-seal",
         fullScreen: true,

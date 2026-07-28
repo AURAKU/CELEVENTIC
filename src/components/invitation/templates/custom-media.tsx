@@ -8,12 +8,13 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function CustomMediaTemplate({ invitation, event, design, guestId, guestName, qrDataUrl }: InvitationRenderProps) {
+export function CustomMediaTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
   const hasVideoBg = design.media?.some((m) => m.type === "video" && m.role === "background");
   const pdfAsset = design.media?.find((m) => m.type === "pdf");
+  const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
     <div className="min-h-screen relative" style={{ backgroundColor: colors.background }}>
@@ -53,7 +54,7 @@ export function CustomMediaTemplate({ invitation, event, design, guestId, guestN
               {pdfAsset && (
                 <p className="text-xs text-brand-600">Designed from your uploaded sample</p>
               )}
-              {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={110} height={110} className="mx-auto rounded"  unoptimized />}
+              {showCardQr && qrDataUrl && <Image src={qrDataUrl} alt="QR" width={110} height={110} className="mx-auto rounded"  unoptimized />}
               <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.primary} />
               <InvitationActions event={event} pdfUrl={pdfAsset?.url} />
             </div>

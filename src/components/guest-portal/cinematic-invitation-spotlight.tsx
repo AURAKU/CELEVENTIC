@@ -9,11 +9,11 @@ import { CountdownDisplay } from "@/components/experience/countdown-display";
 import { InvitationGalleryDisplay } from "@/components/invitation/invitation-gallery-display";
 import { BrandedQrImage } from "@/components/qr/branded-qr-image";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
+import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
 import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
 import { SaveDateCalendarCard } from "@/components/guest-portal/save-date-calendar-card";
 import { CalendarActionsMenu } from "@/components/guest-portal/calendar-actions-menu";
 import { GuestWishesCard } from "@/components/guest-portal/guest-wishes-card";
-import { GiftQrBox } from "@/components/guest-portal/gift-qr-box";
 import { ParticleEnvironment } from "@/components/experience/particle-environment";
 import { useLocale } from "@/components/i18n/locale-provider";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
@@ -300,13 +300,20 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       ),
     });
 
-    if (hubTabs.includes("gifts") && props.qrDataUrl) {
+    if (hubTabs.includes("gifts") && props.giftUrl) {
       list.push({
         id: "gifts",
         durationMs: slideMs,
         content: (
-          <div className="max-w-sm mx-auto px-6 w-full">
-            <GiftQrBox qrDataUrl={props.qrDataUrl} qrToken={props.guestQrToken} accentColor={secondary} variant="dark" />
+          <div className="max-w-sm mx-auto px-6 w-full text-center space-y-3">
+            <p className="text-xs uppercase tracking-[0.35em]" style={{ color: accent }}>
+              {props.giftTitle ?? "Send a Gift"}
+            </p>
+            <Button variant="outline" size="sm" asChild className="border-white/30 text-white hover:bg-white/10">
+              <a href={props.giftUrl} target="_blank" rel="noopener noreferrer">
+                {props.giftCtaLabel ?? "Send a Gift"}
+              </a>
+            </Button>
           </div>
         ),
       });
@@ -336,16 +343,43 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       });
     }
 
-    if (props.admissionQrDataUrl || props.qrDataUrl || props.seatQrDataUrl) {
+    const hasEntryPass = Boolean(props.entryPass);
+    const showAdmissionPass = !hasEntryPass && Boolean(props.admissionQrDataUrl);
+    const showInviteQr = !hasEntryPass && !showAdmissionPass && Boolean(props.qrDataUrl);
+    const showSeatPass = Boolean(props.seatQrDataUrl && props.seatLookupUrl);
+    // Entry pass is the single admission surface on cinematic live invites —
+    // never hide QR without mounting GuestEntryPass (most templates use this path).
+    if (hasEntryPass || showAdmissionPass || showInviteQr || showSeatPass) {
       list.push({
         id: "pass",
-        durationMs: slideMs + 2000,
+        durationMs: slideMs + (hasEntryPass ? 4000 : 2000),
         content: (
           <div className="max-w-sm mx-auto px-6 text-center space-y-6">
             <p className="text-xs uppercase tracking-[0.35em]" style={{ color: accent }}>
               Your Pass
             </p>
-            {props.admissionQrDataUrl && (
+            {hasEntryPass && props.entryPass && (
+              <GuestEntryPass
+                token={props.entryPass.token}
+                code={props.entryPass.code}
+                displayName={props.entryPass.displayName}
+                eventName={props.event.title}
+                eventDate={props.event.startDate}
+                venueName={props.event.venueName}
+                partySize={props.entryPass.partySize}
+                admittedCount={props.entryPass.admittedCount}
+                status={props.entryPass.status}
+                tableNumber={props.entryPass.tableNumber}
+                seatLabel={props.entryPass.seatLabel}
+                instructions={props.entryPass.instructions}
+                allowDownload={props.entryPass.allowDownload}
+                allowPrint={props.entryPass.allowPrint}
+                showPartySize={props.entryPass.showPartySize}
+                layout={props.design.layout}
+                className="text-left shadow-2xl"
+              />
+            )}
+            {showAdmissionPass && props.admissionQrDataUrl && (
               <>
                 <BrandedQrImage
                   src={props.admissionQrDataUrl}
@@ -362,7 +396,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
                 )}
               </>
             )}
-            {props.seatQrDataUrl && props.seatLookupUrl && (
+            {showSeatPass && props.seatQrDataUrl && props.seatLookupUrl && (
               <>
                 <BrandedQrImage src={props.seatQrDataUrl} size={140} showDownload caption="Your seat" />
                 <Button variant="outline" size="sm" asChild className="border-white/30 text-white hover:bg-white/10">
@@ -370,7 +404,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
                 </Button>
               </>
             )}
-            {props.qrDataUrl && !props.admissionQrDataUrl && (
+            {showInviteQr && props.qrDataUrl && (
               <>
                 <BrandedQrImage src={props.qrDataUrl} token={props.guestQrToken ?? undefined} size={160} showDownload={false} />
                 {props.admissionManualCode && (

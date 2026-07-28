@@ -8,11 +8,12 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function BohoHexagonTemplate({ invitation, event, design, guestId, guestName, qrDataUrl }: InvitationRenderProps) {
+export function BohoHexagonTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
   const displayNames = name2 ? `${name1} & ${name2}` : name1;
+  const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: colors.background }}>
@@ -54,7 +55,7 @@ export function BohoHexagonTemplate({ invitation, event, design, guestId, guestN
                 {event.venueName}{event.landmark ? ` · ${event.landmark}` : ""}
               </p>
             )}
-            {qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />}
+            {showCardQr && qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />}
             <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} />
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} />
           </div>

@@ -11,6 +11,8 @@ import assert from "node:assert/strict";
 import {
   DEFAULT_WEDDING_BOARD,
   WEDDING_SECTION_ORDER,
+  distinctInvitationPhrase,
+  invitationPhrasesMatch,
   mergeWeddingBoard,
   normaliseSectionOrder,
   type WeddingSectionId,
@@ -76,6 +78,38 @@ describe("mergeWeddingBoard", () => {
   it("treats an absent board as the full default ceremony", () => {
     assert.deepEqual(mergeWeddingBoard(undefined), mergeWeddingBoard(null));
     assert.equal(mergeWeddingBoard(undefined).hashtag, DEFAULT_WEDDING_BOARD.hashtag);
+  });
+
+  it("never repeats the hero eyebrow as the family section heading", () => {
+    assert.equal(DEFAULT_WEDDING_BOARD.familyHeading, "");
+    assert.equal(mergeWeddingBoard(undefined).familyHeading, "");
+    assert.equal(
+      mergeWeddingBoard({
+        familyHeading: "Together With Their Families",
+        eyebrow: "TOGETHER WITH THEIR FAMILIES",
+      }).familyHeading,
+      ""
+    );
+    assert.equal(
+      mergeWeddingBoard({
+        familyHeading: "Our families welcome you",
+        eyebrow: "TOGETHER WITH THEIR FAMILIES",
+      }).familyHeading,
+      "Our families welcome you"
+    );
+  });
+});
+
+describe("invitation phrase dedupe", () => {
+  it("matches phrases ignoring case, spacing, and punctuation", () => {
+    assert.equal(
+      invitationPhrasesMatch("TOGETHER WITH THEIR FAMILIES", "Together With Their Families"),
+      true
+    );
+    assert.equal(invitationPhrasesMatch("Together  with  their families!", "together with their families"), true);
+    assert.equal(invitationPhrasesMatch("The Wedding", "TOGETHER WITH THEIR FAMILIES"), false);
+    assert.equal(distinctInvitationPhrase("Together With Their Families", "TOGETHER WITH THEIR FAMILIES"), "");
+    assert.equal(distinctInvitationPhrase("Welcome", "TOGETHER WITH THEIR FAMILIES"), "Welcome");
   });
 });
 

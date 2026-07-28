@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { canUseCamera, isMobileDevice } from "@/lib/qr/device-utils";
-import { QR_SCANNER_FPS, QR_SCANNER_FPS_SCREEN } from "@/lib/qr/qr-constants";
+import { canUseCamera } from "@/lib/qr/device-utils";
+import {
+  QR_SCANNER_FPS,
+  QR_SCANNER_FPS_SCREEN,
+  QR_SCAN_DEBOUNCE_MS,
+  QR_SCAN_SAME_CODE_MS,
+} from "@/lib/qr/qr-constants";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Smartphone, Monitor } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Flashlight, FlashlightOff, Monitor, Smartphone } from "lucide-react";
 
 interface QrCameraScannerProps {
   active: boolean;
@@ -16,9 +22,13 @@ interface QrCameraScannerProps {
   screenScanMode?: boolean;
   onScreenScanModeChange?: (enabled: boolean) => void;
   showScreenScanToggle?: boolean;
+  /**
+   * Unique DOM id for the viewfinder. Required when only one scanner should
+   * ever mount on a page — defaults to a React useId-safe slug.
+   */
+  viewfinderId?: string;
 }
 
-const VIEWFINDER_ID = "celeventic-qr-viewfinder";
 const FILE_READER_ID = "celeventic-qr-file-reader";
 
 type ScannerRef = {
@@ -40,6 +50,8 @@ type ScannerRef = {
   ) => Promise<void>;
   scanFile: (file: File, showImage?: boolean) => Promise<string>;
   scanFileV2?: (file: File, showImage?: boolean) => Promise<string>;
+  getRunningTrackCameraCapabilities?: () => { torch?: boolean };
+  applyVideoConstraints?: (constraints: MediaTrackConstraints) => Promise<void>;
 };
 
 async function stopScanner(scanner: ScannerRef | null) {
@@ -60,39 +72,51 @@ async function pickCameraId(): Promise<string | MediaTrackConstraints> {
   try {
     const { Html5Qrcode } = await import("html5-qrcode");
     const cameras = await Html5Qrcode.getCameras();
-    if (!cameras.length) return { facingMode: "environment" };
+    if (!cameras.length) return { facingMode: { ideal: "environment" } };
 
     const rear =
-      cameras.find((c) => /back|rear|environment|trás|arrière|wide/i.test(c.label)) ??
+      cameras.find((c) => /back|rear|environment|trás|arrière|wide|ultra/i.test(c.label)) ??
       cameras[cameras.length - 1];
 
     return rear.id;
   } catch {
-    return { facingMode: "environment" };
+    return { facingMode: { ideal: "environment" } };
   }
 }
 
 function buildScannerConfig(screenScanMode: boolean) {
   return {
     fps: screenScanMode ? QR_SCANNER_FPS_SCREEN : QR_SCANNER_FPS,
+    // Wide scan window — guests hold phones at awkward angles in a queue.
     qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-      const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-      const ratio = screenScanMode ? 0.82 : 0.72;
-      const size = Math.floor(minEdge * ratio);
-      return { width: Math.max(200, size), height: Math.max(200, size) };
+      const ratio = screenScanMode ? 0.92 : 0.82;
+      const width = Math.floor(viewfinderWidth * ratio);
+      const height = Math.floor(viewfinderHeight * ratio);
+      return {
+        width: Math.max(260, width),
+        height: Math.max(260, height),
+      };
     },
-    aspectRatio: 1,
+    // Do not force square aspect — phone screens + printed passes need full FOV.
     disableFlip: false,
     rememberLastUsedCameraId: true,
     experimentalFeatures: {
       useBarCodeDetectorIfSupported: true,
     },
     videoConstraints: {
-      facingMode: "environment",
-      width: { ideal: 1280 },
-      height: { ideal: 720 },
-    },
+      facingMode: { ideal: "environment" },
+      // Screen passes benefit from sharper frames; printed passes from wider FOV.
+      width: { ideal: screenScanMode ? 1920 : 1280 },
+      height: { ideal: screenScanMode ? 1080 : 720 },
+      frameRate: { ideal: screenScanMode ? QR_SCANNER_FPS_SCREEN : QR_SCANNER_FPS },
+      // Prefer continuous autofocus when the browser supports it.
+      advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet],
+    } as MediaTrackConstraints,
   };
+}
+
+function sanitizeDomId(raw: string): string {
+  return raw.replace(/:/g, "").replace(/[^a-zA-Z0-9_-]/g, "") || "qrview";
 }
 
 /** Browser camera QR scanner — optimized for iOS, Android, and screen-to-screen passes */
@@ -103,12 +127,19 @@ export function QrCameraScanner({
   screenScanMode: controlledScreenMode,
   onScreenScanModeChange,
   showScreenScanToggle = true,
+  viewfinderId: viewfinderIdProp,
 }: QrCameraScannerProps) {
+  const reactId = useId();
+  const viewfinderId = viewfinderIdProp ?? `celeventic-qr-viewfinder-${sanitizeDomId(reactId)}`;
   const scannerRef = useRef<ScannerRef | null>(null);
-  const lastScanRef = useRef("");
+  const lastScanRef = useRef<{ text: string; at: number } | null>(null);
   const cooldownRef = useRef(false);
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const [starting, setStarting] = useState(false);
-  const [internalScreenMode, setInternalScreenMode] = useState(isMobileDevice());
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchAvailable, setTorchAvailable] = useState(false);
+  // Printed passes are the entrance default; hosts toggle screen mode when needed.
+  const [internalScreenMode, setInternalScreenMode] = useState(false);
   const screenScanMode = controlledScreenMode ?? internalScreenMode;
 
   const setScreenScanMode = useCallback(
@@ -121,21 +152,44 @@ export function QrCameraScanner({
 
   const handleScan = useCallback(
     (text: string) => {
-      if (cooldownRef.current || text === lastScanRef.current) return;
-      lastScanRef.current = text;
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      const now = Date.now();
+      const last = lastScanRef.current;
+      if (last && last.text === trimmed && now - last.at < QR_SCAN_SAME_CODE_MS) return;
+      if (cooldownRef.current) return;
+      lastScanRef.current = { text: trimmed, at: now };
       cooldownRef.current = true;
-      onScan(text);
-      setTimeout(() => {
+      onScan(trimmed);
+      window.setTimeout(() => {
         cooldownRef.current = false;
-      }, 1800);
+      }, QR_SCAN_DEBOUNCE_MS);
     },
     [onScan]
   );
+
+  const applyTorch = useCallback(async (on: boolean) => {
+    const track = videoTrackRef.current;
+    if (!track) return false;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await track.applyConstraints({ advanced: [{ torch: on } as any] });
+      setTorchOn(on);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     if (!active) {
       void stopScanner(scannerRef.current);
       scannerRef.current = null;
+      videoTrackRef.current = null;
+      setTorchOn(false);
+      setTorchAvailable(false);
+      lastScanRef.current = null;
+      cooldownRef.current = false;
       return;
     }
 
@@ -150,12 +204,24 @@ export function QrCameraScanner({
       setStarting(true);
       await stopScanner(scannerRef.current);
       scannerRef.current = null;
+      videoTrackRef.current = null;
+      setTorchAvailable(false);
+      setTorchOn(false);
 
       try {
         const { Html5Qrcode } = await import("html5-qrcode");
         if (cancelled) return;
 
-        const scanner = new Html5Qrcode(VIEWFINDER_ID, { verbose: false }) as unknown as ScannerRef;
+        const host = document.getElementById(viewfinderId);
+        if (!host) {
+          onError?.("Scanner viewfinder is not ready. Refresh and try again.");
+          return;
+        }
+
+        const scanner = new Html5Qrcode(viewfinderId, {
+          verbose: false,
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        }) as unknown as ScannerRef;
         scannerRef.current = scanner;
 
         const camera = await pickCameraId();
@@ -168,7 +234,20 @@ export function QrCameraScanner({
         try {
           await startWithCamera(camera);
         } catch {
-          await startWithCamera({ facingMode: "environment" });
+          await startWithCamera({ facingMode: { ideal: "environment" } });
+        }
+
+        if (cancelled) return;
+
+        // Capture the live track for torch + capability probes.
+        const video = host.querySelector("video");
+        const stream = video?.srcObject;
+        if (stream instanceof MediaStream) {
+          const track = stream.getVideoTracks()[0] ?? null;
+          videoTrackRef.current = track;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const caps = track?.getCapabilities?.() as any;
+          setTorchAvailable(Boolean(caps?.torch));
         }
       } catch (err) {
         if (!cancelled) {
@@ -192,8 +271,9 @@ export function QrCameraScanner({
       cancelled = true;
       void stopScanner(scannerRef.current);
       scannerRef.current = null;
+      videoTrackRef.current = null;
     };
-  }, [active, handleScan, onError, screenScanMode]);
+  }, [active, handleScan, onError, screenScanMode, viewfinderId]);
 
   if (!active) return null;
 
@@ -211,7 +291,9 @@ export function QrCameraScanner({
               <Label htmlFor="screen-scan-mode" className="font-medium cursor-pointer">
                 Screen pass mode
               </Label>
-              <p className="text-xs text-slate-500">Scan QR codes shown on guest phone screens</p>
+              <p className="text-xs text-slate-500">
+                Boost sensitivity for QR codes shown on guest phone screens
+              </p>
             </div>
           </div>
           <Switch
@@ -229,8 +311,12 @@ export function QrCameraScanner({
         )}
       >
         <div
-          id={VIEWFINDER_ID}
-          className="w-full min-h-[280px] sm:min-h-[340px] [&_video]:object-cover [&_video]:w-full [&_video]:h-full"
+          id={viewfinderId}
+          className={cn(
+            "w-full min-h-[300px] sm:min-h-[420px] [&_video]:w-full [&_video]:h-full",
+            // Screen mode: contain keeps the guest phone QR fully in frame (cover crops edges).
+            screenScanMode ? "[&_video]:object-contain bg-black" : "[&_video]:object-cover"
+          )}
         />
         {starting && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-sm font-medium">
@@ -241,9 +327,23 @@ export function QrCameraScanner({
           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3 text-center">
             <p className="text-xs text-white/90">
               {screenScanMode
-                ? "Hold steady · scan the guest's pass on their phone screen"
-                : "Point at QR code · works on iPhone, Android & printed passes"}
+                ? "Hold steady · fill the frame with the guest's phone QR"
+                : "Point at the pass · printed or on-screen · auto-focus on"}
             </p>
+          </div>
+        )}
+        {torchAvailable && !starting && (
+          <div className="absolute top-3 right-3">
+            <Button
+              type="button"
+              size="sm"
+              variant={torchOn ? "default" : "secondary"}
+              className="h-9 gap-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 border-0"
+              onClick={() => void applyTorch(!torchOn)}
+            >
+              {torchOn ? <FlashlightOff className="h-4 w-4" /> : <Flashlight className="h-4 w-4" />}
+              {torchOn ? "Torch off" : "Torch"}
+            </Button>
           </div>
         )}
       </div>
@@ -251,7 +351,7 @@ export function QrCameraScanner({
   );
 }
 
-/** Hidden container required by html5-qrcode file scanning */
+/** Hidden container required by html5-qrcode file scanning — mount once per page. */
 export function QrFileReaderHost() {
   return <div id={FILE_READER_ID} className="hidden" aria-hidden />;
 }

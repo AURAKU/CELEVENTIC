@@ -15,6 +15,8 @@ import { invitationFontVars } from "@/lib/invitation-fonts";
 import { cn } from "@/lib/utils";
 import {
   DEFAULT_WEDDING_BOARD,
+  distinctInvitationPhrase,
+  invitationPhrasesMatch,
   mergeWeddingBoard,
   normaliseSectionOrder,
   type WeddingBoardContent,
@@ -242,7 +244,22 @@ export function WeddingBoardStudioPanel({
 
       <Group title="Announcement">
         <Field label="Eyebrow">
-          <Input value={board.eyebrow} onChange={(e) => patch({ eyebrow: e.target.value })} />
+          <Input
+            value={board.eyebrow}
+            onChange={(e) => {
+              const eyebrow = e.target.value;
+              // Keep one announcement phrase: clear family heading when it would duplicate.
+              const next: Partial<WeddingBoardContent> = { eyebrow };
+              if (
+                !board.familyHeading?.trim() ||
+                invitationPhrasesMatch(board.familyHeading, eyebrow) ||
+                invitationPhrasesMatch(board.familyHeading, board.eyebrow)
+              ) {
+                next.familyHeading = "";
+              }
+              patch(next);
+            }}
+          />
         </Field>
         <Field label="Script title">
           <Input value={board.scriptTitle} onChange={(e) => patch({ scriptTitle: e.target.value })} />
@@ -273,8 +290,17 @@ export function WeddingBoardStudioPanel({
       </Group>
 
       <Group title="Families">
-        <Field label="Heading">
-          <Input value={board.familyHeading} onChange={(e) => patch({ familyHeading: e.target.value })} />
+        <Field label="Section heading (optional)">
+          <Input
+            value={distinctInvitationPhrase(board.familyHeading, board.eyebrow)}
+            placeholder="Leave blank — uses hero eyebrow once"
+            onChange={(e) => {
+              const raw = e.target.value;
+              patch({
+                familyHeading: distinctInvitationPhrase(raw, board.eyebrow),
+              });
+            }}
+          />
         </Field>
         <Field label="Introduction" wide>
           <Textarea

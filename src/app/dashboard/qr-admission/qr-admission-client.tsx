@@ -26,6 +26,7 @@ import { useSession } from "next-auth/react";
 import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
 import { cn } from "@/lib/utils";
+import { extractPassToken } from "@/lib/admission/pass-token-format";
 import {
   Select,
   SelectContent,
@@ -86,8 +87,6 @@ export function QrAdmissionClient() {
   const { t } = useLocale();
   const { data: session } = useSession();
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [manualToken, setManualToken] = useState("");
@@ -108,12 +107,16 @@ export function QrAdmissionClient() {
   const [isOnline, setIsOnline] = useState(true);
   const [loadingScans, setLoadingScans] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  // Default off for printed passes; toggle on for phone-screen guest passes.
+  /** Default ON — entrance queues are almost always phone-screen passes. */
   const [screenScanMode, setScreenScanMode] = useState(true);
   const [offlinePkg, setOfflinePkg] = useState<OfflinePackage | null>(null);
   const [offlineMsg, setOfflineMsg] = useState("");
   const [resetting, setResetting] = useState(false);
   const [scanningImage, setScanningImage] = useState(false);
   const [lastImageName, setLastImageName] = useState("");
+  /** Routes Guest Entry Pass QR payloads into EntryPassGate (one camera for the page). */
+  const entryPassScanRef = useRef<((text: string) => void) | null>(null);
 
   const isAdmin = session?.user?.role && isAdminRole(session.user.role as UserRole);
   const selectedEventTitle = events.find((e) => e.id === eventId)?.title ?? null;
@@ -367,6 +370,20 @@ export function QrAdmissionClient() {
     ]
   );
 
+  /** One camera: Guest Entry Pass tokens → EntryPassGate; everything else → legacy check-in. */
+  const handleUnifiedScan = useCallback(
+    (raw: string) => {
+      const trimmed = raw.trim();
+      if (!trimmed) return;
+      if (extractPassToken(trimmed) && entryPassScanRef.current) {
+        entryPassScanRef.current(trimmed);
+        return;
+      }
+      void performCheckIn(trimmed);
+    },
+    [performCheckIn]
+  );
+
   async function resetAdmission(scope: "guest" | "event", guestId?: string) {
     if (!eventId) return;
     if (scope === "event") {
@@ -422,7 +439,7 @@ export function QrAdmissionClient() {
     setLastImageName(file.name || "QR image");
     try {
       const text = await scanQrFromFile(file);
-      await performCheckIn(text);
+      handleUnifiedScan(text);
     } catch (err) {
       const message =
         err instanceof QrImageScanError
@@ -495,7 +512,7 @@ export function QrAdmissionClient() {
         ) : undefined
       }
     >
-      <div id="celeventic-qr-file-reader" className="hidden" aria-hidden />
+      <QrFileReaderHost />
 
       <div className="flex flex-wrap items-center gap-2">
         {isOnline ? (
@@ -605,13 +622,113 @@ export function QrAdmissionClient() {
 
       {eventId && <AdmissionSettingsPanel eventId={eventId} />}
 
-      {/* Invitation-level Guest Entry Pass gate. Shares this page's camera and
-          audit ledger; adds party rosters, admission codes, and offline queueing. */}
+      {/* Single camera for the whole gate — Entry Pass + legacy guest QR. */}
+      {eventId && (
+        <Card className="border-brand-200/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Camera className="h-4 w-4 text-brand-600" />
+              Admission scanner
+            </CardTitle>
+            <p className="text-xs text-slate-500">
+              One camera for Guest Entry Pass QR codes and legacy guest QR / tickets. Toggle screen
+              pass mode when scanning phones. Use torch in low light when your device supports it.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={() => setCameraOpen((v) => !v)}
+                variant={cameraOpen ? "secondary" : "default"}
+                className="gap-1.5"
+              >
+                <Camera className="h-4 w-4" />
+                {cameraOpen ? "Stop camera" : "Open camera"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-1.5"
+                disabled={!eventId || scanningImage}
+                onClick={() => document.getElementById("qr-admission-file-input")?.click()}
+              >
+                <Upload className="h-4 w-4" />
+                Upload QR image
+              </Button>
+              <input
+                id="qr-admission-file-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => void handleFileUpload(e)}
+              />
+            </div>
+
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) void processUploadedFile(file);
+              }}
+              className={cn(
+                "rounded-xl border border-dashed px-4 py-6 text-center transition-colors",
+                dragOver ? "border-brand-400 bg-brand-50/50" : "border-slate-200 bg-slate-50/50"
+              )}
+            >
+              <ImagePlus
+                className={cn(
+                  "h-8 w-8 mx-auto mb-2",
+                  scanningImage ? "text-brand-600 animate-pulse" : "text-slate-400"
+                )}
+              />
+              <p className="text-sm font-medium text-slate-700">
+                {scanningImage
+                  ? `Scanning ${lastImageName || "image"}…`
+                  : dragOver
+                    ? "Drop to scan & admit"
+                    : "Drag & drop QR image here"}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                PNG, JPG, or WebP · validates against the selected event
+              </p>
+            </div>
+
+            {cameraError && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                {t("qr_admission.camera_denied")} ({cameraError})
+              </p>
+            )}
+
+            <QrCameraScanner
+              active={cameraOpen && !!eventId}
+              viewfinderId="celeventic-gate-unified-viewfinder"
+              screenScanMode={screenScanMode}
+              onScreenScanModeChange={setScreenScanMode}
+              onScan={handleUnifiedScan}
+              onError={(msg) => {
+                setCameraError(msg);
+                setCameraOpen(false);
+              }}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {eventId && (
         <EntryPassGate
           eventId={eventId}
           eventTitle={selectedEventTitle ?? undefined}
           gate={gate || undefined}
+          hideCamera
+          scanHandlerRef={entryPassScanRef}
         />
       )}
 
@@ -637,103 +754,7 @@ export function QrAdmissionClient() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <QrFileReaderHost />
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              size="lg"
-              className="flex-1 min-h-[52px] gap-2 touch-manipulation"
-              disabled={!eventId || processing}
-              onClick={() => {
-                setCameraError("");
-                setCameraOpen((v) => !v);
-              }}
-            >
-              <Camera className="h-5 w-5" />
-              {cameraOpen ? "Close camera" : t("qr_admission.open_camera")}
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="flex-1 min-h-[52px] gap-2 touch-manipulation"
-              disabled={!eventId || processing || scanningImage}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-5 w-5" />
-              {scanningImage ? "Reading QR…" : t("qr_admission.upload_image")}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
-              className="hidden"
-              onChange={(e) => void handleFileUpload(e)}
-            />
-          </div>
-
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "copy";
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOver(false);
-              const file = e.dataTransfer.files?.[0];
-              if (file) void processUploadedFile(file);
-            }}
-            role="button"
-            tabIndex={eventId ? 0 : -1}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInputRef.current?.click();
-              }
-            }}
-            className={cn(
-              "rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors touch-manipulation",
-              dragOver ? "border-brand-500 bg-brand-50/50" : "border-slate-200 bg-slate-50/50",
-              scanningImage && "border-brand-400 bg-brand-50/40",
-              (!eventId || processing || scanningImage) && "opacity-50 pointer-events-none"
-            )}
-          >
-            <ImagePlus
-              className={cn(
-                "h-8 w-8 mx-auto mb-2",
-                scanningImage ? "text-brand-600 animate-pulse" : "text-slate-400"
-              )}
-            />
-            <p className="text-sm font-medium text-slate-700">
-              {scanningImage
-                ? `Scanning ${lastImageName || "image"}…`
-                : dragOver
-                  ? "Drop to scan & admit"
-                  : "Drag & drop QR image here"}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              PNG, JPG, or WebP · validates against the selected event
-            </p>
-          </div>
-
-          {cameraError && (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-              {t("qr_admission.camera_denied")} ({cameraError})
-            </p>
-          )}
-
-          <QrCameraScanner
-            active={cameraOpen && !!eventId}
-            screenScanMode={screenScanMode}
-            onScreenScanModeChange={setScreenScanMode}
-            onScan={(text) => void performCheckIn(text)}
-            onError={(msg) => {
-              setCameraError(msg);
-              setCameraOpen(false);
-            }}
-          />
-
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
@@ -750,12 +771,13 @@ export function QrAdmissionClient() {
                 disabled={processing}
               />
               <p className="text-xs text-slate-500">
-                Each guest pass has a unique 4-digit code for manual admit when scanning isn’t practical.
+                Guest 4-digit codes and verify URLs check in here. Guest Entry Pass 4/6-digit
+                admission codes use the Entry Pass panel above.
               </p>
               <Button
                 className="w-full min-h-[44px] touch-manipulation"
                 disabled={!eventId || !manualToken.trim() || processing}
-                onClick={() => void performCheckIn(manualToken)}
+                onClick={() => handleUnifiedScan(manualToken)}
               >
                 {processing ? "Checking in…" : "Verify & check in"}
               </Button>

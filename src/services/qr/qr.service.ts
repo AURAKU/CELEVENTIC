@@ -7,7 +7,7 @@ import { QR_DEFAULT_SIZE } from "@/lib/qr/qr-constants";
 import { parseQrToken } from "@/lib/qr/parse-qr-payload";
 import { ensureGuestManualCode, isManualAdmissionCode } from "@/lib/qr/manual-code";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
-import { syncAdmissionAfterCheckIn } from "@/services/admission/admission.service";
+import { syncAdmissionAfterCheckIn, resetAdmission } from "@/services/admission/admission.service";
 
 export type QrAdmissionStatus =
   | "valid"
@@ -589,7 +589,27 @@ export class QrService {
         })
       : { count: 0 };
 
-    if (guest.status === "CHECKED_IN") {
+    // Relock Event Companion + zero the entry pass projection when this guest's
+    // invitation was admitted (otherwise companion stays open after "reset").
+    if (guest.invitationId) {
+      try {
+        await resetAdmission({
+          invitationId: guest.invitationId,
+          scope: "individual",
+          guestIds: [guestId],
+          actorUserId: resetBy,
+          reason: "Gate dashboard reset guest admission",
+        });
+      } catch (error) {
+        console.error("[qr] invitation admission reset failed", error);
+        if (guest.status === "CHECKED_IN") {
+          await prisma.guest.update({
+            where: { id: guestId },
+            data: { status: "ACCEPTED" },
+          });
+        }
+      }
+    } else if (guest.status === "CHECKED_IN") {
       await prisma.guest.update({
         where: { id: guestId },
         data: { status: "ACCEPTED" },
@@ -622,6 +642,24 @@ export class QrService {
         })
       : { count: 0 };
 
+    const invitations = await prisma.invitation.findMany({
+      where: { eventId },
+      select: { id: true },
+    });
+    for (const invitation of invitations) {
+      try {
+        await resetAdmission({
+          invitationId: invitation.id,
+          scope: "entire",
+          actorUserId: resetBy,
+          reason: "Gate dashboard reset all admissions",
+        });
+      } catch (error) {
+        console.error("[qr] invitation admission reset failed", invitation.id, error);
+      }
+    }
+
+    // Fallback for guests not linked to an invitation projection.
     if (guestIds.length) {
       await prisma.guest.updateMany({
         where: { id: { in: guestIds }, status: "CHECKED_IN" },

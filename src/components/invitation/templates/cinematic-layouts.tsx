@@ -20,6 +20,7 @@ function InviteBody({
   guestId,
   guestName,
   qrDataUrl,
+  entryPass,
   variant = "default",
 }: InvitationRenderProps & { variant?: "default" | "dark" | "light" | "neon" | "corporate" }) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
@@ -31,6 +32,7 @@ function InviteBody({
   const bodySize = design.studio?.bodySize ?? 14;
   const scriptSize = design.studio?.scriptSize ?? 22;
   const dark = variant === "dark" || variant === "neon";
+  const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
     <>
@@ -70,7 +72,7 @@ function InviteBody({
       {event.venueName && <p className="tracking-wide" style={{ fontSize: bodySize + 1 }}>{event.venueName}</p>}
       {event.landmark && <p className={cn("inv-muted-on-dark", variant === "light" && "inv-muted-on-light")} style={{ fontSize: bodySize - 1 }}>{event.landmark}</p>}
       {event.dressCode && <p className={cn("inv-caption-on-dark", variant === "light" && "inv-caption-on-light")} style={{ fontSize: bodySize - 1 }}>Dress code · {event.dressCode}</p>}
-      {qrDataUrl && <Image src={qrDataUrl} alt="Guest pass QR" width={112} height={112} className="mx-auto rounded-lg"  unoptimized />}
+      {showCardQr && qrDataUrl && <Image src={qrDataUrl} alt="Guest pass QR" width={112} height={112} className="mx-auto rounded-lg"  unoptimized />}
       <InvitationRsvpPanel
         invitationId={invitation.id}
         guestId={guestId}

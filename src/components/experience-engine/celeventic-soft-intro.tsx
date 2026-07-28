@@ -24,7 +24,8 @@ export interface CeleventicSoftIntroProps {
   logoUrl?: string;
   /**
    * @deprecated Ignored — every invitation plays the canonical Celeventic
-   * brand intro video. Kept so call sites do not break.
+   * brand intro video. Kept so call sites do not break. Never restores a
+   * photo / DNA picture intro.
    */
   atmosphereUrl?: string | null;
   accentColor?: string;
@@ -35,6 +36,11 @@ export interface CeleventicSoftIntroProps {
    * never skip it entirely (guests should never feel "nothing happened").
    */
   quickHold?: boolean;
+  /**
+   * When true (catalogue / studio phone frame), fill the parent shell instead
+   * of locking to the browser viewport with `position: fixed`.
+   */
+  embedded?: boolean;
 }
 
 /**
@@ -49,6 +55,7 @@ export function CeleventicSoftIntro({
   accentColor = CELEVENTIC_PALETTE.teal,
   secondaryColor = CELEVENTIC_PALETTE.gold,
   quickHold = false,
+  embedded = false,
 }: CeleventicSoftIntroProps) {
   const reduceMotion = useReducedMotion();
   const [exiting, setExiting] = useState(false);
@@ -132,19 +139,18 @@ export function CeleventicSoftIntro({
     }
   }, [reduceMotion, videoFailed]);
 
+  const showVideo = !reduceMotion && !videoFailed;
+
   const rootClass = [
     styles.root,
+    embedded ? styles.embedded : styles.live,
     invitationFontVars,
-    "invite-viewport-live",
-    "safe-area-pt",
-    "safe-area-pb",
+    showVideo ? styles.videoPlaying : "",
     reduceMotion ? styles.static : "",
     exiting ? styles.exiting : "",
   ]
     .filter(Boolean)
     .join(" ");
-
-  const showVideo = !reduceMotion && !videoFailed;
 
   return (
     <div
@@ -194,14 +200,19 @@ export function CeleventicSoftIntro({
                 fill
                 sizes="100vw"
                 priority
+                style={{ objectFit: "contain", objectPosition: "center" }}
               />
             </div>
           </>
         )}
       </div>
 
-      <div className={styles.glassMask} aria-hidden />
-      <div className={styles.warmBloom} aria-hidden />
+      {!showVideo && (
+        <>
+          <div className={styles.glassMask} aria-hidden />
+          <div className={styles.warmBloom} aria-hidden />
+        </>
+      )}
 
       {(!showVideo || canSkip) && (
         <div className={styles.stage}>

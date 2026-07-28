@@ -25,6 +25,8 @@ interface GuestWishesCardProps {
   inviteLink?: string | null;
   accentColor?: string;
   memoryVaultEnabled?: boolean;
+  /** When the template already owns Memory Vault, hide the wishes teaser line. */
+  suppressMemoryHint?: boolean;
   variant?: "light" | "dark";
 }
 
@@ -64,6 +66,7 @@ export function GuestWishesCard({
   inviteLink,
   accentColor = "#0B8A83",
   memoryVaultEnabled,
+  suppressMemoryHint = false,
   variant = "light",
 }: GuestWishesCardProps) {
   const dark = variant === "dark";
@@ -397,7 +400,7 @@ export function GuestWishesCard({
         )}
       </div>
 
-      {memoryVaultEnabled && (
+      {memoryVaultEnabled && !suppressMemoryHint && (
         <p
           className={`text-xs text-center flex items-center justify-center gap-1 mt-4 ${
             dark ? "text-white/50" : "text-slate-500"

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
@@ -23,6 +23,11 @@ import { resolveShareOgImage } from "@/lib/social/share-image";
 import { buildShareDescription } from "@/lib/social/share-description";
 import { APP_NAME } from "@/lib/constants";
 import { getInvitationPassView } from "@/services/admission/guest-pass.service";
+import { getInvitationAdmission } from "@/services/admission/admission.service";
+import {
+  buildEventCompanionHref,
+  shouldOpenEventCompanionOnly,
+} from "@/lib/admission/event-companion";
 import { resolvePlaceCard } from "@/services/invitation-features/place-card.service";
 import type { GuestEntryPassData } from "@/types/invitation-design";
 
@@ -118,6 +123,13 @@ export default async function InvitePage({
   // Soft-deleted / cancelled events must not keep serving as live guest pages.
   if (invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") {
     notFound();
+  }
+
+  // Once admitted (QR or manual gate code), the invite link opens the Event
+  // Companion only — ceremony (intro video → tap → envelope) returns after reset.
+  const admissionSummary = await getInvitationAdmission(invitation.id);
+  if (shouldOpenEventCompanionOnly(admissionSummary)) {
+    redirect(buildEventCompanionHref(link, guestToken ?? null));
   }
 
   const event = invitation.event;
@@ -274,6 +286,7 @@ export default async function InvitePage({
   // every later view re-renders the same one.
   let entryPass: GuestEntryPassData | null = null;
   let companionUrl: string | null = null;
+  let watchAdmissionHandoff = Boolean(invitation.postAdmissionEnabled);
   if (personalizedGuest) {
     try {
       const passView = await getInvitationPassView(invitation.id);
@@ -305,14 +318,18 @@ export default async function InvitePage({
           showPartySize: passView.settings.showPartySizeOnPass,
         };
       }
-      // ensureInvitationPass enables the companion; always link once a pass exists.
-      if (passView) {
-        companionUrl = `/invite/${encodeURIComponent(link)}/event-day?guest=${encodeURIComponent(personalizedGuest.qrToken)}`;
+      // Companion unlocks with the pass / post-admission flag.
+      if (passView || invitation.postAdmissionEnabled) {
+        companionUrl = buildEventCompanionHref(link, personalizedGuest.qrToken);
+        watchAdmissionHandoff = true;
       }
     } catch (error) {
       // A pass failure must never take down a published invitation.
       console.error("[invite] entry pass unavailable", error);
     }
+  } else if (invitation.postAdmissionEnabled) {
+    companionUrl = buildEventCompanionHref(link);
+    watchAdmissionHandoff = true;
   }
 
   // Personalised place card — resolved for every published invitation, on every
@@ -375,6 +392,7 @@ export default async function InvitePage({
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       companionUrl={companionUrl}
+      watchAdmissionHandoff={watchAdmissionHandoff}
       seatQrDataUrl={seatQrDataUrl || null}
       backgroundImageUrl={resolvedBackground.backgroundImageUrl ?? event.coverImageUrl}
       backgroundVideoUrl={resolvedBackground.backgroundVideoUrl}
