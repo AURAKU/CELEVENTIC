@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Crown, Music2, Sparkles, Wand2, Layers, Type, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
+import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 import { CINEMATIC_SHOWCASE } from "@/lib/experience/experience-showcase";
 import { SHOWCASE_REVEAL_EFFECTS } from "@/lib/experience/reveal-effects-registry";
 import { AUDIO_CATEGORY_GROUPS, AUDIO_EXPERIENCE_CATALOG } from "@/lib/music/audio-experience-catalog";

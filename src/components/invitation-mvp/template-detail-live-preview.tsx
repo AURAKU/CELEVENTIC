@@ -3,7 +3,8 @@ import { TemplateDetailLivePreviewClient } from "@/components/invitation-mvp/tem
 import type { CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 
 export async function TemplateDetailLivePreview({ template }: { template: CatalogTemplate }) {
-  const memoryLinks = await ensureDemoMemoryLinks(template.name);
+  // Demo memory links are optional — never 500 the template detail page if DB is busy.
+  const memoryLinks = await ensureDemoMemoryLinks(template.name).catch(() => null);
 
   return (
     <TemplateDetailLivePreviewClient

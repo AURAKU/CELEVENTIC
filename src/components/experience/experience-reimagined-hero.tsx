@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Crown, Sparkles, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
+import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 
 const FEATURED_LAYOUT = "royal-emerald-wedding";
 

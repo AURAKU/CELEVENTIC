@@ -5,7 +5,7 @@ import { ArrowRight, Heart, Sparkles, Palette, Globe2, Shield } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getBrowseCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
-import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
+import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 import { getLayoutSignatureFeatures } from "@/lib/invitation/layout-template-signatures";
 import { useLocale } from "@/components/i18n/locale-provider";
 

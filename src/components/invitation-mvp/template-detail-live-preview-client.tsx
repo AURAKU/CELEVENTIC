@@ -1,6 +1,6 @@
 "use client";
 
-import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
+import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 import type { CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 
 export function TemplateDetailLivePreviewClient({

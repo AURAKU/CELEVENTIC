@@ -33,6 +33,7 @@
         "admission:backfill:dry-run": "tsx scripts/backfill-guest-passes.ts --dry-run",
         "smoke-test": "node scripts/smoke-test-local.mjs",
         "smoke-test:pages": "node scripts/smoke-test-local.mjs && node scripts/smoke-test-authed-pages.mjs",
+        "smoke:live": "node scripts/smoke-live-pages.mjs",
         "test:auth": "tsx --test src/lib/auth/__tests__/*.test.ts",
         "test:video": "tsx --test src/lib/video/__tests__/*.test.ts",
         "test:video-pipeline": "tsx --test --test-concurrency=1 src/lib/video/__tests__/integration/*.test.ts",

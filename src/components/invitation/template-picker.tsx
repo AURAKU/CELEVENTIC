@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { InvitationTemplatePreset } from "@/lib/invitation-templates";
-import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
+import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 
 interface TemplatePickerProps {
   templates: InvitationTemplatePreset[];
