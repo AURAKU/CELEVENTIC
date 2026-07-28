@@ -17,6 +17,18 @@ import { buildShareDescription } from "@/lib/social/share-description";
 import { getServerAppUrl } from "@/lib/app-url";
 
 /**
+ * This is a dynamic-param route with no `generateStaticParams`, so without an
+ * explicit opt-out Next.js would render it once on first visit and then serve
+ * that cached HTML (including `og:description`/title) to every guest
+ * indefinitely — a host editing their event site, or a code fix like the
+ * couple-name OG description above, would never reach an already-shared link
+ * until something else happened to bust the cache. Force dynamic rendering so
+ * every request re-reads the live `Event` row, matching `/invite/[link]`.
+ */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+/**
  * Share-card preview defaults to the QR center logo (falls back to the
  * Celeventic official logo) so link previews match the branded QR guests
  * scan — see `resolveShareOgImage`.

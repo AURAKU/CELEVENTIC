@@ -125,13 +125,21 @@ export function sanitizePublicUrl(url: string, baseUrl?: string): string {
   const base = baseUrl ?? getAppUrlFromEnv();
   try {
     const parsed = new URL(url);
-    if (isLocalHost(parsed.origin)) {
+    // Scheme-less input like "localhost:3000/invite/x" (a legacy/dev-seeded
+    // value stored without `http://`) parses as a URL with protocol
+    // `"localhost:"` and an opaque origin — not `http(s):` — rather than
+    // throwing, so it must be rejected here and handled by the regex fallback
+    // below instead of silently passing through unmodified.
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error("not an http(s) URL");
+    }
+    if (isLocalHost(parsed.hostname)) {
       return `${base}${parsed.pathname}${parsed.search}${parsed.hash}`;
     }
     return url;
   } catch {
-    if (/localhost|127\.0\.0\.1/.test(url)) {
-      return url.replace(/https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?/gi, base);
+    if (/localhost|127\.0\.0\.1/i.test(url)) {
+      return url.replace(/(?:https?:\/\/)?(?:localhost|127\.0\.0\.1)(?::\d+)?/gi, base);
     }
     return url;
   }
