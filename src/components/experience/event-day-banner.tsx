@@ -7,6 +7,7 @@ interface EventDayBannerProps {
   eventTitle: string;
   venueName?: string | null;
   seatLookupUrl?: string | null;
+  companionUrl?: string | null;
   mapsLink?: string | null;
   accentColor?: string;
 }
@@ -15,6 +16,7 @@ export function EventDayBanner({
   eventTitle,
   venueName,
   seatLookupUrl,
+  companionUrl,
   mapsLink,
   accentColor = "#0B8A83",
 }: EventDayBannerProps) {
@@ -48,6 +50,13 @@ export function EventDayBanner({
           </p>
         )}
         <div className="flex flex-wrap gap-2">
+          {companionUrl && (
+            <Button size="sm" variant="secondary" className="bg-white text-[#0F172A] border-white/25 hover:bg-white/90" asChild>
+              <a href={companionUrl}>
+                <Sparkles className="h-4 w-4" /> Event Companion
+              </a>
+            </Button>
+          )}
           {mapsLink && (
             <Button size="sm" variant="secondary" className="bg-white/15 text-white border-white/25 hover:bg-white/25" asChild>
               <a href={mapsLink} target="_blank" rel="noopener noreferrer">

@@ -521,7 +521,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       visualLanguage:
         "embossed blush peony paper, champagne foil, ornamental golden gate, botanical line art, editorial serif and script pairing",
       revealMechanic:
-        "tap or swipe the champagne wax seal — the wax breaks, the flaps unfold in depth, the inner card rises, and an ornate golden gate is built and parted from the centre",
+        "tap or swipe the champagne wax seal — the seal lifts slowly from the paper, the flaps unfold in depth, the inner card rises, and an ornate golden gate is built and parted from the centre",
       audioMood: "romantic strings and violin",
       outroType: "gate closes over a gratitude scene",
     },

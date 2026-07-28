@@ -273,6 +273,12 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
                         Close
                       </Button>
                     )}
+                    {(batch.status === "GENERATING" || batch.status === "FAILED") &&
+                      batch.method === "FIXED_QUANTITY" && (
+                        <Button size="sm" variant="outline" disabled={busy} onClick={() => act(batch.id, "retry")}>
+                          {batch.status === "GENERATING" ? "Continue minting" : "Retry minting"}
+                        </Button>
+                      )}
                     {batch.status !== "REVOKED" && (
                       <Button size="sm" variant="outline" disabled={busy} onClick={() => act(batch.id, "revoke")}>
                         <ShieldOff className="h-3.5 w-3.5" /> Revoke all

@@ -1864,14 +1864,16 @@ model EventMemory {
  * Guest wishes left on digital invitations — visible to every guest for the event
  */
 model InvitationGuestWish {
-  id           String   @id @default(cuid())
-  eventId      String
-  invitationId String?
-  guestId      String?
-  authorName   String
-  message      String
-  isVisible    Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  eventId         String
+  invitationId    String?
+  guestId         String?
+  authorName      String
+  message         String
+  /** SHA-256 of the one-time author delete token (never store the raw token). */
+  authorTokenHash String?
+  isVisible       Boolean  @default(true)
+  createdAt       DateTime @default(now())
 
   event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   invitation Invitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
@@ -1879,6 +1881,7 @@ model InvitationGuestWish {
 
   @@index([eventId, createdAt])
   @@index([invitationId])
+  @@index([authorTokenHash])
   @@map("invitation_guest_wishes")
 }
 

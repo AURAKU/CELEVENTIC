@@ -34,7 +34,9 @@ import type { BatchProgress, ColumnSuggestionView, ImportBatchView } from "./typ
 
 type Step = "source" | "map" | "review" | "generate";
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_FAST_MS = 800;
+const POLL_INTERVAL_MS = 1500;
+const POLL_ERROR_BACKOFF_MS = 2500;
 
 interface Props {
   eventId: string;
@@ -188,24 +190,43 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
     void refreshBatch();
   }
 
-  // Poll while generation runs; stop the moment the worker reports finished.
+  // Poll while generation runs. Each GET also self-heals when the jobs worker
+  // is offline, so progress advances even without `npm run jobs:worker`.
   useEffect(() => {
     if (step !== "generate" || !batch) return;
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let polls = 0;
 
     const tick = async () => {
-      const res = await fetch(`/api/guest-import/batches/${batch.id}`);
-      const data = await res.json();
-      if (cancelled || !res.ok) return;
-      setProgress(data.data);
-      if (!data.data.finished) setTimeout(tick, POLL_INTERVAL_MS);
+      try {
+        const res = await fetch(`/api/guest-import/batches/${batch.id}`, {
+          cache: "no-store",
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          timer = setTimeout(tick, POLL_ERROR_BACKOFF_MS);
+          return;
+        }
+        setProgress(data.data);
+        setBatch(data.data.batch);
+        polls += 1;
+        if (!data.data.finished) {
+          const delay = polls < 4 ? POLL_INTERVAL_FAST_MS : POLL_INTERVAL_MS;
+          timer = setTimeout(tick, delay);
+        }
+      } catch {
+        if (!cancelled) timer = setTimeout(tick, POLL_ERROR_BACKOFF_MS);
+      }
     };
 
     void tick();
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
-  }, [step, batch]);
+  }, [step, batch?.id]);
 
   function reset() {
     setBatch(null);
@@ -500,10 +521,16 @@ function GenerationPanel({
     setSending(false);
     setDeliveryNote(
       res.ok
-        ? `Queued ${data.data.queued} message${data.data.queued === 1 ? "" : "s"}. ${data.data.skipped} guest${data.data.skipped === 1 ? "" : "s"} had no contact details — share their links by hand.`
+        ? `Queued ${data.data.queued} message${data.data.queued === 1 ? "" : "s"}. ${data.data.skipped} guest${data.data.skipped === 1 ? "" : "s"} had no contact details — share their links by hand. Delivery continues automatically.`
         : (data.error ?? "Could not queue delivery.")
     );
     onRefresh();
+    // Kick progress polls so inline delivery drain advances without a worker.
+    if (res.ok) {
+      void fetch(`/api/guest-import/batches/${batch.id}/deliveries?page=1&limit=1`, {
+        cache: "no-store",
+      });
+    }
   }
 
   return (
@@ -530,7 +557,15 @@ function GenerationPanel({
           </p>
           {!finished && (
             <p className="text-xs text-slate-500">
-              This runs in the background — you can leave this page and come back.
+              {(progress?.batch.generatedRows ?? 0) === 0
+                ? "Starting automatically — this usually finishes in a few seconds."
+                : "Creating in the background — you can leave this page and come back."}
+            </p>
+          )}
+          {finished && (progress?.batch.failedRows ?? 0) > 0 && (
+            <p className="text-xs text-amber-700">
+              Some rows could not be created. Review the list below — successful invitations are
+              ready to send.
             </p>
           )}
         </CardContent>
@@ -589,7 +624,11 @@ function GenerationPanel({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ImportPreviewTable batchId={batch.id} editable={false} />
+          <ImportPreviewTable
+            batchId={batch.id}
+            editable={false}
+            refreshKey={progress?.batch.generatedRows ?? 0}
+          />
         </CardContent>
       </Card>
     </div>

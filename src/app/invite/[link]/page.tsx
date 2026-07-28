@@ -273,6 +273,7 @@ export default async function InvitePage({
   // idempotent, so the first personalised view of an invite mints the pass and
   // every later view re-renders the same one.
   let entryPass: GuestEntryPassData | null = null;
+  let companionUrl: string | null = null;
   if (personalizedGuest) {
     try {
       const passView = await getInvitationPassView(invitation.id);
@@ -303,6 +304,10 @@ export default async function InvitePage({
           allowPrint: passView.settings.allowPassPrint,
           showPartySize: passView.settings.showPartySizeOnPass,
         };
+      }
+      // ensureInvitationPass enables the companion; always link once a pass exists.
+      if (passView) {
+        companionUrl = `/invite/${encodeURIComponent(link)}/event-day?guest=${encodeURIComponent(personalizedGuest.qrToken)}`;
       }
     } catch (error) {
       // A pass failure must never take down a published invitation.
@@ -369,6 +374,7 @@ export default async function InvitePage({
       placeCard={placeCard}
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
+      companionUrl={companionUrl}
       seatQrDataUrl={seatQrDataUrl || null}
       backgroundImageUrl={resolvedBackground.backgroundImageUrl ?? event.coverImageUrl}
       backgroundVideoUrl={resolvedBackground.backgroundVideoUrl}

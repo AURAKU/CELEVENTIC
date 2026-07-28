@@ -15,6 +15,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { SmartGuestSearch } from "@/components/guest-search/smart-guest-search";
 import { QuickCreateCard } from "@/components/guest-search/quick-create-card";
 import type { SearchResultCard } from "@/lib/guest-search/types";
+import { getClientAppUrl, sanitizePublicUrl } from "@/lib/app-url";
 
 interface Guest {
   id: string;
@@ -105,12 +106,14 @@ export default function GuestsPage() {
 
   function guestInviteLink(guest: Guest) {
     const uniqueLink = guest.invitation?.uniqueLink || defaultInviteUniqueLink;
-    if (!uniqueLink) return window.location.origin;
-    return `${window.location.origin}/invite/${uniqueLink}?guest=${guest.qrToken}`;
+    if (!uniqueLink) return "";
+    const raw = `${getClientAppUrl()}/invite/${uniqueLink}?guest=${guest.qrToken}`;
+    return sanitizePublicUrl(raw);
   }
 
   function whatsAppUrl(guest: Guest) {
     const link = guestInviteLink(guest);
+    if (!link) return "";
     const text = `Dear ${guest.name},\n\nYou are personally invited. Open your Celeventic invitation:\n${link}`;
     return `https://wa.me/?text=${encodeURIComponent(text)}`;
   }
@@ -223,16 +226,22 @@ export default function GuestsPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant={statusVariant(guest.status)}>{guest.status}</Badge>
-                        <Button size="sm" variant="outline" asChild>
-                          <a href={whatsAppUrl(guest)} target="_blank" rel="noopener noreferrer">
-                            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                          </a>
-                        </Button>
-                        <Button size="sm" variant="ghost" asChild>
-                          <a href={guestInviteLink(guest)} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </Button>
+                        {guestInviteLink(guest) ? (
+                          <>
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={whatsAppUrl(guest)} target="_blank" rel="noopener noreferrer">
+                                <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                              </a>
+                            </Button>
+                            <Button size="sm" variant="ghost" asChild>
+                              <a href={guestInviteLink(guest)} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            </Button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-500">Use Quick Invite to create a shareable link</span>
+                        )}
                       </div>
                     </div>
                   ))}

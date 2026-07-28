@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Heart, Loader2, MessageCircle, Send, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ export interface GuestWishItem {
   message: string;
   createdAt: string;
   guestId?: string | null;
+  /** Present only on the create response — proves authorship for delete. */
+  deleteToken?: string;
 }
 
 interface GuestWishesCardProps {
@@ -27,6 +29,32 @@ interface GuestWishesCardProps {
 }
 
 const PAGE_SIZE = FEED_LIMIT;
+const TOKEN_STORAGE_PREFIX = "celeventic:wish-delete-tokens:";
+
+function tokenStorageKey(eventKey: string) {
+  return `${TOKEN_STORAGE_PREFIX}${eventKey}`;
+}
+
+function readStoredTokens(eventKey: string): Record<string, string> {
+  if (typeof window === "undefined" || !eventKey) return {};
+  try {
+    const raw = window.localStorage.getItem(tokenStorageKey(eventKey));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredTokens(eventKey: string, tokens: Record<string, string>) {
+  if (typeof window === "undefined" || !eventKey) return;
+  try {
+    window.localStorage.setItem(tokenStorageKey(eventKey), JSON.stringify(tokens));
+  } catch {
+    /* private mode / quota — author delete still works for this session via state */
+  }
+}
 
 export function GuestWishesCard({
   eventId,
@@ -39,11 +67,13 @@ export function GuestWishesCard({
   variant = "light",
 }: GuestWishesCardProps) {
   const dark = variant === "dark";
+  const eventKey = eventId || invitationId || inviteLink || "unknown";
   const [wishes, setWishes] = useState<GuestWishItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [canModerate, setCanModerate] = useState(false);
+  const [ownedTokens, setOwnedTokens] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(Boolean(eventId));
   const [loadingMore, setLoadingMore] = useState(false);
   const [authorName, setAuthorName] = useState(guestName?.trim() || "");
@@ -52,6 +82,34 @@ export function GuestWishesCard({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    setOwnedTokens(readStoredTokens(eventKey));
+  }, [eventKey]);
+
+  const rememberToken = useCallback(
+    (wishId: string, token: string) => {
+      setOwnedTokens((prev) => {
+        const next = { ...prev, [wishId]: token };
+        writeStoredTokens(eventKey, next);
+        return next;
+      });
+    },
+    [eventKey]
+  );
+
+  const forgetToken = useCallback(
+    (wishId: string) => {
+      setOwnedTokens((prev) => {
+        if (!prev[wishId]) return prev;
+        const next = { ...prev };
+        delete next[wishId];
+        writeStoredTokens(eventKey, next);
+        return next;
+      });
+    },
+    [eventKey]
+  );
 
   const fetchPage = useCallback(
     async (pageNum: number, append: boolean) => {
@@ -103,6 +161,22 @@ export function GuestWishesCard({
     if (guestName?.trim()) setAuthorName(guestName.trim());
   }, [guestName]);
 
+  const canDeleteWish = useCallback(
+    (wish: GuestWishItem) => {
+      if (canModerate) return true;
+      if (ownedTokens[wish.id]) return true;
+      // Personalized invite: wishes stamped with this guest may be deleted only
+      // when we also hold the author token (set at create time on this device).
+      return false;
+    },
+    [canModerate, ownedTokens]
+  );
+
+  const ownedCount = useMemo(
+    () => wishes.filter((w) => Boolean(ownedTokens[w.id])).length,
+    [wishes, ownedTokens]
+  );
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!eventId && !inviteLink && !invitationId) {
@@ -133,7 +207,13 @@ export function GuestWishesCard({
       setMessage("");
       setSuccess("Your wish was shared with everyone invited.");
       if (data.data) {
-        setWishes((prev) => [data.data as GuestWishItem, ...prev.filter((w) => w.id !== data.data.id)]);
+        const created = data.data as GuestWishItem;
+        if (created.deleteToken) {
+          rememberToken(created.id, created.deleteToken);
+        }
+        // Never keep the raw deleteToken in the shared list state.
+        const { deleteToken: _omit, ...publicWish } = created;
+        setWishes((prev) => [publicWish, ...prev.filter((w) => w.id !== publicWish.id)]);
         setTotal((t) => t + 1);
       } else {
         await fetchPage(1, false);
@@ -146,24 +226,29 @@ export function GuestWishesCard({
   }
 
   async function removeWish(wish: GuestWishItem) {
-    if (!canModerate || deletingId) return;
+    if (!canDeleteWish(wish) || deletingId) return;
+    const isMine = Boolean(ownedTokens[wish.id]);
     const label = wish.authorName?.trim() || "this guest";
-    if (
-      !window.confirm(
-        `Permanently delete the wish from ${label}? This cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    const confirmMessage = isMine
+      ? "Delete your wish? This cannot be undone."
+      : `Permanently delete the wish from ${label}? This cannot be undone.`;
+    if (!window.confirm(confirmMessage)) return;
+
     setDeletingId(wish.id);
     setError("");
     try {
-      const res = await fetch(`/api/invite/wishes/${wish.id}`, { method: "DELETE" });
+      const deleteToken = ownedTokens[wish.id];
+      const res = await fetch(`/api/invite/wishes/${wish.id}`, {
+        method: "DELETE",
+        headers: deleteToken ? { "Content-Type": "application/json" } : undefined,
+        body: deleteToken ? JSON.stringify({ deleteToken }) : undefined,
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error || "Could not delete wish");
         return;
       }
+      forgetToken(wish.id);
       setWishes((prev) => prev.filter((w) => w.id !== wish.id));
       setTotal((t) => Math.max(0, t - 1));
     } catch {
@@ -191,11 +276,13 @@ export function GuestWishesCard({
         {total > 0 && (
           <span className={`text-xs ${dark ? "text-white/50" : "text-slate-500"}`}>
             {total} {total === 1 ? "wish" : "wishes"}
+            {ownedCount > 0 && !canModerate ? ` · ${ownedCount} yours` : ""}
           </span>
         )}
       </div>
       <p className={`text-sm mb-4 ${dark ? "text-white/70" : "text-slate-600"}`}>
-        Leave a blessing for the hosts. Every guest who opens this invitation can read all wishes for this event.
+        Leave a blessing for the hosts. You can delete only the wishes you wrote
+        {canModerate ? "; as an admin you can remove any wish" : ""}.
       </p>
 
       <form onSubmit={(e) => void submit(e)} className="space-y-3 mb-5">
@@ -239,51 +326,62 @@ export function GuestWishesCard({
             Be the first to leave a wish for this celebration.
           </p>
         ) : (
-          wishes.map((w) => (
-            <div
-              key={w.id}
-              className={`inv-3d-card rounded-xl px-4 py-3 shadow-sm border ${
-                dark ? "bg-white/10 border-white/15" : "bg-white/90 border-rose-100"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <p className={`text-sm italic leading-relaxed min-w-0 ${dark ? "text-white/90" : "text-slate-700"}`}>
-                  &ldquo;{w.message}&rdquo;
-                </p>
-                {canModerate && (
-                  <button
-                    type="button"
-                    onClick={() => void removeWish(w)}
-                    disabled={deletingId === w.id}
-                    aria-label={`Delete wish from ${w.authorName}`}
-                    title="Delete wish"
-                    className={`shrink-0 -mr-1 -mt-0.5 rounded-md p-1.5 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40 ${
-                      dark
-                        ? "text-white/35 hover:text-white/70 hover:bg-white/10 focus-visible:ring-white/30"
-                        : "text-slate-300 hover:text-slate-500 hover:bg-slate-100/80 focus-visible:ring-slate-300"
-                    }`}
-                  >
-                    {deletingId === w.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    )}
-                  </button>
-                )}
-              </div>
-              <p
-                className={`text-xs font-semibold mt-2 flex items-center gap-1 ${
-                  dark ? "text-rose-300" : "text-rose-600"
+          wishes.map((w) => {
+            const showDelete = canDeleteWish(w);
+            const isMine = Boolean(ownedTokens[w.id]);
+            return (
+              <div
+                key={w.id}
+                className={`inv-3d-card rounded-xl px-4 py-3 shadow-sm border ${
+                  dark ? "bg-white/10 border-white/15" : "bg-white/90 border-rose-100"
                 }`}
               >
-                <MessageCircle className="h-3 w-3" />
-                {w.authorName}
-              </p>
-              <p className={`text-[10px] mt-0.5 ${dark ? "text-white/35" : "text-slate-400"}`}>
-                {new Date(w.createdAt).toLocaleString()}
-              </p>
-            </div>
-          ))
+                <div className="flex items-start justify-between gap-2">
+                  <p
+                    className={`text-sm italic leading-relaxed min-w-0 ${
+                      dark ? "text-white/90" : "text-slate-700"
+                    }`}
+                  >
+                    &ldquo;{w.message}&rdquo;
+                  </p>
+                  {showDelete && (
+                    <button
+                      type="button"
+                      onClick={() => void removeWish(w)}
+                      disabled={deletingId === w.id}
+                      aria-label={
+                        isMine ? "Delete your wish" : `Delete wish from ${w.authorName}`
+                      }
+                      title={isMine ? "Delete your wish" : "Delete wish (admin)"}
+                      className={`shrink-0 -mr-1 -mt-0.5 rounded-md p-1.5 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40 ${
+                        dark
+                          ? "text-white/35 hover:text-white/70 hover:bg-white/10 focus-visible:ring-white/30"
+                          : "text-slate-300 hover:text-slate-500 hover:bg-slate-100/80 focus-visible:ring-slate-300"
+                      }`}
+                    >
+                      {deletingId === w.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      )}
+                    </button>
+                  )}
+                </div>
+                <p
+                  className={`text-xs font-semibold mt-2 flex items-center gap-1 ${
+                    dark ? "text-rose-300" : "text-rose-600"
+                  }`}
+                >
+                  <MessageCircle className="h-3 w-3" />
+                  {w.authorName}
+                  {isMine ? " · you" : ""}
+                </p>
+                <p className={`text-[10px] mt-0.5 ${dark ? "text-white/35" : "text-slate-400"}`}>
+                  {new Date(w.createdAt).toLocaleString()}
+                </p>
+              </div>
+            );
+          })
         )}
         {hasMore && !loading && (
           <Button

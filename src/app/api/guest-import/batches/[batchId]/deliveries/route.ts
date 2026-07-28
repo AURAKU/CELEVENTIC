@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authorizeBatch, errorResponse, guardRate } from "@/lib/guest-import/api-auth";
+import { maybeKickGuestImportDelivery } from "@/lib/guest-import/inline-kick";
 import {
   cancelBatchDelivery,
   listDeliveries,
@@ -40,6 +41,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ batchId:
     limit,
     status: url.searchParams.get("status") ?? undefined,
   });
+
+  // Self-heal queued sends when the jobs worker is offline.
+  void maybeKickGuestImportDelivery(batchId);
+
   return NextResponse.json({ success: true, data });
 }
 
@@ -64,6 +69,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ batchId
     }
 
     const result = await startBatchDelivery(batchId, auth.ctx.userId, body.channels);
+    void maybeKickGuestImportDelivery(batchId);
     return NextResponse.json({ success: true, data: result }, { status: 202 });
   } catch (error) {
     if (error instanceof z.ZodError) {

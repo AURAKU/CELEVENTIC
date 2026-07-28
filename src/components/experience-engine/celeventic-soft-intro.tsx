@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { useReducedMotion } from "framer-motion";
 import { BRAND_MOTTO } from "@/lib/constants";
@@ -11,31 +11,21 @@ import {
 } from "@/lib/experience/celeventic-palette";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import {
+  CELEVENTIC_INVITATION_INTRO_POSTER,
+  CELEVENTIC_INVITATION_INTRO_VIDEO,
   SOFT_INTRO_EXIT_MS,
   SOFT_INTRO_FALLBACK_MS,
   softIntroHoldMs,
 } from "@/lib/experience-engine/soft-intro";
-import { resolveMediaUrl, shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import styles from "./celeventic-soft-intro.module.css";
-
-/** Particle seeds — positions + palette roles for a calm idle loop. */
-const PARTICLE_SEEDS = [
-  { left: 12, top: 22, size: 3, delay: 0, role: "gold" as const },
-  { left: 78, top: 18, size: 4, delay: 0.4, role: "accent" as const },
-  { left: 24, top: 68, size: 2, delay: 0.9, role: "secondary" as const },
-  { left: 86, top: 58, size: 3, delay: 1.2, role: "gold" as const },
-  { left: 48, top: 14, size: 2, delay: 0.2, role: "accent" as const },
-  { left: 62, top: 74, size: 4, delay: 1.6, role: "secondary" as const },
-  { left: 18, top: 44, size: 2, delay: 0.7, role: "gold" as const },
-  { left: 72, top: 40, size: 3, delay: 1.1, role: "accent" as const },
-  { left: 38, top: 82, size: 2, delay: 1.8, role: "gold" as const },
-  { left: 54, top: 52, size: 3, delay: 0.5, role: "secondary" as const },
-];
 
 export interface CeleventicSoftIntroProps {
   onComplete: () => void;
   logoUrl?: string;
-  /** Event / layout imagery used as layered atmosphere (not a flat plate) */
+  /**
+   * @deprecated Ignored — every invitation plays the canonical Celeventic
+   * brand intro video. Kept so call sites do not break.
+   */
   atmosphereUrl?: string | null;
   accentColor?: string;
   secondaryColor?: string;
@@ -48,14 +38,12 @@ export interface CeleventicSoftIntroProps {
 }
 
 /**
- * Platform soft launch — cinematic brand + event atmosphere.
- * Event title + begin CTA live on the tap gate (no duplicated instructions).
- * Auto-advances (~3.2s); tap / Enter / Space skip with crossfade exit.
+ * Platform soft launch — canonical Celeventic intro video for every template.
+ * Auto-advances when the video ends; tap / Enter / Space / Skip crossfade out.
  */
 export function CeleventicSoftIntro({
   onComplete,
   logoUrl = CELEVENTIC_LOGO_FULL,
-  atmosphereUrl,
   accentColor = CELEVENTIC_PALETTE.teal,
   secondaryColor = CELEVENTIC_PALETTE.gold,
   quickHold = false,
@@ -63,14 +51,11 @@ export function CeleventicSoftIntro({
   const reduceMotion = useReducedMotion();
   const [exiting, setExiting] = useState(false);
   const [canSkip, setCanSkip] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   const completed = useRef(false);
   const exitingRef = useRef(false);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const resolvedAtmosphere = useMemo(() => {
-    const url = atmosphereUrl?.trim();
-    return url ? resolveMediaUrl(url) : null;
-  }, [atmosphereUrl]);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const finish = useCallback(() => {
     if (completed.current) return;
@@ -80,32 +65,44 @@ export function CeleventicSoftIntro({
   }, [onComplete]);
 
   const beginExit = useCallback(() => {
-    // Refs avoid re-creating beginExit on setState (which would clear exit timers).
     if (completed.current || exitingRef.current) return;
     exitingRef.current = true;
     setExiting(true);
+    try {
+      videoRef.current?.pause();
+    } catch {
+      /* ignore */
+    }
     const delay = reduceMotion ? 0 : SOFT_INTRO_EXIT_MS;
     exitTimer.current = setTimeout(finish, delay);
   }, [finish, reduceMotion]);
 
   useEffect(() => {
-    const hold = softIntroHoldMs(Boolean(reduceMotion), quickHold);
-    const auto = setTimeout(() => beginExit(), hold);
-    // Hard fallback so a stuck exit never blanks the guest forever.
+    // Reduced motion / failed video: timed brand beat, no full clip.
+    if (reduceMotion || videoFailed) {
+      const hold = softIntroHoldMs(Boolean(reduceMotion), quickHold);
+      const auto = setTimeout(() => beginExit(), hold);
+      const fallback = setTimeout(finish, SOFT_INTRO_FALLBACK_MS);
+      const skipReveal =
+        hold > INTRO_SKIP_AVAILABLE_MS
+          ? setTimeout(() => setCanSkip(true), INTRO_SKIP_AVAILABLE_MS)
+          : setTimeout(() => setCanSkip(true), 200);
+      return () => {
+        clearTimeout(auto);
+        clearTimeout(fallback);
+        clearTimeout(skipReveal);
+      };
+    }
+
+    // Returning guests still watch the brand video — Skip appears sooner.
+    const skipAt = quickHold ? 400 : INTRO_SKIP_AVAILABLE_MS;
+    const skipReveal = setTimeout(() => setCanSkip(true), skipAt);
     const fallback = setTimeout(finish, SOFT_INTRO_FALLBACK_MS);
-    // A visible, honest "Skip intro" affordance — never an invisible/silent
-    // auto-skip. It only ever advances this one beat forward (never past
-    // Tap to Begin or the envelope, which stay gesture-gated on purpose).
-    const skipReveal =
-      hold > INTRO_SKIP_AVAILABLE_MS
-        ? setTimeout(() => setCanSkip(true), INTRO_SKIP_AVAILABLE_MS)
-        : null;
     return () => {
-      clearTimeout(auto);
+      clearTimeout(skipReveal);
       clearTimeout(fallback);
-      if (skipReveal) clearTimeout(skipReveal);
     };
-  }, [beginExit, finish, reduceMotion, quickHold]);
+  }, [beginExit, finish, reduceMotion, quickHold, videoFailed]);
 
   useEffect(() => {
     return () => {
@@ -124,6 +121,15 @@ export function CeleventicSoftIntro({
     return () => window.removeEventListener("keydown", onKey);
   }, [beginExit]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || reduceMotion || videoFailed) return;
+    const play = video.play();
+    if (play && typeof play.catch === "function") {
+      play.catch(() => setVideoFailed(true));
+    }
+  }, [reduceMotion, videoFailed]);
+
   const rootClass = [
     styles.root,
     invitationFontVars,
@@ -136,11 +142,7 @@ export function CeleventicSoftIntro({
     .filter(Boolean)
     .join(" ");
 
-  const particleColor = (role: (typeof PARTICLE_SEEDS)[number]["role"]) => {
-    if (role === "accent") return accentColor;
-    if (role === "secondary") return secondaryColor;
-    return CELEVENTIC_PALETTE.gold;
-  };
+  const showVideo = !reduceMotion && !videoFailed;
 
   return (
     <div
@@ -167,65 +169,46 @@ export function CeleventicSoftIntro({
       </p>
 
       <div className={styles.atmosphere} aria-hidden>
-        {resolvedAtmosphere ? (
+        {showVideo ? (
+          <video
+            ref={videoRef}
+            className={styles.introVideo}
+            src={CELEVENTIC_INVITATION_INTRO_VIDEO}
+            poster={CELEVENTIC_INVITATION_INTRO_POSTER}
+            muted
+            playsInline
+            autoPlay
+            preload="auto"
+            onEnded={beginExit}
+            onError={() => setVideoFailed(true)}
+          />
+        ) : (
           <>
-            <div className={styles.atmosphereBlur}>
+            <div className={styles.atmosphereFallback} />
+            <div className={styles.posterStill}>
               <Image
-                src={resolvedAtmosphere}
+                src={CELEVENTIC_INVITATION_INTRO_POSTER}
                 alt=""
                 fill
                 sizes="100vw"
                 priority
-                unoptimized={shouldUnoptimizeNextImage(resolvedAtmosphere)}
-              />
-            </div>
-            <div className={styles.atmospherePlate}>
-              <Image
-                src={resolvedAtmosphere}
-                alt=""
-                fill
-                sizes="100vw"
-                priority
-                unoptimized={shouldUnoptimizeNextImage(resolvedAtmosphere)}
               />
             </div>
           </>
-        ) : (
-          <div className={styles.atmosphereFallback} />
         )}
       </div>
 
       <div className={styles.glassMask} aria-hidden />
       <div className={styles.warmBloom} aria-hidden />
-      <div className={styles.scan} aria-hidden />
-      <div className={styles.horizon} aria-hidden />
 
-      {!reduceMotion ? (
-        <div className={styles.particles} aria-hidden>
-          {PARTICLE_SEEDS.map((p, i) => (
-            <span
-              key={i}
-              className={styles.particle}
-              style={{
-                left: `${p.left}%`,
-                top: `${p.top}%`,
-                width: p.size,
-                height: p.size,
-                background: particleColor(p.role),
-                animationDelay: `${p.delay}s`,
-                boxShadow: `0 0 ${8 + p.size * 2}px ${particleColor(p.role)}55`,
-              }}
-            />
-          ))}
+      {(!showVideo || canSkip) && (
+        <div className={styles.stage}>
+          <div className={styles.brandMark}>
+            <Image src={logoUrl} alt="Celeventic" width={240} height={100} priority />
+          </div>
+          <p className={styles.motto}>{BRAND_MOTTO}</p>
         </div>
-      ) : null}
-
-      <div className={styles.stage}>
-        <div className={styles.brandMark}>
-          <Image src={logoUrl} alt="Celeventic" width={240} height={100} priority />
-        </div>
-        <p className={styles.motto}>{BRAND_MOTTO}</p>
-      </div>
+      )}
 
       {canSkip && !exiting && (
         <button

@@ -216,7 +216,15 @@ export async function mintGeneralPassChunk(
 }
 
 export async function runGeneralPassJob(batchId: string): Promise<void> {
-  const result = await mintGeneralPassChunk(batchId);
+  const budgetRaw = Number(process.env.GUEST_IMPORT_JOB_BUDGET_MS);
+  const budgetMs = Number.isFinite(budgetRaw) && budgetRaw > 0 ? budgetRaw : 20_000;
+  const started = Date.now();
+
+  let result = await mintGeneralPassChunk(batchId);
+  while (result.remaining > 0 && result.minted > 0 && Date.now() - started < budgetMs) {
+    result = await mintGeneralPassChunk(batchId);
+  }
+
   if (result.remaining > 0 && result.minted > 0) {
     await dispatchJob(GENERAL_PASS_QUEUE, { batchId }, 5);
   }

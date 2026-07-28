@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authorizeGeneralBatch, errorResponse, guardRate } from "@/lib/guest-import/api-auth";
+import { maybeKickGeneralPassBatch } from "@/lib/guest-import/inline-kick";
 import {
   closeGeneralPassBatch,
   listGeneralPasses,
@@ -27,6 +28,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ batchId:
   const url = new URL(req.url);
   const { page, limit } = parsePaginationFromUrl(req.url, { limit: 50, maxLimit: 200 });
   const data = await listGeneralPasses(batchId, { page, limit });
+
+  // Keep minting when the panel is open and the jobs worker is offline.
+  void maybeKickGeneralPassBatch(batchId);
 
   // Print/hand-out export. Codes are quoted and formula-guarded like every
   // other download, so "=..." can never survive into a spreadsheet.
@@ -82,7 +86,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ batchId
       return NextResponse.json({ success: true, data: result });
     }
 
+    // Explicit retry from the UI: mint one chunk now, then kick the rest.
     const result = await mintGeneralPassChunk(batchId);
+    void maybeKickGeneralPassBatch(batchId);
     return NextResponse.json({ success: true, data: result }, { status: 202 });
   } catch (error) {
     if (error instanceof z.ZodError) {

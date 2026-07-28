@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuestInvitationPortal } from "@/components/guest-portal/guest-invitation-portal";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
-import { CeleventicIntroExperience } from "@/components/invitations/CeleventicIntroExperience";
-import { defaultIntroVariantFor } from "@/lib/experience/intro-variants";
 import { TapToBeginExperience } from "@/components/invitations/tap-to-begin-experience";
 import { InvitationAudioControls } from "@/components/invitations/invitation-audio-controls";
 import { isDarkColor } from "@/lib/invitation-theme/color-utils";
@@ -16,7 +14,6 @@ import type { MusicSelection } from "@/lib/music/music-types";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
-import { DEFAULT_INTRO_DURATION_SEC } from "@/lib/experience/celeventic-palette";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import { mapLegacyRevealMode } from "@/lib/experience/opening-experiences";
 import { createInvitationAudioManager } from "@/lib/music/invitation-audio-manager";
@@ -67,6 +64,7 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   admissionManualCode?: string | null;
   guestQrToken?: string | null;
   seatLookupUrl?: string | null;
+  companionUrl?: string | null;
   seatQrDataUrl?: string | null;
   fullScreen?: boolean;
   embedded?: boolean;
@@ -124,7 +122,6 @@ export function PremiumInviteWrapper({
     [props.design]
   );
   const experience = enrichedDesign.experience;
-  const introDuration = experience?.introDurationSec ?? DEFAULT_INTRO_DURATION_SEC;
   const enabledTabs = experience?.enabledTabs ?? DEFAULT_HUB_TABS;
   const themeColors = enrichedDesign.colors;
 
@@ -132,15 +129,6 @@ export function PremiumInviteWrapper({
     openingExperienceProp ??
     experience?.openingExperience ??
     mapLegacyRevealMode(revealMode ?? enrichedDesign.studio?.revealMode ?? "envelope");
-
-  // Branded intro choreography — user choice, else the template family's own.
-  const introVariant =
-    experience?.introVariant ??
-    defaultIntroVariantFor({
-      layout: enrichedDesign.layout,
-      collectionId: experience?.collectionId,
-      heroLayout: experience?.heroLayout,
-    });
 
   const showReveal =
     !skipReveal &&
@@ -158,12 +146,12 @@ export function PremiumInviteWrapper({
   );
 
   const wantsAutoplay = musicAutoplay ?? musicSelection?.autoPlay ?? true;
-  // Curtain ceremonies own "touch to begin" and are the theatrical beat after soft intro:
-  // soft-intro → closed curtain (await tap) → slow open → portal.
-  // Skip separate TapToBegin + template DNA intro so curtains appear next.
+  // Curtain ceremonies own "touch to begin" after the brand video intro:
+  // soft-intro (celeventic.mp4) → closed curtain (await tap) → slow open → portal.
+  // DNA intro variants are retired — the brand video is the only intro.
   const curtainOwnsTap = openingExperience.startsWith("curtain-");
   const needsTapGate = Boolean(!skipTapGate && !curtainOwnsTap);
-  const introEnabled = curtainOwnsTap ? false : (experience?.introEnabled ?? true);
+  const introEnabled = false;
 
   const pipelineFlags = {
     skipSoftIntro,
@@ -380,6 +368,7 @@ export function PremiumInviteWrapper({
         embedded={embedded}
         galleryInteractive={galleryInteractive}
         seatLookupUrl={props.seatLookupUrl}
+        companionUrl={props.companionUrl}
         seatQrDataUrl={props.seatQrDataUrl}
         experienceConfig={experience}
         enabledHubTabs={enabledTabs}
@@ -388,12 +377,26 @@ export function PremiumInviteWrapper({
     </SceneErrorBoundary>
   );
 
-  // 1) Platform soft intro (all live invites) → 2) template DNA intro → …
+  // DNA intro variants are retired; recover safely if an old phase value appears.
+  useEffect(() => {
+    if (phase !== "intro") return;
+    if (needsTapGate) {
+      setPhase("tap-to-begin");
+      return;
+    }
+    if (showReveal) {
+      setPhase("reveal");
+      return;
+    }
+    void startAudio();
+    setPhase("portal");
+  }, [phase, needsTapGate, showReveal, startAudio]);
+
+  // 1) Canonical Celeventic brand video intro → 2) tap gate / reveal…
   if (phase === "soft-intro") {
     return (
       <CeleventicSoftIntro
         onComplete={afterSoftIntro}
-        atmosphereUrl={softAtmosphereUrl}
         accentColor={softAccent}
         secondaryColor={softSecondary}
         quickHold={isReturningGuest}
@@ -402,18 +405,7 @@ export function PremiumInviteWrapper({
   }
 
   if (phase === "intro") {
-    return (
-      <CeleventicIntroExperience
-        durationSec={introDuration}
-        onComplete={afterIntro}
-        variant={introVariant}
-        themeColors={{
-          accent: themeColors?.accent,
-          primary: themeColors?.primary,
-          background: themeColors?.background,
-        }}
-      />
-    );
+    return null;
   }
 
   if (phase === "tap-to-begin") {

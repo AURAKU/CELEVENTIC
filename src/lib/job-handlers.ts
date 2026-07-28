@@ -26,9 +26,8 @@ export function registerAllJobHandlers() {
     await processQueuedVideoAsset(assetId);
   });
 
-  // Bulk Guest Import. Each handler processes one bounded chunk and re-queues
-  // itself while work remains, so a 5,000-name list never blocks the worker on
-  // a single tick and a restart resumes exactly where it stopped.
+  // Bulk Guest Import. Each handler drains as many chunks as fit in the job
+  // budget, then re-queues while work remains — resumable after a restart.
   registerJobHandler(GUEST_IMPORT_QUEUE, async (payload) => {
     const { runGuestImportJob } = await import("@/services/guest-import/generation.service");
     await runGuestImportJob(payload.batchId as string);

@@ -102,16 +102,30 @@ export function resolvePreviewGalleryUrls(
   galleryUrls?: string[] | null,
   catalog?: { defaultGalleryUrls?: string[] | null } | null
 ): string[] {
-  if (galleryUrls?.length) return galleryUrls;
+  const heroUrl = heroUrlFromDesign(design);
+  const introUrl = introAtmosphereUrlFromDesign(design);
+  const pageBg = pageBackgroundFromDesign(design);
+  const reserved = new Set(
+    [heroUrl, introUrl, pageBg.backgroundImageUrl, pageBg.backgroundVideoUrl].filter(
+      (url): url is string => Boolean(url)
+    )
+  );
+
+  if (galleryUrls?.length) {
+    return galleryUrls.filter((url) => url && !reserved.has(url));
+  }
   const catalogGallery = catalog?.defaultGalleryUrls;
-  if (Array.isArray(catalogGallery) && catalogGallery.length) return catalogGallery;
+  if (Array.isArray(catalogGallery) && catalogGallery.length) {
+    return catalogGallery.filter((url) => url && !reserved.has(url));
+  }
   const layout = design.layout ?? "classic-gold";
   const theme = resolveEventTheme(layout);
   const fromMedia = (design.media ?? [])
-    .filter((m) => m.role === "reference" || m.role === "hero")
-    .map((m) => m.url);
-  if (fromMedia.length > 1) return fromMedia;
-  return getThemeGalleryUrls(layout, theme);
+    .filter((m) => m.role === "reference")
+    .map((m) => m.url)
+    .filter((url) => url && !reserved.has(url));
+  if (fromMedia.length) return fromMedia;
+  return getThemeGalleryUrls(layout, theme).filter((url) => !reserved.has(url));
 }
 
 export function galleryItemsFromUrls(urls: string[]) {

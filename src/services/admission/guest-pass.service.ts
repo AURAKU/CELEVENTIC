@@ -178,6 +178,13 @@ export async function ensureInvitationPass(
       orderBy: { tokenVersion: "desc" },
     });
 
+    // Issuing a pass always enables the post-admission companion — otherwise
+    // guests land on a 404 after the gate scans them in.
+    await tx.invitation.updateMany({
+      where: { id: invitationId, postAdmissionEnabled: false },
+      data: { postAdmissionEnabled: true },
+    });
+
     if (existing) {
       const needsWidening = opts.refreshPartySize !== false && partySize > existing.partySize;
       const pass = needsWidening

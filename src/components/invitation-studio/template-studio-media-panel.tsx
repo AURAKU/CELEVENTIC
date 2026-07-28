@@ -49,16 +49,16 @@ const WELCOME_SCRIM_OPTIONS: { id: "auto" | "on" | "off"; label: string }[] = [
 function introPhotoCopy(layout?: string): { title: string; hint: string; note: string } {
   if (layout === "traditional-marriage-ceremony") {
     return {
-      title: "Welcome photo (before the invite opens)",
+      title: "Tap to Begin backdrop (optional)",
       hint:
-        "The very first screen guests see — full-bleed behind “CELEVENTIC · TRADITIONAL · Marriage Ceremony” and the “Tap to Begin” button, before the Traditional Marriage Ceremony invitation opens.",
-      note: "Shows only on this welcome/Tap-to-Begin screen — never used as the hero photo, gallery, or page background.",
+        "Photo behind the “Tap to Begin” gate for Traditional Marriage — after the Celeventic brand intro video, before the ceremony opens.",
+      note: "The Celeventic intro video always plays first on every invitation. This photo never replaces that brand intro, and is never used as the hero or gallery.",
     };
   }
   return {
-    title: "Welcome photo (before the invite opens)",
-    hint: "The very first screen guests see, before your invitation opens — the soft-intro / “Tap to Begin” gate.",
-    note: "Shows only on this welcome/Tap-to-Begin screen — never used as the hero photo, gallery, or page background.",
+    title: "Tap to Begin backdrop (optional)",
+    hint: "Optional photo behind the “Tap to Begin” gate — after the Celeventic brand intro video.",
+    note: "The Celeventic intro video always plays first on every invitation. This photo never replaces that brand intro, and is never used as the hero or gallery.",
   };
 }
 
@@ -144,8 +144,9 @@ export function TemplateStudioMediaPanel({
 
   function setHero(url: string, type: "image" | "video") {
     onDesignChange(syncDesignMediaHero(design, url, type));
-    if (!galleryUrls.includes(url)) {
-      onGalleryChange([url, ...galleryUrls].slice(0, 30));
+    // Hero is the invitation portrait — never a gallery slide.
+    if (galleryUrls.includes(url)) {
+      onGalleryChange(galleryUrls.filter((existing) => existing !== url));
     }
   }
 
@@ -362,14 +363,14 @@ export function TemplateStudioMediaPanel({
 
       <MediaSection
         icon={ImageIcon}
-        title="Hero photo / video"
-        hint="Main card image on the invitation — tap opens fullscreen for guests."
+        title="Invitation hero photo / video"
+        hint="The arched portrait at the top of the invitation — organizers and admins set this independently of the photo gallery."
       >
         {heroUrl ? (
           <div className="relative rounded-xl overflow-hidden border aspect-[4/5] max-h-56 bg-slate-100 inv-hero-media-frame">
             <UploadedMedia
               src={heroUrl}
-              alt="Hero"
+              alt="Invitation hero"
               className="w-full h-full object-cover object-center"
               video={isVideoUrl(heroUrl)}
             />
@@ -385,7 +386,9 @@ export function TemplateStudioMediaPanel({
             </Button>
           </div>
         ) : (
-          <p className="text-xs text-slate-400 italic">No hero yet — upload below or add gallery items.</p>
+          <p className="text-xs text-slate-400 italic">
+            No hero yet — upload the invitation portrait below. It will not appear in the gallery.
+          </p>
         )}
         <div className="flex flex-col sm:flex-row gap-2">
           <ImageUploadCropper
@@ -395,7 +398,7 @@ export function TemplateStudioMediaPanel({
             onUploaded={(r) => setHero(r.url, "image")}
             onError={setError}
             disabled={disabled}
-            buttonLabel="Upload hero photo"
+            buttonLabel="Upload invitation hero"
             hint="Any photo, any shape — drag to select the exact region, or use the full image. 4:5 portrait is available as an optional preset, never locked."
             className="flex-1"
           />
@@ -410,6 +413,9 @@ export function TemplateStudioMediaPanel({
           onUploaded={onHeroVideoUploaded}
           onError={setError}
         />
+        <p className="text-[11px] text-slate-500">
+          Shows only as the invitation header portrait — never added to the swipe gallery or photo strip.
+        </p>
       </MediaSection>
 
       <MediaSection
@@ -474,7 +480,7 @@ export function TemplateStudioMediaPanel({
         maxImages={maxGalleryImages}
         orderId={orderId}
         title="Swipe gallery"
-        description="Ordered slots for the interactive gallery — guests swipe between items and tap any photo or video to open fullscreen."
+        description="Photo and video slides for the invitation gallery only — separate from the invitation hero portrait and welcome photo above."
       />
 
       {error && <p className="text-xs text-red-600">{error}</p>}

@@ -278,7 +278,7 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
     id: "blush-gate",
     label: "Blush gate",
     description:
-      "Blush floral envelope → champagne wax seal → flaps unfold → the golden gate opens from the centre",
+      "Blush floral envelope → champagne wax seal lifts slowly → flaps unfold → the golden gate opens from the centre",
     category: "palace",
   },
   {

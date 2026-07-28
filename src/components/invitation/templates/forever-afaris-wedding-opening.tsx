@@ -27,9 +27,9 @@ import type {
  * Forever Afaris — cinematic opening state machine.
  *
  * preload → sealed envelope (tap or swipe the champagne wax seal) → the seal
- * breaks → the flaps unfold in depth → the inner card rises → an ornate golden
- * gate is rebuilt layer by layer → the gate parts from the centre through light
- * rays, petals and drifting motes → the invitation.
+ * lifts slowly from the paper → the flaps unfold in depth → the inner card
+ * rises → an ornate golden gate is rebuilt layer by layer → the gate parts
+ * from the centre through light rays, petals and drifting motes → the invitation.
  *
  * Everything is CSS/SVG, so the ceremony is complete with zero uploads and the
  * host's palette, envelope paper, gate architecture and wax colour all flow in
@@ -56,7 +56,7 @@ export interface WeddingOpeningProps {
   sealColor?: WeddingSealColor;
   sealMotif?: WeddingSealMotif;
   palette?: WeddingPaletteOverrides;
-  /** Short vibration on the seal break where the device supports it */
+  /** Soft haptic on the seal lift where the device supports it */
   haptics?: boolean;
   /**
    * Offer a visible "Skip intro" control. Reserved for guests who have already
@@ -177,18 +177,20 @@ export function ForeverAfarisWeddingOpening({
   const openEnvelope = useCallback(() => {
     if (stage !== "sealed") return;
     onBegin?.();
-    vibrate([12, 40, 22], haptics);
+    // Soft release pulse — not a crack.
+    vibrate([8, 28, 14], haptics);
     if (prefersReduced) {
       finish();
       return;
     }
     setStage("unsealing");
-    after(700, () => setStage("envelopeOpening"));
-    after(2600, () => {
+    // Let the seal finish its slow lift before the flap commits to opening.
+    after(2000, () => setStage("envelopeOpening"));
+    after(3800, () => {
       setStage("gate");
       vibrate(10, haptics);
     });
-    after(6400, finish);
+    after(7600, finish);
   }, [after, finish, haptics, onBegin, prefersReduced, stage]);
 
   const skip = useCallback(() => {
@@ -491,18 +493,18 @@ function Envelope({
   onKeyActivate: (e: React.KeyboardEvent) => void;
 }) {
   const theme = paperTheme(paper, C);
-  const broken = unsealing || opening;
+  const lifting = unsealing || opening;
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
-  /** Swipe up (or any decisive drag) across the envelope also breaks the seal. */
+  /** Swipe up (or any decisive drag) across the envelope also lifts the seal. */
   const onPointerDown = (e: React.PointerEvent) => {
-    if (broken) return;
+    if (lifting) return;
     swipeStart.current = { x: e.clientX, y: e.clientY };
   };
   const onPointerUp = (e: React.PointerEvent) => {
     const start = swipeStart.current;
     swipeStart.current = null;
-    if (broken || !start) return;
+    if (lifting || !start) return;
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
     if (Math.hypot(dx, dy) > 28) onOpen();
@@ -569,7 +571,7 @@ function Envelope({
         <motion.p
           className="absolute inset-x-0 top-[13%] z-[6] text-center font-[family-name:var(--font-cormorant)] text-[11px] uppercase tracking-[0.3em]"
           style={{ color: C.cocoa }}
-          animate={{ opacity: broken ? 0 : 0.85 }}
+          animate={{ opacity: lifting ? 0 : 0.85 }}
           transition={{ duration: 0.5 }}
         >
           {addressLine}
@@ -642,7 +644,7 @@ function Envelope({
         }}
       />
 
-      {/* Top flap — unfolds fully open with a lit underside */}
+      {/* Top flap — begins a soft peel as the seal lifts, then unfolds fully */}
       <motion.div
         aria-hidden
         className="absolute inset-x-0 top-0 origin-top"
@@ -655,64 +657,95 @@ function Envelope({
           filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.07))",
         }}
         initial={{ rotateX: 0 }}
-        animate={{ rotateX: opening ? -179 : unsealing ? -14 : 0 }}
-        transition={{ duration: opening ? 1 : 0.5, ease: EASE_GATE }}
+        animate={{ rotateX: opening ? -179 : unsealing ? -22 : 0 }}
+        transition={{
+          duration: opening ? 1.35 : 1.8,
+          ease: EASE_GATE,
+          delay: opening ? 0.05 : 0.35,
+        }}
       />
 
-      {/* Wax seal — the interactive control */}
+      {/* Wax seal — lifts slowly off the paper, never breaks */}
       <motion.button
         type="button"
         onClick={onOpen}
         onKeyDown={onKeyActivate}
         data-blush-gate-seal="true"
-        aria-label="Break the wax seal to open the invitation"
-        className="absolute left-1/2 top-[46%] z-10 flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+        aria-label="Lift the wax seal to open the invitation"
+        className="absolute left-1/2 top-[46%] z-20 flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
         style={{
           width: 82,
           height: 82,
           x: "-50%",
-          y: "-50%",
-          cursor: broken ? "default" : "pointer",
+          cursor: lifting ? "default" : "pointer",
+          transformStyle: "preserve-3d",
+          perspective: 600,
         }}
-        initial={{ scale: 1, opacity: 1 }}
+        initial={{ scale: 1, opacity: 1, y: "-50%", rotateX: 0, rotateZ: 0 }}
         animate={
           opening
-            ? { scale: 0.55, opacity: 0, rotate: -24, y: "24%" }
+            ? {
+                scale: 0.78,
+                opacity: 0,
+                y: "-320%",
+                rotateX: -48,
+                rotateZ: -8,
+                filter: "drop-shadow(0 28px 24px rgba(74, 48, 28, 0.18))",
+              }
             : unsealing
-              ? { scale: 1.14, opacity: 1, rotate: -6 }
-              : { scale: [1, 1.05, 1], opacity: 1 }
+              ? {
+                  scale: 1.06,
+                  opacity: 1,
+                  y: "-165%",
+                  rotateX: -28,
+                  rotateZ: -3,
+                  filter: "drop-shadow(0 22px 18px rgba(74, 48, 28, 0.28))",
+                }
+              : {
+                  scale: [1, 1.05, 1],
+                  opacity: 1,
+                  y: "-50%",
+                  rotateX: 0,
+                  rotateZ: 0,
+                  filter: "drop-shadow(0 8px 10px rgba(74, 48, 28, 0.22))",
+                }
         }
         transition={
-          broken
-            ? { duration: opening ? 0.55 : 0.35, ease: "easeOut" }
+          lifting
+            ? {
+                duration: opening ? 1.15 : 1.85,
+                ease: EASE_SILK,
+              }
             : { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
         }
-        whileHover={broken ? undefined : { scale: 1.08 }}
-        whileTap={broken ? undefined : { scale: 0.94 }}
+        whileHover={lifting ? undefined : { scale: 1.08 }}
+        whileTap={lifting ? undefined : { scale: 0.96 }}
+        disabled={lifting}
       >
-        <WaxSeal monogram={monogram} motif={motif} wax={wax} cracked={unsealing} />
+        <WaxSeal monogram={monogram} motif={motif} wax={wax} lifting={unsealing} />
       </motion.button>
 
-      {/* Wax shards flicking away as the seal gives */}
+      {/* Soft paper contact ring left behind as the seal lifts clear */}
       <AnimatePresence>
-        {unsealing &&
-          Array.from({ length: 6 }).map((_, i) => (
-            <motion.span
-              key={i}
-              aria-hidden
-              className="absolute left-1/2 top-[46%] z-[11] rounded-[40%]"
-              style={{ width: 7, height: 5, background: wax.deep }}
-              initial={{ x: "-50%", y: "-50%", opacity: 1, scale: 1 }}
-              animate={{
-                x: `${-50 + Math.cos((i / 6) * Math.PI * 2) * 130}%`,
-                y: `${-50 + Math.sin((i / 6) * Math.PI * 2) * 130}%`,
-                opacity: 0,
-                rotate: 180,
-                scale: 0.5,
-              }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-            />
-          ))}
+        {unsealing && !opening && (
+          <motion.span
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-[46%] z-[9] rounded-full"
+            style={{
+              width: 78,
+              height: 78,
+              x: "-50%",
+              y: "-50%",
+              border: `1px solid ${wax.deep}33`,
+              boxShadow: `inset 0 0 14px ${wax.deep}22`,
+              background: `radial-gradient(circle, ${C.linen}88 0%, transparent 70%)`,
+            }}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: [0, 0.7, 0.25], scale: [0.85, 1.02, 1.08] }}
+            exit={{ opacity: 0, scale: 1.15 }}
+            transition={{ duration: 1.85, ease: EASE_SILK }}
+          />
+        )}
       </AnimatePresence>
     </motion.div>
   );
@@ -722,20 +755,23 @@ function WaxSeal({
   monogram,
   motif,
   wax,
-  cracked,
+  lifting,
 }: {
   monogram: string;
   motif: WeddingSealMotif;
   wax: ReturnType<typeof resolveSealWax>;
-  cracked: boolean;
+  lifting: boolean;
 }) {
   return (
     <span
       className="relative flex h-full w-full items-center justify-center rounded-full"
       style={{
         background: `radial-gradient(circle at 34% 28%, ${wax.light} 0%, ${wax.base} 46%, ${wax.deep} 100%)`,
-        boxShadow: `0 10px 22px -6px ${wax.deep}, inset 0 2px 7px ${wax.light}aa, inset 0 -5px 12px ${wax.deep}`,
+        boxShadow: lifting
+          ? `0 18px 28px -8px ${wax.deep}, inset 0 3px 10px ${wax.light}cc, inset 0 -6px 14px ${wax.deep}`
+          : `0 10px 22px -6px ${wax.deep}, inset 0 2px 7px ${wax.light}aa, inset 0 -5px 12px ${wax.deep}`,
         border: `2px solid ${wax.light}`,
+        transition: "box-shadow 1.2s ease",
       }}
     >
       {/* scalloped wax edge */}
@@ -749,18 +785,17 @@ function WaxSeal({
           WebkitMaskImage: "radial-gradient(circle, transparent 62%, #000 63%)",
         }}
       />
-      {/* hairline fracture once the seal is struck */}
-      {cracked && (
-        <svg aria-hidden viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
-          <path
-            d="M50 6 L44 34 L58 46 L40 62 L52 94"
-            fill="none"
-            stroke={wax.deep}
-            strokeWidth="2.5"
-            opacity="0.75"
-          />
-        </svg>
-      )}
+      {/* Specular highlight that brightens as the seal catches the light mid-lift */}
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute inset-[12%] rounded-full"
+        style={{
+          background: `linear-gradient(125deg, ${wax.light}cc 0%, transparent 42%, transparent 58%, ${wax.deep}33 100%)`,
+          mixBlendMode: "soft-light",
+        }}
+        animate={{ opacity: lifting ? [0.35, 0.85, 0.55] : 0.45 }}
+        transition={{ duration: lifting ? 1.85 : 2.8, ease: EASE_SILK }}
+      />
       <SealRelief motif={motif} monogram={monogram} wax={wax} />
     </span>
   );

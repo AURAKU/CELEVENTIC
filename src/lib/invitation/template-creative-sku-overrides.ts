@@ -510,7 +510,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   "forever-afaris-wedding": {
     creativeUniverse: "blush-gate-romance",
     creativeConcept:
-      "Blush Swan Gate — swan glide intro into an embossed blush envelope; press the champagne wax seal and the golden gate opens from the centre",
+      "Blush Swan Gate — swan glide intro into an embossed blush envelope; lift the champagne wax seal and the golden gate opens from the centre",
     emotionalTone: "romantic",
     targetAudience: "Luxury garden and hall weddings",
     visualLanguage:
