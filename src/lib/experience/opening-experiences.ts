@@ -346,13 +346,15 @@ export function isCurtainExperience(id: OpeningExperienceId | string | undefined
 
 /**
  * Catalogue / studio “Tap to open” already consumed the user gesture.
- * Envelope + curtain ceremonies should begin opening immediately (one-shot),
- * matching the live guest path without a second seal/curtain tap.
- * Gesture-heavy openings (scratch, swipe, press-hold, …) stay interactive.
+ * Prefer landing on the sealed / closed ceremony so the guest (or previewer)
+ * still performs the seal / curtain open — that keeps the slow cinematic
+ * lift. Callers that truly need a one-shot open can still pass autoOpen.
  */
 export function previewAutoOpensReveal(id: OpeningExperienceId | string | undefined): boolean {
-  if (!id || id === "none") return false;
-  return isEnvelopeExperience(id as OpeningExperienceId) || isCurtainExperience(id);
+  // Default off: envelope + curtain feel magical when the seal/curtain is tapped,
+  // not when the ceremony auto-fires after the brand video.
+  void id;
+  return false;
 }
 
 /** Affordance copy for catalogue tiles that mirror the live opening cover. */

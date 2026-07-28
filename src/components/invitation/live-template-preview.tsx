@@ -10,7 +10,6 @@ import { TemplatePreviewGlimpse } from "@/components/invitation/template-preview
 import { InvitationStaticPreviewProvider } from "@/components/invitation/invitation-static-preview";
 import { PreviewTapAffordance } from "@/components/invitation/preview-tap-affordance";
 import {
-  previewAutoOpensReveal,
   previewTapLabelForOpening,
 } from "@/lib/experience/opening-experiences";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
@@ -249,7 +248,6 @@ export function LiveTemplatePreview({
   const openingId = (preview.design.experience?.openingExperience ??
     "none") as OpeningExperienceId;
   const hasTheatricalOpen = openingId !== "none";
-  const autoOpenOnActivate = previewAutoOpensReveal(openingId);
   const tapCopy = previewTapLabelForOpening(openingId);
 
   const hasMusic = Boolean(preview.musicSelection) && (musicEnabled ?? true);
@@ -480,11 +478,15 @@ export function LiveTemplatePreview({
                 fullScreen={isFullLayout}
                 compactFrame={!isFullLayout}
                 skipReveal={skipRevealForLive}
-                /* Catalogue tap replaces Tap-to-Begin; still play brand MP4 like guests. */
+                /*
+                 * Guest-faithful choreography after catalogue tap:
+                 * Celeventic brand MP4 → Tap to Begin → sealed envelope/curtain
+                 * → guest opens the ceremony slowly. Never auto-rush the seal.
+                 */
                 skipIntro
                 skipSoftIntro={false}
-                skipTapGate
-                autoOpenReveal={autoOpenOnActivate}
+                skipTapGate={false}
+                autoOpenReveal={false}
                 musicEnabled={hasMusic && inView}
                 musicAutoplay={hasMusic && inView}
                 memoryUploadUrl={memoryUploadUrl}

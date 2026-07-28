@@ -11,21 +11,21 @@
  */
 
 /** Canonical Celeventic invitation intro — every template, every guest. */
-export const CELEVENTIC_INVITATION_INTRO_VIDEO = "/brand/celeventic-invitation-intro.mp4?v=20260728";
-export const CELEVENTIC_INVITATION_INTRO_POSTER = "/brand/celeventic-invitation-intro-poster.jpg?v=20260728";
+export const CELEVENTIC_INVITATION_INTRO_VIDEO = "/brand/celeventic-invitation-intro.mp4?v=20260728b";
+export const CELEVENTIC_INVITATION_INTRO_POSTER = "/brand/celeventic-invitation-intro-poster.jpg?v=20260728b";
 
 /** Fallback hold when the video element cannot report duration (reduced motion / errors). */
-export const SOFT_INTRO_DURATION_MS = 5200;
+export const SOFT_INTRO_DURATION_MS = 12_500;
 export const SOFT_INTRO_REDUCED_MOTION_MS = 800;
-export const SOFT_INTRO_EXIT_MS = 560;
-/** Hard ceiling so a stalled video never blanks the guest forever. */
-export const SOFT_INTRO_FALLBACK_MS = 28000;
+export const SOFT_INTRO_EXIT_MS = 720;
+/** Hard ceiling so a stalled video never blanks the guest forever (~2× clip length). */
+export const SOFT_INTRO_FALLBACK_MS = 28_000;
 
 /**
- * Returning guest short hold — still a real branded beat, just brief, with an
- * honest Skip control rather than a silent jump into mid-invitation.
+ * Returning guest still watches the full brand clip; Skip appears sooner so
+ * they can move on — the ceremony after Tap to Begin is never auto-rushed.
  */
-export const SOFT_INTRO_RETURN_HOLD_MS = 1600;
+export const SOFT_INTRO_RETURN_HOLD_MS = 12_500;
 export const SOFT_INTRO_RETURN_REDUCED_MOTION_MS = 400;
 
 /** Optional shared begin label — tap gate owns the visible CTA. Soft intro is silent skip. */
@@ -90,12 +90,10 @@ export function phaseAfterSoftIntro(input: SoftIntroGateInput): InvitePipelinePh
 
 /**
  * Hold duration before auto-advance when video cannot drive timing
- * (reduced motion / missing media). `quick` shortens for returning guests.
+ * (reduced motion / missing media). Returning guests still get the full
+ * brand beat length — only the Skip control appears sooner in the UI.
  */
-export function softIntroHoldMs(reducedMotion: boolean, quick = false): number {
-  if (quick) {
-    return reducedMotion ? SOFT_INTRO_RETURN_REDUCED_MOTION_MS : SOFT_INTRO_RETURN_HOLD_MS;
-  }
+export function softIntroHoldMs(reducedMotion: boolean, _quick = false): number {
   return reducedMotion ? SOFT_INTRO_REDUCED_MOTION_MS : SOFT_INTRO_DURATION_MS;
 }
 
