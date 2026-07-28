@@ -41,9 +41,13 @@ import {
 } from "@/lib/experience/opening-visit-memory";
 
 /**
- * Full opening pipeline (platform → template → reveal → invite):
- * Celeventic soft intro → template DNA intro → Tap to Begin → Opening reveal → Guest portal
- * Curtain ceremonies: soft intro → closed curtain (owns tap) → slow open → Guest portal
+ * Full opening pipeline (platform → ceremony → invite):
+ * Celeventic brand MP4 → Tap to Begin → Opening reveal (envelope/curtain) → Guest portal
+ *
+ * Curtain ceremonies own the tap after the brand video:
+ * brand MP4 → closed curtain (await touch) → slow open → Guest portal
+ *
+ * Template DNA / picture intros are retired — the brand video is the only intro.
  */
 type ExperiencePhase = InvitePipelinePhase;
 

@@ -40,6 +40,8 @@ export interface CeleventicSoftIntroProps {
 /**
  * Platform soft launch — canonical Celeventic intro video for every template.
  * Auto-advances when the video ends; tap / Enter / Space / Skip crossfade out.
+ * Never falls back to a photo / DNA picture intro — poster is only a still
+ * of this same brand clip when motion or playback is unavailable.
  */
 export function CeleventicSoftIntro({
   onComplete,
