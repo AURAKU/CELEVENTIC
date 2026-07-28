@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LiveTemplatePreview } from "@/components/invitation/live-template-preview";
+import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 import type { CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { getLayoutSignatureFeatures } from "@/lib/invitation/layout-template-signatures";
 import type { InvitationTemplatePreset } from "@/lib/invitation-templates";
