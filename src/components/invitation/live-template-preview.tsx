@@ -110,6 +110,7 @@ function LivePreviewExperience({
   memoryEventId,
   memoryAlbumTitle,
   skipIntro = true,
+  skipSoftIntro,
   skipTapGate = true,
   autoOpenReveal = false,
 }: {
@@ -127,6 +128,8 @@ function LivePreviewExperience({
   memoryAlbumTitle?: string | null;
   /** Compact thumbs skip; interactive detail/hero can run soft-intro → tap gate */
   skipIntro?: boolean;
+  /** When false, play the Celeventic brand MP4 even if skipIntro is true. */
+  skipSoftIntro?: boolean;
   skipTapGate?: boolean;
   /**
    * Catalogue tap already unlocked audio — start envelope/curtain open immediately
@@ -150,6 +153,7 @@ function LivePreviewExperience({
         <PremiumInviteWrapper
           skipReveal={skipReveal}
           skipIntro={skipIntro}
+          skipSoftIntro={skipSoftIntro}
           skipTapGate={skipTapGate}
           skipAnalytics
           autoOpenReveal={autoOpenReveal}
@@ -476,8 +480,9 @@ export function LiveTemplatePreview({
                 fullScreen={isFullLayout}
                 compactFrame={!isFullLayout}
                 skipReveal={skipRevealForLive}
-                /* Catalogue tap IS the guest gesture — skip soft intro / tap gate. */
+                /* Catalogue tap replaces Tap-to-Begin; still play brand MP4 like guests. */
                 skipIntro
+                skipSoftIntro={false}
                 skipTapGate
                 autoOpenReveal={autoOpenOnActivate}
                 musicEnabled={hasMusic && inView}

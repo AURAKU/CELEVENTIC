@@ -11,8 +11,8 @@
  */
 
 /** Canonical Celeventic invitation intro — every template, every guest. */
-export const CELEVENTIC_INVITATION_INTRO_VIDEO = "/brand/celeventic-invitation-intro.mp4";
-export const CELEVENTIC_INVITATION_INTRO_POSTER = "/brand/celeventic-invitation-intro-poster.jpg";
+export const CELEVENTIC_INVITATION_INTRO_VIDEO = "/brand/celeventic-invitation-intro.mp4?v=20260728";
+export const CELEVENTIC_INVITATION_INTRO_POSTER = "/brand/celeventic-invitation-intro-poster.jpg?v=20260728";
 
 /** Fallback hold when the video element cannot report duration (reduced motion / errors). */
 export const SOFT_INTRO_DURATION_MS = 5200;
@@ -59,11 +59,15 @@ export interface SoftIntroAtmosphereInput {
 
 /**
  * Whether the platform brand-video intro should mount.
- * Thumbnails that already skip DNA intro also skip soft intro unless overridden.
+ *
+ * Prefer explicit `skipSoftIntro`. When omitted, fall back to `skipIntro` so
+ * tiny catalogue thumbs stay quiet — but callers that set `skipIntro` only to
+ * retire DNA (while still wanting the brand MP4) must pass
+ * `skipSoftIntro={false}`.
  */
 export function shouldShowSoftIntro(input: SoftIntroGateInput): boolean {
-  const skip = input.skipSoftIntro ?? input.skipIntro ?? false;
-  return !skip;
+  if (typeof input.skipSoftIntro === "boolean") return !input.skipSoftIntro;
+  return !(input.skipIntro ?? false);
 }
 
 /** Resolve the first phase of the live invite pipeline. */
