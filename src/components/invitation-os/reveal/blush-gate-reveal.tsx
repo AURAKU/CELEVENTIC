@@ -63,14 +63,15 @@ export function BlushGateReveal({
 }: BlushGateRevealProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
 
-  // Catalogue previews already consumed the gesture — press the seal for the guest.
+  // Catalogue previews that still opt into autoOpen: linger on the sealed
+  // envelope first so the lift never feels rushed.
   useEffect(() => {
     if (!autoOpen) return;
     const id = setTimeout(() => {
       stageRef.current
         ?.querySelector<HTMLElement>('[data-blush-gate-seal="true"]')
         ?.click();
-    }, 1700);
+    }, 3200);
     return () => clearTimeout(id);
   }, [autoOpen]);
 
