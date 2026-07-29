@@ -9,17 +9,17 @@ import { setInvitationLifecycle } from "@/services/guest-search/quick-invite.ser
 import { getResultCard } from "@/services/guest-search/guest-search.service";
 
 /**
- * Archive, restore, revoke or reissue a single invitation.
+ * Archive, restore, revoke, reissue, or permanently delete a single invitation.
  *
- * There is no delete. An invitation that has already been handed out cannot be
- * made never to have existed, and a guest arriving with an old QR deserves a
- * "this pass was withdrawn" rather than a blank "unknown code".
+ * Delete is organiser/admin-only cleanup. The published Studio invitation for
+ * an event cannot be hard-deleted here — that would take down the live
+ * production template for every guest.
  */
 
 export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
-  action: z.enum(["ARCHIVE", "RESTORE", "REVOKE_PASS", "REISSUE_PASS"]),
+  action: z.enum(["ARCHIVE", "RESTORE", "REVOKE_PASS", "REISSUE_PASS", "DELETE"]),
   reason: z.string().max(300).optional(),
 });
 
@@ -45,7 +45,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (limited) return limited;
 
   try {
-    await setInvitationLifecycle({
+    const result = await setInvitationLifecycle({
       eventId: auth.ctx.eventId,
       invitationId: id,
       action: parsed.data.action,
@@ -53,11 +53,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       actorUserId: auth.ctx.userId,
     });
 
+    if (result.deleted) {
+      return NextResponse.json({ success: true, data: { deleted: true, card: null } });
+    }
+
     // Archived rows are excluded from search by default, so ask for them
     // explicitly, the UI needs the updated card to render the undo state.
     const card = await getResultCard(auth.ctx.eventId, id);
     return NextResponse.json({ success: true, data: { card } });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Lifecycle action failed";
+    if (message.includes("published Studio invitation")) {
+      return NextResponse.json({ error: message }, { status: 409 });
+    }
     return errorResponse(error, 500);
   }
 }

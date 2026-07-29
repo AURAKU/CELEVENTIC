@@ -14,6 +14,7 @@ import {
   Pencil,
   RotateCcw,
   ShieldOff,
+  Trash2,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +106,14 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? "That did not work.");
+        return;
+      }
+      if (json.data?.deleted) {
+        onChanged({
+          ...card,
+          archivedAt: new Date().toISOString(),
+          passRevoked: true,
+        });
         return;
       }
       if (json.data?.card) onChanged(json.data.card as SearchResultCard);
@@ -272,6 +281,21 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
               <Archive className="h-3.5 w-3.5" /> Archive
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-red-200 text-red-700 hover:bg-red-50"
+            onClick={() =>
+              runLifecycle(
+                "DELETE",
+                `Permanently delete ${card.name}?\n\nThis removes the guest invitation, their entry pass, and CRM row for this event.\nThis cannot be undone.\n\nTip: use Archive if you may need them again.`
+              )
+            }
+            disabled={busy}
+            title="Permanently delete this guest invitation"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
           <Button size="sm" variant="outline" onClick={copyLink} disabled={busy}>
             <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Link"}
           </Button>
@@ -370,6 +394,18 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
                     Archive invitation
                   </MenuItem>
                 )}
+                <MenuItem
+                  icon={Trash2}
+                  destructive
+                  onClick={() =>
+                    runLifecycle(
+                      "DELETE",
+                      `Permanently delete ${card.name}?\n\nThis removes the guest invitation, their entry pass, and CRM row for this event.\nThis cannot be undone.\n\nTip: use Archive if you may need them again.`
+                    )
+                  }
+                >
+                  Delete permanently
+                </MenuItem>
               </div>
             )}
           </div>

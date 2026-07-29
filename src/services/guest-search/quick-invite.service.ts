@@ -389,15 +389,23 @@ export async function updateInvitationPersonalisation(
   });
 }
 
-export type InvitationLifecycleAction = "ARCHIVE" | "RESTORE" | "REVOKE_PASS" | "REISSUE_PASS";
+export type InvitationLifecycleAction =
+  | "ARCHIVE"
+  | "RESTORE"
+  | "REVOKE_PASS"
+  | "REISSUE_PASS"
+  | "DELETE";
 
 /**
- * Archive, restore, revoke or reissue.
+ * Archive, restore, revoke, reissue, or permanently delete.
  *
  * Archive is always available and always reversible; it hides the invitation
  * and revokes the pass so an old printout is politely refused at the gate
- * rather than reading as an unknown QR. There is no delete: an invitation that
- * has already been handed out cannot be made never to have existed.
+ * rather than reading as an unknown QR.
+ *
+ * Delete is reserved for organiser/admin cleanup of wrong or duplicate guest
+ * invitations. The event's published Studio invitation cannot be hard-deleted
+ * here — that would take down the live production template for every guest.
  */
 export async function setInvitationLifecycle(params: {
   eventId: string;
@@ -405,7 +413,7 @@ export async function setInvitationLifecycle(params: {
   action: InvitationLifecycleAction;
   reason?: string;
   actorUserId: string;
-}): Promise<void> {
+}): Promise<{ deleted?: boolean }> {
   const invitation = await prisma.invitation.findFirst({
     where: { id: params.invitationId, eventId: params.eventId },
     select: { id: true },
@@ -453,6 +461,43 @@ export async function setInvitationLifecycle(params: {
       await regenerateInvitationPass(invitation.id, params.actorUserId, reason);
       break;
     }
+
+    case "DELETE": {
+      const publishedStudio = await prisma.invitationOrder.findFirst({
+        where: {
+          invitationId: invitation.id,
+          eventId: params.eventId,
+          status: "PUBLISHED",
+          archivedAt: null,
+          shareUrl: { not: null },
+        },
+        select: { id: true },
+      });
+      if (publishedStudio) {
+        throw new Error(
+          "This is the event's published Studio invitation. Archive it instead — deleting it would take down the live production template."
+        );
+      }
+
+      // Guests are SetNull on invitation delete; remove them first so the CRM
+      // list does not leave orphan rows for the selected event.
+      await prisma.guest.deleteMany({ where: { invitationId: invitation.id } });
+      await prisma.invitation.delete({ where: { id: invitation.id } });
+
+      await createAuditLog({
+        userId: params.actorUserId,
+        action: "DELETE",
+        entity: "invitation",
+        entityId: invitation.id,
+        details: {
+          kind: "invitation_lifecycle",
+          eventId: params.eventId,
+          action: params.action,
+          reason,
+        },
+      });
+      return { deleted: true };
+    }
   }
 
   await createAuditLog({
@@ -467,4 +512,5 @@ export async function setInvitationLifecycle(params: {
       reason,
     },
   });
+  return {};
 }
