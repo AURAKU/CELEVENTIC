@@ -15,6 +15,7 @@ import {
   invitationPhrasesMatch,
   mergeWeddingBoard,
   normaliseSectionOrder,
+  resolveAfarisCoupleNames,
   withoutPhraseDashes,
   type WeddingSectionId,
 } from "../wedding-board";
@@ -44,6 +45,22 @@ describe("wedding board defaults", () => {
     assert.equal(DEFAULT_WEDDING_BOARD.envelopeStyle, "blush-floral");
     assert.equal(DEFAULT_WEDDING_BOARD.gateStyle, "golden-baroque");
     assert.equal(DEFAULT_WEDDING_BOARD.sealColor, "champagne");
+  });
+});
+
+describe("Afaris couple names", () => {
+  it("repairs legacy shortened names for the live invitation gate", () => {
+    assert.deepEqual(resolveAfarisCoupleNames("OWURAKU AFARI", "FRANCISCA"), {
+      coupleName1: "JEFFERY OWURAKU AFARI",
+      coupleName2: "FRANCISCA CHELSY SERWAAH OPOKU",
+    });
+  });
+
+  it("preserves genuine host-edited names", () => {
+    assert.deepEqual(resolveAfarisCoupleNames("ADWOA MENSAH", "KWAME ASARE"), {
+      coupleName1: "ADWOA MENSAH",
+      coupleName2: "KWAME ASARE",
+    });
   });
 });
 

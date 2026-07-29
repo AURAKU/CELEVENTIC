@@ -239,12 +239,24 @@ export function resolvePlaceCardConfig(
   };
 }
 
-/** Guest-facing invitation capacity, with no admission-state disclosure. */
-export function formatAllowanceCopy(_template: string, partySize: number): string {
+/**
+ * Guest-facing invitation capacity.
+ *
+ * Unassigned invitations show nothing. A solo guest is told the pass admits
+ * only them; plus-ones are stated as companions, never as a raw guest total.
+ */
+export function formatAllowanceCopy(
+  _template: string,
+  partySize: number,
+  opts?: { assigned?: boolean }
+): string {
+  if (!opts?.assigned) return "";
   const capacity = Math.max(1, Math.trunc(partySize));
-  return capacity === 1
-    ? "This invitation admits one guest only."
-    : `This invitation admits ${capacity} guests.`;
+  if (capacity === 1) return "This invitation admits only you.";
+  const plusOnes = capacity - 1;
+  return plusOnes === 1
+    ? "This invitation admits you and 1 guest."
+    : `This invitation admits you and ${plusOnes} guests.`;
 }
 
 export interface PlaceCardRecipientInput {
@@ -271,6 +283,29 @@ export function formatPartyGuestNames(names: Array<string | null | undefined>): 
   return `${cleaned.slice(0, -1).join(", ")} & ${cleaned[cleaned.length - 1]}`;
 }
 
+/**
+ * Resolve the one recipient this invitation/pass belongs to.
+ *
+ * A canonical event invitation can have many Guest rows for organizer
+ * management. Those rows must never be joined into a guest-facing place card.
+ */
+export function resolvePlaceCardGuestName(input: {
+  tokenGuest?: string | null;
+  passDisplayName?: string | null;
+  guestNames: Array<string | null | undefined>;
+}): string | null {
+  const candidates = [input.tokenGuest, input.passDisplayName];
+  for (const candidate of candidates) {
+    const value = (candidate ?? "").trim();
+    if (value && !isAnonymousRecipientName(value)) return value;
+  }
+
+  const namedGuests = input.guestNames
+    .map((name) => (name ?? "").trim())
+    .filter((name) => name && !isAnonymousRecipientName(name));
+  return namedGuests.length === 1 ? namedGuests[0] : null;
+}
+
 
 /** Format place-card badge initials, preserving pipe seals (`C | J`). */
 export function formatPlaceCardMonogram(raw?: string | null): string {
@@ -293,6 +328,24 @@ export function formatPlaceCardMonogram(raw?: string | null): string {
   const letters = trimmed.replace(/[^a-zA-ZÀ-ÿ]/g, "").toUpperCase();
   if (letters.length === 2) return `${letters[0]} | ${letters[1]}`;
   return letters.slice(0, 3);
+}
+
+/**
+ * Derive a personalized badge from the invited guest's first and last names.
+ * Common honorifics are ignored, so "Mr Kofi Mensah" becomes "K | M".
+ */
+export function deriveGuestPlaceCardMonogram(name?: string | null): string {
+  const honorifics = /^(mr|mrs|ms|miss|dr|prof|rev|reverend|hon|pastor|engr)\.?$/i;
+  const parts = (name ?? "")
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.replace(/^[^a-zA-ZÀ-ÿ]+|[^a-zA-ZÀ-ÿ]+$/g, ""))
+    .filter((part) => part && !honorifics.test(part));
+
+  if (!parts.length) return "";
+  const first = parts[0][0];
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return formatPlaceCardMonogram(`${first}${last}`);
 }
 
 /** @deprecated Prefer formatPlaceCardMonogram — kept for callers that expect letters only. */
@@ -407,7 +460,7 @@ export interface PlaceCardViewModel {
   heading: string;
   salutation: string;
   recipientLine: string;
-  /** Capacity line, e.g. "This invitation admits 3 guests." */
+  /** Capacity line for assigned guests; blank when unassigned. */
   allowanceCopy: string;
   wording: string;
   supportingMessage: string;
@@ -456,8 +509,8 @@ export function buildPlaceCardViewModel(
       : config.recipientType;
 
   const recipientLine = resolveRecipientLine(config, recipient);
-  // Couple seal / organiser monogram wins — guest initials must not replace
-  // the ceremony badge (e.g. keep "C | J", never derive "TM" from a title).
+  // The server resolves a personalized guest monogram first, then the event
+  // seal fallback for non-specific invitations (e.g. "C | J").
   const configuredMonogram = formatPlaceCardMonogram(config.monogram);
   const monogram = configuredMonogram;
   const configuredSalutation = config.salutation.trim() || "Dear";
@@ -468,7 +521,9 @@ export function buildPlaceCardViewModel(
     heading: config.heading.trim() || headingFor(recipientType),
     salutation,
     recipientLine,
-    allowanceCopy: formatAllowanceCopy(config.allowanceDisplayWording, allowance),
+    allowanceCopy: formatAllowanceCopy(config.allowanceDisplayWording, allowance, {
+      assigned: recipient.assigned,
+    }),
     wording: config.wording.trim(),
     supportingMessage: config.supportingMessage.trim(),
     monogram,

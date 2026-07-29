@@ -100,7 +100,10 @@ export function PlaceCardEditorPanel({
   }, []);
 
   const allowancePreview = useMemo(
-    () => formatAllowanceCopy(config.allowanceDisplayWording, partySize),
+    () =>
+      formatAllowanceCopy(config.allowanceDisplayWording, partySize, {
+        assigned: true,
+      }),
     [config.allowanceDisplayWording, partySize]
   );
 

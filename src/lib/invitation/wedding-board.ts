@@ -109,11 +109,11 @@ export const WEDDING_SECTION_ORDER: WeddingSectionId[] = [
   "venue",
   "dressCode",
   "guestPolicy",
-  "rsvp",
   "story",
   "gallery",
   "scratch",
   "memory",
+  "rsvp",
   "closing",
 ];
 
@@ -368,6 +368,27 @@ export const DEFAULT_WEDDING_BOARD: Required<
 };
 
 export type ResolvedWeddingBoard = typeof DEFAULT_WEDDING_BOARD;
+
+/**
+ * Repair the first-generation Afaris name snapshot without overriding genuine
+ * host edits. That snapshot omitted Jeffery's first name and occasionally
+ * stored only Francisca's first name.
+ */
+export function resolveAfarisCoupleNames(
+  coupleName1: string | null | undefined,
+  coupleName2: string | null | undefined
+): { coupleName1: string; coupleName2: string } {
+  const groom = coupleName1?.trim() ?? "";
+  const bride = coupleName2?.trim() ?? "";
+  return {
+    coupleName1: /^owuraku\s+afari$/i.test(groom)
+      ? DEFAULT_WEDDING_BOARD.coupleName1
+      : groom,
+    coupleName2: /^francisca$/i.test(bride)
+      ? DEFAULT_WEDDING_BOARD.coupleName2
+      : bride,
+  };
+}
 
 /**
  * Guest-facing prose: replace em/en dashes (and spaced hyphens) between

@@ -18,6 +18,7 @@ import { FA_PALETTE } from "@/components/invitation/templates/forever-afaris-wed
 import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
 import { cn } from "@/lib/utils";
 import { resolveEventDetailsItems } from "@/lib/invitation-blocks/event-details";
+import { parseCoupleNames } from "@/lib/invitation-templates";
 
 /**
  * Stationery chrome for wedding templates whose place card / ceremony art
@@ -198,6 +199,10 @@ export function BlockView({ block, ctx }: BlockViewProps) {
   const body = localized?.content ?? block.contentJson?.body ?? "";
   const cj = { ...block.contentJson, ...(localized?.contentJson ?? {}) };
   const heritage = heritageChromeFor(ctx.layout);
+  const coupleIntroNames =
+    ctx.coupleName1?.trim() && ctx.coupleName2?.trim()
+      ? { name1: ctx.coupleName1.trim(), name2: ctx.coupleName2.trim() }
+      : parseCoupleNames(String(cj.highlight ?? ""), ctx.hostName);
 
   switch (block.blockType) {
     case "WELCOME":
@@ -228,17 +233,39 @@ export function BlockView({ block, ctx }: BlockViewProps) {
           style={heritage ? heritageShellStyle(heritage) : undefined}
         >
           <BlockHeader block={block} locale={locale} chrome={heritage} />
-          <p
+          <div
             className={cn(
-              "text-center",
+              "flex flex-col items-center text-center",
               heritage
                 ? "font-[family-name:var(--font-cinzel)] text-xl sm:text-2xl font-semibold tracking-[0.04em] leading-snug"
                 : "font-display text-2xl sm:text-3xl font-bold text-[#0F172A]"
             )}
             style={heritage ? { color: heritage.ink } : undefined}
+            aria-label={
+              coupleIntroNames.name2
+                ? `${coupleIntroNames.name1} and ${coupleIntroNames.name2}`
+                : coupleIntroNames.name1
+            }
           >
-            {cj.highlight ?? ctx.hostName}
-          </p>
+            <span aria-hidden>{coupleIntroNames.name1}</span>
+            {coupleIntroNames.name2 && (
+              <>
+                <span
+                  aria-hidden
+                  className={cn(
+                    "block py-1 leading-none",
+                    heritage
+                      ? "font-[family-name:var(--font-great-vibes)] text-[1.65em] font-normal"
+                      : "text-[0.8em]"
+                  )}
+                  style={heritage ? { color: heritage.accent } : undefined}
+                >
+                  &amp;
+                </span>
+                <span aria-hidden>{coupleIntroNames.name2}</span>
+              </>
+            )}
+          </div>
         </BlockShell>
       );
 
@@ -642,14 +669,42 @@ export function BlockView({ block, ctx }: BlockViewProps) {
 
     case "MEMORY_VAULT":
       return (
-        <BlockShell variant={block.styleVariant}>
-          <BlockHeader block={block} locale={locale} />
-          <p className="text-slate-600 text-center">{body || "A lifetime archive for your cherished memories."}</p>
+        <BlockShell
+          variant={block.styleVariant}
+          style={heritage ? heritageShellStyle(heritage) : undefined}
+        >
+          <BlockHeader block={block} locale={locale} chrome={heritage} />
+          <p
+            className={cn(
+              "text-center",
+              heritage
+                ? "font-[family-name:var(--font-cormorant)] text-[1.05rem] sm:text-lg italic leading-relaxed"
+                : "text-slate-600"
+            )}
+            style={heritage ? { color: heritage.muted } : undefined}
+          >
+            {body || "A lifetime archive for your cherished memories."}
+          </p>
           {ctx.memoryVaultEnabled && ctx.eventId && (
-            <div className="mt-4 text-center">
+            <div className="mt-5 text-center">
               <a
                 href={`/dashboard/memory?eventId=${ctx.eventId}`}
-                className="inline-flex items-center gap-2 rounded-full bg-[#0B8A83] px-5 py-2 text-sm text-white hover:bg-[#097068] transition-colors"
+                className={cn(
+                  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-6 py-2.5 transition-all hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                  heritage
+                    ? "border font-[family-name:var(--font-cormorant)] text-base font-semibold tracking-[0.04em]"
+                    : "bg-[#0B8A83] text-sm text-white hover:bg-[#097068]"
+                )}
+                style={
+                  heritage
+                    ? {
+                        color: heritage.surface,
+                        backgroundColor: heritage.accent,
+                        borderColor: heritage.rule,
+                        boxShadow: `0 12px 28px -18px ${heritage.accent}`,
+                      }
+                    : undefined
+                }
               >
                 Open Memory Vault
               </a>

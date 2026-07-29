@@ -144,7 +144,10 @@ export function PlaceCard({
         </p>
 
         {model.salutation && (
-          <p className="mt-4 text-sm" style={{ color: tokens.text, opacity: 0.8 }}>
+          <p
+            className="mt-4 text-lg font-medium leading-none sm:text-xl"
+            style={{ color: tokens.text, opacity: 0.88 }}
+          >
             {model.salutation}
           </p>
         )}
@@ -160,10 +163,20 @@ export function PlaceCard({
           {model.recipientLine}
         </p>
 
+        {model.allowanceCopy ? (
+          <p
+            className="mt-4 text-[13px] font-semibold sm:text-sm"
+            style={{ color: tokens.primary, letterSpacing: "0.06em" }}
+            data-testid="place-card-capacity"
+          >
+            {model.allowanceCopy}
+          </p>
+        ) : null}
+
         {seating && (
           <div
             className={cn(
-              "mx-auto mt-4 grid w-full max-w-[22rem] overflow-hidden rounded-xl border",
+              "mx-auto mt-5 grid w-full max-w-[22rem] overflow-hidden rounded-xl border",
               seating.seatLabel ? "grid-cols-2" : "grid-cols-1"
             )}
             style={{
@@ -215,14 +228,6 @@ export function PlaceCard({
             )}
           </div>
         )}
-
-        <p
-          className="mt-4 text-[13px] font-semibold sm:text-sm"
-          style={{ color: tokens.primary, letterSpacing: "0.06em" }}
-          data-testid="place-card-capacity"
-        >
-          {model.allowanceCopy}
-        </p>
 
         {model.wording && (
           <p

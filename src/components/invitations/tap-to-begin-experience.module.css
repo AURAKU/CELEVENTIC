@@ -175,7 +175,7 @@
   animation: tap-line-in 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
 }
 
-.name {
+.coupleLine {
   margin: 0;
   font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
   font-size: calc(clamp(0.94rem, 3.2vw, 1.1rem) * var(--tap-scale, 1));
@@ -184,12 +184,12 @@
   text-transform: uppercase;
   color: color-mix(in srgb, var(--tap-ivory) 82%, transparent);
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
-  max-width: 17rem;
-  line-height: 1.4;
+  max-width: 20rem;
+  line-height: 1.55;
+  text-wrap: balance;
 }
 
-.amp {
-  margin: 0;
+.inlineAmp {
   font-family: var(--tap-font-family, var(--font-great-vibes), "Great Vibes", cursive);
   font-size: calc(1.65rem * var(--tap-scale, 1));
   line-height: 1;

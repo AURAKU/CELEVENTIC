@@ -29,6 +29,8 @@ import {
   type FaPalette,
 } from "./forever-afaris-wedding-palette";
 import { TraditionalMarriageRespond } from "./traditional-marriage-respond";
+import { PlaceCard } from "@/components/invitation/place-card";
+import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
 export type ForeverAfarisWeddingProps = InvitationRenderProps & {
   contactEmail?: string | null;
@@ -865,6 +867,18 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <div key={entry.id}>
             {i > 0 && <Divider palette={C} />}
             {entry.node}
+            {entry.id === "hero" && props.placeCard && (
+              <ClientErrorBoundary fallback={null}>
+                <PlaceCard
+                  config={props.placeCard.config}
+                  recipient={props.placeCard.recipient}
+                  party={props.placeCard.party}
+                  seating={props.placeCard.seating}
+                  design={design}
+                  className="mt-8 px-0"
+                />
+              </ClientErrorBoundary>
+            )}
           </div>
         ))}
       </div>

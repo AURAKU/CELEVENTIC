@@ -31,6 +31,9 @@ export type InvitationRendererProps = InvitationRenderProps & {
 };
 
 export function InvitationRenderer({ interactiveMedia = false, ...props }: InvitationRendererProps) {
+  const templatePlacesCardAfterHero =
+    props.design.layout === "traditional-marriage-ceremony" ||
+    props.design.layout === "forever-afaris-wedding";
   const content = isCinematicLayout(props.design.layout) ? (
     <CinematicTemplate {...props} />
   ) : (() => {
@@ -74,10 +77,9 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
       >
         <InvitationMediaProvider interactive={interactiveMedia}>{content}</InvitationMediaProvider>
       </ClientErrorBoundary>
-      {/* Personalised place card. One shared implementation for every template,
-          placed directly above the entry pass so a guest reads who the
-          invitation is for and how many it admits before they reach the QR. */}
-      {props.placeCard && (
+      {/* Templates with a defined hero boundary mount this immediately below
+          that hero. Other layouts retain the safe pre-entry-pass fallback. */}
+      {props.placeCard && !templatePlacesCardAfterHero && (
         <ClientErrorBoundary fallback={null}>
           <PlaceCard
             config={props.placeCard.config}

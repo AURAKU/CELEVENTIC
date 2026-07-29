@@ -2,11 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { resolveInvitationFeatures } from "@/services/invitation-features/feature-resolver";
 import { computeAllowance } from "@/lib/admission/admission-logic";
 import {
-  formatPartyGuestNames,
+  deriveGuestPlaceCardMonogram,
   formatPlaceCardMonogram,
-  isAnonymousRecipientName,
   looksLikeEventTitle,
   resolvePlaceCardConfig,
+  resolvePlaceCardGuestName,
   shouldShowPlaceCard,
   type PlaceCardViewData,
 } from "@/lib/invitation-features/place-card";
@@ -119,26 +119,41 @@ export async function resolvePlaceCard(
       .join("")
   );
   const sealMonogram = formatPlaceCardMonogram(seal);
-  const monogram =
+  const eventMonogram =
     storedMonogram &&
     storedMonogram !== titleInitials &&
     !looksLikeEventTitle(invitation.name)
       ? storedMonogram
       : sealMonogram || storedMonogram;
 
+  // The active QR admission pass is authoritative for who this invitation
+  // admits. This prevents a canonical event invitation with many attached
+  // guests from printing the entire event guest list on one place card.
+  const pass = await prisma.guestPass.findFirst({
+    where: { invitationId, status: { in: [...LIVE_PASS_STATUSES] } },
+    orderBy: { tokenVersion: "desc" },
+    select: { partySize: true, displayName: true },
+  });
+
+  // "Assigned" means this exact invitation/pass identifies a real recipient.
+  // Never join every Guest row into a single guest-facing name.
+  const tokenGuest = guestName?.trim() || null;
+  const passRecipient = pass?.displayName?.trim() || null;
+  const resolvedGuestName = resolvePlaceCardGuestName({
+    tokenGuest,
+    passDisplayName: passRecipient,
+    guestNames: invitation.guests.map((guest) => guest.name),
+  });
+  const assigned = Boolean(resolvedGuestName);
+  // A specific guest gets their own initials. Generic/non-personalized cards
+  // retain the event/couple seal (for Forever Afaris, "C | J").
+  const guestMonogram = assigned
+    ? deriveGuestPlaceCardMonogram(resolvedGuestName)
+    : "";
   const config = {
     ...baseConfig,
-    monogram,
+    monogram: guestMonogram || eventMonogram,
   };
-
-  // "Assigned" means the invitation is addressed to a real guest/party — never
-  // a ceremony title that happened to be stored as invitation.name.
-  const partyGuestNames = formatPartyGuestNames(invitation.guests.map((g) => g.name));
-  const tokenGuest = guestName?.trim() || null;
-  const resolvedGuestName =
-    (tokenGuest && !isAnonymousRecipientName(tokenGuest) ? tokenGuest : null) ||
-    (partyGuestNames && !isAnonymousRecipientName(partyGuestNames) ? partyGuestNames : null);
-  const assigned = Boolean(resolvedGuestName);
   if (
     !shouldShowPlaceCard(
       config,
@@ -148,12 +163,6 @@ export async function resolvePlaceCard(
   ) {
     return null;
   }
-
-  const pass = await prisma.guestPass.findFirst({
-    where: { invitationId, status: { in: [...LIVE_PASS_STATUSES] } },
-    orderBy: { tokenVersion: "desc" },
-    select: { partySize: true },
-  });
 
   const allowance = Math.max(
     computeAllowance(invitation.guests, invitation.admissionAllowance),
@@ -165,6 +174,13 @@ export async function resolvePlaceCard(
     (tokenGuest
       ? invitation.guests.find(
           (guest) => guest.name.trim().toLocaleLowerCase() === tokenGuest.toLocaleLowerCase()
+        )
+      : null) ??
+    (resolvedGuestName
+      ? invitation.guests.find(
+          (guest) =>
+            guest.name.trim().toLocaleLowerCase() ===
+            resolvedGuestName.toLocaleLowerCase()
         )
       : null) ??
     (invitation.guests.length === 1 ? invitation.guests[0] : null);

@@ -33,7 +33,11 @@ import {
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
 import { resolveSealStyle } from "@/lib/invitation/seal-design";
-import { mergeWeddingBoard, type WeddingBoardContent } from "@/lib/invitation/wedding-board";
+import {
+  mergeWeddingBoard,
+  resolveAfarisCoupleNames,
+  type WeddingBoardContent,
+} from "@/lib/invitation/wedding-board";
 import { onInvitationReplay } from "@/lib/experience/replay-invitation";
 import {
   hasSeenOpening,
@@ -206,26 +210,33 @@ export function PremiumInviteWrapper({
         : null,
     [enrichedDesign.studio, isBlushGateLayout]
   );
-  // Tap-to-begin: couple names only, ceremony titles/phrases live once on the invitation body.
-  const softIntroTitle = (() => {
-    if (weddingBoard) {
-      const c1 = weddingBoard.coupleName1?.trim();
-      const c2 = weddingBoard.coupleName2?.trim();
-      if (c1 && c2) {
-        const short = [c1.split(/\s+/)[0], c2.split(/\s+/)[0]].filter(Boolean).join(" & ");
-        return short || weddingBoard.closingSignature?.trim() || undefined;
-      }
-      return weddingBoard.closingSignature?.trim() || props.event.title?.trim() || undefined;
-    }
-    if (visionBoard?.coupleName1?.trim() && visionBoard?.coupleName2?.trim()) {
-      const short = [visionBoard.coupleName1, visionBoard.coupleName2]
-        .map((n) => n.trim().split(/\s+/)[0])
-        .filter(Boolean)
-        .join(" & ");
-      return short || props.event.title?.trim() || undefined;
-    }
-    return enrichedDesign.introText?.trim() || props.event.title?.trim() || undefined;
-  })();
+  // Tap-to-begin: full couple names only (never shortened first-names + leftovers).
+  // Ceremony titles/phrases live once on the invitation body, not on this gate.
+  const storedTapCoupleName1 = (
+    weddingBoard?.coupleName1?.trim() ||
+    visionBoard?.coupleName1?.trim() ||
+    ""
+  );
+  const storedTapCoupleName2 = (
+    weddingBoard?.coupleName2?.trim() ||
+    visionBoard?.coupleName2?.trim() ||
+    ""
+  );
+  // Repair the known legacy Afaris snapshot at read time. Older published
+  // designs stored the groom without his first name; keeping that stale value
+  // would reintroduce a shortened second couple line on the live gate.
+  const isAfarisLayout =
+    enrichedDesign.layout === "forever-afaris-wedding" ||
+    enrichedDesign.layout === "traditional-marriage-ceremony";
+  const tapCoupleNames = isAfarisLayout
+    ? resolveAfarisCoupleNames(storedTapCoupleName1, storedTapCoupleName2)
+    : { coupleName1: storedTapCoupleName1, coupleName2: storedTapCoupleName2 };
+  const tapCoupleName1 = tapCoupleNames.coupleName1;
+  const tapCoupleName2 = tapCoupleNames.coupleName2;
+  const hasTapCoupleNames = Boolean(tapCoupleName1 && tapCoupleName2);
+  const tapCeremonyLabel = hasTapCoupleNames
+    ? null
+    : enrichedDesign.introText?.trim() || props.event.title?.trim() || undefined;
 
   const softAccent =
     themeColors?.accent ??
@@ -460,9 +471,9 @@ export function PremiumInviteWrapper({
           primaryColor={themeColors?.primary ?? themeColors?.secondary}
           backgroundColor={themeColors?.background}
           atmosphereUrl={softAtmosphereUrl}
-          ceremonyLabel={softIntroTitle}
-          name1={visionBoard?.coupleName1}
-          name2={visionBoard?.coupleName2}
+          ceremonyLabel={tapCeremonyLabel}
+          name1={hasTapCoupleNames ? tapCoupleName1 : null}
+          name2={hasTapCoupleNames ? tapCoupleName2 : null}
           layoutSlug={enrichedDesign.layout}
           category={experience?.collectionId}
           fontFamily={

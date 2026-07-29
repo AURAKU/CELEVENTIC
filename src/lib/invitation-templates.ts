@@ -210,7 +210,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
           scriptTitle: "Marriage Ceremony",
           familyInvite:
             "THE AFARI AND OPOKU FAMILIES HUMBLY INVITE YOU TO WITNESS THE TRADITIONAL MARRIAGE CEREMONY BETWEEN THEIR SON AND DAUGHTER",
-          coupleName1: "OWURAKU AFARI",
+          coupleName1: "JEFFERY OWURAKU AFARI",
           coupleName2: "FRANCISCA CHELSY SERWAAH OPOKU",
           sealInitials: "C | J",
           weekday: "THURSDAY",

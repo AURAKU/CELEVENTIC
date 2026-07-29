@@ -256,6 +256,12 @@ export function TapToBeginExperience({
     [name1, name2, eventTitle, hostName, layoutSlug, category]
   );
 
+  // When the couple is the hero signal, don't also print a ceremony title above
+  // them — that was duplicating shortened first names with full legal names.
+  const showEventBeat = Boolean(
+    !couple && (beat.plain?.trim() || (beat.eyebrow && beat.script))
+  );
+
   // A lone "BEGIN" floating over a photo reads as decorative type, not a control, // guests need the verb ("tap") spelled out so the gesture is obvious on first look.
   const beginVerb = resolveBeginVerb(layoutSlug, category);
   const ctaText = `Tap to ${beginVerb}`;
@@ -310,9 +316,13 @@ export function TapToBeginExperience({
     .filter(Boolean)
     .join(" ");
 
-  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation, ${
-    beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")
-  }${couple ? `, ${couple.name1} and ${couple.name2}` : ""}`;
+  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation${
+    couple
+      ? `, ${couple.name1} and ${couple.name2}`
+      : beat.plain || [beat.eyebrow, beat.script].filter(Boolean).join(" ")
+        ? `, ${beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")}`
+        : ""
+  }`;
 
   return (
     <button
@@ -382,20 +392,22 @@ export function TapToBeginExperience({
       ) : null}
 
       <div className={stageClass}>
-        {beat.eyebrow && beat.script ? (
-          <>
-            <p className={styles.eventBeat}>{beat.eyebrow}</p>
-            <p className={styles.scriptBeat}>{beat.script}</p>
-          </>
-        ) : (
-          <p className={styles.eventBeat}>{beat.plain}</p>
-        )}
+        {showEventBeat ? (
+          beat.eyebrow && beat.script ? (
+            <>
+              <p className={styles.eventBeat}>{beat.eyebrow}</p>
+              <p className={styles.scriptBeat}>{beat.script}</p>
+            </>
+          ) : (
+            <p className={styles.eventBeat}>{beat.plain}</p>
+          )
+        ) : null}
 
         {couple ? (
           <div className={styles.names}>
-            <p className={styles.name}>{couple.name1}</p>
-            <p className={styles.amp}>&amp;</p>
-            <p className={styles.name}>{couple.name2}</p>
+            <p className={styles.coupleLine}>
+              {couple.name1} <span className={styles.inlineAmp}>&amp;</span> {couple.name2}
+            </p>
           </div>
         ) : showHostFallback ? (
           <p className={styles.hostLine}>{hostName}</p>

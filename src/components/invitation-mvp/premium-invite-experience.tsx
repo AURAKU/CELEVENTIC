@@ -170,10 +170,22 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
     eventId: props.eventId,
   };
 
-  const useBlocks = props.blocks && props.blocks.length > 0;
+  const useBlocks = Boolean(props.blocks?.length);
+  const welcomeBlocks = (props.blocks ?? []).filter(
+    (block) => block.blockType === "WELCOME" && block.isVisible !== false
+  );
+  const remainingBlocks = (props.blocks ?? []).filter(
+    (block) => block.blockType !== "WELCOME"
+  );
 
   return (
     <div className="min-h-screen bg-[#FAF8F4]">
+      {useBlocks && welcomeBlocks.length > 0 && (
+        <section className="mx-auto max-w-2xl px-4 pb-2 pt-10">
+          <BlockRenderer blocks={welcomeBlocks} context={blockContext} />
+        </section>
+      )}
+
       <InvitationRenderer
         invitation={displayInvitation}
         event={displayEvent}
@@ -188,7 +200,7 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
       <section className="mx-auto max-w-2xl px-4 py-10 space-y-6">
         {useBlocks ? (
           <>
-            <BlockRenderer blocks={props.blocks!} context={blockContext} />
+            <BlockRenderer blocks={remainingBlocks} context={blockContext} />
             <div className="flex flex-wrap gap-3 justify-center pt-4">
               <Button variant="outline" onClick={handleShare}>
                 {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}

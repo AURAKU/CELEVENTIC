@@ -2,11 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildPlaceCardViewModel,
+  deriveGuestPlaceCardMonogram,
   formatAllowanceCopy,
+  formatPlaceCardMonogram,
   inferRecipientType,
   PLACE_CARD_DEFAULTS,
   PLACE_CARD_PRESETS,
   resolvePlaceCardConfig,
+  resolvePlaceCardGuestName,
   resolveRecipientLine,
   shouldShowPlaceCard,
   type PlaceCardConfig,
@@ -33,6 +36,45 @@ const recipient = (patch: Record<string, unknown> = {}) => ({
   partySize: 3,
   assigned: true,
   ...patch,
+});
+
+/* ── badge initials ───────────────────────────────────────────────────── */
+
+test("personalized place-card initials use the guest first and last names", () => {
+  assert.equal(deriveGuestPlaceCardMonogram("Mabel Wiah"), "M | W");
+  assert.equal(deriveGuestPlaceCardMonogram("Jeffery Owuraku Afari"), "J | A");
+});
+
+test("guest initials ignore honorifics and support single names", () => {
+  assert.equal(deriveGuestPlaceCardMonogram("Mr Joshua Obuah"), "J | O");
+  assert.equal(deriveGuestPlaceCardMonogram("Regina"), "R");
+});
+
+test("the event seal remains available as the non-personalized fallback", () => {
+  assert.equal(formatPlaceCardMonogram("CJ"), "C | J");
+});
+
+test("the QR pass recipient wins over unrelated event guests", () => {
+  assert.equal(
+    resolvePlaceCardGuestName({
+      passDisplayName: "Mabel Wiah",
+      guestNames: ["Mother of Groom", "Mabel Wiah", "Ivan Cronze", "Bright Kweku Darko"],
+    }),
+    "Mabel Wiah"
+  );
+});
+
+test("multiple event guests are never joined into one place-card recipient", () => {
+  assert.equal(
+    resolvePlaceCardGuestName({
+      guestNames: ["Mabel Wiah", "Ivan Cronze", "Bright Kweku Darko"],
+    }),
+    null
+  );
+});
+
+test("a sole guest remains the safe fallback when no token or pass name exists", () => {
+  assert.equal(resolvePlaceCardGuestName({ guestNames: ["Mabel Wiah"] }), "Mabel Wiah");
 });
 
 /* ── config resolution ─────────────────────────────────────────────────── */
@@ -88,28 +130,41 @@ test("a disabled feature or a disabled card always wins over visibility", () => 
   assert.equal(shouldShowPlaceCard(config({ enabled: false }), true, true), false);
 });
 
-/* ── capacity copy (no admission / arrival disclosure) ─────────────────── */
+/* ── capacity copy (personalized, never a raw headcount) ───────────────── */
 
-test("single-guest capacity uses the exclusive one-guest line", () => {
-  assert.equal(formatAllowanceCopy("", 1), "This invitation admits one guest only.");
+test("unassigned invitations leave capacity blank", () => {
+  assert.equal(formatAllowanceCopy("", 19), "");
+  assert.equal(formatAllowanceCopy("", 1, { assigned: false }), "");
+});
+
+test("single-guest capacity addresses the invited guest only", () => {
   assert.equal(
-    formatAllowanceCopy(PLACE_CARD_DEFAULTS.allowanceDisplayWording, 1),
-    "This invitation admits one guest only."
+    formatAllowanceCopy("", 1, { assigned: true }),
+    "This invitation admits only you."
+  );
+  assert.equal(
+    formatAllowanceCopy(PLACE_CARD_DEFAULTS.allowanceDisplayWording, 1, {
+      assigned: true,
+    }),
+    "This invitation admits only you."
   );
 });
 
-test("multi-guest capacity states the total without arrivals", () => {
+test("plus-ones are stated as companions, never as a raw guest total", () => {
   assert.equal(
-    formatAllowanceCopy("This invitation admits {n} guests", 3),
-    "This invitation admits 3 guests."
+    formatAllowanceCopy("This invitation admits {n} guests", 2, { assigned: true }),
+    "This invitation admits you and 1 guest."
   );
-  assert.equal(formatAllowanceCopy("", 2), "This invitation admits 2 guests.");
+  assert.equal(
+    formatAllowanceCopy("", 3, { assigned: true }),
+    "This invitation admits you and 2 guests."
+  );
 });
 
 test("organiser templates cannot override the guest-facing capacity line", () => {
   assert.equal(
-    formatAllowanceCopy("This table seats {n} guests", 8),
-    "This invitation admits 8 guests."
+    formatAllowanceCopy("This table seats {n} guests", 8, { assigned: true }),
+    "This invitation admits you and 7 guests."
   );
 });
 
@@ -228,15 +283,24 @@ test("the view model binds config, recipient and live capacity together", () => 
 
   assert.equal(model.heading, "A place is reserved for you");
   assert.equal(model.recipientLine, "Ama Mensah");
-  assert.equal(model.allowanceCopy, "This invitation admits 3 guests.");
+  assert.equal(model.allowanceCopy, "This invitation admits you and 2 guests.");
   assert.equal(model.isGroup, true);
   assert.equal("arrivalCopy" in model, false, "guest place cards must not expose arrival copy");
 });
 
 test("single-guest view models keep the exclusive capacity line", () => {
   const model = buildPlaceCardViewModel(config(), recipient({ partySize: 1 }), party({ allowance: 1 }));
-  assert.equal(model.allowanceCopy, "This invitation admits one guest only.");
+  assert.equal(model.allowanceCopy, "This invitation admits only you.");
   assert.equal(model.isGroup, false);
+});
+
+test("unassigned view models leave capacity blank", () => {
+  const model = buildPlaceCardViewModel(
+    config(),
+    recipient({ assigned: false, guestName: null }),
+    party({ allowance: 19 })
+  );
+  assert.equal(model.allowanceCopy, "");
 });
 
 test("a blank monogram stays blank until the seal or organiser sets one", () => {
@@ -270,8 +334,8 @@ test("an already-published invitation reflects a changed allowance without arriv
   const before = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 3 }));
   const after = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 4 }));
 
-  assert.equal(before.allowanceCopy, "This invitation admits 3 guests.");
-  assert.equal(after.allowanceCopy, "This invitation admits 4 guests.");
+  assert.equal(before.allowanceCopy, "This invitation admits you and 2 guests.");
+  assert.equal(after.allowanceCopy, "This invitation admits you and 3 guests.");
 });
 
 /* ── shared feature layer + template adapters ──────────────────────────── */

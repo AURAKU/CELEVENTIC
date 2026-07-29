@@ -73,7 +73,8 @@ const MOTE_COUNT = 18;
 /** Deliberate luxury pacing: seal lift → envelope unfold → final gate tableau. */
 const UNSEAL_HOLD_MS = 2400;
 const GATE_REVEAL_AT_MS = 4600;
-const CEREMONY_COMPLETE_MS = 9800;
+/** Hold the completed word-and-couple tableau before entering the invitation. */
+const CEREMONY_COMPLETE_MS = 12000;
 
 /** Cinematic easing shared across the ceremony. */
 const EASE_SILK = [0.22, 1, 0.36, 1] as const;
@@ -248,7 +249,8 @@ export function ForeverAfarisWeddingOpening({
             <button
               type="button"
               onClick={skip}
-              className="absolute right-4 top-4 z-[70] rounded-full px-4 py-1.5 text-[11px] uppercase tracking-[0.22em] backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              aria-label="Skip the wedding opening ceremony"
+              className="absolute left-4 top-4 z-[70] rounded-full px-4 py-1.5 text-[11px] uppercase tracking-[0.22em] backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               style={{
                 color: C.cocoa,
                 background: `${C.linen}aa`,
@@ -917,7 +919,7 @@ function Gate({
             style={{ color: C.goldDeep, textShadow: `0 2px 18px ${C.linen}` }}
             initial={{ opacity: 0, y: 18, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1.8, ease: EASE_SILK, delay: 1.55 }}
+            transition={{ duration: 2.2, ease: EASE_SILK, delay: 2 }}
           >
             {word}
           </motion.p>
@@ -926,7 +928,7 @@ function Gate({
             style={{ color: C.cocoa }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1.6, delay: 2.55 }}
+            transition={{ duration: 1.8, ease: EASE_SILK, delay: 3.2 }}
           >
             {coupleLine}
           </motion.p>
@@ -968,7 +970,7 @@ function GatePanel({
       }}
       initial={{ rotateY: 0 }}
       animate={{ rotateY: isLeft ? -112 : 112 }}
-      transition={{ duration: 3.1, ease: EASE_GATE, delay: 0.65 }}
+      transition={{ duration: 3.7, ease: EASE_GATE, delay: 0.75 }}
     >
       <GateOrnament flip={!isLeft} palette={C} style={style} />
     </motion.div>

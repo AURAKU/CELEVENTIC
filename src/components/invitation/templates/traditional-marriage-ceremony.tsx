@@ -16,6 +16,8 @@ import {
 } from "@/lib/invitation/vision-board";
 import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
+import { PlaceCard } from "@/components/invitation/place-card";
+import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
 export type TraditionalMarriageProps = InvitationRenderProps & {
   seatLabel?: string | null;
@@ -367,8 +369,31 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
         )}
       </article>
 
-      {/* Lower chrome: Kindly Respond + Continue With Us, no chips / DIGITAL RSVP / utility cards */}
+      {/* Guest identity and allowance belong at the start of the invitation,
+          directly beneath its hero card—not after the journey and RSVP. */}
+      {props.placeCard && (
+        <ClientErrorBoundary fallback={null}>
+          <PlaceCard
+            config={props.placeCard.config}
+            recipient={props.placeCard.recipient}
+            party={props.placeCard.party}
+            seating={props.placeCard.seating}
+            design={design}
+          />
+        </ClientErrorBoundary>
+      )}
+
+      {/* Lower chrome: journey first, Kindly Respond last — guests meet the day before the form */}
       <div className="w-full max-w-[420px] mt-5 space-y-5 pb-8">
+        <TraditionalMarriageJourney
+          event={event}
+          mapsHref={features.location ? mapsHref : null}
+          pdfUrl={design.media?.find((m) => m.type === "pdf")?.url}
+          showGifts={Boolean(features.contributions && hasGiftsSection)}
+          showTimeline={Boolean(features.timeline && hasTimelineSection)}
+          partyAllowance={props.placeCard?.party.allowance ?? props.placeCard?.recipient.partySize ?? 1}
+        />
+
         {showRespondSection && (
           <TraditionalMarriageRespond
             invitationId={invitation.id}
@@ -381,15 +406,6 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
             organizerEmail={organizerEmail}
           />
         )}
-
-        <TraditionalMarriageJourney
-          event={event}
-          mapsHref={features.location ? mapsHref : null}
-          pdfUrl={design.media?.find((m) => m.type === "pdf")?.url}
-          showGifts={Boolean(features.contributions && hasGiftsSection)}
-          showTimeline={Boolean(features.timeline && hasTimelineSection)}
-          partyAllowance={props.placeCard?.party.allowance ?? props.placeCard?.recipient.partySize ?? 1}
-        />
       </div>
     </div>
   );

@@ -218,7 +218,13 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     thankYouScriptFontFamily: thankYouScriptFontFamily,
   };
 
-  const useBlocks = props.blocks && props.blocks.length > 0;
+  const useBlocks = Boolean(props.blocks?.length);
+  const welcomeBlocks = (props.blocks ?? []).filter(
+    (block) => block.blockType === "WELCOME" && block.isVisible !== false
+  );
+  const remainingBlocks = (props.blocks ?? []).filter(
+    (block) => block.blockType !== "WELCOME"
+  );
   const hubMode = experience?.hubMode ?? "scroll";
   const countdownStyle = experience?.countdownStyle ?? "classic";
   const environmentId = experience?.environment ?? "none";
@@ -381,6 +387,14 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
       )}
 
       <div className="relative z-10">
+        {useBlocks && welcomeBlocks.length > 0 && (
+          <div className="mx-auto max-w-2xl px-4 pb-2 pt-6 invite-content-pad">
+            <PortalSection>
+              <BlockRenderer blocks={welcomeBlocks} context={blockContext} />
+            </PortalSection>
+          </div>
+        )}
+
         <InvitationRenderer
           invitation={displayInvitation}
           event={displayEvent}
@@ -442,7 +456,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           )}
 
           {/* Journey-owning templates already show the guest name and full card copy */}
-          {!templateOwnsJourney && (
+          {!templateOwnsJourney && !useBlocks && (
             <PortalSection id="welcome">
               <div className="text-center space-y-2">
                 <p className="text-xs uppercase tracking-[0.3em] text-[#0B8A83]">Welcome</p>
@@ -490,7 +504,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
           {useBlocks ? (
             <PortalSection delay={80}>
-              <BlockRenderer blocks={props.blocks!} context={blockContext} />
+              <BlockRenderer blocks={remainingBlocks} context={blockContext} />
             </PortalSection>
           ) : (
             <>

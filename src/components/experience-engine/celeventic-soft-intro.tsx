@@ -3,10 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { useReducedMotion } from "framer-motion";
-import {
-  CELEVENTIC_PALETTE,
-  INTRO_SKIP_AVAILABLE_MS,
-} from "@/lib/experience/celeventic-palette";
+import { CELEVENTIC_PALETTE } from "@/lib/experience/celeventic-palette";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import {
   CELEVENTIC_INVITATION_INTRO_POSTER,
@@ -47,7 +44,7 @@ export interface CeleventicSoftIntroProps {
 
 /**
  * Platform soft launch, canonical Celeventic intro video for every template.
- * Auto-advances when the video ends; tap / Enter / Space / Skip crossfade out.
+ * Starts immediately and advances only when the full video ends.
  * No logo PNG overlay, the clip is the brand beat. Poster is only a still
  * of this same brand clip when motion or playback is unavailable.
  */
@@ -60,11 +57,9 @@ export function CeleventicSoftIntro({
 }: CeleventicSoftIntroProps) {
   const reduceMotion = useReducedMotion();
   const [exiting, setExiting] = useState(false);
-  const [canSkip, setCanSkip] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
-  /** Embedded previews stay silent; live guests explicitly unlock sound. */
-  const [videoStarted, setVideoStarted] = useState(embedded);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  /** Embedded previews stay silent; live playback attempts full audio first. */
+  const [soundEnabled, setSoundEnabled] = useState(!embedded);
   const completed = useRef(false);
   const exitingRef = useRef(false);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,70 +85,22 @@ export function CeleventicSoftIntro({
     exitTimer.current = setTimeout(finish, delay);
   }, [finish, reduceMotion]);
 
-  /**
-   * Browsers prohibit autoplay with audio. Starting inside the guest's click
-   * is the only reliable cross-browser path to audible playback on live URLs.
-   */
-  const startWithSound = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || completed.current || exitingRef.current) return;
-
-    // A live intro never starts before this user gesture, so restart at zero
-    // defensively if the browser restored stale media state from its cache.
-    if (video.currentTime > 0 || video.ended) {
-      video.currentTime = 0;
-    }
-    video.defaultMuted = false;
-    video.muted = false;
-    video.volume = 1;
-    setSoundEnabled(true);
-    setVideoStarted(true);
-
-    const playback = video.play();
-    if (playback && typeof playback.catch === "function") {
-      playback.catch(() => {
-        // Last-resort continuity: play muted rather than losing the intro.
-        video.muted = true;
-        setSoundEnabled(false);
-        const mutedPlayback = video.play();
-        if (mutedPlayback && typeof mutedPlayback.catch === "function") {
-          mutedPlayback.catch(() => setVideoFailed(true));
-        }
-      });
-    }
-  }, []);
-
   useEffect(() => {
     // Reduced motion / failed video: timed brand beat, no full clip.
     if (reduceMotion || videoFailed) {
       const hold = softIntroHoldMs(Boolean(reduceMotion), quickHold);
       const auto = setTimeout(() => beginExit(), hold);
       const fallback = setTimeout(finish, SOFT_INTRO_FALLBACK_MS);
-      const skipReveal =
-        hold > INTRO_SKIP_AVAILABLE_MS
-          ? setTimeout(() => setCanSkip(true), INTRO_SKIP_AVAILABLE_MS)
-          : setTimeout(() => setCanSkip(true), 200);
       return () => {
         clearTimeout(auto);
         clearTimeout(fallback);
-        clearTimeout(skipReveal);
       };
     }
 
-    // Live guests unlock sound first; only then start skip / hard-fallback timers.
-    if (!embedded && !videoStarted) {
-      return;
-    }
-
-    // Returning guests still watch the brand video, Skip appears sooner.
-    const skipAt = quickHold ? 400 : INTRO_SKIP_AVAILABLE_MS;
-    const skipReveal = setTimeout(() => setCanSkip(true), skipAt);
-    const fallback = setTimeout(finish, SOFT_INTRO_FALLBACK_MS);
-    return () => {
-      clearTimeout(skipReveal);
-      clearTimeout(fallback);
-    };
-  }, [beginExit, embedded, finish, reduceMotion, quickHold, videoFailed, videoStarted]);
+    // Successful video playback owns completion through `onEnded`, ensuring
+    // the canonical intro is never cut short by a timer or incidental tap.
+    return;
+  }, [beginExit, finish, reduceMotion, quickHold, videoFailed]);
 
   useEffect(() => {
     return () => {
@@ -162,29 +109,30 @@ export function CeleventicSoftIntro({
   }, []);
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        if (!embedded && !videoStarted && !reduceMotion && !videoFailed) {
-          startWithSound();
-        } else {
-          beginExit();
-        }
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [beginExit, embedded, reduceMotion, startWithSound, videoFailed, videoStarted]);
-
-  useEffect(() => {
     const video = videoRef.current;
-    if (!video || reduceMotion || videoFailed || (!embedded && !videoStarted)) return;
-    video.muted = !soundEnabled;
-    const play = video.play();
-    if (play && typeof play.catch === "function") {
-      play.catch(() => setVideoFailed(true));
+    if (!video || reduceMotion || videoFailed) return;
+
+    // Request audible autoplay first. Browsers that allow it start with sound
+    // immediately. Browsers enforcing autoplay policy reject that promise; in
+    // that case continue the complete intro muted rather than showing a gate.
+    video.defaultMuted = embedded;
+    video.muted = embedded;
+    video.volume = 1;
+    setSoundEnabled(!embedded);
+
+    const playback = video.play();
+    if (playback && typeof playback.catch === "function") {
+      playback.catch(() => {
+        video.defaultMuted = true;
+        video.muted = true;
+        setSoundEnabled(false);
+        const mutedPlayback = video.play();
+        if (mutedPlayback && typeof mutedPlayback.catch === "function") {
+          mutedPlayback.catch(() => setVideoFailed(true));
+        }
+      });
     }
-  }, [embedded, reduceMotion, soundEnabled, videoFailed, videoStarted]);
+  }, [embedded, reduceMotion, videoFailed]);
 
   const handleVideoEnded = useCallback(() => {
     // The media track naturally ends here; explicitly mute before the exit
@@ -213,36 +161,12 @@ export function CeleventicSoftIntro({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
       className={rootClass}
       style={
         {
           ["--soft-accent"]: accentColor,
           ["--soft-secondary"]: secondaryColor,
         } as CSSProperties
-      }
-      onClick={() => {
-        if (!embedded && !videoStarted && showVideo) {
-          startWithSound();
-          return;
-        }
-        beginExit();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          if (!embedded && !videoStarted && showVideo) {
-            startWithSound();
-          } else {
-            beginExit();
-          }
-        }
-      }}
-      aria-label={
-        !embedded && !videoStarted && showVideo
-          ? "Play the Celeventic introduction with sound"
-          : "Continue. Celeventic."
       }
     >
       <p className={styles.srStatus} aria-live="polite">
@@ -270,7 +194,7 @@ export function CeleventicSoftIntro({
               poster={CELEVENTIC_INVITATION_INTRO_POSTER}
               muted={!soundEnabled}
               playsInline
-              autoPlay={embedded}
+              autoPlay
               preload="auto"
               disablePictureInPicture
               controlsList="nodownload nofullscreen noremoteplayback"
@@ -302,34 +226,6 @@ export function CeleventicSoftIntro({
         </>
       )}
 
-      {!embedded && showVideo && !videoStarted && !exiting && (
-        <div className={styles.soundGate}>
-          <button
-            type="button"
-            className={styles.soundButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              startWithSound();
-            }}
-          >
-            <span aria-hidden className={styles.soundIcon}>♪</span>
-            <span>Play intro with sound</span>
-          </button>
-        </div>
-      )}
-
-      {canSkip && !exiting && (
-        <button
-          type="button"
-          className={styles.skipButton}
-          onClick={(e) => {
-            e.stopPropagation();
-            beginExit();
-          }}
-        >
-          Skip intro
-        </button>
-      )}
     </div>
   );
 }
