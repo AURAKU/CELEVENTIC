@@ -189,7 +189,12 @@ export function SmartGuestSearch({
             Just created
           </p>
           {pinned.map((card) => (
-            <GuestResultCard key={card.invitationId} card={card} onChanged={onCardChanged} />
+            <GuestResultCard
+              key={card.invitationId}
+              eventId={eventId!}
+              card={card}
+              onChanged={onCardChanged}
+            />
           ))}
         </div>
       )}
@@ -237,6 +242,7 @@ export function SmartGuestSearch({
           {results.map((card) => (
             <GuestResultCard
               key={card.invitationId}
+              eventId={eventId!}
               card={card}
               highlight={searching ? highlightRanges(card.name, parsed) : undefined}
               onChanged={onCardChanged}

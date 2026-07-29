@@ -52,6 +52,17 @@ export interface SearchResultCard {
   matchReason: string;
   /** Relevance score, exposed so the UI can group "exact" above "also found". */
   score: number;
+  /**
+   * Private organizer CRM relationship tags (family/friends/etc).
+   * Never sent to guest-facing invitation surfaces.
+   */
+  tags: GuestTagSummary[];
+}
+
+/** Organizer-only chip shown on Guest CRM cards. */
+export interface GuestTagSummary {
+  id: string;
+  label: string;
 }
 
 export interface SearchResponse {

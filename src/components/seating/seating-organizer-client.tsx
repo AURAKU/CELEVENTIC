@@ -55,6 +55,8 @@ interface GuestRow {
   phone: string | null;
   qrToken: string;
   status?: string;
+  /** Private organizer CRM tags for seating arrangement. */
+  tags?: { id: string; label: string }[];
 }
 
 interface AssignmentRow {
@@ -681,7 +683,13 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
         <SeatAssignPanel
           tableLabel={selectedTable.label}
           seatIndex={selectedSeat}
-          guests={guests.map((g) => ({ id: g.id, name: g.name, email: g.email, status: g.status }))}
+          guests={guests.map((g) => ({
+            id: g.id,
+            name: g.name,
+            email: g.email,
+            status: g.status,
+            tags: g.tags,
+          }))}
           currentGuestId={currentSeatGuestId}
           onAssign={assignGuestToSeat}
           onUnassign={() => void unassignSeat()}

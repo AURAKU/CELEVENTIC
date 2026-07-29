@@ -223,7 +223,13 @@ export function SeatingTableVisual({
 interface SeatAssignPanelProps {
   tableLabel: string;
   seatIndex: number;
-  guests: { id: string; name: string; email: string | null; status?: string | null }[];
+  guests: {
+    id: string;
+    name: string;
+    email: string | null;
+    status?: string | null;
+    tags?: { id: string; label: string }[];
+  }[];
   currentGuestId?: string;
   onAssign: (guestId: string) => void;
   onUnassign: () => void;
@@ -250,12 +256,14 @@ export function SeatAssignPanel({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [onClose]);
 
+  const needle = search.trim().toLowerCase();
   const filtered = guests
     .filter(
       (g) =>
-        !search ||
-        g.name.toLowerCase().includes(search.toLowerCase()) ||
-        g.email?.toLowerCase().includes(search.toLowerCase())
+        !needle ||
+        g.name.toLowerCase().includes(needle) ||
+        g.email?.toLowerCase().includes(needle) ||
+        g.tags?.some((tag) => tag.label.toLowerCase().includes(needle))
     )
     .slice()
     .sort(compareGuestsForSeatingAssign);
@@ -312,6 +320,11 @@ export function SeatAssignPanel({
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate">{g.name}</p>
                         <p className="text-xs text-slate-500 truncate">{g.email ?? "No email"}</p>
+                        {(g.tags?.length ?? 0) > 0 && (
+                          <p className="mt-0.5 truncate text-[10px] text-amber-800/90">
+                            {g.tags!.map((tag) => tag.label).join(" · ")}
+                          </p>
+                        )}
                       </div>
                       <Badge className={cn("text-[9px] shrink-0", planningBadgeClass(g.status))}>
                         {seatingPlanningLabel(g.status)}

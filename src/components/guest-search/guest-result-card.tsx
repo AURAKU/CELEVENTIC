@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PartyAllowanceField } from "./party-allowance-field";
+import { GuestTagPicker } from "./guest-tag-picker";
 import { describeAllowance } from "@/lib/guest-search/party-allowance";
 import type { SearchResultCard } from "@/lib/guest-search/types";
 import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
@@ -42,13 +43,14 @@ function publicInviteUrl(url: string): string {
  */
 
 interface GuestResultCardProps {
+  eventId: string;
   card: SearchResultCard;
   /** Ranges to embolden in the name, from the current query. */
   highlight?: [number, number][];
   onChanged: (card: SearchResultCard) => void;
 }
 
-export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardProps) {
+export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestResultCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -140,6 +142,7 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
       }
       onChanged({
         ...card,
+        tags: card.tags ?? [],
         admittedCount: 0,
         members: card.members.map((m) => ({ ...m, admitted: false })),
         guestStatus:
@@ -191,6 +194,20 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
             )}
             <span className="truncate">{card.email || card.phone || "No contact"}</span>
           </div>
+
+          {(card.tags?.length ?? 0) > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {card.tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="rounded-full border border-brand-200 bg-brand-50/80 px-2 py-0.5 text-[10px] font-medium text-brand-800"
+                  title="Private organizer tag — guests never see this"
+                >
+                  {tag.label}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Why this result appeared, when it was not the obvious name match. */}
           {card.matchedField !== "name" && (
@@ -363,6 +380,7 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
 
       {editing && (
         <EditPanel
+          eventId={eventId}
           card={card}
           onClose={() => setEditing(false)}
           onSaved={(next) => {
@@ -408,10 +426,12 @@ function MenuItem({
 
 /** Inline edit. The link is never regenerated, see the personalisation route. */
 function EditPanel({
+  eventId,
   card,
   onClose,
   onSaved,
 }: {
+  eventId: string;
   card: SearchResultCard;
   onClose: () => void;
   onSaved: (card: SearchResultCard) => void;
@@ -420,10 +440,15 @@ function EditPanel({
   const [partySize, setPartySize] = useState(card.partySize);
   const [phone, setPhone] = useState(card.phone ?? "");
   const [email, setEmail] = useState(card.email ?? "");
+  const [tagIds, setTagIds] = useState<string[]>(() => (card.tags ?? []).map((tag) => tag.id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   async function save() {
+    if (!card.guestId && tagIds.length > 0) {
+      setError("This invitation has no guest row to tag yet.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -442,7 +467,40 @@ function EditPanel({
         setError(json.error ?? "Could not save the changes.");
         return;
       }
-      if (json.data?.card) onSaved(json.data.card as SearchResultCard);
+
+      let nextCard = (json.data?.card as SearchResultCard | undefined) ?? {
+        ...card,
+        name,
+        partySize,
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+        tags: card.tags ?? [],
+      };
+
+      if (card.guestId) {
+        const tagRes = await fetch(`/api/guests/${card.guestId}/tags`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tagIds }),
+        });
+        const tagJson = await tagRes.json();
+        if (!tagRes.ok) {
+          setError(tagJson.error ?? "Details saved, but tags could not be updated.");
+          if (tagJson.data?.card) onSaved(tagJson.data.card as SearchResultCard);
+          else onSaved(nextCard);
+          return;
+        }
+        if (tagJson.data?.card) {
+          nextCard = tagJson.data.card as SearchResultCard;
+        } else {
+          nextCard = {
+            ...nextCard,
+            tags: (tagJson.data?.tags as SearchResultCard["tags"]) ?? [],
+          };
+        }
+      }
+
+      onSaved(nextCard);
     } catch {
       setError("Could not reach the server.");
     } finally {
@@ -482,6 +540,19 @@ function EditPanel({
           />
         </div>
       </div>
+
+      {card.guestId ? (
+        <GuestTagPicker
+          eventId={eventId}
+          selectedIds={tagIds}
+          onChange={setTagIds}
+          disabled={saving}
+        />
+      ) : (
+        <p className="text-xs text-slate-500">
+          Tags become available once this invitation has a guest record.
+        </p>
+      )}
 
       <p className="text-xs text-slate-500">
         The invitation link stays exactly the same, so anything you have already sent keeps working.

@@ -22,7 +22,18 @@ export async function GET(
     const [guests, guestTotal] = await Promise.all([
       prisma.guest.findMany({
         where: { eventId, archivedAt: null },
-        select: { id: true, name: true, email: true, phone: true, qrToken: true, status: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          qrToken: true,
+          status: true,
+          tagAssignments: {
+            orderBy: { tag: { sortOrder: "asc" } },
+            select: { tag: { select: { id: true, label: true } } },
+          },
+        },
         orderBy: { name: "asc" },
         take: SEATING_GUEST_LIMIT,
       }),
@@ -32,7 +43,18 @@ export async function GET(
       success: true,
       data: {
         plan,
-        guests,
+        guests: guests.map((guest) => ({
+          id: guest.id,
+          name: guest.name,
+          email: guest.email,
+          phone: guest.phone,
+          qrToken: guest.qrToken,
+          status: guest.status,
+          tags: guest.tagAssignments.map((row) => ({
+            id: row.tag.id,
+            label: row.tag.label,
+          })),
+        })),
         guestTotal,
         guestsTruncated: guestTotal > guests.length,
       },

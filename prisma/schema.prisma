@@ -353,6 +353,8 @@ model Event {
   guestPasses          GuestPass[]
   guestImportBatches   GuestImportBatch[]
   generalPassBatches   GeneralPassBatch[]
+  /// Organizer-only relationship labels for seating/planning (never guest-facing).
+  guestTags            EventGuestTag[]
 
   @@index([organizerId])
   @@index([organizationId])
@@ -565,12 +567,53 @@ model Guest {
   giftPayments      EventGiftPayment[]
   importBatch       GuestImportBatch?     @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
   importRows        GuestImportRow[]
+  /// Private organizer CRM tags (family/friends/etc). Never exposed on invites.
+  tagAssignments    GuestTagAssignment[]
 
   @@unique([eventId, manualCode])
   @@index([eventId])
   @@index([status])
   @@index([importBatchId])
   @@map("guests")
+}
+
+/**
+ * Event-scoped guest relationship labels for seating and planning.
+ * Visible only to organizers/admins in Guest CRM — never on guest surfaces.
+ */
+model EventGuestTag {
+  id        String   @id @default(cuid())
+  eventId   String
+  /// Display label, e.g. "Family of bride"
+  label     String
+  /// Normalized unique key within the event
+  slug      String
+  /// True when seeded from the wedding preset catalog
+  isPreset  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event        Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignments  GuestTagAssignment[]
+
+  @@unique([eventId, slug])
+  @@index([eventId, sortOrder])
+  @@map("event_guest_tags")
+}
+
+model GuestTagAssignment {
+  id        String   @id @default(cuid())
+  guestId   String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  guest Guest         @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  tag   EventGuestTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([guestId, tagId])
+  @@index([tagId])
+  @@map("guest_tag_assignments")
 }
 
 model Rsvp {

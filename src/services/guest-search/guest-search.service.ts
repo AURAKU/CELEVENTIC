@@ -70,6 +70,12 @@ const invitationSelect = {
       notes: true,
       qrToken: true,
       seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+      tagAssignments: {
+        orderBy: { tag: { sortOrder: "asc" } },
+        select: {
+          tag: { select: { id: true, label: true } },
+        },
+      },
     },
   },
   guestPasses: {
@@ -173,6 +179,11 @@ function toCard(
   const primary = row.guests[0] ?? null;
   const seating = row.guests.find((g) => g.seatingAssignment)?.seatingAssignment ?? null;
   const pass = row.guestPasses[0] ?? null;
+  const tags =
+    primary?.tagAssignments?.map((assignment) => ({
+      id: assignment.tag.id,
+      label: assignment.tag.label,
+    })) ?? [];
 
   // A personal link carries the guest token so the invitation greets them by
   // name and the place card resolves to the right person.
@@ -210,6 +221,7 @@ function toCard(
     matchedField: match.field,
     matchReason: match.reason,
     score: match.score,
+    tags,
   };
 }
 
