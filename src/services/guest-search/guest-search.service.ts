@@ -38,55 +38,62 @@ export interface SearchOptions {
   eventId: string;
   query: string;
   limit?: number;
+  /** 1-based page for empty-query browse. Ignored while searching. */
+  page?: number;
   /** Include archived invitations. Off by default — archive means "hidden". */
   includeArchived?: boolean;
   /** Include unnamed general-admission passes. Off by default. */
   includeGeneralPasses?: boolean;
 }
 
-const invitationSelect = {
-  id: true,
-  name: true,
-  status: true,
-  admissionAllowance: true,
-  admittedCount: true,
-  isGeneralPass: true,
-  archivedAt: true,
-  uniqueLink: true,
-  createdAt: true,
-  updatedAt: true,
-  guests: {
-    where: { archivedAt: null },
-    orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      manualCode: true,
-      plusOnes: true,
-      status: true,
-      partyType: true,
-      notes: true,
-      qrToken: true,
-      seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
-      tagAssignments: {
-        orderBy: { tag: { sortOrder: "asc" } },
-        select: {
-          tag: { select: { id: true, label: true } },
+function invitationSelectFor(eventId: string) {
+  return {
+    id: true,
+    name: true,
+    status: true,
+    admissionAllowance: true,
+    admittedCount: true,
+    isGeneralPass: true,
+    archivedAt: true,
+    uniqueLink: true,
+    createdAt: true,
+    updatedAt: true,
+    guests: {
+      where: { archivedAt: null, eventId },
+      orderBy: { createdAt: "asc" as const },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        manualCode: true,
+        plusOnes: true,
+        status: true,
+        partyType: true,
+        notes: true,
+        qrToken: true,
+        eventId: true,
+        seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+        tagAssignments: {
+          orderBy: { tag: { sortOrder: "asc" as const } },
+          select: {
+            tag: { select: { id: true, label: true } },
+          },
         },
       },
     },
-  },
-  guestPasses: {
-    where: { status: { notIn: ["REISSUED"] } },
-    orderBy: { tokenVersion: "desc" },
-    take: 1,
-    select: { code: true, status: true, partySize: true, admittedCount: true },
-  },
-} satisfies Prisma.InvitationSelect;
+    guestPasses: {
+      where: { status: { notIn: ["REISSUED" as const] }, eventId },
+      orderBy: { tokenVersion: "desc" as const },
+      take: 1,
+      select: { code: true, status: true, partySize: true, admittedCount: true },
+    },
+  } satisfies Prisma.InvitationSelect;
+}
 
-type InvitationRow = Prisma.InvitationGetPayload<{ select: typeof invitationSelect }>;
+type InvitationRow = Prisma.InvitationGetPayload<{
+  select: ReturnType<typeof invitationSelectFor>;
+}>;
 
 /** Build the stage-one `WHERE`: only the fields this query could match. */
 function buildWhere(
@@ -235,32 +242,39 @@ function toCard(
 export async function searchGuests(options: SearchOptions): Promise<SearchResponse> {
   const startedAt = Date.now();
   const limit = Math.min(MAX_LIMIT, Math.max(1, options.limit ?? DEFAULT_LIMIT));
+  const page = Math.max(1, Math.trunc(options.page ?? 1));
   const query = parseSearchQuery(options.query);
 
   const appUrl = await getServerAppUrl();
+  const invitationSelect = invitationSelectFor(options.eventId);
   const baseWhere: Prisma.InvitationWhereInput = {
     eventId: options.eventId,
     ...(options.includeArchived ? {} : { archivedAt: null }),
     ...(options.includeGeneralPasses ? {} : { isGeneralPass: false }),
   };
 
-  // Empty query = browse the guest list (newest first). Keeps Add Guest and
-  // search on one continuous surface instead of a second CRM table.
+  // Empty query = browse this event's guest list only (newest first), paged.
   if (query.isEmpty) {
+    const total = await prisma.invitation.count({ where: baseWhere });
+    const pages = Math.max(1, Math.ceil(total / limit));
+    const safePage = Math.min(page, pages);
     const rows = await prisma.invitation.findMany({
       where: baseWhere,
       select: invitationSelect,
       orderBy: { updatedAt: "desc" },
+      skip: (safePage - 1) * limit,
       take: limit,
     });
-    const total = await prisma.invitation.count({ where: baseWhere });
     return {
       query: query.raw,
       results: rows.map((row) =>
         toCard(row, { score: 0, field: "name", reason: row.name }, appUrl)
       ),
       total,
-      truncated: total > rows.length,
+      page: safePage,
+      pages,
+      limit,
+      truncated: total > safePage * limit,
       tookMs: Date.now() - startedAt,
     };
   }
@@ -301,6 +315,9 @@ export async function searchGuests(options: SearchOptions): Promise<SearchRespon
     query: query.raw,
     results,
     total: ranked.length,
+    page: 1,
+    pages: 1,
+    limit,
     truncated,
     tookMs: Date.now() - startedAt,
   };
@@ -319,7 +336,7 @@ export async function getResultCard(
 ): Promise<SearchResultCard | null> {
   const row = await prisma.invitation.findFirst({
     where: { id: invitationId, eventId },
-    select: invitationSelect,
+    select: invitationSelectFor(eventId),
   });
   if (!row) return null;
 

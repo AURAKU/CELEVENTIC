@@ -18,6 +18,7 @@ const querySchema = z.object({
   eventId: z.string().min(1, "eventId is required"),
   q: z.string().max(MAX_QUERY_LENGTH).default(""),
   limit: z.coerce.number().int().min(1).max(50).optional(),
+  page: z.coerce.number().int().min(1).max(10_000).optional(),
   includeArchived: z.enum(["0", "1"]).optional(),
   includeGeneralPasses: z.enum(["0", "1"]).optional(),
 });
@@ -29,6 +30,7 @@ export async function GET(req: Request) {
     eventId: url.searchParams.get("eventId") ?? "",
     q: url.searchParams.get("q") ?? "",
     limit: url.searchParams.get("limit") ?? undefined,
+    page: url.searchParams.get("page") ?? undefined,
     includeArchived: url.searchParams.get("includeArchived") ?? undefined,
     includeGeneralPasses: url.searchParams.get("includeGeneralPasses") ?? undefined,
   });
@@ -37,7 +39,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
   }
 
-  const { eventId, q, limit, includeArchived, includeGeneralPasses } = parsed.data;
+  const { eventId, q, limit, page, includeArchived, includeGeneralPasses } = parsed.data;
 
   const auth = await authorizeSearch(eventId);
   if (auth.error) return auth.error;
@@ -51,6 +53,7 @@ export async function GET(req: Request) {
       eventId,
       query: q,
       limit,
+      page,
       includeArchived: includeArchived === "1",
       includeGeneralPasses: includeGeneralPasses === "1",
     });

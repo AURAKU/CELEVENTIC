@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Search, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { PaginationBar } from "@/components/ui/pagination";
 import { GuestResultCard } from "./guest-result-card";
 import {
   MIN_QUERY_LENGTH,
@@ -15,12 +16,13 @@ import type { SearchResponse, SearchResultCard } from "@/lib/guest-search/types"
  * Smart Guest Search + guest list.
  *
  * One box. A name, a phone number, an email, an admission code or a table all
- * work. With an empty box the same surface browses the live guest list, so
- * Add Guest and search stay one continuous flow.
+ * work. With an empty box the same surface browses the live guest list for the
+ * selected event only — never mixed with another celebration — 15 at a time.
  */
 
 const DEBOUNCE_MS = 220;
-const BROWSE_LIMIT = 40;
+const BROWSE_LIMIT = 15;
+const SEARCH_LIMIT = 20;
 
 interface SmartGuestSearchProps {
   eventId: string | null;
@@ -41,6 +43,7 @@ export function SmartGuestSearch({
   refreshToken = 0,
 }: SmartGuestSearchProps) {
   const [term, setTerm] = useState("");
+  const [page, setPage] = useState(1);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -53,7 +56,7 @@ export function SmartGuestSearch({
   const searching = term.trim().length >= MIN_QUERY_LENGTH;
 
   const runSearch = useCallback(
-    async (query: string, archived: boolean, signal: AbortSignal) => {
+    async (query: string, archived: boolean, nextPage: number, signal: AbortSignal) => {
       if (!eventId) return;
       const id = ++requestId.current;
       setLoading(true);
@@ -61,8 +64,9 @@ export function SmartGuestSearch({
         const params = new URLSearchParams({
           eventId,
           q: query,
-          limit: String(searching ? 20 : BROWSE_LIMIT),
+          limit: String(searching ? SEARCH_LIMIT : BROWSE_LIMIT),
         });
+        if (!searching) params.set("page", String(nextPage));
         if (archived) params.set("includeArchived", "1");
         const res = await fetch(`/api/guest-search?${params}`, { signal });
         const json = await res.json();
@@ -85,6 +89,19 @@ export function SmartGuestSearch({
     [eventId, searching]
   );
 
+  // Switching events must drop the previous celebration's rows immediately.
+  useEffect(() => {
+    setResponse(null);
+    setTerm("");
+    setPage(1);
+    setError("");
+    setIncludeArchived(false);
+  }, [eventId]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [term, includeArchived, statusFilter]);
+
   useEffect(() => {
     if (!eventId) {
       setResponse(null);
@@ -93,14 +110,14 @@ export function SmartGuestSearch({
     }
     const controller = new AbortController();
     const timer = setTimeout(
-      () => void runSearch(term, includeArchived, controller.signal),
+      () => void runSearch(term, includeArchived, page, controller.signal),
       searching ? DEBOUNCE_MS : 0
     );
     return () => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [term, eventId, includeArchived, searching, runSearch, refreshToken]);
+  }, [term, eventId, includeArchived, searching, runSearch, refreshToken, page]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -135,6 +152,10 @@ export function SmartGuestSearch({
   const pinned = recentlyCreated.filter(
     (card) => !shownIds.has(card.invitationId) && !card.archivedAt
   );
+
+  const browseTotal = response?.total ?? 0;
+  const browsePages = response?.pages ?? Math.max(1, Math.ceil(browseTotal / BROWSE_LIMIT));
+  const browsePage = response?.page ?? page;
 
   return (
     <div className="space-y-3">
@@ -236,8 +257,7 @@ export function SmartGuestSearch({
               ? `${response?.total ?? results.length} match${
                   (response?.total ?? results.length) === 1 ? "" : "es"
                 }`
-              : `Guest list · ${response?.total ?? results.length}`}
-            {response && response.total > results.length ? ` · showing ${results.length}` : ""}
+              : `Guest list · ${browseTotal} for this event`}
           </p>
           {results.map((card) => (
             <GuestResultCard
@@ -248,6 +268,15 @@ export function SmartGuestSearch({
               onChanged={onCardChanged}
             />
           ))}
+          {!searching && browseTotal > BROWSE_LIMIT && (
+            <PaginationBar
+              page={browsePage}
+              pages={browsePages}
+              total={browseTotal}
+              limit={BROWSE_LIMIT}
+              onPageChange={setPage}
+            />
+          )}
         </div>
       )}
     </div>

@@ -70,6 +70,12 @@ export interface SearchResponse {
   results: SearchResultCard[];
   /** Total matches found before the limit was applied. */
   total: number;
+  /** 1-based page for browse mode. */
+  page?: number;
+  /** Total pages for browse mode. */
+  pages?: number;
+  /** Page size used for this response. */
+  limit?: number;
   /** True when ranking ran against a truncated candidate set. */
   truncated: boolean;
   /** Milliseconds spent server-side, surfaced in the UI in dev. */

@@ -74,7 +74,7 @@ export default function GuestsPage() {
         <div>
           <h1 className="text-2xl font-bold">Guest CRM</h1>
           <p className="page-subtitle">
-          Add guests, tag relationships for seating (organizer-only), edit details, or archive — one list for all of it.
+            Select an event to manage only that celebration&apos;s guests — never mixed with another list.
           </p>
         </div>
         <Button asChild variant="outline">
