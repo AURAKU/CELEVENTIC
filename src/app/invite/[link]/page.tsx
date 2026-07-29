@@ -190,22 +190,15 @@ export default async function InvitePage({
 
   const galleryUrls = event.media?.map((m) => m.url) ?? [];
 
-  const hasStoredDesign = Boolean(
-    (invitation.designConfig as Partial<InvitationDesignConfig> | null)?.layout
-  );
-  const inheritsProductionOrder = Boolean(
-    order && (order.invitationId === invitation.id || !hasStoredDesign)
-  );
-  const productionOrder = inheritsProductionOrder ? order : null;
+  // Once the organizer/admin publishes Studio work for this event, every guest
+  // link for the selected event must render that live production design —
+  // never a catalogue snapshot stamped onto a secondary invitation at create.
+  const productionOrder = order;
   const catalogSlug =
     productionOrder?.templateSlug ??
     productionOrder?.template?.slug ??
     invitation.template?.slug ??
     null;
-  // A personalized guest invitation is a separate Invitation row and normally
-  // has no design snapshot of its own. Render from the event's paid/published
-  // Studio order so every guest sees the organizer/admin's current live work.
-  // A separate legacy invitation with an intentional design keeps that design.
   const productionDesign = productionOrder
     ? buildPublishedDesignConfig(productionOrder)
     : null;

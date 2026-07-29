@@ -82,17 +82,15 @@ export async function resolvePlaceCard(
   const feature = features.find((f) => f.key === "PLACE_CARD");
   const baseConfig = resolvePlaceCardConfig(feature?.config);
 
-  // Prefer this invitation's design; fall back to the event's published Studio
-  // order so personalised guest links still inherit the couple seal (C | J).
+  // Prefer the event's published Studio design so place-card seals follow the
+  // live production template, not a catalogue layout stamped at invite create.
   let design = designFromUnknown(invitation.designConfig);
-  if (!design.layout) {
-    const productionOrder = await resolveProductionInvitationOrder(
-      invitation.id,
-      invitation.eventId
-    );
-    if (productionOrder?.designConfig) {
-      design = designFromUnknown(productionOrder.designConfig);
-    }
+  const productionOrder = await resolveProductionInvitationOrder(
+    invitation.id,
+    invitation.eventId
+  );
+  if (productionOrder?.designConfig) {
+    design = designFromUnknown(productionOrder.designConfig);
   }
 
   const board = mergeVisionBoard(

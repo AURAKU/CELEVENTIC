@@ -75,17 +75,12 @@ export default async function EventDayPortal({
     redirect(inviteHref);
   }
 
-  const order = await resolveProductionInvitationOrder(
+  // Event Companion must continue the same live Studio design guests saw on
+  // the invitation — never a stale catalogue layout on a secondary invite.
+  const productionOrder = await resolveProductionInvitationOrder(
     invitation.id,
     invitation.event.id
   );
-  const hasStoredDesign = Boolean(
-    (invitation.designConfig as { layout?: unknown } | null)?.layout
-  );
-  const productionOrder =
-    order && (order.invitationId === invitation.id || !hasStoredDesign)
-      ? order
-      : null;
   const theme = resolveCompanionTheme({
     designConfig: productionOrder
       ? buildPublishedDesignConfig(productionOrder)

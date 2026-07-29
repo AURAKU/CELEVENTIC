@@ -110,4 +110,32 @@ describe("production invitation source", () => {
     assert.equal(theme.colors.primary, "#102030");
     assert.notEqual(theme.layout, "classic-gold");
   });
+
+  it("wins over a catalogue layout stamped onto a secondary invitation", async () => {
+    const source = productionOrder();
+    const resolved = await resolveProductionInvitationOrderWithReader(
+      "secondary-guest-invitation",
+      "event-1",
+      readerReturning([null, source], [])
+    );
+    assert.ok(resolved);
+
+    // Guest pages must render the published Studio order even when the
+    // secondary invitation row still carries a catalogue designConfig.layout.
+    const live = buildPublishedDesignConfig(resolved);
+    const catalogueSnapshot = {
+      layout: "classic-gold",
+      colors: {
+        primary: "#000000",
+        secondary: "#111111",
+        accent: "#222222",
+        background: "#ffffff",
+        text: "#000000",
+      },
+    };
+
+    assert.equal(live.layout, STUDIO_LAYOUT);
+    assert.notEqual(live.layout, catalogueSnapshot.layout);
+    assert.equal(live.colors.primary, "#102030");
+  });
 });

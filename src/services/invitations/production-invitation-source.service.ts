@@ -37,7 +37,8 @@ type ProductionOrderReader = {
  * are separate Invitation rows, but they belong to the same Event as the
  * canonical invitation created when the Studio order was published. Their
  * guest pages must therefore inherit that event's production order instead of
- * falling back to the platform default template.
+ * falling back to the platform catalogue template — even when a catalogue
+ * layout was stamped onto the secondary invitation at create time.
  */
 export async function resolveProductionInvitationOrder(
   invitationId: string,
