@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * Personalised Place Card — the shared, template-agnostic implementation.
+ * Personalised Place Card, the shared, template-agnostic implementation.
  *
  * There is exactly one of these for the whole platform. Presentation is
  * inherited from the template's feature adapter (colours, typography, border
@@ -156,17 +156,6 @@ export function PlaceCard({ config, recipient, party, design, className }: Place
           className="mx-auto mt-6 h-px w-16"
           style={{ background: tokens.secondary, opacity: 0.6 }}
         />
-
-        {/* Party allowance — the structured allowance is the source of truth;
-            this is only its wording. Bold and unambiguous so a guest never has
-            to guess how many people the invitation covers. */}
-        <p
-          className="mt-6 text-[13px] font-semibold sm:text-sm"
-          style={{ color: tokens.primary, letterSpacing: "0.12em" }}
-          data-testid="place-card-allowance"
-        >
-          {model.allowanceCopy}
-        </p>
 
         {model.arrivalCopy && (
           <p

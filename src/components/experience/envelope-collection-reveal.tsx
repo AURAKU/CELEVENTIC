@@ -26,43 +26,50 @@ interface EnvelopeCollectionRevealProps {
   sealInitials?: string;
   /** Designed seal (color/material) + font/size/color overrides for the wax seal text. */
   sealStyle?: ResolvedSealStyle;
-  /** Fires on the open gesture — preferred music unlock path. */
+  /** Fires on the open gesture, preferred music unlock path. */
   onBegin?: () => void;
   onComplete: () => void;
   /** Invitation peeks under the flap as it lifts. */
   children?: ReactNode;
   /**
-   * Catalogue / studio glimpse: sealed face only — absolute fill, no open gesture.
+   * Catalogue / studio glimpse: sealed face only, absolute fill, no open gesture.
    * Used so preview tiles show the real opening DNA before tap-to-view.
    */
   staticPreview?: boolean;
   /**
-   * Framed catalogue / studio live preview — absolute fill inside the tile
+   * Framed catalogue / studio live preview, absolute fill inside the tile
    * instead of viewport-fixed (avoids zero-height collapse under CSS transforms).
    */
   embedded?: boolean;
   /**
    * Start opening on mount (catalogue “Tap to open envelope” already consumed
-   * the user gesture — do not require a second tap on a sealed face).
+   * the user gesture, do not require a second tap on a sealed face).
    */
   autoOpen?: boolean;
 }
 
-type Phase = "idle" | "opening" | "done";
+/**
+ * Photoreal TM (Forever Afaris–inspired):
+ * idle → unsealing (seal lifts clear) → opening (flap unfolds) → done.
+ * CSS envelopes stay on the simpler idle → opening → done path.
+ */
+type Phase = "idle" | "unsealing" | "opening" | "done";
 
-/** Theatrical open — flap unveils (CSS seals lift first). */
+/** Theatrical open, flap unveils (CSS seals lift first). */
 export const ENVELOPE_OPEN_MS = 3000;
 export const ENVELOPE_OPEN_REDUCED_MS = 650;
 /**
- * Photoreal TM choreography (soft, unhurried):
- * tap → flap lifts with seal attached → invite unveils → settle.
- * Music only — no crack/pop SFX.
+ * Photoreal TM cinematic open (Forever Afaris timing DNA):
+ * tap → seal lifts (~1.9s) → flap unfolds dramatically → invite unveils → settle.
+ * Music only, no crack/pop SFX.
  */
-export const ENVELOPE_PHOTO_OPEN_MS = 7800;
-export const ENVELOPE_PHOTO_OPEN_REDUCED_MS = 1700;
+export const ENVELOPE_PHOTO_OPEN_MS = 5600;
+export const ENVELOPE_PHOTO_OPEN_REDUCED_MS = 900;
+/** Seal-clear beat before the flap commits (matches Forever Afaris unseal window). */
+export const ENVELOPE_PHOTO_UNSEAL_MS = 1900;
 const OPEN_EASE = "cubic-bezier(0.22, 0.61, 0.18, 1)";
-/** Soft luxury ease — long ease-out, no snap. */
-const PHOTO_OPEN_EASE = "cubic-bezier(0.14, 0.82, 0.12, 1)";
+/** Soft luxury ease, long ease-out, no snap. */
+const PHOTO_OPEN_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 const DEFAULT_STAGE =
   "linear-gradient(180deg, #071428 0%, #0c3f3c 40%, #0a2a36 70%, #050d16 100%)";
@@ -75,7 +82,7 @@ function resolveSealLabel(sealInitials: string | undefined, theme: EnvelopeVisua
   return theme.sealIcon ?? "✦";
 }
 
-/** Minimal ripple glyph — reads as "tap here" without a generic stock hand/cursor icon. */
+/** Minimal ripple glyph, reads as "tap here" without a generic stock hand/cursor icon. */
 function EnvelopeTapGlyph() {
   return (
     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -87,7 +94,7 @@ function EnvelopeTapGlyph() {
 }
 
 /**
- * Full-viewport immersive envelope — teal→navy stage, cyan frame, gold edges,
+ * Full-viewport immersive envelope, teal→navy stage, cyan frame, gold edges,
  * navy body, mustard flap, wax seal with initials. No instructional copy:
  * the envelope is the experience.
  */
@@ -110,9 +117,10 @@ export function EnvelopeCollectionReveal({
   const [phase, setPhase] = useState<Phase>("idle");
   const started = useRef(false);
   const completeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unsealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoOpenBootstrapped = useRef(false);
 
-  /** Cream embroidered face — photoreal art fill + interactive seal when themed. */
+  /** Cream embroidered face, photoreal art fill + interactive seal when themed. */
   const photoreal = Boolean(theme.photoreal);
   const openEase = photoreal ? PHOTO_OPEN_EASE : OPEN_EASE;
   const durationMs = reduceMotion
@@ -122,16 +130,16 @@ export function EnvelopeCollectionReveal({
     : photoreal
       ? ENVELOPE_PHOTO_OPEN_MS
       : ENVELOPE_OPEN_MS;
-  /** Slow whole-stamp lift — used by CSS envelopes; photoreal rides the flap. */
+  /** Slow whole-stamp lift for CSS envelopes; photoreal seal lifts in its own beat. */
   const sealDurationMs = reduceMotion
     ? photoreal
-      ? 720
+      ? 420
       : 220
     : photoreal
-      ? 3400
+      ? ENVELOPE_PHOTO_UNSEAL_MS
       : 780;
   /**
-   * Photoreal: seal is parented to the flap — zero delay, one cohesive lift.
+   * Photoreal: flap peels softly during unseal, then commits after the seal clears.
    * CSS envelopes: flap follows after the seal float.
    */
   const flapDelayMs = reduceMotion
@@ -139,13 +147,15 @@ export function EnvelopeCollectionReveal({
     : photoreal
       ? 0
       : Math.round(sealDurationMs * 0.55);
-  /** Invitation template begins unveiling once the flap is mid-open. */
+  /** Invitation unveils once the flap is mid-open (after unseal on photoreal). */
   const unveilDelayMs = reduceMotion
     ? 0
     : photoreal
-      ? Math.round(durationMs * 0.22)
+      ? ENVELOPE_PHOTO_UNSEAL_MS + Math.round((durationMs - ENVELOPE_PHOTO_UNSEAL_MS) * 0.28)
       : 220;
-  const isOpening = phase === "opening";
+  const isUnsealing = phase === "unsealing";
+  const isEnvelopeOpening = phase === "opening";
+  const isOpening = isUnsealing || isEnvelopeOpening;
   const sealLabel = resolveSealLabel(sealInitials, theme);
   const useInitialsGlyph = Boolean(normalizeSealInitials(sealInitials));
 
@@ -161,33 +171,59 @@ export function EnvelopeCollectionReveal({
   const sealInk = sealInkStyle(sealTextColor, false, useInitialsGlyph);
   const stageBase = photoreal ? "#ebe2d6" : "#050a12";
 
+  const clearOpenTimers = useCallback(() => {
+    if (completeTimer.current) {
+      clearTimeout(completeTimer.current);
+      completeTimer.current = null;
+    }
+    if (unsealTimer.current) {
+      clearTimeout(unsealTimer.current);
+      unsealTimer.current = null;
+    }
+  }, []);
+
   const finish = useCallback(() => {
+    clearOpenTimers();
     setPhase("done");
     onComplete();
-  }, [onComplete]);
+  }, [clearOpenTimers, onComplete]);
+
+  /** Staged photoreal open, or single-beat CSS open. */
+  const runOpenSequence = useCallback(() => {
+    clearOpenTimers();
+    if (photoreal && !reduceMotion) {
+      setPhase("unsealing");
+      unsealTimer.current = setTimeout(() => {
+        setPhase("opening");
+      }, ENVELOPE_PHOTO_UNSEAL_MS);
+      completeTimer.current = setTimeout(finish, durationMs + 80);
+      return;
+    }
+    setPhase("opening");
+    completeTimer.current = setTimeout(finish, durationMs + 80);
+  }, [clearOpenTimers, durationMs, finish, photoreal, reduceMotion]);
 
   const beginOpen = useCallback(() => {
     if (staticPreview || started.current || phase !== "idle") return;
     started.current = true;
     triggerHapticLight();
-    // Unlock template music on the gesture — photoreal TM is music-only (no crack/pop SFX).
+    // Unlock template music on the gesture, photoreal TM is music-only (no crack/pop SFX).
     onBegin?.();
     if (enableSounds && !photoreal) {
       playRevealSounds(true);
     }
-    setPhase("opening");
-    completeTimer.current = setTimeout(finish, durationMs + 80);
-  }, [durationMs, enableSounds, finish, onBegin, phase, photoreal, staticPreview]);
+    runOpenSequence();
+  }, [enableSounds, onBegin, phase, photoreal, runOpenSequence, staticPreview]);
 
   useEffect(() => {
     return () => {
-      if (completeTimer.current) clearTimeout(completeTimer.current);
+      clearOpenTimers();
     };
-  }, []);
+  }, [clearOpenTimers]);
 
   /**
    * Catalogue “Tap to open envelope” already happened.
-   * Paint one sealed frame, then open so CSS transitions actually run.
+   * Paint one sealed frame, then open so CSS / motion transitions actually run.
    * Music unlock runs immediately (sticky activation from the affordance tap).
    */
   useEffect(() => {
@@ -203,15 +239,14 @@ export function EnvelopeCollectionReveal({
     let raf2 = 0;
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => {
-        setPhase("opening");
-        completeTimer.current = setTimeout(finish, durationMs + 80);
+        runOpenSequence();
       });
     });
     return () => {
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
     };
-  }, [shouldAutoOpen, onBegin, enableSounds, photoreal, finish, durationMs]);
+  }, [shouldAutoOpen, onBegin, enableSounds, photoreal, runOpenSequence]);
 
   useEffect(() => {
     if (staticPreview || phase !== "idle") return;
@@ -257,15 +292,22 @@ export function EnvelopeCollectionReveal({
       <div
         className="absolute inset-0 z-0"
         style={{
-          opacity: isOpening ? 1 : 0,
-          transform: isOpening
+          opacity: isEnvelopeOpening ? 1 : 0,
+          transform: isEnvelopeOpening
             ? "scale(1)"
             : reduceMotion
               ? "scale(1)"
               : "scale(0.965)",
-          transition: `opacity ${Math.min(durationMs, photoreal ? 3600 : 1200)}ms ${
-            photoreal ? PHOTO_OPEN_EASE : "ease"
-          } ${unveilDelayMs}ms, transform ${durationMs}ms ${openEase} ${unveilDelayMs}ms`,
+          transition: `opacity ${Math.min(
+            durationMs,
+            photoreal ? 2200 : 1200
+          )}ms ${photoreal ? PHOTO_OPEN_EASE : "ease"} ${
+            photoreal ? Math.round((durationMs - ENVELOPE_PHOTO_UNSEAL_MS) * 0.2) : unveilDelayMs
+          }ms, transform ${
+            photoreal ? Math.round(durationMs - ENVELOPE_PHOTO_UNSEAL_MS) : durationMs
+          }ms ${openEase} ${
+            photoreal ? Math.round((durationMs - ENVELOPE_PHOTO_UNSEAL_MS) * 0.15) : unveilDelayMs
+          }ms`,
           pointerEvents: "none",
         }}
         aria-hidden
@@ -278,7 +320,8 @@ export function EnvelopeCollectionReveal({
           theme={theme}
           sealLabel={sealLabel}
           eventTitle={eventTitle}
-          isOpening={isOpening}
+          isUnsealing={isUnsealing}
+          isOpening={isEnvelopeOpening}
           reduceMotion={Boolean(reduceMotion)}
           durationMs={durationMs}
           sealDurationMs={sealDurationMs}
@@ -336,7 +379,7 @@ export function EnvelopeCollectionReveal({
           }}
         />
 
-        {/* Envelope fills the framed stage — no copy below */}
+        {/* Envelope fills the framed stage, no copy below */}
         <div
           className={`absolute ${
             reduceMotion || isOpening ? "" : "inv-envelope-breathe"
@@ -541,7 +584,7 @@ export function EnvelopeCollectionReveal({
       )}
 
       {/*
-        Guided tap affordance — the envelope/seal itself IS the control, but a
+        Guided tap affordance, the envelope/seal itself IS the control, but a
         guest who has never seen this ceremony before shouldn't have to guess
         that it's interactive. Uses the theme's own copy ("Tap the seal to
         open", "Press the wax seal", ...) so every envelope variant stays on
@@ -579,13 +622,13 @@ export function EnvelopeCollectionReveal({
         </div>
       )}
 
-      {/* Full-area hit target — seal/envelope IS the control; the chip above just labels it */}
+      {/* Full-area hit target, seal/envelope IS the control; the chip above just labels it */}
       {!staticPreview && !shouldAutoOpen && phase === "idle" && (
         <button
           type="button"
           onClick={beginOpen}
           className="absolute inset-0 z-40 touch-manipulation bg-transparent border-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-12px] focus-visible:outline-[#D4A63A]/85"
-          aria-label={theme.label ? `${theme.label} — open invitation` : "Tap to open invitation"}
+          aria-label={theme.label ? `${theme.label}, open invitation` : "Tap to open invitation"}
         />
       )}
     </div>

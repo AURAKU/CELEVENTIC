@@ -1,8 +1,9 @@
 "use client";
-// flap+seal: seal is a child of the flap transform (cohesive lift, no float-away)
+// Cinematic open (Forever Afaris DNA): seal lifts clear → flap unfolds → unveil.
 // rect-fill: classic landscape envelope + embroidery cover-fill
 
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { EnvelopeVisualTheme } from "@/lib/experience/opening-experiences";
 import { TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL } from "@/lib/invitation/vision-board";
 import { invitationFontVars } from "@/lib/invitation-fonts";
@@ -16,14 +17,21 @@ import {
   type ResolvedSealStyle,
 } from "@/lib/invitation/seal-design";
 
+/** Matches Forever Afaris silk ease for seal / flap beats. */
+const EASE_SILK = [0.22, 1, 0.36, 1] as const;
+const EASE_GATE = [0.16, 1, 0.3, 1] as const;
+
 interface EmbroideredEnvelopeFaceProps {
   theme: EnvelopeVisualTheme;
   sealLabel: string;
   eventTitle: string;
+  /** Seal lifting clear of the paper (first cinematic beat). */
+  isUnsealing?: boolean;
+  /** Flap committing to a full dramatic unfold (second beat). */
   isOpening: boolean;
   reduceMotion: boolean;
   durationMs: number;
-  /** Kept for call-site compatibility; photoreal open no longer floats the seal alone. */
+  /** Seal-clear duration; drives the independent stamp lift. */
   sealDurationMs: number;
   flapDelayMs: number;
   openEase: string;
@@ -50,11 +58,11 @@ const ART_ASPECT_NUM = 937 / 957;
 const ART_SEAL_X = 0.5518;
 const ART_SEAL_Y = 0.6238;
 
-/** Natural V-flap tip — interactive seal anchors exactly here. */
+/** Natural V-flap tip, interactive seal anchors exactly here. */
 const PHOTO_FLAP_PCT = 54.5;
 /**
  * Premium stamp fills the cream disc / plate under the V-tip.
- * Sized to fully cover leftover faint circle — peach seal only, no halo peek.
+ * Sized to fully cover leftover faint circle, peach seal only, no halo peek.
  */
 const PHOTO_SEAL_WIDTH = "40%";
 const FALLBACK_SEAL_WIDTH = "36%";
@@ -75,7 +83,7 @@ function subscribeMq(mq: MediaQueryList, onChange: () => void) {
   return () => mq.removeEventListener("change", onChange);
 }
 
-/** Desktop vs mobile envelope aspect — fills screen without grey letterboxing. */
+/** Desktop vs mobile envelope aspect, fills screen without grey letterboxing. */
 function useEnvelopeAspect(fitContainer: boolean): number {
   const isDesktop = useSyncExternalStore(
     (onStoreChange) => {
@@ -112,20 +120,21 @@ function photoFillLayout(
 
 /**
  * Hybrid embroidered cream envelope:
- * - Primary: photoreal IMG_8701 fills body + V-flap (object-cover), peach seal on flap tip.
- * - Open: flap + seal rotate as one (seal never floats away alone).
+ * - Primary: photoreal IMG_8701 fills body + V-flap (object-cover), peach seal on tip.
+ * - Open (Forever Afaris DNA): seal lifts clear → flap peels then unfolds dramatically.
  * - Fallback: CSS/SVG composition if the face art fails to load.
  */
 export function EmbroideredEnvelopeFace({
   theme,
   sealLabel,
   eventTitle,
+  isUnsealing = false,
   isOpening,
   reduceMotion,
   durationMs,
-  sealDurationMs: _sealDurationMs,
-  flapDelayMs,
-  openEase,
+  sealDurationMs,
+  flapDelayMs: _flapDelayMs,
+  openEase: _openEase,
   fitContainer = false,
   sealStyle,
 }: EmbroideredEnvelopeFaceProps) {
@@ -137,6 +146,11 @@ export function EmbroideredEnvelopeFace({
   const usePhoto = Boolean(faceArtUrl) && artState === "ready";
   /** Prefer photo geometry while loading so seal/flap don’t jump when art arrives. */
   const preferPhotoLayout = Boolean(faceArtUrl) && artState !== "error";
+  const lifting = isUnsealing || isOpening;
+  const sealLiftSec = Math.max(0.45, sealDurationMs / 1000);
+  const flapOpenSec = reduceMotion
+    ? 0.35
+    : Math.max(1.1, (durationMs - sealDurationMs) / 1000 * 0.72);
 
   useEffect(() => {
     if (!faceArtUrl) {
@@ -165,38 +179,59 @@ export function EmbroideredEnvelopeFace({
   const flapHeightPct = preferPhotoLayout ? PHOTO_FLAP_PCT : 54;
   const sealWidth = preferPhotoLayout ? PHOTO_SEAL_WIDTH : FALLBACK_SEAL_WIDTH;
 
-  /** Maximize envelope in viewport — landscape box constrained by width AND height. */
+  /** Maximize envelope in viewport, landscape box constrained by width AND height. */
   const envelopeWidth = fitContainer
     ? "100%"
     : `min(99.2vw, calc((100dvh - 0.28rem) * ${envelopeAspect}), 56rem)`;
 
+  /**
+   * Hold the envelope fully visible through seal lift + flap unfold.
+   * Only dissolve once the flap has committed — never mid-lift.
+   */
+  const shellFadeDelay = isOpening
+    ? Math.round(flapOpenSec * 1000 * 0.55)
+    : 0;
+  const shellFadeMs = isOpening
+    ? Math.round(flapOpenSec * 1000 * 0.55)
+    : Math.round(durationMs * 0.2);
+
   return (
-    <div
+    <motion.div
       className={`absolute inset-0 z-10 flex items-center justify-center ${invitationFontVars}`}
       style={{
         background: stageBg,
-        /* Hold the envelope on-stage while the flap opens; fade only after the lift reads. */
-        opacity: isOpening ? 0 : 1,
-        transform: isOpening
-          ? reduceMotion
-            ? "translateY(-4%) scale(1.01)"
-            : "translateY(-6%) scale(1.03)"
-          : "translateY(0) scale(1)",
-        transition: reduceMotion
-          ? `opacity ${durationMs}ms ${openEase}, transform ${durationMs}ms ${openEase}`
-          : `opacity ${Math.round(durationMs * 0.28)}ms ${openEase} ${Math.round(
-              durationMs * 0.68
-            )}ms, transform ${Math.round(durationMs * 0.55)}ms ${openEase} ${Math.round(
-              durationMs * 0.38
-            )}ms`,
         pointerEvents: "none",
         padding: fitContainer
           ? "0"
           : "max(0.12rem, env(safe-area-inset-top, 0px)) max(0.18rem, env(safe-area-inset-right, 0px)) max(0.12rem, env(safe-area-inset-bottom, 0px)) max(0.18rem, env(safe-area-inset-left, 0px))",
-        /* Perspective lives here so rotateX on the flap+seal unit is never flattened. */
         perspective: reduceMotion ? undefined : "1600px",
         perspectiveOrigin: "50% 0%",
       }}
+      initial={false}
+      animate={
+        isOpening
+          ? {
+              opacity: 0,
+              y: reduceMotion ? "-3%" : "-7%",
+              scale: reduceMotion ? 1.01 : 1.055,
+            }
+          : isUnsealing
+            ? { opacity: 1, y: 0, scale: 1.025 }
+            : { opacity: 1, y: 0, scale: 1 }
+      }
+      transition={
+        isOpening
+          ? {
+              opacity: {
+                duration: shellFadeMs / 1000,
+                delay: shellFadeDelay / 1000,
+                ease: EASE_SILK,
+              },
+              y: { duration: flapOpenSec, ease: EASE_SILK },
+              scale: { duration: flapOpenSec, ease: EASE_SILK },
+            }
+          : { duration: 0.9, ease: EASE_SILK }
+      }
     >
       {/* Soft linen atmosphere */}
       <div
@@ -208,12 +243,12 @@ export function EmbroideredEnvelopeFace({
         aria-hidden
       />
 
-      <div
+      <motion.div
         className={`relative z-10 ${
-          reduceMotion || isOpening ? "" : "inv-envelope-breathe"
+          reduceMotion || lifting ? "" : "inv-envelope-breathe"
         }`}
         style={{
-          /* Classic landscape invitation envelope — fills screen, adapts mobile/desktop. */
+          /* Classic landscape invitation envelope, fills screen, adapts mobile/desktop. */
           width: envelopeWidth,
           aspectRatio: `${envelopeAspect} / 1`,
           maxHeight: fitContainer ? "100%" : "calc(100dvh - 0.28rem)",
@@ -223,20 +258,24 @@ export function EmbroideredEnvelopeFace({
           boxShadow:
             "0 24px 70px rgba(80, 50, 30, 0.22), 0 0 0 1px rgba(196, 154, 120, 0.34)",
           /* Flap+seal may swing past the face; keep clipped while sealed. */
-          overflow: isOpening ? "visible" : "hidden",
+          overflow: lifting ? "visible" : "hidden",
           background: "#efe6dc",
         }}
+        animate={
+          isOpening
+            ? { filter: "brightness(1.1)" }
+            : isUnsealing
+              ? { filter: "brightness(1.04)" }
+              : { filter: "brightness(1)" }
+        }
+        transition={{ duration: 1.1, ease: EASE_SILK }}
         role="img"
         aria-label={`Sealed embroidered invitation envelope for ${eventTitle}`}
       >
-        {/* Envelope body — cream underlay, photo fills shape when ready */}
+        {/* Envelope body, cream underlay, photo fills shape when ready */}
         <div
           className="absolute inset-0 overflow-hidden"
-          style={{
-            filter: isOpening ? "brightness(1.08)" : undefined,
-            transition: `filter ${durationMs}ms ${openEase}`,
-            background: PAPER,
-          }}
+          style={{ background: PAPER }}
         >
           {/* Rich emboss always under photo so loading never looks blank gray */}
           <EmbossTexture opacity={usePhoto ? 0.12 : 0.6} />
@@ -286,27 +325,39 @@ export function EmbroideredEnvelopeFace({
           />
         )}
 
-        {/* Flap + seal assembly — ONE rotateX; seal is a child so it never floats alone */}
-        <div
-          className="absolute inset-x-0 top-0 z-20"
+        {/*
+          Top V-flap — soft peel while the seal lifts, then a dramatic unfold.
+          Seal is a sibling (not a child) so it can float clear independently.
+        */}
+        <motion.div
+          className="absolute inset-x-0 top-0 z-20 origin-top"
           style={{
             height: `${flapHeightPct}%`,
-            transformOrigin: "50% 0%",
-            transform: isOpening
-              ? reduceMotion
-                ? "translateY(-105%)"
-                /* Stay under 90° so the embroidered face stays visible while lifting. */
-                : "translateY(-1%) rotateX(-82deg)"
-              : "translateY(0) rotateX(0deg)",
-            transition: `transform ${durationMs}ms ${openEase} ${flapDelayMs}ms`,
             transformStyle: "preserve-3d",
-            /* Seal protrudes past the V-tip; never clip the assembly. */
             overflow: "visible",
-            willChange: isOpening ? "transform" : undefined,
+            willChange: lifting ? "transform" : undefined,
+            zIndex: isOpening ? 12 : 20,
+          }}
+          initial={{ rotateX: 0 }}
+          animate={{
+            rotateX: reduceMotion
+              ? isOpening
+                ? -28
+                : 0
+              : isOpening
+                ? -152
+                : isUnsealing
+                  ? -22
+                  : 0,
+          }}
+          transition={{
+            duration: isOpening ? flapOpenSec : sealLiftSec,
+            ease: EASE_GATE,
+            delay: isOpening ? 0.05 : isUnsealing ? 0.32 : 0,
           }}
           aria-hidden
         >
-          {/* Cream underside — reads as paper when the flap lifts toward camera */}
+          {/* Cream underside, reads as paper when the flap lifts toward camera */}
           <div
             className="absolute inset-0"
             style={{
@@ -318,13 +369,13 @@ export function EmbroideredEnvelopeFace({
             }}
           />
 
-          {/* V-flap face only (clipped triangle) — NO backface hide (that made the flap vanish past ~90°) */}
+          {/* V-flap face only (clipped triangle) */}
           <div
             className="absolute inset-0 overflow-hidden"
             style={{
               clipPath: "polygon(0 0, 100% 0, 50% 100%)",
-              boxShadow: isOpening ? "none" : "0 18px 40px rgba(80,50,30,0.16)",
-              filter: isOpening ? "brightness(1.1)" : undefined,
+              boxShadow: lifting ? "none" : "0 18px 40px rgba(80,50,30,0.16)",
+              filter: lifting ? "brightness(1.1)" : undefined,
               transform: "translateZ(0.5px)",
             }}
           >
@@ -370,7 +421,7 @@ export function EmbroideredEnvelopeFace({
               </div>
             )}
 
-            {!reduceMotion && !isOpening && (
+            {!reduceMotion && !lifting && (
               <div
                 className="absolute inset-0 opacity-35"
                 style={{
@@ -382,40 +433,110 @@ export function EmbroideredEnvelopeFace({
               />
             )}
           </div>
+        </motion.div>
 
-          {/*
-            Peach wax stamp — child of flap transform (same rotateX).
-            Anchored on the V-tip; covers cream plate; never floats away alone.
-          */}
-          <div
-            className="absolute left-1/2 z-30"
-            style={{
-              top: "100%",
-              width: sealWidth,
-              height: "auto",
-              aspectRatio: "1",
-              minWidth: fitContainer ? "4.25rem" : "9.25rem",
-              minHeight: fitContainer ? "4.25rem" : "9.25rem",
-              maxWidth: fitContainer ? "7.75rem" : "17rem",
-              /* Centered on tip; parent flap owns ALL open motion — no seal-only transform. */
-              transform: "translate3d(-50%, -50%, 1.5px)",
-            }}
-          >
-            <PremiumWaxSeal
-              sealLabel={sealLabel}
-              isOpening={isOpening}
-              reduceMotion={reduceMotion}
-              compact={fitContainer}
-              sealStyle={sealStyle}
+        {/* Soft paper contact ring left behind as the seal lifts clear */}
+        <AnimatePresence>
+          {isUnsealing && !isOpening && !reduceMotion && (
+            <motion.span
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 z-[18] rounded-full"
+              style={{
+                top: `${flapHeightPct}%`,
+                width: sealWidth,
+                maxWidth: fitContainer ? "7.75rem" : "17rem",
+                minWidth: fitContainer ? "4.25rem" : "9.25rem",
+                aspectRatio: "1",
+                x: "-50%",
+                y: "-50%",
+                border: "1px solid rgba(160, 90, 70, 0.28)",
+                boxShadow: "inset 0 0 16px rgba(160, 90, 70, 0.14)",
+                background:
+                  "radial-gradient(circle, rgba(255,248,240,0.72) 0%, transparent 70%)",
+              }}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: [0, 0.75, 0.22], scale: [0.85, 1.02, 1.1] }}
+              exit={{ opacity: 0, scale: 1.18 }}
+              transition={{ duration: sealLiftSec, ease: EASE_SILK }}
             />
-          </div>
-        </div>
-      </div>
-    </div>
+          )}
+        </AnimatePresence>
+
+        {/*
+          Peach wax stamp — sibling of the flap so it can lift clear first
+          (Forever Afaris seal choreography), then soar away as the flap opens.
+        */}
+        <motion.div
+          className="absolute left-1/2 z-30 flex items-center justify-center"
+          style={{
+            top: `${flapHeightPct}%`,
+            width: sealWidth,
+            height: "auto",
+            aspectRatio: "1",
+            minWidth: fitContainer ? "4.25rem" : "9.25rem",
+            minHeight: fitContainer ? "4.25rem" : "9.25rem",
+            maxWidth: fitContainer ? "7.75rem" : "17rem",
+            x: "-50%",
+            transformStyle: "preserve-3d",
+            willChange: lifting ? "transform, opacity" : undefined,
+          }}
+          initial={{ y: "-50%", scale: 1, opacity: 1, rotateX: 0, rotateZ: 0 }}
+          animate={
+            reduceMotion
+              ? isOpening
+                ? { y: "-120%", scale: 0.92, opacity: 0, rotateX: 0, rotateZ: 0 }
+                : { y: "-50%", scale: 1, opacity: 1, rotateX: 0, rotateZ: 0 }
+              : isOpening
+                ? {
+                    y: "-340%",
+                    scale: 0.76,
+                    opacity: 0,
+                    rotateX: -52,
+                    rotateZ: -9,
+                    filter: "drop-shadow(0 28px 24px rgba(120, 70, 50, 0.22))",
+                  }
+                : isUnsealing
+                  ? {
+                      y: "-175%",
+                      scale: 1.07,
+                      opacity: 1,
+                      rotateX: -30,
+                      rotateZ: -4,
+                      filter: "drop-shadow(0 22px 20px rgba(120, 70, 50, 0.34))",
+                    }
+                  : {
+                      y: "-50%",
+                      scale: 1,
+                      opacity: 1,
+                      rotateX: 0,
+                      rotateZ: 0,
+                      filter: "drop-shadow(0 10px 14px rgba(120, 70, 50, 0.28))",
+                    }
+          }
+          transition={
+            lifting
+              ? {
+                  duration: isOpening ? Math.min(1.2, flapOpenSec) : sealLiftSec,
+                  ease: EASE_SILK,
+                }
+              : { duration: 0.01 }
+          }
+        >
+          <PremiumWaxSeal
+            sealLabel={sealLabel}
+            isOpening={lifting}
+            isUnsealing={isUnsealing && !isOpening}
+            reduceMotion={reduceMotion}
+            compact={fitContainer}
+            sealStyle={sealStyle}
+          />
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
 
-/** Zoom+pan cover-fill — embroidery covers rectangle; art seal under interactive stamp. */
+/** Zoom+pan cover-fill, embroidery covers rectangle; art seal under interactive stamp. */
 function EnvelopePhotoFill({
   src,
   alt,
@@ -427,7 +548,7 @@ function EnvelopePhotoFill({
 }) {
   const layout = photoFillLayout(boxAspect);
   return (
-    // Local public template — body + flap share identical pan/zoom
+    // Local public template, body + flap share identical pan/zoom
     <img
       src={src}
       alt={alt}
@@ -446,7 +567,7 @@ function EnvelopePhotoFill({
         WebkitBackfaceVisibility: "hidden",
         backfaceVisibility: "hidden",
         transform: "translateZ(0)",
-        /* Premium color grade — richer peach embroidery, sharper presence */
+        /* Premium color grade, richer peach embroidery, sharper presence */
         filter: "saturate(1.12) contrast(1.06) brightness(1.03)",
       }}
     />
@@ -997,20 +1118,22 @@ function sealTypography(
 }
 
 /**
- * Luxury pearlescent peach wax — circular poured stamp cloned from IMG_8701:
- * soft peach face, raised rim, pearl bead ring, gloss — never bronze, never halo.
- * Rides the flap tip as a child transform (never floats away alone).
+ * Luxury pearlescent peach wax, circular poured stamp cloned from IMG_8701:
+ * soft peach face, raised rim, pearl bead ring, gloss, never bronze, never halo.
+ * Lifts clear of the flap tip first, then soars away as the envelope opens.
  * Host/admin seal text renders dynamically.
  */
 function PremiumWaxSeal({
   sealLabel,
   isOpening,
+  isUnsealing = false,
   reduceMotion,
   compact = false,
   sealStyle,
 }: {
   sealLabel: string;
   isOpening: boolean;
+  isUnsealing?: boolean;
   reduceMotion: boolean;
   compact?: boolean;
   sealStyle?: ResolvedSealStyle;
@@ -1035,6 +1158,7 @@ function PremiumWaxSeal({
   const beadGrad = `waxBead-${uid}`;
   const softShadow = `waxShadow-${uid}`;
   const pearlSheen = `waxPearl-${uid}`;
+  const lifting = isOpening || isUnsealing;
 
   const beads = Array.from({ length: 36 }, (_, i) => {
     const angle = (i / 36) * Math.PI * 2 - Math.PI / 2;
@@ -1059,11 +1183,13 @@ function PremiumWaxSeal({
   return (
     <div
       className={`relative flex h-full w-full items-center justify-center ${
-        reduceMotion || isOpening ? "" : "inv-seal-pulse-peach"
+        reduceMotion || lifting ? "" : "inv-seal-pulse-peach"
       }`}
       style={{
-        filter: reduceMotion || isOpening
-          ? "drop-shadow(0 12px 18px rgba(120, 70, 50, 0.38))"
+        filter: reduceMotion || lifting
+          ? isUnsealing
+            ? "drop-shadow(0 18px 22px rgba(120, 70, 50, 0.42))"
+            : "drop-shadow(0 12px 18px rgba(120, 70, 50, 0.38))"
           : undefined,
       }}
     >
@@ -1074,13 +1200,13 @@ function PremiumWaxSeal({
         aria-hidden
       >
         <defs>
-          {/* Deep poured base — preset-driven material color */}
+          {/* Deep poured base, preset-driven material color */}
           <radialGradient id={waxDeep} cx="48%" cy="55%" r="62%">
             {preset.deep.map((s, i) => (
               <stop key={i} offset={s.offset} stopColor={s.color} />
             ))}
           </radialGradient>
-          {/* Luminous face — preset-driven material color */}
+          {/* Luminous face, preset-driven material color */}
           <radialGradient id={waxFace} cx="34%" cy="28%" r="72%">
             {preset.face.map((s, i) => (
               <stop key={i} offset={s.offset} stopColor={s.color} />
@@ -1116,7 +1242,7 @@ function PremiumWaxSeal({
           </filter>
         </defs>
 
-        {/* Soft contact shadow — tight, no white halo */}
+        {/* Soft contact shadow, tight, no white halo */}
         <ellipse cx="51.5" cy="54" rx="41" ry="39" fill="rgba(120,70,50,0.2)" opacity="0.55" />
 
         {/* Deep poured base */}
@@ -1178,7 +1304,7 @@ function PremiumWaxSeal({
           </g>
         ))}
 
-        {/* Gloss highlight — wet pearlescent catch-light */}
+        {/* Gloss highlight, wet pearlescent catch-light */}
         <ellipse cx="36" cy="33" rx="20" ry="14" fill={`url(#${glossGrad})`} />
         <path
           d="M22 28 C30 18, 46 16, 58 24"
@@ -1218,7 +1344,7 @@ function PremiumWaxSeal({
         {displayText}
       </span>
 
-      {!reduceMotion && !isOpening && (
+      {!reduceMotion && !lifting && (
         <span
           className="absolute left-[18%] top-[14%] h-2.5 w-3.5 rounded-full bg-[#fff8f0]/8 blur-[1px]"
           style={{ animation: "inv-envelope-glint 2.8s ease-in-out infinite" }}

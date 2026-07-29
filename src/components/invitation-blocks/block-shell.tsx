@@ -1,16 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 interface BlockShellProps {
   children: React.ReactNode;
   variant?: string;
   className?: string;
+  style?: CSSProperties;
   animate?: boolean;
 }
 
-export function BlockShell({ children, variant = "elegant", className, animate = true }: BlockShellProps) {
+export function BlockShell({
+  children,
+  variant = "elegant",
+  className,
+  style,
+  animate = true,
+}: BlockShellProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(!animate);
 
@@ -44,9 +51,11 @@ export function BlockShell({ children, variant = "elegant", className, animate =
   return (
     <div
       ref={ref}
+      style={style}
       className={cn(
         "rounded-2xl border p-6 sm:p-8 transition-all duration-700",
-        variantClass,
+        /* Heritage chrome supplies its own surface/border via style */
+        !style && variantClass,
         animate && (visible ? "inv-block-reveal" : "opacity-0 translate-y-4"),
         className
       )}

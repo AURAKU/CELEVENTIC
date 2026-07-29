@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { MapPin, Clock, Shirt, Phone, Mail, Gift, Users } from "lucide-react";
+import { useState, useEffect, type CSSProperties } from "react";
+import { Clock, Shirt, Phone, Mail, Gift, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { BlockShell } from "@/components/invitation-blocks/block-shell";
@@ -14,30 +14,94 @@ import { TraditionalMarriageGallerySection } from "@/components/invitation/templ
 import { TraditionalMarriageCountdown } from "@/components/invitation/templates/traditional-marriage-countdown";
 import { TraditionalMarriageThankYou } from "@/components/invitation/templates/traditional-marriage-thank-you";
 import { TM_PALETTE } from "@/components/invitation/templates/traditional-marriage-palette";
+import { FA_PALETTE } from "@/components/invitation/templates/forever-afaris-wedding-palette";
+import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
 import { cn } from "@/lib/utils";
+
+/**
+ * Stationery chrome for wedding templates whose place card / ceremony art
+ * already own the look. Blocks inherit linen, ink, and script fonts instead
+ * of generic white/teal dashboard cards.
+ */
+interface HeritageChrome {
+  surface: string;
+  border: string;
+  heading: string;
+  eyebrow: string;
+  rule: string;
+  ink: string;
+  muted: string;
+  accent: string;
+  radius: string;
+}
+
+function heritageChromeFor(layout?: string): HeritageChrome | null {
+  if (layout === "traditional-marriage-ceremony") {
+    return {
+      surface: TM_PALETTE.peach,
+      border: TM_PALETTE.border,
+      heading: TM_PALETTE.bronze,
+      eyebrow: TM_PALETTE.bronzeDeep,
+      rule: `${TM_PALETTE.mustard}70`,
+      ink: TM_PALETTE.ink,
+      muted: TM_PALETTE.dress,
+      accent: TM_PALETTE.bronzeDeep,
+      radius: "0.5rem",
+    };
+  }
+  if (layout === "forever-afaris-wedding") {
+    return {
+      surface: FA_PALETTE.linen,
+      border: FA_PALETTE.border,
+      heading: FA_PALETTE.goldDeep,
+      eyebrow: FA_PALETTE.cocoa,
+      rule: FA_PALETTE.goldSoft,
+      ink: FA_PALETTE.ink,
+      muted: FA_PALETTE.cocoa,
+      accent: FA_PALETTE.gold,
+      radius: "1.25rem",
+    };
+  }
+  return null;
+}
+
+function heritageShellStyle(chrome: HeritageChrome): CSSProperties {
+  return {
+    background: chrome.surface,
+    borderColor: chrome.border,
+    borderRadius: chrome.radius,
+    color: chrome.ink,
+    boxShadow: "none",
+  };
+}
 
 function BlockHeader({
   block,
   locale,
   editorial,
+  chrome,
 }: {
   block: InvitationBlockDto;
   locale: string;
   /** Traditional Marriage / heritage editorial header */
   editorial?: boolean;
+  chrome?: HeritageChrome | null;
 }) {
   const localized = block.contents?.find((c) => c.language === locale);
   const title = localized?.title ?? block.title;
   const subtitle = localized?.subtitle ?? block.subtitle;
   if (!title && !subtitle) return null;
 
-  if (editorial) {
+  const heritage =
+    chrome ?? (editorial ? heritageChromeFor("traditional-marriage-ceremony") : null);
+
+  if (heritage) {
     return (
       <div className="mb-5 text-center space-y-2">
         {subtitle && (
           <p
             className="font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.36em] uppercase"
-            style={{ color: TM_PALETTE.bronzeDeep }}
+            style={{ color: heritage.eyebrow }}
           >
             {subtitle}
           </p>
@@ -45,14 +109,14 @@ function BlockHeader({
         {title && (
           <h2
             className="font-[family-name:var(--font-great-vibes)] text-[2.35rem] sm:text-[2.65rem] leading-none"
-            style={{ color: TM_PALETTE.bronze }}
+            style={{ color: heritage.heading }}
           >
             {title}
           </h2>
         )}
         <div
           className="tm-hairline mx-auto mt-3 h-px w-14"
-          style={{ backgroundColor: `${TM_PALETTE.mustard}70` }}
+          style={{ backgroundColor: heritage.rule }}
           aria-hidden
         />
       </div>
@@ -76,7 +140,7 @@ function CountdownView({
   target?: string;
   label: string;
   begun: string;
-  /** Traditional Marriage linen editorial — other templates keep classic navy */
+  /** Traditional Marriage linen editorial, other templates keep classic navy */
   chrome?: "default" | "linen";
 }) {
   const [left, setLeft] = useState("");
@@ -131,13 +195,25 @@ export function BlockView({ block, ctx }: BlockViewProps) {
   const localized = block.contents?.find((c) => c.language === locale);
   const body = localized?.content ?? block.contentJson?.body ?? "";
   const cj = { ...block.contentJson, ...(localized?.contentJson ?? {}) };
+  const heritage = heritageChromeFor(ctx.layout);
 
   switch (block.blockType) {
     case "WELCOME":
       return (
-        <BlockShell variant={block.styleVariant}>
-          <BlockHeader block={block} locale={locale} />
-          <p className="text-center text-lg text-[#0B8A83] font-medium">
+        <BlockShell
+          variant={block.styleVariant}
+          style={heritage ? heritageShellStyle(heritage) : undefined}
+        >
+          <BlockHeader block={block} locale={locale} chrome={heritage} />
+          <p
+            className={cn(
+              "text-center",
+              heritage
+                ? "font-[family-name:var(--font-cormorant)] text-[1.05rem] sm:text-lg leading-relaxed italic"
+                : "text-lg text-[#0B8A83] font-medium"
+            )}
+            style={heritage ? { color: heritage.muted } : undefined}
+          >
             {ctx.guestName ? t("invite.welcome", { name: ctx.guestName }) : body}
           </p>
         </BlockShell>
@@ -145,9 +221,30 @@ export function BlockView({ block, ctx }: BlockViewProps) {
 
     case "COUPLE_INTRO":
       return (
-        <BlockShell variant={block.styleVariant}>
-          <BlockHeader block={block} locale={locale} />
-          <p className="text-center font-display text-2xl sm:text-3xl font-bold text-[#0F172A]">
+        <BlockShell
+          variant={block.styleVariant}
+          style={heritage ? heritageShellStyle(heritage) : undefined}
+        >
+          <BlockHeader
+            block={{
+              ...block,
+              title:
+                !block.title || block.title === "Couple / Event Intro"
+                  ? "Couple Intro"
+                  : block.title,
+            }}
+            locale={locale}
+            chrome={heritage}
+          />
+          <p
+            className={cn(
+              "text-center",
+              heritage
+                ? "font-[family-name:var(--font-cinzel)] text-xl sm:text-2xl font-semibold tracking-[0.04em] leading-snug"
+                : "font-display text-2xl sm:text-3xl font-bold text-[#0F172A]"
+            )}
+            style={heritage ? { color: heritage.ink } : undefined}
+          >
             {cj.highlight ?? ctx.hostName}
           </p>
         </BlockShell>
@@ -165,17 +262,46 @@ export function BlockView({ block, ctx }: BlockViewProps) {
 
     case "EVENT_DETAILS":
       return (
-        <BlockShell variant={block.styleVariant}>
-          <BlockHeader block={block} locale={locale} />
+        <BlockShell
+          variant={block.styleVariant}
+          style={heritage ? heritageShellStyle(heritage) : undefined}
+        >
+          <BlockHeader block={block} locale={locale} chrome={heritage} />
           <div className="space-y-3">
             {(cj.items ?? [
               { label: "Date", value: ctx.eventDate },
               { label: "Time", value: ctx.eventTime },
               { label: "Venue", value: ctx.venueName ?? ctx.landmark },
             ]).map((item) => (
-              <div key={item.label} className="flex justify-between text-sm border-b border-slate-100 pb-2">
-                <span className="text-slate-500">{item.label}</span>
-                <span className="font-medium text-[#0F172A]">{item.value}</span>
+              <div
+                key={item.label}
+                className={cn(
+                  "flex justify-between gap-4 pb-2",
+                  heritage
+                    ? "border-b font-[family-name:var(--font-cormorant)] text-[15px]"
+                    : "text-sm border-b border-slate-100"
+                )}
+                style={heritage ? { borderColor: heritage.border } : undefined}
+              >
+                <span
+                  className={
+                    heritage ? "uppercase tracking-[0.18em] text-[12px]" : "text-slate-500"
+                  }
+                  style={heritage ? { color: heritage.muted } : undefined}
+                >
+                  {item.label}
+                </span>
+                <span
+                  className={cn(
+                    "text-right",
+                    heritage
+                      ? "font-[family-name:var(--font-cinzel)] text-[13px] sm:text-sm font-medium tracking-[0.04em]"
+                      : "font-medium text-[#0F172A]"
+                  )}
+                  style={heritage ? { color: heritage.ink } : undefined}
+                >
+                  {item.value}
+                </span>
               </div>
             ))}
           </div>
@@ -186,9 +312,22 @@ export function BlockView({ block, ctx }: BlockViewProps) {
     case "OBITUARY":
       if (!body && !ctx.story) return null;
       return (
-        <BlockShell variant={block.styleVariant}>
-          <BlockHeader block={block} locale={locale} />
-          <p className="text-slate-600 leading-relaxed whitespace-pre-line">{body || ctx.story}</p>
+        <BlockShell
+          variant={block.styleVariant}
+          style={heritage ? heritageShellStyle(heritage) : undefined}
+        >
+          <BlockHeader block={block} locale={locale} chrome={heritage} />
+          <p
+            className={cn(
+              "leading-relaxed whitespace-pre-line",
+              heritage
+                ? "font-[family-name:var(--font-cormorant)] text-[15px]"
+                : "text-slate-600"
+            )}
+            style={heritage ? { color: heritage.muted } : undefined}
+          >
+            {body || ctx.story}
+          </p>
         </BlockShell>
       );
 
@@ -223,6 +362,9 @@ export function BlockView({ block, ctx }: BlockViewProps) {
         <BlockShell
           variant={block.styleVariant}
           className={cn(isTm && "border-[#E8C9B8] bg-[#FAF8F4]/95")}
+          style={
+            heritage && !isTm ? heritageShellStyle(heritage) : undefined
+          }
         >
           <BlockHeader
             block={{
@@ -238,6 +380,7 @@ export function BlockView({ block, ctx }: BlockViewProps) {
             }}
             locale={locale}
             editorial={isTm}
+            chrome={heritage}
           />
           <InvitationGalleryDisplay
             items={galleryItems}
@@ -252,12 +395,37 @@ export function BlockView({ block, ctx }: BlockViewProps) {
     case "DRESS_CODE":
       if (!body && !ctx.dressCode) return null;
       return (
-        <BlockShell variant={block.styleVariant}>
-          <div className="flex gap-3 items-start">
-            <Shirt className="h-5 w-5 text-[#0B8A83] shrink-0 mt-1" />
-            <div>
-              <BlockHeader block={block} locale={locale} />
-              <p className="font-medium text-[#0F172A]">{body || ctx.dressCode}</p>
+        <BlockShell
+          variant={block.styleVariant}
+          style={heritage ? heritageShellStyle(heritage) : undefined}
+        >
+          <div
+            className={cn(
+              "flex gap-3 items-start",
+              heritage && "flex-col items-center text-center gap-0"
+            )}
+          >
+            {heritage ? (
+              <Shirt
+                className="mb-1 h-5 w-5 shrink-0"
+                style={{ color: heritage.accent }}
+                aria-hidden
+              />
+            ) : (
+              <Shirt className="mt-1 h-5 w-5 shrink-0 text-[#0B8A83]" />
+            )}
+            <div className={heritage ? "w-full" : undefined}>
+              <BlockHeader block={block} locale={locale} chrome={heritage} />
+              <p
+                className={
+                  heritage
+                    ? "font-[family-name:var(--font-cormorant)] text-[15px] leading-relaxed"
+                    : "font-medium text-[#0F172A]"
+                }
+                style={heritage ? { color: heritage.muted } : undefined}
+              >
+                {body || ctx.dressCode}
+              </p>
             </div>
           </div>
         </BlockShell>
@@ -265,48 +433,106 @@ export function BlockView({ block, ctx }: BlockViewProps) {
 
     case "VENUE_MAPS":
     case "VENUE":
-    case "BURIAL_DIRECTIONS":
+    case "BURIAL_DIRECTIONS": {
+      const venueTitle =
+        (typeof body === "string" && body.trim()) ||
+        ctx.venueName ||
+        ctx.landmark ||
+        null;
+      const mapsHref = cj.mapsUrl || ctx.mapsLink || null;
       return (
-        <BlockShell variant={block.styleVariant}>
-          <div className="flex gap-3 items-start">
-            <MapPin className="h-5 w-5 text-[#0B8A83] shrink-0 mt-1" />
-            <div className="flex-1">
-              <BlockHeader block={block} locale={locale} />
-              <p className="font-medium">{body || ctx.venueName || ctx.landmark}</p>
-              {(cj.mapsUrl || ctx.mapsLink) && (
-                <a
-                  href={cj.mapsUrl || ctx.mapsLink!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-2 text-sm text-[#0B8A83] hover:underline"
-                >
-                  {t("invite.directions")}
-                </a>
-              )}
-            </div>
-          </div>
+        <BlockShell
+          variant={block.styleVariant}
+          style={heritage ? heritageShellStyle(heritage) : undefined}
+        >
+          <BlockHeader block={block} locale={locale} chrome={heritage} />
+          <VenueMapEmbed
+            presentation="glimpse"
+            mapsLink={mapsHref}
+            venueName={ctx.venueName || venueTitle}
+            landmark={ctx.landmark}
+            accentColor={heritage?.accent ?? "#0B8A83"}
+            heritage={
+              heritage
+                ? {
+                    surface: heritage.surface,
+                    border: heritage.border,
+                    ink: heritage.ink,
+                    muted: heritage.muted,
+                    accent: heritage.accent,
+                    radius: heritage.radius,
+                  }
+                : null
+            }
+            directionsLabel={t("invite.directions")}
+          />
         </BlockShell>
       );
+    }
 
     case "SCHEDULE":
     case "AGENDA":
     case "FUNERAL_PROGRAM":
       return (
-        <BlockShell variant={block.styleVariant}>
-          <BlockHeader block={block} locale={locale} />
+        <BlockShell
+          variant={block.styleVariant}
+          style={heritage ? heritageShellStyle(heritage) : undefined}
+        >
+          <BlockHeader block={block} locale={locale} chrome={heritage} />
           <div className="space-y-4">
             {(cj.items ?? []).map((item, i) => (
               <div key={i} className="flex gap-4">
                 {item.time && (
-                  <span className="text-xs font-semibold text-[#0B8A83] w-16 shrink-0 pt-0.5">{item.time}</span>
+                  <span
+                    className={cn(
+                      "w-16 shrink-0 pt-0.5 text-xs font-semibold",
+                      !heritage && "text-[#0B8A83]",
+                      heritage &&
+                        "font-[family-name:var(--font-cormorant)] uppercase tracking-[0.14em]"
+                    )}
+                    style={heritage ? { color: heritage.accent } : undefined}
+                  >
+                    {item.time}
+                  </span>
                 )}
                 <div>
-                  <p className="font-medium text-[#0F172A]">{item.label}</p>
-                  {item.description && <p className="text-sm text-slate-500">{item.description}</p>}
+                  <p
+                    className={cn(
+                      "font-medium",
+                      !heritage && "text-[#0F172A]",
+                      heritage && "font-[family-name:var(--font-cinzel)] text-[15px]"
+                    )}
+                    style={heritage ? { color: heritage.ink } : undefined}
+                  >
+                    {item.label}
+                  </p>
+                  {item.description && (
+                    <p
+                      className={cn(
+                        "text-sm",
+                        !heritage && "text-slate-500",
+                        heritage && "font-[family-name:var(--font-cormorant)]"
+                      )}
+                      style={heritage ? { color: heritage.muted } : undefined}
+                    >
+                      {item.description}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
-            {!cj.items?.length && body && <p className="text-slate-600 whitespace-pre-line">{body}</p>}
+            {!cj.items?.length && body && (
+              <p
+                className={cn(
+                  "whitespace-pre-line",
+                  !heritage && "text-slate-600",
+                  heritage && "font-[family-name:var(--font-cormorant)] text-[15px]"
+                )}
+                style={heritage ? { color: heritage.muted } : undefined}
+              >
+                {body}
+              </p>
+            )}
           </div>
         </BlockShell>
       );
@@ -343,7 +569,7 @@ export function BlockView({ block, ctx }: BlockViewProps) {
 
     case "CONTACT_HOST":
     case "FAMILY_CONTACTS":
-      // TM: Kindly Respond already owns “Reach the hosts” — skip duplicate teal button cards
+      // TM: Kindly Respond already owns “Reach the hosts”, skip duplicate teal button cards
       if (ctx.layout === "traditional-marriage-ceremony") return null;
       return (
         <BlockShell variant={block.styleVariant}>

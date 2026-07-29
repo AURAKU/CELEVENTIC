@@ -49,7 +49,7 @@ export type InvitationBlockType =
 
 export const BLOCK_TYPE_LABELS: Record<string, { en: string; fr: string; category: BlockCategory }> = {
   WELCOME: { en: "Welcome", fr: "Bienvenue", category: "default" },
-  COUPLE_INTRO: { en: "Couple / Event Intro", fr: "Introduction", category: "default" },
+  COUPLE_INTRO: { en: "Couple Intro", fr: "Introduction", category: "default" },
   COUNTDOWN: { en: "Countdown", fr: "Compte à rebours", category: "default" },
   EVENT_DETAILS: { en: "Event Details", fr: "Détails de l'événement", category: "default" },
   STORY: { en: "Story", fr: "Notre histoire", category: "default" },
