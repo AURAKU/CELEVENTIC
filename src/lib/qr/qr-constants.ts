@@ -57,10 +57,10 @@ export function parseQrLogoSize(raw: unknown): QrLogoSizePreset {
 /** Minimum on-screen pass QR size (px) for reliable phone-to-phone scanning */
 export const QR_PASS_DISPLAY_MIN_PX = 280;
 
-/** Scanner target fps — high enough for entrance queues without melting phones */
-export const QR_SCANNER_FPS = 28;
-/** Phone-screen QR mode needs aggressive sampling (was 6 — felt stuck at the door) */
-export const QR_SCANNER_FPS_SCREEN = 24;
+/** Balanced decode rate: responsive in queues without starving mobile autofocus. */
+export const QR_SCANNER_FPS = 15;
+/** Phone-screen mode samples slightly faster while staying stable on mid-range devices. */
+export const QR_SCANNER_FPS_SCREEN = 18;
 /** Cooldown between any two successful decodes (ms) — keep short for queue throughput */
 export const QR_SCAN_DEBOUNCE_MS = 450;
 /** Same code may re-fire after this window (ms) — never lock forever */

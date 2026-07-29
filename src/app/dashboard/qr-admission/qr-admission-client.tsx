@@ -27,6 +27,7 @@ import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { prefersEntryPassAdmit } from "@/lib/admission/gate-scan";
+import { parseQrToken } from "@/lib/qr/parse-qr-payload";
 import {
   Select,
   SelectContent,
@@ -380,9 +381,22 @@ export function QrAdmissionClient() {
         entryPassScanRef.current(trimmed);
         return;
       }
+      // Reject unrelated consumer/payment/contact QRs locally. Legacy platform
+      // tokens still proceed to the server, where event ownership and current
+      // admission state are authoritative.
+      if (!parseQrToken(trimmed)) {
+        setResult({
+          status: "invalid",
+          selectedEventTitle,
+          feedback: "This is not a Celeventic admission QR code.",
+        });
+        setError("This is not a Celeventic admission QR code.");
+        playScanFeedback(false);
+        return;
+      }
       void performCheckIn(trimmed);
     },
-    [performCheckIn]
+    [performCheckIn, selectedEventTitle]
   );
 
   async function resetAdmission(scope: "guest" | "event", guestId?: string) {

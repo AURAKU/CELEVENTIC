@@ -4,11 +4,10 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { canUseCamera } from "@/lib/qr/device-utils";
 import {
-  QR_SCANNER_FPS,
-  QR_SCANNER_FPS_SCREEN,
   QR_SCAN_DEBOUNCE_MS,
   QR_SCAN_SAME_CODE_MS,
 } from "@/lib/qr/qr-constants";
+import { buildScannerConfig } from "@/lib/qr/scanner-config";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -41,9 +40,7 @@ type ScannerRef = {
       qrbox: number | { width: number; height: number } | ((w: number, h: number) => { width: number; height: number });
       aspectRatio?: number;
       disableFlip?: boolean;
-      rememberLastUsedCameraId?: boolean;
       experimentalFeatures?: { useBarCodeDetectorIfSupported?: boolean };
-      videoConstraints?: MediaTrackConstraints;
     },
     onSuccess: (decoded: string) => void,
     onFailure: (err: string) => void
@@ -72,7 +69,7 @@ async function pickCameraId(): Promise<string | MediaTrackConstraints> {
   try {
     const { Html5Qrcode } = await import("html5-qrcode");
     const cameras = await Html5Qrcode.getCameras();
-    if (!cameras.length) return { facingMode: { ideal: "environment" } };
+    if (!cameras.length) return { facingMode: "environment" };
 
     const rear =
       cameras.find((c) => /back|rear|environment|trás|arrière|wide|ultra/i.test(c.label)) ??
@@ -80,39 +77,8 @@ async function pickCameraId(): Promise<string | MediaTrackConstraints> {
 
     return rear.id;
   } catch {
-    return { facingMode: { ideal: "environment" } };
+    return { facingMode: "environment" };
   }
-}
-
-function buildScannerConfig(screenScanMode: boolean) {
-  return {
-    fps: screenScanMode ? QR_SCANNER_FPS_SCREEN : QR_SCANNER_FPS,
-    // Wide scan window, guests hold phones at awkward angles in a queue.
-    qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-      const ratio = screenScanMode ? 0.92 : 0.82;
-      const width = Math.floor(viewfinderWidth * ratio);
-      const height = Math.floor(viewfinderHeight * ratio);
-      return {
-        width: Math.max(260, width),
-        height: Math.max(260, height),
-      };
-    },
-    // Do not force square aspect, phone screens + printed passes need full FOV.
-    disableFlip: false,
-    rememberLastUsedCameraId: true,
-    experimentalFeatures: {
-      useBarCodeDetectorIfSupported: true,
-    },
-    videoConstraints: {
-      facingMode: { ideal: "environment" },
-      // Screen passes benefit from sharper frames; printed passes from wider FOV.
-      width: { ideal: screenScanMode ? 1920 : 1280 },
-      height: { ideal: screenScanMode ? 1080 : 720 },
-      frameRate: { ideal: screenScanMode ? QR_SCANNER_FPS_SCREEN : QR_SCANNER_FPS },
-      // Prefer continuous autofocus when the browser supports it.
-      advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet],
-    } as MediaTrackConstraints,
-  };
 }
 
 function sanitizeDomId(raw: string): string {
@@ -234,7 +200,10 @@ export function QrCameraScanner({
         try {
           await startWithCamera(camera);
         } catch {
-          await startWithCamera({ facingMode: { ideal: "environment" } });
+          // html5-qrcode applies this camera constraint directly. Keeping
+          // videoConstraints out of the scan config makes this a real fallback
+          // instead of retrying the exact same failed stream constraints.
+          await startWithCamera({ facingMode: "environment" });
         }
 
         if (cancelled) return;

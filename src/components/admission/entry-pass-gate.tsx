@@ -592,6 +592,7 @@ export function EntryPassGate({
 
   const handleScan = useCallback(
     async (text: string) => {
+      if (busy) return;
       const now = Date.now();
       // Align with camera same-code window so the unified scanner does not double-fire.
       if (lastScanRef.current?.text === text && now - lastScanRef.current.at < QR_SCAN_SAME_CODE_MS) return;
@@ -616,7 +617,7 @@ export function EntryPassGate({
       setError("That QR isn't a Celeventic entry pass.");
       playScanFeedback(false);
     },
-    [beginAdmission]
+    [beginAdmission, busy]
   );
 
   useEffect(() => {

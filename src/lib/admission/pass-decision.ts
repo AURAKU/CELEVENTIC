@@ -205,7 +205,16 @@ export function decideAdmission(
 
   const { from, until } = resolveValidity(pass, settings);
   if (from && ctx.now < from) {
-    return deny("NOT_YET_VALID", "Entry has not opened yet for this pass.", pass, "amber");
+    const opensAt = from.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    return deny(
+      "NOT_YET_VALID",
+      `This Celeventic pass is valid, but entry has not opened yet. Gate opens ${opensAt}.`,
+      pass,
+      "amber"
+    );
   }
   if (until && ctx.now > until) {
     return deny("EXPIRED", "This pass has expired.", pass);

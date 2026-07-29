@@ -558,8 +558,12 @@ function scanResultFor(decision: AdmissionDecision) {
     case "DUPLICATE_BLOCKED":
       return "ALREADY_USED" as const;
     case "EXPIRED":
-    case "NOT_YET_VALID":
       return "EXPIRED" as const;
+    case "NOT_YET_VALID":
+      // QrScanResult has no pre-valid state. Never mislabel an authentic pass
+      // as expired; the decision response still carries the precise
+      // NOT_YET_VALID reason and operator message.
+      return "INVALID" as const;
     case "WRONG_EVENT":
       return "WRONG_EVENT" as const;
     case "OK":
