@@ -29,12 +29,21 @@ export function buildPublishedDesignConfig(
     (order.designConfig ?? undefined) as Partial<InvitationDesignConfig> | undefined
   );
 
-  const heroAsset = design.media?.find((m) => m.role === "hero");
+  const heroExplicitlyCleared = design.heroCleared === true;
+  const heroAsset = heroExplicitlyCleared
+    ? undefined
+    : design.media?.find((m) => m.role === "hero");
   const introAsset = design.media?.find((m) => m.role === "intro");
   const backgroundAsset = design.media?.find((m) => m.role === "background");
   const gallery = Array.isArray(order.galleryUrls) ? (order.galleryUrls as string[]) : [];
 
-  if (gallery.length > 0 || heroAsset || introAsset || backgroundAsset) {
+  if (
+    gallery.length > 0 ||
+    heroAsset ||
+    introAsset ||
+    backgroundAsset ||
+    heroExplicitlyCleared
+  ) {
     const reserved = new Set(
       [heroAsset?.url, introAsset?.url, backgroundAsset?.url].filter(
         (url): url is string => Boolean(url)
@@ -46,7 +55,7 @@ export function buildPublishedDesignConfig(
 
     if (heroAsset) {
       media.push(heroAsset);
-    } else if (galleryForRefs[0]) {
+    } else if (!heroExplicitlyCleared && galleryForRefs[0]) {
       // Legacy orders without a dedicated hero still use the first gallery image.
       const first = galleryForRefs[0];
       media.push({

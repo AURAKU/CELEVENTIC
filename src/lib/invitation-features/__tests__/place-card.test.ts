@@ -150,21 +150,21 @@ test("single-guest capacity addresses the invited guest only", () => {
   );
 });
 
-test("plus-ones are stated as companions, never as a raw guest total", () => {
+test("companion access is shown without exposing its allocated headcount", () => {
   assert.equal(
     formatAllowanceCopy("This invitation admits {n} guests", 2, { assigned: true }),
-    "This invitation admits you and 1 guest."
+    "This invitation admits you and a guest."
   );
   assert.equal(
     formatAllowanceCopy("", 3, { assigned: true }),
-    "This invitation admits you and 2 guests."
+    "This invitation admits you and your guests."
   );
 });
 
 test("organiser templates cannot override the guest-facing capacity line", () => {
   assert.equal(
     formatAllowanceCopy("This table seats {n} guests", 8, { assigned: true }),
-    "This invitation admits you and 7 guests."
+    "This invitation admits you and your guests."
   );
 });
 
@@ -283,7 +283,7 @@ test("the view model binds config, recipient and live capacity together", () => 
 
   assert.equal(model.heading, "A place is reserved for you");
   assert.equal(model.recipientLine, "Ama Mensah");
-  assert.equal(model.allowanceCopy, "This invitation admits you and 2 guests.");
+  assert.equal(model.allowanceCopy, "This invitation admits you and your guests.");
   assert.equal(model.isGroup, true);
   assert.equal("arrivalCopy" in model, false, "guest place cards must not expose arrival copy");
 });
@@ -330,12 +330,12 @@ test("compact couple initials expand to the pipe seal form", () => {
   assert.equal(model.monogram, "C | J");
 });
 
-test("an already-published invitation reflects a changed allowance without arrivals", () => {
+test("an already-published invitation does not expose increased companion allocation", () => {
   const before = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 3 }));
   const after = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 4 }));
 
-  assert.equal(before.allowanceCopy, "This invitation admits you and 2 guests.");
-  assert.equal(after.allowanceCopy, "This invitation admits you and 3 guests.");
+  assert.equal(before.allowanceCopy, "This invitation admits you and your guests.");
+  assert.equal(after.allowanceCopy, "This invitation admits you and your guests.");
 });
 
 /* ── shared feature layer + template adapters ──────────────────────────── */

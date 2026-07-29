@@ -15,6 +15,7 @@ import {
 } from "../../invitation-templates";
 import { buildPublishedDesignConfig } from "../published-design";
 import { isStudioUnlocked, isLiveInvitation } from "../studio-access";
+import { syncDesignMediaHero } from "../studio-media-utils";
 
 const TRADITIONAL = "traditional-marriage-ceremony";
 
@@ -62,6 +63,44 @@ describe("catalog DNA round-trip", () => {
 });
 
 describe("published design snapshot", () => {
+  it("persists an explicit hero removal and never promotes gallery media back into it", () => {
+    const base = getDefaultDesignConfig(TRADITIONAL);
+    const cleared = syncDesignMediaHero(
+      {
+        ...base,
+        media: [
+          { url: "/old-hero.jpg", type: "image", role: "hero" },
+          { url: "/welcome.jpg", type: "image", role: "intro" },
+        ],
+      },
+      null
+    );
+
+    assert.equal(cleared.heroCleared, true);
+    assert.equal(cleared.media?.some((media) => media.role === "hero"), false);
+
+    const published = buildPublishedDesignConfig({
+      templateSlug: TRADITIONAL,
+      designConfig: cleared,
+      galleryUrls: ["/gallery-a.jpg", "/gallery-b.jpg"],
+    });
+
+    assert.equal(published.heroCleared, true);
+    assert.equal(published.media?.some((media) => media.role === "hero"), false);
+    assert.deepEqual(
+      published.media?.filter((media) => media.role === "reference").map((media) => media.url),
+      ["/gallery-a.jpg", "/gallery-b.jpg"]
+    );
+  });
+
+  it("clears the removal marker when the organizer selects a replacement hero", () => {
+    const base = getDefaultDesignConfig(TRADITIONAL);
+    const restored = syncDesignMediaHero({ ...base, heroCleared: true }, "/replacement.jpg");
+
+    assert.equal(restored.heroCleared, false);
+    assert.equal(restored.media?.find((media) => media.role === "hero")?.url, "/replacement.jpg");
+  });
+
   it("rebuilds gallery media from the order and keeps the welcome photo", () => {
     const design = buildPublishedDesignConfig({
       templateSlug: TRADITIONAL,

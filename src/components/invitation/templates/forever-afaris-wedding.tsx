@@ -355,11 +355,12 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   const showRespond = Boolean(features.rsvp || organizerPhone || organizerEmail);
 
   const heroPortrait = useMemo(() => {
+    if (design.heroCleared) return null;
     const hero = (design.media ?? []).find(
       (m) => m.type === "image" && m.role === "hero"
     );
     return hero?.url ?? event.coverImageUrl ?? null;
-  }, [design.media, event.coverImageUrl]);
+  }, [design.heroCleared, design.media, event.coverImageUrl]);
 
   const galleryImages = useMemo(() => {
     // Explicit gallery uploads own this section. An image must stay in Moments
@@ -514,9 +515,39 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             {venueName}
           </p>
         ) : null}
+
+        {features.location ? (
+          <div className="mt-7 text-center">
+            <VenueSketch palette={C} />
+            <p className="mt-4 font-[family-name:var(--font-cinzel)] text-sm tracking-[0.14em]" style={{ color: C.ink }}>
+              {venueName}
+            </p>
+            {board.venueAddress && (
+              <p className="mt-1 font-[family-name:var(--font-cormorant)] text-[13px]" style={{ color: C.cocoa }}>
+                {board.venueAddress}
+              </p>
+            )}
+            {mapsHref && !staticPreview && (
+              <Link
+                href={mapsHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 text-[11px] uppercase tracking-[0.22em] transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                style={{
+                  color: C.ink,
+                  background: `linear-gradient(135deg, ${C.goldSoft}, ${C.gold})`,
+                  boxShadow: `0 12px 26px -14px ${C.goldDeep}`,
+                }}
+              >
+                {board.mapButtonLabel}
+              </Link>
+            )}
+          </div>
+        ) : null}
+
         {board.receptionText && (
           <p
-            className={`${!features.location && venueName ? "mt-2" : "mt-5"} font-[family-name:var(--font-great-vibes)] text-2xl`}
+            className="mt-5 font-[family-name:var(--font-great-vibes)] text-2xl"
             style={{ color: C.goldDeep }}
           >
             {board.receptionText}
@@ -624,34 +655,9 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         </Reveal>
       ) : null,
 
-    venue: features.location ? (
-      <Reveal as="section" className="text-center">
-        <VenueSketch palette={C} />
-        <p className="mt-4 font-[family-name:var(--font-cinzel)] text-sm tracking-[0.14em]" style={{ color: C.ink }}>
-          {venueName}
-        </p>
-        {board.venueAddress && (
-          <p className="mt-1 font-[family-name:var(--font-cormorant)] text-[13px]" style={{ color: C.cocoa }}>
-            {board.venueAddress}
-          </p>
-        )}
-        {mapsHref && !staticPreview && (
-          <Link
-            href={mapsHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 text-[11px] uppercase tracking-[0.22em] transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            style={{
-              color: C.ink,
-              background: `linear-gradient(135deg, ${C.goldSoft}, ${C.gold})`,
-              boxShadow: `0 12px 26px -14px ${C.goldDeep}`,
-            }}
-          >
-            {board.mapButtonLabel}
-          </Link>
-        )}
-      </Reveal>
-    ) : null,
+    // Venue renders inside details so it always follows date/time and precedes
+    // the reception phrase, independent of an older saved section order.
+    venue: null,
 
     dressCode: features.dressCode ? (
       <Reveal as="section" className="text-center">

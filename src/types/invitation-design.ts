@@ -77,6 +77,11 @@ export interface InvitationDesignConfig {
     presetId?: string;
   };
   media?: InvitationMediaAsset[];
+  /**
+   * Durable Studio intent: the organizer explicitly removed the invitation
+   * hero. Prevents legacy cover/gallery fallbacks from putting it back.
+   */
+  heroCleared?: boolean;
   animation?: "fade" | "parallax" | "ken-burns" | "none";
   ornament?: "gold-frame" | "vine" | "lace" | "floral" | "hexagon" | "none";
   introText?: string;

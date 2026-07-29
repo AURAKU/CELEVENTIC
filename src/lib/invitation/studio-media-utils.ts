@@ -62,14 +62,20 @@ export function syncDesignMediaHero(
   type: "image" | "video" = "image"
 ): InvitationDesignConfig {
   const rest = (design.media ?? []).filter((m) => m.role !== "hero");
-  if (!url) return { ...design, media: rest.length ? rest : undefined };
+  if (!url) {
+    return {
+      ...design,
+      media: rest.length ? rest : undefined,
+      heroCleared: true,
+    };
+  }
   const asset: InvitationMediaAsset = {
     url,
     type,
     role: "hero",
     name: type === "video" ? "Hero video" : "Hero photo",
   };
-  return { ...design, media: [asset, ...rest] };
+  return { ...design, media: [asset, ...rest], heroCleared: false };
 }
 
 export function syncDesignPageBackground(

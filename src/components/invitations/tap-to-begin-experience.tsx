@@ -406,7 +406,9 @@ export function TapToBeginExperience({
         {couple ? (
           <div className={styles.names}>
             <p className={styles.coupleLine}>
-              {couple.name1} <span className={styles.inlineAmp}>&amp;</span> {couple.name2}
+              <span className={styles.coupleName}>{couple.name1}</span>
+              <span className={styles.inlineAmp}>&amp;</span>
+              <span className={styles.coupleName}>{couple.name2}</span>
             </p>
           </div>
         ) : showHostFallback ? (
