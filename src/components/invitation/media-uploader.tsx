@@ -47,7 +47,7 @@ interface VideoAssetStatusPayload {
 /**
  * Polls `GET /api/uploads/video/:id` (the same generic status endpoint `VideoUploader` uses)
  * until the background worker flips the asset to READY or FAILED/CANCELLED, or the bounded
- * timeout elapses. Never throws — transient network hiccups just keep the loop going.
+ * timeout elapses. Never throws, transient network hiccups just keep the loop going.
  */
 async function pollVideoAsset(pollUrl: string): Promise<VideoAssetStatusPayload> {
   const startedAt = Date.now();
@@ -61,7 +61,7 @@ async function pollVideoAsset(pollUrl: string): Promise<VideoAssetStatusPayload>
         return data;
       }
     } catch {
-      /* transient network error — keep polling */
+      /* transient network error, keep polling */
     }
     if (Date.now() - startedAt > VIDEO_POLL_TIMEOUT_MS) {
       return {
@@ -72,7 +72,7 @@ async function pollVideoAsset(pollUrl: string): Promise<VideoAssetStatusPayload>
         durationSeconds: null,
         width: null,
         height: null,
-        failureReason: "Video is taking longer than expected to process. It will finish in the background — check back shortly.",
+        failureReason: "Video is taking longer than expected to process. It will finish in the background, check back shortly.",
       };
     }
   }
@@ -152,8 +152,7 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
       const uploaded = await uploadFile(file);
       if (!uploaded) continue;
 
-      // Video is now queued for background processing (202) rather than finished inline —
-      // show a "PROCESSING" placeholder immediately, then poll and patch it in place once the
+      // Video is now queued for background processing (202) rather than finished inline, // show a "PROCESSING" placeholder immediately, then poll and patch it in place once the
       // worker finishes. `VideoPlayer`-aware consumers of `assets` (e.g. the studio preview)
       // already know how to render the `PROCESSING`/`FAILED` states via `InvitationMediaAsset.status`.
       if (uploaded.video && uploaded.video.status !== "READY" && uploaded.video.status !== "FAILED") {
@@ -299,7 +298,7 @@ export function MediaUploader({ assets, onChange, onAnalysis, buildMode = "inspi
           {analyzing ? "Analyzing colors & style..." : uploading ? "Uploading..." : "Upload from device"}
         </p>
         <p className="text-xs page-subtitle">
-          Import image, PDF, or video — crop images before upload · Celeventic extracts inspiration
+          Import image, PDF, or video, crop images before upload · Celeventic extracts inspiration
         </p>
       </div>
 

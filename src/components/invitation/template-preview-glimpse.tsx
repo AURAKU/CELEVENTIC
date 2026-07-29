@@ -33,7 +33,7 @@ const CURTAIN_THEME_MAP: Record<string, "wedding" | "concert" | "award" | "birth
 
 interface TemplatePreviewGlimpseProps {
   layoutSlug: string;
-  /** Catalog SKU — required when multiple SKUs share a layout (Wave-1 pages) */
+  /** Catalog SKU, required when multiple SKUs share a layout (Wave-1 pages) */
   catalogSlug?: string;
   category?: string;
   features?: string[];
@@ -46,7 +46,7 @@ interface TemplatePreviewGlimpseProps {
 /**
  * Faithful pre-tap visual of a template: sealed opening cover when the template
  * opens with an envelope/curtain, otherwise a static scaled invitation render.
- * Shown under a soft tap affordance — never a darkened generic blur.
+ * Shown under a soft tap affordance, never a darkened generic blur.
  */
 export function TemplatePreviewGlimpse({
   layoutSlug,

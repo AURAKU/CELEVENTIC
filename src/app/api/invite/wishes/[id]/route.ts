@@ -68,7 +68,7 @@ export async function DELETE(
   if (!allowedAsModerator && !allowedAsAuthor) {
     return NextResponse.json(
       {
-        error: "Forbidden — only the person who wrote this wish, or an admin, can delete it",
+        error: "Forbidden, only the person who wrote this wish, or an admin, can delete it",
       },
       { status: 403 }
     );

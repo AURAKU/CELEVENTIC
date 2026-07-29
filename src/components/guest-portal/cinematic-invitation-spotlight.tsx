@@ -347,8 +347,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     const showAdmissionPass = !hasEntryPass && Boolean(props.admissionQrDataUrl);
     const showInviteQr = !hasEntryPass && !showAdmissionPass && Boolean(props.qrDataUrl);
     const showSeatPass = Boolean(props.seatQrDataUrl && props.seatLookupUrl);
-    // Entry pass is the single admission surface on cinematic live invites —
-    // never hide QR without mounting GuestEntryPass (most templates use this path).
+    // Entry pass is the single admission surface on cinematic live invites, // never hide QR without mounting GuestEntryPass (most templates use this path).
     if (hasEntryPass || showAdmissionPass || showInviteQr || showSeatPass) {
       list.push({
         id: "pass",

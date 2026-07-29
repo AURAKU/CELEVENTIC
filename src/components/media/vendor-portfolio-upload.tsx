@@ -34,7 +34,7 @@ export function VendorPortfolioUpload({ onUploaded, disabled }: VendorPortfolioU
         onError={setError}
         disabled={disabled}
         buttonLabel="Upload portfolio image"
-        hint="Add a portfolio photo — drag to select any region, any shape, or use the full image."
+        hint="Add a portfolio photo, drag to select any region, any shape, or use the full image."
       />
       <VideoUploader
         category="VENDOR_PORTFOLIO"
@@ -42,7 +42,7 @@ export function VendorPortfolioUpload({ onUploaded, disabled }: VendorPortfolioU
         onError={setError}
         disabled={disabled}
         buttonLabel="Upload portfolio video"
-        hint="Add a portfolio video reel — up to 500MB. Automatically appears once processing finishes."
+        hint="Add a portfolio video reel, up to 500MB. Automatically appears once processing finishes."
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>

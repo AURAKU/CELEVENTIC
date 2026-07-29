@@ -20,7 +20,7 @@ import { getServerAppUrl } from "@/lib/app-url";
  * This is a dynamic-param route with no `generateStaticParams`, so without an
  * explicit opt-out Next.js would render it once on first visit and then serve
  * that cached HTML (including `og:description`/title) to every guest
- * indefinitely — a host editing their event site, or a code fix like the
+ * indefinitely, a host editing their event site, or a code fix like the
  * couple-name OG description above, would never reach an already-shared link
  * until something else happened to bust the cache. Force dynamic rendering so
  * every request re-reads the live `Event` row, matching `/invite/[link]`.
@@ -31,7 +31,7 @@ export const revalidate = 0;
 /**
  * Share-card preview defaults to the QR center logo (falls back to the
  * Celeventic official logo) so link previews match the branded QR guests
- * scan — see `resolveShareOgImage`.
+ * scan, see `resolveShareOgImage`.
  */
 export async function generateMetadata({
   params,
@@ -44,7 +44,7 @@ export async function generateMetadata({
 
   const title = site.title;
   // Always lead with the couple/host name rather than `site.description`
-  // (the host's free-form "our story" text) — see `buildShareDescription`.
+  // (the host's free-form "our story" text), see `buildShareDescription`.
   const description = buildShareDescription({ hostName: site.hostName, title: site.title });
   const appUrl = await getServerAppUrl();
   const ogImage = await resolveShareOgImage(site.id, appUrl);
@@ -214,7 +214,7 @@ export default async function EventMiniSitePage({ params }: { params: Promise<{ 
         )}
 
         <p className="text-center text-xs text-slate-400 pb-8">
-          Powered by <Link href="/" className="text-brand-600 hover:underline">Celeventic</Link> — {BRAND_MOTTO}
+          Powered by <Link href="/" className="text-brand-600 hover:underline">Celeventic</Link>, {BRAND_MOTTO}
         </p>
       </main>
     </div>

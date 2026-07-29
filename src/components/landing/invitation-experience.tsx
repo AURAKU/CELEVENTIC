@@ -18,7 +18,7 @@ const HIGHLIGHT_KEYS = [
 
 export function InvitationExperience() {
   const { t } = useLocale();
-  // Browse-deduped winners only — never raw CATALOG_TEMPLATES.slice (hides lites / shows flagships).
+  // Browse-deduped winners only, never raw CATALOG_TEMPLATES.slice (hides lites / shows flagships).
   const featured = getBrowseCatalogTemplates().slice(0, 6);
 
   return (

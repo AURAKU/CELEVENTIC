@@ -20,7 +20,7 @@ interface FunnelSummaryBarProps {
  * Persistent, non-obstructive order summary for the personalization funnel.
  * Never surprise the user at checkout: the running total follows them from
  * details through sections and extras. Fetches the same pricing engine the
- * checkout uses — one source of truth.
+ * checkout uses, one source of truth.
  */
 export function FunnelSummaryBar({ packageSlug, packageName, addonSlugs = [] }: FunnelSummaryBarProps) {
   const { format, currency } = useCurrency();

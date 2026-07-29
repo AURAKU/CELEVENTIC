@@ -199,7 +199,7 @@ function TemplateLibraryPageInner() {
           <h1 className="page-heading flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-brand-600" /> Template Library
           </h1>
-          <p className="page-subtitle">Curated JSON-based editable templates — generate full design suites</p>
+          <p className="page-subtitle">Curated JSON-based editable templates, generate full design suites</p>
         </div>
       </div>
 

@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   }
 
   // Decide S3 vs. local-disk+FFmpeg fallback up front. Missing/incomplete S3 config is an
-  // environment gap, never a dead end for a legitimate upload — see storage-strategy.ts.
+  // environment gap, never a dead end for a legitimate upload, see storage-strategy.ts.
   const decision = resolveVideoStorageStrategy({
     providerEnv: process.env.MEDIA_STORAGE_PROVIDER,
     s3Ready: await isVideoStorageReady(),
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
     },
   });
 
-  // S3 not usable on this environment (or the operator forced local mode) — route the
+  // S3 not usable on this environment (or the operator forced local mode), route the
   // browser straight to the local-disk + VPS FFmpeg endpoint. That endpoint queues
   // background processing and responds 202 (see `/api/uploads/video/local`); the response
   // shape mirrors the S3 strategies below so `VideoUploader` only needs one extra branch.
@@ -176,7 +176,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     // Belt-and-suspenders: S3 looked ready moments ago but the actual presign call failed
-    // (transient creds/network issue) — degrade to the local fallback instead of failing the
+    // (transient creds/network issue), degrade to the local fallback instead of failing the
     // upload outright, unless the operator explicitly opted out of that fallback.
     if (error instanceof VideoStorageNotConfiguredError && isLocalFallbackEnabled(process.env.VIDEO_LOCAL_FALLBACK_ENABLED)) {
       return NextResponse.json({

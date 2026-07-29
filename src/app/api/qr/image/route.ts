@@ -13,7 +13,7 @@ function parseSize(raw: string | null): QrExportSize {
   return (QR_EXPORT_SIZES.includes(n as QrExportSize) ? n : QR_DEFAULT_SIZE) as QrExportSize;
 }
 
-/** Public branded QR PNG/SVG — token encodes secure verify URL only (no PII) */
+/** Public branded QR PNG/SVG, token encodes secure verify URL only (no PII) */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");

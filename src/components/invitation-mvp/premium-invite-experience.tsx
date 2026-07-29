@@ -39,13 +39,18 @@ export interface PremiumInviteExperienceProps {
   design: InvitationDesignConfig;
   guestId?: string;
   guestName?: string;
+  /**
+   * Admission epoch (invitation.portalTokenVersion). Bumps on organiser reset
+   * so the opening ceremony plays as a first visit again.
+   */
+  openingEpoch?: number | string | null;
   qrDataUrl?: string;
   galleryUrls?: string[];
   allowedLocales?: AppLocale[];
   localizedVersions?: Partial<Record<AppLocale, LocalizedInviteContent>>;
   blocks?: InvitationBlockDto[];
   memoryVaultEnabled?: boolean;
-  /** Guest Album — unique per-event upload page */
+  /** Guest Album, unique per-event upload page */
   memoryUploadUrl?: string | null;
   /** Shared album gallery for all guests */
   memoryAlbumUrl?: string | null;
@@ -55,7 +60,7 @@ export interface PremiumInviteExperienceProps {
   memoryAlbumTitle?: string | null;
   /**
    * Gift Wallet placement. Present only when the event has a live gift campaign
-   * with invitation placement enabled — absent means the invite renders exactly
+   * with invitation placement enabled, absent means the invite renders exactly
    * as it did before gifting existed.
    */
   giftUrl?: string | null;
@@ -69,7 +74,7 @@ export interface PremiumInviteExperienceProps {
   templateSlug?: string;
   /**
    * Guest Entry Pass. Present only when the event has QR admission enabled and
-   * the invite was opened with a guest token — absent means the invitation
+   * the invite was opened with a guest token, absent means the invitation
    * renders exactly as it did before the pass system.
    */
   entryPass?: GuestEntryPassData | null;

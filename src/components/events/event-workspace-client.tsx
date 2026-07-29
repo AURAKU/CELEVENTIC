@@ -138,7 +138,7 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Event Workspace</h1>
-        <p className="text-slate-500">{eventTitle} — collaborate with your team</p>
+        <p className="text-slate-500">{eventTitle}, collaborate with your team</p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>

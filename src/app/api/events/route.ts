@@ -16,7 +16,7 @@ const createEventSchema = z.object({
   eventType: z.string(),
   /** Canonical couple / host display name. */
   hostName: z.string().optional(),
-  /** Legacy alias — folded into hostName when present. */
+  /** Legacy alias, folded into hostName when present. */
   coupleNames: z.string().optional(),
   description: z.string().optional(),
   startDate: z.string(),

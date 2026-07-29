@@ -52,7 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ success: false, error: "Invitation not found" }, { status: 404 });
     }
 
-    // RBAC — reset is a guest-management action. Scanners/ushers (SCAN_QR only)
+    // RBAC, reset is a guest-management action. Scanners/ushers (SCAN_QR only)
     // and viewers are excluded; owner/organiser/guest-manager/admin pass.
     try {
       await requireEventPermission(

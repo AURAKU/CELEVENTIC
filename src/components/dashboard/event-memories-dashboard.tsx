@@ -320,7 +320,7 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
                       <p className="text-sm text-slate-500">
                         {settings.approvalRequired
                           ? "Uploads stay pending until you approve them in Moderation."
-                          : "Uploads are published automatically — no review step."}
+                          : "Uploads are published automatically, no review step."}
                       </p>
                     </div>
                     <Switch
@@ -420,7 +420,7 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-center space-y-4">
-                <p className="text-sm text-slate-600">Scan to view approved memories — photos & videos for this event only.</p>
+                <p className="text-sm text-slate-600">Scan to view approved memories, photos & videos for this event only.</p>
                 {viewQrUrl ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -451,7 +451,7 @@ export function EventMemoriesDashboard({ eventId }: { eventId: string }) {
           </div>
 
           <p className="text-xs text-slate-500 text-center">
-            Upload a custom center logo above — both QR codes will regenerate with your image in the center.
+            Upload a custom center logo above, both QR codes will regenerate with your image in the center.
           </p>
         </TabsContent>
       </Tabs>

@@ -5,11 +5,10 @@ import { MAX_PARTY_SIZE, MIN_PARTY_SIZE } from "@/lib/guest-search/party-allowan
 import { previewQuickInvitation } from "@/services/guest-search/quick-invite.service";
 
 /**
- * Quick Invitation Generator — preview.
+ * Quick Invitation Generator, preview.
  *
  * Writes nothing. Shows the organiser what the name was read as, what the
- * allowance will be, and whether this person may already be on the list —
- * before anything guest-facing exists.
+ * allowance will be, and whether this person may already be on the list, * before anything guest-facing exists.
  */
 
 const bodySchema = z.object({

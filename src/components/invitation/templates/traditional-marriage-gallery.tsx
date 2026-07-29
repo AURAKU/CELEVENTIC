@@ -9,7 +9,7 @@ import {
 import type { SlideshowSettings } from "@/lib/invitation/slideshow-styles";
 
 /**
- * Traditional Marriage Ceremony gallery — editorial title + full-bleed media stage.
+ * Traditional Marriage Ceremony gallery, editorial title + full-bleed media stage.
  * Title: "The Couple" (ceremony vision-board voice; not generic "Gallery").
  */
 export function TraditionalMarriageGallerySection({
@@ -83,7 +83,7 @@ export function TraditionalMarriageGallerySection({
             showCaptions: false,
             transition: "fade",
             ...settings,
-            /* Calm full-bleed carousel — avoid padded collage grid on this template */
+            /* Calm full-bleed carousel, avoid padded collage grid on this template */
             style: "fade-carousel",
           }}
           className="tm-gallery-stage"

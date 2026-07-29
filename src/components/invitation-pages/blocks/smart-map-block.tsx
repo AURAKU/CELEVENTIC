@@ -12,7 +12,7 @@ import type { PageRenderContext } from "@/lib/invite-blueprints/blueprint-types"
 
 /**
  * Smart map: directions link + landmark text + ride-hailing deep links.
- * Ghana addressing reality — landmarks beat street addresses, so the landmark
+ * Ghana addressing reality, landmarks beat street addresses, so the landmark
  * line is first-class content, not an afterthought. No map iframe (page-weight
  * budget); link-outs only.
  */

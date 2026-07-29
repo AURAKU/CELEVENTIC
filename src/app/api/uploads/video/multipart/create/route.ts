@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   if (asset.multipartUploadId) {
-    // Already initiated (e.g. page refresh mid-upload) — return the existing session so the
+    // Already initiated (e.g. page refresh mid-upload), return the existing session so the
     // client can resume instead of orphaning the first multipart upload on S3.
     const { partSize, totalParts } = computePartPlan(Number(asset.sizeBytes));
     return NextResponse.json({

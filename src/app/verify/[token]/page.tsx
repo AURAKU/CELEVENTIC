@@ -4,7 +4,7 @@ import { Logo } from "@/components/layout/logo";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 
-/** Secure verify entry — routes to invitation or admission without exposing PII in QR */
+/** Secure verify entry, routes to invitation or admission without exposing PII in QR */
 export default async function VerifyPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const result = await qrRoutingService.resolveScan(token);

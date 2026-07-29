@@ -16,7 +16,7 @@ const initSchema = z.object({
     "VENDOR_BOOKING",
     "CONTRIBUTION",
   ]),
-  /** Optional override — when omitted, platform default provider is used */
+  /** Optional override, when omitted, platform default provider is used */
   provider: z.enum(["PAYSTACK", "FLUTTERWAVE", "HUBTEL"]).optional().nullable(),
   metadata: z.record(z.unknown()).optional(),
   ticketOrderId: z.string().optional(),

@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
  * Accessibility companions for the opening-ceremony system.
  *
  * Rule: interactive reveal effects must always have an accessible
- * alternative, and prefers-reduced-motion always wins — a guest who asked
+ * alternative, and prefers-reduced-motion always wins, a guest who asked
  * for no motion gets a dignified static gate, never a canned animation.
  */
 

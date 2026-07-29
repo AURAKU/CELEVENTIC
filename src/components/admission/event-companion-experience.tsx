@@ -4,31 +4,27 @@ import {
   type CompanionTheme,
 } from "@/lib/admission/event-companion-theme";
 import {
-  describeHeldSeats,
+  type PartySeat,
   type SeatingContinuity,
 } from "@/lib/admission/seating-continuity";
+import { EVENT_TIME_ZONE } from "@/lib/constants";
 import type { ResolvedFeature } from "@/lib/invitation-features/registry";
 import { invitationFontVars } from "@/lib/invitation-fonts";
+import { formatInvitationDateParts } from "@/lib/invitation-templates";
 import { cn } from "@/lib/utils";
 
 export type EventCompanionExperienceProps = {
   theme: CompanionTheme;
   eventTitle: string;
   guestName: string | null;
-  isGroup: boolean;
-  admittedCount: number;
-  remainingCount: number;
-  allowance: number;
   seat: { tableNumber: string; seatLabel: string | null; zone: string | null } | null;
   showSeat: boolean;
+  /** Every allocated seat on this invitation, shown after admit. */
+  partySeats?: PartySeat[];
   continuity: SeatingContinuity | null;
   features: ResolvedFeature[];
   event: {
     startDate: Date | string;
-    venueName: string | null;
-    landmark: string | null;
-    mapsLink: string | null;
-    dressCode: string | null;
     contactPhone: string | null;
   };
   memoryUploadUrl: string | null;
@@ -36,28 +32,39 @@ export type EventCompanionExperienceProps = {
   giftUrl: string | null;
   giftTitle: string | null;
   inviteHref: string;
+  /** Optional menu copy for in-event dining guidance. */
+  menuBody?: string | null;
+  menuUrl?: string | null;
 };
 
+/** Same timezone + clock as live invitations (Africa/Accra, 12-hour). */
 function formatEventWhen(startDate: Date | string): string {
-  const d = typeof startDate === "string" ? new Date(startDate) : startDate;
-  if (Number.isNaN(d.getTime())) return "";
+  const raw = typeof startDate === "string" ? startDate : startDate.toISOString();
+  const instant = new Date(raw);
+  if (Number.isNaN(instant.getTime())) return "";
   try {
-    return new Intl.DateTimeFormat("en-GB", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
+    const parts = formatInvitationDateParts(raw);
+    const clock = new Intl.DateTimeFormat("en-GB", {
+      timeZone: EVENT_TIME_ZONE,
       hour: "numeric",
-      minute: "2-digit",
-    }).format(d);
+      minute: "numeric",
+      hourCycle: "h23",
+    }).formatToParts(instant);
+    const hour = Number(clock.find((p) => p.type === "hour")?.value ?? "0");
+    const minute = Number(clock.find((p) => p.type === "minute")?.value ?? "0");
+    const dateLabel = `${parts.weekday} ${parts.day} ${parts.month}`;
+    // Date-only events are stored at midnight; omit a misleading clock.
+    if (hour === 0 && minute === 0) return dateLabel;
+    return `${dateLabel} at ${parts.time}`;
   } catch {
-    return d.toLocaleString();
+    return "";
   }
 }
 
 function SectionRule({ color }: { color: string }) {
   return (
     <div
-      className="mx-auto h-px w-16"
+      className="mx-auto h-px w-20"
       style={{
         background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
       }}
@@ -67,19 +74,16 @@ function SectionRule({ color }: { color: string }) {
 }
 
 /**
- * Post-admission companion — themed to the live invitation so arrival feels
- * like the same celebration, with seat, venue, programme, and guest actions.
+ * Post-admission companion — themed to the live invitation.
+ * Shown only after a successful gate admission (QR or manual code).
  */
 export function EventCompanionExperience({
   theme,
   eventTitle,
   guestName,
-  isGroup,
-  admittedCount,
-  remainingCount,
-  allowance,
   seat,
   showSeat,
+  partySeats = [],
   continuity,
   features,
   event,
@@ -88,18 +92,53 @@ export function EventCompanionExperience({
   giftUrl,
   giftTitle,
   inviteHref,
+  menuBody = null,
+  menuUrl = null,
 }: EventCompanionExperienceProps) {
   const { colors } = theme;
   const fonts = companionFontStyles(theme.fonts);
-  const heldCopy = continuity ? describeHeldSeats(continuity) : null;
   const enabled = (key: ResolvedFeature["key"]) =>
     features.some((f) => f.key === key && f.enabled);
   const showHelp = enabled("GUEST_HELP") && Boolean(event.contactPhone);
   const showProgramme =
     (enabled("LIVE_PROGRAMME") || theme.programmeItems.length > 0) &&
     theme.programmeItems.length > 0;
+  const showMenu =
+    enabled("EVENT_MENU") && Boolean((menuBody && menuBody.trim()) || menuUrl);
   const whenLabel = formatEventWhen(event.startDate);
   const firstName = guestName?.trim().split(/\s+/)[0] ?? null;
+
+  const allocatedSeats =
+    partySeats.length > 0
+      ? partySeats
+      : continuity?.revealed?.length
+        ? continuity.revealed
+        : [];
+  const displaySeat =
+    seat ??
+    (continuity?.tableNumber
+      ? {
+          tableNumber: continuity.tableNumber,
+          seatLabel: allocatedSeats.find((s) => s.tableNumber === continuity.tableNumber)
+            ?.seatLabel ?? null,
+          zone: allocatedSeats.find((s) => s.tableNumber === continuity.tableNumber)?.zone ?? null,
+        }
+      : allocatedSeats[0]
+        ? {
+            tableNumber: allocatedSeats[0].tableNumber,
+            seatLabel: allocatedSeats[0].seatLabel,
+            zone: allocatedSeats[0].zone,
+          }
+        : null);
+  const extraPartySeats = displaySeat
+    ? allocatedSeats.filter(
+        (s) =>
+          !(
+            s.tableNumber === displaySeat.tableNumber &&
+            (s.seatLabel ?? "") === (displaySeat.seatLabel ?? "")
+          )
+      )
+    : allocatedSeats;
 
   const cssVars = {
     ["--ec-primary" as string]: colors.primary,
@@ -123,14 +162,13 @@ export function EventCompanionExperience({
         fontFamily: fonts.body,
       }}
     >
-      {/* Atmosphere — invitation cover wash + theme gradients */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         {theme.backgroundImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={theme.backgroundImageUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover opacity-[0.22] saturate-[0.85]"
+            className="absolute inset-0 h-full w-full object-cover opacity-[0.18] saturate-[0.8]"
           />
         ) : null}
         <div
@@ -138,233 +176,169 @@ export function EventCompanionExperience({
           style={{
             background: `
               radial-gradient(ellipse 90% 55% at 50% -10%, ${theme.accentWash}, transparent 70%),
-              radial-gradient(ellipse 70% 50% at 100% 100%, ${colors.accent}22, transparent 55%),
+              radial-gradient(ellipse 70% 50% at 100% 100%, ${colors.accent}18, transparent 55%),
               linear-gradient(180deg, ${theme.paperWash} 0%, ${colors.background} 42%, ${colors.background} 100%)
             `,
           }}
         />
-        <div
-          className="absolute inset-x-0 top-0 h-40 opacity-40"
-          style={{
-            backgroundImage: `radial-gradient(${colors.secondary}33 0.6px, transparent 0.6px)`,
-            backgroundSize: "18px 18px",
-            maskImage: "linear-gradient(180deg, black, transparent)",
-          }}
-        />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[540px] flex-col px-5 pb-16 pt-12 sm:px-6 sm:pt-16">
-        {/* Hero — brand-first welcome, one job */}
+      <div className="relative z-10 mx-auto flex w-full max-w-[540px] flex-col px-5 pb-20 pt-14 sm:px-7 sm:pt-20">
         <header className="text-center">
           <p
-            className="text-[10px] uppercase tracking-[0.42em]"
-            style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+            className="text-xs uppercase tracking-[0.38em] sm:text-sm"
+            style={{ color: colors.secondary, fontFamily: fonts.eyebrow, fontWeight: 600 }}
           >
             You&apos;ve arrived
           </p>
           <h1
-            className="mt-4 text-[2.35rem] leading-[1.1] sm:text-5xl"
+            className="mt-5 text-[2.85rem] leading-[1.05] sm:text-[3.5rem]"
             style={{ color: colors.primary, fontFamily: fonts.script, fontWeight: 400 }}
           >
             {firstName ? `Welcome, ${firstName}` : "Welcome"}
           </h1>
           <SectionRule color={colors.secondary} />
           <p
-            className="mt-5 text-lg leading-snug sm:text-xl"
-            style={{ color: colors.primary, fontFamily: fonts.heading }}
+            className="mt-6 text-2xl leading-snug sm:text-3xl"
+            style={{ color: colors.primary, fontFamily: fonts.heading, fontWeight: 600 }}
           >
             {eventTitle}
           </p>
           {whenLabel ? (
             <p
-              className="mt-2 text-xs uppercase tracking-[0.22em]"
-              style={{ color: colors.text, opacity: 0.7, fontFamily: fonts.eyebrow }}
+              className="mt-3 text-sm uppercase tracking-[0.18em] sm:text-base"
+              style={{
+                color: colors.text,
+                opacity: 0.78,
+                fontFamily: fonts.eyebrow,
+                fontWeight: 600,
+              }}
             >
               {whenLabel}
             </p>
           ) : null}
-          <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed" style={{ opacity: 0.88 }}>
-            Your arrival is confirmed. Here is everything you need for the celebration —
-            seating, venue, and ways to take part.
+          <p
+            className="mx-auto mt-6 max-w-md text-base leading-relaxed sm:text-lg"
+            style={{ opacity: 0.92, fontWeight: 500 }}
+          >
+            You&apos;re in. Here is your seat, today&apos;s programme, and everything you need
+            while the celebration unfolds.
           </p>
         </header>
 
-        {isGroup ? (
-          <p
-            className="mt-6 text-center text-sm"
-            style={{ color: colors.primary }}
-            aria-live="polite"
-          >
-            <span className="font-medium">
-              {admittedCount} of {allowance} arrived
-            </span>
-            {remainingCount > 0 ? (
-              <span style={{ opacity: 0.75 }}>
-                {" "}
-                · {remainingCount} {remainingCount === 1 ? "place" : "places"} still open on this
-                pass
-              </span>
-            ) : null}
-          </p>
-        ) : null}
-
-        {/* Seat — the one critical wayfinding signal */}
         {showSeat ? (
           <section
-            className="mt-10 text-center"
+            className="mt-12 text-center"
             aria-labelledby="ec-seat-heading"
             style={{
               background: `linear-gradient(165deg, ${theme.accentWash}, ${colors.background}cc)`,
               border: `1px solid ${colors.secondary}40`,
               borderRadius: "1.75rem",
-              padding: "1.75rem 1.5rem",
+              padding: "2rem 1.5rem",
               boxShadow: `0 24px 60px -36px ${colors.primary}55`,
             }}
           >
             <h2
               id="ec-seat-heading"
-              className="text-[10px] uppercase tracking-[0.36em]"
-              style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+              className="text-xs uppercase tracking-[0.32em] sm:text-sm"
+              style={{ color: colors.secondary, fontFamily: fonts.eyebrow, fontWeight: 600 }}
             >
               Your place
             </h2>
-            {seat ? (
+            {displaySeat ? (
               <>
                 <p
-                  className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl"
+                  className="mt-4 text-5xl font-semibold tracking-tight sm:text-6xl"
                   style={{ color: colors.primary, fontFamily: fonts.heading }}
                 >
-                  Table {seat.tableNumber}
+                  Table {displaySeat.tableNumber}
                 </p>
-                {seat.seatLabel ? (
-                  <p className="mt-2 text-base" style={{ opacity: 0.9 }}>
-                    Seat {seat.seatLabel}
+                {displaySeat.seatLabel ? (
+                  <p
+                    className="mt-3 text-lg sm:text-xl"
+                    style={{ opacity: 0.92, fontWeight: 500 }}
+                  >
+                    Seat {displaySeat.seatLabel}
                   </p>
                 ) : null}
-                {seat.zone ? (
+                {displaySeat.zone ? (
                   <p
-                    className="mt-1 text-xs uppercase tracking-[0.2em]"
-                    style={{ color: colors.secondary, opacity: 0.85 }}
+                    className="mt-2 text-sm uppercase tracking-[0.18em]"
+                    style={{ color: colors.secondary, opacity: 0.9, fontWeight: 600 }}
                   >
-                    {seat.zone}
+                    {displaySeat.zone}
                   </p>
+                ) : null}
+                {extraPartySeats.length > 0 ? (
+                  <ul className="mt-6 space-y-2 text-left">
+                    {extraPartySeats.map((s) => (
+                      <li
+                        key={s.guestId}
+                        className="text-base sm:text-lg"
+                        style={{ color: colors.primary }}
+                      >
+                        <span className="font-semibold">{s.guestName}</span>
+                        <span style={{ opacity: 0.8 }}>
+                          {`, Table ${s.tableNumber}`}
+                          {s.seatLabel ? `, Seat ${s.seatLabel}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 ) : null}
               </>
-            ) : continuity?.revealed.length ? (
-              <ul className="mt-4 space-y-2 text-left">
-                {continuity.revealed.map((s) => (
-                  <li key={s.guestId} className="text-sm" style={{ color: colors.primary }}>
-                    <span className="font-medium">{s.guestName}</span>
-                    <span style={{ opacity: 0.75 }}>
-                      {" "}
-                      — Table {s.tableNumber}
-                      {s.seatLabel ? `, Seat ${s.seatLabel}` : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
             ) : (
-              <p className="mt-3 text-sm leading-relaxed" style={{ opacity: 0.8 }}>
+              <p
+                className="mt-4 text-base leading-relaxed sm:text-lg"
+                style={{ opacity: 0.88, fontWeight: 500 }}
+              >
                 Your table will appear here once seating is assigned. An usher can guide you in
                 the meantime.
               </p>
             )}
-            {heldCopy ? (
-              <p className="mt-4 text-xs leading-relaxed" style={{ opacity: 0.72 }}>
-                {heldCopy}
-              </p>
-            ) : null}
           </section>
         ) : null}
 
-        {/* Venue & dress — navigate the room */}
-        {(event.venueName || event.dressCode || event.mapsLink) && (
-          <section className="mt-10 text-center" aria-labelledby="ec-venue-heading">
-            <h2
-              id="ec-venue-heading"
-              className="text-[10px] uppercase tracking-[0.36em]"
-              style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
-            >
-              Find your way
-            </h2>
-            <SectionRule color={`${colors.secondary}99`} />
-            {event.venueName ? (
-              <p
-                className="mt-5 text-xl leading-snug"
-                style={{ color: colors.primary, fontFamily: fonts.heading }}
-              >
-                {event.venueName}
-              </p>
-            ) : null}
-            {event.landmark ? (
-              <p className="mt-2 text-sm" style={{ opacity: 0.75 }}>
-                {event.landmark}
-              </p>
-            ) : null}
-            {event.dressCode ? (
-              <p className="mt-4 text-sm">
-                <span
-                  className="uppercase tracking-[0.18em] text-[10px]"
-                  style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
-                >
-                  Dress code
-                </span>
-                <span className="mt-1 block" style={{ color: colors.primary }}>
-                  {event.dressCode}
-                </span>
-              </p>
-            ) : null}
-            {event.mapsLink ? (
-              <Link
-                href={event.mapsLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full px-7 text-[11px] uppercase tracking-[0.22em] transition-transform active:scale-[0.98]"
-                style={{
-                  background: colors.secondary,
-                  color: colors.background,
-                  fontFamily: fonts.eyebrow,
-                }}
-              >
-                Open directions
-              </Link>
-            ) : null}
-          </section>
-        )}
-
-        {/* Programme — invitation order of day */}
         {showProgramme ? (
-          <section className="mt-12" aria-labelledby="ec-programme-heading">
+          <section className="mt-14" aria-labelledby="ec-programme-heading">
             <h2
               id="ec-programme-heading"
-              className="text-center text-[10px] uppercase tracking-[0.36em]"
-              style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+              className="text-center text-xs uppercase tracking-[0.32em] sm:text-sm"
+              style={{ color: colors.secondary, fontFamily: fonts.eyebrow, fontWeight: 600 }}
             >
               Today&apos;s programme
             </h2>
             <SectionRule color={`${colors.secondary}99`} />
-            <ol className="mt-6 space-y-0">
+            <ol className="mt-7 space-y-0">
               {theme.programmeItems.map((item, index) => (
                 <li
                   key={item.id || `${item.time}-${item.title}`}
-                  className="grid grid-cols-[4.5rem_1fr] gap-3 border-t py-4 first:border-t-0"
+                  className="grid grid-cols-[5rem_1fr] gap-3 border-t py-5 first:border-t-0"
                   style={{ borderColor: `${colors.secondary}28` }}
                 >
                   <span
-                    className="pt-0.5 text-xs tabular-nums tracking-wide"
-                    style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+                    className="pt-0.5 text-sm tabular-nums tracking-wide sm:text-base"
+                    style={{
+                      color: colors.secondary,
+                      fontFamily: fonts.eyebrow,
+                      fontWeight: 600,
+                    }}
                   >
                     {item.time || `${index + 1}`.padStart(2, "0")}
                   </span>
                   <div>
                     <p
-                      className="text-base leading-snug"
-                      style={{ color: colors.primary, fontFamily: fonts.heading }}
+                      className="text-lg leading-snug sm:text-xl"
+                      style={{
+                        color: colors.primary,
+                        fontFamily: fonts.heading,
+                        fontWeight: 600,
+                      }}
                     >
                       {item.title}
                     </p>
                     {item.description ? (
-                      <p className="mt-1 text-sm leading-relaxed" style={{ opacity: 0.75 }}>
+                      <p className="mt-1.5 text-base leading-relaxed" style={{ opacity: 0.8 }}>
                         {item.description}
                       </p>
                     ) : null}
@@ -375,24 +349,60 @@ export function EventCompanionExperience({
           </section>
         ) : null}
 
-        {/* Guest actions — memory, gift, help */}
+        {showMenu ? (
+          <section className="mt-14 text-center" aria-labelledby="ec-menu-heading">
+            <h2
+              id="ec-menu-heading"
+              className="text-xs uppercase tracking-[0.32em] sm:text-sm"
+              style={{ color: colors.secondary, fontFamily: fonts.eyebrow, fontWeight: 600 }}
+            >
+              Menu
+            </h2>
+            <SectionRule color={`${colors.secondary}99`} />
+            {menuBody?.trim() ? (
+              <p
+                className="mx-auto mt-6 max-w-md whitespace-pre-line text-base leading-relaxed sm:text-lg"
+                style={{ color: colors.primary, fontWeight: 500 }}
+              >
+                {menuBody.trim()}
+              </p>
+            ) : null}
+            {menuUrl ? (
+              <Link
+                href={menuUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-7 inline-flex min-h-[48px] items-center justify-center rounded-full px-8 text-xs uppercase tracking-[0.2em] transition-transform active:scale-[0.98] sm:text-sm"
+                style={{
+                  background: colors.secondary,
+                  color: colors.background,
+                  fontFamily: fonts.eyebrow,
+                  fontWeight: 600,
+                }}
+              >
+                View full menu
+              </Link>
+            ) : null}
+          </section>
+        ) : null}
+
         {(enabled("MEMORY_VAULT") && (memoryUploadUrl || memoryAlbumUrl)) ||
         (enabled("GIFT_WALLET") && giftUrl) ||
         showHelp ? (
-          <section className="mt-12" aria-labelledby="ec-actions-heading">
+          <section className="mt-14" aria-labelledby="ec-actions-heading">
             <h2
               id="ec-actions-heading"
-              className="text-center text-[10px] uppercase tracking-[0.36em]"
-              style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+              className="text-center text-xs uppercase tracking-[0.32em] sm:text-sm"
+              style={{ color: colors.secondary, fontFamily: fonts.eyebrow, fontWeight: 600 }}
             >
               Take part
             </h2>
             <SectionRule color={`${colors.secondary}99`} />
-            <div className="mt-6 flex flex-col gap-3">
+            <div className="mt-7 flex flex-col gap-3.5">
               {enabled("MEMORY_VAULT") && memoryUploadUrl ? (
                 <Link
                   href={memoryUploadUrl}
-                  className="flex min-h-[52px] items-center justify-between rounded-2xl px-5 py-3 transition-colors"
+                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5 transition-colors"
                   style={{
                     background: theme.accentWash,
                     border: `1px solid ${colors.secondary}35`,
@@ -400,12 +410,19 @@ export function EventCompanionExperience({
                 >
                   <span>
                     <span
-                      className="block text-[10px] uppercase tracking-[0.24em]"
-                      style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+                      className="block text-xs uppercase tracking-[0.2em] sm:text-sm"
+                      style={{
+                        color: colors.secondary,
+                        fontFamily: fonts.eyebrow,
+                        fontWeight: 600,
+                      }}
                     >
                       Memory Vault
                     </span>
-                    <span className="mt-0.5 block text-sm" style={{ color: colors.primary }}>
+                    <span
+                      className="mt-1 block text-base sm:text-lg"
+                      style={{ color: colors.primary, fontWeight: 500 }}
+                    >
                       Add a photo or video
                     </span>
                   </span>
@@ -417,7 +434,7 @@ export function EventCompanionExperience({
               {enabled("MEMORY_VAULT") && memoryAlbumUrl ? (
                 <Link
                   href={memoryAlbumUrl}
-                  className="flex min-h-[52px] items-center justify-between rounded-2xl px-5 py-3"
+                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5"
                   style={{
                     background: `${colors.primary}08`,
                     border: `1px solid ${colors.secondary}28`,
@@ -425,12 +442,19 @@ export function EventCompanionExperience({
                 >
                   <span>
                     <span
-                      className="block text-[10px] uppercase tracking-[0.24em]"
-                      style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+                      className="block text-xs uppercase tracking-[0.2em] sm:text-sm"
+                      style={{
+                        color: colors.secondary,
+                        fontFamily: fonts.eyebrow,
+                        fontWeight: 600,
+                      }}
                     >
                       Live album
                     </span>
-                    <span className="mt-0.5 block text-sm" style={{ color: colors.primary }}>
+                    <span
+                      className="mt-1 block text-base sm:text-lg"
+                      style={{ color: colors.primary, fontWeight: 500 }}
+                    >
                       View shared memories
                     </span>
                   </span>
@@ -442,7 +466,7 @@ export function EventCompanionExperience({
               {enabled("GIFT_WALLET") && giftUrl ? (
                 <Link
                   href={giftUrl}
-                  className="flex min-h-[52px] items-center justify-between rounded-2xl px-5 py-3"
+                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5"
                   style={{
                     background: `${colors.primary}08`,
                     border: `1px solid ${colors.secondary}28`,
@@ -450,12 +474,19 @@ export function EventCompanionExperience({
                 >
                   <span>
                     <span
-                      className="block text-[10px] uppercase tracking-[0.24em]"
-                      style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+                      className="block text-xs uppercase tracking-[0.2em] sm:text-sm"
+                      style={{
+                        color: colors.secondary,
+                        fontFamily: fonts.eyebrow,
+                        fontWeight: 600,
+                      }}
                     >
                       {giftTitle || "Send a gift"}
                     </span>
-                    <span className="mt-0.5 block text-sm" style={{ color: colors.primary }}>
+                    <span
+                      className="mt-1 block text-base sm:text-lg"
+                      style={{ color: colors.primary, fontWeight: 500 }}
+                    >
                       Open Gift Wallet
                     </span>
                   </span>
@@ -467,7 +498,7 @@ export function EventCompanionExperience({
               {showHelp && event.contactPhone ? (
                 <a
                   href={`tel:${event.contactPhone.replace(/\s/g, "")}`}
-                  className="flex min-h-[52px] items-center justify-between rounded-2xl px-5 py-3"
+                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5"
                   style={{
                     background: `${colors.primary}08`,
                     border: `1px solid ${colors.secondary}28`,
@@ -475,12 +506,19 @@ export function EventCompanionExperience({
                 >
                   <span>
                     <span
-                      className="block text-[10px] uppercase tracking-[0.24em]"
-                      style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+                      className="block text-xs uppercase tracking-[0.2em] sm:text-sm"
+                      style={{
+                        color: colors.secondary,
+                        fontFamily: fonts.eyebrow,
+                        fontWeight: 600,
+                      }}
                     >
                       Need help
                     </span>
-                    <span className="mt-0.5 block text-sm" style={{ color: colors.primary }}>
+                    <span
+                      className="mt-1 block text-base sm:text-lg"
+                      style={{ color: colors.primary, fontWeight: 500 }}
+                    >
                       Call host · {event.contactPhone}
                     </span>
                   </span>
@@ -493,11 +531,11 @@ export function EventCompanionExperience({
           </section>
         ) : null}
 
-        <footer className="mt-14 text-center">
+        <footer className="mt-16 text-center">
           <Link
             href={inviteHref}
-            className="text-[10px] uppercase tracking-[0.28em] underline-offset-4 hover:underline"
-            style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
+            className="text-xs uppercase tracking-[0.24em] underline-offset-4 hover:underline sm:text-sm"
+            style={{ color: colors.secondary, fontFamily: fonts.eyebrow, fontWeight: 600 }}
           >
             View invitation
           </Link>

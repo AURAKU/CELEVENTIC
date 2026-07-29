@@ -4,7 +4,7 @@ import { vendorProfileService } from "@/services/vendor-os/vendor-profile.servic
 import { vendorMediaService } from "@/services/vendor-os/vendor-media.service";
 
 /**
- * Removes one portfolio media item (image or video) — powers the Remove button in the vendor
+ * Removes one portfolio media item (image or video), powers the Remove button in the vendor
  * portal's Portfolio grid. Soft-deletes (status -> "removed") rather than hard-deleting the
  * row/file: matches `VendorMediaService.deleteMedia`'s existing contract (keeps usage/plan
  * accounting and audit history intact) and is scoped to `vendorId` so a vendor can only ever

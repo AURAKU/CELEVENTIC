@@ -3,7 +3,7 @@
  *
  * The pass sits at the bottom of every invitation template, so it has to feel
  * native to a luxury wedding, a traditional ceremony, and a corporate gala
- * alike — without ever compromising QR contrast. The QR panel stays pure
+ * alike, without ever compromising QR contrast. The QR panel stays pure
  * white-on-black in every preset; only the surrounding frame changes.
  */
 

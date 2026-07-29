@@ -262,7 +262,7 @@ export function AdminCatalogTemplatesClient() {
     <div className="space-y-6">
       <AdminToolbar
         title="Invitation Catalogue Templates"
-        subtitle="Create, archive, duplicate, feature — uniqueness scores are internal only"
+        subtitle="Create, archive, duplicate, feature, uniqueness scores are internal only"
         count={templates.length}
         onRefresh={load}
         onAdd={() => { setShowForm(true); setEditId(null); setForm(emptyForm); }}
@@ -407,7 +407,7 @@ export function AdminCatalogTemplatesClient() {
         <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="font-semibold">Creative assignment — {creativeSlug}</h3>
+              <h3 className="font-semibold">Creative assignment, {creativeSlug}</h3>
               <Button size="sm" variant="ghost" onClick={() => setCreativeSlug(null)}>Close</Button>
             </div>
             <p className="text-xs text-slate-500">

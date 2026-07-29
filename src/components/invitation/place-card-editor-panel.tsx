@@ -27,7 +27,7 @@ import {
  *
  * Writes a single `PLACE_CARD` override through the shared feature-layer API,
  * so the change reaches every already-published copy of the invitation on the
- * next guest view — no re-publish, no per-template work.
+ * next guest view, no re-publish, no per-template work.
  */
 
 interface PlaceCardEditorPanelProps {
@@ -151,7 +151,7 @@ export function PlaceCardEditorPanel({
         </CardTitle>
         <p className="text-xs text-slate-500">
           Shown on this invitation above the entry pass, on every template. Party allowance comes
-          from the guest list — this only controls the wording and styling.
+          from the guest list, this only controls the wording and styling.
         </p>
       </CardHeader>
 

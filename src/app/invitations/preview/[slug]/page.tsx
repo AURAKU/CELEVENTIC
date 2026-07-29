@@ -9,7 +9,7 @@ import { TemplatePreviewShell } from "@/components/invitation-paged/template-pre
 export const dynamic = "force-dynamic";
 
 /**
- * Live template preview — the real paged viewer over sample data, with theme
+ * Live template preview, the real paged viewer over sample data, with theme
  * switcher chips and a pinned "Use this template" CTA. Legacy (non-paged)
  * templates keep their existing detail page.
  */

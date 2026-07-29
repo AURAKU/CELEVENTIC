@@ -145,7 +145,7 @@ export function AdminUsersClient({
       body: JSON.stringify({ userId: user.id, password }),
     });
     const d = await res.json();
-    if (res.ok) setSuccess(`Password reset for ${user.name} — user must sign in again`);
+    if (res.ok) setSuccess(`Password reset for ${user.name}, user must sign in again`);
     else setError(d.error);
   }
 
@@ -202,8 +202,8 @@ export function AdminUsersClient({
         subtitle={
           canPromoteToAdmin
             ? actorRole === "SUPER_ADMIN"
-              ? "Super Admin — create users, assign any role including Super Admin."
-              : "Admin — create users, assign roles, promote to Admin, and manage all non–Super Admin accounts."
+              ? "Super Admin, create users, assign any role including Super Admin."
+              : "Admin, create users, assign roles, promote to Admin, and manage all non–Super Admin accounts."
             : "Manage users on the platform."
         }
         count={total}
@@ -343,7 +343,7 @@ export function AdminUsersClient({
               {users.map((user) => (
                 <tr key={user.id} className="border-b last:border-0 hover:bg-slate-50/50">
                   <td className="p-3 font-medium">{user.name}</td>
-                  <td className="p-3">{user.email ?? "—"}</td>
+                  <td className="p-3">{user.email ?? ", "}</td>
                   <td className="p-3"><Badge variant="outline">{formatRoleLabel(user.role)}</Badge></td>
                   <td className="p-3">
                     <Badge variant={user.status === "ACTIVE" ? "success" : "destructive"}>{user.status}</Badge>

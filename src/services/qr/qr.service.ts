@@ -595,8 +595,7 @@ export class QrService {
       try {
         await resetAdmission({
           invitationId: guest.invitationId,
-          scope: "individual",
-          guestIds: [guestId],
+          scope: "entire",
           actorUserId: resetBy,
           reason: "Gate dashboard reset guest admission",
         });

@@ -33,7 +33,7 @@ function HeroShell({
   return <div className={`text-center px-6 sm:px-8 max-w-2xl mx-auto ${className}`}>{children}</div>;
 }
 
-/** Each layout slug gets its own standalone hero — no shared layouts. */
+/** Each layout slug gets its own standalone hero, no shared layouts. */
 export function renderTemplateHero(ctx: TemplateHeroContext) {
   const { layout, name1, name2, intro, dateLine, time, colors, fonts } = ctx;
   const primary = colors.primary ?? "#F5F0E6";

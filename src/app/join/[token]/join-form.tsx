@@ -62,7 +62,7 @@ export function JoinForm({
           </a>
         </Button>
         <p className="text-xs text-slate-400">
-          Save this link — it carries your QR code for the gate.
+          Save this link, it carries your QR code for the gate.
         </p>
       </div>
     );

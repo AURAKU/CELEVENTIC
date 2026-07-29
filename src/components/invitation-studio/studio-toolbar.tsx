@@ -50,7 +50,7 @@ function statusLabel(status: StudioSaveStatus, lastSavedAt?: Date | null): strin
     case "dirty":
       return "Unsaved changes";
     case "error":
-      return "Save failed — retry";
+      return "Save failed, retry";
     default:
       return "Ready";
   }

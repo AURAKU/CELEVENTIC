@@ -8,7 +8,7 @@ import { communicationService } from "@/services/communications/communication.se
 import { GUEST_IMPORT_DELIVERY_QUEUE } from "./queues";
 
 /**
- * Bulk Guest Import — delivery.
+ * Bulk Guest Import, delivery.
  *
  * Sending is a separate, resumable stage from generation, and it is always
  * optional. A name-only guest generates a complete invitation with a live
@@ -43,7 +43,7 @@ function defaultBody(params: {
   if (params.admissionCode) {
     lines.push("", `Your admission code: ${params.admissionCode}`);
   }
-  lines.push("", "Please keep this link private — it is your entry pass.");
+  lines.push("", "Please keep this link private, it is your entry pass.");
   return lines.join("\n");
 }
 
@@ -143,7 +143,7 @@ export async function queueBatchDeliveries(
           status: recipient ? "QUEUED" : "SKIPPED_NO_CONTACT",
           recipient,
           guestName: row.name,
-          subject: `You're invited — ${batch.event.title}`,
+          subject: `You're invited, ${batch.event.title}`,
           body,
         });
 
@@ -277,7 +277,7 @@ export async function startBatchDelivery(
   return result;
 }
 
-/** Stop everything still queued — the organiser spotted a mistake mid-send. */
+/** Stop everything still queued, the organiser spotted a mistake mid-send. */
 export async function cancelBatchDelivery(
   batchId: string,
   userId: string

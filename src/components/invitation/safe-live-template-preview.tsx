@@ -45,7 +45,7 @@ type SafeProps = {
 function PreviewFallback() {
   return (
     <div className="flex min-h-[180px] w-full items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50 px-4 text-center text-xs text-slate-500">
-      Preview unavailable — open the template to see the full invitation.
+      Preview unavailable, open the template to see the full invitation.
     </div>
   );
 }

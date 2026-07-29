@@ -120,8 +120,7 @@ export function StudioScenesPanel({
       {leftTab === "scenes" ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
           <p className="mb-2 text-[11px] leading-relaxed text-slate-500">
-            Drag to reorder sections guests see. Hide, duplicate, or add a custom section —
-            changes show live in the preview.
+            Drag to reorder sections guests see. Hide, duplicate, or add a custom section, changes show live in the preview.
           </p>
           <ul className="space-y-1">
             {scenes.map((scene, index) => {
@@ -285,7 +284,7 @@ export function StudioScenesPanel({
 
           <div className="mt-auto pt-4">
             <p className="text-[10px] text-slate-400">
-              Freeform drag/resize of every element is planned for a later canvas phase — scene
+              Freeform drag/resize of every element is planned for a later canvas phase, scene
               order and properties are live now.
             </p>
           </div>

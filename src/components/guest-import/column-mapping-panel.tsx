@@ -9,7 +9,7 @@ import { IMPORT_FIELD_OPTIONS, type ColumnSuggestionView } from "./types";
  * Column mapping.
  *
  * Shown before anything is created, with the detected guess pre-selected and
- * three real values from each column underneath — the organiser confirms
+ * three real values from each column underneath, the organiser confirms
  * against their own data rather than trusting a header they may not have
  * written. Re-mapping re-derives every row from the stored source cells, so
  * fixing a wrong guess never means re-uploading.
@@ -31,7 +31,7 @@ export function ColumnMappingPanel({ suggestions, onApply, busy }: Props) {
 
   async function apply() {
     if (nameColumns === 0) {
-      setError("Map one column to the guest name — it is the only required field.");
+      setError("Map one column to the guest name, it is the only required field.");
       return;
     }
     if (nameColumns > 1) {
@@ -48,8 +48,7 @@ export function ColumnMappingPanel({ suggestions, onApply, busy }: Props) {
         <div>
           <h3 className="font-semibold">Match your columns</h3>
           <p className="text-sm text-slate-500">
-            We guessed from your headers and the data itself. Only the name is required —
-            phone and email are optional.
+            We guessed from your headers and the data itself. Only the name is required, phone and email are optional.
           </p>
         </div>
 

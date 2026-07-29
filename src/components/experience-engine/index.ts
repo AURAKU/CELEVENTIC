@@ -1,5 +1,5 @@
 /**
- * Experience Engine React barrel — thin modules for Phase 2 foundation.
+ * Experience Engine React barrel, thin modules for Phase 2 foundation.
  */
 export { InvitationExperience } from "@/components/experience-engine/invitation-experience";
 export type { InvitationExperienceProps } from "@/components/experience-engine/invitation-experience";

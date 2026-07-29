@@ -24,12 +24,12 @@ interface InteractiveRevealProps {
   onComplete: () => void;
   /** User gesture that starts the reveal (audio unlock). */
   onBegin?: () => void;
-  /** Framed catalogue/studio preview — absolute envelope shell. */
+  /** Framed catalogue/studio preview, absolute envelope shell. */
   embedded?: boolean;
   /** Start envelope/curtain open immediately (preview tap gesture already happened). */
   autoOpen?: boolean;
   /**
-   * Guest has completed this ceremony before — reveals may offer a visible,
+   * Guest has completed this ceremony before, reveals may offer a visible,
    * opt-in way to move along faster. Never skips anything on its own.
    */
   allowSkip?: boolean;

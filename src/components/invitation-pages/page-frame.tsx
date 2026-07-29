@@ -16,7 +16,7 @@ interface PageFrameProps {
 
 /**
  * Full-viewport snap page. Everything inside styles via var(--inv-*) only.
- * SSR-complete: this is a plain section — no client gating around content.
+ * SSR-complete: this is a plain section, no client gating around content.
  */
 export function PageFrame({
   pageId,

@@ -14,7 +14,7 @@ import { PARTY_TYPE_LABELS, STATUS_LABELS, type ImportRowView } from "./types";
  * Everything an organiser needs to answer "is this list right?" before a
  * single invitation exists: per-row status, why a row was flagged, inline
  * correction of the name and allowance, and an explicit create/skip decision
- * for every duplicate. Paginated server-side — a 5,000-row import is browsed,
+ * for every duplicate. Paginated server-side, a 5,000-row import is browsed,
  * never loaded whole.
  */
 
@@ -238,7 +238,7 @@ export function ImportPreviewTable({ batchId, editable, onChanged, refreshKey }:
                   )}
                 </td>
                 <td className="px-3 py-2 text-xs text-slate-500">
-                  {row.tableNumber ? `${row.tableNumber}${row.seatLabel ? ` · ${row.seatLabel}` : ""}` : "—"}
+                  {row.tableNumber ? `${row.tableNumber}${row.seatLabel ? ` · ${row.seatLabel}` : ""}` : ", "}
                 </td>
                 <td className="px-3 py-2">
                   <span

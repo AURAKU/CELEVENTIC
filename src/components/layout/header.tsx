@@ -109,7 +109,7 @@ function NavLink({
   );
 }
 
-/** Secondary auth CTA — glass capsule matching prefs / logo */
+/** Secondary auth CTA, glass capsule matching prefs / logo */
 function SignInLink({
   label,
   className,
@@ -150,7 +150,7 @@ function SignInLink({
   );
 }
 
-/** Primary auth CTA — solid brand fill with soft edge glow */
+/** Primary auth CTA, solid brand fill with soft edge glow */
 function GetStartedLink({
   label,
   className,

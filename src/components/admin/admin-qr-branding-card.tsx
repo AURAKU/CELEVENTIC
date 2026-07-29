@@ -69,7 +69,7 @@ export function AdminQrBrandingCard() {
       <CardContent className="space-y-4">
         <p className="text-sm text-slate-600">
           Platform fallback when events have no custom QR logo. Used on invitations, tickets, and admission passes.
-          Upload any size — it is optimised automatically.
+          Upload any size, it is optimised automatically.
         </p>
         {error && <p className="text-sm text-red-600">{error}</p>}
         {notice && <p className="text-sm text-emerald-700">{notice}</p>}
@@ -77,7 +77,7 @@ export function AdminQrBrandingCard() {
           defaultAspect="free"
           allowedAspects={CROP_PRESETS.all}
           buttonLabel="Upload Celeventic fallback"
-          hint="Import logo from device — crop any part of the image."
+          hint="Import logo from device, crop any part of the image."
           maxFileBytes={Infinity}
           dropzoneNote="or drag & drop · JPEG, PNG, WebP, GIF · any size"
           previewUrl={url}

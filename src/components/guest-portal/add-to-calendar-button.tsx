@@ -3,7 +3,7 @@
 import { CalendarActionsMenu } from "@/components/guest-portal/calendar-actions-menu";
 import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
 
-/** @deprecated Use CalendarActionsMenu — kept for backward compatibility */
+/** @deprecated Use CalendarActionsMenu, kept for backward compatibility */
 export function AddToCalendarButton({
   title,
   startDateRaw,

@@ -19,7 +19,7 @@ export interface PagedInvitationViewerProps {
 }
 
 /**
- * Invitation Viewer 2.0 — pagination as the core model.
+ * Invitation Viewer 2.0, pagination as the core model.
  *
  * Full-viewport pages with CSS scroll-snap, a tappable dot rail, a persistent
  * action bar from page 2, and per-page hash deep links. The full page tree is

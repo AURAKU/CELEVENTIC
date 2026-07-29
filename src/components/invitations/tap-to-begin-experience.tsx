@@ -15,7 +15,7 @@ import {
 import styles from "./tap-to-begin-experience.module.css";
 
 const EXIT_MS = 480;
-/** Deep warm gold — legible script/accent tone when the photo classifies as light. */
+/** Deep warm gold, legible script/accent tone when the photo classifies as light. */
 const DEEP_GOLD_ON_LIGHT = "#8A5A12";
 
 export interface TapToBeginExperienceProps {
@@ -33,16 +33,16 @@ export interface TapToBeginExperienceProps {
   name2?: string | null;
   layoutSlug?: string;
   category?: string;
-  /** Studio welcome-typography override — resolved CSS font stack (unset keeps each line's template default). */
+  /** Studio welcome-typography override, resolved CSS font stack (unset keeps each line's template default). */
   fontFamily?: string | null;
-  /** Studio welcome-typography override — overall text scale. */
+  /** Studio welcome-typography override, overall text scale. */
   fontScale?: "compact" | "cozy" | "spacious" | "bold";
-  /** Studio welcome-typography override — manual body/ivory text color (bypasses smart auto-contrast). */
+  /** Studio welcome-typography override, manual body/ivory text color (bypasses smart auto-contrast). */
   textColorOverride?: string | null;
-  /** Studio welcome-typography override — manual gold/script accent color (bypasses smart auto-contrast). */
+  /** Studio welcome-typography override, manual gold/script accent color (bypasses smart auto-contrast). */
   accentColorOverride?: string | null;
   /**
-   * Legibility backdrop behind the welcome copy — a blurred plate that keeps text
+   * Legibility backdrop behind the welcome copy, a blurred plate that keeps text
    * readable over busy, multi-color patterned art (e.g. kente/Ankara photos).
    * "auto" (default) turns it on for templates known to use patterned welcome art;
    * "on"/"off" let the studio override that per invitation.
@@ -57,7 +57,7 @@ const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale
   bold: 1.4,
 };
 
-/** Templates whose welcome art is a busy, multi-color pattern (kente/Ankara, etc.) — legibility plate defaults on. */
+/** Templates whose welcome art is a busy, multi-color pattern (kente/Ankara, etc.), legibility plate defaults on. */
 function isPatternedWelcomeLayout(layoutSlug?: string, category?: string): boolean {
   const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
   return (
@@ -111,7 +111,7 @@ function titleCase(s: string): string {
     .join(" ");
 }
 
-/** The bare action verb ("Begin"/"Enter") — used to build the visible CTA and aria-label. */
+/** The bare action verb ("Begin"/"Enter"), used to build the visible CTA and aria-label. */
 function resolveBeginVerb(layoutSlug?: string, category?: string): string {
   const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
   if (
@@ -157,7 +157,7 @@ function resolveNames(
   return null;
 }
 
-/** Minimal ripple glyph — reads as "tap here" without a generic stock hand/cursor icon. */
+/** Minimal ripple glyph, reads as "tap here" without a generic stock hand/cursor icon. */
 function TapGlyph() {
   return (
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -180,7 +180,7 @@ const ORBS = [
 ];
 
 /**
- * Music-unlock gate — cinematic, content-aware, single begin action.
+ * Music-unlock gate, cinematic, content-aware, single begin action.
  * One brand beat · one event beat · one CTA. No “touch anywhere” stack.
  */
 export function TapToBeginExperience({
@@ -212,7 +212,7 @@ export function TapToBeginExperience({
 
   const hero = atmosphereUrl?.trim() ? resolveMediaUrl(atmosphereUrl) : null;
 
-  // Smart contrast — classify the uploaded photo (light vs dark) so overlay text
+  // Smart contrast, classify the uploaded photo (light vs dark) so overlay text
   // always flips to a legible scheme instead of assuming every photo is dark.
   // Defaults to "dark" (today's design) until sampling resolves, and stays "dark"
   // when there's no photo at all (matches the built-in navy fallback backdrop).
@@ -232,7 +232,7 @@ export function TapToBeginExperience({
   }, [hero]);
 
   // A brand primaryColor only wins as the script/accent "gold" when it stays
-  // legible against the resolved photo — a deep bronze reads fine on paper but
+  // legible against the resolved photo, a deep bronze reads fine on paper but
   // disappears (dark-on-dark) as accent text over a dark photo, and the mirror
   // case on a light photo. Otherwise fall back to a known-legible gold per mode.
   const brandGoldCandidate =
@@ -256,8 +256,7 @@ export function TapToBeginExperience({
     [name1, name2, eventTitle, hostName, layoutSlug, category]
   );
 
-  // A lone "BEGIN" floating over a photo reads as decorative type, not a control —
-  // guests need the verb ("tap") spelled out so the gesture is obvious on first look.
+  // A lone "BEGIN" floating over a photo reads as decorative type, not a control, // guests need the verb ("tap") spelled out so the gesture is obvious on first look.
   const beginVerb = resolveBeginVerb(layoutSlug, category);
   const ctaText = `Tap to ${beginVerb}`;
   const scrimActive = scrim === "on" || (scrim === "auto" && isPatternedWelcomeLayout(layoutSlug, category));
@@ -311,7 +310,7 @@ export function TapToBeginExperience({
     .filter(Boolean)
     .join(" ");
 
-  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation — ${
+  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation, ${
     beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")
   }${couple ? `, ${couple.name1} and ${couple.name2}` : ""}`;
 

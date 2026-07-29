@@ -28,9 +28,9 @@ function unregisterPlaying(el: HTMLVideoElement) {
 export type VideoPlayerStatus = "UPLOADING" | "UPLOADED" | "QUEUED" | "PROCESSING" | "READY" | "FAILED" | "CANCELLED";
 
 export interface VideoPlayerProps {
-  /** Direct MP4 URL — always required as the universal-compatibility fallback. */
+  /** Direct MP4 URL, always required as the universal-compatibility fallback. */
   src: string | null;
-  /** HLS master playlist (.m3u8) — used for ABR on longer videos when available. */
+  /** HLS master playlist (.m3u8), used for ABR on longer videos when available. */
   hlsSrc?: string | null;
   poster?: string | null;
   status?: VideoPlayerStatus;
@@ -93,7 +93,7 @@ export function VideoPlayer({
       hls.attachMedia(video);
       hlsInstanceRef.current = hls;
     } else if (src) {
-      // No HLS support at all (very old browser) — fall back to progressive MP4.
+      // No HLS support at all (very old browser), fall back to progressive MP4.
       video.src = src;
     }
   }, [src]);

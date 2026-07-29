@@ -41,7 +41,7 @@ const TIER_CHIPS = [
 
 /**
  * Gallery state lives entirely in the URL (?eventType=&tier=&style=&q=&page=…)
- * — shareable, back-button safe. Mobile: infinite scroll in batches of 12 with
+ *, shareable, back-button safe. Mobile: infinite scroll in batches of 12 with
  * an explicit "Load more" gate after 3 auto-batches. Desktop: numbered pages.
  */
 export function CatalogueClient() {
@@ -49,7 +49,7 @@ export function CatalogueClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // — URL-derived filter state (single source of truth) —
+  // URL-derived filter state (single source of truth)
   const eventType = searchParams.get("eventType") ?? "WEDDING";
   const weddingBrowse = weddingBrowseCategoriesForEventType(eventType).length > 0;
   // Wedding/Engagement browse defaults to all wedding-family categories so Engagement SKUs appear
@@ -93,7 +93,7 @@ export function CatalogueClient() {
     try {
       window.sessionStorage.setItem("celeventic:referrer-invite", ref);
     } catch {
-      // storage unavailable — attribution silently skipped
+      // storage unavailable, attribution silently skipped
     }
   }, [searchParams]);
 
@@ -127,7 +127,7 @@ export function CatalogueClient() {
     });
   }, [category, style, mood, tier, parallaxOnly, urlSearch, eventType]);
 
-  // — Mobile infinite scroll / desktop numbered pagination —
+  // Mobile infinite scroll / desktop numbered pagination
   const [isMobile, setIsMobile] = useState(false);
   const [visibleCount, setVisibleCount] = useState(MOBILE_BATCH);
   const [autoBatches, setAutoBatches] = useState(0);
@@ -176,7 +176,7 @@ export function CatalogueClient() {
               Complete invitation experiences
             </p>
             <h2 className="font-display text-xl sm:text-2xl font-bold text-[#0F172A]">
-              Handcrafted templates — free to create, switch anytime
+              Handcrafted templates, free to create, switch anytime
             </h2>
             <p className="mt-2 text-sm text-slate-600 leading-relaxed">
               Every design includes RSVP, calendar save, maps, countdown, guest wishes, music, gallery, and gift QR.

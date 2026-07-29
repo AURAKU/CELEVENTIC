@@ -466,7 +466,12 @@ describe("admission reset", () => {
     const issued = await ensureInvitationPass(invitationId);
     assert.ok(issued);
 
-    await admitByPass({ eventId, token: issued.token, scannerUserId: organizerId });
+    await admitByPass({
+      eventId,
+      token: issued.token,
+      quantity: 2,
+      scannerUserId: organizerId,
+    });
     assert.equal((await getInvitationAdmission(invitationId))?.canAccessPortal, true);
 
     await resetAdmission({
@@ -488,9 +493,11 @@ describe("admission reset", () => {
     const readmitted = await admitByPass({
       eventId,
       token: issued.token,
+      quantity: 2,
       scannerUserId: organizerId,
     });
     assert.equal(readmitted.decision.outcome, "ADMIT", "a reset pass works again");
+    assert.equal((await getInvitationAdmission(invitationId))?.canAccessPortal, true);
   });
 });
 

@@ -354,7 +354,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
             Seating arrangement
           </h1>
           <p className="page-subtitle">
-            Design your floor plan — tap seats to assign guests. Hover or tap a seat to see who is admitted.
+            Design your floor plan, tap seats to assign guests. Hover or tap a seat to see who is admitted.
           </p>
         </div>
         <Button onClick={() => void savePlan()} disabled={saving} className="bg-[#0B8A83] gap-2">
@@ -605,12 +605,12 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                         >
                           <div className="flex-1 min-w-[140px]">
                             <p className="font-medium text-sm">{g.name}</p>
-                            <p className="text-xs text-slate-500">{g.email ?? g.phone ?? "—"}</p>
+                            <p className="text-xs text-slate-500">{g.email ?? g.phone ?? ", "}</p>
                           </div>
                           {a ? (
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">
-                                {a.tableNumber} · Seat {a.seatLabel ?? "—"}
+                                {a.tableNumber} · Seat {a.seatLabel ?? ", "}
                               </Badge>
                               {admitted ? (
                                 <Badge className="bg-emerald-100 text-emerald-800 gap-1">

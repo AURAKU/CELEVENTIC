@@ -20,7 +20,7 @@ export function BlockRenderer({ blocks, context, previewOnly }: BlockRendererPro
   return (
     <div className="space-y-6 sm:space-y-8">
       {visible.map((block) => (
-        // Isolate each block — a malformed asset or media state in one block (e.g. a
+        // Isolate each block, a malformed asset or media state in one block (e.g. a
         // still-processing/failed video) must never take down the rest of the invitation.
         <ClientErrorBoundary key={block.id} fallback={null}>
           <BlockView block={block} ctx={context} />

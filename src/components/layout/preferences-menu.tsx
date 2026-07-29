@@ -16,7 +16,7 @@ interface PreferencesMenuProps {
 
 const CURRENCIES: DisplayCurrency[] = ["GHS", "USD", "GBP"];
 
-/** Orbital globe mark — modern, brand-aligned, readable at 16–18px */
+/** Orbital globe mark, modern, brand-aligned, readable at 16–18px */
 function GlobeMark({ className }: { className?: string }) {
   const uid = useId().replace(/:/g, "");
   const orbitId = `pref-globe-orbit-${uid}`;
@@ -94,7 +94,7 @@ function GlobeMark({ className }: { className?: string }) {
   );
 }
 
-/** Single control — tap to open language & currency picker (avoids crowded header). */
+/** Single control, tap to open language & currency picker (avoids crowded header). */
 export function PreferencesMenu({ className, compact = false }: PreferencesMenuProps) {
   const { locale, setLocale, labels, availableLocales } = useLocale();
   const { currency, setCurrency, loading: ratesLoading } = useCurrency();

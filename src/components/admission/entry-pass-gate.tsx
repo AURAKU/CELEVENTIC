@@ -72,7 +72,7 @@ interface EntryPassGateProps {
   className?: string;
   /**
    * When true (default on the unified QR Admission page), this panel does not
-   * mount its own camera — the parent scanner routes entry-pass QR payloads here.
+   * mount its own camera, the parent scanner routes entry-pass QR payloads here.
    */
   hideCamera?: boolean;
   /** Parent registers a scan handler so one camera serves pass + legacy QR. */
@@ -92,7 +92,7 @@ function ToneIcon({ tone }: { tone: AdmissionDecision["tone"] }) {
 }
 
 /**
- * Guest Entry Pass gate — party rosters, admission codes, offline queue.
+ * Guest Entry Pass gate, party rosters, admission codes, offline queue.
  * Camera scanning lives on the parent QR Admission page (one scanner for all).
  */
 export function EntryPassGate({
@@ -114,7 +114,7 @@ export function EntryPassGate({
 
   const [online, setOnline] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
-  /** Fast mode default on — entrance queues must not wait on dry-run confirms. */
+  /** Fast mode default on, entrance queues must not wait on dry-run confirms. */
   const [fastMode, setFastMode] = useState(true);
   const [pkg, setPkg] = useState<OfflinePackage | null>(null);
   const [queue, setQueue] = useState<QueuedAdmission[]>([]);
@@ -138,7 +138,7 @@ export function EntryPassGate({
     try {
       setQueue(await listQueue(eventId));
     } catch {
-      /* storage unavailable — the gate still works online */
+      /* storage unavailable, the gate still works online */
     }
   }, [eventId]);
 
@@ -196,7 +196,7 @@ export function EntryPassGate({
 
       await savePackage(pkgJson.data);
       setPkg(pkgJson.data);
-      setSyncMessage(`Offline list ready — ${pkgJson.data.passes.length} passes cached.`);
+      setSyncMessage(`Offline list ready, ${pkgJson.data.passes.length} passes cached.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Offline download failed");
     } finally {
@@ -351,7 +351,7 @@ export function EntryPassGate({
             outcome: "PARTIAL_ADMIT",
             tone: "amber",
             reason: "OK_PARTIAL",
-            message: `This invitation admits ${pass.p}. ${remaining} places are still open — how many are arriving now?`,
+            message: `This invitation admits ${pass.p}. ${remaining} places are still open, how many are arriving now?`,
             admitQuantity: 0,
             resultingAdmittedCount: pass.a,
             resultingStatus: pass.a > 0 ? "PARTIALLY_ADMITTED" : "ACTIVE",
@@ -471,7 +471,7 @@ export function EntryPassGate({
         }
 
         const data = json.data;
-        // A pending quantity prompt is not a failure — stay quiet until the
+        // A pending quantity prompt is not a failure, stay quiet until the
         // operator answers rather than buzzing the gate twice per party.
         if (!data.decision.requiresQuantityConfirmation) {
           playScanFeedback(data.decision.tone === "green");
@@ -503,7 +503,7 @@ export function EntryPassGate({
   /**
    * One entry point for both the camera and the keypad.
    *
-   * A single-guest pass admits on the spot — there is nothing to ask. Anything
+   * A single-guest pass admits on the spot, there is nothing to ask. Anything
    * larger is previewed first so the operator can say how many of the party
    * have actually turned up, unless fast admission is on.
    */
@@ -630,7 +630,7 @@ export function EntryPassGate({
     [result, selectedMembers]
   );
   const namedUnadmitted = result?.party.filter((m) => !m.admitted).length ?? 0;
-  /** Heads with no name on the guest list — admitted purely as a quantity. */
+  /** Heads with no name on the guest list, admitted purely as a quantity. */
   const unnamedCompanions = Math.max(0, remaining - namedUnadmitted);
 
   return (
@@ -890,7 +890,7 @@ export function EntryPassGate({
                     {unnamedCompanions > 0 && (
                       <p className="mt-2 text-xs opacity-80">
                         {unnamedCompanions} companion{unnamedCompanions === 1 ? "" : "s"} on this
-                        pass {unnamedCompanions === 1 ? "is" : "are"} not named — use the counter
+                        pass {unnamedCompanions === 1 ? "is" : "are"} not named, use the counter
                         above for {unnamedCompanions === 1 ? "them" : "those"}.
                       </p>
                     )}
@@ -1016,7 +1016,7 @@ function SeatingContinuityNote({ continuity }: { continuity: SeatingContinuity }
           <span className="font-semibold">Seat now:</span>{" "}
           {continuity.revealed
             .map((s) =>
-              s.seatLabel ? `${s.guestName} — Table ${s.tableNumber}, Seat ${s.seatLabel}` : `${s.guestName} — Table ${s.tableNumber}`
+              s.seatLabel ? `${s.guestName}, Table ${s.tableNumber}, Seat ${s.seatLabel}` : `${s.guestName}, Table ${s.tableNumber}`
             )
             .join(" · ")}
         </p>
@@ -1025,7 +1025,7 @@ function SeatingContinuityNote({ continuity }: { continuity: SeatingContinuity }
       {continuity.unseatedCount > 0 && (
         <p className="opacity-80">
           {continuity.unseatedCount} of this party {continuity.unseatedCount === 1 ? "has" : "have"}{" "}
-          no seat assigned — seat them at the host desk.
+          no seat assigned, seat them at the host desk.
         </p>
       )}
     </div>

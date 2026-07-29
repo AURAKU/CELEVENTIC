@@ -167,7 +167,7 @@ export function AdmissionSettingsPanel({ eventId, onSaved, className }: Admissio
       onSaved?.(json.data);
       setMessage(
         json.backfilled
-          ? `Saved — ${json.backfilled.issued} new pass(es) issued across ${json.backfilled.total} invitation(s).`
+          ? `Saved, ${json.backfilled.issued} new pass(es) issued across ${json.backfilled.total} invitation(s).`
           : "Saved."
       );
     } catch (err) {

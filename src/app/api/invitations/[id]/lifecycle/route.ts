@@ -54,7 +54,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
 
     // Archived rows are excluded from search by default, so ask for them
-    // explicitly — the UI needs the updated card to render the undo state.
+    // explicitly, the UI needs the updated card to render the undo state.
     const card = await getResultCard(auth.ctx.eventId, id);
     return NextResponse.json({ success: true, data: { card } });
   } catch (error) {

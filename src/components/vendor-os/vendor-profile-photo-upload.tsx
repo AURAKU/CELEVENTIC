@@ -54,7 +54,7 @@ export function VendorProfilePhotoUpload({ profileImage, onUpdated, disabled }: 
         onError={setError}
         disabled={disabled}
         buttonLabel="Upload profile photo"
-        hint="Add a profile photo — shown on your marketplace listing and public page."
+        hint="Add a profile photo, shown on your marketplace listing and public page."
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>

@@ -186,7 +186,7 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
                   <div className="flex items-center gap-2">
                     <Star className="h-3.5 w-3.5 text-[#D4A63A] fill-[#D4A63A]" />
                     <span className="text-sm font-medium">{r.rating}/5</span>
-                    <span className="text-xs text-slate-400">— {r.user.name}</span>
+                    <span className="text-xs text-slate-400">, {r.user.name}</span>
                   </div>
                   {r.comment && <p className="text-sm text-slate-600 mt-1">{r.comment}</p>}
                 </div>

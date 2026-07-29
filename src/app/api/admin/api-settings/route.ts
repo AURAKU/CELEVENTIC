@@ -4,7 +4,7 @@ import { requireAdminSession } from "@/lib/require-admin";
 import { createAuditLog } from "@/lib/audit";
 import { integrationService } from "@/services/admin/integration.service";
 
-/** @deprecated Use /api/admin/integrations — kept for backward compatibility */
+/** @deprecated Use /api/admin/integrations, kept for backward compatibility */
 export async function GET() {
   const session = await requireAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

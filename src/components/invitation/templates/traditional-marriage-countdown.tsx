@@ -66,7 +66,7 @@ function Unit({ value, unit, delay }: { value: number; unit: string; delay: numb
 }
 
 /**
- * Traditional Marriage countdown — linen / bronze editorial cells.
+ * Traditional Marriage countdown, linen / bronze editorial cells.
  * No navy slab; blends with Kindly Respond / The Couple / Memory Vault.
  */
 export function TraditionalMarriageCountdown({

@@ -61,7 +61,7 @@ function statusLabel(status: AdmissionFeedbackStatus, result?: VerifyResult | nu
     invalid: "Invalid code",
     expired: "Pass expired",
     not_found: "Code not found",
-    wrong_event: "Wrong event — pass not valid here",
+    wrong_event: "Wrong event, pass not valid here",
     wrong_pass: "Not an admission pass",
     revoked: "Revoked",
     refunded: "Refunded",
@@ -123,7 +123,7 @@ export default function QrVerifyPage() {
   async function verifyQr(e: React.FormEvent) {
     e.preventDefault();
     if (!eventId) {
-      setError("Select an event first — 4-digit codes are unique per event.");
+      setError("Select an event first, 4-digit codes are unique per event.");
       return;
     }
 
@@ -221,7 +221,7 @@ export default function QrVerifyPage() {
     } catch {
       if (getOfflinePackage(eventId)) {
         setMode("offline");
-        setError("Network failed — switch to Offline and try again with the downloaded pack.");
+        setError("Network failed, switch to Offline and try again with the downloaded pack.");
       } else {
         setError("Check-in failed. Download an offline pack while online to keep the gate moving.");
       }
@@ -240,7 +240,7 @@ export default function QrVerifyPage() {
       saveOfflinePackage(eventId, d.data);
       setOfflinePkg(d.data);
       setSyncStatus(
-        `Package ready — ${d.data.guests.length} guests (with 4-digit codes), ${d.data.tickets.length} tickets`
+        `Package ready, ${d.data.guests.length} guests (with 4-digit codes), ${d.data.tickets.length} tickets`
       );
     } else {
       setError(d.error);
@@ -358,7 +358,7 @@ export default function QrVerifyPage() {
         <CardContent className="p-4">
           <EventPicker events={events} value={eventId} onChange={setEventId} loading={eventsLoading} />
           <p className="text-xs text-slate-500 mt-2">
-            Event is required — each celebration has its own set of 4-digit gate codes.
+            Event is required, each celebration has its own set of 4-digit gate codes.
           </p>
         </CardContent>
       </Card>
@@ -437,7 +437,7 @@ export default function QrVerifyPage() {
               <p className="text-xs text-slate-500 flex items-start gap-1.5">
                 <Keyboard className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 Guests see this unique 4-digit code under their invitation. Enter it here when scanning isn’t
-                practical — works online and offline.
+                practical, works online and offline.
               </p>
             </div>
             {mode === "online" && (

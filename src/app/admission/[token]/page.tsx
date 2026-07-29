@@ -22,7 +22,7 @@ import { getInvitationAdmission } from "@/services/admission/admission.service";
 /**
  * Share-card preview defaults to the QR center logo (falls back to the
  * Celeventic official logo) so link previews match the branded QR guests
- * scan — see `resolveShareOgImage`.
+ * scan, see `resolveShareOgImage`.
  */
 export async function generateMetadata({
   params,
@@ -105,7 +105,7 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
     // Already admitted → Event Companion is the home surface (until reset).
     if (companionHref && pass.admittedCount > 0) {
       const summary = await getInvitationAdmission(pass.invitation.id);
-      if (summary?.canAccessPortal) {
+      if (summary?.canAccessPortal && summary.admittedCount > 0) {
         redirect(companionHref);
       }
     }
@@ -192,7 +192,7 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
       {qrCode.ticket && (
         <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-600">
           <Ticket className="h-4 w-4" />
-          {qrCode.ticket.name} — {qrCode.ticket.type}
+          {qrCode.ticket.name}, {qrCode.ticket.type}
         </div>
       )}
 

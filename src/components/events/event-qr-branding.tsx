@@ -118,13 +118,13 @@ export function EventQrBranding({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-slate-600">
-          Upload any image, at any size — it is optimised automatically. The full mark is shown inside
+          Upload any image, at any size, it is optimised automatically. The full mark is shown inside
           the QR white inset (never cropped). Square reads best; wide or tall logos letterbox with padding.
         </p>
 
         {url && (
           <div className="relative flex h-20 w-20 items-center justify-center rounded-xl border bg-white p-1.5 overflow-hidden">
-            {/* object-contain — full uploaded mark, never cropped in the preview tile */}
+            {/* object-contain, full uploaded mark, never cropped in the preview tile */}
             <UploadedMedia
               src={url}
               alt="QR center logo"

@@ -126,7 +126,7 @@ function WeddingCountdown({
 }) {
   const target = useMemo(() => new Date(targetIso).getTime(), [targetIso]);
   const valid = Number.isFinite(target);
-  // Start empty so SSR and the first client paint agree — ticking numbers
+  // Start empty so SSR and the first client paint agree, ticking numbers
   // only appear after mount, which avoids a React #418 text mismatch.
   const [parts, setParts] = useState<ReturnType<typeof diffParts> | null>(null);
 
@@ -137,7 +137,7 @@ function WeddingCountdown({
     return () => clearInterval(id);
   }, [target, valid]);
 
-  // Null until mount (and when the ISO is unusable) — SSR and the first
+  // Null until mount (and when the ISO is unusable), SSR and the first
   // client paint both render nothing, so the ticking numbers never hydrate
   // against a different clock.
   if (!valid || !parts) return null;
@@ -337,7 +337,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   const weekday = board.weekday || dateParts.weekday?.toUpperCase() || "";
   const timeLabel = board.timeLabel || dateParts.time || "";
   const venueName = board.venueName || event.venueName || "";
-  // Hero eyebrow is the single announcement phrase — family heading only if distinct.
+  // Hero eyebrow is the single announcement phrase, family heading only if distinct.
   const familyHeading = distinctInvitationPhrase(board.familyHeading, board.eyebrow);
 
   const mapsHref =
@@ -360,7 +360,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   }, [design.media, event.coverImageUrl]);
 
   const galleryImages = useMemo(() => {
-    // Gallery is reference assets + portal gallery only — never the hero portrait,
+    // Gallery is reference assets + portal gallery only, never the hero portrait,
     // welcome intro, or page background.
     const reserved = new Set(
       [heroPortrait, event.coverImageUrl].filter((url): url is string => Boolean(url))
@@ -550,7 +550,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <h2 className="font-[family-name:var(--font-great-vibes)] text-3xl" style={{ color: C.goldDeep }}>
             {board.greetingHeading}
           </h2>
-          {/* Guest name already shown in welcome — never repeat it here. */}
+          {/* Guest name already shown in welcome, never repeat it here. */}
           {!(features.guestWelcome && invitedGuestName) && (
             <>
               <p
@@ -702,7 +702,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                   className="font-[family-name:var(--font-cormorant)] text-[13px] uppercase tracking-[0.08em] hover:opacity-80"
                   style={{ color: C.ink }}
                 >
-                  {c.name} — {c.phone}
+                  {c.name}, {c.phone}
                 </a>
               ))}
             </div>
@@ -979,7 +979,7 @@ function VenueSketch({ palette: C }: { palette: FaPalette }) {
   );
 }
 
-/** Fixed botanical wash behind the scroll — keeps the page feeling like paper. */
+/** Fixed botanical wash behind the scroll, keeps the page feeling like paper. */
 function PageFlora({ palette: C }: { palette: FaPalette }) {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">

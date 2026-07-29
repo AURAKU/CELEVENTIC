@@ -25,7 +25,7 @@ export function ExperienceReimaginedHero() {
               Invitations <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-teal-300">Reimagined</span>
             </h2>
             <p className="mt-4 text-lg text-slate-400">
-              Not just an invitation — it&apos;s an experience. Every template is its own cinematic universe.
+              Not just an invitation, it&apos;s an experience. Every template is its own cinematic universe.
             </p>
             <ul className="mt-6 space-y-2 text-sm text-slate-300">
               {["10+ unique templates with distinct intros & reveals", "Premium audio library with trim, loop & fade", "Full-screen immersive 100dvh guest experience", "RSVP, QR, seating, gallery & memory vault intact"].map((item) => (

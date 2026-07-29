@@ -61,7 +61,7 @@ interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   companionUrl?: string | null;
   seatQrDataUrl?: string | null;
   fullScreen?: boolean;
-  /** Embedded inside a preview frame — no min-h-screen */
+  /** Embedded inside a preview frame, no min-h-screen */
   embedded?: boolean;
   /** Swipe/arrow gallery navigation (defaults to !embedded) */
   galleryInteractive?: boolean;
@@ -240,7 +240,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     return getMediaEntranceClass(getMediaEntranceForLayout(layout ?? props.design.layout ?? "classic-gold"));
   }
 
-  // Studio 2.0 paged viewer — activates when the design carries a token theme
+  // Studio 2.0 paged viewer, activates when the design carries a token theme
   // (Wave 1 templates). Checked before cinematic mode; legacy invites without
   // a theme are untouched.
   const pagedTheme = props.design?.theme;
@@ -396,11 +396,11 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           galleryUrls={templateOwnsJourney ? props.galleryUrls : undefined}
           contactEmail={templateOwnsJourney ? props.contactEmail : undefined}
           hasGiftsSection={isTraditionalMarriage && hubTabs.includes("gifts")}
-          // Portal schedule is suppressed for journey-owning templates — don't deep-link to a missing #schedule.
+          // Portal schedule is suppressed for journey-owning templates, don't deep-link to a missing #schedule.
           hasTimelineSection={false}
         />
 
-        {/* Journey-owning templates supply their own chrome — hide the duplicate action rail */}
+        {/* Journey-owning templates supply their own chrome, hide the duplicate action rail */}
         {!templateOwnsJourney &&
           !useBlocks &&
           !hiddenLayers.has("actions") &&
@@ -683,7 +683,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 )}
                 {showAdmissionPass && props.admissionQrDataUrl && (
                   <div className="mb-6">
-                    <p className="text-xs text-slate-600 mb-3">Admission pass — show at the gate</p>
+                    <p className="text-xs text-slate-600 mb-3">Admission pass, show at the gate</p>
                     <BrandedQrImage
                       src={props.admissionQrDataUrl}
                       token={props.admissionQrToken ?? undefined}
@@ -779,7 +779,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             </PortalSection>
           )}
 
-          {/* Journey-owning templates close themselves — never stack a second thank-you slab. */}
+          {/* Journey-owning templates close themselves, never stack a second thank-you slab. */}
           {!templateOwnsJourney && !(isTraditionalMarriage && blocksHaveThankYou) && (
           <PortalSection delay={440} id="thank-you">
             {isTraditionalMarriage ? (

@@ -39,7 +39,7 @@ export default async function GiftStatusPage({
       const result = await giftPaymentService.fulfilFromProvider(reference, "guest_verify");
       gift = result.gift;
     } catch {
-      // Provider unreachable or still processing — the client keeps polling.
+      // Provider unreachable or still processing, the client keeps polling.
     }
   }
 

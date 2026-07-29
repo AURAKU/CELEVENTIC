@@ -130,7 +130,7 @@ export default function GuestsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Guest CRM</h1>
-          <p className="page-subtitle">Track invited, opened, RSVP, check-in — share via WhatsApp with one tap.</p>
+          <p className="page-subtitle">Track invited, opened, RSVP, check-in, share via WhatsApp with one tap.</p>
         </div>
         <Button asChild variant="outline">
           <Link href="/dashboard/guests/import">

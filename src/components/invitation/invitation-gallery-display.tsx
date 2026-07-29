@@ -19,11 +19,11 @@ interface InvitationGalleryDisplayProps {
   items: GalleryItem[];
   settings?: Partial<SlideshowSettings>;
   className?: string;
-  /** User-controlled navigation — disables autoplay, enables swipe + arrows + tap fullscreen */
+  /** User-controlled navigation, disables autoplay, enables swipe + arrows + tap fullscreen */
   interactive?: boolean;
   /**
    * Visual chrome family.
-   * `linen` — Traditional Marriage / heritage: full-bleed media, bronze dots, quiet cues.
+   * `linen`, Traditional Marriage / heritage: full-bleed media, bronze dots, quiet cues.
    * Does not change non-TM callers (default).
    */
   chrome?: "default" | "linen";

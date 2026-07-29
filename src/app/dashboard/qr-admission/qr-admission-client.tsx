@@ -108,7 +108,7 @@ export function QrAdmissionClient() {
   const [loadingScans, setLoadingScans] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   // Default off for printed passes; toggle on for phone-screen guest passes.
-  /** Default ON — entrance queues are almost always phone-screen passes. */
+  /** Default ON, entrance queues are almost always phone-screen passes. */
   const [screenScanMode, setScreenScanMode] = useState(true);
   const [offlinePkg, setOfflinePkg] = useState<OfflinePackage | null>(null);
   const [offlineMsg, setOfflineMsg] = useState("");
@@ -218,7 +218,7 @@ export function QrAdmissionClient() {
       saveOfflinePackage(eventId, d.data);
       setOfflinePkg(d.data);
       setOfflineMsg(
-        `Offline ready — ${d.data.guests.length} guests, ${d.data.tickets.length} tickets (incl. 4-digit codes)`
+        `Offline ready, ${d.data.guests.length} guests, ${d.data.tickets.length} tickets (incl. 4-digit codes)`
       );
     } catch {
       setOfflineMsg("Could not download offline package");
@@ -343,9 +343,9 @@ export function QrAdmissionClient() {
         if (!res.ok && data.error) setError(data.error);
         await loadEventData(historyPage);
       } catch {
-        // Network failure mid-request — fall back to offline admit
+        // Network failure mid-request, fall back to offline admit
         if (getOfflinePackage(eventId)) {
-          setError("Network failed — admitting from offline package.");
+          setError("Network failed, admitting from offline package.");
           performOfflineCheckIn(trimmed);
         } else {
           setError("Check-in failed. Download offline package while online to keep the gate moving.");
@@ -388,7 +388,13 @@ export function QrAdmissionClient() {
     if (!eventId) return;
     if (scope === "event") {
       const ok = window.confirm(
-        "Reset ALL guest admissions for this event? Every QR and 4-digit code can be scanned again."
+        "Reset ALL guest admissions for this event? Every QR and 4-digit code can be scanned again, and Event Companion locks for everyone until re-admit."
+      );
+      if (!ok) return;
+    } else if (scope === "guest") {
+      if (!guestId) return;
+      const ok = window.confirm(
+        "Reset this guest's admission? Their Event Companion locks again and they can be scanned in once more."
       );
       if (!ok) return;
     }
@@ -532,7 +538,7 @@ export function QrAdmissionClient() {
         )}
         {eventId && !offlinePkg && !isOnline && (
           <Badge variant="destructive" className="text-xs">
-            No offline pack — connect once to download
+            No offline pack, connect once to download
           </Badge>
         )}
         <Link href="/dashboard/qr" className="text-xs text-slate-500 hover:text-brand-600 ml-auto">
@@ -622,7 +628,7 @@ export function QrAdmissionClient() {
 
       {eventId && <AdmissionSettingsPanel eventId={eventId} />}
 
-      {/* Single camera for the whole gate — Entry Pass + legacy guest QR. */}
+      {/* Single camera for the whole gate, Entry Pass + legacy guest QR. */}
       {eventId && (
         <Card className="border-brand-200/80">
           <CardHeader className="pb-2">
@@ -857,18 +863,38 @@ export function QrAdmissionClient() {
                         )}
                         <p className="text-xs text-slate-500 mt-0.5 truncate">{subtitle}</p>
                       </div>
-                      <Badge
-                        variant={
-                          scan.result === "VALID" || scan.status === "checked_in" || scan.status === "valid"
-                            ? "success"
-                            : scan.result === "ALREADY_USED" || scan.status === "duplicate_scan"
-                              ? "warning"
-                              : "destructive"
-                        }
-                        className="shrink-0 text-[10px]"
-                      >
-                        {(scan.result ?? scan.status ?? "unknown").replace(/_/g, " ")}
-                      </Badge>
+                      <div className="flex shrink-0 flex-col items-end gap-1.5">
+                        <Badge
+                          variant={
+                            scan.result === "VALID" || scan.status === "checked_in" || scan.status === "valid"
+                              ? "success"
+                              : scan.result === "ALREADY_USED" || scan.status === "duplicate_scan"
+                                ? "warning"
+                                : "destructive"
+                          }
+                          className="text-[10px]"
+                        >
+                          {(scan.result ?? scan.status ?? "unknown").replace(/_/g, " ")}
+                        </Badge>
+                        {scan.guestId &&
+                          (scan.result === "VALID" ||
+                            scan.result === "ALREADY_USED" ||
+                            scan.status === "checked_in" ||
+                            scan.status === "valid" ||
+                            scan.status === "duplicate_scan") && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-amber-800 hover:bg-amber-50"
+                              disabled={resetting}
+                              onClick={() => void resetAdmission("guest", scan.guestId!)}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Reset
+                            </Button>
+                          )}
+                      </div>
                     </li>
                   );
                 })}

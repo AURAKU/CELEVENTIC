@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { useReducedMotion } from "framer-motion";
-import { BRAND_MOTTO } from "@/lib/constants";
 import {
-  CELEVENTIC_LOGO_FULL,
   CELEVENTIC_PALETTE,
   INTRO_SKIP_AVAILABLE_MS,
 } from "@/lib/experience/celeventic-palette";
@@ -21,9 +19,13 @@ import styles from "./celeventic-soft-intro.module.css";
 
 export interface CeleventicSoftIntroProps {
   onComplete: () => void;
+  /**
+   * @deprecated Ignored, soft intro is video-only (no logo overlay). Kept so
+   * call sites do not break.
+   */
   logoUrl?: string;
   /**
-   * @deprecated Ignored — every invitation plays the canonical Celeventic
+   * @deprecated Ignored, every invitation plays the canonical Celeventic
    * brand intro video. Kept so call sites do not break. Never restores a
    * photo / DNA picture intro.
    */
@@ -31,7 +33,7 @@ export interface CeleventicSoftIntroProps {
   accentColor?: string;
   secondaryColor?: string;
   /**
-   * Returning guest who has already completed the opening once — hold the
+   * Returning guest who has already completed the opening once, hold the
    * branded beat briefly rather than the full first-visit duration, but
    * never skip it entirely (guests should never feel "nothing happened").
    */
@@ -44,14 +46,13 @@ export interface CeleventicSoftIntroProps {
 }
 
 /**
- * Platform soft launch — canonical Celeventic intro video for every template.
+ * Platform soft launch, canonical Celeventic intro video for every template.
  * Auto-advances when the video ends; tap / Enter / Space / Skip crossfade out.
- * Never falls back to a photo / DNA picture intro — poster is only a still
+ * No logo PNG overlay, the clip is the brand beat. Poster is only a still
  * of this same brand clip when motion or playback is unavailable.
  */
 export function CeleventicSoftIntro({
   onComplete,
-  logoUrl = CELEVENTIC_LOGO_FULL,
   accentColor = CELEVENTIC_PALETTE.teal,
   secondaryColor = CELEVENTIC_PALETTE.gold,
   quickHold = false,
@@ -103,7 +104,7 @@ export function CeleventicSoftIntro({
       };
     }
 
-    // Returning guests still watch the brand video — Skip appears sooner.
+    // Returning guests still watch the brand video, Skip appears sooner.
     const skipAt = quickHold ? 400 : INTRO_SKIP_AVAILABLE_MS;
     const skipReveal = setTimeout(() => setCanSkip(true), skipAt);
     const fallback = setTimeout(finish, SOFT_INTRO_FALLBACK_MS);
@@ -212,15 +213,6 @@ export function CeleventicSoftIntro({
           <div className={styles.glassMask} aria-hidden />
           <div className={styles.warmBloom} aria-hidden />
         </>
-      )}
-
-      {(!showVideo || canSkip) && (
-        <div className={styles.stage}>
-          <div className={styles.brandMark}>
-            <Image src={logoUrl} alt="Celeventic" width={240} height={100} priority />
-          </div>
-          <p className={styles.motto}>{BRAND_MOTTO}</p>
-        </div>
       )}
 
       {canSkip && !exiting && (

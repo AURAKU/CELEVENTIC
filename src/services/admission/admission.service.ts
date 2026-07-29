@@ -295,42 +295,47 @@ export async function resetAdmission(
     );
     const requested =
       scope === "entire"
-        ? [...admittedIds]
-        : (input.guestIds ?? []).filter((id) => admittedIds.has(id));
+        ? invitation.guests.map((g) => g.id)
+        : [...new Set(input.guestIds ?? [])];
+    const toUncheck = requested.filter((id) => admittedIds.has(id));
 
     // Idempotent: only act on members that are actually admitted.
-    if (requested.length > 0) {
+    if (toUncheck.length > 0) {
       await tx.guest.updateMany({
-        where: { id: { in: requested }, invitationId, status: "CHECKED_IN" },
+        where: { id: { in: toUncheck }, invitationId, status: "CHECKED_IN" },
         // Back to a neutral non-admitted status; RSVP records are untouched.
         data: { status: "INVITED" },
       });
 
       if (input.options?.releaseSeating) {
-        await tx.seatingAssignment.deleteMany({ where: { guestId: { in: requested } } });
+        await tx.seatingAssignment.deleteMany({ where: { guestId: { in: toUncheck } } });
       }
       if (input.options?.regenerateQr) {
-        for (const gid of requested) {
+        for (const gid of toUncheck) {
           await tx.guest.update({ where: { id: gid }, data: { qrToken: randomUUID() } });
         }
       }
     }
 
     // The pass carries the authoritative head count, so a reset has to clear it
-    // too — otherwise the projection would immediately re-derive the old total.
+    // too, otherwise the projection would immediately re-derive the old total.
+    // Quantity-only admits may leave guests as INVITED while pass.admittedCount > 0.
     const pass = await livePass(tx, invitationId);
     if (pass) {
-      const remaining =
-        scope === "entire"
-          ? 0
-          : Math.max(
-              0,
-              pass.admittedCount -
-                (await tx.guest.findMany({
-                  where: { id: { in: requested } },
-                  select: { plusOnes: true },
-                })).reduce((sum, g) => sum + 1 + Math.max(0, g.plusOnes ?? 0), 0)
-            );
+      let remaining = pass.admittedCount;
+      if (scope === "entire") {
+        remaining = 0;
+      } else if (requested.length > 0) {
+        const heads = await tx.guest.findMany({
+          where: { id: { in: requested }, invitationId },
+          select: { plusOnes: true },
+        });
+        const subtract =
+          heads.length > 0
+            ? heads.reduce((sum, g) => sum + 1 + Math.max(0, g.plusOnes ?? 0), 0)
+            : requested.length;
+        remaining = Math.max(0, pass.admittedCount - subtract);
+      }
       await tx.guestPass.update({
         where: { id: pass.id },
         data: {
@@ -350,7 +355,7 @@ export async function resetAdmission(
       wasReset: true,
     });
 
-    return { summary, resetGuestIds: requested };
+    return { summary, resetGuestIds: toUncheck.length ? toUncheck : requested };
   });
 
   await createAuditLog({

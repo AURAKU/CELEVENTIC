@@ -26,7 +26,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  // Load without organizer-scoped where — access already verified (incl. platform admin).
+  // Load without organizer-scoped where, access already verified (incl. platform admin).
   const event = await eventService.getEventById(id);
   if (!event) notFound();
 

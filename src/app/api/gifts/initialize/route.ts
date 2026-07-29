@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const schema = z.object({
   publicToken: z.string().min(8).max(128),
-  /** Integer minor units — the client never sends a decimal string. */
+  /** Integer minor units, the client never sends a decimal string. */
   amountMinor: z.number().int().positive(),
   method: z.enum(GIFT_PAYMENT_METHOD_IDS as [string, ...string[]]),
   guestName: z.string().trim().max(120).optional(),

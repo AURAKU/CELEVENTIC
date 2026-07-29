@@ -102,9 +102,9 @@ const PALETTE_FIELDS: {
 ];
 
 /**
- * Studio editor for The Forever Afaris. Every guest-visible line — including
+ * Studio editor for The Forever Afaris. Every guest-visible line, including
  * the opening ceremony copy, the envelope paper, the wax, the gate, the order
- * of the day, and the scene order — is editable here, so the template ships as
+ * of the day, and the scene order, is editable here, so the template ships as
  * a starting point rather than a fixed card.
  */
 export function WeddingBoardStudioPanel({
@@ -144,7 +144,7 @@ export function WeddingBoardStudioPanel({
         <h3 className="text-sm font-semibold text-slate-900">Wedding invitation content</h3>
         <p className="mt-0.5 text-xs text-slate-500">
           Rewrite every line of the invitation, design the opening ceremony, reorder the scenes,
-          and switch any of them off — guests see your edits the moment you publish.
+          and switch any of them off, guests see your edits the moment you publish.
         </p>
       </div>
 
@@ -293,7 +293,7 @@ export function WeddingBoardStudioPanel({
         <Field label="Section heading (optional)">
           <Input
             value={distinctInvitationPhrase(board.familyHeading, board.eyebrow)}
-            placeholder="Leave blank — uses hero eyebrow once"
+            placeholder="Leave blank, uses hero eyebrow once"
             onChange={(e) => {
               const raw = e.target.value;
               patch({
@@ -618,7 +618,7 @@ export function WeddingBoardStudioPanel({
       <div className="space-y-2">
         <Label>Scenes on this invitation</Label>
         <p className="text-xs text-slate-500">
-          Drag-free reordering — move a scene up or down, or switch it off entirely.
+          Drag-free reordering, move a scene up or down, or switch it off entirely.
         </p>
         <ol className="space-y-1.5">
           {order.map((id, i) => {

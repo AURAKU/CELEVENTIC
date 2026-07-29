@@ -12,6 +12,7 @@ import {
   MessageCircle,
   MoreHorizontal,
   Pencil,
+  RotateCcw,
   ShieldOff,
   Users,
 } from "lucide-react";
@@ -85,7 +86,7 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
       setError("");
       return;
     }
-    setError("Could not copy automatically — tap the link field and copy it.");
+    setError("Could not copy automatically, tap the link field and copy it.");
   }
 
   async function runLifecycle(action: string, confirmMessage?: string) {
@@ -105,6 +106,45 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
         return;
       }
       if (json.data?.card) onChanged(json.data.card as SearchResultCard);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetAdmission() {
+    if (
+      !window.confirm(
+        `Reset admission for ${card.name}? Their Event Companion locks again and they can be scanned in at the gate once more.`
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setMenuOpen(false);
+    try {
+      const res = await fetch(`/api/invitations/${card.invitationId}/admission/reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scope: "entire",
+          reason: "Organiser reset from guest search",
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? "Could not reset admission.");
+        return;
+      }
+      onChanged({
+        ...card,
+        admittedCount: 0,
+        members: card.members.map((m) => ({ ...m, admitted: false })),
+        guestStatus:
+          card.guestStatus === "CHECKED_IN" ? ("INVITED" as SearchResultCard["guestStatus"]) : card.guestStatus,
+      });
     } catch {
       setError("Could not reach the server.");
     } finally {
@@ -151,11 +191,27 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
           )}
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           {card.archivedAt && <Badge variant="outline">Archived</Badge>}
           {card.passRevoked && !card.archivedAt && <Badge variant="destructive">Pass revoked</Badge>}
           {card.status === "DRAFT" && <Badge variant="warning">Draft</Badge>}
+          {card.admittedCount > 0 && (
+            <Badge variant="success" className="text-[10px]">
+              Admitted
+            </Badge>
+          )}
 
+          {card.admittedCount > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-200 text-amber-900 hover:bg-amber-50"
+              onClick={() => void resetAdmission()}
+              disabled={busy}
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Reset admit
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={copyLink} disabled={busy}>
             <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Link"}
           </Button>
@@ -192,7 +248,7 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
                 </MenuItem>
                 <MenuItem
                   icon={Mail}
-                  href={`mailto:${card.email ?? ""}?subject=${encodeURIComponent(`Your invitation — ${card.name}`)}&body=${encodeURIComponent(emailBody)}`}
+                  href={`mailto:${card.email ?? ""}?subject=${encodeURIComponent(`Your invitation, ${card.name}`)}&body=${encodeURIComponent(emailBody)}`}
                 >
                   Email invitation
                 </MenuItem>
@@ -205,6 +261,15 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
                 <MenuItem icon={Pencil} onClick={() => { setEditing(true); setMenuOpen(false); }}>
                   Edit name & allowance
                 </MenuItem>
+                {card.admittedCount > 0 && (
+                  <MenuItem
+                    icon={RotateCcw}
+                    destructive
+                    onClick={() => void resetAdmission()}
+                  >
+                    Reset admission
+                  </MenuItem>
+                )}
 
                 <div className="my-1 border-t border-slate-100" />
 
@@ -298,7 +363,7 @@ function MenuItem({
   );
 }
 
-/** Inline edit. The link is never regenerated — see the personalisation route. */
+/** Inline edit. The link is never regenerated, see the personalisation route. */
 function EditPanel({
   card,
   onClose,

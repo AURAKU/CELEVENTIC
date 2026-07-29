@@ -42,7 +42,7 @@ export function EventPicker({ events, value, onChange, loading, label = "Select 
         <SelectContent>
           {events.map((e) => (
             <SelectItem key={e.id} value={e.id}>
-              {e.title} — {formatDate(e.startDate)}
+              {e.title}, {formatDate(e.startDate)}
             </SelectItem>
           ))}
         </SelectContent>

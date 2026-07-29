@@ -29,7 +29,7 @@ interface StudioCanvasProps {
 }
 
 /**
- * Honest device widths — the canvas renders the real guest renderer natively at
+ * Honest device widths, the canvas renders the real guest renderer natively at
  * each width (never a scaled-down mockup), so CSS max-widths/breakpoints inside
  * the invite reflow exactly as they would on that class of device. Each `maxW`
  * is capped by the parent's `w-full`, so it also never overflows the available
@@ -47,7 +47,7 @@ const DEVICE_FRAME: Record<
     bezel: "p-[10px] bg-slate-900 shadow-2xl ring-1 ring-black/50",
   },
   tablet: {
-    // iPad-portrait width — genuinely reflows the invite's own responsive CSS,
+    // iPad-portrait width, genuinely reflows the invite's own responsive CSS,
     // not a stretched phone mockup.
     maxW: "max-w-[768px]",
     label: "Tablet frame",
@@ -137,7 +137,7 @@ export function StudioCanvas({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Soft studio atmosphere — not a flat fill */}
+      {/* Soft studio atmosphere, not a flat fill */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(11,138,131,0.08),transparent_50%),radial-gradient(ellipse_at_80%_80%,rgba(212,166,58,0.1),transparent_45%),linear-gradient(160deg,#0f172a_0%,#1e293b_40%,#0f172a_100%)]"

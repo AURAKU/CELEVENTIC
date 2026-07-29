@@ -29,7 +29,7 @@ interface InvitationStudioPreviewProps {
   invitationName: string;
   musicSelection?: MusicSelection | null;
   galleryUrls?: string[] | null;
-  /** Catalog SKU — ensures Wave 1 templates get unique audio */
+  /** Catalog SKU, ensures Wave 1 templates get unique audio */
   catalogSlug?: string | null;
 }
 
@@ -117,7 +117,7 @@ export function InvitationStudioPreview({
               ? `${tapCopy.subtitle ?? "Opens as guests see it"} · music begins`
               : tapCopy.subtitle ??
                 (hasMusic
-                  ? "Music starts automatically — use the corner button to mute"
+                  ? "Music starts automatically, use the corner button to mute"
                   : "Full guest experience with reveal and gallery")
           }
           onOpen={(e) => {

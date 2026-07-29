@@ -89,7 +89,7 @@ export function TemplateBuilder({ initialSchema, onSave, onDuplicate, saving }: 
       await onSave(schema);
       setSaveMsg("Saved successfully!");
     } catch {
-      setSaveMsg("Save failed — try again.");
+      setSaveMsg("Save failed, try again.");
     }
   }
 
@@ -133,7 +133,7 @@ export function TemplateBuilder({ initialSchema, onSave, onDuplicate, saving }: 
                 onClick={() => setSelectedId(b.id)}
                 className={`flex-1 text-left p-2 rounded border text-sm ${selectedId === b.id ? "border-brand-500 bg-brand-50" : ""}`}
               >
-                <span className="font-medium capitalize">{b.type}</span> — {b.key}
+                <span className="font-medium capitalize">{b.type}</span>, {b.key}
               </button>
               <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeBlock(b.id)}>
                 <Trash2 className="h-3 w-3" />

@@ -35,9 +35,9 @@ interface RecentEventsListProps {
   emptyDesc: string;
   secondaryHref?: string;
   secondaryLabel?: string;
-  /** Current user id — used with organizerId for owner delete. */
+  /** Current user id, used with organizerId for owner delete. */
   userId?: string;
-  /** Platform admin (ADMIN / SUPER_ADMIN) — full manage + delete any event. */
+  /** Platform admin (ADMIN / SUPER_ADMIN), full manage + delete any event. */
   isAdmin?: boolean;
   /** Organizers/owners may open the Edit manage menu for events they can access. */
   canEdit?: boolean;
@@ -119,7 +119,7 @@ export function RecentEventsList({
       setFeedback({
         type: "ok",
         message: soft
-          ? `"${event.title}" cancelled — invitations deactivated.`
+          ? `"${event.title}" cancelled, invitations deactivated.`
           : `"${event.title}" permanently deleted.`,
       });
       router.refresh();
@@ -236,7 +236,7 @@ export function RecentEventsList({
                         <div>
                           <p className="text-sm font-semibold text-slate-900">Manage event</p>
                           <p className="text-xs text-slate-500 mt-0.5">
-                            Edit info, invitation design, addons, and workspace — existing flows, no duplicate forms.
+                            Edit info, invitation design, addons, and workspace, existing flows, no duplicate forms.
                           </p>
                         </div>
                         <Button

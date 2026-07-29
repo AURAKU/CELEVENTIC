@@ -12,7 +12,7 @@ interface MagazinePageTurnRevealProps {
 }
 
 /**
- * Editorial ceremony — magazine cover, swipe / page-turn / keyboard to open.
+ * Editorial ceremony, magazine cover, swipe / page-turn / keyboard to open.
  */
 export function MagazinePageTurnReveal({
   guestName,

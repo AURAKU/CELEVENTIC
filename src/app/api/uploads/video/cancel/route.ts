@@ -46,7 +46,7 @@ export async function DELETE(req: Request) {
       assetId = body.assetId ?? null;
       guestToken = body.guestToken ?? guestToken;
     } catch {
-      // no JSON body — fall through to the missing-assetId error below
+      // no JSON body, fall through to the missing-assetId error below
     }
   }
 

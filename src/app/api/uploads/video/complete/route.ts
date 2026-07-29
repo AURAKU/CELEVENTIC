@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     throw error;
   }
 
-  // Idempotency guard — duplicate finalize calls just return current state, never redo work.
+  // Idempotency guard, duplicate finalize calls just return current state, never redo work.
   if (asset.status !== "UPLOADING") {
     return NextResponse.json({ success: true, data: serializeVideoAsset(asset), alreadyFinalized: true });
   }

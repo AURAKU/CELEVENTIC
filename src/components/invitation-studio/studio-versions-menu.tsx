@@ -43,7 +43,7 @@ export function StudioVersionsMenu({
           <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
             <p className="text-xs font-semibold text-slate-800">Named revisions</p>
             <p className="mt-0.5 text-[10px] text-slate-500">
-              Saved in this browser session — restore anytime before you leave.
+              Saved in this browser session, restore anytime before you leave.
             </p>
             <div className="mt-2 flex gap-1.5">
               <Input

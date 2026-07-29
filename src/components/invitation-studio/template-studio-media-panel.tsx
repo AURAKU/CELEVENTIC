@@ -45,19 +45,19 @@ const WELCOME_SCRIM_OPTIONS: { id: "auto" | "on" | "off"; label: string }[] = [
   { id: "off", label: "Always off" },
 ];
 
-/** Studio copy for the pre-invite welcome photo — TM-specific wording only for that layout. */
+/** Studio copy for the pre-invite welcome photo, TM-specific wording only for that layout. */
 function introPhotoCopy(layout?: string): { title: string; hint: string; note: string } {
   if (layout === "traditional-marriage-ceremony") {
     return {
       title: "Tap to Begin backdrop (optional)",
       hint:
-        "Photo behind the “Tap to Begin” gate for Traditional Marriage — after the Celeventic brand intro video, before the ceremony opens.",
+        "Photo behind the “Tap to Begin” gate for Traditional Marriage, after the Celeventic brand intro video, before the ceremony opens.",
       note: "The Celeventic intro video always plays first on every invitation. This photo never replaces that brand intro, and is never used as the hero or gallery.",
     };
   }
   return {
     title: "Tap to Begin backdrop (optional)",
-    hint: "Optional photo behind the “Tap to Begin” gate — after the Celeventic brand intro video.",
+    hint: "Optional photo behind the “Tap to Begin” gate, after the Celeventic brand intro video.",
     note: "The Celeventic intro video always plays first on every invitation. This photo never replaces that brand intro, and is never used as the hero or gallery.",
   };
 }
@@ -144,7 +144,7 @@ export function TemplateStudioMediaPanel({
 
   function setHero(url: string, type: "image" | "video") {
     onDesignChange(syncDesignMediaHero(design, url, type));
-    // Hero is the invitation portrait — never a gallery slide.
+    // Hero is the invitation portrait, never a gallery slide.
     if (galleryUrls.includes(url)) {
       onGalleryChange(galleryUrls.filter((existing) => existing !== url));
     }
@@ -204,7 +204,7 @@ export function TemplateStudioMediaPanel({
           </div>
         ) : (
           <p className="text-xs text-slate-400 italic">
-            No welcome photo yet — guests see the template&apos;s default atmosphere until you upload one.
+            No welcome photo yet, guests see the template&apos;s default atmosphere until you upload one.
           </p>
         )}
         <ImageUploadCropper
@@ -215,7 +215,7 @@ export function TemplateStudioMediaPanel({
           onError={setError}
           disabled={disabled}
           buttonLabel={introUrl ? "Replace welcome photo" : "Upload welcome photo"}
-          hint="Any photo, any shape — drag to select the exact region, no fixed crop ratio."
+          hint="Any photo, any shape, drag to select the exact region, no fixed crop ratio."
           className="flex-1"
         />
         <p className="text-[11px] text-slate-500">{introCopy.note}</p>
@@ -226,7 +226,7 @@ export function TemplateStudioMediaPanel({
             Welcome text style
           </div>
           <p className="text-[11px] text-slate-500 -mt-1.5">
-            Brand, ceremony, names &amp; the “Tap to Begin” CTA on the welcome screen — live in the
+            Brand, ceremony, names &amp; the “Tap to Begin” CTA on the welcome screen, live in the
             preview. Leave colors on Auto to keep smart contrast against your photo.
           </p>
           <div className="grid grid-cols-2 gap-2.5">
@@ -364,7 +364,7 @@ export function TemplateStudioMediaPanel({
       <MediaSection
         icon={ImageIcon}
         title="Invitation hero photo / video"
-        hint="The arched portrait at the top of the invitation — organizers and admins set this independently of the photo gallery."
+        hint="The arched portrait at the top of the invitation, organizers and admins set this independently of the photo gallery."
       >
         {heroUrl ? (
           <div className="relative rounded-xl overflow-hidden border aspect-[4/5] max-h-56 bg-slate-100 inv-hero-media-frame">
@@ -387,7 +387,7 @@ export function TemplateStudioMediaPanel({
           </div>
         ) : (
           <p className="text-xs text-slate-400 italic">
-            No hero yet — upload the invitation portrait below. It will not appear in the gallery.
+            No hero yet, upload the invitation portrait below. It will not appear in the gallery.
           </p>
         )}
         <div className="flex flex-col sm:flex-row gap-2">
@@ -399,7 +399,7 @@ export function TemplateStudioMediaPanel({
             onError={setError}
             disabled={disabled}
             buttonLabel="Upload invitation hero"
-            hint="Any photo, any shape — drag to select the exact region, or use the full image. 4:5 portrait is available as an optional preset, never locked."
+            hint="Any photo, any shape, drag to select the exact region, or use the full image. 4:5 portrait is available as an optional preset, never locked."
             className="flex-1"
           />
         </div>
@@ -408,20 +408,20 @@ export function TemplateStudioMediaPanel({
           orderId={orderId}
           role="hero"
           buttonLabel="Hero video"
-          hint="Phone, DSLR, or exported clip — up to 150MB. Processed automatically for smooth playback."
+          hint="Phone, DSLR, or exported clip, up to 150MB. Processed automatically for smooth playback."
           disabled={disabled}
           onUploaded={onHeroVideoUploaded}
           onError={setError}
         />
         <p className="text-[11px] text-slate-500">
-          Shows only as the invitation header portrait — never added to the swipe gallery or photo strip.
+          Shows only as the invitation header portrait, never added to the swipe gallery or photo strip.
         </p>
       </MediaSection>
 
       <MediaSection
         icon={Layout}
         title="Full-page background"
-        hint="Behind the entire invite experience — separate from the hero card."
+        hint="Behind the entire invite experience, separate from the hero card."
       >
         {pageBgUrl ? (
           <div className="relative rounded-xl overflow-hidden border aspect-video max-h-40 bg-slate-100">
@@ -454,7 +454,7 @@ export function TemplateStudioMediaPanel({
             onError={setError}
             disabled={disabled}
             buttonLabel="Background image"
-            hint="Freeform crop by default — drag to select any region, any size. Used as a fallback for the welcome screen only if no dedicated welcome photo is set above."
+            hint="Freeform crop by default, drag to select any region, any size. Used as a fallback for the welcome screen only if no dedicated welcome photo is set above."
             className="flex-1"
           />
         </div>
@@ -465,7 +465,7 @@ export function TemplateStudioMediaPanel({
             role="background"
             mute
             buttonLabel="Background video"
-            hint="Loop-friendly background clip — up to 150MB, muted automatically for ambient playback."
+            hint="Loop-friendly background clip, up to 150MB, muted automatically for ambient playback."
             disabled={disabled}
             onUploaded={onPageBackgroundVideoUploaded}
             onError={setError}
@@ -480,7 +480,7 @@ export function TemplateStudioMediaPanel({
         maxImages={maxGalleryImages}
         orderId={orderId}
         title="Swipe gallery"
-        description="Photo and video slides for the invitation gallery only — separate from the invitation hero portrait and welcome photo above."
+        description="Photo and video slides for the invitation gallery only, separate from the invitation hero portrait and welcome photo above."
       />
 
       {error && <p className="text-xs text-red-600">{error}</p>}

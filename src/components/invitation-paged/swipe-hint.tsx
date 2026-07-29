@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronUp } from "lucide-react";
 
 const STORAGE_KEY = "celeventic:swipe-hint-count";
-// Some webviews (private mode) throw on localStorage — degrade to memory.
+// Some webviews (private mode) throw on localStorage, degrade to memory.
 const memoryFallback = { count: 0 };
 
 function readHintCount(): number {

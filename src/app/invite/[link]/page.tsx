@@ -27,6 +27,7 @@ import { getInvitationAdmission } from "@/services/admission/admission.service";
 import {
   buildEventCompanionHref,
   shouldOpenEventCompanionOnly,
+  wantsInviteCeremonyView,
 } from "@/lib/admission/event-companion";
 import { resolvePlaceCard } from "@/services/invitation-features/place-card.service";
 import type { GuestEntryPassData } from "@/types/invitation-design";
@@ -59,7 +60,7 @@ export const revalidate = 0;
  * Share-card preview defaults to the QR center logo (the mark guests see at
  * the heart of their branded QR) so the link-preview thumbnail matches what
  * they'll scan. Falls back to the Celeventic official logo when no center
- * logo has been uploaded — see `resolveShareOgImage`.
+ * logo has been uploaded, see `resolveShareOgImage`.
  */
 export async function generateMetadata({
   params,
@@ -75,7 +76,7 @@ export async function generateMetadata({
   const event = invitation.event;
   const title = `${event.title} · You're invited`;
   // Always lead with the couple/host name rather than `event.description`
-  // (the host's free-form "our story" text) — see `buildShareDescription`.
+  // (the host's free-form "our story" text), see `buildShareDescription`.
   const description = buildShareDescription({ hostName: event.hostName, title: event.title });
   const appUrl = await getServerAppUrl();
   const ogImage = await resolveShareOgImage(event.id, appUrl);
@@ -104,11 +105,13 @@ export default async function InvitePage({
   searchParams,
 }: {
   params: Promise<{ link: string }>;
-  searchParams: Promise<{ guest?: string }>;
+  searchParams: Promise<{ guest?: string; view?: string }>;
 }) {
   const { link } = await params;
-  const { guest: guestToken } = await searchParams;
-  // These two reads are independent (env/host lookup vs. DB lookup) — run them
+  const query = await searchParams;
+  const guestToken = query.guest;
+  const preferInviteCeremony = wantsInviteCeremonyView(query);
+  // These two reads are independent (env/host lookup vs. DB lookup), run them
   // together instead of serially so the very first await in this request
   // isn't paying for both round trips back-to-back. Every millisecond shaved
   // here shrinks the window guests spend looking at the branded load-up
@@ -125,10 +128,11 @@ export default async function InvitePage({
     notFound();
   }
 
-  // Once admitted (QR or manual gate code), the invite link opens the Event
-  // Companion only — ceremony (intro video → tap → envelope) returns after reset.
+  // Once admitted, the bare invite link opens Event Companion. Guests can still
+  // reopen the ceremony via ?view=invite (from Companion "View invitation").
+  // After an organiser reset, companion unlock clears and this redirect stops.
   const admissionSummary = await getInvitationAdmission(invitation.id);
-  if (shouldOpenEventCompanionOnly(admissionSummary)) {
+  if (!preferInviteCeremony && shouldOpenEventCompanionOnly(admissionSummary)) {
     redirect(buildEventCompanionHref(link, guestToken ?? null));
   }
 
@@ -136,7 +140,7 @@ export default async function InvitePage({
 
   // Guest personalization, the order/design record, custom blocks, and the
   // memory-vault links are all independent reads keyed off `invitation.id` /
-  // `event.id` — fetch them concurrently rather than as a serial waterfall.
+  // `event.id`, fetch them concurrently rather than as a serial waterfall.
   const [personalizedGuest, order, blocks, memoryLinks] = await Promise.all([
     guestToken
       ? invitationService.getGuestForInvitation(invitation.id, guestToken)
@@ -281,12 +285,19 @@ export default async function InvitePage({
     }
   }
 
-  // Guest Entry Pass — only for events that turned QR admission on. Issuance is
+  // Guest Entry Pass, only for events that turned QR admission on. Issuance is
   // idempotent, so the first personalised view of an invite mints the pass and
   // every later view re-renders the same one.
   let entryPass: GuestEntryPassData | null = null;
-  let companionUrl: string | null = null;
-  let watchAdmissionHandoff = Boolean(invitation.postAdmissionEnabled);
+  // Never expose a companion CTA before the gate admits this invite. Unlocked
+  // guests are redirected above unless they explicitly reopen the ceremony
+  // (?view=invite). While viewing the ceremony, do not hand off back to companion.
+  const companionUrl: string | null = null;
+  const companionHandoffHref =
+    invitation.postAdmissionEnabled && !preferInviteCeremony
+      ? buildEventCompanionHref(link, personalizedGuest?.qrToken ?? guestToken ?? null)
+      : null;
+  const watchAdmissionHandoff = Boolean(companionHandoffHref);
   if (personalizedGuest) {
     try {
       const passView = await getInvitationPassView(invitation.id);
@@ -318,21 +329,13 @@ export default async function InvitePage({
           showPartySize: passView.settings.showPartySizeOnPass,
         };
       }
-      // Companion unlocks with the pass / post-admission flag.
-      if (passView || invitation.postAdmissionEnabled) {
-        companionUrl = buildEventCompanionHref(link, personalizedGuest.qrToken);
-        watchAdmissionHandoff = true;
-      }
     } catch (error) {
       // A pass failure must never take down a published invitation.
       console.error("[invite] entry pass unavailable", error);
     }
-  } else if (invitation.postAdmissionEnabled) {
-    companionUrl = buildEventCompanionHref(link);
-    watchAdmissionHandoff = true;
   }
 
-  // Personalised place card — resolved for every published invitation, on every
+  // Personalised place card, resolved for every published invitation, on every
   // template, from the shared feature layer. A failure here must never take the
   // invitation down, so it degrades to "no place card".
   const placeCard = await resolvePlaceCard(
@@ -347,7 +350,7 @@ export default async function InvitePage({
   const revealMode = design.studio?.revealMode;
   const resolvedBackground = resolveBackgroundMedia(design, catalogTemplate);
 
-  // Gift Wallet placement — null unless the event has a live campaign with
+  // Gift Wallet placement, null unless the event has a live campaign with
   // invitation placement on, so invites without gifting are untouched.
   const giftPlacement = await giftCampaignService
     .resolveInvitePlacement(event.id, { guestQrToken })
@@ -383,6 +386,7 @@ export default async function InvitePage({
       design={design}
       guestId={personalizedGuest?.id}
       guestName={personalizedGuest?.name?.trim() || undefined}
+      openingEpoch={invitation.portalTokenVersion}
       qrDataUrl={qrDataUrl}
       admissionQrDataUrl={admissionQrDataUrl || null}
       admissionQrToken={admissionQrToken || null}
@@ -392,6 +396,7 @@ export default async function InvitePage({
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       companionUrl={companionUrl}
+      companionHandoffHref={companionHandoffHref}
       watchAdmissionHandoff={watchAdmissionHandoff}
       seatQrDataUrl={seatQrDataUrl || null}
       backgroundImageUrl={resolvedBackground.backgroundImageUrl ?? event.coverImageUrl}

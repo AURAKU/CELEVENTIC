@@ -10,7 +10,7 @@ import { detectMethodFromPhone } from "@/lib/gifts/gift-providers";
 /**
  * The guest gifting flow.
  *
- * Four short steps — amount, who it's from, how to pay, confirm — then the
+ * Four short steps, amount, who it's from, how to pay, confirm, then the
  * provider's own authorisation screen. Nothing in here ever claims a payment
  * succeeded: the moment we hand off to Paystack the guest is routed to the
  * status page, which waits for the server to confirm.
@@ -582,11 +582,11 @@ function ConfirmStep({
       <dl className="mt-5 space-y-3 text-sm">
         <Row label="Gift amount">
           <span className="gift-display text-lg">
-            {amountMinor !== null ? formatMinor(amountMinor, campaign.currency) : "—"}
+            {amountMinor !== null ? formatMinor(amountMinor, campaign.currency) : ", "}
           </span>
         </Row>
         <Row label="From">{guestName || "A guest"}</Row>
-        <Row label="Paying with">{method?.label ?? "—"}</Row>
+        <Row label="Paying with">{method?.label ?? ", "}</Row>
       </dl>
 
       <div className="gift-rule my-6" />

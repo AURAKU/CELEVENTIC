@@ -75,7 +75,7 @@ export default function PreviewPage() {
     <MvpShell step={6} title="Live Preview" subtitle="Same renderer as your published invitation · Preview Mode">
       <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
         <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-          Preview Mode — RSVP, payments and bookings are disabled
+          Preview Mode, RSVP, payments and bookings are disabled
         </span>
       </div>
       <div className="mb-6 flex justify-center gap-2">

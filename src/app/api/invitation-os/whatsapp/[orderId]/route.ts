@@ -28,8 +28,7 @@ export async function GET(
     eventTitle: order.eventTitle ?? "Your Celebration",
     eventDate: order.eventDate?.toISOString(),
     venue: order.venueName ?? undefined,
-    // `sharePath` is already sanitized (localhost-stripped, relative) above —
-    // passing the raw `order.shareUrl` here previously bypassed that guard and
+    // `sharePath` is already sanitized (localhost-stripped, relative) above, // passing the raw `order.shareUrl` here previously bypassed that guard and
     // could concatenate a stale absolute localhost URL onto the live domain.
     sharePath,
     hostName: order.hostName ?? undefined,

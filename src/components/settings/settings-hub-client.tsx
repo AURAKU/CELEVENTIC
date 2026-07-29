@@ -82,8 +82,8 @@ function AccountSection() {
       <CardHeader><CardTitle>Account</CardTitle></CardHeader>
       <CardContent className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-3 text-sm">
-          <div><span className="text-slate-500">Email</span><p>{session?.user?.email ?? "—"}</p></div>
-          <div><span className="text-slate-500">Phone</span><p>{session?.user?.phone ?? "—"}</p></div>
+          <div><span className="text-slate-500">Email</span><p>{session?.user?.email ?? ", "}</p></div>
+          <div><span className="text-slate-500">Phone</span><p>{session?.user?.phone ?? ", "}</p></div>
           <div><span className="text-slate-500">Role</span><Badge className="mt-1">{session?.user?.role}</Badge></div>
         </div>
         <div className="space-y-1">
@@ -181,7 +181,7 @@ function TeamSection() {
           <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border text-sm">
             <div>
               <p className="font-medium">{m.name}</p>
-              <p className="text-slate-500">{m.email ?? "—"}</p>
+              <p className="text-slate-500">{m.email ?? ", "}</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline">{m.role}</Badge>
@@ -419,7 +419,7 @@ function BillingSection() {
           <CardTitle>Billing & Plan</CardTitle>
           <CardDescription>
             Current plan:{" "}
-            <Badge>{data.adminFullAccess ? "Admin — full access" : data.currentPlan}</Badge> ·{" "}
+            <Badge>{data.adminFullAccess ? "Admin, full access" : data.currentPlan}</Badge> ·{" "}
             {data.eventCount} events
             {data.adminFullAccess ? " · all packages unlocked free" : ""}
           </CardDescription>

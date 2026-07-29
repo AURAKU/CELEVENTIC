@@ -26,7 +26,7 @@ const FALLBACK_THEME =
   getOpeningExperience("envelope-royal")?.envelopeTheme;
 
 /**
- * Legacy envelope reveal — delegates to the full-viewport
+ * Legacy envelope reveal, delegates to the full-viewport
  * EnvelopeCollectionReveal (no copy stack under the envelope).
  */
 export function InvitationRevealCeremony({

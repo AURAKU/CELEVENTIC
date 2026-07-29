@@ -17,7 +17,7 @@ interface ExperienceSequenceProps {
 
 /**
  * Ordered scene list with shared transition language.
- * Does not replace GuestInvitationPortal sections — templates can adopt incrementally.
+ * Does not replace GuestInvitationPortal sections, templates can adopt incrementally.
  */
 export function ExperienceSequence({
   sequence,

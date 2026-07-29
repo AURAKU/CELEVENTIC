@@ -1,5 +1,5 @@
 /**
- * Forever Afaris — luxury wedding palette.
+ * Forever Afaris, luxury wedding palette.
  * Blush pink · ivory linen · champagne gold, drawn from the reference stationery.
  * Kept as a local constant object (the sanctioned pattern for
  * `components/invitation/templates/*`; token-purity lint only gates the
@@ -10,11 +10,11 @@ export const FA_PALETTE = {
   ink: "#3A2A2E",
   /** Soft brown-rose body text */
   cocoa: "#6E5257",
-  /** Champagne gold — seals, rules, accents */
+  /** Champagne gold, seals, rules, accents */
   gold: "#C7A35A",
   goldDeep: "#A9852F",
   goldSoft: "#E6D2A2",
-  /** Blush pinks — envelope + section washes */
+  /** Blush pinks, envelope + section washes */
   blush: "#F6E2DE",
   blushDeep: "#EFCBC5",
   rose: "#D99A93",
@@ -37,7 +37,7 @@ function clean(value?: string | null): string | null {
   return v && HEX.test(v) ? v : null;
 }
 
-/** Mix a hex colour toward white (amount 0–1) — used to derive soft variants. */
+/** Mix a hex colour toward white (amount 0–1), used to derive soft variants. */
 function lighten(hex: string, amount: number): string {
   const full =
     hex.length === 4

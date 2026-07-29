@@ -187,7 +187,7 @@ export function AdminPaymentsClient({ initial, initialTotal }: { initial: Paymen
                   {payments.map((p) => (
                     <tr key={p.id} className="border-b last:border-0">
                       <td className="p-3 font-mono text-xs">{p.reference}</td>
-                      <td className="p-3">{p.user?.name ?? "—"}</td>
+                      <td className="p-3">{p.user?.name ?? ", "}</td>
                       <td className="p-3 font-medium">{formatCurrency(p.amount)}</td>
                       <td className="p-3">{p.provider}</td>
                       <td className="p-3">{p.purpose.replace(/_/g, " ")}</td>

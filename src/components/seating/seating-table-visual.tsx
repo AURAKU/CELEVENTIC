@@ -275,7 +275,7 @@ export function SeatAssignPanel({
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-sm truncate">{g.name}</p>
-                        <p className="text-xs text-slate-500 truncate">{g.email ?? "—"}</p>
+                        <p className="text-xs text-slate-500 truncate">{g.email ?? ", "}</p>
                       </div>
                       <UserPlus className="h-4 w-4 text-slate-400 ml-auto shrink-0" />
                     </button>

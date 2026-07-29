@@ -19,7 +19,7 @@ export function InspirationInsights({ analysis }: InspirationInsightsProps) {
         Celeventic Design Insights ({Math.round(confidence * 100)}% match)
       </div>
       <div className="grid gap-2 text-xs text-slate-700">
-        <p><span className="font-medium">Style:</span> {concept.style} — {concept.mood}</p>
+        <p><span className="font-medium">Style:</span> {concept.style}, {concept.mood}</p>
         <p className="flex items-start gap-1.5">
           <Palette className="h-3.5 w-3.5 shrink-0 mt-0.5 text-brand-600" />
           {concept.colorStory}
@@ -28,7 +28,7 @@ export function InspirationInsights({ analysis }: InspirationInsightsProps) {
           <Type className="h-3.5 w-3.5 shrink-0 mt-0.5 text-brand-600" />
           {concept.typography}
         </p>
-        <p><span className="font-medium">Layout:</span> {suggestedLayout.replace(/-/g, " ")} — {concept.layoutReason}</p>
+        <p><span className="font-medium">Layout:</span> {suggestedLayout.replace(/-/g, " ")}, {concept.layoutReason}</p>
       </div>
       <div>
         <p className="text-xs font-medium text-slate-600 flex items-center gap-1 mb-1.5">

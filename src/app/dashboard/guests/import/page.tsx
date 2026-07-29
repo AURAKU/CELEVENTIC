@@ -12,7 +12,7 @@ import { GeneralPassesPanel } from "@/components/guest-import/general-passes-pan
 import { ImportHistoryPanel } from "@/components/guest-import/import-history-panel";
 
 /**
- * Bulk Guest Import — organiser workspace.
+ * Bulk Guest Import, organiser workspace.
  *
  * Three jobs on one screen: import a named guest list, issue general
  * admission passes for people you cannot name, and undo an import that went
@@ -36,7 +36,7 @@ export default function GuestImportPage() {
         <h1 className="mt-1 text-2xl font-bold">Bulk guest import</h1>
         <p className="page-subtitle">
           Turn a list of names into personalised invitations, entry passes and place
-          cards. A name on its own is enough — phone and email are optional.
+          cards. A name on its own is enough, phone and email are optional.
         </p>
       </div>
 

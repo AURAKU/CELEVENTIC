@@ -8,7 +8,7 @@ import type { PageRenderContext } from "@/lib/invite-blueprints/blueprint-types"
 
 interface PersistentActionBarProps {
   context: PageRenderContext;
-  /** Appears from page 2 onward — never covers the cinematic cover */
+  /** Appears from page 2 onward, never covers the cinematic cover */
   visible: boolean;
   hasRsvpPage: boolean;
 }
@@ -41,7 +41,7 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
         return;
       }
     } catch {
-      // user dismissed the share sheet — fall through silently
+      // user dismissed the share sheet, fall through silently
       return;
     }
     try {
@@ -49,7 +49,7 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // clipboard unavailable in this webview — nothing further to do
+      // clipboard unavailable in this webview, nothing further to do
     }
   }
 

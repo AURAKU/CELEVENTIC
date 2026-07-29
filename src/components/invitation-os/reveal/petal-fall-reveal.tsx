@@ -63,7 +63,7 @@ export function PetalFallReveal({ guestName, eventTitle, onComplete }: PetalFall
           className="mx-auto touch-manipulation rounded-full border-2 border-rose-300/70 bg-white/80 px-8 py-3 text-rose-900 shadow-md hover:bg-white"
           aria-label="Let the petals fall"
         >
-          {opened ? "Opening…" : "Tap — petals fall"}
+          {opened ? "Opening…" : "Tap, petals fall"}
         </button>
       </div>
     </div>

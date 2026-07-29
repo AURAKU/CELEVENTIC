@@ -138,7 +138,7 @@ export function VisionBoardStudioPanel({
               />
               <p id="seal-initials-hint" className="mt-1 text-[11px] text-slate-500">
                 Shown on the wax seal when guests open the envelope. Monograms (C | J) or short
-                words — default {TRADITIONAL_MARRIAGE_DEFAULT_SEAL}.
+                words, default {TRADITIONAL_MARRIAGE_DEFAULT_SEAL}.
               </p>
             </div>
           </div>
@@ -375,7 +375,7 @@ export function VisionBoardStudioPanel({
 }
 
 /**
- * Mini wax seal chip — mirrors the guest-facing embroidered seal:
+ * Mini wax seal chip, mirrors the guest-facing embroidered seal:
  * same design preset gradients + font/size/color the host has chosen.
  */
 function SealLivePreview({

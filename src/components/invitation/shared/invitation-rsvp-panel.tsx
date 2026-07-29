@@ -38,7 +38,7 @@ export function InvitationRsvpPanel({
 
   async function handleRsvp(response: "ACCEPTED" | "DECLINED" | "MAYBE") {
     if (isPreviewInvitationId(invitationId)) {
-      setError("Preview mode — RSVP works on your published invitation link.");
+      setError("Preview mode, RSVP works on your published invitation link.");
       return;
     }
     setError("");
@@ -76,7 +76,7 @@ export function InvitationRsvpPanel({
         className="text-center p-4 rounded-lg font-medium inv-fade-in"
         style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
       >
-        {t("rsvp.title")}: {rsvpStatus.replace(/_/g, " ")} — {t("rsvp.thank_you")}
+        {t("rsvp.title")}: {rsvpStatus.replace(/_/g, " ")}, {t("rsvp.thank_you")}
       </div>
     );
   }

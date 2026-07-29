@@ -10,7 +10,7 @@ import { useParallax } from "@/components/motion/use-parallax";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
 
-/** Background hero layer — the only element that parallaxes (text never does). */
+/** Background hero layer, the only element that parallaxes (text never does). */
 function CoverParallaxMedia({ url }: { url: string }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { y } = useParallax(ref, "background");
@@ -30,7 +30,7 @@ export function CoverPage({ context, page }: InvitePageProps) {
   const isFuneral = category === "funeral";
 
   const names = isFuneral
-    ? event.title.replace(/^celebration of life\s*[—–-]\s*/i, "")
+    ? event.title.replace(/^celebration of life\s*[, –-]\s*/i, "")
     : (() => {
         const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
         return name2 ? `${name1} & ${name2}` : name1;

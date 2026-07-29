@@ -242,8 +242,8 @@ export default function StudioPage() {
       title="Invitation Studio"
       subtitle={
         isLive
-          ? "This invitation is live — every saved change updates the guest link"
-          : "Design the guest experience — live preview matches publish"
+          ? "This invitation is live, every saved change updates the guest link"
+          : "Design the guest experience, live preview matches publish"
       }
     >
       <InvitationStudioHub

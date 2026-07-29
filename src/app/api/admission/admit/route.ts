@@ -15,7 +15,7 @@ const admitSchema = z
     quantity: z.number().int().positive().max(200).optional(),
     guestIds: z.array(z.string().min(1)).max(200).optional(),
     gate: z.string().max(80).optional(),
-    /** Evaluate without writing — powers the confirm-before-admit flow. */
+    /** Evaluate without writing, powers the confirm-before-admit flow. */
     dryRun: z.boolean().optional(),
     /** The operator answered the "how many now?" prompt. */
     quantityConfirmed: z.boolean().optional(),
@@ -28,7 +28,7 @@ const admitSchema = z
  * The gate endpoint: scan a Guest Entry Pass QR or type its admission code.
  *
  * Manual codes get their own tight rate limit (they are the only guessable
- * surface), and every attempt — successful or not — lands in the scan ledger.
+ * surface), and every attempt, successful or not, lands in the scan ledger.
  */
 export async function POST(req: Request) {
   const actor = await requireActor();

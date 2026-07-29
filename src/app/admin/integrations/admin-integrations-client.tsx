@@ -363,7 +363,7 @@ export function AdminIntegrationsClient() {
                   </p>
                 ))}
                 <p className="text-xs text-slate-500 pt-1">
-                  Configure via <code className="text-[11px]">.env</code> — secrets never shown here.
+                  Configure via <code className="text-[11px]">.env</code>, secrets never shown here.
                 </p>
               </CardContent>
             </Card>
@@ -417,7 +417,7 @@ export function AdminIntegrationsClient() {
           </CardTitle>
           <p className="text-sm text-slate-600">
             Checkouts, emails, SMS, and WhatsApp use these defaults when a request does not specify a provider.
-            Enable and store secrets below first — disabled providers are never used.
+            Enable and store secrets below first, disabled providers are never used.
           </p>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -464,7 +464,7 @@ export function AdminIntegrationsClient() {
                 {defaultsStatus[field.key]?.enabled ? (
                   <span className="text-emerald-700">Connected & enabled</span>
                 ) : (
-                  <span className="text-amber-700">Not enabled — configure below</span>
+                  <span className="text-amber-700">Not enabled, configure below</span>
                 )}
               </p>
             </div>
@@ -513,7 +513,7 @@ export function AdminIntegrationsClient() {
                     <SelectContent>
                       {availableCatalog.map((c) => (
                         <SelectItem key={c.provider} value={c.provider}>
-                          {c.label} — {c.category}
+                          {c.label}, {c.category}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -561,7 +561,7 @@ export function AdminIntegrationsClient() {
                       type="password"
                       value={addForm.secret}
                       onChange={(e) => setAddForm({ ...addForm, secret: e.target.value })}
-                      placeholder="Optional — encrypted when saved"
+                      placeholder="Optional, encrypted when saved"
                     />
                   </div>
                   <div>
@@ -804,7 +804,7 @@ export function AdminIntegrationsClient() {
                   <p className="text-xs text-slate-500">
                     Last tested: {new Date((selected.config as { lastTestedAt: string }).lastTestedAt).toLocaleString()}
                     {(selected.config as { lastTestMessage?: string }).lastTestMessage && (
-                      <> — {(selected.config as { lastTestMessage: string }).lastTestMessage}</>
+                      <>, {(selected.config as { lastTestMessage: string }).lastTestMessage}</>
                     )}
                   </p>
                 )}

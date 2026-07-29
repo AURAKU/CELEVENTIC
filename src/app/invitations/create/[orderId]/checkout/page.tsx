@@ -106,7 +106,7 @@ export default function CheckoutPage() {
           )}
           {adminBypass && (
             <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-              Admin access — all packages unlocked free. No payment required.
+              Admin access, all packages unlocked free. No payment required.
             </div>
           )}
           <div className="space-y-3 text-sm">

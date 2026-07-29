@@ -26,7 +26,7 @@ function parseSize(raw: string | null): QrExportSize {
  * Branded QR image for a Guest Entry Pass.
  *
  * Possession of the signed token *is* the credential, so there is no session
- * check — but the HMAC is verified before any work happens, and responses are
+ * check, but the HMAC is verified before any work happens, and responses are
  * marked private so a shared cache never holds someone's pass.
  */
 export async function GET(req: Request) {

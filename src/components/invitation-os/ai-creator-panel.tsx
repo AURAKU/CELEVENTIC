@@ -53,7 +53,7 @@ export function AiCreatorPanel({ orderId, eventType, onApply }: AiCreatorPanelPr
           <Sparkles className="h-4 w-4 text-[#D4A63A]" />
           Celeventic Experience Engine
         </CardTitle>
-        <p className="text-xs text-slate-500">{AGI_COPY.designed} — story, RSVP, WhatsApp & more</p>
+        <p className="text-xs text-slate-500">{AGI_COPY.designed}, story, RSVP, WhatsApp & more</p>
         <AgiBadge variant="inline" label={AGI_COPY.enhanced} />
       </CardHeader>
       <CardContent className="space-y-3">

@@ -29,7 +29,7 @@ import type {
 import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
 import { copyText } from "@/lib/clipboard";
 
-/** Absolute invite URL safe for copy/WhatsApp/email — never localhost on live. */
+/** Absolute invite URL safe for copy/WhatsApp/email, never localhost on live. */
 function publicInviteUrl(url: string): string {
   const base = getClientAppUrl();
   if (isLocalHost(url) && !isLocalHost(base)) return sanitizePublicUrl(url, base);
@@ -40,8 +40,8 @@ function publicInviteUrl(url: string): string {
  * Create Personalised Invitation.
  *
  * One required field. The allowance is pre-filled from the name the moment it
- * is typed — "Mr & Mrs Obuah" arrives as two, "The Mensah Family" arrives as a
- * question — and the organiser can always overrule it.
+ * is typed, "Mr & Mrs Obuah" arrives as two, "The Mensah Family" arrives as a
+ * question, and the organiser can always overrule it.
  *
  * Preview is a real dry run against the server, not a client-side guess, so
  * the duplicate warning an organiser sees is the same check that will run when
@@ -159,7 +159,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
       setCreated(invitation);
       if (json.data.card) onCreated(json.data.card as SearchResultCard);
       reset();
-      // Hand the link over immediately — organisers create then paste into WhatsApp.
+      // Hand the link over immediately, organisers create then paste into WhatsApp.
       void copyLink(publicInviteUrl(invitation.inviteUrl));
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
@@ -176,7 +176,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
       setTimeout(() => setCopied(false), 2500);
       return;
     }
-    // Keep the invite link visible/selectable — never block sharing on clipboard quirks.
+    // Keep the invite link visible/selectable, never block sharing on clipboard quirks.
     setCopyHint("Select the link below and copy it, or use WhatsApp / Email.");
   }
 
@@ -241,7 +241,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="quick-phone">Phone number — optional</Label>
+              <Label htmlFor="quick-phone">Phone number, optional</Label>
               <Input
                 id="quick-phone"
                 value={phone}
@@ -260,7 +260,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="quick-email">Email address — optional</Label>
+              <Label htmlFor="quick-email">Email address, optional</Label>
               <Input
                 id="quick-email"
                 type="email"
@@ -295,7 +295,7 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
           {previewOpen && preview && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="flex items-center gap-2 font-semibold text-slate-700">
-                <Sparkles className="h-3.5 w-3.5" /> {preview.displayName || "—"}
+                <Sparkles className="h-3.5 w-3.5" /> {preview.displayName || ", "}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge variant="outline">
@@ -415,7 +415,7 @@ function CreatedSummary({
         </Button>
         <Button size="sm" variant="outline" asChild>
           <a
-            href={`mailto:?subject=${encodeURIComponent(`Your invitation — ${result.name}`)}&body=${encodeURIComponent(emailBody)}`}
+            href={`mailto:?subject=${encodeURIComponent(`Your invitation, ${result.name}`)}&body=${encodeURIComponent(emailBody)}`}
           >
             <Mail className="h-3.5 w-3.5" /> Email
           </a>

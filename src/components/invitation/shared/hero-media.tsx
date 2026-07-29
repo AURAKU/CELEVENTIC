@@ -20,7 +20,7 @@ interface HeroMediaProps {
   layout?: string;
   className?: string;
   overlay?: boolean;
-  /** Tap hero to open fullscreen viewer — defaults to InvitationMediaProvider context */
+  /** Tap hero to open fullscreen viewer, defaults to InvitationMediaProvider context */
   interactive?: boolean;
 }
 
@@ -45,7 +45,7 @@ export function HeroMedia({
     return (
       <div className={`relative bg-gradient-to-br from-stone-200 via-stone-100 to-stone-300 ${className}`}>
         <div className="absolute inset-0 flex items-center justify-center text-stone-500 text-sm px-4 text-center inv-text-on-light">
-          Upload a photo or video in the studio — preview updates instantly
+          Upload a photo or video in the studio, preview updates instantly
         </div>
       </div>
     );
@@ -63,7 +63,7 @@ export function HeroMedia({
   // Video plays through VideoPlayer (poster + FAILED/PROCESSING states + byte-range-friendly
   // <video>) so a broken/still-processing upload never shows a blank or crashed frame to
   // guests. Older assets (pre video-processor pipeline) have no `status`/`posterUrl` and
-  // simply default to READY with no poster — same visual result as before.
+  // simply default to READY with no poster, same visual result as before.
   const mediaNode = isVideo ? (
     <VideoPlayer
       src={heroUrl}

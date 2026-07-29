@@ -295,7 +295,7 @@ export function AdminCommerceClient() {
             <Card key={c.id}>
               <CardContent className="pt-6 flex flex-wrap justify-between items-center gap-4">
                 <div>
-                  <p className="font-semibold">{c.symbol} {c.code} — {c.name}</p>
+                  <p className="font-semibold">{c.symbol} {c.code}, {c.name}</p>
                   {c.isDefault && <Badge className="mt-1">Default</Badge>}
                 </div>
                 <Button

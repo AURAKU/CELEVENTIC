@@ -9,13 +9,23 @@
  * guests can move along faster themselves without the app deciding for them
  * or ever jumping them straight into mid-invitation.
  *
- * Stored per invitation + guest so a shared device still gives each named
- * guest their own first-time reveal.
+ * Stored per invitation + guest + admission epoch so a shared device still
+ * gives each named guest their own first-time reveal, and an organiser reset
+ * (portal token bump) starts the ceremony as if never opened before.
  */
 const STORAGE_PREFIX = "celeventic:opening-seen:v1";
 
-export function openingMemoryKey(invitationId: string, guestId?: string | null): string {
-  return `${STORAGE_PREFIX}:${invitationId}:${guestId ?? "anon"}`;
+export function openingMemoryKey(
+  invitationId: string,
+  guestId?: string | null,
+  /** Bumps when admission is reset so the intro plays fresh again. */
+  admissionEpoch?: number | string | null
+): string {
+  const epoch =
+    admissionEpoch === null || admissionEpoch === undefined || admissionEpoch === ""
+      ? "0"
+      : String(admissionEpoch);
+  return `${STORAGE_PREFIX}:${invitationId}:${guestId ?? "anon"}:${epoch}`;
 }
 
 /** Storage is unavailable in private mode / when cookies are blocked. */

@@ -295,7 +295,7 @@ export default function VendorPortalClient() {
               <CardContent className="pt-5">
                 <div className="flex justify-between text-xs text-slate-500 mb-1">
                   <span>Portfolio Images</span>
-                  <span>{usage ? `${usage.usage.images}/${usage.limits.imageLimit}` : "—"}</span>
+                  <span>{usage ? `${usage.usage.images}/${usage.limits.imageLimit}` : ", "}</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-[#0B8A83] rounded-full transition-all" style={{ width: `${Math.min(imagePct, 100)}%` }} />
@@ -330,7 +330,7 @@ export default function VendorPortalClient() {
             <CardHeader><CardTitle className="text-base">Your Portfolio</CardTitle></CardHeader>
             <CardContent>
               {portfolioMedia.length === 0 ? (
-                <p className="text-sm text-slate-500">No portfolio media yet — upload photos or videos above.</p>
+                <p className="text-sm text-slate-500">No portfolio media yet, upload photos or videos above.</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {portfolioMedia.map((m) => (

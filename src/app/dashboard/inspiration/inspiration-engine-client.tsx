@@ -302,7 +302,7 @@ export function InspirationEngineClient() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-slate-600">
-            Upload photos, videos, or audio from your device. The Celeventic Experience Engine analyzes your media — no URL paste required.
+            Upload photos, videos, or audio from your device. The Celeventic Experience Engine analyzes your media, no URL paste required.
           </p>
           <ImageUploadCropper
               buttonLabel={t("inspiration.upload_image")}

@@ -186,7 +186,7 @@ export function SmartGuestSearch({
               Nobody matches &ldquo;{term}&rdquo;.
             </p>
             <p className="mt-1 text-xs text-slate-400">
-              Create them below — a name on its own is enough.
+              Create them below, a name on its own is enough.
             </p>
           </CardContent>
         </Card>

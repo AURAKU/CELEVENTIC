@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * Status of one gift, by reference.
  *
  * The guest's pending screen polls this. Knowing a reference proves nothing
- * about the event, so the payload is scoped hard to that single payment — and
+ * about the event, so the payload is scoped hard to that single payment, and
  * it only ever reports success once the server has confirmed it with the
  * provider.
  */

@@ -46,7 +46,7 @@ export default function MarketplacePage() {
     const d = await res.json();
     if (res.ok) {
       setPurchased((prev) => new Set([...prev, id]));
-      alert(d.data.free ? "Free template unlocked!" : "Purchase successful — template unlocked!");
+      alert(d.data.free ? "Free template unlocked!" : "Purchase successful, template unlocked!");
     } else {
       alert(d.error);
     }

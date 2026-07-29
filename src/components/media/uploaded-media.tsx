@@ -42,7 +42,7 @@ export function UploadedMedia({
   if (!resolved) return null;
 
   // Never point a <video> element's src at an image (a caller-forced `video` combined with a
-  // thumbnail-only `src` — e.g. a grid tile falling back to a poster JPEG — must still render
+  // thumbnail-only `src`, e.g. a grid tile falling back to a poster JPEG, must still render
   // as an image). Extension sniffing here is a safety net, not the primary signal.
   const looksLikeImage = /\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(resolved);
   const isVideo =

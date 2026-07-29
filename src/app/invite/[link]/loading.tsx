@@ -7,7 +7,7 @@ import styles from "./loading.module.css";
  *
  * Next.js renders this automatically while the async `page.tsx` (invitation
  * lookup, QR/seating/memory-vault queries, etc.) is still resolving on the
- * server — it is streamed as part of the initial HTML response, so it paints
+ * server, it is streamed as part of the initial HTML response, so it paints
  * before any client JS loads or hydrates. That makes it the true first frame
  * a guest sees after tapping their invite link: a branded hold instead of a
  * blank tab, however long the data fetch takes.

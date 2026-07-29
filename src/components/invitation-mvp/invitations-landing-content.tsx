@@ -99,7 +99,7 @@ export function InvitationsLandingContent({ packages }: Props) {
             </h2>
             <Button variant="outline" asChild><Link href="/invitations/catalogue">{t("invitations.view_all")}</Link></Button>
           </div>
-          <p className="text-sm text-slate-500 mb-6 -mt-6">Live scrolling previews — see exactly how each invitation flows for guests.</p>
+          <p className="text-sm text-slate-500 mb-6 -mt-6">Live scrolling previews, see exactly how each invitation flows for guests.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {featured.map((tpl) => <TemplateCard key={tpl.slug} template={tpl} />)}
           </div>

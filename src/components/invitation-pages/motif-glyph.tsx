@@ -1,6 +1,6 @@
 /**
  * Inline SVG motif glyphs, keyed by the theme's motif placement ids.
- * Stroke-only, currentColor — the wrapper sets color to the accent token, so
+ * Stroke-only, currentColor, the wrapper sets color to the accent token, so
  * glyphs recolor with the theme for free and cost zero asset bytes.
  */
 

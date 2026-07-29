@@ -56,7 +56,7 @@ export function GiftStatusScreen({
         setGift(payload.data as PublicGiftPaymentView);
       }
     } catch {
-      // A failed poll is not a failed payment — keep waiting.
+      // A failed poll is not a failed payment, keep waiting.
     } finally {
       setChecking(false);
     }
@@ -178,7 +178,7 @@ function PendingPanel({
       <h1 className="gift-display mt-6 text-2xl">Awaiting confirmation</h1>
       <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--gift-color-ink-muted)" }}>
         Approve the prompt on your phone if you have not already. We will confirm
-        here the moment your bank or network completes the payment — please keep
+        here the moment your bank or network completes the payment, please keep
         this page open.
       </p>
 
@@ -254,7 +254,7 @@ function FailedPanel({
   );
 }
 
-/** Six petals, staggered — restrained enough to feel like stationery, not confetti. */
+/** Six petals, staggered, restrained enough to feel like stationery, not confetti. */
 function Petals() {
   const petals = [0, 1, 2, 3, 4, 5];
   return (

@@ -10,7 +10,7 @@ import { giftPaymentUiState } from "@/lib/gifts/gift-privacy";
 export const dynamic = "force-dynamic";
 
 /**
- * "My Gifts" — gifts the signed-in user sent, scoped to their own user id.
+ * "My Gifts", gifts the signed-in user sent, scoped to their own user id.
  * A guest without an account reaches the same information through their signed
  * receipt link instead.
  */

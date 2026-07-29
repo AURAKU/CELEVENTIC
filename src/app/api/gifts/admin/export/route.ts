@@ -6,7 +6,7 @@ import type { EventGiftPaymentStatus, EventGiftType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-/** CSV export of gift transactions — organiser finance access only. */
+/** CSV export of gift transactions, organiser finance access only. */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const guard = await requireGiftFinanceAccess(url.searchParams.get("eventId"));

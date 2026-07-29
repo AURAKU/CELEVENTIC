@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  *
  * Sibling of the reset endpoint and guarded identically: correcting who is
  * inside is guest management, so scanners and viewers are excluded. Every
- * correction appends to the ledger — nothing here deletes history.
+ * correction appends to the ledger, nothing here deletes history.
  */
 
 const correctSchema = z

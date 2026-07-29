@@ -333,7 +333,7 @@ export function AdminPackagesClient({
     <div className="space-y-6">
       <AdminToolbar
         title="Event Packages"
-        subtitle="Set prices, limits, credits, and which features/services each package unlocks — edit freely without leaving the page."
+        subtitle="Set prices, limits, credits, and which features/services each package unlocks, edit freely without leaving the page."
         count={total}
         onRefresh={() => void reload()}
         onAdd={startCreate}
@@ -448,7 +448,7 @@ export function AdminPackagesClient({
             )}
             {savedFlash && (
               <p className="text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2 flex items-center gap-2">
-                <Check className="h-4 w-4" /> Saved. Editor stays open — keep editing anytime.
+                <Check className="h-4 w-4" /> Saved. Editor stays open, keep editing anytime.
               </p>
             )}
 

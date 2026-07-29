@@ -211,9 +211,9 @@ export function AdminInvitationOrdersClient() {
                       </div>
                     )}
                     {selected.payment && (
-                      <div className="flex items-center gap-2"><CreditCard className="h-4 w-4" /> {selected.payment.reference} — {selected.payment.status}</div>
+                      <div className="flex items-center gap-2"><CreditCard className="h-4 w-4" /> {selected.payment.reference}, {selected.payment.status}</div>
                     )}
-                    <p>Workflow: {selected.workflowType?.replace(/_/g, " ") ?? "—"} · {selected.workflowStage?.replace(/_/g, " ") ?? selected.productionStatus}</p>
+                    <p>Workflow: {selected.workflowType?.replace(/_/g, " ") ?? ", "} · {selected.workflowStage?.replace(/_/g, " ") ?? selected.productionStatus}</p>
                     <p>Revisions: {selected.revisionsUsed} / {selected.package.revisions}</p>
                     <div className="flex flex-wrap gap-2">
                       {selected.shareUrl && (

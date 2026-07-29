@@ -12,7 +12,7 @@ interface CandleLightRevealProps {
 }
 
 /**
- * Memorial ceremony — soft dark field, unlit candle, tap/keyboard to light.
+ * Memorial ceremony, soft dark field, unlit candle, tap/keyboard to light.
  * Reduced-motion callers should use ReducedMotionGate instead of this component.
  */
 export function CandleLightReveal({

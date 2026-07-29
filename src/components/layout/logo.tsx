@@ -8,7 +8,7 @@ type LogoSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 interface LogoProps {
   className?: string;
-  /** @deprecated Full logo is always shown — use `size` instead */
+  /** @deprecated Full logo is always shown, use `size` instead */
   showTagline?: boolean;
   variant?: "default" | "light" | "ghost";
   /** @deprecated Use full logo badge at `xs` size instead */

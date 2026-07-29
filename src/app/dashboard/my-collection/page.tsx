@@ -27,7 +27,7 @@ export default function MyCollectionPage() {
   return (
     <DashboardPageShell
       title="Saved Vendors"
-      description="Your shortlisted vendors in one place — ready when you need them."
+      description="Your shortlisted vendors in one place, ready when you need them."
       loading={loading}
       error={error}
       empty={!loading && !error && favorites.length === 0}

@@ -14,7 +14,7 @@ import type { ImportBatchView } from "./types";
  * Rollback is offered only while nothing from the batch has been admitted; the
  * server is asked first, so the button an organiser sees is one that will
  * actually work. Once somebody has walked through the gate, archive takes over
- * — it revokes the passes and hides the invitations without erasing the
+ *, it revokes the passes and hides the invitations without erasing the
  * admission record.
  */
 
@@ -85,9 +85,9 @@ export function ImportHistoryPanel({ eventId }: { eventId: string }) {
 
     setMessage(
       action === "rollback"
-        ? `Rolled back — removed ${data.data.invitationsRemoved} invitation${data.data.invitationsRemoved === 1 ? "" : "s"}.`
+        ? `Rolled back, removed ${data.data.invitationsRemoved} invitation${data.data.invitationsRemoved === 1 ? "" : "s"}.`
         : action === "archive"
-          ? `Archived — revoked ${data.data.passesRevoked} pass${data.data.passesRevoked === 1 ? "" : "es"}.`
+          ? `Archived, revoked ${data.data.passesRevoked} pass${data.data.passesRevoked === 1 ? "" : "es"}.`
           : `Restored ${data.data.invitationsRestored} invitation${data.data.invitationsRestored === 1 ? "" : "s"}.`
     );
     await load();

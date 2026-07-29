@@ -107,7 +107,7 @@ export default function AIPlannerPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Event Intelligence</h1>
-        <p className="page-subtitle">Your personal event consultant — budget, timeline, risks, and recommendations.</p>
+        <p className="page-subtitle">Your personal event consultant, budget, timeline, risks, and recommendations.</p>
       </div>
 
       <Card>

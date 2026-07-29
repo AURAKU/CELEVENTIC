@@ -37,7 +37,7 @@ export async function PUT(req: Request) {
       ]);
       return NextResponse.json({ success: true, data: { url, logoSize } });
     }
-    // Single source of truth — this used to duplicate the size/type rules and
+    // Single source of truth, this used to duplicate the size/type rules and
     // drifted out of sync with the service.
     const validationError = qrBrandingService.validateUpload(file);
     if (validationError) {

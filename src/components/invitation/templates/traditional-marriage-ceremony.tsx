@@ -81,7 +81,7 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
   const mapsHref = event.mapsLink || props.mapsLink || null;
   const passQr = admissionQrDataUrl || qrDataUrl;
   const hasEntryPass = Boolean(props.entryPass);
-  /** Entry pass owns the gate QR — never draw a second code on the card. */
+  /** Entry pass owns the gate QR, never draw a second code on the card. */
   const showCardQr = Boolean(features.qr && passQr && !hasEntryPass);
   const organizerPhone = event.contactPhone?.trim() || null;
   const organizerEmail = contactEmail?.trim() || null;
@@ -113,7 +113,7 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
         color: PALETTE.ink,
       }}
     >
-      {/* Invited guest name — personalized per guest link; Place Card owns identity when present */}
+      {/* Invited guest name, personalized per guest link; Place Card owns identity when present */}
       {features.guestWelcome && invitedGuestName && !props.placeCard && (
         <div
           className="w-full max-w-[420px] mb-3 rounded-2xl bg-white/70 border px-4 py-3 text-center shadow-sm backdrop-blur-sm"
@@ -175,7 +175,7 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
           </div>
         )}
 
-        {/* Editable live typography — mirrors card fonts/layout, never stacked on printed text */}
+        {/* Editable live typography, mirrors card fonts/layout, never stacked on printed text */}
         {useLiveType && (
           <div
             className="relative px-7 sm:px-9 pt-10 pb-8 text-center"
@@ -263,7 +263,7 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
               {board.sentiment}
             </p>
 
-            {/* Live footer — mirrors card: location + RSVP + hashtag (single copy only) */}
+            {/* Live footer, mirrors card: location + RSVP + hashtag (single copy only) */}
             <div className="mt-7 grid grid-cols-2 gap-3 items-start text-left">
               <div className="flex flex-col items-start gap-2">
                 {showCardQr ? (
@@ -367,7 +367,7 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
         )}
       </article>
 
-      {/* Lower chrome: Kindly Respond + Continue With Us — no chips / DIGITAL RSVP / utility cards */}
+      {/* Lower chrome: Kindly Respond + Continue With Us, no chips / DIGITAL RSVP / utility cards */}
       <div className="w-full max-w-[420px] mt-5 space-y-5 pb-8">
         {showRespondSection && (
           <TraditionalMarriageRespond

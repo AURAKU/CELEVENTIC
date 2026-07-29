@@ -90,7 +90,7 @@ export function LocaleProvider({
     };
   }, []);
 
-  // Authenticated user preference — only apply if different from current (post-login).
+  // Authenticated user preference, only apply if different from current (post-login).
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.id) return;
     fetch("/api/i18n/preferences")

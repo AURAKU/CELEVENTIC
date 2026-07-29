@@ -146,8 +146,7 @@ const ORNAMENT_OPTIONS = [
   { id: "none", label: "None" },
 ] as const;
 
-/** Heading/body live-bind to `--font-display` / `--font-sans` (scoped to the invite viewport) —
- * registered FontIds only, so the studio pick always resolves to an already-loaded next/font.
+/** Heading/body live-bind to `--font-display` / `--font-sans` (scoped to the invite viewport), * registered FontIds only, so the studio pick always resolves to an already-loaded next/font.
  * Script currently only feeds designConfig (visual wiring is a template-by-template follow-up). */
 const INVITE_FONT_OPTIONS = THANK_YOU_FONT_OPTIONS;
 const OPENING_CATEGORIES = [
@@ -232,7 +231,7 @@ export interface InvitationStudioHubProps {
   onChange: (design: InvitationDesignConfig) => void;
   onSave?: () => Promise<void>;
   saving?: boolean;
-  /** Order id — enables Sections editor deep-link */
+  /** Order id, enables Sections editor deep-link */
   orderId?: string;
   catalogSlug?: string | null;
   /** History / autosave wiring from parent */
@@ -585,7 +584,7 @@ export const InvitationStudioHub = forwardRef<
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_300px]">
-        {/* Left — Scenes / Assets */}
+        {/* Left, Scenes / Assets */}
         <div className="hidden min-h-0 lg:block">
           <StudioScenesPanel
             scenes={scenes}
@@ -600,7 +599,7 @@ export const InvitationStudioHub = forwardRef<
           />
         </div>
 
-        {/* Center — Live canvas */}
+        {/* Center, Live canvas */}
         <StudioCanvas
           device={device}
           design={previewDesign}
@@ -611,7 +610,7 @@ export const InvitationStudioHub = forwardRef<
           catalogSlug={catalogSlug}
         />
 
-        {/* Right — Properties (desktop sidebar + mobile sheet) */}
+        {/* Right, Properties (desktop sidebar + mobile sheet) */}
         <div
           className={
             mobileSheet === "props"
@@ -641,7 +640,7 @@ export const InvitationStudioHub = forwardRef<
                     accent
                   >
                     <p className="text-xs text-slate-500">
-                      Instant re-skin — colors, fonts, motifs, and motion swap together.
+                      Instant re-skin, colors, fonts, motifs, and motion swap together.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {pagedThemeIds.map((id) => {
@@ -766,7 +765,7 @@ export const InvitationStudioHub = forwardRef<
                     ) : (
                       <p className="text-[11px] text-slate-500">
                         Hub section content comes from Details / Sections editor. Hide or reorder
-                        this scene from the left panel — preview updates live.
+                        this scene from the left panel, preview updates live.
                       </p>
                     )}
                     <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
@@ -1219,7 +1218,7 @@ export const InvitationStudioHub = forwardRef<
                   icon={<Type className="h-4 w-4 text-[#0B8A83]" />}
                 >
                   <p className="text-[11px] text-slate-500">
-                    One-click font presets — inspired by the Traditional Marriage thank-you card
+                    One-click font presets, inspired by the Traditional Marriage thank-you card
                     (tracked serif eyebrow, sweeping script, readable serif body). Applies to
                     headings, script, body, and the thank-you section together.
                   </p>
@@ -1635,7 +1634,7 @@ export const InvitationStudioHub = forwardRef<
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   <p className="text-[11px] text-slate-500">
-                    Actions map through the Action Registry — preview suppresses real RSVP & payments.
+                    Actions map through the Action Registry, preview suppresses real RSVP & payments.
                   </p>
                   {(
                     [
@@ -1732,7 +1731,7 @@ export const InvitationStudioHub = forwardRef<
                         ...design,
                         studio: { ...studio, weddingBoard },
                         // The board carries the ceremony itself (envelope paper,
-                        // wax, gate) — claim the design so the catalog SKU never
+                        // wax, gate), claim the design so the catalog SKU never
                         // reinstates its own opening over the host's.
                         experience: { ...experience, experienceCustomized: true },
                       })
@@ -1750,7 +1749,7 @@ export const InvitationStudioHub = forwardRef<
                 {(featureFlags.audioLibrary || featureFlags.audioUpload) && onMusicChange ? (
                   <>
                     <p className="text-xs text-slate-500">
-                      Library or upload only — trim the clip guests hear. Tap the live preview
+                      Library or upload only, trim the clip guests hear. Tap the live preview
                       to test.
                     </p>
                     <MusicPreferenceEditor

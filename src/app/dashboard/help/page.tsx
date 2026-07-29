@@ -32,7 +32,7 @@ export default function HelpPage() {
     <div className="max-w-3xl mx-auto space-y-8">
       <PageHeader
         title="Help & Support"
-        subtitle="Answers, guides, and ways to reach us — tailored for every Celeventic user."
+        subtitle="Answers, guides, and ways to reach us, tailored for every Celeventic user."
         icon={HelpCircle}
       />
 

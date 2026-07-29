@@ -7,7 +7,7 @@ import { guestImportService } from "@/services/guest-import/guest-import.service
 /**
  * The point of no return: hand a reviewed batch to the background worker.
  *
- * Rate-limited hard — a double-clicked confirm must not queue two generation
+ * Rate-limited hard, a double-clicked confirm must not queue two generation
  * runs for the same list. When the worker isn't running, we also kick inline
  * generation immediately so Create & send never sits at "0 of N" forever.
  */

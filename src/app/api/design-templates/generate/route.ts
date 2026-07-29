@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       data.templateId,
       session.user.role
     );
-    if (!hasAccess) return NextResponse.json({ error: "Premium template — purchase required" }, { status: 402 });
+    if (!hasAccess) return NextResponse.json({ error: "Premium template, purchase required" }, { status: 402 });
 
     const designs = await designGeneratorService.generateFromEvent({
       userId: session.user.id,

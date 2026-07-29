@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * Root error boundary — keep dependencies minimal.
+ * Root error boundary, keep dependencies minimal.
  * Heavy UI imports here can break the production SSR module graph.
  */
 export default function GlobalError({

@@ -48,7 +48,7 @@ import {
  * Curtain ceremonies own the tap after the brand video:
  * brand MP4 → closed curtain (await touch) → slow open → Guest portal
  *
- * Template DNA / picture intros are retired — the brand video is the only intro.
+ * Template DNA / picture intros are retired, the brand video is the only intro.
  */
 type ExperiencePhase = InvitePipelinePhase;
 
@@ -70,6 +70,11 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   guestQrToken?: string | null;
   seatLookupUrl?: string | null;
   companionUrl?: string | null;
+  /**
+   * Internal handoff target for post-gate jump. Always the companion URL when
+   * post-admission is enabled, never shown as a guest CTA until unlocked.
+   */
+  companionHandoffHref?: string | null;
   /** Poll admission and jump to companion the moment the gate admits this invite. */
   watchAdmissionHandoff?: boolean;
   seatQrDataUrl?: string | null;
@@ -92,7 +97,7 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   /** Skip INVITE_OPEN analytics (catalog/studio previews) */
   skipAnalytics?: boolean;
   /**
-   * Catalogue “Tap to open envelope” already consumed the gesture —
+   * Catalogue “Tap to open envelope” already consumed the gesture,
    * start the opening reveal immediately (music unlocks via onBegin).
    */
   autoOpenReveal?: boolean;
@@ -156,7 +161,7 @@ export function PremiumInviteWrapper({
   const wantsAutoplay = musicAutoplay ?? musicSelection?.autoPlay ?? true;
   // Curtain ceremonies own "touch to begin" after the brand video intro:
   // soft-intro (celeventic.mp4) → closed curtain (await tap) → slow open → portal.
-  // DNA intro variants are retired — the brand video is the only intro.
+  // DNA intro variants are retired, the brand video is the only intro.
   const curtainOwnsTap = openingExperience.startsWith("curtain-");
   const needsTapGate = Boolean(!skipTapGate && !curtainOwnsTap);
   const introEnabled = false;
@@ -170,14 +175,14 @@ export function PremiumInviteWrapper({
   };
 
   const layoutMedia = getLayoutMediaPack(enrichedDesign.layout);
-  // TM soft intro must match embroidery pre-reveal — never the printed card art.
+  // TM soft intro must match embroidery pre-reveal, never the printed card art.
   const layoutFallbackUrl =
     enrichedDesign.layout === "traditional-marriage-ceremony"
       ? TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL
       : (layoutMedia?.background ?? layoutMedia?.hero ?? null);
   const mediaHero =
     enrichedDesign.media?.find((m) => m.role === "hero" || m.role === "background")?.url ?? null;
-  // Studio's dedicated "pre-invite welcome photo" upload — soft-intro / BEGIN gate only,
+  // Studio's dedicated "pre-invite welcome photo" upload, soft-intro / BEGIN gate only,
   // never the hero, gallery, or page background behind the rest of the invite.
   const introImageUrl = introAtmosphereUrlFromDesign(enrichedDesign);
   const softAtmosphereUrl = resolveSoftIntroAtmosphere({
@@ -201,7 +206,7 @@ export function PremiumInviteWrapper({
         : null,
     [enrichedDesign.studio, isBlushGateLayout]
   );
-  // Tap-to-begin: couple names only — ceremony titles/phrases live once on the invitation body.
+  // Tap-to-begin: couple names only, ceremony titles/phrases live once on the invitation body.
   const softIntroTitle = (() => {
     if (weddingBoard) {
       const c1 = weddingBoard.coupleName1?.trim();
@@ -240,15 +245,15 @@ export function PremiumInviteWrapper({
   // Hosts reviewing a preview or thumbnail must always get the full ceremony.
   const remembersVisits = !skipAnalytics && !embedded && !isPreviewInvite;
   const ceremonyMemoryKey = useMemo(
-    () => openingMemoryKey(props.invitation.id, props.guestId),
-    [props.invitation.id, props.guestId]
+    () => openingMemoryKey(props.invitation.id, props.guestId, props.openingEpoch),
+    [props.invitation.id, props.guestId, props.openingEpoch]
   );
 
   /**
-   * Returning guest — someone who has already completed the full ceremony
+   * Returning guest, someone who has already completed the full ceremony
    * (Tap to Begin + envelope/curtain reveal) on this device before.
    *
-   * They still get every beat of the ceremony again on this visit — Tap to
+   * They still get every beat of the ceremony again on this visit, Tap to
    * Begin and the envelope/gate are never silently skipped, first visit or
    * not. The only thing this flag changes is the branded preload: it holds
    * briefly (`quickHold`) instead of the full first-visit duration, and
@@ -258,7 +263,7 @@ export function PremiumInviteWrapper({
    *
    * This is a lazy `useState` initializer rather than an effect so it never
    * changes what gets rendered for the very first paint (that's always
-   * `resolveInitialInvitePhase`, i.e. the soft intro) — no server/client
+   * `resolveInitialInvitePhase`, i.e. the soft intro), no server/client
    * markup mismatch, it only tunes a duration/control for a phase the guest
    * is already looking at.
    */
@@ -309,7 +314,7 @@ export function PremiumInviteWrapper({
 
   function afterSoftIntro() {
     // Tap to Begin and the envelope/curtain reveal are never silently
-    // skipped — not on first visit, not on a return visit. A returning
+    // skipped, not on first visit, not on a return visit. A returning
     // guest only ever gets a shorter preload beat (`quickHold`, wired below)
     // plus an honest, visible "Skip intro" control on that beat; the
     // ceremony itself always continues normally from here.
@@ -414,11 +419,11 @@ export function PremiumInviteWrapper({
   const admissionHandoff =
     watchAdmissionHandoff &&
     !embedded &&
-    props.companionUrl &&
+    (props.companionHandoffHref || props.companionUrl) &&
     props.invitation.uniqueLink ? (
       <AdmissionCompanionHandoff
         link={props.invitation.uniqueLink}
-        companionHref={props.companionUrl}
+        companionHref={props.companionHandoffHref || props.companionUrl!}
         enabled
       />
     ) : null;

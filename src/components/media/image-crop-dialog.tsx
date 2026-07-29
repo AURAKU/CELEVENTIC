@@ -157,7 +157,7 @@ export function ImageCropDialog({
 
   // Track the crop surface across resizes/orientation changes (e.g. rotating
   // a phone mid-crop) so drag math and the final export always match what's
-  // on screen — never trust the static 360x320 constants.
+  // on screen, never trust the static 360x320 constants.
   useEffect(() => {
     if (!open) return;
     const el = containerRef.current;
@@ -214,7 +214,7 @@ export function ImageCropDialog({
         frame.y
       )
     );
-    // Only when natural dims or aspect-driven frame resets — not every frame drag.
+    // Only when natural dims or aspect-driven frame resets, not every frame drag.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [natural.w, natural.h, aspect]);
 

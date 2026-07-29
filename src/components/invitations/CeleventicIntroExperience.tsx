@@ -24,7 +24,7 @@ interface CeleventicIntroExperienceProps {
   onComplete: () => void;
   logoUrl?: string;
   themeColors?: ThemeTransitionColors;
-  /** Branded choreography — same logo, different worlds per template family */
+  /** Branded choreography, same logo, different worlds per template family */
   variant?: IntroVariantId;
 }
 
@@ -98,7 +98,7 @@ function variantBackground(variant: IntroVariantId, accent: string): string {
   }
 }
 
-/** Decorative layer behind the logo — transform/opacity motion only. */
+/** Decorative layer behind the logo, transform/opacity motion only. */
 function VariantLayer({ variant, accent }: { variant: IntroVariantId; accent: string }) {
   switch (introVisualFamily(variant)) {
     case "engine-grid":
@@ -365,7 +365,7 @@ export function CeleventicIntroExperience({
     setTimeout(onComplete, reduceMotion ? 0 : 400);
   }
 
-  // Static accessible frame — prefers-reduced-motion always wins.
+  // Static accessible frame, prefers-reduced-motion always wins.
   if (reduceMotion) {
     return (
       <div

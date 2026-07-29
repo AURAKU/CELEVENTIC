@@ -61,7 +61,7 @@ export default async function PublicTemplatesPage({
               Premium Invitation Templates
             </h1>
             <p className="mt-4 text-slate-600">
-              {browseTemplates.length} unique cinematic experiences — each with its own layout, motion, and soundtrack.
+              {browseTemplates.length} unique cinematic experiences, each with its own layout, motion, and soundtrack.
               Scroll live previews exactly as your guests will see them.
             </p>
           </div>
@@ -105,7 +105,7 @@ export default async function PublicTemplatesPage({
 
           <div className="mt-14 text-center">
             <Button size="lg" asChild>
-              <Link href="/auth/register">Start Designing — Free</Link>
+              <Link href="/auth/register">Start Designing, Free</Link>
             </Button>
           </div>
         </div>

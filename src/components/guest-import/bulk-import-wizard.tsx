@@ -26,7 +26,7 @@ import type { BatchProgress, ColumnSuggestionView, ImportBatchView } from "./typ
 /**
  * Bulk Guest Import wizard.
  *
- * Four honest steps — paste or upload, match columns, review, generate — with
+ * Four honest steps, paste or upload, match columns, review, generate, with
  * the review step doing the heavy lifting. The organiser can always see what
  * *will* happen before it does, and nothing guest-facing exists until they
  * press the confirm button on step three.
@@ -255,7 +255,7 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="guest-paste">Paste names — one per line</Label>
+                <Label htmlFor="guest-paste">Paste names, one per line</Label>
                 <Textarea
                   id="guest-paste"
                   rows={10}
@@ -266,7 +266,7 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
                 />
                 <p className="text-xs text-slate-500">
                   A name on its own is enough. You can also paste straight from a
-                  spreadsheet — columns are detected automatically.
+                  spreadsheet, columns are detected automatically.
                 </p>
               </div>
 
@@ -360,7 +360,7 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
         <>
           <ColumnMappingPanel suggestions={suggestions} onApply={applyMapping} busy={busy} />
           <Button variant="ghost" onClick={() => setStep("review")}>
-            Skip — the guess looks right
+            Skip, the guess looks right
           </Button>
         </>
       )}
@@ -521,7 +521,7 @@ function GenerationPanel({
     setSending(false);
     setDeliveryNote(
       res.ok
-        ? `Queued ${data.data.queued} message${data.data.queued === 1 ? "" : "s"}. ${data.data.skipped} guest${data.data.skipped === 1 ? "" : "s"} had no contact details — share their links by hand. Delivery continues automatically.`
+        ? `Queued ${data.data.queued} message${data.data.queued === 1 ? "" : "s"}. ${data.data.skipped} guest${data.data.skipped === 1 ? "" : "s"} had no contact details, share their links by hand. Delivery continues automatically.`
         : (data.error ?? "Could not queue delivery.")
     );
     onRefresh();
@@ -558,13 +558,13 @@ function GenerationPanel({
           {!finished && (
             <p className="text-xs text-slate-500">
               {(progress?.batch.generatedRows ?? 0) === 0
-                ? "Starting automatically — this usually finishes in a few seconds."
-                : "Creating in the background — you can leave this page and come back."}
+                ? "Starting automatically, this usually finishes in a few seconds."
+                : "Creating in the background, you can leave this page and come back."}
             </p>
           )}
           {finished && (progress?.batch.failedRows ?? 0) > 0 && (
             <p className="text-xs text-amber-700">
-              Some rows could not be created. Review the list below — successful invitations are
+              Some rows could not be created. Review the list below, successful invitations are
               ready to send.
             </p>
           )}
@@ -600,7 +600,7 @@ function GenerationPanel({
               ))}
             </div>
             <p className="text-xs text-slate-500">
-              Guests with no phone or email are skipped, not failed — their links stay
+              Guests with no phone or email are skipped, not failed, their links stay
               ready for you to share by hand.
             </p>
             {deliveryNote && <p className="text-sm text-slate-700">{deliveryNote}</p>}

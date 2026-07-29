@@ -25,7 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const adminBanner =
     isAdmin && adminViewMode?.value === "user" ? (
       <div className="bg-gradient-to-r from-gold-500 to-gold-400 text-slate-900 text-center py-2.5 text-sm font-semibold shadow-md">
-        Admin User View Mode —{" "}
+        Admin User View Mode, {" "}
         <form action="/api/admin/return-to-admin" method="POST" className="inline">
           <button type="submit" className="underline hover:no-underline cursor-pointer">
             Return to Admin Panel

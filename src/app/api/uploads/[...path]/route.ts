@@ -28,7 +28,7 @@ function resolveMime(relative: string, ext: string): string {
 }
 
 /**
- * Serves uploaded media with HTTP Range support (206 Partial Content) — required for video
+ * Serves uploaded media with HTTP Range support (206 Partial Content), required for video
  * seeking / fast-start playback when a file is stored on local disk (S3/CloudFront already
  * support Range natively; this route is the local-storage fallback, see file-storage.ts).
  */

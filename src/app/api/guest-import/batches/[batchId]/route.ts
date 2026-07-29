@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ batchId
   const progress = await guestImportService.getProgress(batchId);
   if (!progress) return NextResponse.json({ error: "Import not found" }, { status: 404 });
 
-  // Self-heal when the jobs worker isn't running — fire-and-forget so this
+  // Self-heal when the jobs worker isn't running, fire-and-forget so this
   // poll stays fast; the next poll picks up freshly generated rows.
   if (!progress.finished) {
     void maybeKickGuestImportBatch(batchId);

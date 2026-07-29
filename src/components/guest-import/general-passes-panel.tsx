@@ -14,7 +14,7 @@ import { PaginationBar } from "@/components/ui/pagination";
  *
  * Method A mints a fixed run of unique passes to print and hand out. Method B
  * publishes one registration link that issues a *different* pass to everybody
- * who uses it — which is the whole point, and the panel says so plainly,
+ * who uses it, which is the whole point, and the panel says so plainly,
  * because the failure mode organisers fear is one QR being screenshotted and
  * forwarded to a hundred people.
  */
@@ -146,13 +146,13 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
               active={method === "FIXED_QUANTITY"}
               onClick={() => setMethod("FIXED_QUANTITY")}
               title="A set number of passes"
-              body="Mint a fixed run now. Every pass has its own QR and admission code — print them, hand them out, scan them at the gate."
+              body="Mint a fixed run now. Every pass has its own QR and admission code, print them, hand them out, scan them at the gate."
             />
             <MethodCard
               active={method === "OPEN_REGISTRATION"}
               onClick={() => setMethod("OPEN_REGISTRATION")}
               title="An open registration link"
-              body="Share one link. Everyone who registers is issued their own unique pass — forwarding the link creates more passes, it never shares one."
+              body="Share one link. Everyone who registers is issued their own unique pass, forwarding the link creates more passes, it never shares one."
             />
           </div>
 
@@ -319,7 +319,7 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
                   {passes.map((pass) => (
                     <tr key={pass.id} className={pass.archived ? "text-slate-400" : undefined}>
                       <td className="px-3 py-2 font-medium">{pass.name}</td>
-                      <td className="px-3 py-2 font-mono">{pass.code ?? "—"}</td>
+                      <td className="px-3 py-2 font-mono">{pass.code ?? ", "}</td>
                       <td className="px-3 py-2">{pass.partySize}</td>
                       <td className="px-3 py-2">{pass.admittedCount}</td>
                       <td className="px-3 py-2">

@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
             <span className="text-sm font-medium text-white/70">Invitation Business Administration</span>
           </div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">Admin Command Center</h1>
-          <p className="text-white/60 mt-1">Welcome, {session?.user?.name}. Control orders, templates, commerce, and content — no code required.</p>
+          <p className="text-white/60 mt-1">Welcome, {session?.user?.name}. Control orders, templates, commerce, and content, no code required.</p>
         </div>
       </div>
 
@@ -54,7 +54,7 @@ export default async function AdminDashboardPage() {
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold">{formatCurrency(analytics.averageOrderValue)}</p><p className="text-xs text-slate-500">Avg Order Value</p></CardContent></Card>
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold text-amber-600">{analytics.pendingProduction}</p><p className="text-xs text-slate-500 flex items-center justify-center gap-1"><Clock className="h-3 w-3" /> Pending Production</p></CardContent></Card>
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold">{analytics.paymentSuccessRate}%</p><p className="text-xs text-slate-500">Payment Success</p></CardContent></Card>
-        <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold capitalize">{analytics.bestPackage?.slug ?? "—"}</p><p className="text-xs text-slate-500">Best Package</p></CardContent></Card>
+        <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold capitalize">{analytics.bestPackage?.slug ?? ", "}</p><p className="text-xs text-slate-500">Best Package</p></CardContent></Card>
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold">{analytics.paidOrders}</p><p className="text-xs text-slate-500">Paid Orders</p></CardContent></Card>
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold">{analytics.conversionFunnel.published}</p><p className="text-xs text-slate-500">Published Invites</p></CardContent></Card>
       </div>

@@ -11,7 +11,7 @@ import {
 } from "@/components/admission/entry-pass-theme";
 
 export interface GuestEntryPassProps {
-  /** Signed pass token — the QR payload. Never a database id. */
+  /** Signed pass token, the QR payload. Never a database id. */
   token: string;
   /** Human-readable admission code (4 or 6 digits). */
   code: string;
@@ -23,14 +23,14 @@ export interface GuestEntryPassProps {
   partySize: number;
   admittedCount?: number;
   status?: string;
-  /** Optional table/seat — only supplied when event policy allows it. */
+  /** Optional table/seat, only supplied when event policy allows it. */
   tableNumber?: string | null;
   seatLabel?: string | null;
   instructions?: string | null;
   allowDownload?: boolean;
   allowPrint?: boolean;
   showPartySize?: boolean;
-  /** Invitation layout slug — drives the theme preset. */
+  /** Invitation layout slug, drives the theme preset. */
   layout?: string | null;
   preset?: EntryPassPreset;
   className?: string;
@@ -49,7 +49,7 @@ function statusCopy(status: string | undefined, admitted: number, partySize: num
       };
     case "REVOKED":
     case "REISSUED":
-      return { label: "Replaced — request a new pass", tone: "text-rose-700 bg-rose-50 border-rose-200" };
+      return { label: "Replaced, request a new pass", tone: "text-rose-700 bg-rose-50 border-rose-200" };
     case "EXPIRED":
       return { label: "Expired", tone: "text-rose-700 bg-rose-50 border-rose-200" };
     case "CONFLICT":

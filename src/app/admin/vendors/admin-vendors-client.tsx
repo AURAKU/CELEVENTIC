@@ -98,7 +98,7 @@ export function AdminVendorsClient() {
                   {v.isFeatured && <Badge className="bg-[#D4A63A] text-[#0F172A]">Featured</Badge>}
                   <Badge variant="outline">{v.status}</Badge>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">{v.category} · {v.city ?? "—"} · {v.plan?.name ?? "Free"} · {v._count.leads} leads</p>
+                <p className="text-xs text-slate-500 mt-1">{v.category} · {v.city ?? ", "} · {v.plan?.name ?? "Free"} · {v._count.leads} leads</p>
                 <p className="text-xs text-slate-400">{v.user.name} · /vendors/{v.slug}</p>
               </div>
               <div className="flex flex-wrap gap-1">

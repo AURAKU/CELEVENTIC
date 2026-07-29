@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 /**
  * While a guest still has the invitation ceremony open, poll admission status.
  * The moment the gate admits them (QR or manual code), jump straight into the
- * Event Companion — no soft-intro / envelope replay on this device session.
+ * Event Companion, no soft-intro / envelope replay on this device session.
  */
 export function AdmissionCompanionHandoff({
   link,
@@ -55,7 +55,7 @@ export function AdmissionCompanionHandoff({
           }
         }
       } catch {
-        /* transient — keep polling */
+        /* transient, keep polling */
       }
       timer = setTimeout(poll, intervalMs);
     }

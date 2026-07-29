@@ -24,7 +24,7 @@ interface QrCameraScannerProps {
   showScreenScanToggle?: boolean;
   /**
    * Unique DOM id for the viewfinder. Required when only one scanner should
-   * ever mount on a page — defaults to a React useId-safe slug.
+   * ever mount on a page, defaults to a React useId-safe slug.
    */
   viewfinderId?: string;
 }
@@ -87,7 +87,7 @@ async function pickCameraId(): Promise<string | MediaTrackConstraints> {
 function buildScannerConfig(screenScanMode: boolean) {
   return {
     fps: screenScanMode ? QR_SCANNER_FPS_SCREEN : QR_SCANNER_FPS,
-    // Wide scan window — guests hold phones at awkward angles in a queue.
+    // Wide scan window, guests hold phones at awkward angles in a queue.
     qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
       const ratio = screenScanMode ? 0.92 : 0.82;
       const width = Math.floor(viewfinderWidth * ratio);
@@ -97,7 +97,7 @@ function buildScannerConfig(screenScanMode: boolean) {
         height: Math.max(260, height),
       };
     },
-    // Do not force square aspect — phone screens + printed passes need full FOV.
+    // Do not force square aspect, phone screens + printed passes need full FOV.
     disableFlip: false,
     rememberLastUsedCameraId: true,
     experimentalFeatures: {
@@ -119,7 +119,7 @@ function sanitizeDomId(raw: string): string {
   return raw.replace(/:/g, "").replace(/[^a-zA-Z0-9_-]/g, "") || "qrview";
 }
 
-/** Browser camera QR scanner — optimized for iOS, Android, and screen-to-screen passes */
+/** Browser camera QR scanner, optimized for iOS, Android, and screen-to-screen passes */
 export function QrCameraScanner({
   active,
   onScan,
@@ -351,7 +351,7 @@ export function QrCameraScanner({
   );
 }
 
-/** Hidden container required by html5-qrcode file scanning — mount once per page. */
+/** Hidden container required by html5-qrcode file scanning, mount once per page. */
 export function QrFileReaderHost() {
   return <div id={FILE_READER_ID} className="hidden" aria-hidden />;
 }
@@ -389,7 +389,7 @@ async function scanWithBarcodeDetector(file: File): Promise<string | null> {
   }
 }
 
-/** Scan QR from uploaded / dropped image — multi-engine for gate reliability */
+/** Scan QR from uploaded / dropped image, multi-engine for gate reliability */
 export async function scanQrFromFile(file: File): Promise<string> {
   if (!file || file.size === 0) {
     throw new QrImageScanError("The image file is empty. Please try another photo.");

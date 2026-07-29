@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { EVENT_TIME_ZONE } from "@/lib/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -17,6 +18,7 @@ export function formatCurrency(amount: number | string, currency = "GHS") {
 export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions) {
   const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("en-GH", {
+    timeZone: EVENT_TIME_ZONE,
     dateStyle: "medium",
     timeStyle: "short",
     ...options,

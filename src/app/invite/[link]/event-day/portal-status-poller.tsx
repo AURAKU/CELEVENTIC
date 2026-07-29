@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 /**
  * Polls admission status while the companion is open. If the organiser resets
- * admission, send the guest back to the invitation — the companion is admit-only.
+ * admission, send the guest back to the invitation, the companion is admit-only.
  */
 export function PortalStatusPoller({
   link,
@@ -55,7 +55,7 @@ export function PortalStatusPoller({
           }
         }
       } catch {
-        /* transient — keep polling */
+        /* transient, keep polling */
       }
       timer = setTimeout(poll, intervalMs);
     }

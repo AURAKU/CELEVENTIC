@@ -37,7 +37,7 @@ type QuietLink = {
 };
 
 /**
- * Continue With Us — Directions · Save the Date · Share.
+ * Continue With Us, Directions · Save the Date · Share.
  * Quiet text links only when destinations exist. No chip spam / utility cards.
  */
 export function TraditionalMarriageJourney({

@@ -132,7 +132,7 @@ export function VideoUploader({
   const partSizeRef = useRef(0);
   const contentTypeRef = useRef("application/octet-stream");
   /**
-   * Set only when `pollUntilReady` gives up because of OUR client-side timeout — the upload
+   * Set only when `pollUntilReady` gives up because of OUR client-side timeout, the upload
    * already fully succeeded and the background worker may well finish it seconds later. Distinct
    * from a real server-reported FAILED. `handleRetry` uses this to resume polling the SAME asset
    * instead of re-uploading the whole file from scratch (which would silently orphan the
@@ -155,7 +155,7 @@ export function VideoUploader({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFile]);
 
-  // Ticking counter for the "Preparing your video…" state — reassures the user something is
+  // Ticking counter for the "Preparing your video…" state, reassures the user something is
   // actively happening instead of a bare spinner sitting still for minutes.
   useEffect(() => {
     if (phase !== "processing") {
@@ -208,7 +208,7 @@ export function VideoUploader({
       try {
         res = await postJsonLikeGet(`/api/uploads/video/${assetId}${qs}`);
       } catch {
-        continue; // transient network error — keep polling
+        continue; // transient network error, keep polling
       }
 
       const asset = res.data;
@@ -232,14 +232,14 @@ export function VideoUploader({
         return;
       }
       if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
-        // This is OUR client-side patience running out, not a server-reported failure — the
+        // This is OUR client-side patience running out, not a server-reported failure, the
         // upload is safely persisted and the worker may still finish it. Flag it so `handleRetry`
         // resumes polling instead of re-uploading the whole file (see `softTimeoutRef`).
         softTimeoutRef.current = true;
-        reportError("Video is taking longer than expected to process. It will finish in the background — tap Retry to check again.");
+        reportError("Video is taking longer than expected to process. It will finish in the background, tap Retry to check again.");
         return;
       }
-      // QUEUED / UPLOADED / PROCESSING — keep polling.
+      // QUEUED / UPLOADED / PROCESSING, keep polling.
     }
   }
 
@@ -310,10 +310,9 @@ export function VideoUploader({
   }
 
   /**
-   * S3 isn't configured/usable on this environment — presign already told us to route the
+   * S3 isn't configured/usable on this environment, presign already told us to route the
    * raw bytes straight to our own server instead of a presigned S3 PUT. One request carries
-   * the whole file; the server just persists it to disk and responds `202 QUEUED` (fast) —
-   * ffmpeg transcoding runs in the background worker, so this always falls through to the
+   * the whole file; the server just persists it to disk and responds `202 QUEUED` (fast), * ffmpeg transcoding runs in the background worker, so this always falls through to the
    * same polling loop the S3/multipart paths use. A same-request `READY`/`FAILED` is still
    * handled (idempotent replays of an already-finalized asset, or a fast synchronous
    * validation failure) but is no longer the expected common case for a fresh upload.
@@ -352,7 +351,7 @@ export function VideoUploader({
       reportError(asset.failureReason ?? "Video processing failed.");
       return;
     }
-    // QUEUED (the expected response now) — poll the same generic status endpoint every other
+    // QUEUED (the expected response now), poll the same generic status endpoint every other
     // upload strategy uses until the background worker flips this to READY/FAILED.
     await pollUntilReady(asset.id);
   }
@@ -449,7 +448,7 @@ export function VideoUploader({
 
   function handleRetry() {
     // A soft (client-side) timeout means the file already finished uploading and may still be
-    // processing in the background — resume polling the same asset instead of re-uploading the
+    // processing in the background, resume polling the same asset instead of re-uploading the
     // whole file again (which would orphan the original and create a duplicate VideoAsset).
     if (softTimeoutRef.current && assetIdRef.current) {
       setError(null);
@@ -486,11 +485,11 @@ export function VideoUploader({
   }
 
   /**
-   * Removes a finished (or pre-existing) video — the counterpart to `handleCancel` for videos
+   * Removes a finished (or pre-existing) video, the counterpart to `handleCancel` for videos
    * that already reached "ready" (cancel deliberately refuses those; see the cancel API route).
    * Matches the delete/remove affordance images already get via `ImageUploadCropper`'s `onClear`
    * button. Best-effort server-side cleanup: only fires the DELETE call when we actually know
-   * the asset id from a completed upload in this session — a bare pre-existing `previewUrl`
+   * the asset id from a completed upload in this session, a bare pre-existing `previewUrl`
    * (no local assetId) just clears the field, same as image removal does.
    */
   async function handleRemove() {
@@ -504,7 +503,7 @@ export function VideoUploader({
         const qs = guestToken ? `?guestToken=${encodeURIComponent(guestToken)}` : "";
         await fetch(`/api/uploads/video/${encodeURIComponent(assetId)}${qs}`, { method: "DELETE" });
       } catch {
-        /* best-effort — the reference is cleared from the UI either way */
+        /* best-effort, the reference is cleared from the UI either way */
       }
     }
 
@@ -538,7 +537,7 @@ export function VideoUploader({
               <div>
                 <p className="font-medium text-slate-700">{fileMeta?.name ?? "Video selected"}</p>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Your browser can&apos;t preview this format (common for iPhone/Android HEVC video) — it will still upload
+                  Your browser can&apos;t preview this format (common for iPhone/Android HEVC video), it will still upload
                   and process normally.
                 </p>
               </div>
@@ -576,8 +575,8 @@ export function VideoUploader({
               {processingElapsedSec < 20
                 ? "Preparing your video for smooth playback…"
                 : processingElapsedSec < 90
-                  ? `Still preparing… (${processingElapsedSec}s) — bigger files take a bit longer.`
-                  : `Still working on it (${Math.round(processingElapsedSec / 60) || 1} min so far) — feel free to leave this page, we'll finish in the background.`}
+                  ? `Still preparing… (${processingElapsedSec}s), bigger files take a bit longer.`
+                  : `Still working on it (${Math.round(processingElapsedSec / 60) || 1} min so far), feel free to leave this page, we'll finish in the background.`}
             </p>
           )}
           {error && (
@@ -647,7 +646,7 @@ export function VideoUploader({
         >
           <Video className="h-8 w-8 mx-auto text-slate-400 mb-2" />
           <p className="text-sm text-slate-600 mb-3">
-            {hint ?? "Upload a video from your device — phone, DSLR, WhatsApp/TikTok/Instagram exports, or screen recordings all work."}
+            {hint ?? "Upload a video from your device, phone, DSLR, WhatsApp/TikTok/Instagram exports, or screen recordings all work."}
           </p>
           <Button type="button" variant="outline" className="gap-2 min-h-[44px] touch-manipulation" disabled={disabled} onClick={() => inputRef.current?.click()}>
             <Upload className="h-4 w-4" /> {buttonLabel}

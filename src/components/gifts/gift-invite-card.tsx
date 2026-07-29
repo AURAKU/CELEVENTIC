@@ -19,7 +19,7 @@ export interface GiftInviteCardProps {
  * The gift entry point inside a digital invitation.
  *
  * Deliberately quiet: a title, a line of copy, one button and an optional QR.
- * There is no total, no goal, no contributor list and no progress bar — a guest
+ * There is no total, no goal, no contributor list and no progress bar, a guest
  * standing in the room must not be able to infer what anyone else gave. Colours
  * come from the invitation's own palette so the card reads as part of the
  * template rather than a bolted-on payment widget.

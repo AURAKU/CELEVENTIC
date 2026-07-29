@@ -224,7 +224,7 @@ function GuestbookPanel({ eventId }: { eventId: string }) {
           ) : guestbook.map((m) => (
             <div key={m.id} className="p-3 rounded-lg border text-sm bg-[#FAF8F4]">
               <p className="italic">&ldquo;{m.content}&rdquo;</p>
-              {m.author && <p className="text-xs text-slate-400 mt-2">— {m.author}</p>}
+              {m.author && <p className="text-xs text-slate-400 mt-2">, {m.author}</p>}
             </div>
           ))}
           <PaginationBar
@@ -309,7 +309,7 @@ function GalleryPanel({ eventId }: { eventId: string }) {
                   onClear={() => setForm({ ...form, url: "" })}
                   onUploaded={(r: UploadedVideoResult) => setForm({ ...form, url: r.processedMp4Url ?? "" })}
                   buttonLabel="Upload video"
-                  hint="Event highlight video — up to 250MB, phone/DSLR/screen-recording friendly (incl. iPhone HEVC)."
+                  hint="Event highlight video, up to 250MB, phone/DSLR/screen-recording friendly (incl. iPhone HEVC)."
                 />
               )}
               <Textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} placeholder="Caption" />
@@ -386,7 +386,7 @@ function LegacyPanel({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-slate-600">
-          Publish a permanent legacy archive for {event?.title ?? "this event"} — obituary, tributes, timeline, and approved memories.
+          Publish a permanent legacy archive for {event?.title ?? "this event"}, obituary, tributes, timeline, and approved memories.
         </p>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={publishLegacy} disabled={publishing}>

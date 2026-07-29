@@ -16,7 +16,7 @@ export async function GET() {
         ok: false,
         status: "degraded",
         timestamp: new Date().toISOString(),
-        hint: "Database unreachable — run npm run db:push",
+        hint: "Database unreachable, run npm run db:push",
       },
       { status: 503 }
     );

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 
-// Admission status must never be cached — a scan or reset has to reflect on the
+// Admission status must never be cached, a scan or reset has to reflect on the
 // guest's next poll immediately (spec §27).
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,7 +16,7 @@ const noStore = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 
 /**
  * Public, non-sensitive admission status for portal polling. Returns only
- * counts + lock state — never seating, gifts, or other guests' details.
+ * counts + lock state, never seating, gifts, or other guests' details.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ link: string }> }) {
   const rl = await rateLimit(`admission-status:${clientIp(req)}`, 120, 60);
@@ -46,7 +46,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ link: st
   return NextResponse.json(
     {
       enabled: true,
-      unlocked: summary.canAccessPortal,
+      unlocked: summary.canAccessPortal && summary.admittedCount > 0,
       state: summary.state,
       admittedCount: summary.admittedCount,
       remainingCount: summary.remainingCount,

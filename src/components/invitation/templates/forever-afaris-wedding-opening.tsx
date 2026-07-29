@@ -24,7 +24,7 @@ import type {
 } from "@/lib/invitation/wedding-board";
 
 /**
- * Forever Afaris — cinematic opening state machine.
+ * Forever Afaris, cinematic opening state machine.
  *
  * preload → sealed envelope (tap or swipe the champagne wax seal) → the seal
  * lifts slowly from the paper → the flaps unfold in depth → the inner card
@@ -34,7 +34,7 @@ import type {
  * Everything is CSS/SVG, so the ceremony is complete with zero uploads and the
  * host's palette, envelope paper, gate architecture and wax colour all flow in
  * from Studio. Reduced motion collapses the journey to a single dignified open
- * gesture — which still supplies the interaction browsers require to start audio.
+ * gesture, which still supplies the interaction browsers require to start audio.
  */
 type Stage =
   | "preloading"
@@ -60,12 +60,12 @@ export interface WeddingOpeningProps {
   haptics?: boolean;
   /**
    * Offer a visible "Skip intro" control. Reserved for guests who have already
-   * completed the ceremony once — a first-time guest is never shown a way to
+   * completed the ceremony once, a first-time guest is never shown a way to
    * miss the envelope, and the ceremony is never skipped silently.
    */
   allowSkip?: boolean;
   onComplete: () => void;
-  /** Fires on the first open gesture — the audio-unlock hook for the pipeline. */
+  /** Fires on the first open gesture, the audio-unlock hook for the pipeline. */
   onBegin?: () => void;
 }
 
@@ -81,7 +81,7 @@ function vibrate(pattern: number | number[], enabled?: boolean) {
   try {
     navigator.vibrate?.(pattern);
   } catch {
-    /* unsupported or blocked by the user agent — the ceremony is unaffected */
+    /* unsupported or blocked by the user agent, the ceremony is unaffected */
   }
 }
 
@@ -177,7 +177,7 @@ export function ForeverAfarisWeddingOpening({
   const openEnvelope = useCallback(() => {
     if (stage !== "sealed") return;
     onBegin?.();
-    // Soft release pulse — not a crack.
+    // Soft release pulse, not a crack.
     vibrate([8, 28, 14], haptics);
     if (prefersReduced) {
       finish();
@@ -198,7 +198,7 @@ export function ForeverAfarisWeddingOpening({
     finish();
   }, [finish, onBegin]);
 
-  // Keyboard access — Enter/Space activates the current step.
+  // Keyboard access, Enter/Space activates the current step.
   const onKeyActivate = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -228,7 +228,7 @@ export function ForeverAfarisWeddingOpening({
           role="dialog"
           aria-label="Wedding invitation opening ceremony"
         >
-          {/* Depth wash — drifts opposite the envelope for a sense of room */}
+          {/* Depth wash, drifts opposite the envelope for a sense of room */}
           <ParallaxLayer x={parallax.x} y={parallax.y} depth={-8} className="pointer-events-none absolute inset-0">
             <div
               aria-hidden
@@ -240,7 +240,7 @@ export function ForeverAfarisWeddingOpening({
             <VignetteFlora palette={C} />
           </ParallaxLayer>
 
-          {/* Ambient motes — present from the first frame so the room feels alive */}
+          {/* Ambient motes, present from the first frame so the room feels alive */}
           {!prefersReduced && <Motes palette={C} />}
 
           {allowSkip && stage !== "gate" && (
@@ -259,7 +259,7 @@ export function ForeverAfarisWeddingOpening({
             </button>
           )}
 
-          {/* 1 — PRELOAD */}
+          {/* 1, PRELOAD */}
           <AnimatePresence>
             {stage === "preloading" && (
               <motion.div
@@ -285,7 +285,7 @@ export function ForeverAfarisWeddingOpening({
             )}
           </AnimatePresence>
 
-          {/* 2–6 — ENVELOPE, SEAL, FLAPS, INNER CARD */}
+          {/* 2–6, ENVELOPE, SEAL, FLAPS, INNER CARD */}
           {(sealed || opening) && (
             <ParallaxLayer
               x={parallax.x}
@@ -324,7 +324,7 @@ export function ForeverAfarisWeddingOpening({
             </ParallaxLayer>
           )}
 
-          {/* 7–9 — GOLDEN GATE */}
+          {/* 7–9, GOLDEN GATE */}
           {stage === "gate" && (
             <Gate
               palette={C}
@@ -605,7 +605,7 @@ function Envelope({
         </div>
       </motion.div>
 
-      {/* Side flaps — fold outward for depth as the envelope opens */}
+      {/* Side flaps, fold outward for depth as the envelope opens */}
       {(["left", "right"] as const).map((side) => (
         <motion.div
           key={side}
@@ -630,7 +630,7 @@ function Envelope({
         />
       ))}
 
-      {/* Lower front pocket — keeps the card hidden until it clears the paper */}
+      {/* Lower front pocket, keeps the card hidden until it clears the paper */}
       <div
         aria-hidden
         className="absolute inset-x-0 bottom-0 rounded-b-[12px]"
@@ -644,7 +644,7 @@ function Envelope({
         }}
       />
 
-      {/* Top flap — begins a soft peel as the seal lifts, then unfolds fully */}
+      {/* Top flap, begins a soft peel as the seal lifts, then unfolds fully */}
       <motion.div
         aria-hidden
         className="absolute inset-x-0 top-0 origin-top"
@@ -665,7 +665,7 @@ function Envelope({
         }}
       />
 
-      {/* Wax seal — lifts slowly off the paper, never breaks */}
+      {/* Wax seal, lifts slowly off the paper, never breaks */}
       <motion.button
         type="button"
         onClick={onOpen}
@@ -1050,7 +1050,7 @@ function GatePanel({
 }
 
 /**
- * Ornamental ironwork drawn in layers — pier, bars, scrollwork, arch crest and
+ * Ornamental ironwork drawn in layers, pier, bars, scrollwork, arch crest and
  * finials each fade in on their own beat so the gate is built in front of the
  * guest rather than dropped in as one flat picture.
  */
@@ -1091,13 +1091,13 @@ function GateOrnament({
         </linearGradient>
       </defs>
 
-      {/* 1 — masonry pier */}
+      {/* 1, masonry pier */}
       <motion.g {...layer(0)}>
         <rect x="0" y="14" width="9" height="372" fill={C.cream} opacity="0.9" />
         <rect x="0" y="14" width="9" height="372" fill="none" stroke={metalDeep} strokeWidth="0.8" opacity="0.5" />
       </motion.g>
 
-      {/* 2 — vertical bars */}
+      {/* 2, vertical bars */}
       <motion.g
         {...layer(0.1)}
         stroke={`url(#fa-gate-${flip ? "r" : "l"})`}
@@ -1111,7 +1111,7 @@ function GateOrnament({
         <line x1="4" y1="196" x2="98" y2="196" strokeWidth="2" opacity="0.8" />
       </motion.g>
 
-      {/* 3 — arched crest */}
+      {/* 3, arched crest */}
       <motion.g {...layer(0.24)} stroke={metal} strokeWidth="2.6" fill="none">
         <path d="M4 66 Q50 4 98 66" />
         <path d="M4 84 Q50 26 98 84" opacity="0.75" />
@@ -1120,7 +1120,7 @@ function GateOrnament({
         ))}
       </motion.g>
 
-      {/* 4 — scrollwork */}
+      {/* 4, scrollwork */}
       <motion.g {...layer(0.36)} stroke={metal} strokeWidth="1.9" fill="none" opacity="0.85">
         {(isTrellis ? [116, 168, 220, 272, 324] : [124, 214, 304]).map((y) => (
           <g key={y}>
@@ -1130,7 +1130,7 @@ function GateOrnament({
         ))}
       </motion.g>
 
-      {/* 5 — botanical growth on the trellis */}
+      {/* 5, botanical growth on the trellis */}
       {isTrellis && (
         <motion.g {...layer(0.48)} stroke={C.sage} strokeWidth="1.6" fill="none" opacity="0.75">
           <path d="M12 380 Q30 300 20 220 Q12 150 34 80" />
@@ -1140,7 +1140,7 @@ function GateOrnament({
         </motion.g>
       )}
 
-      {/* 6 — finials + medallion */}
+      {/* 6, finials + medallion */}
       <motion.g {...layer(0.52)}>
         {bars.map((x) => (
           <circle key={`f-${x}`} cx={x} cy="12" r="3.2" fill={metal} opacity="0.9" />
@@ -1149,7 +1149,7 @@ function GateOrnament({
         <circle cx="50" cy="124" r="4" fill={metal} opacity="0.7" />
       </motion.g>
 
-      {/* 7 — specular sheen sweeping the metal as the gate parts */}
+      {/* 7, specular sheen sweeping the metal as the gate parts */}
       <motion.rect
         x="0"
         y="0"

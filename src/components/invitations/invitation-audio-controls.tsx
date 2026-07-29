@@ -12,7 +12,7 @@ interface InvitationAudioControlsProps {
   className?: string;
   /** Track name shown when the controller is expanded */
   trackTitle?: string;
-  /** Template accent — tints the active/hover state so the control belongs to the design */
+  /** Template accent, tints the active/hover state so the control belongs to the design */
   accentColor?: string;
   /** Surface tone the control sits on; drives light vs. dark chrome */
   variant?: "light" | "dark";
@@ -174,7 +174,7 @@ export function InvitationAudioControls({
         )}
       </div>
 
-      {/* Expand toggle — only rendered when there's more to reveal */}
+      {/* Expand toggle, only rendered when there's more to reveal */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}

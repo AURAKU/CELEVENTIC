@@ -13,7 +13,7 @@ interface PressHoldRevealProps {
 }
 
 /**
- * Press-and-hold reveal — pointer + keyboard accessible.
+ * Press-and-hold reveal, pointer + keyboard accessible.
  * Used for Experience Engine mechanic `press-hold`.
  */
 export function PressHoldReveal({

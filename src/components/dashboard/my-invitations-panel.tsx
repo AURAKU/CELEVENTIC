@@ -92,7 +92,7 @@ export function MyInvitationsPanel() {
                 <CardHeader className="flex flex-row items-start justify-between gap-4">
                   <div>
                     <CardTitle className="text-lg">{order.eventTitle ?? order.template?.name ?? "Your Invitation"}</CardTitle>
-                    <p className="text-sm text-slate-500 mt-1">{order.template?.name ?? "—"} · {order.package?.name ?? "—"}</p>
+                    <p className="text-sm text-slate-500 mt-1">{order.template?.name ?? ", "} · {order.package?.name ?? ", "}</p>
                   </div>
                   <Badge variant={statusColor(order.status) as "success" | "secondary" | "outline"}>{order.status}</Badge>
                 </CardHeader>
@@ -140,7 +140,7 @@ export function MyInvitationsPanel() {
                   </div>
                   {isLiveInvitation(order) && (
                     <p className="text-xs text-slate-500">
-                      Published — saved changes appear on the guest link right away.
+                      Published, saved changes appear on the guest link right away.
                     </p>
                   )}
                 </CardContent>

@@ -388,7 +388,7 @@ export function TicketingStudioClient() {
                       <div className="space-y-1"><Label>Max quantity</Label><Input type="number" min={1} value={form.maxQuantity} onChange={(e) => setForm({ ...form, maxQuantity: e.target.value })} placeholder="Unlimited" /></div>
                       <div className="space-y-1"><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} /></div>
                       <Button type="submit" className="w-full">Create ticket</Button>
-                      <p className="text-[11px] text-slate-400">New tickets start as Draft — publish with the eye icon to go live on your sales page.</p>
+                      <p className="text-[11px] text-slate-400">New tickets start as Draft, publish with the eye icon to go live on your sales page.</p>
                     </form>
                   </CardContent>
                 </Card>
@@ -499,15 +499,15 @@ export function TicketingStudioClient() {
                           <tr key={o.id} className="border-b last:border-0">
                             <td className="p-2">
                               <p className="font-medium">{o.buyerName}</p>
-                              <p className="text-xs text-slate-400">{o.buyerEmail ?? o.buyerPhone ?? "—"}</p>
+                              <p className="text-xs text-slate-400">{o.buyerEmail ?? o.buyerPhone ?? ", "}</p>
                             </td>
                             <td className="p-2">{o.ticket.name}</td>
                             <td className="p-2">{o.quantity}</td>
                             <td className="p-2 font-medium">{formatCurrency(o.totalAmount)}</td>
-                            <td className="p-2 text-xs">{o.promoCode ?? "—"}</td>
+                            <td className="p-2 text-xs">{o.promoCode ?? ", "}</td>
                             <td className="p-2">
                               <Badge variant={o.payments?.[0]?.status === "SUCCESSFUL" ? "success" : "outline"}>
-                                {o.payments?.[0]?.status ?? (o.totalAmount === 0 ? "FREE" : "—")}
+                                {o.payments?.[0]?.status ?? (o.totalAmount === 0 ? "FREE" : ", ")}
                               </Badge>
                             </td>
                             <td className="p-2"><Badge variant={o.status === "PAID" ? "success" : "warning"}>{o.status}</Badge></td>

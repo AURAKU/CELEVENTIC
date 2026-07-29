@@ -14,9 +14,9 @@ import { parsePaginationFromUrl } from "@/lib/pagination";
 /**
  * Stage a guest list for review, or list previous imports.
  *
- * POST accepts all four input methods behind one endpoint — an uploaded
+ * POST accepts all four input methods behind one endpoint, an uploaded
  * CSV/XLSX (multipart), pasted text (one name per line or a spreadsheet copy),
- * and manually-typed rows — because they all converge on the same reviewable
+ * and manually-typed rows, because they all converge on the same reviewable
  * batch. Nothing guest-facing is created here.
  */
 

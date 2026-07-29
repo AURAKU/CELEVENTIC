@@ -114,7 +114,7 @@ export function PublicMemoriesGallery({
                 {item.mediaType === "video" ? (
                   <>
                     {item.thumbnailUrl ? (
-                      // Poster JPEG — cheap to render at grid scale, no video metadata fetch
+                      // Poster JPEG, cheap to render at grid scale, no video metadata fetch
                       // needed just to show a thumbnail. Never point a <video> src at a JPEG.
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -237,7 +237,7 @@ export function ThankYouPublicView({
   qrImageUrl,
 }: ThankYouPublicViewProps) {
   const [audioPlaying, setAudioPlaying] = useState(false);
-  const displayTitle = title ?? `Thank You — ${eventTitle}`;
+  const displayTitle = title ?? `Thank You, ${eventTitle}`;
 
   async function sharePage() {
     const url = window.location.href;

@@ -109,7 +109,7 @@ export function GlobalSearch({ className }: { className?: string }) {
               orderedGroups.map((group) => (
                 <div key={group.key}>
                   <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 border-b border-slate-100">
-                    {GROUP_LABELS[group.key]} — {group.items.length} {group.items.length === 1 ? "result" : "results"}
+                    {GROUP_LABELS[group.key]}, {group.items.length} {group.items.length === 1 ? "result" : "results"}
                   </p>
                   {group.items.map((hit) => (
                     <Link

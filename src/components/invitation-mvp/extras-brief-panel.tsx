@@ -21,7 +21,7 @@ const ADDON_LABELS: Record<string, { title: string; prompt: string; extraField?:
   },
   "custom-illustration": {
     title: "Custom illustration",
-    prompt: "Describe the illustration you want — subjects, style, mood. Add links to reference photos if any.",
+    prompt: "Describe the illustration you want, subjects, style, mood. Add links to reference photos if any.",
   },
   "custom-domain": {
     title: "Custom domain",
@@ -30,7 +30,7 @@ const ADDON_LABELS: Record<string, { title: string; prompt: string; extraField?:
   },
   "video-intro": {
     title: "Animated intro video",
-    prompt: "Describe the feel you want — names to feature, moments to include, preferred pace.",
+    prompt: "Describe the feel you want, names to feature, moments to include, preferred pace.",
   },
   "voice-intro": {
     title: "Voice intro",
@@ -41,7 +41,7 @@ const ADDON_LABELS: Record<string, { title: string; prompt: string; extraField?:
 /**
  * Post-purchase requirement collection for bespoke extras. A purchased
  * monogram/illustration/domain/video is only a promise until we have the
- * customer's brief — this panel captures it and shows delivery status.
+ * customer's brief, this panel captures it and shows delivery status.
  */
 export function ExtrasBriefPanel({ orderId }: { orderId: string }) {
   const [requests, setRequests] = useState<FulfillmentRequest[]>([]);
@@ -118,7 +118,7 @@ export function ExtrasBriefPanel({ orderId }: { orderId: string }) {
                 </a>
               ) : submitted ? (
                 <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
-                  <Check className="h-3.5 w-3.5 text-[#0B8A83]" /> Brief received — our team will be in touch.
+                  <Check className="h-3.5 w-3.5 text-[#0B8A83]" /> Brief received, our team will be in touch.
                 </p>
               ) : (
                 <div className="mt-3 space-y-2">

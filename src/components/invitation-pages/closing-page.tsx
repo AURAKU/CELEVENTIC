@@ -8,7 +8,7 @@ import { ViralFooterBlock } from "./blocks/viral-footer-block";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 
-/** Page 10 — thank-you + countdown + the always-on viral footer. */
+/** Page 10, thank-you + countdown + the always-on viral footer. */
 export function ClosingPage({ context, page }: InvitePageProps) {
   const { theme, category, design } = context;
   const isFuneral = category === "funeral";

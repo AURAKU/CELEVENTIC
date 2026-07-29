@@ -21,7 +21,7 @@ export function ViralFooterBlock({ context }: { context: PageRenderContext }) {
   const href = `/invitations/catalogue?${params.toString()}`;
 
   function handleClick() {
-    // sendBeacon-backed — survives the navigation.
+    // sendBeacon-backed, survives the navigation.
     trackInviteEvent({
       eventType: "VIRAL_CTA_CLICK",
       invitationId: invitation.id,

@@ -17,7 +17,7 @@ interface ResponsiveSceneComposerProps {
 }
 
 /**
- * Fullscreen composer — wraps InviteViewportShell with 100dvh/vw + no white-gap fill.
+ * Fullscreen composer, wraps InviteViewportShell with 100dvh/vw + no white-gap fill.
  * Additive: existing InviteViewportShell usage remains valid.
  */
 export function ResponsiveSceneComposer({

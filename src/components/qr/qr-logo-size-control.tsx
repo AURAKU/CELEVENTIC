@@ -62,7 +62,7 @@ export function QrLogoSizeControl({
       </div>
       <p className="text-[11px] text-slate-400 leading-relaxed">
         Your full logo stays visible inside the white inset (never cropped). Bold is the maximum safe
-        size with high error correction — prefer Balanced for print and gates.
+        size with high error correction, prefer Balanced for print and gates.
       </p>
     </div>
   );

@@ -87,7 +87,7 @@ export function ScratchReveal({ guestName, eventTitle, onComplete, children }: S
     <div ref={containerRef} className="fixed inset-0 z-[100] safe-area-pt safe-area-pb overflow-hidden">
       <RevealConfetti active={revealed} />
 
-      {/* Live invitation template underneath — revealed as foil is scratched away */}
+      {/* Live invitation template underneath, revealed as foil is scratched away */}
       <div className="absolute inset-0 overflow-y-auto overscroll-contain inv-portal-enter">
         {children}
       </div>

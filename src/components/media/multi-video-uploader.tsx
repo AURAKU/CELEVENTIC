@@ -34,7 +34,7 @@ export interface MultiVideoUploaderProps {
   /** Remaining number of videos that may be added right now (e.g. gallery slots left). */
   maxFiles?: number;
   /**
-   * How many videos upload at once — the rest wait client-side as "Queued".
+   * How many videos upload at once, the rest wait client-side as "Queued".
    * The background worker already transcodes one job at a time (see
    * `processJobs` in `src/lib/queue.ts`), so this mainly protects upload
    * bandwidth; it also naturally throttles how fast `BackgroundJob` rows pile up.
@@ -87,7 +87,7 @@ export function MultiVideoUploader({
       onError?.(
         maxFiles === 1
           ? "Maximum of 1 video reached."
-          : `Maximum of ${maxFiles} videos reached — remove one to add another.`
+          : `Maximum of ${maxFiles} videos reached, remove one to add another.`
       );
       return;
     }
@@ -95,7 +95,7 @@ export function MultiVideoUploader({
     const accepted = incoming.slice(0, remainingCapacity);
     if (accepted.length < incoming.length) {
       onError?.(
-        `Only ${accepted.length} more video slot${accepted.length === 1 ? "" : "s"} available — added the first ${accepted.length} of ${incoming.length} selected.`
+        `Only ${accepted.length} more video slot${accepted.length === 1 ? "" : "s"} available, added the first ${accepted.length} of ${incoming.length} selected.`
       );
     }
 
@@ -130,7 +130,7 @@ export function MultiVideoUploader({
       >
         <Video className="h-8 w-8 mx-auto text-slate-400 mb-2" />
         <p className="text-sm text-slate-600 mb-3">
-          {hint ?? "Select or drag & drop one or more videos — phone, DSLR, WhatsApp/TikTok/Instagram exports, or screen recordings all work."}
+          {hint ?? "Select or drag & drop one or more videos, phone, DSLR, WhatsApp/TikTok/Instagram exports, or screen recordings all work."}
         </p>
         <Button
           type="button"
@@ -196,7 +196,7 @@ export function MultiVideoUploader({
               <Clock className="h-4 w-4 text-slate-400 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-700 truncate">{file.name}</p>
-                <p className="text-xs text-slate-400">{formatBytes(file.size)} · Queued — waiting for a slot</p>
+                <p className="text-xs text-slate-400">{formatBytes(file.size)} · Queued, waiting for a slot</p>
               </div>
               <Button
                 type="button"

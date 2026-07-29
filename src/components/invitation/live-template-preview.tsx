@@ -38,7 +38,7 @@ const VARIANT_CONFIG: Record<
 
 interface LiveTemplatePreviewProps {
   layoutSlug: string;
-  /** Catalog SKU — required for unique DNA when multiple SKUs share a layout */
+  /** Catalog SKU, required for unique DNA when multiple SKUs share a layout */
   catalogSlug?: string;
   category?: string;
   features?: string[];
@@ -131,7 +131,7 @@ function LivePreviewExperience({
   skipSoftIntro?: boolean;
   skipTapGate?: boolean;
   /**
-   * Catalogue tap already unlocked audio — start envelope/curtain open immediately
+   * Catalogue tap already unlocked audio, start envelope/curtain open immediately
    * (same one-shot path guests get after their open gesture).
    */
   autoOpenReveal?: boolean;
@@ -195,14 +195,14 @@ function LivePreviewExperience({
     </PreviewDeviceChrome>
   );
 
-  // Compact catalogue/card embeds can sit under a parent link — keep chrome non-anchoring.
+  // Compact catalogue/card embeds can sit under a parent link, keep chrome non-anchoring.
   if (compactFrame) {
     return <InvitationStaticPreviewProvider>{experience}</InvitationStaticPreviewProvider>;
   }
   return experience;
 }
 
-/** Renders invitation preview only after user taps — never auto-launches on scroll or load. */
+/** Renders invitation preview only after user taps, never auto-launches on scroll or load. */
 export function LiveTemplatePreview({
   layoutSlug,
   catalogSlug,
@@ -253,11 +253,11 @@ export function LiveTemplatePreview({
   const hasMusic = Boolean(preview.musicSelection) && (musicEnabled ?? true);
   const portalLive = showLive;
   /**
-   * Live preview must run the same opening guests get — never skip into a
+   * Live preview must run the same opening guests get, never skip into a
    * static portal when the template has a theatrical reveal.
    * Compact thumbs without an opening still skip for snappy catalogue scroll.
    * A sealed envelope / curtain needs real screen space to read as the guest
-   * choreography (seal lifts → flap opens → invite reveals) — never confine
+   * choreography (seal lifts → flap opens → invite reveals), never confine
    * that ceremony to a catalogue tile's tiny scaled mini-portal, even on
    * compact card/picker tiles.
    */
@@ -343,7 +343,7 @@ export function LiveTemplatePreview({
   /**
    * Static thumbnail keeps the tile's compact catalogue height. Once live +
    * full-layout (theatrical envelope/curtain choreography), the stage must
-   * grow to fit the real opening — pinning it to the thumbnail height is what
+   * grow to fit the real opening, pinning it to the thumbnail height is what
    * clipped the reveal / stranded it on the sealed frame behind a scrollbar.
    */
   const stageHeight = showLive && isFullLayout ? undefined : cfg.height;

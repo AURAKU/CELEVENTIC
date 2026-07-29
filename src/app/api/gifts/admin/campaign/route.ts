@@ -98,7 +98,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json(
         {
           error:
-            "This looks like fundraiser wording. Celebration templates read better as a gift — resend with allowFundraisingLanguage if you meant it.",
+            "This looks like fundraiser wording. Celebration templates read better as a gift, resend with allowFundraisingLanguage if you meant it.",
         },
         { status: 422 }
       );

@@ -15,7 +15,7 @@ interface State {
 }
 
 /**
- * Scene-level isolation — one failed scene must not crash the invitation.
+ * Scene-level isolation, one failed scene must not crash the invitation.
  */
 export class SceneErrorBoundary extends Component<SceneErrorBoundaryProps, State> {
   state: State = { hasError: false };

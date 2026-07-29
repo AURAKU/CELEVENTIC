@@ -17,7 +17,7 @@ interface PreviewTapAffordanceProps {
 
 /**
  * Soft tap gate over a faithful template glimpse.
- * Bottom-anchored pill + light scrim — design stays readable; clicks always fire.
+ * Bottom-anchored pill + light scrim, design stays readable; clicks always fire.
  */
 export function PreviewTapAffordance({
   compact,
@@ -37,9 +37,9 @@ export function PreviewTapAffordance({
         onOpen(e);
       }}
       className={cn(
-        // Above glimpse (z-10) and any decorative layers — never under the poster
+        // Above glimpse (z-10) and any decorative layers, never under the poster
         "absolute inset-0 z-30 flex flex-col items-center justify-end w-full h-full",
-        // Soft bottom scrim only — keep envelope / cover readable (no heavy wash)
+        // Soft bottom scrim only, keep envelope / cover readable (no heavy wash)
         "bg-gradient-to-t from-black/40 via-black/[0.07] to-transparent",
         "pt-8 pb-3 sm:pb-4 px-3",
         "transition-colors hover:from-black/48 hover:via-black/10 active:scale-[0.997]",
@@ -76,7 +76,7 @@ export function PreviewTapAffordance({
         </span>
         {hasMusic && (
           <span className="text-[10px] text-white/85 flex items-center gap-1">
-            <Music2 className="h-3 w-3" /> Includes music — tap to begin
+            <Music2 className="h-3 w-3" /> Includes music, tap to begin
           </span>
         )}
         {subtitle ? (

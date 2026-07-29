@@ -25,7 +25,7 @@ function formatSavedAt(at: Date | null | undefined): string | null {
 }
 
 /**
- * Subtle draft indicator — matches brand slate/teal, no purple chrome.
+ * Subtle draft indicator, matches brand slate/teal, no purple chrome.
  * Silent when idle with no draft; shows restore / saved / clear.
  */
 export function FormDraftStatusBar({

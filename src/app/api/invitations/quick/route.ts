@@ -9,7 +9,7 @@ import {
 import { getResultCard } from "@/services/guest-search/guest-search.service";
 
 /**
- * Quick Invitation Generator — create.
+ * Quick Invitation Generator, create.
  *
  * Name is the only required field. Everything else has a defensible default,
  * because the whole point of this endpoint is that an organiser standing in a
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   if (auth.error) return auth.error;
 
   // Each create mints a credential and consumes an admission code, so this is
-  // far tighter than search — but still comfortably above human typing speed.
+  // far tighter than search, but still comfortably above human typing speed.
   const limited = await guardRate(req, auth.ctx.userId, "create", 60, 60);
   if (limited) return limited;
 

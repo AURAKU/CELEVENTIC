@@ -3,7 +3,7 @@ import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
 /**
  * `sharePath` is meant to be a relative path (e.g. `/invite/abc`), but a
  * caller passing an already-absolute URL used to get it blindly concatenated
- * onto `appUrl` — producing a mangled double-URL like
+ * onto `appUrl`, producing a mangled double-URL like
  * `https://www.celeventic.com/https://www.celeventic.com/invite/abc` (or,
  * worse, leaking a stale `http://localhost:3000/...` share link if the
  * absolute value hadn't been sanitized upstream). Normalize defensively here
@@ -47,7 +47,7 @@ export class InvitationSharingService {
       `📅 ${dateLine}\n` +
       `${options.venue ? `📍 ${options.venue}\n` : ""}` +
       `\nOpen your Celeventic invitation:\n${link}\n\n` +
-      `_Powered by Celeventic — Global Event Operating System_`;
+      `_Powered by Celeventic, Global Event Operating System_`;
 
     const generalTextFr =
       `✨ *${options.eventTitle}*\n\n` +
@@ -66,9 +66,9 @@ export class InvitationSharingService {
         `📅 ${dateLine}\n` +
         `${options.venue ? `📍 ${options.venue}\n` : ""}` +
         `\nYour private invitation link:\n${link}?guest=${token}\n\n` +
-        `We hope to see you there. — ${options.hostName ?? "Your hosts"}`,
+        `We hope to see you there., ${options.hostName ?? "Your hosts"}`,
       bulkCampaignText: (title, count) =>
-        `Celeventic bulk invite ready: *${title}* — ${count} guests. ` +
+        `Celeventic bulk invite ready: *${title}*, ${count} guests. ` +
         `Personalized WhatsApp messages generated. Review in Guest CRM before sending.`,
     };
   }

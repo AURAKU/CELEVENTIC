@@ -103,7 +103,7 @@ export function OrganizerBookingsClient() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Vendor Bookings</h1>
-        <p className="text-slate-500 text-sm">Track payments, delivery, and verified reviews — all secured on Celeventic.</p>
+        <p className="text-slate-500 text-sm">Track payments, delivery, and verified reviews, all secured on Celeventic.</p>
       </div>
 
       <Card>

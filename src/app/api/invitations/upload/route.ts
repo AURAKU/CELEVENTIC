@@ -11,7 +11,7 @@ import { createAndQueueLocalVideoAsset } from "@/lib/video/processing";
 import { serializeVideoAsset } from "@/lib/video/serialize";
 
 // Node runtime required: reads multipart bodies into memory. Video no longer runs ffmpeg
-// inline here (see `handleVideoUpload`) — only image/PDF processing is synchronous now, so
+// inline here (see `handleVideoUpload`), only image/PDF processing is synchronous now, so
 // this route always returns quickly regardless of `maxDuration`.
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,7 +32,7 @@ interface ResolvedUpload {
 /**
  * Resolve the upload type the same way `src/lib/video/validation.ts` does for the universal
  * pipeline: never trust the browser-reported MIME alone for video (HEVC/MOV/MKV/etc. are
- * wildly inconsistent across browsers/OSes) — the file extension is the primary signal, and
+ * wildly inconsistent across browsers/OSes), the file extension is the primary signal, and
  * the post-upload byte signature check below is the real authority.
  */
 function resolveUploadKind(file: File, limits: { maxImageBytes: number; maxVideoBytes: number }): ResolvedUpload | null {
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
  * pipeline the rest of the app uses.
  *
  * ASYNC (v2): this used to call `processVideoFile` inline and hold the request open for the
- * full ffmpeg run — on large uploads that produced `Upload error: ECONNRESET` (client/proxy
+ * full ffmpeg run, on large uploads that produced `Upload error: ECONNRESET` (client/proxy
  * idle-timeout killing the socket mid-transcode). Now the response returns `202 Accepted` the
  * instant the bytes are safely on disk, carrying `video.assetId` + `video.pollUrl`; the
  * caller polls `GET /api/uploads/video/:id` (the same generic endpoint `VideoUploader` uses)
@@ -137,7 +137,7 @@ async function handleVideoUpload(
   const sniff = sniffVideoContainer(buffer.subarray(0, 262_144));
   if (sniff.disallowed) {
     return NextResponse.json(
-      { error: `File was rejected — detected as ${sniff.disallowed.label}, not a video.` },
+      { error: `File was rejected, detected as ${sniff.disallowed.label}, not a video.` },
       { status: 400 }
     );
   }
@@ -145,7 +145,7 @@ async function handleVideoUpload(
   const extHint = String(sniff.container ?? resolved.ext.replace(".", ""));
 
   // "PREMIUM" carries no artificial duration cap and a generous size ceiling in the shared
-  // video pipeline (see limits.ts) — this route's own `resolved.maxBytes` check above (run by
+  // video pipeline (see limits.ts), this route's own `resolved.maxBytes` check above (run by
   // the caller before this function) remains the real, pre-existing size gate, so behavior
   // for callers of this legacy endpoint is unchanged from before this refactor.
   const asset = await createAndQueueLocalVideoAsset({
@@ -173,7 +173,7 @@ async function handleVideoUpload(
   const serialized = serializeVideoAsset(asset);
 
   // Deliberately NOT running `invitationInspirationService.analyze()` here (unlike the
-  // image/PDF path below) — it would bake today's (still-empty) `url` into `designConfig`.
+  // image/PDF path below), it would bake today's (still-empty) `url` into `designConfig`.
   // The client re-applies the design once polling reaches READY and has the real
   // `playbackUrl`, so there's nothing useful to analyze yet.
   return NextResponse.json(

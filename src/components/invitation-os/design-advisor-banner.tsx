@@ -36,7 +36,7 @@ export function DesignAdvisorBanner({ eventType, guestCount, budgetGhs }: Design
         <Lightbulb className="h-4 w-4" /> {AGI_COPY.suggest}
       </p>
       <p className="text-xs text-slate-600">
-        Recommended: <strong>{data.recommendedPackage.name}</strong> — {data.recommendedPackage.reason}
+        Recommended: <strong>{data.recommendedPackage.name}</strong>, {data.recommendedPackage.reason}
       </p>
       <div className="flex flex-wrap gap-1">
         {data.recommendedTemplates.slice(0, 3).map((t) => (

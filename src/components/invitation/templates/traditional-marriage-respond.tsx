@@ -29,7 +29,7 @@ const CHOICES: { id: RsvpChoice; label: string; whisper: string }[] = [
 ];
 
 /**
- * Kindly Respond — theme-native RSVP + quiet host reach.
+ * Kindly Respond, theme-native RSVP + quiet host reach.
  * No magenta ribbons, chevrons, or generic utility card chrome.
  */
 export function TraditionalMarriageRespond({
@@ -57,7 +57,7 @@ export function TraditionalMarriageRespond({
   async function handleRsvp(response: RsvpChoice) {
     if (staticPreview) return;
     if (isPreviewInvitationId(invitationId)) {
-      setError("Preview mode — RSVP works on your published invitation link.");
+      setError("Preview mode, RSVP works on your published invitation link.");
       return;
     }
     setError("");

@@ -153,7 +153,7 @@ export function FlyerStudioClient() {
         <div>
           <h1 className="text-2xl font-bold">Flyer Studio</h1>
           <p className="page-subtitle">
-            Professional flyers, posters, banners, and social creatives — drag-and-drop editor, templates, and export.
+            Professional flyers, posters, banners, and social creatives, drag-and-drop editor, templates, and export.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

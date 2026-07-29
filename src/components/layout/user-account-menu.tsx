@@ -116,7 +116,7 @@ export function UserAccountMenu({ compact, variant = "light", className }: UserA
   );
 }
 
-/** Standalone logout control — icon on mobile, label on larger screens. */
+/** Standalone logout control, icon on mobile, label on larger screens. */
 export function LogoutButton({ className, showLabel = true }: { className?: string; showLabel?: boolean }) {
   const { t } = useLocale();
   const [loggingOut, setLoggingOut] = useState(false);

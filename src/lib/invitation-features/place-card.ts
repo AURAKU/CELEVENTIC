@@ -1,5 +1,5 @@
 /**
- * Personalised Place Card — shared invitation feature.
+ * Personalised Place Card, shared invitation feature.
  *
  * One module for every template (existing and future). Config lives in
  * `Invitation.featureConfig.PLACE_CARD`; presentation tokens come from the
@@ -386,7 +386,7 @@ function headingFor(type: PlaceCardRecipientType): string {
  * Build everything the shared place-card component renders.
  *
  * Pure, so the same model can be asserted in tests and reused by any template
- * adapter. Party allowance is passed in from the admission projection — this
+ * adapter. Party allowance is passed in from the admission projection, this
  * function never invents a number.
  */
 export function buildPlaceCardViewModel(

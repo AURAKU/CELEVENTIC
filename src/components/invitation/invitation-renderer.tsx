@@ -21,9 +21,9 @@ import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
 export type InvitationRendererProps = InvitationRenderProps & {
   interactiveMedia?: boolean;
-  /** Optional organizer email — used by themed templates (e.g. traditional marriage merge) */
+  /** Optional organizer email, used by themed templates (e.g. traditional marriage merge) */
   contactEmail?: string | null;
-  /** Portal section presence — quiet journey links (traditional marriage) */
+  /** Portal section presence, quiet journey links (traditional marriage) */
   hasGiftsSection?: boolean;
   hasTimelineSection?: boolean;
   /** Guest-facing gallery URLs for templates that render their own gallery */
@@ -63,7 +63,7 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
 
   return (
     <div className="invitation-copy-root">
-      {/* Template-level isolation — a broken layout/media config must degrade to a
+      {/* Template-level isolation, a broken layout/media config must degrade to a
           friendly message instead of crashing the whole guest-facing page. */}
       <ClientErrorBoundary
         fallback={
@@ -88,7 +88,7 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
         </ClientErrorBoundary>
       )}
       {/* Closing section of every invitation. The entry pass supersedes the
-          standalone gate code — showing both would give a guest two different
+          standalone gate code, showing both would give a guest two different
           numbers to read out at the door. */}
       {props.entryPass ? (
         <ClientErrorBoundary

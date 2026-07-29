@@ -195,7 +195,7 @@ export function MusicPreferenceEditor({
       return;
     }
     // Never let the "preview full-track" case happen: an invalid/untrimmed
-    // clip must not be playable from here — the Play button always previews
+    // clip must not be playable from here, the Play button always previews
     // the exact audible window guests will hear (startSec → endSec).
     if (!trackUrl || !clipValid) return;
     stopPreview();
@@ -214,7 +214,7 @@ export function MusicPreferenceEditor({
     previewRef.current = audio;
   }
 
-  /** Seek within the trimmed clip only — offset is clamped to [0, clipLen]. */
+  /** Seek within the trimmed clip only, offset is clamped to [0, clipLen]. */
   function seekPreview(offsetSec: number) {
     const audio = previewRef.current;
     if (!audio) return;
@@ -398,7 +398,7 @@ export function MusicPreferenceEditor({
             </p>
           ) : library.length === 0 ? (
             <p className="text-sm text-slate-500 rounded-xl border border-dashed p-4 text-center">
-              No library tracks yet — upload your own or ask admin to add music.
+              No library tracks yet, upload your own or ask admin to add music.
             </p>
           ) : (
             <ul className="grid gap-2 max-h-48 overflow-y-auto">
@@ -418,7 +418,7 @@ export function MusicPreferenceEditor({
                     <p className="font-medium text-sm truncate">{track.title}</p>
                     <p className="text-xs text-slate-500 truncate">
                       {track.artist ? `${track.artist} · ` : ""}
-                      {track.durationSec ? formatAudioTime(track.durationSec) : "—"}
+                      {track.durationSec ? formatAudioTime(track.durationSec) : ", "}
                     </p>
                   </button>
                 </li>
@@ -450,7 +450,7 @@ export function MusicPreferenceEditor({
             onClick={() => fileInputRef.current?.click()}
           >
             {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {uploading ? "Uploading…" : "Upload audio (MP3, WAV, M4A — max 25MB)"}
+            {uploading ? "Uploading…" : "Upload audio (MP3, WAV, M4A, max 25MB)"}
           </Button>
         </>
       )}
@@ -461,7 +461,7 @@ export function MusicPreferenceEditor({
             <div className="min-w-0">
               <p className="font-medium text-sm truncate">{trackTitle || "Selected track"}</p>
               <p className="text-xs text-slate-500">
-                Full length: {durationSec ? formatAudioTime(durationSec) : "—"}
+                Full length: {durationSec ? formatAudioTime(durationSec) : ", "}
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
@@ -473,7 +473,7 @@ export function MusicPreferenceEditor({
                 disabled={!clipValid}
                 title={
                   clipValid
-                    ? `Preview clip (${formatAudioTime(startSec)}–${formatAudioTime(endSec)}) — never the full track`
+                    ? `Preview clip (${formatAudioTime(startSec)}–${formatAudioTime(endSec)}), never the full track`
                     : "Set a valid clip range to preview"
                 }
               >
@@ -493,7 +493,7 @@ export function MusicPreferenceEditor({
               )}
               <span>End: {formatAudioTime(endSec)}</span>
             </div>
-            {/* MVP waveform — trim window highlighted, live playhead while previewing */}
+            {/* MVP waveform, trim window highlighted, live playhead while previewing */}
             <div
               className="relative h-10 w-full overflow-hidden rounded-md bg-slate-100"
               aria-hidden

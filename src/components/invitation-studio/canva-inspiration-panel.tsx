@@ -69,7 +69,7 @@ export function CanvaInspirationPanel({ eventId, onGenerated }: CanvaInspiration
       return;
     }
     if (!isCanvaShareUrl(canvaUrl)) {
-      setError("Paste a valid Canva share link (canva.com/design/…). We analyze layout concept only — no assets are copied.");
+      setError("Paste a valid Canva share link (canva.com/design/…). We analyze layout concept only, no assets are copied.");
       return;
     }
     setBusy(true);
@@ -144,7 +144,7 @@ export function CanvaInspirationPanel({ eventId, onGenerated }: CanvaInspiration
             <Sparkles className="h-4 w-4 text-violet-600" /> Canva Inspiration
           </h3>
           <p className="text-xs text-slate-600 mt-1">
-            Import your Canva export or share link. Celeventic generates an original editable template — we never copy protected assets.
+            Import your Canva export or share link. Celeventic generates an original editable template, we never copy protected assets.
           </p>
         </div>
         <Link href="/dashboard/inspiration" className="text-xs text-[#0B8A83] hover:underline flex items-center gap-1 shrink-0">

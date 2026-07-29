@@ -26,7 +26,7 @@ export function ConfettiBurstReveal({ guestName, eventTitle, onComplete }: Confe
         className="relative z-10 text-center px-8 max-w-md"
       >
         <h1 className="font-display text-3xl sm:text-4xl text-white font-bold mb-2">{eventTitle}</h1>
-        {guestName && <p className="text-fuchsia-200 text-sm">Hey {guestName} — you&apos;re invited!</p>}
+        {guestName && <p className="text-fuchsia-200 text-sm">Hey {guestName}, you&apos;re invited!</p>}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

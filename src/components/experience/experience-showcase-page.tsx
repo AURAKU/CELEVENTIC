@@ -32,7 +32,7 @@ export function ExperienceShowcasePage() {
             Invitations <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-teal-300">Reimagined</span>
           </h1>
           <p className="mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto">
-            Not just an invitation — it&apos;s an experience. Every template is its own cinematic universe with unique intro, reveal, audio, typography, and pacing.
+            Not just an invitation, it&apos;s an experience. Every template is its own cinematic universe with unique intro, reveal, audio, typography, and pacing.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm text-slate-400">
             {["10+ Unique Templates", "Cinematic Intros", "Premium Audio", "Full Screen Immersive", "Interactive Reveals", "RSVP · QR · Ticketing"].map((item) => (
@@ -58,7 +58,7 @@ export function ExperienceShowcasePage() {
             <span className="text-xs uppercase tracking-widest text-amber-400/80">Template Diversity</span>
           </div>
           <h2 className="font-display text-3xl font-bold mb-2">10 Unique Cinematic Templates</h2>
-          <p className="text-slate-400 mb-10 max-w-2xl">Each template belongs to a completely different creative universe — no recolored copies.</p>
+          <p className="text-slate-400 mb-10 max-w-2xl">Each template belongs to a completely different creative universe, no recolored copies.</p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {CINEMATIC_SHOWCASE.map((item) => (
@@ -125,7 +125,7 @@ export function ExperienceShowcasePage() {
             <span className="text-xs uppercase tracking-widest text-teal-400/80">Premium Audio Engine</span>
           </div>
           <h2 className="font-display text-3xl font-bold mb-2">Rich Audio Library</h2>
-          <p className="text-slate-400 mb-8">Upload, trim, loop, fade, and preview — admin manages everything.</p>
+          <p className="text-slate-400 mb-8">Upload, trim, loop, fade, and preview, admin manages everything.</p>
 
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2">
@@ -244,7 +244,7 @@ export function ExperienceShowcasePage() {
           <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
             Create. Invite. Celebrate. Remember Forever.
           </h2>
-          <p className="text-slate-400 mb-8">Every invitation tells a story — beginning, build-up, emotion, reveal, celebration, and outro.</p>
+          <p className="text-slate-400 mb-8">Every invitation tells a story, beginning, build-up, emotion, reveal, celebration, and outro.</p>
           <Button size="lg" asChild className="bg-gradient-to-r from-rose-500 via-fuchsia-500 to-amber-500 text-white font-semibold px-10">
             <Link href="/dashboard">Start Creating</Link>
           </Button>

@@ -34,9 +34,9 @@ interface BlushGateRevealProps {
   hostName?: string;
   /** Editable opening copy resolved from `design.studio.weddingBoard`. */
   copy?: BlushGateOpeningCopy;
-  /** Catalogue tiles already consumed the tap — open without a second gesture. */
+  /** Catalogue tiles already consumed the tap, open without a second gesture. */
   autoOpen?: boolean;
-  /** Returning guest — surface an honest, opt-in way to move along faster. */
+  /** Returning guest, surface an honest, opt-in way to move along faster. */
   allowSkip?: boolean;
   onBegin?: () => void;
   onComplete: () => void;

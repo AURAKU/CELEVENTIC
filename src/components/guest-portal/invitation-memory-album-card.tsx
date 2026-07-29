@@ -131,7 +131,7 @@ export function InvitationMemoryAlbumCard({
           <Link
             href={uploadUrl!}
             className="relative mt-5 inline-flex flex-col items-center gap-2 group"
-            aria-label="Open album upload — take or share photos and videos"
+            aria-label="Open album upload, take or share photos and videos"
           >
             <span
               className="rounded-sm bg-white p-2 border shadow-sm transition-colors"
@@ -238,7 +238,7 @@ export function InvitationMemoryAlbumCard({
         <Link
           href={uploadUrl!}
           className="mt-5 inline-flex flex-col items-center gap-2 group"
-          aria-label="Open album upload — take or share photos and videos"
+          aria-label="Open album upload, take or share photos and videos"
         >
           <span className="rounded-xl bg-white p-2 border border-slate-200 shadow-sm group-hover:border-slate-400 transition-colors">
             <Image

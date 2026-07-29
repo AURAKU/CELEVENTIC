@@ -11,7 +11,7 @@ interface CalendarActionsMenuProps {
   variant?: "button" | "card" | "dark";
 }
 
-/** Single smart reminder action — replaces Google / Outlook / Apple menu. */
+/** Single smart reminder action, replaces Google / Outlook / Apple menu. */
 export function CalendarActionsMenu({
   event,
   accentColor = "#0B8A83",

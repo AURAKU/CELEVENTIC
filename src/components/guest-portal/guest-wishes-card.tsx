@@ -13,7 +13,7 @@ export interface GuestWishItem {
   message: string;
   createdAt: string;
   guestId?: string | null;
-  /** Present only on the create response — proves authorship for delete. */
+  /** Present only on the create response, proves authorship for delete. */
   deleteToken?: string;
 }
 
@@ -54,7 +54,7 @@ function writeStoredTokens(eventKey: string, tokens: Record<string, string>) {
   try {
     window.localStorage.setItem(tokenStorageKey(eventKey), JSON.stringify(tokens));
   } catch {
-    /* private mode / quota — author delete still works for this session via state */
+    /* private mode / quota, author delete still works for this session via state */
   }
 }
 
@@ -406,7 +406,7 @@ export function GuestWishesCard({
             dark ? "text-white/50" : "text-slate-500"
           }`}
         >
-          <Sparkles className="h-3 w-3" /> Find the Album — share your experience from your lens
+          <Sparkles className="h-3 w-3" /> Find the Album, share your experience from your lens
         </p>
       )}
     </div>

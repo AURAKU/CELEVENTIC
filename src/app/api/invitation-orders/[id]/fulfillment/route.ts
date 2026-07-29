@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 /**
  * Requirement collection for bespoke purchased extras (monogram,
  * illustration, custom domain, animated/voice intro). A paid extra is only a
- * feature flag until the customer's brief is captured — these endpoints give
+ * feature flag until the customer's brief is captured, these endpoints give
  * every such extra a lifecycle: PENDING_INFO → SUBMITTED → IN_PROGRESS →
  * DELIVERED.
  */

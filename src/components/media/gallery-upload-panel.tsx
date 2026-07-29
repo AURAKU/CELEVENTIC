@@ -31,7 +31,7 @@ export function GalleryUploadPanel({
   maxImages = 30,
   disabled,
   title = "Event gallery",
-  description = "Upload photos or videos — guests can swipe through and tap any item to open fullscreen on the invitation.",
+  description = "Upload photos or videos, guests can swipe through and tap any item to open fullscreen on the invitation.",
   uploadEndpoint = "/api/invitations/upload",
   extraFormFields = { role: "gallery", buildMode: "template" },
   orderId,
@@ -151,7 +151,7 @@ export function GalleryUploadPanel({
             onError={setError}
             disabled={disabled}
             buttonLabel={urls.length === 0 ? "Upload gallery photo" : "Add photo"}
-            hint="Free crop by default — drag to select any region, any size, or use the full image."
+            hint="Free crop by default, drag to select any region, any size, or use the full image."
             className="flex-1"
           />
           <MultiVideoUploader
@@ -159,7 +159,7 @@ export function GalleryUploadPanel({
             orderId={orderId}
             role="gallery"
             buttonLabel="Add videos"
-            hint="Add one or more videos to the swipe gallery — up to 150MB each."
+            hint="Add one or more videos to the swipe gallery, up to 150MB each."
             disabled={disabled}
             maxFiles={maxImages - urls.length}
             onUploaded={onGalleryVideoUploaded}

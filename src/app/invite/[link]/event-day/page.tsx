@@ -12,10 +12,11 @@ import {
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { resolveCompanionTheme } from "@/lib/admission/event-companion-theme";
+import { buildInviteCeremonyHref } from "@/lib/admission/event-companion";
 import { EventCompanionExperience } from "@/components/admission/event-companion-experience";
 import { PortalStatusPoller } from "./portal-status-poller";
 
-// Admission is verified per request on the server — never cached, never trusted
+// Admission is verified per request on the server, never cached, never trusted
 // from the client (spec §21, §27).
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -50,10 +51,6 @@ export default async function EventDayPortal({
           title: true,
           status: true,
           startDate: true,
-          venueName: true,
-          landmark: true,
-          mapsLink: true,
-          dressCode: true,
           contactPhone: true,
           coverImageUrl: true,
         },
@@ -66,9 +63,10 @@ export default async function EventDayPortal({
   if (!invitation.postAdmissionEnabled) notFound();
 
   const summary = await getInvitationAdmission(invitation.id);
-  const unlocked = Boolean(summary?.canAccessPortal);
+  const unlocked =
+    Boolean(summary?.canAccessPortal) && (summary?.admittedCount ?? 0) > 0;
 
-  // Companion is admit-only — never a pre-arrival teaser.
+  // Companion is admit-only: QR scan or manual gate code must succeed first.
   if (!unlocked) {
     const inviteHref = guestToken
       ? `/invite/${encodeURIComponent(link)}?guest=${encodeURIComponent(guestToken)}`
@@ -82,18 +80,80 @@ export default async function EventDayPortal({
     eventCoverImageUrl: invitation.event.coverImageUrl,
   });
 
-  const guest = guestToken
-    ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
-    : null;
-  const seating = guest ? await seatingService.lookupByGuestId(guest.id) : null;
-  const seat = seating?.assignment ?? null;
+  const partyGuests = await prisma.guest.findMany({
+    where: { invitationId: invitation.id },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      qrToken: true,
+      seatingAssignment: { select: { tableNumber: true, seatLabel: true, zone: true } },
+    },
+  });
 
-  const guestName = guest?.name?.trim() || null;
-  const isGroup = (summary?.allowance ?? 1) > 1;
+  const guest = guestToken
+    ? (await invitationService.getGuestForInvitation(invitation.id, guestToken)) ??
+      partyGuests.find((g) => g.qrToken === guestToken) ??
+      null
+    : null;
+
+  const partySeats = partyGuests
+    .filter((g) => g.seatingAssignment)
+    .map((g) => ({
+      guestId: g.id,
+      guestName: g.name,
+      tableNumber: g.seatingAssignment!.tableNumber,
+      seatLabel: g.seatingAssignment!.seatLabel,
+      zone: g.seatingAssignment!.zone,
+      admitted: g.status === "CHECKED_IN",
+    }));
+
+  // Prefer the viewing guest's row; otherwise any allocated seat on this pass.
+  let seat: { tableNumber: string; seatLabel: string | null; zone: string | null } | null =
+    null;
+  if (guest) {
+    const seating = await seatingService.lookupByGuestId(guest.id);
+    if (seating?.assignment) {
+      seat = {
+        tableNumber: seating.assignment.tableNumber,
+        seatLabel: seating.assignment.seatLabel,
+        zone: seating.assignment.zone,
+      };
+    } else {
+      const own = partySeats.find((s) => s.guestId === guest.id);
+      if (own) {
+        seat = {
+          tableNumber: own.tableNumber,
+          seatLabel: own.seatLabel,
+          zone: own.zone,
+        };
+      }
+    }
+  }
+  if (!seat && partySeats.length > 0) {
+    const pick =
+      partySeats.find((s) => s.admitted) ??
+      partySeats.find((s) => s.seatLabel) ??
+      partySeats[0];
+    seat = {
+      tableNumber: pick.tableNumber,
+      seatLabel: pick.seatLabel,
+      zone: pick.zone,
+    };
+  }
+
+  const guestName =
+    guest?.name?.trim() ||
+    partyGuests.find((g) => g.status === "CHECKED_IN")?.name?.trim() ||
+    partyGuests[0]?.name?.trim() ||
+    null;
 
   const features = await resolveInvitationFeatures(invitation.id);
-  const showSeat =
+  const seatingFeatureOn =
     features.find((f) => f.key === "SEATING_REVEAL")?.enabled ?? true;
+  // Always surface allocated seating after admit when a table/seat exists.
+  const showSeat = seatingFeatureOn || Boolean(seat) || partySeats.length > 0;
 
   const memoryLinks = features.some((f) => f.key === "MEMORY_VAULT" && f.enabled)
     ? await ensureEventMemoryLinks(invitation.event.id).catch(() => null)
@@ -105,36 +165,15 @@ export default async function EventDayPortal({
     : null;
 
   let continuity: SeatingContinuity | null = null;
-  if (showSeat && isGroup) {
-    const partyGuests = await prisma.guest.findMany({
-      where: { invitationId: invitation.id },
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true,
-        name: true,
-        status: true,
-        seatingAssignment: { select: { tableNumber: true, seatLabel: true, zone: true } },
-      },
-    });
+  if (showSeat && partySeats.length > 0) {
     continuity = resolveSeatingContinuity(
-      partyGuests
-        .filter((g) => g.seatingAssignment)
-        .map((g) => ({
-          guestId: g.id,
-          guestName: g.name,
-          tableNumber: g.seatingAssignment!.tableNumber,
-          seatLabel: g.seatingAssignment!.seatLabel,
-          zone: g.seatingAssignment!.zone,
-          admitted: g.status === "CHECKED_IN",
-        })),
+      partySeats,
       summary?.allowance ?? 1,
       summary?.admittedCount ?? 0
     );
   }
 
-  const inviteHref = guestToken
-    ? `/invite/${encodeURIComponent(link)}?guest=${encodeURIComponent(guestToken)}`
-    : `/invite/${encodeURIComponent(link)}`;
+  const inviteHref = buildInviteCeremonyHref(link, guestToken ?? null);
 
   return (
     <>
@@ -143,15 +182,15 @@ export default async function EventDayPortal({
         theme={theme}
         eventTitle={invitation.event.title}
         guestName={guestName}
-        isGroup={isGroup}
-        admittedCount={summary?.admittedCount ?? 1}
-        remainingCount={summary?.remainingCount ?? 0}
-        allowance={summary?.allowance ?? 1}
         seat={showSeat ? seat : null}
         showSeat={showSeat}
+        partySeats={showSeat ? partySeats : []}
         continuity={continuity}
         features={features}
-        event={invitation.event}
+        event={{
+          startDate: invitation.event.startDate,
+          contactPhone: invitation.event.contactPhone,
+        }}
         memoryUploadUrl={memoryLinks?.uploadUrl ?? null}
         memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
         giftUrl={giftPlacement?.giftUrl ?? null}

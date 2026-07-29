@@ -25,7 +25,7 @@ interface TemplatePreviewShellProps {
 
 /**
  * Preview mode = the published experience. The buyer gets the same
- * PremiumInviteWrapper pipeline a guest gets — Celeventic soft intro,
+ * PremiumInviteWrapper pipeline a guest gets, Celeventic soft intro,
  * then opening ceremony (curtain owns tap on Kente Royale), then the invitation.
  * Theme chips re-skin the experience live; the pinned CTA carries
  * template + chosen theme into the create funnel.

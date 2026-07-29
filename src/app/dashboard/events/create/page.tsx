@@ -267,7 +267,7 @@ export default function CreateEventPage() {
                 <Label>Event Title *</Label>
                 <Input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="My Amazing Event" />
               </div>
-              {/* Single canonical couple/host field — do not reintroduce coupleNames input */}
+              {/* Single canonical couple/host field, do not reintroduce coupleNames input */}
               <div className="space-y-2">
                 <Label htmlFor="create-event-host-name">{hostLabel} Name *</Label>
                 <Input
@@ -360,7 +360,7 @@ export default function CreateEventPage() {
                   <SelectTrigger><SelectValue placeholder="Select theme" /></SelectTrigger>
                   <SelectContent>
                     {themes.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name} — {t.category}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}>{t.name}, {t.category}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

@@ -8,19 +8,19 @@ import {
 } from "@/lib/invitation-theme/fonts";
 import type { FontId } from "@/lib/invitation-theme/theme-types";
 
-/** Eyebrow ("WITH GRATITUDE") default — preserves the original TM look when unset. */
+/** Eyebrow ("WITH GRATITUDE") default, preserves the original TM look when unset. */
 const DEFAULT_EYEBROW_FONT: FontId = "cormorant";
-/** Script ("Thank you") default — preserves the original TM look when unset. */
+/** Script ("Thank you") default, preserves the original TM look when unset. */
 const DEFAULT_SCRIPT_FONT: FontId = "great-vibes";
 
 export interface TraditionalMarriageThankYouProps {
   /** Optional host/studio message; falls back to editorial default */
   message?: string | null;
-  /** Body font — curated invitation FontId (Cormorant, Great Vibes, etc.) */
+  /** Body font, curated invitation FontId (Cormorant, Great Vibes, etc.) */
   fontFamily?: FontId | string | null;
-  /** Eyebrow ("With gratitude") font — curated invitation FontId; defaults to Cormorant. */
+  /** Eyebrow ("With gratitude") font, curated invitation FontId; defaults to Cormorant. */
   eyebrowFontFamily?: FontId | string | null;
-  /** Script ("Thank you") font — curated invitation FontId; defaults to Great Vibes. */
+  /** Script ("Thank you") font, curated invitation FontId; defaults to Great Vibes. */
   scriptFontFamily?: FontId | string | null;
   className?: string;
 }
@@ -29,7 +29,7 @@ const DEFAULT_MESSAGE =
   "Your presence is a blessing. We are deeply honoured to share this sacred day with you.";
 
 /**
- * Traditional Marriage closing — Great Vibes / Cormorant linen editorial.
+ * Traditional Marriage closing, Great Vibes / Cormorant linen editorial.
  * Replaces the generic slate “Thank You” slab card.
  * Hosts edit body + fonts via experience.thankYouMessage / thankYouFontFamily /
  * thankYouEyebrowFontFamily / thankYouScriptFontFamily (or a Studio font preset).

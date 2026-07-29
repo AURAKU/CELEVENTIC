@@ -7,7 +7,7 @@ import type { ResolvedAdmissionSettings } from "@/lib/admission/admission-settin
  * Deliberately pure: the same function decides online (server, inside the
  * admit transaction) and offline (browser, against the cached package). One
  * engine means an offline gate can never be more permissive than the online
- * one — the only difference is that offline results are written as
+ * one, the only difference is that offline results are written as
  * PENDING_SYNC and reconciled later.
  */
 
@@ -117,7 +117,7 @@ function deny(
 /**
  * Should the gate stop and ask how many of the party are arriving now?
  *
- * Yes for any group with more than one place still open — that is the whole
+ * Yes for any group with more than one place still open, that is the whole
  * point of partial admission. No for a single guest (nothing to choose), no
  * once the operator has answered, and no when the organiser turned on the safe
  * auto rule (fast admission), which admits the remainder in one tap.
@@ -186,7 +186,7 @@ export function decideAdmission(
     case "REISSUED":
       return deny(
         "REISSUED",
-        "This is an old copy of the pass. The guest was sent a replacement — ask for the latest one.",
+        "This is an old copy of the pass. The guest was sent a replacement, ask for the latest one.",
         pass
       );
     case "EXPIRED":
@@ -281,7 +281,7 @@ export function decideAdmission(
   }
 
   // A group with places still open is asked "how many are arriving now?" before
-  // anything is written. Nothing is admitted on this pass of the engine — the
+  // anything is written. Nothing is admitted on this pass of the engine, the
   // operator's answer comes back as an explicit `requestedQuantity`.
   if (needsQuantityPrompt(remaining, settings, ctx)) {
     return {
@@ -290,7 +290,7 @@ export function decideAdmission(
       reason: "OK_PARTIAL",
       message:
         `This invitation admits ${allowance}. ${remaining} ` +
-        `${remaining === 1 ? "place is" : "places are"} still open — how many are arriving now?`,
+        `${remaining === 1 ? "place is" : "places are"} still open, how many are arriving now?`,
       admitQuantity: 0,
       resultingAdmittedCount: alreadyIn,
       resultingStatus: alreadyIn > 0 ? "PARTIALLY_ADMITTED" : "ACTIVE",
@@ -331,7 +331,7 @@ export function decideAdmission(
     tone: "green",
     reason: complete ? "OK" : "OK_PARTIAL",
     message: complete
-      ? `Admitted — ${requested} of ${allowance} guest${allowance === 1 ? "" : "s"}. Welcome!`
+      ? `Admitted, ${requested} of ${allowance} guest${allowance === 1 ? "" : "s"}. Welcome!`
       : `Admitted ${requested} of ${allowance}. ${allowance - resulting} still to arrive.`,
     admitQuantity: requested,
     resultingAdmittedCount: resulting,

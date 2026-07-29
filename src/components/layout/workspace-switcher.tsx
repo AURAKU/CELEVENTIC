@@ -88,7 +88,7 @@ export function WorkspaceSwitcher({ compact }: { compact?: boolean }) {
     options[0] ??
     WORKSPACE_OPTIONS.find((o) => o.id === "organizer")!;
 
-  // Single allowed workspace — show a clean label, no fake multi-role menu.
+  // Single allowed workspace, show a clean label, no fake multi-role menu.
   if (options.length <= 1) {
     return (
       <div

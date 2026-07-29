@@ -11,7 +11,7 @@ interface FlowerBloomRevealProps {
 }
 
 /**
- * Botanical Bloom — tap flower or swipe petals outward to open.
+ * Botanical Bloom, tap flower or swipe petals outward to open.
  */
 export function FlowerBloomReveal({ guestName, eventTitle, onComplete }: FlowerBloomRevealProps) {
   const [bloomed, setBloomed] = useState(false);

@@ -10,7 +10,7 @@ import {
 /**
  * Public open-registration endpoint (General Pass Method B).
  *
- * Unauthenticated by design — the whole point is that a guest with the link
+ * Unauthenticated by design, the whole point is that a guest with the link
  * can claim a pass. The safety comes from elsewhere: an unguessable 24-byte
  * token, a per-IP ceiling and a batch-wide cap in the service, and an IP rate
  * limit here so the endpoint cannot be hammered to enumerate tokens.

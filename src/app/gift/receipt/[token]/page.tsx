@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Signed receipt page — the guest's own proof of payment. Works without an
+ * Signed receipt page, the guest's own proof of payment. Works without an
  * account, shows only their gift, and inherits the invitation's theme so the
  * receipt still feels like part of the celebration.
  */

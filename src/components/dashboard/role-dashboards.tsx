@@ -43,7 +43,7 @@ export function EventOwnerDashboard({
     <div className="space-y-8">
       <HeroBanner
         firstName={firstName}
-        subtitle="Here's progress on your events — guests, invitations, and next steps."
+        subtitle="Here's progress on your events, guests, invitations, and next steps."
         primaryHref="/dashboard/events/create"
         primaryLabel="Create Event"
       />

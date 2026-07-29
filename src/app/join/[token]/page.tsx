@@ -28,7 +28,7 @@ export async function generateMetadata({
   return {
     title: `${page.event.title} · Get your pass`,
     description: `Register to receive your entry pass for ${page.event.title}.`,
-    // A registration link should never be indexed — it is meant to be shared
+    // A registration link should never be indexed, it is meant to be shared
     // deliberately by the organiser, not found in a search result.
     robots: { index: false, follow: false },
   };
@@ -73,7 +73,7 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
 
         <p className="mt-6 text-xs text-slate-400">
           Your pass is issued to you alone. Sharing this page gives someone a pass of
-          their own — it never shares yours.
+          their own, it never shares yours.
         </p>
       </div>
     </main>

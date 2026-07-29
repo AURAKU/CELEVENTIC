@@ -14,7 +14,7 @@ import { getResultCard } from "@/services/guest-search/guest-search.service";
  *
  * The URL is never regenerated. A guest who already has the link in a WhatsApp
  * thread keeps a working link after the host fixes a spelling or widens the
- * party — which is the whole reason this is a separate endpoint from create.
+ * party, which is the whole reason this is a separate endpoint from create.
  */
 
 export const dynamic = "force-dynamic";

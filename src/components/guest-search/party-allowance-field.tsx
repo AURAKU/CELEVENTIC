@@ -24,7 +24,7 @@ interface PartyAllowanceFieldProps {
   disabled?: boolean;
   /** Explanation from name analysis, e.g. "Reads as a couple". */
   hint?: string | null;
-  /** True when the name implies a size we cannot know — asks for confirmation. */
+  /** True when the name implies a size we cannot know, asks for confirmation. */
   needsConfirmation?: boolean;
   label?: string;
 }

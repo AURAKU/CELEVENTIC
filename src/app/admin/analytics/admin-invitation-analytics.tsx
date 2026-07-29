@@ -50,7 +50,7 @@ export function AdminInvitationAnalytics() {
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold">{data.paymentSuccessRate}%</p><p className="text-xs text-slate-500">Payment Success</p></CardContent></Card>
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold text-amber-600">{data.pendingProduction}</p><p className="text-xs text-slate-500">Pending Production</p></CardContent></Card>
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold">{data.paidOrders}</p><p className="text-xs text-slate-500">Paid Orders</p></CardContent></Card>
-        <Card><CardContent className="pt-5 text-center"><p className="text-lg font-bold capitalize">{data.bestPackage?.slug ?? "—"}</p><p className="text-xs text-slate-500">Best Package ({data.bestPackage?.count ?? 0} orders)</p></CardContent></Card>
+        <Card><CardContent className="pt-5 text-center"><p className="text-lg font-bold capitalize">{data.bestPackage?.slug ?? ", "}</p><p className="text-xs text-slate-500">Best Package ({data.bestPackage?.count ?? 0} orders)</p></CardContent></Card>
         <Card><CardContent className="pt-5 text-center"><p className="text-3xl font-bold">{data.conversionFunnel.published}</p><p className="text-xs text-slate-500">Published</p></CardContent></Card>
       </div>
 

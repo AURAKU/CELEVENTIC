@@ -158,7 +158,7 @@ export function GuestPortalQuickActions({
   error,
   className,
 }: GuestPortalQuickActionsProps) {
-  // Hide soft-dead CTAs from the primary dock — only actionable controls belong here.
+  // Hide soft-dead CTAs from the primary dock, only actionable controls belong here.
   const actions = allActions.filter((a) => !a.disabled);
   if (actions.length === 0) return null;
 

@@ -1,7 +1,7 @@
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/** Single gold primary action per page — use secondary/outline for other actions. */
+/** Single gold primary action per page, use secondary/outline for other actions. */
 export function PrimaryAction({ className, children, ...props }: ButtonProps) {
   return (
     <Button

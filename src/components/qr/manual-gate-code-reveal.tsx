@@ -9,7 +9,7 @@ interface ManualGateCodeRevealProps {
   className?: string;
 }
 
-/** Guest-facing 4-digit gate code — shown under invitation / admission QR. */
+/** Guest-facing 4-digit gate code, shown under invitation / admission QR. */
 export function ManualGateCodeReveal({
   code,
   variant = "invite",

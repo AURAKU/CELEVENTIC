@@ -27,7 +27,7 @@ interface ImageUploadCropperProps {
   uploadEndpoint?: string;
   extraFormFields?: Record<string, string>;
   onUploaded: (result: UploadedImageResult) => void;
-  /** Custom upload handler (e.g. event QR logo) — skips default endpoint */
+  /** Custom upload handler (e.g. event QR logo), skips default endpoint */
   onCustomUpload?: (blob: Blob, fileName: string) => Promise<UploadedImageResult>;
   onError?: (message: string) => void;
   disabled?: boolean;
@@ -37,7 +37,7 @@ interface ImageUploadCropperProps {
   buttonLabel?: string;
   /**
    * Max accepted source file size. Pass `Infinity` when the consumer compresses
-   * in `onCustomUpload` — the source size no longer bounds what gets uploaded.
+   * in `onCustomUpload`, the source size no longer bounds what gets uploaded.
    */
   maxFileBytes?: number;
   /** Footer text under the drop zone. Defaults to the generic 10MB wording. */
@@ -46,7 +46,7 @@ interface ImageUploadCropperProps {
 
 export function ImageUploadCropper({
   label,
-  hint = "Upload from your device — crop and frame before saving.",
+  hint = "Upload from your device, crop and frame before saving.",
   defaultAspect = "free",
   allowedAspects,
   uploadEndpoint = "/api/invitations/upload",

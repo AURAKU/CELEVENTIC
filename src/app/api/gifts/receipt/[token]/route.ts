@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
 /**
- * Signed receipt lookup — the one way an unauthenticated guest can retrieve
+ * Signed receipt lookup, the one way an unauthenticated guest can retrieve
  * proof of their gift. The token is an HMAC over the receipt id, so a bad
  * signature is rejected before any database work happens.
  */

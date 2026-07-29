@@ -75,7 +75,7 @@ export function TemplateMediaUpload({
         onUploaded={onVideoUploaded}
         onError={setError}
         buttonLabel="Upload video"
-        hint="Upload template preview, background, or motion reference — up to 5GB, processed automatically."
+        hint="Upload template preview, background, or motion reference, up to 5GB, processed automatically."
       />
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>

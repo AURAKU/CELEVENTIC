@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       data: {
         id: upload.id,
         status: upload.status,
-        message: upload.status === "PENDING" ? "Upload received — pending organizer approval" : "Upload successful",
+        message: upload.status === "PENDING" ? "Upload received, pending organizer approval" : "Upload successful",
       },
     }, { status: 201 });
   } catch (error) {

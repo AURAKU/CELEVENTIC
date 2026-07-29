@@ -11,7 +11,7 @@ import { GiftExperience } from "@/components/gifts/gift-experience";
  *
  * Rendered per request and never cached: campaign copy, amounts and open/closed
  * state are all organiser-editable and a guest must always see the current
- * version. The page shows no totals, no contributor list and no progress — the
+ * version. The page shows no totals, no contributor list and no progress, the
  * only numbers on screen are the amounts this guest may choose from.
  */
 export const dynamic = "force-dynamic";

@@ -54,11 +54,11 @@ interface OpeningExperienceRouterProps {
   onComplete: () => void;
   /** Fires on the reveal start gesture (e.g. curtain tap / envelope open) for audio unlock. */
   onBegin?: () => void;
-  /** Framed preview — envelope uses absolute fill instead of viewport-fixed. */
+  /** Framed preview, envelope uses absolute fill instead of viewport-fixed. */
   embedded?: boolean;
-  /** Catalogue tap already unlocked audio — open without a second seal tap. */
+  /** Catalogue tap already unlocked audio, open without a second seal tap. */
   autoOpen?: boolean;
-  /** Returning guest — reveals may offer a visible, opt-in skip control. */
+  /** Returning guest, reveals may offer a visible, opt-in skip control. */
   allowSkip?: boolean;
   children: React.ReactNode;
 }
@@ -114,7 +114,7 @@ export function OpeningExperienceRouter({
     const meta = getOpeningExperience(experienceId);
     const theme = meta?.envelopeTheme;
     if (!theme) {
-      // Unknown envelope variant — open directly rather than blank-screening.
+      // Unknown envelope variant, open directly rather than blank-screening.
       return <div className="inv-portal-enter">{children}</div>;
     }
     return (
@@ -286,8 +286,7 @@ export function OpeningExperienceRouter({
         </>
       );
     default:
-      // Unknown/future experience id: never blank-screen the guest —
-      // degrade to opening the invitation directly.
+      // Unknown/future experience id: never blank-screen the guest, // degrade to opening the invitation directly.
       return <div className="inv-portal-enter">{children}</div>;
   }
 }

@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     throw error;
   }
 
-  // Idempotency guard — a duplicate/late complete call (double-click, retried request after a
+  // Idempotency guard, a duplicate/late complete call (double-click, retried request after a
   // slow response) must not re-run S3 completion or re-queue processing.
   if (asset.status !== "UPLOADING") {
     return NextResponse.json({ success: true, data: serializeVideoAsset(asset), alreadyFinalized: true });

@@ -192,7 +192,7 @@ export default function PublicEventPage() {
                     >
                       {saleTickets.map((t) => (
                         <option key={t.id} value={t.id}>
-                          {t.name} — {t.price > 0 ? formatCurrency(t.price) : "Free"} ({t.soldCount}{t.maxQuantity ? `/${t.maxQuantity}` : ""} sold)
+                          {t.name}, {t.price > 0 ? formatCurrency(t.price) : "Free"} ({t.soldCount}{t.maxQuantity ? `/${t.maxQuantity}` : ""} sold)
                         </option>
                       ))}
                     </select>

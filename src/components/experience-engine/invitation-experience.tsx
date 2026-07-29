@@ -45,7 +45,7 @@ export interface InvitationExperienceProps {
 }
 
 /**
- * Thin orchestrator — composes ResponsiveSceneComposer + InteractiveReveal +
+ * Thin orchestrator, composes ResponsiveSceneComposer + InteractiveReveal +
  * sequence/outro. Does NOT replace PremiumInviteWrapper; Phase 3 templates can
  * adopt this incrementally. Legacy pipeline stays the source of truth for live invites.
  */

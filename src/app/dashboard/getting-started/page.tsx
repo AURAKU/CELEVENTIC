@@ -35,7 +35,7 @@ const FLOWS: Record<FlowId, StepDef[]> = {
     { title: "Add event details", description: "Date, venue, and host information.", href: "/dashboard/events/create", cta: "Add Details" },
     { title: "Choose your package", description: "Pick the plan that fits your celebration.", href: "/dashboard/events/create", cta: "View Packages" },
     { title: "Invite collaborators", description: "Bring your team on board.", href: "/dashboard/invitations/workspace", cta: "Invite Team" },
-    { title: "Start planning", description: "Guests, invitations, vendors — you're ready.", href: "/dashboard", cta: "Go to Dashboard" },
+    { title: "Start planning", description: "Guests, invitations, vendors, you're ready.", href: "/dashboard", cta: "Go to Dashboard" },
   ],
   ORGANIZER: [
     { title: "Complete your organizer profile", description: "Help clients find and trust you.", href: "/dashboard/settings", cta: "Edit Profile" },
@@ -128,7 +128,7 @@ export default function GettingStartedPage() {
           Welcome to Celeventic
         </h1>
         <p className="text-slate-500 text-sm sm:text-base">
-          A quick guide to get you started — about {steps.length} steps.
+          A quick guide to get you started, about {steps.length} steps.
         </p>
       </div>
 

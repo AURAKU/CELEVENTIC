@@ -593,7 +593,7 @@ export function AdminMusicClient() {
                     <div className="flex-1 min-w-[140px]">
                       <p className="font-medium text-sm">{track.title}</p>
                       <p className="text-xs text-slate-500">
-                        {track.artist ?? "—"} ·{" "}
+                        {track.artist ?? ", "} ·{" "}
                         {MUSIC_CATEGORIES.find((c) => c.value === track.category)?.label ??
                           track.category}
                         {track.durationSec ? ` · ${formatAudioTime(track.durationSec)}` : ""}

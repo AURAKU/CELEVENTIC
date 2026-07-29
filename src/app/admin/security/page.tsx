@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RBAC_ROLES } from "@/lib/rbac";
 
 const securityFeatures = [
-  { title: "Centralized RBAC", status: "Active", desc: `Roles: ${RBAC_ROLES.join(", ")} — permissions enforced via @/lib/rbac` },
+  { title: "Centralized RBAC", status: "Active", desc: `Roles: ${RBAC_ROLES.join(", ")}, permissions enforced via @/lib/rbac` },
   { title: "Admin Panel Protection", status: "Active", desc: "Middleware + layout guard for SUPER_ADMIN and ADMIN only" },
   { title: "JWT Session Sync", status: "Active", desc: "Role changes and force-logout apply without stale sessions" },
   { title: "Login Diagnostics", status: "Active", desc: "Structured dev logs; safe user-facing error messages" },

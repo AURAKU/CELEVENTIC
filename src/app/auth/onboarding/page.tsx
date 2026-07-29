@@ -26,7 +26,7 @@ const INTENT_OPTIONS = [
   {
     id: "EVENT_OWNER" as AccountType,
     title: "Plan My Own Event",
-    description: "Wedding, birthday, funeral, conference — plan your celebration.",
+    description: "Wedding, birthday, funeral, conference, plan your celebration.",
     icon: CalendarHeart,
     joinIntent: false,
   },
@@ -135,7 +135,7 @@ export default function OnboardingPage() {
       }
       subtitle={
         step === 1
-          ? "Sign up in under a minute — email, phone, or Google."
+          ? "Sign up in under a minute, email, phone, or Google."
           : step === 2
             ? "Pick the option that fits you best. You can change this later."
             : "Just a few details for your account type."

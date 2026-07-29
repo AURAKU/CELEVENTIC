@@ -57,7 +57,7 @@ export function AdminInvitationExperienceControls() {
         <div className="rounded-xl border border-[#0B8A83]/20 bg-[#0B8A83]/5 p-3">
           <p className="text-sm font-medium text-[#0F172A]">Studio capabilities</p>
           <p className="mt-1 text-xs text-slate-600">
-            These flags gate Invitation Studio assets (music, gallery, video). Hosts never paste media URLs — upload only.
+            These flags gate Invitation Studio assets (music, gallery, video). Hosts never paste media URLs, upload only.
           </p>
           <div className="mt-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {studioCaps.map((key) => (

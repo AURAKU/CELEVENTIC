@@ -13,13 +13,13 @@ interface CurtainRevealProps {
   /** Fires synchronously on the user gesture that starts the open (audio unlock). */
   onBegin?: () => void;
   children?: ReactNode;
-  /** Catalogue glimpse: closed curtains only — absolute fill, no open gesture. */
+  /** Catalogue glimpse: closed curtains only, absolute fill, no open gesture. */
   staticPreview?: boolean;
-  /** Framed catalogue / studio live preview — absolute fill instead of viewport-fixed. */
+  /** Framed catalogue / studio live preview, absolute fill instead of viewport-fixed. */
   embedded?: boolean;
   /**
    * Start opening on mount (catalogue “Tap to open curtains” already consumed
-   * the user gesture — do not require a second stage tap).
+   * the user gesture, do not require a second stage tap).
    */
   autoOpen?: boolean;
 }
@@ -37,7 +37,7 @@ const CURTAIN_THEMES: Record<
   }
 > = {
   wedding: {
-    // Theatrical crimson velvet (Kente flagship) — gold trim carries heritage.
+    // Theatrical crimson velvet (Kente flagship), gold trim carries heritage.
     velvet: "#B01022",
     velvetDeep: "#6A0814",
     fold: "rgba(255, 230, 220, 0.18)",
@@ -84,7 +84,7 @@ const CURTAIN_THEMES: Record<
   },
 };
 
-/** Heavy velvet ease — slow start, decisive finish (~2.5–3.5s theatrical part). */
+/** Heavy velvet ease, slow start, decisive finish (~2.5–3.5s theatrical part). */
 const OPEN_EASE = "cubic-bezier(0.22, 0.61, 0.18, 1)";
 export const CURTAIN_OPEN_MS = 3000;
 export const CURTAIN_OPEN_REDUCED_MS = 700;
@@ -216,7 +216,7 @@ function CurtainPanel({
 }
 
 /**
- * Theatrical stage curtains — closed until tap / Enter / Space, then part
+ * Theatrical stage curtains, closed until tap / Enter / Space, then part
  * left+right to reveal the invitation. Wedding theme uses deep velvet with
  * optional kente gold trim.
  */
@@ -378,7 +378,7 @@ export function CurtainReveal({
         />
       )}
 
-      {/* Tap affordance — full-stage hit target while closed (skipped when autoOpen). */}
+      {/* Tap affordance, full-stage hit target while closed (skipped when autoOpen). */}
       {!staticPreview && !shouldAutoOpen && phase === "closed" && (
         <button
           type="button"

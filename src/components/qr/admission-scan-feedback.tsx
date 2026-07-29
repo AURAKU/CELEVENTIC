@@ -175,7 +175,7 @@ export function AdmissionScanFeedback({
         )}
 
         {result.offline && (
-          <p className="text-xs text-slate-500">Recorded offline — will sync when online.</p>
+          <p className="text-xs text-slate-500">Recorded offline, will sync when online.</p>
         )}
 
         {result.guest?.id &&
