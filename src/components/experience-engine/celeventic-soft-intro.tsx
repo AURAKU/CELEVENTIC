@@ -62,6 +62,9 @@ export function CeleventicSoftIntro({
   const [exiting, setExiting] = useState(false);
   const [canSkip, setCanSkip] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+  /** Embedded previews stay silent; live guests explicitly unlock sound. */
+  const [videoStarted, setVideoStarted] = useState(embedded);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const completed = useRef(false);
   const exitingRef = useRef(false);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,6 +90,39 @@ export function CeleventicSoftIntro({
     exitTimer.current = setTimeout(finish, delay);
   }, [finish, reduceMotion]);
 
+  /**
+   * Browsers prohibit autoplay with audio. Starting inside the guest's click
+   * is the only reliable cross-browser path to audible playback on live URLs.
+   */
+  const startWithSound = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || completed.current || exitingRef.current) return;
+
+    // A live intro never starts before this user gesture, so restart at zero
+    // defensively if the browser restored stale media state from its cache.
+    if (video.currentTime > 0 || video.ended) {
+      video.currentTime = 0;
+    }
+    video.defaultMuted = false;
+    video.muted = false;
+    video.volume = 1;
+    setSoundEnabled(true);
+    setVideoStarted(true);
+
+    const playback = video.play();
+    if (playback && typeof playback.catch === "function") {
+      playback.catch(() => {
+        // Last-resort continuity: play muted rather than losing the intro.
+        video.muted = true;
+        setSoundEnabled(false);
+        const mutedPlayback = video.play();
+        if (mutedPlayback && typeof mutedPlayback.catch === "function") {
+          mutedPlayback.catch(() => setVideoFailed(true));
+        }
+      });
+    }
+  }, []);
+
   useEffect(() => {
     // Reduced motion / failed video: timed brand beat, no full clip.
     if (reduceMotion || videoFailed) {
@@ -104,6 +140,11 @@ export function CeleventicSoftIntro({
       };
     }
 
+    // Live guests unlock sound first; only then start skip / hard-fallback timers.
+    if (!embedded && !videoStarted) {
+      return;
+    }
+
     // Returning guests still watch the brand video, Skip appears sooner.
     const skipAt = quickHold ? 400 : INTRO_SKIP_AVAILABLE_MS;
     const skipReveal = setTimeout(() => setCanSkip(true), skipAt);
@@ -112,7 +153,7 @@ export function CeleventicSoftIntro({
       clearTimeout(skipReveal);
       clearTimeout(fallback);
     };
-  }, [beginExit, finish, reduceMotion, quickHold, videoFailed]);
+  }, [beginExit, embedded, finish, reduceMotion, quickHold, videoFailed, videoStarted]);
 
   useEffect(() => {
     return () => {
@@ -124,21 +165,38 @@ export function CeleventicSoftIntro({
     function onKey(e: KeyboardEvent) {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        beginExit();
+        if (!embedded && !videoStarted && !reduceMotion && !videoFailed) {
+          startWithSound();
+        } else {
+          beginExit();
+        }
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [beginExit]);
+  }, [beginExit, embedded, reduceMotion, startWithSound, videoFailed, videoStarted]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || reduceMotion || videoFailed) return;
+    if (!video || reduceMotion || videoFailed || (!embedded && !videoStarted)) return;
+    video.muted = !soundEnabled;
     const play = video.play();
     if (play && typeof play.catch === "function") {
       play.catch(() => setVideoFailed(true));
     }
-  }, [reduceMotion, videoFailed]);
+  }, [embedded, reduceMotion, soundEnabled, videoFailed, videoStarted]);
+
+  const handleVideoEnded = useCallback(() => {
+    // The media track naturally ends here; explicitly mute before the exit
+    // crossfade so no browser can retain audio into the following invite beat.
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.muted = true;
+    }
+    setSoundEnabled(false);
+    beginExit();
+  }, [beginExit]);
 
   const showVideo = !reduceMotion && !videoFailed;
 
@@ -164,14 +222,28 @@ export function CeleventicSoftIntro({
           ["--soft-secondary"]: secondaryColor,
         } as CSSProperties
       }
-      onClick={beginExit}
+      onClick={() => {
+        if (!embedded && !videoStarted && showVideo) {
+          startWithSound();
+          return;
+        }
+        beginExit();
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          beginExit();
+          if (!embedded && !videoStarted && showVideo) {
+            startWithSound();
+          } else {
+            beginExit();
+          }
         }
       }}
-      aria-label="Continue. Celeventic."
+      aria-label={
+        !embedded && !videoStarted && showVideo
+          ? "Play the Celeventic introduction with sound"
+          : "Continue. Celeventic."
+      }
     >
       <p className={styles.srStatus} aria-live="polite">
         Preparing your invitation. Powered by Celeventic.
@@ -179,18 +251,33 @@ export function CeleventicSoftIntro({
 
       <div className={styles.atmosphere} aria-hidden>
         {showVideo ? (
-          <video
-            ref={videoRef}
-            className={styles.introVideo}
-            src={CELEVENTIC_INVITATION_INTRO_VIDEO}
-            poster={CELEVENTIC_INVITATION_INTRO_POSTER}
-            muted
-            playsInline
-            autoPlay
-            preload="auto"
-            onEnded={beginExit}
-            onError={() => setVideoFailed(true)}
-          />
+          <>
+            {/* A soft, cropped poster fills mismatched aspect-ratio margins.
+                The actual video remains contained above it, fully uncropped. */}
+            <div className={styles.videoBackdrop}>
+              <Image
+                src={CELEVENTIC_INVITATION_INTRO_POSTER}
+                alt=""
+                fill
+                sizes="100vw"
+                priority
+              />
+            </div>
+            <video
+              ref={videoRef}
+              className={styles.introVideo}
+              src={CELEVENTIC_INVITATION_INTRO_VIDEO}
+              poster={CELEVENTIC_INVITATION_INTRO_POSTER}
+              muted={!soundEnabled}
+              playsInline
+              autoPlay={embedded}
+              preload="auto"
+              disablePictureInPicture
+              controlsList="nodownload nofullscreen noremoteplayback"
+              onEnded={handleVideoEnded}
+              onError={() => setVideoFailed(true)}
+            />
+          </>
         ) : (
           <>
             <div className={styles.atmosphereFallback} />
@@ -213,6 +300,22 @@ export function CeleventicSoftIntro({
           <div className={styles.glassMask} aria-hidden />
           <div className={styles.warmBloom} aria-hidden />
         </>
+      )}
+
+      {!embedded && showVideo && !videoStarted && !exiting && (
+        <div className={styles.soundGate}>
+          <button
+            type="button"
+            className={styles.soundButton}
+            onClick={(e) => {
+              e.stopPropagation();
+              startWithSound();
+            }}
+          >
+            <span aria-hidden className={styles.soundIcon}>♪</span>
+            <span>Play intro with sound</span>
+          </button>
+        </div>
       )}
 
       {canSkip && !exiting && (

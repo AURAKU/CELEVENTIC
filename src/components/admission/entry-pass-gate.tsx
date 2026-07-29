@@ -25,8 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { playScanFeedback } from "@/components/qr/qr-camera-scanner";
 import { cn } from "@/lib/utils";
-import { extractPassToken } from "@/lib/admission/pass-token-format";
 import { formatAdmissionCode, normalizeAdmissionCode } from "@/lib/admission/pass-code";
+import { classifyGateInput } from "@/lib/admission/gate-scan";
 import type { AdmissionDecision } from "@/lib/admission/pass-decision";
 import { QR_SCAN_SAME_CODE_MS } from "@/lib/qr/qr-constants";
 import {
@@ -77,6 +77,11 @@ interface EntryPassGateProps {
   hideCamera?: boolean;
   /** Parent registers a scan handler so one camera serves pass + legacy QR. */
   scanHandlerRef?: MutableRefObject<((text: string) => void) | null>;
+  /**
+   * When a typed/scanned 4/6-digit code is not a Guest Entry Pass code,
+   * fall through to legacy guest `manualCode` check-in (same secure server path).
+   */
+  onUnresolvedCode?: (code: string) => void;
 }
 
 const TONE_STYLES: Record<AdmissionDecision["tone"], string> = {
@@ -102,6 +107,7 @@ export function EntryPassGate({
   className,
   hideCamera = true,
   scanHandlerRef,
+  onUnresolvedCode,
 }: EntryPassGateProps) {
   const [manualCode, setManualCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -513,6 +519,16 @@ export function EntryPassGate({
 
       if (usingOffline) {
         const preview = await admitOffline({ ...source, preview: true });
+        if (
+          preview?.decision.reason === "NOT_FOUND" &&
+          source.code &&
+          onUnresolvedCode
+        ) {
+          setResult(null);
+          setError("");
+          onUnresolvedCode(source.code);
+          return;
+        }
         if (preview?.decision.requiresQuantityConfirmation) {
           setPendingScan(source);
           setArrivingNow(Math.min(1, preview.decision.remaining) || 1);
@@ -523,13 +539,34 @@ export function EntryPassGate({
       }
 
       if (fastMode) {
-        await admitOnline({ ...source, quantityConfirmed: true });
+        const result = await admitOnline({ ...source, quantityConfirmed: true });
+        if (
+          result?.decision.reason === "NOT_FOUND" &&
+          source.code &&
+          onUnresolvedCode
+        ) {
+          setResult(null);
+          setError("");
+          onUnresolvedCode(source.code);
+          return;
+        }
         setPendingScan(null);
         return;
       }
 
       const preview = await admitOnline({ ...source, dryRun: true });
       if (!preview) return;
+
+      if (
+        preview.decision.reason === "NOT_FOUND" &&
+        source.code &&
+        onUnresolvedCode
+      ) {
+        setResult(null);
+        setError("");
+        onUnresolvedCode(source.code);
+        return;
+      }
 
       if (preview.decision.requiresQuantityConfirmation) {
         setPendingScan(source);
@@ -550,7 +587,7 @@ export function EntryPassGate({
 
       setPendingScan(source);
     },
-    [admitOffline, admitOnline, fastMode, usingOffline]
+    [admitOffline, admitOnline, fastMode, onUnresolvedCode, usingOffline]
   );
 
   const handleScan = useCallback(
@@ -560,18 +597,24 @@ export function EntryPassGate({
       if (lastScanRef.current?.text === text && now - lastScanRef.current.at < QR_SCAN_SAME_CODE_MS) return;
       lastScanRef.current = { text, at: now };
 
-      const token = extractPassToken(text);
-      if (!token) {
-        // Parent unified scanner falls through to legacy check-in for non-pass QR.
-        // If this panel was called directly, surface a clear message.
-        setError("That QR isn't a Celeventic entry pass.");
-        playScanFeedback(false);
+      const classified = classifyGateInput(text);
+      if (classified.kind === "pass_token") {
+        setSelectedMembers([]);
+        setError("");
+        await beginAdmission({ token: classified.token });
+        return;
+      }
+      if (classified.kind === "admission_code") {
+        setSelectedMembers([]);
+        setError("");
+        await beginAdmission({ code: classified.code });
         return;
       }
 
-      setSelectedMembers([]);
-      setError("");
-      await beginAdmission({ token });
+      // Parent unified scanner falls through to legacy check-in for non-pass QR.
+      // If this panel was called directly, surface a clear message.
+      setError("That QR isn't a Celeventic entry pass.");
+      playScanFeedback(false);
     },
     [beginAdmission]
   );

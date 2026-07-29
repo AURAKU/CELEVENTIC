@@ -68,7 +68,7 @@ export const INVITATION_FEATURE_DEFAULTS: Record<GuestFeatureKey, InvitationFeat
   LIVE_PROGRAMME: { key: "LIVE_PROGRAMME", label: "Programme", postAdmissionOnly: true, enabledByDefault: false, defaultOrder: 80, entitlementKey: FeatureKey.TIMELINE, version: 1 },
   EVENT_MENU: { key: "EVENT_MENU", label: "Menu", postAdmissionOnly: true, enabledByDefault: false, defaultOrder: 90, entitlementKey: FeatureKey.MENU, version: 1 },
   MEMORY_VAULT: { key: "MEMORY_VAULT", label: "Memories", postAdmissionOnly: true, enabledByDefault: true, defaultOrder: 100, entitlementKey: FeatureKey.MEMORY_VAULT, version: 1 },
-  GIFT_WALLET: { key: "GIFT_WALLET", label: "Send a Gift", postAdmissionOnly: true, enabledByDefault: false, defaultOrder: 110, entitlementKey: FeatureKey.CONTRIBUTIONS, version: 1 },
+  GIFT_WALLET: { key: "GIFT_WALLET", label: "Gift the Couple", postAdmissionOnly: true, enabledByDefault: false, defaultOrder: 110, entitlementKey: FeatureKey.CONTRIBUTIONS, version: 1 },
   EVENT_SERVICES: { key: "EVENT_SERVICES", label: "Event Services", postAdmissionOnly: true, enabledByDefault: false, defaultOrder: 120, version: 1 },
   ANNOUNCEMENTS: { key: "ANNOUNCEMENTS", label: "Announcements", postAdmissionOnly: true, enabledByDefault: false, defaultOrder: 130, version: 1 },
   GUEST_HELP: { key: "GUEST_HELP", label: "Help", postAdmissionOnly: true, enabledByDefault: true, defaultOrder: 140, version: 1 },

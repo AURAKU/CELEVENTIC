@@ -4,6 +4,7 @@ import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { giftThemeToCssVars } from "@/lib/gifts/gift-theme";
 import { listEnabledGiftPaymentMethods } from "@/lib/gifts/gift-providers";
 import { assertNoPrivateGiftData } from "@/lib/gifts/gift-privacy";
+import { sanitizeCompanionReturnUrl } from "@/lib/gifts/gift-placement";
 import { GiftExperience } from "@/components/gifts/gift-experience";
 
 /**
@@ -38,9 +39,12 @@ export default async function GiftPage({
   searchParams,
 }: {
   params: Promise<{ publicToken: string }>;
-  searchParams: Promise<{ g?: string }>;
+  searchParams: Promise<{ g?: string; return?: string }>;
 }) {
-  const [{ publicToken }, { g: guestToken }] = await Promise.all([params, searchParams]);
+  const [{ publicToken }, { g: guestToken, return: returnParam }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
 
   const context = await giftCampaignService.getByPublicToken(publicToken);
   if (!context) notFound();
@@ -52,6 +56,8 @@ export default async function GiftPage({
   const campaign = giftCampaignService.toPublicView(context, guest ? { name: guest.name } : null);
 
   assertNoPrivateGiftData(campaign, "giftPage");
+
+  const companionReturnUrl = sanitizeCompanionReturnUrl(returnParam);
 
   return (
     <GiftExperience
@@ -66,6 +72,7 @@ export default async function GiftPage({
         accentClass: m.accentClass,
       }))}
       guestToken={guestToken ?? null}
+      companionReturnUrl={companionReturnUrl}
     />
   );
 }

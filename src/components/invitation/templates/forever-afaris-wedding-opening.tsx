@@ -37,7 +37,6 @@ import type {
  * gesture, which still supplies the interaction browsers require to start audio.
  */
 type Stage =
-  | "preloading"
   | "sealed"
   | "unsealing"
   | "envelopeOpening"
@@ -71,6 +70,10 @@ export interface WeddingOpeningProps {
 
 const PETAL_COUNT = 16;
 const MOTE_COUNT = 18;
+/** Deliberate luxury pacing: seal lift → envelope unfold → final gate tableau. */
+const UNSEAL_HOLD_MS = 2400;
+const GATE_REVEAL_AT_MS = 4600;
+const CEREMONY_COMPLETE_MS = 9800;
 
 /** Cinematic easing shared across the ceremony. */
 const EASE_SILK = [0.22, 1, 0.36, 1] as const;
@@ -138,7 +141,9 @@ export function ForeverAfarisWeddingOpening({
   const prefersReduced = useReducedMotion();
   const C = useMemo(() => resolveWeddingPalette(palette), [palette]);
   const wax = useMemo(() => resolveSealWax(sealColor), [sealColor]);
-  const [stage, setStage] = useState<Stage>("preloading");
+  // Start on the envelope. The former monogram + couple-name preload repeated
+  // the same identity shown after the envelope at the golden gate.
+  const [stage, setStage] = useState<Stage>("sealed");
   const [visible, setVisible] = useState(true);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const doneRef = useRef(false);
@@ -147,6 +152,8 @@ export function ForeverAfarisWeddingOpening({
     timers.current.forEach(clearTimeout);
     timers.current = [];
   }, []);
+
+  useEffect(() => clearTimers, [clearTimers]);
 
   const after = useCallback((ms: number, fn: () => void) => {
     const id = setTimeout(fn, ms);
@@ -157,13 +164,6 @@ export function ForeverAfarisWeddingOpening({
     stage === "sealed" || stage === "unsealing" || stage === "gate",
     Boolean(prefersReduced)
   );
-
-  // Preload → sealed (or straight to a reduced-motion enter card).
-  useEffect(() => {
-    after(prefersReduced ? 350 : 1400, () => setStage("sealed"));
-    return clearTimers;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const finish = useCallback(() => {
     if (doneRef.current) return;
@@ -184,13 +184,14 @@ export function ForeverAfarisWeddingOpening({
       return;
     }
     setStage("unsealing");
-    // Let the seal finish its slow lift before the flap commits to opening.
-    after(2000, () => setStage("envelopeOpening"));
-    after(3800, () => {
+    // Let each tactile beat breathe; the final couple-name tableau is now the
+    // only identity reveal and remains visible long enough to be read.
+    after(UNSEAL_HOLD_MS, () => setStage("envelopeOpening"));
+    after(GATE_REVEAL_AT_MS, () => {
       setStage("gate");
       vibrate(10, haptics);
     });
-    after(7600, finish);
+    after(CEREMONY_COMPLETE_MS, finish);
   }, [after, finish, haptics, onBegin, prefersReduced, stage]);
 
   const skip = useCallback(() => {
@@ -259,33 +260,7 @@ export function ForeverAfarisWeddingOpening({
             </button>
           )}
 
-          {/* 1, PRELOAD */}
-          <AnimatePresence>
-            {stage === "preloading" && (
-              <motion.div
-                key="preload"
-                className="flex flex-col items-center gap-5"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8, transition: { duration: 0.45 } }}
-                transition={{ duration: 0.9, ease: EASE_SILK }}
-              >
-                <Monogram text={monogram} palette={C} wax={wax} />
-                <motion.p
-                  className="font-[family-name:var(--font-great-vibes)] text-2xl"
-                  style={{ color: C.goldDeep }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 1, 0.6, 1] }}
-                  transition={{ duration: 1.8, ease: "easeInOut" }}
-                >
-                  {coupleLine}
-                </motion.p>
-                <LoadingRule palette={C} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* 2–6, ENVELOPE, SEAL, FLAPS, INNER CARD */}
+          {/* ENVELOPE, SEAL, FLAPS, INNER CARD */}
           {(sealed || opening) && (
             <ParallaxLayer
               x={parallax.x}
@@ -367,55 +342,6 @@ function ParallaxLayer({
     <motion.div className={className} style={{ ...style, x: tx, y: ty, rotateX, rotateY }}>
       {children}
     </motion.div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Preload                                                             */
-/* ------------------------------------------------------------------ */
-
-function Monogram({
-  text,
-  palette: C,
-  wax,
-}: {
-  text: string;
-  palette: FaPalette;
-  wax: ReturnType<typeof resolveSealWax>;
-}) {
-  return (
-    <div
-      className="flex h-20 w-20 items-center justify-center rounded-full"
-      style={{
-        border: `1.5px solid ${C.gold}`,
-        boxShadow: `0 0 0 4px ${C.linen}, 0 10px 30px -12px ${C.goldDeep}`,
-        background: `radial-gradient(circle at 35% 30%, ${wax.light}, ${wax.base} 70%, ${wax.deep})`,
-      }}
-    >
-      <span
-        className="font-[family-name:var(--font-cinzel)] text-2xl font-semibold"
-        style={{ color: wax.text }}
-      >
-        {text}
-      </span>
-    </div>
-  );
-}
-
-function LoadingRule({ palette: C }: { palette: FaPalette }) {
-  return (
-    <div
-      aria-hidden
-      className="h-px w-28 overflow-hidden rounded-full"
-      style={{ background: `${C.border}` }}
-    >
-      <motion.div
-        className="h-full w-1/3 rounded-full"
-        style={{ background: `linear-gradient(90deg, transparent, ${C.gold}, transparent)` }}
-        animate={{ x: ["-120%", "320%"] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      />
-    </div>
   );
 }
 
@@ -948,7 +874,7 @@ function Gate({
         className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden"
         initial={{ scale: 1.2, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 2, ease: "easeOut", delay: 0.55 }}
+        transition={{ duration: 2.8, ease: "easeOut", delay: 0.7 }}
         style={{
           background: `radial-gradient(72% 62% at 50% 44%, ${C.linen} 0%, ${C.blush} 58%, ${C.blushDeep} 100%)`,
         }}
@@ -991,7 +917,7 @@ function Gate({
             style={{ color: C.goldDeep, textShadow: `0 2px 18px ${C.linen}` }}
             initial={{ opacity: 0, y: 18, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1.2, ease: EASE_SILK, delay: 1.1 }}
+            transition={{ duration: 1.8, ease: EASE_SILK, delay: 1.55 }}
           >
             {word}
           </motion.p>
@@ -1000,7 +926,7 @@ function Gate({
             style={{ color: C.cocoa }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 1.6 }}
+            transition={{ duration: 1.6, delay: 2.55 }}
           >
             {coupleLine}
           </motion.p>
@@ -1042,7 +968,7 @@ function GatePanel({
       }}
       initial={{ rotateY: 0 }}
       animate={{ rotateY: isLeft ? -112 : 112 }}
-      transition={{ duration: 2, ease: EASE_GATE, delay: 0.45 }}
+      transition={{ duration: 3.1, ease: EASE_GATE, delay: 0.65 }}
     >
       <GateOrnament flip={!isLeft} palette={C} style={style} />
     </motion.div>

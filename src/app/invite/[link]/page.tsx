@@ -31,6 +31,12 @@ import {
 } from "@/lib/admission/event-companion";
 import { resolvePlaceCard } from "@/services/invitation-features/place-card.service";
 import type { GuestEntryPassData } from "@/types/invitation-design";
+import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
+import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
+import {
+  resolveGuestFacingEventInstant,
+  resolveGuestFacingVenue,
+} from "@/lib/invitation/guest-event-details";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -128,9 +134,10 @@ export default async function InvitePage({
     notFound();
   }
 
-  // Once admitted, the bare invite link opens Event Companion. Guests can still
-  // reopen the ceremony via ?view=invite (from Companion "View invitation").
-  // After an organiser reset, companion unlock clears and this redirect stops.
+  // Ceremony always opens from the start for WhatsApp / social / browser links.
+  // Open + RSVP never unlock companion — only a successful QR scan or manual
+  // admission code at the gate does. Guests can still reopen the ceremony via
+  // ?view=invite after admit; after an organiser reset this redirect stops.
   const admissionSummary = await getInvitationAdmission(invitation.id);
   if (!preferInviteCeremony && shouldOpenEventCompanionOnly(admissionSummary)) {
     redirect(buildEventCompanionHref(link, guestToken ?? null));
@@ -141,30 +148,11 @@ export default async function InvitePage({
   // Guest personalization, the order/design record, custom blocks, and the
   // memory-vault links are all independent reads keyed off `invitation.id` /
   // `event.id`, fetch them concurrently rather than as a serial waterfall.
-  const [personalizedGuest, order, blocks, memoryLinks] = await Promise.all([
+  const [personalizedGuest, order, invitationBlocks, memoryLinks] = await Promise.all([
     guestToken
       ? invitationService.getGuestForInvitation(invitation.id, guestToken)
       : Promise.resolve(null),
-    prisma.invitationOrder.findFirst({
-      where: { invitationId: invitation.id },
-      include: {
-        languageVersions: true,
-        template: {
-          include: {
-            defaultMusicTrack: {
-              select: {
-                id: true,
-                title: true,
-                artist: true,
-                url: true,
-                durationSec: true,
-                isActive: true,
-              },
-            },
-          },
-        },
-      },
-    }),
+    resolveProductionInvitationOrder(invitation.id, event.id),
     invitationBlockService.getBlocksForInvitation(invitation.id),
     // Always provision Album QR for published invites so guests can upload/view live.
     ensureEventMemoryLinks(event.id),
@@ -202,14 +190,38 @@ export default async function InvitePage({
 
   const galleryUrls = event.media?.map((m) => m.url) ?? [];
 
-  const orderDesign = order?.designConfig as Partial<InvitationDesignConfig> | null;
-  const catalogSlug = order?.templateSlug ?? order?.template?.slug ?? invitation.template?.slug ?? null;
+  const hasStoredDesign = Boolean(
+    (invitation.designConfig as Partial<InvitationDesignConfig> | null)?.layout
+  );
+  const inheritsProductionOrder = Boolean(
+    order && (order.invitationId === invitation.id || !hasStoredDesign)
+  );
+  const productionOrder = inheritsProductionOrder ? order : null;
+  const catalogSlug =
+    productionOrder?.templateSlug ??
+    productionOrder?.template?.slug ??
+    invitation.template?.slug ??
+    null;
+  // A personalized guest invitation is a separate Invitation row and normally
+  // has no design snapshot of its own. Render from the event's paid/published
+  // Studio order so every guest sees the organizer/admin's current live work.
+  // A separate legacy invitation with an intentional design keeps that design.
+  const productionDesign = productionOrder
+    ? buildPublishedDesignConfig(productionOrder)
+    : null;
   const design = applyCatalogCreativeIdentity(
-    mergeDesignConfig(baseDesign, orderDesign ?? undefined),
+    productionDesign ?? baseDesign,
     catalogSlug
   );
+  const guestFacingStartDate = resolveGuestFacingEventInstant(event.startDate, design);
+  const guestFacingVenue = resolveGuestFacingVenue(event.venueName, design);
+  const blocks = productionOrder
+    ? (await invitationBlockService.getBlocksForOrder(productionOrder.id)).filter(
+        (block) => block.isVisible
+      )
+    : invitationBlocks;
 
-  let templateDefaultTrack = order?.template?.defaultMusicTrack ?? null;
+  let templateDefaultTrack = productionOrder?.template?.defaultMusicTrack ?? null;
   if (!templateDefaultTrack && catalogSlug) {
     templateDefaultTrack = await prisma.invitationCatalogTemplate.findUnique({
       where: { slug: catalogSlug },
@@ -228,11 +240,11 @@ export default async function InvitePage({
     }).then((t) => t?.defaultMusicTrack ?? null);
   }
 
-  const allowedLocales = order
-    ? invitationLanguageService.getAvailableLocales(order.languageMode)
+  const allowedLocales = productionOrder
+    ? invitationLanguageService.getAvailableLocales(productionOrder.languageMode)
     : (["en"] as AppLocale[]);
 
-  const localizedVersions = order?.languageVersions.reduce(
+  const localizedVersions = productionOrder?.languageVersions.reduce(
     (acc, v) => {
       const code = v.languageCode as AppLocale;
       acc[code] = {
@@ -248,14 +260,22 @@ export default async function InvitePage({
     {} as Partial<Record<AppLocale, { eventTitle?: string | null; story?: string | null; dressCode?: string | null; venueName?: string | null; landmark?: string | null; hostName?: string | null }>>
   );
 
-  const musicAddon = order ? addonFulfillmentService.hasFeature(order, "guest_music") : false;
-  const memoryVaultAddon = order ? addonFulfillmentService.hasFeature(order, "memory_vault") : false;
+  const musicAddon = productionOrder
+    ? addonFulfillmentService.hasFeature(productionOrder, "guest_music")
+    : false;
+  const memoryVaultAddon = productionOrder
+    ? addonFulfillmentService.hasFeature(productionOrder, "memory_vault")
+    : false;
   const memoryVault = memoryVaultAddon || Boolean(memoryLinks);
-  const qrCheckin = order ? addonFulfillmentService.hasFeature(order, "qr_checkin") : false;
-  const seatingPlan = order ? addonFulfillmentService.hasFeature(order, "seating_plan") : false;
+  const qrCheckin = productionOrder
+    ? addonFulfillmentService.hasFeature(productionOrder, "qr_checkin")
+    : false;
+  const seatingPlan = productionOrder
+    ? addonFulfillmentService.hasFeature(productionOrder, "seating_plan")
+    : false;
   const { musicSelection, hasMusic } = resolveInvitationMusic({
-    orderSelection: order?.musicSelection,
-    legacyMusicUrl: order?.musicPreference,
+    orderSelection: productionOrder?.musicSelection,
+    legacyMusicUrl: productionOrder?.musicPreference,
     design,
     catalogSlug: catalogSlug,
     eventDefaultTrack: event.defaultMusicTrack,
@@ -306,27 +326,16 @@ export default async function InvitePage({
         passView.settings.qrAdmissionEnabled &&
         passView.settings.displayPassOnInvitation
       ) {
+        // Capacity and assigned seating render on the place card only — the
+        // entry pass is QR + admission code + save/print.
         entryPass = {
           token: passView.token,
           code: passView.pass.code,
           displayName: personalizedGuest.name?.trim() || passView.pass.displayName,
-          partySize: passView.pass.partySize,
-          admittedCount: passView.pass.admittedCount,
           status: passView.pass.status,
           instructions: passView.settings.passInstructions,
-          tableNumber:
-            passView.settings.showTableOnPass &&
-            (!passView.settings.hideSeatingUntilAdmitted || passView.pass.admittedCount > 0)
-              ? seatTable
-              : null,
-          seatLabel:
-            passView.settings.showSeatOnPass &&
-            (!passView.settings.hideSeatingUntilAdmitted || passView.pass.admittedCount > 0)
-              ? seatLabel
-              : null,
           allowDownload: passView.settings.allowPassDownload,
           allowPrint: passView.settings.allowPassPrint,
-          showPartySize: passView.settings.showPartySizeOnPass,
         };
       }
     } catch (error) {
@@ -340,13 +349,14 @@ export default async function InvitePage({
   // invitation down, so it degrades to "no place card".
   const placeCard = await resolvePlaceCard(
     invitation.id,
-    personalizedGuest?.name ?? null
+    personalizedGuest?.name ?? null,
+    personalizedGuest?.id ?? null
   ).catch((error) => {
     console.error("[invite] place card unavailable", error);
     return null;
   });
 
-  const catalogTemplate = order?.template;
+  const catalogTemplate = productionOrder?.template;
   const revealMode = design.studio?.revealMode;
   const resolvedBackground = resolveBackgroundMedia(design, catalogTemplate);
 
@@ -374,9 +384,9 @@ export default async function InvitePage({
         title: event.title,
         hostName: event.hostName,
         description: event.description,
-        startDate: formatDate(event.startDate),
-        startDateRaw: event.startDate.toISOString(),
-        venueName: event.venueName,
+        startDate: formatDate(guestFacingStartDate),
+        startDateRaw: guestFacingStartDate.toISOString(),
+        venueName: guestFacingVenue,
         landmark: event.landmark,
         mapsLink: event.mapsLink,
         contactPhone: event.contactPhone,
@@ -401,7 +411,7 @@ export default async function InvitePage({
       seatQrDataUrl={seatQrDataUrl || null}
       backgroundImageUrl={resolvedBackground.backgroundImageUrl ?? event.coverImageUrl}
       backgroundVideoUrl={resolvedBackground.backgroundVideoUrl}
-      rsvpRequired={order?.rsvpRequired ?? true}
+      rsvpRequired={productionOrder?.rsvpRequired ?? true}
       galleryUrls={galleryUrls}
       allowedLocales={allowedLocales}
       localizedVersions={localizedVersions}
@@ -418,11 +428,11 @@ export default async function InvitePage({
       giftCtaLabel={giftPlacement?.ctaLabel ?? null}
       giftPrivacyNote={giftPlacement?.privacyNote ?? null}
       eventId={event.id}
-      contactEmail={order?.contactEmail ?? null}
+      contactEmail={productionOrder?.contactEmail ?? null}
       seatingEnabled={seatingPlan && Boolean(seatQrDataUrl && seatLookupUrl)}
       seatTable={seatTable}
       seatLabel={seatLabel}
-      templateSlug={order?.templateSlug}
+      templateSlug={productionOrder?.templateSlug}
     />
   );
 }

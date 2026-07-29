@@ -116,7 +116,7 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
   async function resetAdmission() {
     if (
       !window.confirm(
-        `Reset admission for ${card.name}? Their Event Companion locks again and they can be scanned in at the gate once more.`
+        `Reset admission for ${card.name}?\n\nUse this when they left the venue and need to re-enter.\n• Their QR / code can be scanned again like the first time\n• Event Companion locks\n• Their invite link starts from the invitation intro again`
       )
     ) {
       return;
@@ -130,7 +130,7 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scope: "entire",
-          reason: "Organiser reset from guest search",
+          reason: "Organiser reset for exit / re-entry",
         }),
       });
       const json = await res.json();
@@ -143,7 +143,9 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
         admittedCount: 0,
         members: card.members.map((m) => ({ ...m, admitted: false })),
         guestStatus:
-          card.guestStatus === "CHECKED_IN" ? ("INVITED" as SearchResultCard["guestStatus"]) : card.guestStatus,
+          card.guestStatus === "CHECKED_IN"
+            ? ("ACCEPTED" as SearchResultCard["guestStatus"])
+            : card.guestStatus,
       });
     } catch {
       setError("Could not reach the server.");
@@ -151,6 +153,11 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
       setBusy(false);
     }
   }
+
+  const canResetAdmission =
+    card.admittedCount > 0 ||
+    card.guestStatus === "CHECKED_IN" ||
+    card.members.some((m) => m.admitted);
 
   return (
     <div
@@ -195,21 +202,57 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
           {card.archivedAt && <Badge variant="outline">Archived</Badge>}
           {card.passRevoked && !card.archivedAt && <Badge variant="destructive">Pass revoked</Badge>}
           {card.status === "DRAFT" && <Badge variant="warning">Draft</Badge>}
-          {card.admittedCount > 0 && (
+          {canResetAdmission && (
             <Badge variant="success" className="text-[10px]">
               Admitted
             </Badge>
           )}
 
-          {card.admittedCount > 0 && (
+          {canResetAdmission && (
             <Button
               size="sm"
               variant="outline"
               className="border-amber-200 text-amber-900 hover:bg-amber-50"
               onClick={() => void resetAdmission()}
               disabled={busy}
+              title="Reset so they can re-enter; invite link starts from the intro again"
             >
-              <RotateCcw className="h-3.5 w-3.5" /> Reset admit
+              <RotateCcw className="h-3.5 w-3.5" /> Reset admission
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setEditing(true)}
+            disabled={busy || Boolean(card.archivedAt)}
+            title="Edit name, party size, and contact details"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Button>
+          {card.archivedAt ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => runLifecycle("RESTORE")}
+              disabled={busy}
+            >
+              <ArchiveRestore className="h-3.5 w-3.5" /> Restore
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-200 text-amber-900 hover:bg-amber-50"
+              onClick={() =>
+                runLifecycle(
+                  "ARCHIVE",
+                  `Archive ${card.name}? The invitation is hidden and the pass stops working. You can restore it later — nothing is permanently deleted.`
+                )
+              }
+              disabled={busy}
+              title="Archive invitation (soft remove — restoreable)"
+            >
+              <Archive className="h-3.5 w-3.5" /> Archive
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={copyLink} disabled={busy}>
@@ -259,15 +302,15 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
                   Download QR
                 </MenuItem>
                 <MenuItem icon={Pencil} onClick={() => { setEditing(true); setMenuOpen(false); }}>
-                  Edit name & allowance
+                  Edit name & party size
                 </MenuItem>
-                {card.admittedCount > 0 && (
+                {canResetAdmission && (
                   <MenuItem
                     icon={RotateCcw}
                     destructive
                     onClick={() => void resetAdmission()}
                   >
-                    Reset admission
+                    Reset admission (re-entry)
                   </MenuItem>
                 )}
 
@@ -303,7 +346,7 @@ export function GuestResultCard({ card, highlight, onChanged }: GuestResultCardP
                     onClick={() =>
                       runLifecycle(
                         "ARCHIVE",
-                        `Archive ${card.name}? The invitation is hidden and the pass stops working. You can restore it later.`
+                        `Archive ${card.name}? The invitation is hidden and the pass stops working. You can restore it later — nothing is permanently deleted.`
                       )
                     }
                   >

@@ -42,6 +42,11 @@ import {
   type SeatingTableConfig,
   type TableShape,
 } from "@/lib/seating/seating-types";
+import {
+  compareGuestsForSeatingAssign,
+  seatingPlanningLabel,
+} from "@/lib/seating/guest-planning-status";
+import { cn } from "@/lib/utils";
 
 interface GuestRow {
   id: string;
@@ -164,9 +169,19 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
   const stats = useMemo(() => {
     const assigned = Object.keys(assignments).length;
     const admitted = assignmentViews.filter((a) => a.admitted).length;
+    const accepted = guests.filter((g) => g.status === "ACCEPTED").length;
+    const opened = guests.filter((g) => g.status === "OPENED").length;
     const totalSeats = tables.reduce((sum, t) => sum + (normalizeTable(t).seatCount ?? 8), 0);
-    return { assigned, admitted, unassigned: guests.length - assigned, totalSeats, tableCount: tables.length };
-  }, [assignments, assignmentViews, guests.length, tables]);
+    return {
+      assigned,
+      admitted,
+      accepted,
+      opened,
+      unassigned: guests.length - assigned,
+      totalSeats,
+      tableCount: tables.length,
+    };
+  }, [assignments, assignmentViews, guests, tables]);
 
   const selectedTable = tables.find((t) => t.id === selectedTableId) ?? null;
 
@@ -354,7 +369,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
             Seating arrangement
           </h1>
           <p className="page-subtitle">
-            Design your floor plan, tap seats to assign guests. Hover or tap a seat to see who is admitted.
+            Design your floor plan and seat guests using invite opens and RSVPs. Gate admission is
+            separate — only QR / manual code unlocks Event Companion for the guest.
           </p>
         </div>
         <Button onClick={() => void savePlan()} disabled={saving} className="bg-[#0B8A83] gap-2">
@@ -363,11 +379,13 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: "Tables", value: stats.tableCount, color: "bg-slate-50 text-slate-800" },
           { label: "Total seats", value: stats.totalSeats, color: "bg-blue-50 text-blue-800" },
           { label: "Assigned", value: stats.assigned, color: "bg-teal-50 text-teal-800" },
+          { label: "Accepted", value: stats.accepted, color: "bg-teal-50 text-teal-900" },
+          { label: "Opened invite", value: stats.opened, color: "bg-sky-50 text-sky-800" },
           { label: "Admitted", value: stats.admitted, color: "bg-emerald-50 text-emerald-800" },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
@@ -568,7 +586,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
               <Card>
                 <CardContent className="p-6">
                   <p className="text-xs text-slate-500 mb-4 text-center">
-                    Tap a seat to assign a guest · Green = admitted at gate
+                    Tap a seat to assign · Teal = accepted · Sky = opened invite · Green = admitted at
+                    gate
                   </p>
                   <SeatingFloorPlan
                     tables={tables}
@@ -595,9 +614,13 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                   {guests.length === 0 ? (
                     <p className="text-center text-slate-500 py-8">Add guests from the Guests page first.</p>
                   ) : (
-                    guests.map((g) => {
+                    guests
+                      .slice()
+                      .sort(compareGuestsForSeatingAssign)
+                      .map((g) => {
                       const a = assignments[g.id];
                       const admitted = g.status === "CHECKED_IN";
+                      const statusLabel = seatingPlanningLabel(g.status);
                       return (
                         <div
                           key={g.id}
@@ -605,21 +628,32 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                         >
                           <div className="flex-1 min-w-[140px]">
                             <p className="font-medium text-sm">{g.name}</p>
-                            <p className="text-xs text-slate-500">{g.email ?? g.phone ?? ", "}</p>
+                            <p className="text-xs text-slate-500">{g.email ?? g.phone ?? "No contact"}</p>
                           </div>
+                          <Badge
+                            className={cn(
+                              "text-[10px]",
+                              admitted
+                                ? "bg-emerald-100 text-emerald-800"
+                                : g.status === "ACCEPTED"
+                                  ? "bg-teal-100 text-teal-800"
+                                  : g.status === "OPENED"
+                                    ? "bg-sky-100 text-sky-800"
+                                    : "bg-slate-100 text-slate-700"
+                            )}
+                          >
+                            {admitted ? (
+                              <span className="inline-flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" /> {statusLabel}
+                              </span>
+                            ) : (
+                              statusLabel
+                            )}
+                          </Badge>
                           {a ? (
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">
-                                {a.tableNumber} · Seat {a.seatLabel ?? ", "}
-                              </Badge>
-                              {admitted ? (
-                                <Badge className="bg-emerald-100 text-emerald-800 gap-1">
-                                  <CheckCircle2 className="h-3 w-3" /> Admitted
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary">Assigned</Badge>
-                              )}
-                            </div>
+                            <Badge variant="outline">
+                              {a.tableNumber} · Seat {a.seatLabel ?? "—"}
+                            </Badge>
                           ) : (
                             <Badge variant="outline" className="text-slate-400">
                               Unassigned
@@ -647,7 +681,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
         <SeatAssignPanel
           tableLabel={selectedTable.label}
           seatIndex={selectedSeat}
-          guests={guests.map((g) => ({ id: g.id, name: g.name, email: g.email }))}
+          guests={guests.map((g) => ({ id: g.id, name: g.name, email: g.email, status: g.status }))}
           currentGuestId={currentSeatGuestId}
           onAssign={assignGuestToSeat}
           onUnassign={() => void unassignSeat()}

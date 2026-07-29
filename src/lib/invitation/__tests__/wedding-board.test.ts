@@ -15,6 +15,7 @@ import {
   invitationPhrasesMatch,
   mergeWeddingBoard,
   normaliseSectionOrder,
+  withoutPhraseDashes,
   type WeddingSectionId,
 } from "../wedding-board";
 import {
@@ -97,6 +98,22 @@ describe("mergeWeddingBoard", () => {
       }).familyHeading,
       "Our families welcome you"
     );
+  });
+
+  it("strips em dashes from published guest prose so copy never shows — between phrases", () => {
+    assert.equal(
+      withoutPhraseDashes("a joyful yes — we can't wait"),
+      "a joyful yes, we can't wait"
+    );
+    assert.equal(
+      mergeWeddingBoard({
+        storyBody:
+          "From a first hello to this joyful yes — we can't wait to celebrate.",
+      }).storyBody,
+      "From a first hello to this joyful yes, we can't wait to celebrate."
+    );
+    assert.ok(!mergeWeddingBoard(undefined).storyBody.includes("—"));
+    assert.ok(!mergeWeddingBoard(undefined).scratchMessage.includes("—"));
   });
 });
 

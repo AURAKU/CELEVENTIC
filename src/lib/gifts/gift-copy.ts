@@ -24,16 +24,16 @@ export interface GiftCopy {
 }
 
 const WEDDING_COPY: GiftCopy = {
-  title: "Send a Gift",
+  title: "Gift the Couple",
   subtitle: "Your presence is the greatest gift — but if you wish to bless us with more",
   description:
-    "Thank you for celebrating with us. If you would like to send a cash gift, you can do so securely below. Your gift goes directly to the couple.",
-  ctaLabel: "Send a Gift",
+    "Thank you for celebrating with us. If you would like to send a cash gift, you can do so securely and privately below. Your gift goes directly to the couple.",
+  ctaLabel: "Gift the Couple",
   amountPrompt: "How much would you like to gift?",
   messagePrompt: "Leave a note for the couple (optional)",
-  thankYouTitle: "Thank You",
+  thankYouTitle: "With love and gratitude",
   thankYouMessage:
-    "Your gift has been received with so much love. Thank you for being part of our forever.",
+    "Your gift has been received with so much love. On behalf of the couple — thank you for being part of our forever.",
   privacyNote: "Your gift is private. Only the couple can see it.",
 };
 
@@ -236,6 +236,22 @@ export const GIFT_TYPE_LABELS: Record<EventGiftType, string> = {
   FUNERAL_SUPPORT: "Funeral support",
   GENERAL_GIFT: "Gift",
 };
+
+/** Short companion TAKE PART teaser — warm gesture language, never ecommerce. */
+export function companionGiftTeaser(giftType: EventGiftType): string {
+  switch (giftType) {
+    case "WEDDING_GIFT":
+    case "ANNIVERSARY_GIFT":
+      return "A private blessing for the couple";
+    case "FUNERAL_SUPPORT":
+      return "Stand with the family privately";
+    case "BABY_GIFT":
+    case "NAMING_CEREMONY_GIFT":
+      return "A private blessing for the family";
+    default:
+      return "A private gift for the hosts";
+  }
+}
 
 /** Default suggested amounts in minor units (GHS pesewas). */
 export const DEFAULT_SUGGESTED_AMOUNTS_MINOR = [5000, 10000, 20000, 50000];

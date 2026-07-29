@@ -20,6 +20,7 @@ const schema = z.object({
   guestMessage: z.string().trim().max(500).optional(),
   isAnonymous: z.boolean().optional(),
   guestToken: z.string().trim().max(128).optional(),
+  companionReturnUrl: z.string().trim().max(500).optional(),
 });
 
 /**
@@ -55,6 +56,7 @@ export async function POST(req: Request) {
       guestMessage: data.guestMessage ?? null,
       isAnonymous: data.isAnonymous ?? false,
       guestToken: data.guestToken ?? null,
+      companionReturnUrl: data.companionReturnUrl ?? null,
       userId: session?.user?.id ?? null,
       ip,
       userAgent: req.headers.get("user-agent"),

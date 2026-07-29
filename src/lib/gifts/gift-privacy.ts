@@ -54,6 +54,8 @@ export interface PublicGiftPaymentView {
   guestName: string | null;
   isAnonymous: boolean;
   receiptUrl: string | null;
+  /** Safe relative path back to Event Companion after a verified gift. */
+  companionReturnUrl: string | null;
   failureReason: string | null;
 }
 
@@ -85,6 +87,11 @@ const FORBIDDEN_PUBLIC_KEYS = [
   "targetminor",
   "progress",
   "percentraised",
+  "providerreference",
+  "authorizationurl",
+  "webhook",
+  "secret",
+  "apikey",
 ];
 
 /**

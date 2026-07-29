@@ -2,23 +2,31 @@ import { prisma } from "@/lib/prisma";
 import { resolveInvitationFeatures } from "@/services/invitation-features/feature-resolver";
 import { computeAllowance } from "@/lib/admission/admission-logic";
 import {
+  formatPartyGuestNames,
+  formatPlaceCardMonogram,
+  isAnonymousRecipientName,
+  looksLikeEventTitle,
   resolvePlaceCardConfig,
   shouldShowPlaceCard,
   type PlaceCardViewData,
 } from "@/lib/invitation-features/place-card";
+import { mergeVisionBoard, resolveSealInitials } from "@/lib/invitation/vision-board";
+import { parseCoupleNames } from "@/lib/invitation-templates";
+import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
+import type { InvitationDesignConfig } from "@/types/invitation-design";
 
 /**
  * Personalised Place Card — server resolution.
  *
  * Reads the organiser's config out of the shared feature layer and binds it to
- * the live party allowance, so a published invitation reflects an allowance or
- * arrival change on the very next guest view. Nothing here is cached: the
- * public invite route is `force-dynamic`.
+ * the live party allowance and assigned seating, so a published invitation
+ * reflects capacity or seat changes on the next guest view. Nothing here is
+ * cached: the public invite route is `force-dynamic`.
  */
 
 export type { PlaceCardViewData };
 
-/** Statuses in which a pass still governs its invitation's admitted count. */
+/** Statuses in which a pass still governs its invitation's capacity. */
 const LIVE_PASS_STATUSES = [
   "ACTIVE",
   "PARTIALLY_ADMITTED",
@@ -28,43 +36,123 @@ const LIVE_PASS_STATUSES = [
   "MANUAL_REVIEW",
 ] as const;
 
+function designFromUnknown(value: unknown): Partial<InvitationDesignConfig> {
+  return value && typeof value === "object"
+    ? (value as Partial<InvitationDesignConfig>)
+    : {};
+}
+
 /**
  * Resolve the place card for one invitation, or null when it should not render.
  *
  * @param guestName  personalised recipient, when the link carried a guest token
+ * @param guestId    exact personalised guest, used for table / seat assignment
  */
 export async function resolvePlaceCard(
   invitationId: string,
-  guestName?: string | null
+  guestName?: string | null,
+  guestId?: string | null
 ): Promise<PlaceCardViewData | null> {
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
     select: {
       id: true,
+      eventId: true,
       name: true,
       admissionAllowance: true,
-      admittedCount: true,
+      designConfig: true,
       guests: {
-        select: { plusOnes: true, group: { select: { name: true } } },
+        select: {
+          id: true,
+          name: true,
+          plusOnes: true,
+          group: { select: { name: true } },
+          seatingAssignment: {
+            select: { tableNumber: true, seatLabel: true, zone: true },
+          },
+        },
         orderBy: { createdAt: "asc" },
       },
+      event: { select: { title: true, hostName: true } },
     },
   });
   if (!invitation) return null;
 
   const features = await resolveInvitationFeatures(invitationId);
   const feature = features.find((f) => f.key === "PLACE_CARD");
-  const config = resolvePlaceCardConfig(feature?.config);
+  const baseConfig = resolvePlaceCardConfig(feature?.config);
 
-  // "Assigned" means the invitation is addressed to somebody: either the link
-  // was personalised for a named guest, or guest rows exist on the invitation.
-  const assigned = Boolean(guestName?.trim()) || invitation.guests.length > 0;
-  if (!shouldShowPlaceCard(config, feature?.enabled ?? false, assigned)) return null;
+  // Prefer this invitation's design; fall back to the event's published Studio
+  // order so personalised guest links still inherit the couple seal (C | J).
+  let design = designFromUnknown(invitation.designConfig);
+  if (!design.layout) {
+    const productionOrder = await resolveProductionInvitationOrder(
+      invitation.id,
+      invitation.eventId
+    );
+    if (productionOrder?.designConfig) {
+      design = designFromUnknown(productionOrder.designConfig);
+    }
+  }
+
+  const board = mergeVisionBoard(
+    (design.studio as { visionBoard?: Parameters<typeof mergeVisionBoard>[0] } | undefined)
+      ?.visionBoard
+  );
+  const parsed = parseCoupleNames(invitation.event.title, invitation.event.hostName);
+  const seal = resolveSealInitials(board.sealInitials, {
+    layout: design.layout,
+    coupleName1: board.coupleName1 || parsed.name1,
+    coupleName2: board.coupleName2 || parsed.name2,
+    hostName: invitation.event.hostName,
+  });
+
+  const storedMonogram = formatPlaceCardMonogram(baseConfig.monogram);
+  // Drop ceremony-title initials ("TM" from Traditional Marriage) in favour of
+  // the couple seal.
+  const titleInitials = formatPlaceCardMonogram(
+    (invitation.name || invitation.event.title || "")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+  );
+  const sealMonogram = formatPlaceCardMonogram(seal);
+  const monogram =
+    storedMonogram &&
+    storedMonogram !== titleInitials &&
+    !looksLikeEventTitle(invitation.name)
+      ? storedMonogram
+      : sealMonogram || storedMonogram;
+
+  const config = {
+    ...baseConfig,
+    monogram,
+  };
+
+  // "Assigned" means the invitation is addressed to a real guest/party — never
+  // a ceremony title that happened to be stored as invitation.name.
+  const partyGuestNames = formatPartyGuestNames(invitation.guests.map((g) => g.name));
+  const tokenGuest = guestName?.trim() || null;
+  const resolvedGuestName =
+    (tokenGuest && !isAnonymousRecipientName(tokenGuest) ? tokenGuest : null) ||
+    (partyGuestNames && !isAnonymousRecipientName(partyGuestNames) ? partyGuestNames : null);
+  const assigned = Boolean(resolvedGuestName);
+  if (
+    !shouldShowPlaceCard(
+      config,
+      feature?.enabled ?? false,
+      assigned || invitation.guests.length > 0
+    )
+  ) {
+    return null;
+  }
 
   const pass = await prisma.guestPass.findFirst({
     where: { invitationId, status: { in: [...LIVE_PASS_STATUSES] } },
     orderBy: { tokenVersion: "desc" },
-    select: { partySize: true, admittedCount: true },
+    select: { partySize: true },
   });
 
   const allowance = Math.max(
@@ -72,24 +160,34 @@ export async function resolvePlaceCard(
     pass?.partySize ?? 0,
     1
   );
-  const admittedCount = Math.min(
-    Math.max(invitation.admittedCount, pass?.admittedCount ?? 0),
-    allowance
-  );
+  const personalizedGuest =
+    (guestId ? invitation.guests.find((guest) => guest.id === guestId) : null) ??
+    (tokenGuest
+      ? invitation.guests.find(
+          (guest) => guest.name.trim().toLocaleLowerCase() === tokenGuest.toLocaleLowerCase()
+        )
+      : null) ??
+    (invitation.guests.length === 1 ? invitation.guests[0] : null);
+  const seating = personalizedGuest?.seatingAssignment ?? null;
 
   return {
     config,
     recipient: {
       invitationName: invitation.name,
-      guestName: guestName?.trim() || null,
+      guestName: resolvedGuestName,
       groupName: invitation.guests.find((g) => g.group?.name)?.group?.name ?? null,
       partySize: allowance,
       assigned,
     },
     party: {
       allowance,
-      admittedCount,
-      remainingCount: Math.max(0, allowance - admittedCount),
     },
+    seating: seating?.tableNumber?.trim()
+      ? {
+          tableNumber: seating.tableNumber.trim(),
+          seatLabel: seating.seatLabel?.trim() || null,
+          zone: seating.zone?.trim() || null,
+        }
+      : null,
   };
 }

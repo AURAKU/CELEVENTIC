@@ -9,10 +9,14 @@ import type {
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 import {
+  applyPortalUnlockPolicy,
   computeAllowance,
   summarize,
   type AdmissionSummary,
 } from "@/lib/admission/admission-logic";
+import { ADMISSION_QR_TYPES } from "@/lib/qr/qr-types";
+
+export { applyPortalUnlockPolicy } from "@/lib/admission/admission-logic";
 
 /**
  * Post-Admission Guest Experience — admission projection + reset.
@@ -156,14 +160,19 @@ export async function syncAdmissionAfterCheckIn(params: {
   scannerDeviceId?: string | null;
 }): Promise<AdmissionSummary | null> {
   try {
-    return await prisma.$transaction((tx) =>
-      recomputeProjection(tx, params.invitationId, {
+    return await prisma.$transaction(async (tx) => {
+      // A successful gate admit always unlocks Event Companion for this invite.
+      await tx.invitation.updateMany({
+        where: { id: params.invitationId, postAdmissionEnabled: false },
+        data: { postAdmissionEnabled: true },
+      });
+      return recomputeProjection(tx, params.invitationId, {
         action: "ADMIT",
         guestId: params.guestId,
         scannerUserId: params.scannerUserId,
         scannerDeviceId: params.scannerDeviceId,
-      })
-    );
+      });
+    });
   } catch (err) {
     console.error("[admission] syncAdmissionAfterCheckIn failed", err);
     return null;
@@ -271,8 +280,9 @@ const RESET_ACTION: Record<ResetScope, AdmissionAction> = {
 /**
  * Reset admission for one member, selected members, or the whole invitation.
  * Atomic + concurrency-safe (single transaction). Append-only: never deletes
- * prior admission rows. Locks the portal (relock) only when no admitted head
- * remains.
+ * prior admission event rows. Locks the portal (relock) only when no admitted
+ * head remains, bumps portalTokenVersion so the invite link plays the intro
+ * again, and clears VALID gate scans so QR / manual code admit like first entry.
  */
 export async function resetAdmission(
   input: ResetAdmissionInput
@@ -286,7 +296,16 @@ export async function resetAdmission(
   const result = await prisma.$transaction(async (tx) => {
     const invitation = await tx.invitation.findUnique({
       where: { id: invitationId },
-      include: { guests: { select: { id: true, status: true } } },
+      include: {
+        guests: {
+          select: {
+            id: true,
+            status: true,
+            inviteOpenedAt: true,
+            rsvps: { orderBy: { createdAt: "desc" }, take: 1, select: { response: true } },
+          },
+        },
+      },
     });
     if (!invitation) throw new Error(`Invitation ${invitationId} not found`);
 
@@ -301,11 +320,19 @@ export async function resetAdmission(
 
     // Idempotent: only act on members that are actually admitted.
     if (toUncheck.length > 0) {
-      await tx.guest.updateMany({
-        where: { id: { in: toUncheck }, invitationId, status: "CHECKED_IN" },
-        // Back to a neutral non-admitted status; RSVP records are untouched.
-        data: { status: "INVITED" },
-      });
+      for (const guest of invitation.guests.filter((g) => toUncheck.includes(g.id))) {
+        const rsvp = guest.rsvps[0]?.response;
+        const restoredStatus: GuestStatus =
+          rsvp === "ACCEPTED" || rsvp === "DECLINED" || rsvp === "MAYBE"
+            ? rsvp
+            : guest.inviteOpenedAt
+              ? "OPENED"
+              : "INVITED";
+        await tx.guest.update({
+          where: { id: guest.id },
+          data: { status: restoredStatus },
+        });
+      }
 
       if (input.options?.releaseSeating) {
         await tx.seatingAssignment.deleteMany({ where: { guestId: { in: toUncheck } } });
@@ -314,6 +341,29 @@ export async function resetAdmission(
         for (const gid of toUncheck) {
           await tx.guest.update({ where: { id: gid }, data: { qrToken: randomUUID() } });
         }
+      }
+    }
+
+    // Clear VALID admission scans so re-entry QR / 4-digit code behave like
+    // a first admit (otherwise ALREADY_USED blocks the gate).
+    const scanGuestIds = scope === "entire" ? invitation.guests.map((g) => g.id) : requested;
+    if (scanGuestIds.length > 0) {
+      const admissionQrs = await tx.qrCode.findMany({
+        where: {
+          eventId: invitation.eventId,
+          guestId: { in: scanGuestIds },
+          type: { in: [...ADMISSION_QR_TYPES] },
+        },
+        select: { id: true },
+      });
+      if (admissionQrs.length > 0) {
+        await tx.qrScan.deleteMany({
+          where: {
+            eventId: invitation.eventId,
+            qrCodeId: { in: admissionQrs.map((q) => q.id) },
+            result: "VALID",
+          },
+        });
       }
     }
 
@@ -619,20 +669,6 @@ export async function getInvitationAdmission(invitationId: string): Promise<
   };
 }
 
-/**
- * Narrow the default "unlock on first admitted head" rule to the organiser's
- * chosen policy. Only ever narrows — never grants access the summary denied.
- */
-export function applyPortalUnlockPolicy(
-  summary: AdmissionSummary,
-  policy: PortalUnlockPolicy
-): boolean {
-  if (!summary.canAccessPortal) return false;
-  if (policy === "MANUAL") return false;
-  if (policy === "ON_FULL_ADMISSION") return summary.state === "ADMITTED";
-  return true;
-}
-
 export interface ApplyPassAdmissionInput {
   passId: string;
   /** CAS guard: the revision the caller based its decision on. */
@@ -718,7 +754,14 @@ export async function applyPassAdmission(
 
     await tx.invitation.update({
       where: { id: current.invitationId },
-      data: { admittedCount: summary.admittedCount, admissionState: summary.state },
+      data: {
+        admittedCount: summary.admittedCount,
+        admissionState: summary.state,
+        // Gate admit must unlock companion on the invite link (bare URL /
+        // handoff poll). Issuance usually sets this already; reinforce here
+        // so a successful admit can never leave the guest stuck on ceremony.
+        postAdmissionEnabled: true,
+      },
     });
 
     await tx.admissionEvent.create({

@@ -26,7 +26,7 @@ import { useSession } from "next-auth/react";
 import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
 import { cn } from "@/lib/utils";
-import { extractPassToken } from "@/lib/admission/pass-token-format";
+import { prefersEntryPassAdmit } from "@/lib/admission/gate-scan";
 import {
   Select,
   SelectContent,
@@ -370,12 +370,13 @@ export function QrAdmissionClient() {
     ]
   );
 
-  /** One camera: Guest Entry Pass tokens → EntryPassGate; everything else → legacy check-in. */
+  /** One camera: Guest Entry Pass tokens/codes → EntryPassGate; everything else → legacy check-in. */
   const handleUnifiedScan = useCallback(
     (raw: string) => {
       const trimmed = raw.trim();
       if (!trimmed) return;
-      if (extractPassToken(trimmed) && entryPassScanRef.current) {
+      // Client decode only routes — admit always happens server-side.
+      if (prefersEntryPassAdmit(trimmed) && entryPassScanRef.current) {
         entryPassScanRef.current(trimmed);
         return;
       }
@@ -388,13 +389,13 @@ export function QrAdmissionClient() {
     if (!eventId) return;
     if (scope === "event") {
       const ok = window.confirm(
-        "Reset ALL guest admissions for this event? Every QR and 4-digit code can be scanned again, and Event Companion locks for everyone until re-admit."
+        "Reset ALL guest admissions for this event?\n\nEveryone can be scanned again like first entry.\nEvent Companion locks for all until re-admit.\nInvite links start from the invitation intro again."
       );
       if (!ok) return;
     } else if (scope === "guest") {
       if (!guestId) return;
       const ok = window.confirm(
-        "Reset this guest's admission? Their Event Companion locks again and they can be scanned in once more."
+        "Reset this guest's admission?\n\nUse when they left and need to re-enter.\n• QR / code works again like first entry\n• Event Companion locks\n• Their invite link starts from the invitation intro"
       );
       if (!ok) return;
     }
@@ -618,7 +619,7 @@ export function QrAdmissionClient() {
                   className="gap-1.5 text-amber-800 border-amber-200 hover:bg-amber-50"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Reset all admits
+                  Reset all admissions
                 </Button>
               </div>
             </div>
@@ -735,6 +736,7 @@ export function QrAdmissionClient() {
           gate={gate || undefined}
           hideCamera
           scanHandlerRef={entryPassScanRef}
+          onUnresolvedCode={(code) => void performCheckIn(code)}
         />
       )}
 
@@ -773,12 +775,12 @@ export function QrAdmissionClient() {
                 value={manualToken}
                 onChange={(e) => setManualToken(e.target.value.trim())}
                 inputMode="numeric"
-                placeholder="4-digit code, token, or verify URL"
+                placeholder="4/6-digit code, token, or verify URL"
                 disabled={processing}
               />
               <p className="text-xs text-slate-500">
-                Guest 4-digit codes and verify URLs check in here. Guest Entry Pass 4/6-digit
-                admission codes use the Entry Pass panel above.
+                Entry-pass codes and QR tokens admit through the secure gate first. Legacy guest
+                4-digit codes and verify URLs fall through to the same server check-in path.
               </p>
               <Button
                 className="w-full min-h-[44px] touch-manipulation"
@@ -891,7 +893,7 @@ export function QrAdmissionClient() {
                               onClick={() => void resetAdmission("guest", scan.guestId!)}
                             >
                               <RotateCcw className="h-3 w-3" />
-                              Reset
+                              Reset admission
                             </Button>
                           )}
                       </div>

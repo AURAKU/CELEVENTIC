@@ -3,8 +3,10 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { qrService } from "@/services/qr/qr.service";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/workspace/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import { rateLimit } from "@/lib/rate-limit";
+import type { UserRole } from "@prisma/client";
 
 const resetSchema = z.discriminatedUnion("scope", [
   z.object({
@@ -34,7 +36,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = resetSchema.parse(body);
 
-    await verifyEventAccess(data.eventId, session.user.id, session.user.role);
+    // Admins / organisers / guest managers only — not scanner-only ushers.
+    try {
+      await requireEventPermission(
+        data.eventId,
+        session.user.id,
+        session.user.role as UserRole,
+        EventPermissionKey.MANAGE_GUESTS
+      );
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "You do not have permission to reset admission" },
+        { status: 403 }
+      );
+    }
 
     if (data.scope === "guest") {
       const result = await qrService.resetGuestAdmission(data.eventId, data.guestId, session.user.id);

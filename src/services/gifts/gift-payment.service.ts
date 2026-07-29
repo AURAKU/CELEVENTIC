@@ -31,6 +31,10 @@ import {
   type GiftPaymentMethodId,
 } from "@/lib/gifts/gift-providers";
 import { giftPaymentUiState, type PublicGiftPaymentView } from "@/lib/gifts/gift-privacy";
+import {
+  detectGiftVerificationMismatch,
+  sanitizeCompanionReturnUrl,
+} from "@/lib/gifts/gift-placement";
 
 /**
  * Gift payments.
@@ -62,6 +66,8 @@ export interface InitializeGiftInput {
   guestMessage?: string | null;
   isAnonymous?: boolean;
   guestToken?: string | null;
+  /** Safe relative companion path for post-success return (never absolute). */
+  companionReturnUrl?: string | null;
   userId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
@@ -125,6 +131,8 @@ export class GiftPaymentService {
       ? input.guestMessage?.trim().slice(0, 500) || null
       : null;
 
+    const companionReturnUrl = sanitizeCompanionReturnUrl(input.companionReturnUrl);
+
     // Paystack requires an email; when a guest only gives a phone number we use
     // a non-routable placeholder rather than inventing a deliverable address.
     const receiptEmail = guestEmail ?? `gift-${Date.now()}@guests.celeventic.com`;
@@ -156,7 +164,11 @@ export class GiftPaymentService {
         isAnonymous,
         ipHash: hashIp(input.ip),
         userAgent: input.userAgent?.slice(0, 300),
-        metadata: { method: method.id, qrMode: campaign.qrMode },
+        metadata: {
+          method: method.id,
+          qrMode: campaign.qrMode,
+          ...(companionReturnUrl ? { companionReturnUrl } : {}),
+        },
       },
     });
 
@@ -384,16 +396,15 @@ export class GiftPaymentService {
     gift: EventGiftPayment,
     verification: { reference: string; amountMinor: number; currency: string }
   ): string | null {
-    if (verification.reference !== gift.reference) {
-      return `Reference mismatch: expected ${gift.reference}, provider reported ${verification.reference}`;
-    }
-    if (verification.currency.toUpperCase() !== gift.currency.toUpperCase()) {
-      return `Currency mismatch: expected ${gift.currency}, provider reported ${verification.currency}`;
-    }
-    if (!amountsMatch(gift.amountMinor, verification.amountMinor)) {
-      return `Amount mismatch: expected ${gift.amountMinor}, provider reported ${verification.amountMinor}`;
-    }
-    return null;
+    return detectGiftVerificationMismatch(
+      {
+        reference: gift.reference,
+        amountMinor: gift.amountMinor,
+        currency: gift.currency,
+      },
+      verification,
+      amountsMatch
+    );
   }
 
   /**
@@ -644,7 +655,12 @@ export class GiftPaymentService {
     const receiptToken =
       state === "success" ? await giftReceiptService.tokenForPayment(gift.id) : null;
 
-    const methodId = (gift.metadata as { method?: string } | null)?.method ?? null;
+    const meta = gift.metadata as {
+      method?: string;
+      companionReturnUrl?: string;
+    } | null;
+    const methodId = meta?.method ?? null;
+    const companionReturnUrl = sanitizeCompanionReturnUrl(meta?.companionReturnUrl);
 
     return {
       reference: gift.reference,
@@ -659,6 +675,7 @@ export class GiftPaymentService {
       guestName: gift.isAnonymous ? null : gift.guestName,
       isAnonymous: gift.isAnonymous,
       receiptUrl: receiptToken ? `${options.baseUrl}/gift/receipt/${receiptToken}` : null,
+      companionReturnUrl,
       failureReason:
         state === "failed" ? gift.failureReason ?? "This payment did not go through" : null,
     };

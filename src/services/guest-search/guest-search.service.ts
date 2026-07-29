@@ -225,16 +225,33 @@ export async function searchGuests(options: SearchOptions): Promise<SearchRespon
   const limit = Math.min(MAX_LIMIT, Math.max(1, options.limit ?? DEFAULT_LIMIT));
   const query = parseSearchQuery(options.query);
 
-  if (query.isEmpty) {
-    return { query: query.raw, results: [], total: 0, truncated: false, tookMs: 0 };
-  }
-
   const appUrl = await getServerAppUrl();
   const baseWhere: Prisma.InvitationWhereInput = {
     eventId: options.eventId,
     ...(options.includeArchived ? {} : { archivedAt: null }),
     ...(options.includeGeneralPasses ? {} : { isGeneralPass: false }),
   };
+
+  // Empty query = browse the guest list (newest first). Keeps Add Guest and
+  // search on one continuous surface instead of a second CRM table.
+  if (query.isEmpty) {
+    const rows = await prisma.invitation.findMany({
+      where: baseWhere,
+      select: invitationSelect,
+      orderBy: { updatedAt: "desc" },
+      take: limit,
+    });
+    const total = await prisma.invitation.count({ where: baseWhere });
+    return {
+      query: query.raw,
+      results: rows.map((row) =>
+        toCard(row, { score: 0, field: "name", reason: row.name }, appUrl)
+      ),
+      total,
+      truncated: total > rows.length,
+      tookMs: Date.now() - startedAt,
+    };
+  }
 
   // ── Stage one: narrow ──
   const narrow = await prisma.invitation.findMany({

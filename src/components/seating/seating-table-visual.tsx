@@ -10,6 +10,11 @@ import type { GuestAssignmentView } from "@/lib/seating/seating-types";
 import { computeSeatPositions } from "@/lib/seating/seating-layout";
 import { normalizeTable } from "@/lib/seating/seating-types";
 import type { SeatingTableConfig } from "@/lib/seating/seating-types";
+import {
+  compareGuestsForSeatingAssign,
+  seatingPlanningLabel,
+  seatingPlanningTone,
+} from "@/lib/seating/guest-planning-status";
 
 interface SeatSlotProps {
   seatIndex: number;
@@ -20,11 +25,42 @@ interface SeatSlotProps {
   onSelect?: () => void;
 }
 
+function planningBadgeClass(status?: string | null): string {
+  switch (seatingPlanningTone(status)) {
+    case "admitted":
+      return "bg-emerald-100 text-emerald-800";
+    case "accepted":
+      return "bg-teal-100 text-teal-800";
+    case "opened":
+      return "bg-sky-100 text-sky-800";
+    case "maybe":
+      return "bg-amber-100 text-amber-800";
+    case "declined":
+      return "bg-slate-100 text-slate-600";
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+}
+
+function seatOccupiedClass(status?: string | null, admitted?: boolean): string {
+  if (admitted || status === "CHECKED_IN") {
+    return "bg-emerald-500 border-emerald-600 text-white shadow-md shadow-emerald-500/30";
+  }
+  if (status === "ACCEPTED") {
+    return "bg-[#0B8A83] border-[#0B8A83] text-white shadow-md";
+  }
+  if (status === "OPENED") {
+    return "bg-sky-500 border-sky-600 text-white shadow-md";
+  }
+  return "bg-[#0B8A83]/80 border-[#0B8A83] text-white shadow-md";
+}
+
 function SeatSlot({ seatIndex, assignment, interactive, selected, highlighted, onSelect }: SeatSlotProps) {
   const [pinned, setPinned] = useState(false);
   const showPopup = pinned || selected;
   const occupied = Boolean(assignment);
   const admitted = assignment?.admitted || assignment?.guestStatus === "CHECKED_IN";
+  const planningLabel = seatingPlanningLabel(assignment?.guestStatus);
 
   return (
     <div className="relative">
@@ -46,9 +82,7 @@ function SeatSlot({ seatIndex, assignment, interactive, selected, highlighted, o
           !interactive && "cursor-default",
           highlighted && "ring-2 ring-[#D4A63A] ring-offset-2 scale-110",
           occupied
-            ? admitted
-              ? "bg-emerald-500 border-emerald-600 text-white shadow-md shadow-emerald-500/30"
-              : "bg-[#0B8A83] border-[#0B8A83] text-white shadow-md"
+            ? seatOccupiedClass(assignment?.guestStatus, admitted)
             : "bg-white border-slate-300 text-slate-400 hover:border-[#0B8A83] hover:text-[#0B8A83]",
           selected && !highlighted && "ring-2 ring-[#D4A63A] ring-offset-2"
         )}
@@ -76,13 +110,10 @@ function SeatSlot({ seatIndex, assignment, interactive, selected, highlighted, o
             <Badge variant="outline" className="text-[9px]">
               Seat {assignment.seatLabel ?? seatIndex}
             </Badge>
-            {admitted ? (
-              <Badge className="text-[9px] bg-emerald-100 text-emerald-800 gap-0.5">
-                <CheckCircle2 className="h-2.5 w-2.5" /> Admitted
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-[9px]">Assigned</Badge>
-            )}
+            <Badge className={cn("text-[9px] gap-0.5", planningBadgeClass(assignment.guestStatus))}>
+              {admitted ? <CheckCircle2 className="h-2.5 w-2.5" /> : null}
+              {planningLabel}
+            </Badge>
           </div>
         </div>
       )}
@@ -192,7 +223,7 @@ export function SeatingTableVisual({
 interface SeatAssignPanelProps {
   tableLabel: string;
   seatIndex: number;
-  guests: { id: string; name: string; email: string | null }[];
+  guests: { id: string; name: string; email: string | null; status?: string | null }[];
   currentGuestId?: string;
   onAssign: (guestId: string) => void;
   onUnassign: () => void;
@@ -219,12 +250,15 @@ export function SeatAssignPanel({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [onClose]);
 
-  const filtered = guests.filter(
-    (g) =>
-      !search ||
-      g.name.toLowerCase().includes(search.toLowerCase()) ||
-      g.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = guests
+    .filter(
+      (g) =>
+        !search ||
+        g.name.toLowerCase().includes(search.toLowerCase()) ||
+        g.email?.toLowerCase().includes(search.toLowerCase())
+    )
+    .slice()
+    .sort(compareGuestsForSeatingAssign);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
@@ -235,7 +269,9 @@ export function SeatAssignPanel({
         <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
           <div>
             <p className="font-semibold text-sm">{tableLabel}</p>
-            <p className="text-xs text-slate-500">Seat {seatIndex}</p>
+            <p className="text-xs text-slate-500">
+              Seat {seatIndex} · Accepted & opened guests listed first
+            </p>
           </div>
           <Button size="icon" variant="ghost" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -273,11 +309,14 @@ export function SeatAssignPanel({
                       <div className="h-8 w-8 rounded-full bg-[#0B8A83]/10 flex items-center justify-center shrink-0">
                         <User className="h-4 w-4 text-[#0B8A83]" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate">{g.name}</p>
-                        <p className="text-xs text-slate-500 truncate">{g.email ?? ", "}</p>
+                        <p className="text-xs text-slate-500 truncate">{g.email ?? "No email"}</p>
                       </div>
-                      <UserPlus className="h-4 w-4 text-slate-400 ml-auto shrink-0" />
+                      <Badge className={cn("text-[9px] shrink-0", planningBadgeClass(g.status))}>
+                        {seatingPlanningLabel(g.status)}
+                      </Badge>
+                      <UserPlus className="h-4 w-4 text-slate-400 shrink-0" />
                     </button>
                   </li>
                 ))

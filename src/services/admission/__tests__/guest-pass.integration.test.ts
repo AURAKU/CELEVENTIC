@@ -474,6 +474,11 @@ describe("admission reset", () => {
     });
     assert.equal((await getInvitationAdmission(invitationId))?.canAccessPortal, true);
 
+    const before = await db.invitation.findUniqueOrThrow({
+      where: { id: invitationId },
+      select: { portalTokenVersion: true },
+    });
+
     await resetAdmission({
       invitationId,
       scope: "entire",
@@ -485,6 +490,15 @@ describe("admission reset", () => {
     assert.equal(after?.admittedCount, 0);
     assert.equal(after?.canAccessPortal, false, "the portal must relock");
     assert.equal(after?.state, "ADMISSION_RESET");
+
+    const afterInv = await db.invitation.findUniqueOrThrow({
+      where: { id: invitationId },
+      select: { portalTokenVersion: true },
+    });
+    assert.ok(
+      afterInv.portalTokenVersion > before.portalTokenVersion,
+      "portal epoch must bump so invite intro plays from the start"
+    );
 
     const pass = await db.guestPass.findUniqueOrThrow({ where: { id: issued.pass.id } });
     assert.equal(pass.admittedCount, 0);

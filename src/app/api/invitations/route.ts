@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { parsePaginationFromUrl, DEFAULT_LIMIT } from "@/lib/pagination";
 import { verifyEventAccess } from "@/lib/event-access";
+import { DuplicateGuestError } from "@/lib/guest-search/duplicate-guests";
 
 const designConfigSchema = z.object({
   layout: z.string(),
@@ -32,6 +33,7 @@ const createSchema = z.object({
   templateId: z.string().optional(),
   message: z.string().optional(),
   designConfig: designConfigSchema.optional(),
+  acknowledgeDuplicates: z.boolean().optional(),
 });
 
 export async function GET(req: Request) {
@@ -76,12 +78,19 @@ export async function POST(req: Request) {
       message: data.message,
       templateId: data.templateId,
       designConfig: data.designConfig as never,
+      acknowledgeDuplicates: data.acknowledgeDuplicates,
     });
 
     return NextResponse.json({ success: true, data: invitation }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+    }
+    if (error instanceof DuplicateGuestError) {
+      return NextResponse.json(
+        { error: error.message, duplicates: error.duplicates, code: "DUPLICATE" },
+        { status: 409 }
+      );
     }
     console.error("Create invitation error:", error);
     return NextResponse.json(

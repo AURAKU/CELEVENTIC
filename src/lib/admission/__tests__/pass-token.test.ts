@@ -83,6 +83,20 @@ test("pass URLs round-trip through the extractor", () => {
   assert.equal(extractPassToken(""), null);
 });
 
+test("pass-image screenshots and utm-tagged admission URLs extract cleanly", () => {
+  const { token } = mintPassToken();
+  assert.equal(
+    extractPassToken(
+      `https://celeventic.com/api/admission/pass-image?token=${encodeURIComponent(token)}&size=512`
+    ),
+    token
+  );
+  assert.equal(
+    extractPassToken(`https://celeventic.com/admission/${encodeURIComponent(token)}?utm=gate#focus`),
+    token
+  );
+});
+
 test("code comparison is length-safe", () => {
   assert.equal(safeCodeEquals("1234", "1234"), true);
   assert.equal(safeCodeEquals("1234", "1235"), false);

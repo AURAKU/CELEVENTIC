@@ -382,8 +382,6 @@ export function TapToBeginExperience({
       ) : null}
 
       <div className={stageClass}>
-        <p className={styles.brand}>Celeventic</p>
-
         {beat.eyebrow && beat.script ? (
           <>
             <p className={styles.eventBeat}>{beat.eyebrow}</p>

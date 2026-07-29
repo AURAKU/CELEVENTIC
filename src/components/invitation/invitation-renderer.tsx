@@ -83,6 +83,7 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
             config={props.placeCard.config}
             recipient={props.placeCard.recipient}
             party={props.placeCard.party}
+            seating={props.placeCard.seating}
             design={props.design}
           />
         </ClientErrorBoundary>
@@ -106,15 +107,10 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
             eventName={props.event.title}
             eventDate={props.event.startDate}
             venueName={props.event.venueName}
-            partySize={props.entryPass.partySize}
-            admittedCount={props.entryPass.admittedCount}
             status={props.entryPass.status}
-            tableNumber={props.entryPass.tableNumber}
-            seatLabel={props.entryPass.seatLabel}
             instructions={props.entryPass.instructions}
             allowDownload={props.entryPass.allowDownload}
             allowPrint={props.entryPass.allowPrint}
-            showPartySize={props.entryPass.showPartySize}
             layout={props.design.layout}
           />
         </ClientErrorBoundary>

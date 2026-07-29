@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { verifyEventAccess } from "@/lib/event-access";
 import { parsePaginationFromUrl } from "@/lib/pagination";
+import { DuplicateGuestError } from "@/lib/guest-search/duplicate-guests";
 
 const addGuestSchema = z.object({
   eventId: z.string(),
@@ -13,12 +14,16 @@ const addGuestSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().optional(),
   plusOnes: z.number().optional(),
+  acknowledgeDuplicates: z.boolean().optional(),
 });
 
 const bulkSchema = z.object({
   eventId: z.string(),
   invitationId: z.string().optional(),
-  guests: z.array(addGuestSchema.omit({ eventId: true, invitationId: true })),
+  guests: z.array(
+    addGuestSchema.omit({ eventId: true, invitationId: true, acknowledgeDuplicates: true })
+  ),
+  acknowledgeDuplicates: z.boolean().optional(),
 });
 
 export async function GET(req: Request) {
@@ -41,7 +46,10 @@ export async function GET(req: Request) {
     const result = await invitationService.getEventGuests(eventId, { page, limit, status });
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Access denied" }, { status: 403 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Access denied" },
+      { status: 403 }
+    );
   }
 }
 
@@ -57,7 +65,14 @@ export async function POST(req: Request) {
     if (body.guests) {
       const data = bulkSchema.parse(body);
       await verifyEventAccess(data.eventId, session.user.id, session.user.role);
-      const results = await invitationService.addGuestsBulk(data.eventId, data.invitationId, data.guests);
+      const results = await invitationService.addGuestsBulk(
+        data.eventId,
+        data.invitationId,
+        data.guests.map((guest) => ({
+          ...guest,
+          acknowledgeDuplicates: data.acknowledgeDuplicates,
+        }))
+      );
       return NextResponse.json({ success: true, data: results }, { status: 201 });
     }
 
@@ -69,6 +84,15 @@ export async function POST(req: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to add guest" }, { status: 500 });
+    if (error instanceof DuplicateGuestError) {
+      return NextResponse.json(
+        { error: error.message, duplicates: error.duplicates, code: "DUPLICATE" },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to add guest" },
+      { status: 500 }
+    );
   }
 }

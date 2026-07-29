@@ -11,6 +11,7 @@ import { useLocale } from "@/components/i18n/locale-provider";
 import { BlockRenderer } from "@/components/invitation-blocks/block-renderer";
 import type { AppLocale } from "@/lib/i18n/constants";
 import type { InvitationBlockDto, BlockRenderContext } from "@/lib/invitation-blocks/block-types";
+import { formatEventDetailsTime } from "@/lib/invitation-blocks/event-details";
 
 export interface LocalizedInviteContent {
   eventTitle?: string | null;
@@ -151,6 +152,10 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
     hostName: displayEvent.hostName,
     eventDate: displayEvent.startDate,
     eventDateRaw: props.event.startDateRaw,
+    eventTime:
+      formatEventDetailsTime(undefined, props.event.startDateRaw, props.event.startDate) ??
+      props.design.studio?.visionBoard?.timeLabel ??
+      props.design.studio?.weddingBoard?.timeLabel,
     venueName: displayEvent.venueName ?? undefined,
     landmark: displayEvent.landmark ?? undefined,
     mapsLink: props.event.mapsLink ?? undefined,

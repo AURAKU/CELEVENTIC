@@ -3,9 +3,11 @@ import { describe, it } from "node:test";
 import {
   buildEventCompanionHref,
   buildInviteCeremonyHref,
+  resolveCompanionPlace,
   shouldOpenEventCompanionOnly,
   wantsInviteCeremonyView,
 } from "@/lib/admission/event-companion";
+import type { PartySeat } from "@/lib/admission/seating-continuity";
 import { openingMemoryKey } from "@/lib/experience/opening-visit-memory";
 
 describe("event companion routing", () => {
@@ -35,14 +37,15 @@ describe("event companion routing", () => {
     assert.equal(wantsInviteCeremonyView({}), false);
   });
 
-  it("opens companion only when post-admission is enabled, portal unlocked, and at least one head admitted", () => {
+  it("never opens companion for invite-open / RSVP-only signals (admittedCount must be > 0)", () => {
+    // OPENED / ACCEPTED are seating signals only — they do not set admittedCount.
     assert.equal(
       shouldOpenEventCompanionOnly({
         postAdmissionEnabled: true,
-        canAccessPortal: true,
-        admittedCount: 1,
+        canAccessPortal: false,
+        admittedCount: 0,
       }),
-      true
+      false
     );
     assert.equal(
       shouldOpenEventCompanionOnly({
@@ -52,9 +55,16 @@ describe("event companion routing", () => {
       }),
       false
     );
+  });
+
+  it("opens companion only after gate admit when portal is unlocked", () => {
     assert.equal(
-      shouldOpenEventCompanionOnly({ postAdmissionEnabled: true, canAccessPortal: false }),
-      false
+      shouldOpenEventCompanionOnly({
+        postAdmissionEnabled: true,
+        canAccessPortal: true,
+        admittedCount: 1,
+      }),
+      true
     );
     assert.equal(
       shouldOpenEventCompanionOnly({
@@ -71,5 +81,42 @@ describe("event companion routing", () => {
     const before = openingMemoryKey("inv-1", "guest-1", 0);
     const after = openingMemoryKey("inv-1", "guest-1", 1);
     assert.notEqual(before, after);
+  });
+
+  it("shows the personalized guest's assigned table, seat, and zone", () => {
+    const result = resolveCompanionPlace(
+      { tableNumber: "12", seatLabel: "B", zone: "Garden" },
+      []
+    );
+
+    assert.deepEqual(result.place, {
+      tableNumber: "12",
+      seatLabel: "B",
+      zone: "Garden",
+    });
+  });
+
+  it("falls back to an assigned party seat when no personalized seat was passed", () => {
+    const partySeats: PartySeat[] = [
+      {
+        guestId: "guest-1",
+        guestName: "Ama",
+        tableNumber: "7",
+        seatLabel: "3",
+        zone: "East wing",
+        admitted: true,
+      },
+    ];
+
+    const result = resolveCompanionPlace(null, partySeats);
+    assert.deepEqual(result.place, {
+      tableNumber: "7",
+      seatLabel: "3",
+      zone: "East wing",
+    });
+  });
+
+  it("returns the empty state only when no real seating assignment exists", () => {
+    assert.equal(resolveCompanionPlace(null, [], null).place, null);
   });
 });

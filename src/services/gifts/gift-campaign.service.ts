@@ -5,12 +5,18 @@ import { generateGiftPublicToken } from "@/lib/gifts/tokens";
 import {
   DEFAULT_MIN_AMOUNT_MINOR,
   DEFAULT_SUGGESTED_AMOUNTS_MINOR,
+  companionGiftTeaser,
   defaultGiftTypeForEvent,
   resolveGiftCopy,
 } from "@/lib/gifts/gift-copy";
 import { parseSuggestedAmounts } from "@/lib/gifts/money";
 import { resolveGiftTheme, type GiftTheme } from "@/lib/gifts/gift-theme";
 import type { PublicGiftCampaignView } from "@/lib/gifts/gift-privacy";
+import {
+  buildCompanionGiftUrl,
+  isCampaignPlaceable,
+  isGuestScopedToCampaignEvent,
+} from "@/lib/gifts/gift-placement";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 
 /**
@@ -259,7 +265,7 @@ export class GiftCampaignService {
       where: { qrToken: guestToken },
       select: { id: true, name: true, email: true, phone: true, eventId: true },
     });
-    if (!guest || guest.eventId !== campaign.eventId) return null;
+    if (!isGuestScopedToCampaignEvent(guest, campaign.eventId)) return null;
     return guest;
   }
 
@@ -298,8 +304,7 @@ export class GiftCampaignService {
   } | null> {
     const campaign = await this.getByEvent(eventId);
     if (!campaign) return null;
-    if (campaign.status !== "ACTIVE") return null;
-    if (!campaign.showOnInvitation) return null;
+    if (!isCampaignPlaceable(campaign, "invitation")) return null;
     if (this.resolveClosedReason(campaign)) return null;
 
     const { giftUrl } = await this.links(campaign);
@@ -319,6 +324,50 @@ export class GiftCampaignService {
       title: copy.title,
       subtitle: copy.subtitle,
       ctaLabel: copy.ctaLabel,
+      privacyNote: copy.privacyNote,
+    };
+  }
+
+  /**
+   * Post-admission Event Companion TAKE PART placement.
+   *
+   * Independent of `showOnInvitation` — organisers can hide the ceremony card
+   * while still offering gifting after gate admission. Still requires an
+   * ACTIVE, open campaign (never auto-activates DRAFT).
+   */
+  async resolveCompanionPlacement(
+    eventId: string,
+    options: {
+      guestQrToken?: string | null;
+      companionReturnUrl?: string | null;
+    } = {}
+  ): Promise<{
+    giftUrl: string;
+    title: string;
+    subtitle: string;
+    ctaLabel: string;
+    teaser: string;
+    privacyNote: string;
+  } | null> {
+    const campaign = await this.getByEvent(eventId);
+    if (!campaign) return null;
+    if (!isCampaignPlaceable(campaign, "companion")) return null;
+    if (this.resolveClosedReason(campaign)) return null;
+
+    const { giftUrl: baseGiftUrl } = await this.links(campaign);
+    const giftUrl = buildCompanionGiftUrl(baseGiftUrl, {
+      guestQrToken:
+        campaign.qrMode === "PERSONALISED_GIFT_QR" ? options.guestQrToken : null,
+      companionReturnUrl: options.companionReturnUrl,
+    });
+    const copy = resolveGiftCopy(campaign.giftType, campaign);
+
+    return {
+      giftUrl,
+      title: copy.title,
+      subtitle: copy.subtitle,
+      ctaLabel: copy.ctaLabel,
+      teaser: companionGiftTeaser(campaign.giftType),
       privacyNote: copy.privacyNote,
     };
   }

@@ -228,7 +228,7 @@ export function resolvePlaceCardConfig(
     supportingMessage: asString(o.supportingMessage, base.supportingMessage),
     theme: pickEnum(o.theme, THEMES, base.theme),
     frameStyle: pickEnum(o.frameStyle, FRAMES, base.frameStyle),
-    monogram: asString(o.monogram, base.monogram).slice(0, 4).toUpperCase(),
+    monogram: formatPlaceCardMonogram(asString(o.monogram, base.monogram)),
     animation: pickEnum(o.animation, ANIMATIONS, base.animation),
     visibility: pickEnum(o.visibility, VISIBILITIES, base.visibility),
     sectionOrder:
@@ -239,14 +239,12 @@ export function resolvePlaceCardConfig(
   };
 }
 
-/** Format the bold allowance line; `{n}` is replaced with the party size. */
-export function formatAllowanceCopy(template: string, partySize: number): string {
-  const n = Math.max(0, Math.trunc(partySize));
-  const raw = (template || PLACE_CARD_DEFAULTS.allowanceDisplayWording).replace(
-    /\{n\}/gi,
-    String(n)
-  );
-  return raw.toUpperCase();
+/** Guest-facing invitation capacity, with no admission-state disclosure. */
+export function formatAllowanceCopy(_template: string, partySize: number): string {
+  const capacity = Math.max(1, Math.trunc(partySize));
+  return capacity === 1
+    ? "This invitation admits one guest only."
+    : `This invitation admits ${capacity} guests.`;
 }
 
 export interface PlaceCardRecipientInput {
@@ -257,25 +255,99 @@ export interface PlaceCardRecipientInput {
   assigned: boolean;
 }
 
-/** Resolve the line shown under the salutation. */
+/** Ceremony / event titles must never appear as the place-card recipient. */
+export function looksLikeEventTitle(value: string): boolean {
+  return /\b(ceremony|wedding|invitation|marriage|celebration|funeral|memorial|birthday|engagement|anniversary)\b/i.test(
+    value.trim()
+  );
+}
+
+/** Join party member names for the place-card hero line. */
+export function formatPartyGuestNames(names: Array<string | null | undefined>): string | null {
+  const cleaned = names.map((n) => (n ?? "").trim()).filter(Boolean);
+  if (!cleaned.length) return null;
+  if (cleaned.length === 1) return cleaned[0];
+  if (cleaned.length === 2) return `${cleaned[0]} & ${cleaned[1]}`;
+  return `${cleaned.slice(0, -1).join(", ")} & ${cleaned[cleaned.length - 1]}`;
+}
+
+
+/** Format place-card badge initials, preserving pipe seals (`C | J`). */
+export function formatPlaceCardMonogram(raw?: string | null): string {
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed) return "";
+
+  // Prefer the seal display form so "CJ" / "C|J" / "C | J" all render as "C | J".
+  const pipeParts = trimmed
+    .replace(/[^a-zA-ZÀ-ÿ\s|&·•.]/g, "")
+    .split(/\s*[|&·•.]\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (
+    pipeParts.length === 2 &&
+    pipeParts.every((p) => p.length === 1 && /^[a-zA-ZÀ-ÿ]$/i.test(p))
+  ) {
+    return `${pipeParts[0].toUpperCase()} | ${pipeParts[1].toUpperCase()}`;
+  }
+
+  const letters = trimmed.replace(/[^a-zA-ZÀ-ÿ]/g, "").toUpperCase();
+  if (letters.length === 2) return `${letters[0]} | ${letters[1]}`;
+  return letters.slice(0, 3);
+}
+
+/** @deprecated Prefer formatPlaceCardMonogram — kept for callers that expect letters only. */
+export function compactPlaceCardMonogram(raw?: string | null): string {
+  return (raw ?? "")
+    .replace(/[^a-zA-ZÀ-ÿ]/g, "")
+    .toUpperCase()
+    .slice(0, 3);
+}
+
+/** Default place-card addressee when no guest name is assigned. */
+export const PLACE_CARD_FALLBACK_RECIPIENT = "Dear invited guest";
+
+/** True when a candidate string is not a real guest / party addressee. */
+export function isAnonymousRecipientName(value?: string | null): boolean {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return true;
+  if (looksLikeEventTitle(trimmed)) return true;
+  return /^(guest|invited guest|dear invited guest)$/i.test(trimmed);
+}
+
+/**
+ * Resolve the hero name line under the salutation.
+ *
+ * Only a real guest / party name is allowed here. Ceremony titles and blank
+ * invitations fall back to "Dear invited guest".
+ */
 export function resolveRecipientLine(
   config: PlaceCardConfig,
   input: PlaceCardRecipientInput
 ): string {
-  const name = (input.guestName || input.invitationName || "").trim();
+  const rawGuest = (input.guestName || "").trim();
+  const guestName = isAnonymousRecipientName(rawGuest) ? "" : rawGuest;
+  // Invitation labels are often the ceremony title ("Traditional Marriage
+  // Ceremony") — never promote them to the guest-facing name line.
+  const invitationLabel = looksLikeEventTitle(input.invitationName)
+    ? ""
+    : (input.invitationName || "").trim();
+  const safeInvitationLabel = isAnonymousRecipientName(invitationLabel) ? "" : invitationLabel;
+  // Prefer an assigned guest name. Never use a ceremony/event title here.
+  const name = guestName || (input.assigned ? safeInvitationLabel : "");
   const group = (config.groupName || input.groupName || "").trim();
+  const safeGroup = isAnonymousRecipientName(group) ? "" : group;
 
   switch (config.recipientDisplay) {
     case "group":
-      return group || name || "Guest";
+      return safeGroup || name || PLACE_CARD_FALLBACK_RECIPIENT;
     case "both":
-      if (group && name && group.toLowerCase() !== name.toLowerCase()) {
-        return `${name} · ${group}`;
+      if (safeGroup && name && safeGroup.toLowerCase() !== name.toLowerCase()) {
+        return `${name} · ${safeGroup}`;
       }
-      return name || group || "Guest";
+      return name || safeGroup || PLACE_CARD_FALLBACK_RECIPIENT;
     case "name":
     default:
-      return name || group || "Guest";
+      return name || safeGroup || PLACE_CARD_FALLBACK_RECIPIENT;
   }
 }
 
@@ -316,24 +388,27 @@ export interface PlaceCardViewData {
   config: PlaceCardConfig;
   recipient: PlaceCardRecipientInput;
   party: PlaceCardPartyState;
+  /** Personalized guest's organiser-assigned place, when available. */
+  seating: PlaceCardSeating | null;
 }
 
-/** Live party position, mirrored from the admission projection. */
+export interface PlaceCardSeating {
+  tableNumber: string;
+  seatLabel: string | null;
+  zone: string | null;
+}
+
+/** Personalized invitation capacity. Admission state is intentionally excluded. */
 export interface PlaceCardPartyState {
   allowance: number;
-  admittedCount: number;
-  /** Zero when nobody has arrived yet. */
-  remainingCount: number;
 }
 
 export interface PlaceCardViewModel {
   heading: string;
   salutation: string;
   recipientLine: string;
-  /** Bold allowance line, e.g. "THIS INVITATION ADMITS 3 GUESTS". */
+  /** Capacity line, e.g. "This invitation admits 3 guests." */
   allowanceCopy: string;
-  /** Present only while a group is part-way through arriving. */
-  arrivalCopy: string | null;
   wording: string;
   supportingMessage: string;
   monogram: string;
@@ -343,26 +418,6 @@ export interface PlaceCardViewModel {
   recipientType: PlaceCardRecipientType;
   /** True for anything the organiser addressed to more than one head. */
   isGroup: boolean;
-}
-
-/**
- * Guest-facing arrival copy for a part-arrived party.
- *
- * Deliberately plain: a guest reads "2 of your 3 guests have arrived", never
- * `PARTIALLY_ADMITTED`. Returns null when there is nothing worth saying (nobody
- * in yet, or the whole party is already inside).
- */
-export function resolveArrivalCopy(party: PlaceCardPartyState): string | null {
-  const allowance = Math.max(0, Math.trunc(party.allowance));
-  const admitted = Math.max(0, Math.min(Math.trunc(party.admittedCount), allowance));
-  if (allowance <= 1 || admitted <= 0) return null;
-
-  const remaining = Math.max(0, allowance - admitted);
-  if (remaining === 0) return `All ${allowance} of your guests have arrived.`;
-  return (
-    `${admitted} of your ${allowance} guests ${admitted === 1 ? "has" : "have"} arrived · ` +
-    `${remaining} still welcome`
-  );
 }
 
 /** Recipient-type-aware fallback heading, used when the organiser left it blank. */
@@ -401,22 +456,19 @@ export function buildPlaceCardViewModel(
       : config.recipientType;
 
   const recipientLine = resolveRecipientLine(config, recipient);
-  const monogram =
-    config.monogram.trim() ||
-    recipientLine
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase();
+  // Couple seal / organiser monogram wins — guest initials must not replace
+  // the ceremony badge (e.g. keep "C | J", never derive "TM" from a title).
+  const configuredMonogram = formatPlaceCardMonogram(config.monogram);
+  const monogram = configuredMonogram;
+  const configuredSalutation = config.salutation.trim() || "Dear";
+  // The default addressee already includes "Dear", so don't print it twice.
+  const salutation = /^dear\b/i.test(recipientLine) ? "" : configuredSalutation;
 
   return {
     heading: config.heading.trim() || headingFor(recipientType),
-    salutation: config.salutation.trim(),
+    salutation,
     recipientLine,
     allowanceCopy: formatAllowanceCopy(config.allowanceDisplayWording, allowance),
-    arrivalCopy: resolveArrivalCopy(party),
     wording: config.wording.trim(),
     supportingMessage: config.supportingMessage.trim(),
     monogram,

@@ -48,6 +48,7 @@ import { PostEventExperience } from "@/components/experience/post-event-experien
 import { CinematicInvitationSpotlight } from "@/components/guest-portal/cinematic-invitation-spotlight";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
+import { formatEventDetailsTime } from "@/lib/invitation-blocks/event-details";
 
 interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -191,6 +192,10 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     hostName: displayEvent.hostName,
     eventDate: displayEvent.startDate,
     eventDateRaw: props.event.startDateRaw,
+    eventTime:
+      formatEventDetailsTime(undefined, props.event.startDateRaw, props.event.startDate) ??
+      props.design.studio?.visionBoard?.timeLabel ??
+      props.design.studio?.weddingBoard?.timeLabel,
     venueName: displayEvent.venueName ?? undefined,
     landmark: displayEvent.landmark ?? undefined,
     mapsLink: props.event.mapsLink ?? undefined,

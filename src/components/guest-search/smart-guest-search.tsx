@@ -12,34 +12,33 @@ import {
 import type { SearchResponse, SearchResultCard } from "@/lib/guest-search/types";
 
 /**
- * Smart Guest Search.
+ * Smart Guest Search + guest list.
  *
  * One box. A name, a phone number, an email, an admission code or a table all
- * work, because at the door there is no time to pick the right filter first.
- *
- * Two details matter more than they look:
- *
- *  - Requests are debounced *and* superseded. A slow response for "kof" must
- *    never overwrite a fast one for "kofi", or the list flickers backwards
- *    while the organiser is still reading it.
- *  - Newly created invitations are merged into the top of the list even when
- *    the current query would not match them, so "create then find" is one
- *    continuous flow.
+ * work. With an empty box the same surface browses the live guest list, so
+ * Add Guest and search stay one continuous flow.
  */
 
 const DEBOUNCE_MS = 220;
+const BROWSE_LIMIT = 40;
 
 interface SmartGuestSearchProps {
   eventId: string | null;
   /** Invitations created this session, shown above search results. */
   recentlyCreated: SearchResultCard[];
   onCardChanged: (card: SearchResultCard) => void;
+  /** Optional RSVP/status filter applied client-side on the current results. */
+  statusFilter?: string;
+  /** Bump to reload browse/search results after a create/edit/delete. */
+  refreshToken?: number;
 }
 
 export function SmartGuestSearch({
   eventId,
   recentlyCreated,
   onCardChanged,
+  statusFilter = "all",
+  refreshToken = 0,
 }: SmartGuestSearchProps) {
   const [term, setTerm] = useState("");
   const [response, setResponse] = useState<SearchResponse | null>(null);
@@ -47,12 +46,11 @@ export function SmartGuestSearch({
   const [error, setError] = useState("");
   const [includeArchived, setIncludeArchived] = useState(false);
 
-  // Monotonic request id: only the newest response is allowed to win.
   const requestId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const parsed = useMemo(() => parseSearchQuery(term), [term]);
-  const active = term.trim().length >= MIN_QUERY_LENGTH;
+  const searching = term.trim().length >= MIN_QUERY_LENGTH;
 
   const runSearch = useCallback(
     async (query: string, archived: boolean, signal: AbortSignal) => {
@@ -60,7 +58,11 @@ export function SmartGuestSearch({
       const id = ++requestId.current;
       setLoading(true);
       try {
-        const params = new URLSearchParams({ eventId, q: query, limit: "20" });
+        const params = new URLSearchParams({
+          eventId,
+          q: query,
+          limit: String(searching ? 20 : BROWSE_LIMIT),
+        });
         if (archived) params.set("includeArchived", "1");
         const res = await fetch(`/api/guest-search?${params}`, { signal });
         const json = await res.json();
@@ -80,25 +82,26 @@ export function SmartGuestSearch({
         if (id === requestId.current) setLoading(false);
       }
     },
-    [eventId]
+    [eventId, searching]
   );
 
   useEffect(() => {
-    if (!eventId || !active) {
+    if (!eventId) {
       setResponse(null);
       setLoading(false);
       return;
     }
     const controller = new AbortController();
-    const timer = setTimeout(() => void runSearch(term, includeArchived, controller.signal), DEBOUNCE_MS);
+    const timer = setTimeout(
+      () => void runSearch(term, includeArchived, controller.signal),
+      searching ? DEBOUNCE_MS : 0
+    );
     return () => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [term, eventId, includeArchived, active, runSearch]);
+  }, [term, eventId, includeArchived, searching, runSearch, refreshToken]);
 
-  // Keyboard shortcut: "/" focuses search, the way every list app the
-  // organiser already uses behaves.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
@@ -115,9 +118,23 @@ export function SmartGuestSearch({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const results = response?.results ?? [];
+  const results = useMemo(() => {
+    const rows = response?.results ?? [];
+    if (statusFilter === "all") return rows;
+    if (statusFilter === "NO_RESPONSE") {
+      return rows.filter(
+        (card) =>
+          !card.guestStatus ||
+          !["ACCEPTED", "DECLINED", "MAYBE", "CHECKED_IN", "OPENED"].includes(card.guestStatus)
+      );
+    }
+    return rows.filter((card) => card.guestStatus === statusFilter);
+  }, [response?.results, statusFilter]);
+
   const shownIds = new Set(results.map((r) => r.invitationId));
-  const pinned = recentlyCreated.filter((card) => !shownIds.has(card.invitationId));
+  const pinned = recentlyCreated.filter(
+    (card) => !shownIds.has(card.invitationId) && !card.archivedAt
+  );
 
   return (
     <div className="space-y-3">
@@ -154,17 +171,15 @@ export function SmartGuestSearch({
         </div>
       </div>
 
-      {active && (
-        <label className="flex items-center gap-2 text-xs text-slate-500">
-          <input
-            type="checkbox"
-            checked={includeArchived}
-            onChange={(e) => setIncludeArchived(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-slate-300"
-          />
-          Include archived invitations
-        </label>
-      )}
+      <label className="flex items-center gap-2 text-xs text-slate-500">
+        <input
+          type="checkbox"
+          checked={includeArchived}
+          onChange={(e) => setIncludeArchived(e.target.checked)}
+          className="h-3.5 w-3.5 rounded border-slate-300"
+        />
+        Include archived invitations
+      </label>
 
       {error && <p className="rounded-lg bg-red-50 p-2.5 text-sm text-red-600">{error}</p>}
 
@@ -179,14 +194,31 @@ export function SmartGuestSearch({
         </div>
       )}
 
-      {active && !loading && results.length === 0 && !error && (
+      {!eventId && (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-slate-500">
+            Select an event to manage guests.
+          </CardContent>
+        </Card>
+      )}
+
+      {eventId && searching && !loading && results.length === 0 && !error && (
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-sm text-slate-500">
-              Nobody matches &ldquo;{term}&rdquo;.
-            </p>
+            <p className="text-sm text-slate-500">Nobody matches &ldquo;{term}&rdquo;.</p>
             <p className="mt-1 text-xs text-slate-400">
-              Create them below, a name on its own is enough.
+              Add them with the form — a name on its own is enough.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {eventId && !searching && !loading && results.length === 0 && pinned.length === 0 && !error && (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-sm text-slate-500">No guests yet for this event.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Add a guest invitation beside this list to get started.
             </p>
           </CardContent>
         </Card>
@@ -195,15 +227,18 @@ export function SmartGuestSearch({
       {results.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            {response?.total ?? results.length} match
-            {(response?.total ?? results.length) === 1 ? "" : "es"}
+            {searching
+              ? `${response?.total ?? results.length} match${
+                  (response?.total ?? results.length) === 1 ? "" : "es"
+                }`
+              : `Guest list · ${response?.total ?? results.length}`}
             {response && response.total > results.length ? ` · showing ${results.length}` : ""}
           </p>
           {results.map((card) => (
             <GuestResultCard
               key={card.invitationId}
               card={card}
-              highlight={highlightRanges(card.name, parsed)}
+              highlight={searching ? highlightRanges(card.name, parsed) : undefined}
               onChanged={onCardChanged}
             />
           ))}

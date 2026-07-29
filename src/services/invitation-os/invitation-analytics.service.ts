@@ -46,14 +46,41 @@ export class InvitationAnalyticsService {
     });
   }
 
+  /**
+   * Opening an invitation is a seating / CRM signal for organisers — never
+   * gate admission. Status only advances INVITED → OPENED. ACCEPTED / DECLINED /
+   * MAYBE / CHECKED_IN are preserved; inviteOpenedAt still stamps on first open.
+   */
   async trackInviteOpen(invitationId: string, guestId?: string) {
-    if (guestId) {
-      await prisma.guest.updateMany({
-        where: { id: guestId, inviteOpenedAt: null },
-        data: { inviteOpenedAt: new Date(), status: "OPENED" },
+    let targetGuestId = guestId?.trim() || undefined;
+    if (!targetGuestId) {
+      // Bare personalized links (no ?guest=) still attribute open when the
+      // invitation has exactly one live guest — typical WhatsApp share case.
+      const singles = await prisma.guest.findMany({
+        where: { invitationId, archivedAt: null },
+        select: { id: true },
+        take: 2,
       });
+      if (singles.length === 1) targetGuestId = singles[0].id;
     }
-    return this.track({ eventType: "INVITE_OPEN", invitationId, guestId });
+
+    if (targetGuestId) {
+      const guest = await prisma.guest.findFirst({
+        where: { id: targetGuestId, invitationId },
+        select: { id: true, status: true, inviteOpenedAt: true },
+      });
+      if (guest && !guest.inviteOpenedAt) {
+        await prisma.guest.update({
+          where: { id: guest.id },
+          data: {
+            inviteOpenedAt: new Date(),
+            ...(guest.status === "INVITED" ? { status: "OPENED" as const } : {}),
+          },
+        });
+      }
+    }
+
+    return this.track({ eventType: "INVITE_OPEN", invitationId, guestId: targetGuestId });
   }
 
   async getOrganizerAnalytics(userId: string) {

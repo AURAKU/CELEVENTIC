@@ -18,6 +18,14 @@ import { getEventAdmissionSettings } from "@/services/admission/guest-pass.servi
 import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
 import { buildEventCompanionHref } from "@/lib/admission/event-companion";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
+import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
+import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
+import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
+import type { InvitationDesignConfig } from "@/types/invitation-design";
+import {
+  resolveGuestFacingEventInstant,
+  resolveGuestFacingVenue,
+} from "@/lib/invitation/guest-event-details";
 
 /**
  * Share-card preview defaults to the QR center logo (falls back to the
@@ -89,6 +97,8 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
             id: true,
             uniqueLink: true,
             postAdmissionEnabled: true,
+            designConfig: true,
+            template: { select: { slug: true, config: true } },
             guests: { select: { qrToken: true }, take: 1 },
           },
         },
@@ -96,7 +106,27 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
     });
     if (!pass) notFound();
 
-    const settings = await getEventAdmissionSettings(pass.eventId);
+    const [settings, productionOrder] = await Promise.all([
+      getEventAdmissionSettings(pass.eventId),
+      resolveProductionInvitationOrder(pass.invitation.id, pass.eventId),
+    ]);
+    const storedDesign = pass.invitation.designConfig as InvitationDesignConfig | null;
+    const templateConfig = pass.invitation.template?.config as Partial<InvitationDesignConfig> | null;
+    const admissionDesign = productionOrder
+      ? buildPublishedDesignConfig(productionOrder)
+      : storedDesign?.layout
+        ? storedDesign
+        : pass.invitation.template
+          ? mergeDesignConfig(
+              getDefaultDesignConfig(pass.invitation.template.slug),
+              templateConfig ?? undefined
+            )
+          : null;
+    const guestFacingStartDate = resolveGuestFacingEventInstant(
+      pass.event.startDate,
+      admissionDesign
+    );
+    const guestFacingVenue = resolveGuestFacingVenue(pass.event.venueName, admissionDesign);
     const guestToken = pass.invitation.guests[0]?.qrToken;
     const companionHref = pass.invitation.postAdmissionEnabled
       ? buildEventCompanionHref(pass.invitation.uniqueLink, guestToken)
@@ -120,15 +150,12 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
           code={pass.code}
           displayName={pass.displayName}
           eventName={pass.event.title}
-          eventDate={formatDate(pass.event.startDate)}
-          venueName={pass.event.venueName}
-          partySize={pass.partySize}
-          admittedCount={pass.admittedCount}
+          eventDate={formatDate(guestFacingStartDate)}
+          venueName={guestFacingVenue}
           status={pass.status}
           instructions={settings.passInstructions}
           allowDownload={settings.allowPassDownload}
           allowPrint={settings.allowPassPrint}
-          showPartySize={settings.showPartySizeOnPass}
           preset="minimal"
           className="px-0 pb-0 pt-0"
         />

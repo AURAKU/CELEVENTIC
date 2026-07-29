@@ -54,6 +54,7 @@ const paymentView: PublicGiftPaymentView = {
   guestName: "Yaa",
   isAnonymous: false,
   receiptUrl: "/gift/receipt/rcpt.sig",
+  companionReturnUrl: "/invite/abc/event-day",
   failureReason: null,
 };
 

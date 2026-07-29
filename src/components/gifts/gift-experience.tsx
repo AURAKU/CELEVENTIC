@@ -30,13 +30,20 @@ interface Props {
   themeVars: GiftThemeCssVars;
   methods: GiftMethodOption[];
   guestToken?: string | null;
+  companionReturnUrl?: string | null;
 }
 
 type Step = "landing" | "amount" | "details" | "method" | "confirm" | "redirecting";
 
 const STEP_ORDER: Step[] = ["landing", "amount", "details", "method", "confirm"];
 
-export function GiftExperience({ campaign, themeVars, methods, guestToken }: Props) {
+export function GiftExperience({
+  campaign,
+  themeVars,
+  methods,
+  guestToken,
+  companionReturnUrl,
+}: Props) {
   const [step, setStep] = useState<Step>("landing");
   const [amountMinor, setAmountMinor] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
@@ -113,6 +120,7 @@ export function GiftExperience({ campaign, themeVars, methods, guestToken }: Pro
           guestMessage: guestMessage.trim() || undefined,
           isAnonymous,
           guestToken: guestToken || undefined,
+          companionReturnUrl: companionReturnUrl || undefined,
         }),
       });
 
@@ -586,7 +594,7 @@ function ConfirmStep({
           </span>
         </Row>
         <Row label="From">{guestName || "A guest"}</Row>
-        <Row label="Paying with">{method?.label ?? ", "}</Row>
+        <Row label="Via">{method?.label ?? "—"}</Row>
       </dl>
 
       <div className="gift-rule my-6" />
@@ -600,7 +608,7 @@ function ConfirmStep({
         {submitting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Preparing your payment…
+            Preparing your gift…
           </>
         ) : (
           <>
@@ -611,8 +619,8 @@ function ConfirmStep({
       </button>
 
       <p className="mt-4 text-center text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
-        You will approve this payment on your phone or with your card. Nothing is
-        taken until you authorise it.
+        You will approve this on your phone or card. Nothing is taken until you
+        authorise it.
       </p>
     </div>
   );
@@ -626,7 +634,7 @@ function RedirectingStep() {
         style={{ color: "var(--gift-color-accent)" }}
         aria-hidden
       />
-      <p className="gift-display mt-5 text-lg">Taking you to the secure checkout…</p>
+      <p className="gift-display mt-5 text-lg">Opening a secure gift screen…</p>
       <p className="mt-2 text-sm" style={{ color: "var(--gift-color-ink-muted)" }}>
         Please don&apos;t close this page.
       </p>

@@ -7,6 +7,7 @@ import {
   canAccessPortal,
   isTerminalDenied,
   summarize,
+  applyPortalUnlockPolicy,
 } from "../admission-logic";
 
 test("computeAllowance: individual, couple, group with plus-ones", () => {
@@ -101,4 +102,17 @@ test("summarize: over-admit is clamped to allowance", () => {
   assert.equal(s.admittedCount, 2);
   assert.equal(s.remainingCount, 0);
   assert.equal(s.state, "ADMITTED");
+});
+
+test("applyPortalUnlockPolicy: only narrows, never invents unlock", () => {
+  const locked = summarize(0, 4);
+  const partial = summarize(1, 4);
+  const full = summarize(4, 4);
+
+  assert.equal(applyPortalUnlockPolicy(locked, "ON_FIRST_ADMISSION"), false);
+  assert.equal(applyPortalUnlockPolicy(partial, "ON_FIRST_ADMISSION"), true);
+  assert.equal(applyPortalUnlockPolicy(partial, "ON_FULL_ADMISSION"), false);
+  assert.equal(applyPortalUnlockPolicy(full, "ON_FULL_ADMISSION"), true);
+  assert.equal(applyPortalUnlockPolicy(full, "MANUAL"), false);
+  assert.equal(applyPortalUnlockPolicy(partial, "MANUAL"), false);
 });

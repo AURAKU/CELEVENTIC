@@ -6,7 +6,6 @@ import {
   inferRecipientType,
   PLACE_CARD_DEFAULTS,
   PLACE_CARD_PRESETS,
-  resolveArrivalCopy,
   resolvePlaceCardConfig,
   resolveRecipientLine,
   shouldShowPlaceCard,
@@ -24,8 +23,6 @@ const config = (patch: Partial<PlaceCardConfig> = {}): PlaceCardConfig => ({
 
 const party = (patch: Partial<PlaceCardPartyState> = {}): PlaceCardPartyState => ({
   allowance: 1,
-  admittedCount: 0,
-  remainingCount: 1,
   ...patch,
 });
 
@@ -91,21 +88,29 @@ test("a disabled feature or a disabled card always wins over visibility", () => 
   assert.equal(shouldShowPlaceCard(config({ enabled: false }), true, true), false);
 });
 
-/* ── allowance copy ────────────────────────────────────────────────────── */
+/* ── capacity copy (no admission / arrival disclosure) ─────────────────── */
 
-test("the allowance line is bold, uppercase, and carries the real party size", () => {
+test("single-guest capacity uses the exclusive one-guest line", () => {
+  assert.equal(formatAllowanceCopy("", 1), "This invitation admits one guest only.");
   assert.equal(
-    formatAllowanceCopy("This invitation admits {n} guests", 3),
-    "THIS INVITATION ADMITS 3 GUESTS"
+    formatAllowanceCopy(PLACE_CARD_DEFAULTS.allowanceDisplayWording, 1),
+    "This invitation admits one guest only."
   );
 });
 
-test("custom allowance wording is honoured for reserved tables", () => {
-  assert.equal(formatAllowanceCopy("This table seats {n} guests", 8), "THIS TABLE SEATS 8 GUESTS");
+test("multi-guest capacity states the total without arrivals", () => {
+  assert.equal(
+    formatAllowanceCopy("This invitation admits {n} guests", 3),
+    "This invitation admits 3 guests."
+  );
+  assert.equal(formatAllowanceCopy("", 2), "This invitation admits 2 guests.");
 });
 
-test("a blank allowance template falls back to the platform default", () => {
-  assert.equal(formatAllowanceCopy("", 2), "THIS INVITATION ADMITS 2 GUESTS");
+test("organiser templates cannot override the guest-facing capacity line", () => {
+  assert.equal(
+    formatAllowanceCopy("This table seats {n} guests", 8),
+    "This invitation admits 8 guests."
+  );
 });
 
 /* ── recipient resolution ──────────────────────────────────────────────── */
@@ -121,6 +126,78 @@ test("recipient display modes name the guest, the group, or both", () => {
     resolveRecipientLine(config({ recipientDisplay: "both" }), input),
     "Ama Mensah · The Mensah Family"
   );
+});
+
+test("ceremony titles never appear as the place-card recipient", () => {
+  const line = resolveRecipientLine(
+    config({ recipientDisplay: "name" }),
+    recipient({
+      guestName: null,
+      invitationName: "TRADITIONAL MARRIAGE CEREMONY",
+      groupName: null,
+    })
+  );
+  assert.equal(line, "Dear invited guest");
+});
+
+test("unassigned invitations always address Dear invited guest", () => {
+  const line = resolveRecipientLine(
+    config({ recipientDisplay: "name" }),
+    recipient({
+      guestName: "",
+      invitationName: "",
+      groupName: null,
+      assigned: false,
+    })
+  );
+  assert.equal(line, "Dear invited guest");
+});
+
+test("named guests win over invitation labels", () => {
+  const line = resolveRecipientLine(
+    config({ recipientDisplay: "name" }),
+    recipient({
+      guestName: "Kwame Asante",
+      invitationName: "TRADITIONAL MARRIAGE CEREMONY",
+    })
+  );
+  assert.equal(line, "Kwame Asante");
+});
+
+test("ceremony-titled guest rows still fall back to Dear invited guest", () => {
+  const line = resolveRecipientLine(
+    config({ recipientDisplay: "name" }),
+    recipient({
+      guestName: "TRADITIONAL MARRIAGE CEREMONY",
+      invitationName: "TRADITIONAL MARRIAGE CEREMONY",
+      assigned: true,
+    })
+  );
+  assert.equal(line, "Dear invited guest");
+});
+
+test("default greeting hides the duplicate Dear salutation", () => {
+  const model = buildPlaceCardViewModel(
+    config(),
+    recipient({
+      guestName: null,
+      invitationName: "TRADITIONAL MARRIAGE CEREMONY",
+      assigned: false,
+    }),
+    party({ allowance: 1 })
+  );
+  assert.equal(model.salutation, "");
+  assert.equal(model.recipientLine, "Dear invited guest");
+});
+
+test("assigned guests keep Dear above their name", () => {
+  const model = buildPlaceCardViewModel(
+    config(),
+    recipient({ guestName: "Ama Mensah" }),
+    party({ allowance: 1 })
+  );
+  assert.equal(model.salutation, "Dear");
+  assert.equal(model.recipientLine, "Ama Mensah");
 });
 
 test("a group name identical to the guest name is not printed twice", () => {
@@ -140,69 +217,61 @@ test("recipient type is inferred across the supported party shapes", () => {
   assert.equal(inferRecipientType(3, { hasGroupName: true }), "custom");
 });
 
-/* ── arrival copy (guest-facing partial status) ────────────────────────── */
-
-test("a party that has not arrived yet is told nothing about arrivals", () => {
-  assert.equal(resolveArrivalCopy(party({ allowance: 3, admittedCount: 0 })), null);
-});
-
-test("a part-arrived party reads its position in plain words, not status codes", () => {
-  const copy = resolveArrivalCopy(party({ allowance: 3, admittedCount: 2, remainingCount: 1 }));
-  assert.equal(copy, "2 of your 3 guests have arrived · 1 still welcome");
-  assert.ok(copy && !/PARTIAL/i.test(copy), "guest copy must not leak admission jargon");
-});
-
-test("a fully arrived party is told everyone is in", () => {
-  assert.equal(
-    resolveArrivalCopy(party({ allowance: 3, admittedCount: 3, remainingCount: 0 })),
-    "All 3 of your guests have arrived."
-  );
-});
-
-test("a single guest never sees group arrival copy", () => {
-  assert.equal(resolveArrivalCopy(party({ allowance: 1, admittedCount: 1 })), null);
-});
-
 /* ── view model ────────────────────────────────────────────────────────── */
 
-test("the view model binds config, recipient and live allowance together", () => {
+test("the view model binds config, recipient and live capacity together", () => {
   const model = buildPlaceCardViewModel(
     config({ heading: "A place is reserved for you" }),
     recipient(),
-    party({ allowance: 3, admittedCount: 0, remainingCount: 3 })
+    party({ allowance: 3 })
   );
 
   assert.equal(model.heading, "A place is reserved for you");
   assert.equal(model.recipientLine, "Ama Mensah");
-  assert.equal(model.allowanceCopy, "THIS INVITATION ADMITS 3 GUESTS");
+  assert.equal(model.allowanceCopy, "This invitation admits 3 guests.");
   assert.equal(model.isGroup, true);
-  assert.equal(model.arrivalCopy, null);
+  assert.equal("arrivalCopy" in model, false, "guest place cards must not expose arrival copy");
 });
 
-test("a monogram is derived from the recipient when the organiser left it blank", () => {
+test("single-guest view models keep the exclusive capacity line", () => {
+  const model = buildPlaceCardViewModel(config(), recipient({ partySize: 1 }), party({ allowance: 1 }));
+  assert.equal(model.allowanceCopy, "This invitation admits one guest only.");
+  assert.equal(model.isGroup, false);
+});
+
+test("a blank monogram stays blank until the seal or organiser sets one", () => {
   const model = buildPlaceCardViewModel(
     config(),
     recipient({ guestName: "Ama Mensah" }),
     party({ allowance: 2 })
   );
-  assert.equal(model.monogram, "AM");
+  assert.equal(model.monogram, "");
 });
 
-test("an already-published invitation reflects a changed allowance and arrivals", () => {
-  const before = buildPlaceCardViewModel(
-    config(),
-    recipient(),
-    party({ allowance: 3, admittedCount: 0, remainingCount: 3 })
+test("couple seal monograms keep the pipe display form", () => {
+  const model = buildPlaceCardViewModel(
+    config({ monogram: "C | J" }),
+    recipient({ guestName: "Thomas Mensah" }),
+    party({ allowance: 1 })
   );
-  const after = buildPlaceCardViewModel(
-    config(),
-    recipient(),
-    party({ allowance: 4, admittedCount: 2, remainingCount: 2 })
-  );
+  assert.equal(model.monogram, "C | J");
+});
 
-  assert.equal(before.allowanceCopy, "THIS INVITATION ADMITS 3 GUESTS");
-  assert.equal(after.allowanceCopy, "THIS INVITATION ADMITS 4 GUESTS");
-  assert.equal(after.arrivalCopy, "2 of your 4 guests have arrived · 2 still welcome");
+test("compact couple initials expand to the pipe seal form", () => {
+  const model = buildPlaceCardViewModel(
+    config({ monogram: "CJ" }),
+    recipient({ guestName: "Thomas Mensah" }),
+    party({ allowance: 1 })
+  );
+  assert.equal(model.monogram, "C | J");
+});
+
+test("an already-published invitation reflects a changed allowance without arrivals", () => {
+  const before = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 3 }));
+  const after = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 4 }));
+
+  assert.equal(before.allowanceCopy, "This invitation admits 3 guests.");
+  assert.equal(after.allowanceCopy, "This invitation admits 4 guests.");
 });
 
 /* ── shared feature layer + template adapters ──────────────────────────── */

@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Maximize2, Printer, Sun, Users, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Download, Maximize2, Printer, Sun, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatAdmissionCode } from "@/lib/admission/pass-code";
 import {
@@ -20,15 +20,19 @@ export interface GuestEntryPassProps {
   eventName: string;
   eventDate?: string | null;
   venueName?: string | null;
-  partySize: number;
+  /** Kept for callers; capacity copy lives on the place card only. */
+  partySize?: number;
+  /** @deprecated Guest-facing admission counts are never shown on the pass. */
   admittedCount?: number;
   status?: string;
-  /** Optional table/seat, only supplied when event policy allows it. */
+  /** @deprecated Table/seat belong on the place card when assigned. */
   tableNumber?: string | null;
+  /** @deprecated Table/seat belong on the place card when assigned. */
   seatLabel?: string | null;
   instructions?: string | null;
   allowDownload?: boolean;
   allowPrint?: boolean;
+  /** @deprecated Party-size chips are never shown on the guest entry pass. */
   showPartySize?: boolean;
   /** Invitation layout slug, drives the theme preset. */
   layout?: string | null;
@@ -38,34 +42,15 @@ export interface GuestEntryPassProps {
 
 const QR_DISPLAY_PX = 240;
 
-function statusCopy(status: string | undefined, admitted: number, partySize: number) {
-  switch (status) {
-    case "ADMITTED":
-      return { label: "Admitted", tone: "text-emerald-700 bg-emerald-50 border-emerald-200" };
-    case "PARTIALLY_ADMITTED":
-      return {
-        label: `${admitted} of ${partySize} admitted`,
-        tone: "text-amber-700 bg-amber-50 border-amber-200",
-      };
-    case "REVOKED":
-    case "REISSUED":
-      return { label: "Replaced, request a new pass", tone: "text-rose-700 bg-rose-50 border-rose-200" };
-    case "EXPIRED":
-      return { label: "Expired", tone: "text-rose-700 bg-rose-50 border-rose-200" };
-    case "CONFLICT":
-    case "MANUAL_REVIEW":
-      return { label: "Check with the host desk", tone: "text-amber-700 bg-amber-50 border-amber-200" };
-    default:
-      return { label: "Ready for entry", tone: "text-slate-600 bg-white/70 border-black/10" };
-  }
-}
-
 /**
  * The Guest Entry Pass shown at the bottom of a published invitation.
  *
  * Readability at the gate beats decoration: the QR is rendered on a plain
  * white plate at a fixed minimum size, works from a screenshot, and the
  * fullscreen view maximises brightness contrast for scanning in the dark.
+ *
+ * Capacity and seating live on the personalised place card — this surface is
+ * QR + admission code + save/print actions only.
  */
 export function GuestEntryPass({
   token,
@@ -74,22 +59,18 @@ export function GuestEntryPass({
   eventName,
   eventDate,
   venueName,
-  partySize,
-  admittedCount = 0,
   status = "ACTIVE",
-  tableNumber,
-  seatLabel,
   instructions,
   allowDownload = true,
   allowPrint = true,
-  showPartySize = true,
   layout,
   preset,
   className,
 }: GuestEntryPassProps) {
   const [fullscreen, setFullscreen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareRef = useRef<HTMLDivElement | null>(null);
   const theme = entryPassTheme(preset ?? resolveEntryPassPreset(layout));
-  const badge = statusCopy(status, admittedCount, partySize);
   const formattedCode = useMemo(() => formatAdmissionCode(code), [code]);
 
   const imageUrl = useCallback(
@@ -115,7 +96,28 @@ export function GuestEntryPass({
     };
   }, [fullscreen]);
 
+  useEffect(() => {
+    if (!shareOpen) return;
+    const onPointer = (event: MouseEvent | TouchEvent) => {
+      if (!shareRef.current?.contains(event.target as Node)) {
+        setShareOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShareOpen(false);
+    };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("touchstart", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("touchstart", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [shareOpen]);
+
   const isUsable = status !== "REVOKED" && status !== "REISSUED" && status !== "EXPIRED";
+  const showShareMenu = (allowDownload || allowPrint) && isUsable;
 
   return (
     <section
@@ -195,42 +197,6 @@ export function GuestEntryPass({
               Read this out if the QR can&apos;t be scanned
             </p>
           </div>
-
-          <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-2">
-            {showPartySize && (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium",
-                  theme.codePlate,
-                  theme.body
-                )}
-              >
-                <Users className="h-3.5 w-3.5" aria-hidden />
-                Admits {partySize} {partySize === 1 ? "guest" : "guests"}
-              </span>
-            )}
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
-                badge.tone
-              )}
-              role="status"
-            >
-              {badge.label}
-            </span>
-            {tableNumber && (
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
-                  theme.codePlate,
-                  theme.body
-                )}
-              >
-                Table {tableNumber}
-                {seatLabel ? ` · Seat ${seatLabel}` : ""}
-              </span>
-            )}
-          </div>
         </div>
 
         {instructions && (
@@ -242,7 +208,7 @@ export function GuestEntryPass({
           </>
         )}
 
-        {(allowDownload || allowPrint) && isUsable && (
+        {isUsable && (
           <div className="flex flex-wrap items-center justify-center gap-2 px-6 pb-6 pt-2 print:hidden">
             <button
               type="button"
@@ -255,44 +221,74 @@ export function GuestEntryPass({
               <Maximize2 className="h-3.5 w-3.5" aria-hidden />
               Full screen
             </button>
-            {allowPrint && (
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className={cn(
-                  "inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors",
-                  theme.action
+
+            {showShareMenu && (
+              <div className="relative" ref={shareRef}>
+                <button
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={shareOpen}
+                  onClick={() => setShareOpen((open) => !open)}
+                  className={cn(
+                    "inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors",
+                    theme.action
+                  )}
+                >
+                  <Download className="h-3.5 w-3.5" aria-hidden />
+                  Save or print
+                  <ChevronDown
+                    className={cn("h-3.5 w-3.5 transition-transform", shareOpen && "rotate-180")}
+                    aria-hidden
+                  />
+                </button>
+
+                {shareOpen && (
+                  <div
+                    role="menu"
+                    aria-label="Save or print entry pass"
+                    className="absolute bottom-full left-1/2 z-20 mb-2 w-48 -translate-x-1/2 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                  >
+                    {allowPrint && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setShareOpen(false);
+                          window.print();
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        <Printer className="h-3.5 w-3.5" aria-hidden />
+                        Print / PDF
+                      </button>
+                    )}
+                    {allowDownload && (
+                      <>
+                        <a
+                          role="menuitem"
+                          href={imageUrl(1024, { download: true })}
+                          download
+                          onClick={() => setShareOpen(false)}
+                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                          <Download className="h-3.5 w-3.5" aria-hidden />
+                          Download PNG
+                        </a>
+                        <a
+                          role="menuitem"
+                          href={imageUrl(1024, { format: "svg", download: true })}
+                          download
+                          onClick={() => setShareOpen(false)}
+                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                          <Download className="h-3.5 w-3.5" aria-hidden />
+                          Download SVG
+                        </a>
+                      </>
+                    )}
+                  </div>
                 )}
-              >
-                <Printer className="h-3.5 w-3.5" aria-hidden />
-                Print / PDF
-              </button>
-            )}
-            {allowDownload && (
-              <>
-                <a
-                  href={imageUrl(1024, { download: true })}
-                  download
-                  className={cn(
-                    "inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors",
-                    theme.action
-                  )}
-                >
-                  <Download className="h-3.5 w-3.5" aria-hidden />
-                  PNG
-                </a>
-                <a
-                  href={imageUrl(1024, { format: "svg", download: true })}
-                  download
-                  className={cn(
-                    "inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors",
-                    theme.action
-                  )}
-                >
-                  <Download className="h-3.5 w-3.5" aria-hidden />
-                  SVG
-                </a>
-              </>
+              </div>
             )}
           </div>
         )}

@@ -190,7 +190,7 @@ export function AdmissionScanFeedback({
               onClick={() => onResetGuest(result.guest!.id!)}
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Reset this guest
+              Reset admission (re-entry)
             </Button>
           )}
       </CardContent>

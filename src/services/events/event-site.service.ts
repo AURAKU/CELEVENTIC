@@ -1,5 +1,18 @@
 import { prisma } from "@/lib/prisma";
 
+type PublicInvitationLink = {
+  id: string;
+  uniqueLink: string;
+  name: string;
+};
+
+export function choosePrimaryInvitation(
+  canonical: PublicInvitationLink | null,
+  newestActive: PublicInvitationLink | null
+): PublicInvitationLink | null {
+  return canonical ?? newestActive;
+}
+
 export async function getPublicEventSite(slug: string) {
   const event = await prisma.event.findUnique({
     where: { slug },
@@ -9,7 +22,7 @@ export async function getPublicEventSite(slug: string) {
         where: { status: "ACTIVE" },
         orderBy: { createdAt: "desc" },
         take: 1,
-        select: { uniqueLink: true, name: true },
+        select: { id: true, uniqueLink: true, name: true },
       },
       tickets: {
         where: { status: { in: ["PENDING", "PAID"] } },
@@ -22,6 +35,38 @@ export async function getPublicEventSite(slug: string) {
   if (!event || !event.isPublic || !["PUBLISHED", "LIVE"].includes(event.status)) {
     return null;
   }
+
+  // Quick invites and imports create newer personalized Invitation rows. The
+  // public event CTA must keep pointing at the canonical invitation published
+  // by Studio, not whichever guest row happened to be created most recently.
+  const productionOrder = await prisma.invitationOrder.findFirst({
+    where: {
+      eventId: event.id,
+      status: "PUBLISHED",
+      invitationId: { not: null },
+      shareUrl: { not: null },
+      archivedAt: null,
+    },
+    orderBy: { updatedAt: "desc" },
+    select: { invitationId: true },
+  });
+  const fallbackInvitation = event.invitations[0] ?? null;
+  const canonicalInvitation =
+    productionOrder?.invitationId &&
+    productionOrder.invitationId !== fallbackInvitation?.id
+      ? await prisma.invitation.findFirst({
+          where: {
+            id: productionOrder.invitationId,
+            eventId: event.id,
+            status: "ACTIVE",
+          },
+          select: { id: true, uniqueLink: true, name: true },
+        })
+      : null;
+  const primaryInvitation = choosePrimaryInvitation(
+    canonicalInvitation,
+    fallbackInvitation
+  );
 
   return {
     id: event.id,
@@ -47,7 +92,12 @@ export async function getPublicEventSite(slug: string) {
       type: m.type,
       caption: m.caption,
     })),
-    primaryInvitation: event.invitations[0] ?? null,
+    primaryInvitation: primaryInvitation
+      ? {
+          uniqueLink: primaryInvitation.uniqueLink,
+          name: primaryInvitation.name,
+        }
+      : null,
     tickets: event.tickets.map((t) => ({
       id: t.id,
       name: t.name,

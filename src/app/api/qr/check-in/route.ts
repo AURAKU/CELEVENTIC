@@ -4,7 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { qrService } from "@/services/qr/qr.service";
 import { createAuditLog } from "@/lib/audit";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/workspace/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import { rateLimit } from "@/lib/rate-limit";
 import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
@@ -44,7 +45,19 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = checkInSchema.parse(body);
 
-    await verifyEventAccess(data.eventId, session.user.id, session.user.role);
+    try {
+      await requireEventPermission(
+        data.eventId,
+        session.user.id,
+        session.user.role as UserRole,
+        EventPermissionKey.SCAN_QR
+      );
+    } catch {
+      return NextResponse.json(
+        { success: false, status: "unauthorized", error: "You do not have permission to work this gate" },
+        { status: 403 }
+      );
+    }
 
     const override = Boolean(data.override) && isAdminRole(session.user.role as UserRole);
     if (data.override && !override) {

@@ -5,6 +5,9 @@ import type { InvitationDesignConfig } from "@/types/invitation-design";
 import type { GuestStatus, Prisma } from "@prisma/client";
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 import { getAppUrlFromEnv } from "@/lib/app-url";
+import { cleanName } from "@/lib/guest-import/name";
+import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact";
+import { assertNoActiveGuestDuplicate } from "@/lib/guest-search/duplicate-guests";
 
 export interface CreateInvitationInput {
   eventId: string;
@@ -12,6 +15,8 @@ export interface CreateInvitationInput {
   templateId?: string;
   message?: string;
   designConfig?: InvitationDesignConfig;
+  /** Explicit override after the organiser confirmed a name collision. */
+  acknowledgeDuplicates?: boolean;
 }
 
 export interface GuestInput {
@@ -24,6 +29,7 @@ export interface GuestInput {
 export interface AddGuestInput extends GuestInput {
   eventId: string;
   invitationId?: string;
+  acknowledgeDuplicates?: boolean;
 }
 
 export class InvitationService {
@@ -39,15 +45,23 @@ export class InvitationService {
     const event = await prisma.event.findUnique({ where: { id: input.eventId } });
     if (!event) throw new Error("Event not found. Please select a valid event from the list.");
 
+    const displayName = cleanName(input.name);
+    if (displayName.length < 2) {
+      throw new Error("Invitation name must be at least 2 characters");
+    }
+    if (!input.acknowledgeDuplicates) {
+      await assertNoActiveGuestDuplicate(input.eventId, displayName);
+    }
+
     const templateId = await this.resolveTemplateId(input.templateId);
-    const slug = `${slugify(input.name) || "invitation"}-${generateToken(6)}`;
+    const slug = `${slugify(displayName) || "invitation"}-${generateToken(6)}`;
     const uniqueLink = generateToken(32);
     const appUrl = getAppUrlFromEnv();
 
     const invitation = await prisma.invitation.create({
       data: {
         eventId: input.eventId,
-        name: input.name.trim(),
+        name: displayName,
         message: input.message?.trim() || null,
         templateId,
         designConfig: input.designConfig as Prisma.InputJsonValue | undefined,
@@ -174,6 +188,16 @@ export class InvitationService {
   }
 
   async addGuest(input: AddGuestInput) {
+    const displayName = cleanName(input.name);
+    if (displayName.length < 2) {
+      throw new Error("Enter the guest name.");
+    }
+    const email = normalizeEmail(input.email).value;
+    const phone = normalizeGhanaPhone(input.phone).value;
+    if (!input.acknowledgeDuplicates) {
+      await assertNoActiveGuestDuplicate(input.eventId, displayName, email, phone);
+    }
+
     const { allocateManualAdmissionCode } = await import("@/lib/qr/manual-code");
     const manualCode = await allocateManualAdmissionCode(input.eventId);
 
@@ -191,9 +215,9 @@ export class InvitationService {
       data: {
         eventId: input.eventId,
         invitationId,
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
+        name: displayName,
+        email: email ?? undefined,
+        phone: phone ?? undefined,
         plusOnes: input.plusOnes ?? 0,
         status: "INVITED",
         manualCode,
@@ -206,7 +230,11 @@ export class InvitationService {
     return { guest, qrDataUrl: dataUrl, qrToken: token, manualCode };
   }
 
-  async addGuestsBulk(eventId: string, invitationId: string | undefined, guests: GuestInput[]) {
+  async addGuestsBulk(
+    eventId: string,
+    invitationId: string | undefined,
+    guests: Array<GuestInput & { acknowledgeDuplicates?: boolean }>
+  ) {
     const results = [];
     for (const g of guests) {
       const result = await this.addGuest({ ...g, eventId, invitationId });
@@ -218,12 +246,20 @@ export class InvitationService {
   async submitRsvp(guestId: string, response: "ACCEPTED" | "DECLINED" | "MAYBE", message?: string) {
     const statusMap = { ACCEPTED: "ACCEPTED", DECLINED: "DECLINED", MAYBE: "MAYBE" } as const;
 
+    // RSVP is a seating / planning signal — never demote gate admission.
+    const guest = await prisma.guest.findUnique({
+      where: { id: guestId },
+      select: { status: true },
+    });
+
     const [rsvp] = await Promise.all([
       prisma.rsvp.create({ data: { guestId, response, message } }),
-      prisma.guest.update({
-        where: { id: guestId },
-        data: { status: statusMap[response] },
-      }),
+      guest?.status === "CHECKED_IN"
+        ? Promise.resolve(null)
+        : prisma.guest.update({
+            where: { id: guestId },
+            data: { status: statusMap[response] },
+          }),
     ]);
 
     return rsvp;
@@ -235,7 +271,7 @@ export class InvitationService {
   ) {
     const { page, limit, skip } = parsePaginationInput(options, { limit: 20 });
 
-    const where: Prisma.GuestWhereInput = { eventId };
+    const where: Prisma.GuestWhereInput = { eventId, archivedAt: null };
     if (options?.status && options.status !== "all") {
       if (options.status === "NO_RESPONSE") {
         where.status = {
@@ -257,11 +293,11 @@ export class InvitationService {
       prisma.guest.count({ where }),
       prisma.guest.groupBy({
         by: ["status"],
-        where: { eventId },
+        where: { eventId, archivedAt: null },
         _count: true,
       }),
       prisma.invitation.findFirst({
-        where: { eventId, status: { not: "EXPIRED" } },
+        where: { eventId, status: { not: "EXPIRED" }, archivedAt: null },
         orderBy: { createdAt: "desc" },
         select: { uniqueLink: true },
       }),

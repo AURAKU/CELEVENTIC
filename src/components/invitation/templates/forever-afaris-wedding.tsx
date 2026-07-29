@@ -360,29 +360,24 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   }, [design.media, event.coverImageUrl]);
 
   const galleryImages = useMemo(() => {
-    // Gallery is reference assets + portal gallery only, never the hero portrait,
-    // welcome intro, or page background.
-    const reserved = new Set(
-      [heroPortrait, event.coverImageUrl].filter((url): url is string => Boolean(url))
-    );
-    for (const asset of design.media ?? []) {
-      if (asset.role === "intro" || asset.role === "background" || asset.role === "hero") {
-        if (asset.url) reserved.add(asset.url);
-      }
-    }
-
+    // Explicit gallery uploads own this section. An image must stay in Moments
+    // even when the host also reuses it as hero, cover, intro, or background.
+    // Reference media is appended for legacy published snapshots, then deduped.
+    const fromUploads = (props.galleryUrls ?? []).map((url) => ({
+      url,
+      name: undefined,
+    }));
     const fromMedia = (design.media ?? [])
       .filter((m) => m.type === "image" && m.role === "reference")
       .map((m) => ({ url: m.url, name: m.name }));
-    const fromPortal = (props.galleryUrls ?? []).map((url) => ({ url, name: undefined }));
 
     const seen = new Set<string>();
-    return [...fromMedia, ...fromPortal].filter((item) => {
-      if (!item.url || reserved.has(item.url) || seen.has(item.url)) return false;
+    return [...fromUploads, ...fromMedia].filter((item) => {
+      if (!item.url || seen.has(item.url)) return false;
       seen.add(item.url);
       return true;
     });
-  }, [design.media, props.galleryUrls, heroPortrait, event.coverImageUrl]);
+  }, [design.media, props.galleryUrls]);
 
   const countdownTarget =
     board.countdownTarget?.trim() || event.startDateRaw || event.startDate;
@@ -505,7 +500,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             <div className="py-1">{displayDate}</div>
           </div>
           <div
-            className="flex flex-col justify-center text-left text-[10px] uppercase tracking-[0.2em]"
+            className="flex min-w-[4.75rem] flex-col justify-center whitespace-nowrap text-left text-sm font-semibold uppercase tracking-[0.14em]"
             style={{ color: C.cocoa }}
           >
             <span>{timeLabel}</span>
@@ -526,7 +521,15 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           </p>
         )}
         {board.accessNote && (
-          <p className="mt-3 text-[10px] uppercase tracking-[0.3em]" style={{ color: C.rose }}>
+          <p
+            className="mx-auto mt-4 w-fit max-w-full rounded-full border px-4 py-2 text-xs font-semibold uppercase leading-relaxed tracking-[0.2em]"
+            style={{
+              color: C.cocoa,
+              borderColor: C.rose,
+              background: `color-mix(in srgb, ${C.rose} 12%, transparent)`,
+              boxShadow: `0 6px 20px -14px ${C.cocoa}`,
+            }}
+          >
             {board.accessNote}
           </p>
         )}
@@ -736,7 +739,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             {board.galleryHeading}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            {galleryImages.slice(0, 6).map((m, i) => (
+            {galleryImages.map((m, i) => (
               <div
                 key={`${m.url}-${i}`}
                 className="relative overflow-hidden rounded-lg"

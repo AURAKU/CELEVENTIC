@@ -109,15 +109,20 @@ export interface GuestEntryPassData {
   token: string;
   code: string;
   displayName: string;
-  partySize: number;
-  admittedCount: number;
+  /** Kept for callers; capacity copy lives on the place card only. */
+  partySize?: number;
+  /** @deprecated Guest-facing admission counts are never shown on the pass. */
+  admittedCount?: number;
   status: string;
   instructions?: string | null;
+  /** @deprecated Table/seat belong on the place card when assigned. */
   tableNumber?: string | null;
+  /** @deprecated Table/seat belong on the place card when assigned. */
   seatLabel?: string | null;
   allowDownload: boolean;
   allowPrint: boolean;
-  showPartySize: boolean;
+  /** @deprecated Party-size chips are never shown on the guest entry pass. */
+  showPartySize?: boolean;
 }
 
 export interface InvitationRenderProps {

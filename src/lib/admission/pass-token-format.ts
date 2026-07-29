@@ -15,17 +15,24 @@ export function looksLikePassToken(value: string): boolean {
 }
 
 /**
- * Extract a pass token from raw scanner input (bare token or full pass URL).
+ * Extract a pass token from raw scanner input (bare token, `/admission/…`
+ * URL, or `/api/admission/pass-image?token=…` image URL).
  * Returns null when the input is not a syntactically valid pass token.
+ * Never treats client-decoded data as authoritative — the gate still
+ * verifies the HMAC and event scope server-side.
  */
 export function extractPassToken(raw: string): string | null {
   const text = raw.trim().replace(/\s+/g, "");
   if (!text) return null;
   if (looksLikePassToken(text)) return text;
 
-  const match = text.match(/\/admission\/([A-Za-z0-9_.%-]+)/i);
-  if (match?.[1]) {
-    let candidate = match[1];
+  // Strip query/hash before path parsing so camera payloads like
+  // `/admission/cvp1.…?utm=gate` still round-trip.
+  const withoutQuery = text.split(/[?#]/, 2)[0] ?? text;
+
+  const pathMatch = withoutQuery.match(/\/admission\/([A-Za-z0-9_.%-]+)/i);
+  if (pathMatch?.[1]) {
+    let candidate = pathMatch[1];
     try {
       candidate = decodeURIComponent(candidate);
     } catch {
@@ -33,6 +40,19 @@ export function extractPassToken(raw: string): string | null {
     }
     if (looksLikePassToken(candidate)) return candidate;
   }
+
+  // Screenshots / share links of the live pass image include `?token=…`.
+  const tokenParam = text.match(/[?&]token=([A-Za-z0-9_.%-]+)/i);
+  if (tokenParam?.[1]) {
+    let candidate = tokenParam[1];
+    try {
+      candidate = decodeURIComponent(candidate);
+    } catch {
+      /* keep raw */
+    }
+    if (looksLikePassToken(candidate)) return candidate;
+  }
+
   return null;
 }
 

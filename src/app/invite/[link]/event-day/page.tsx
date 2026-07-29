@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { invitationService } from "@/services/invitations/invitation.service";
-import { seatingService } from "@/services/seating/seating.service";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import { resolveInvitationFeatures } from "@/services/invitation-features/feature-resolver";
 import {
@@ -12,7 +11,9 @@ import {
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { resolveCompanionTheme } from "@/lib/admission/event-companion-theme";
-import { buildInviteCeremonyHref } from "@/lib/admission/event-companion";
+import { buildInviteCeremonyHref, buildEventCompanionHref } from "@/lib/admission/event-companion";
+import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
+import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
 import { EventCompanionExperience } from "@/components/admission/event-companion-experience";
 import { PortalStatusPoller } from "./portal-status-poller";
 
@@ -74,14 +75,41 @@ export default async function EventDayPortal({
     redirect(inviteHref);
   }
 
+  const order = await resolveProductionInvitationOrder(
+    invitation.id,
+    invitation.event.id
+  );
+  const hasStoredDesign = Boolean(
+    (invitation.designConfig as { layout?: unknown } | null)?.layout
+  );
+  const productionOrder =
+    order && (order.invitationId === invitation.id || !hasStoredDesign)
+      ? order
+      : null;
   const theme = resolveCompanionTheme({
-    designConfig: invitation.designConfig,
-    template: invitation.template,
+    designConfig: productionOrder
+      ? buildPublishedDesignConfig(productionOrder)
+      : invitation.designConfig,
+    template: productionOrder
+      ? {
+          slug: productionOrder.templateSlug,
+          config: null,
+        }
+      : invitation.template,
     eventCoverImageUrl: invitation.event.coverImageUrl,
   });
 
+  const guest = guestToken
+    ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
+    : null;
+
   const partyGuests = await prisma.guest.findMany({
-    where: { invitationId: invitation.id },
+    // Guest CRM records can be event-scoped without invitationId. Include the
+    // authenticated personalized guest so their real assignment reaches the
+    // same partySeats/continuity projection as invitation-linked guests.
+    where: guest
+      ? { OR: [{ invitationId: invitation.id }, { id: guest.id }] }
+      : { invitationId: invitation.id },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
@@ -91,12 +119,6 @@ export default async function EventDayPortal({
       seatingAssignment: { select: { tableNumber: true, seatLabel: true, zone: true } },
     },
   });
-
-  const guest = guestToken
-    ? (await invitationService.getGuestForInvitation(invitation.id, guestToken)) ??
-      partyGuests.find((g) => g.qrToken === guestToken) ??
-      null
-    : null;
 
   const partySeats = partyGuests
     .filter((g) => g.seatingAssignment)
@@ -113,22 +135,13 @@ export default async function EventDayPortal({
   let seat: { tableNumber: string; seatLabel: string | null; zone: string | null } | null =
     null;
   if (guest) {
-    const seating = await seatingService.lookupByGuestId(guest.id);
-    if (seating?.assignment) {
+    const own = partySeats.find((s) => s.guestId === guest.id);
+    if (own) {
       seat = {
-        tableNumber: seating.assignment.tableNumber,
-        seatLabel: seating.assignment.seatLabel,
-        zone: seating.assignment.zone,
+        tableNumber: own.tableNumber,
+        seatLabel: own.seatLabel,
+        zone: own.zone,
       };
-    } else {
-      const own = partySeats.find((s) => s.guestId === guest.id);
-      if (own) {
-        seat = {
-          tableNumber: own.tableNumber,
-          seatLabel: own.seatLabel,
-          zone: own.zone,
-        };
-      }
     }
   }
   if (!seat && partySeats.length > 0) {
@@ -160,7 +173,10 @@ export default async function EventDayPortal({
     : null;
   const giftPlacement = features.some((f) => f.key === "GIFT_WALLET" && f.enabled)
     ? await giftCampaignService
-        .resolveInvitePlacement(invitation.event.id, { guestQrToken: guestToken ?? null })
+        .resolveCompanionPlacement(invitation.event.id, {
+          guestQrToken: guestToken ?? null,
+          companionReturnUrl: buildEventCompanionHref(link, guestToken ?? null),
+        })
         .catch(() => null)
     : null;
 
@@ -195,6 +211,7 @@ export default async function EventDayPortal({
         memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
         giftUrl={giftPlacement?.giftUrl ?? null}
         giftTitle={giftPlacement?.title ?? null}
+        giftTeaser={giftPlacement?.teaser ?? null}
         inviteHref={inviteHref}
       />
     </>

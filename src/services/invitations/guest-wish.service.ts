@@ -1,6 +1,14 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import type { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
+import { isPlatformAdmin } from "@/lib/rbac";
+export {
+  resolveWishCapabilities,
+  viewerCanDeleteWish,
+  viewerCanEditWish,
+  type WishCapabilities,
+} from "@/lib/invitation/guest-wish-permissions";
 
 export type CreateGuestWishInput = {
   eventId: string;
@@ -10,6 +18,11 @@ export type CreateGuestWishInput = {
   message: string;
 };
 
+export type UpdateGuestWishInput = {
+  authorName?: string;
+  message?: string;
+};
+
 export type GuestWishPublic = {
   id: string;
   authorName: string;
@@ -17,6 +30,21 @@ export type GuestWishPublic = {
   createdAt: Date;
   guestId: string | null;
 };
+
+/** True when the signed-in user may moderate (edit/delete-any) wishes for this event. */
+export async function isWishEventModerator(
+  eventId: string,
+  userId: string | undefined,
+  role: UserRole | undefined
+): Promise<boolean> {
+  if (!userId || !role) return false;
+  if (isPlatformAdmin(role)) return true;
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { organizerId: true },
+  });
+  return event?.organizerId === userId;
+}
 
 function hashAuthorToken(token: string): string {
   return createHash("sha256").update(token.trim()).digest("hex");
@@ -35,6 +63,14 @@ export function authorTokenMatches(storedHash: string | null | undefined, token:
   return timingSafeEqual(incoming, expected);
 }
 
+const publicSelect = {
+  id: true,
+  authorName: true,
+  message: true,
+  createdAt: true,
+  guestId: true,
+} as const;
+
 export class GuestWishService {
   async listForEvent(eventId: string, page = 1, limit = 50) {
     const { page: p, limit: take, skip } = parsePaginationInput(
@@ -48,13 +84,7 @@ export class GuestWishService {
         orderBy: { createdAt: "desc" },
         skip,
         take,
-        select: {
-          id: true,
-          authorName: true,
-          message: true,
-          createdAt: true,
-          guestId: true,
-        },
+        select: publicSelect,
       }),
       prisma.invitationGuestWish.count({ where }),
     ]);
@@ -100,16 +130,35 @@ export class GuestWishService {
         message,
         authorTokenHash: hash,
       },
-      select: {
-        id: true,
-        authorName: true,
-        message: true,
-        createdAt: true,
-        guestId: true,
-      },
+      select: publicSelect,
     });
 
     return { ...wish, deleteToken: token };
+  }
+
+  async update(id: string, input: UpdateGuestWishInput): Promise<GuestWishPublic> {
+    const authorName =
+      input.authorName !== undefined ? input.authorName.trim().slice(0, 80) : undefined;
+    const message = input.message !== undefined ? input.message.trim().slice(0, 1000) : undefined;
+
+    if (authorName !== undefined && !authorName) {
+      throw new Error("Please enter a name");
+    }
+    if (message !== undefined && message.length < 2) {
+      throw new Error("Please write a short wish");
+    }
+    if (authorName === undefined && message === undefined) {
+      throw new Error("Nothing to update");
+    }
+
+    return prisma.invitationGuestWish.update({
+      where: { id },
+      data: {
+        ...(authorName !== undefined ? { authorName } : {}),
+        ...(message !== undefined ? { message } : {}),
+      },
+      select: publicSelect,
+    });
   }
 
   async getById(id: string) {

@@ -6,7 +6,10 @@ import {
   guardRate,
 } from "@/lib/guest-search/api-auth";
 import { MAX_PARTY_SIZE, MIN_PARTY_SIZE } from "@/lib/guest-search/party-allowance";
-import { updateInvitationPersonalisation } from "@/services/guest-search/quick-invite.service";
+import {
+  DuplicateGuestError,
+  updateInvitationPersonalisation,
+} from "@/services/guest-search/quick-invite.service";
 import { getResultCard } from "@/services/guest-search/guest-search.service";
 
 /**
@@ -63,6 +66,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const card = await getResultCard(auth.ctx.eventId, id);
     return NextResponse.json({ success: true, data: { card } });
   } catch (error) {
+    if (error instanceof DuplicateGuestError) {
+      return NextResponse.json(
+        { error: error.message, duplicates: error.duplicates, code: "DUPLICATE" },
+        { status: 409 }
+      );
+    }
     return errorResponse(error, 500);
   }
 }

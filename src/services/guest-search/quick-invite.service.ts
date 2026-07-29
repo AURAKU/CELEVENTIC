@@ -2,11 +2,14 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 import { getServerAppUrl } from "@/lib/app-url";
-import { cleanName, nameKey, stripTitles } from "@/lib/guest-import/name";
+import { cleanName, nameKey } from "@/lib/guest-import/name";
 import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact";
+import {
+  DuplicateGuestError,
+  findActiveGuestDuplicates,
+} from "@/lib/guest-search/duplicate-guests";
 import { clampPartySize, suggestAllowance } from "@/lib/guest-search/party-allowance";
 import type {
-  DuplicateWarning,
   QuickInvitePreview,
   QuickInviteResult,
 } from "@/lib/guest-search/types";
@@ -17,6 +20,8 @@ import {
   featureConfigFor,
   newUniqueLink,
 } from "@/services/invitations/personalised-invitation";
+
+export { DuplicateGuestError } from "@/lib/guest-search/duplicate-guests";
 
 /**
  * Quick Invitation Generator.
@@ -52,19 +57,6 @@ export function buildQrImageUrl(appUrl: string, inviteUrl: string, eventId: stri
   return `${appUrl}/api/qr/image?${params.toString()}`;
 }
 
-export class DuplicateGuestError extends Error {
-  readonly duplicates: DuplicateWarning[];
-
-  constructor(duplicates: DuplicateWarning[]) {
-    super(
-      duplicates[0]?.message ??
-        "Someone with this name is already on the guest list."
-    );
-    this.name = "DuplicateGuestError";
-    this.duplicates = duplicates;
-  }
-}
-
 export interface QuickInviteInput {
   eventId: string;
   name: string;
@@ -88,106 +80,6 @@ export interface QuickInviteInput {
 }
 
 /**
- * The most distinctive word in a name, used to gather duplicate candidates.
- *
- * Matching on the whole typed string would miss the case that matters most:
- * "Mr Kofi Obuah" typed against a "Kofi Obuah" already on the list. Honorifics
- * are stripped and the longest remaining token — in practice the surname — is
- * what the database is asked for. Precision then comes from comparing
- * `nameKey`, which is order-, case-, accent- and title-insensitive.
- */
-function duplicateProbe(name: string): string {
-  const tokens = stripTitles(cleanName(name)).split(" ").filter(Boolean);
-  if (tokens.length === 0) return cleanName(name);
-  return tokens.reduce((longest, token) => (token.length > longest.length ? token : longest));
-}
-
-/** Look for anyone this new invitation might be a second copy of. */
-async function findDuplicates(
-  eventId: string,
-  name: string,
-  email: string | null,
-  phone: string | null
-): Promise<DuplicateWarning[]> {
-  const key = nameKey(name);
-  const phoneDigits = phone?.replace(/\D+/g, "") ?? null;
-  const probe = duplicateProbe(name);
-
-  const [guests, invitations] = await Promise.all([
-    prisma.guest.findMany({
-      where: {
-        eventId,
-        archivedAt: null,
-        OR: [
-          ...(email ? [{ email }] : []),
-          ...(phoneDigits && phoneDigits.length >= 7
-            ? [{ phone: { contains: phoneDigits.slice(-9) } }]
-            : []),
-          { name: { contains: probe } },
-        ],
-      },
-      select: { id: true, name: true, email: true, phone: true },
-      take: 50,
-    }),
-    prisma.invitation.findMany({
-      where: { eventId, archivedAt: null, isGeneralPass: false, name: { contains: probe } },
-      select: { id: true, name: true },
-      take: 50,
-    }),
-  ]);
-
-  const warnings: DuplicateWarning[] = [];
-
-  for (const guest of guests) {
-    if (email && guest.email?.toLowerCase() === email) {
-      warnings.push({
-        kind: "guest",
-        id: guest.id,
-        name: guest.name,
-        message: `${guest.name} already uses ${email} on this event.`,
-      });
-      continue;
-    }
-    if (
-      phoneDigits &&
-      guest.phone &&
-      guest.phone.replace(/\D+/g, "").slice(-9) === phoneDigits.slice(-9)
-    ) {
-      warnings.push({
-        kind: "guest",
-        id: guest.id,
-        name: guest.name,
-        message: `${guest.name} already uses this phone number on this event.`,
-      });
-      continue;
-    }
-    // Name alone is a question, not a fact — two cousins really can share one.
-    if (key && nameKey(guest.name) === key) {
-      warnings.push({
-        kind: "guest",
-        id: guest.id,
-        name: guest.name,
-        message: `"${guest.name}" is already on this event's guest list.`,
-      });
-    }
-  }
-
-  const seenGuestNames = new Set(warnings.map((w) => nameKey(w.name)));
-  for (const invitation of invitations) {
-    if (!key || nameKey(invitation.name) !== key) continue;
-    if (seenGuestNames.has(nameKey(invitation.name))) continue;
-    warnings.push({
-      kind: "invitation",
-      id: invitation.id,
-      name: invitation.name,
-      message: `An invitation named "${invitation.name}" already exists for this event.`,
-    });
-  }
-
-  return warnings;
-}
-
-/**
  * Dry run: what would be created, and what should the organiser look at first.
  *
  * Writes nothing. Safe to call on every pause in typing.
@@ -208,7 +100,12 @@ export async function previewQuickInvitation(input: {
   const emailResult = normalizeEmail(input.email);
 
   const duplicates = displayName
-    ? await findDuplicates(input.eventId, displayName, emailResult.value, phoneResult.value)
+    ? await findActiveGuestDuplicates(
+        input.eventId,
+        displayName,
+        emailResult.value,
+        phoneResult.value
+      )
     : [];
 
   return {
@@ -256,7 +153,12 @@ export async function createQuickInvitation(
   const phone = phoneResult.value;
 
   if (!input.acknowledgeDuplicates) {
-    const duplicates = await findDuplicates(input.eventId, displayName, email, phone);
+    const duplicates = await findActiveGuestDuplicates(
+      input.eventId,
+      displayName,
+      email,
+      phone
+    );
     if (duplicates.length > 0) throw new DuplicateGuestError(duplicates);
   }
 
@@ -405,7 +307,11 @@ export async function updateInvitationPersonalisation(
     select: {
       id: true,
       admissionAllowance: true,
-      guests: { orderBy: { createdAt: "asc" }, take: 1, select: { id: true } },
+      guests: {
+        where: { archivedAt: null },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      },
     },
   });
   if (!invitation) throw new Error("Invitation not found");
@@ -416,6 +322,21 @@ export async function updateInvitationPersonalisation(
   if (update.name != null) {
     displayName = cleanName(update.name);
     if (displayName.length < 2) throw new Error("Enter the guest or invitation name.");
+    const email =
+      update.email === undefined ? null : normalizeEmail(update.email).value;
+    const phone =
+      update.phone === undefined ? null : normalizeGhanaPhone(update.phone).value;
+    const duplicates = await findActiveGuestDuplicates(
+      update.eventId,
+      displayName,
+      email,
+      phone,
+      {
+        excludeInvitationIds: [update.invitationId],
+        excludeGuestIds: invitation.guests.map((g) => g.id),
+      }
+    );
+    if (duplicates.length > 0) throw new DuplicateGuestError(duplicates);
     data.name = displayName;
   }
 

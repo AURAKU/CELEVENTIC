@@ -1,4 +1,4 @@
-import type { AdmissionState } from "@prisma/client";
+import type { AdmissionState, PortalUnlockPolicy } from "@prisma/client";
 
 /**
  * Pure admission arithmetic + state derivation for the Post-Admission Guest
@@ -86,4 +86,19 @@ export function summarize(
     state,
     canAccessPortal: canAccessPortal(state) && !isTerminalDenied(state),
   };
+}
+
+/**
+ * Narrow the default "unlock on first admitted head" rule to the organiser's
+ * chosen policy. Only ever narrows — never grants access the summary denied.
+ * RSVP / invite-open never reach here with admittedCount > 0.
+ */
+export function applyPortalUnlockPolicy(
+  summary: AdmissionSummary,
+  policy: PortalUnlockPolicy
+): boolean {
+  if (!summary.canAccessPortal) return false;
+  if (policy === "MANUAL") return false;
+  if (policy === "ON_FULL_ADMISSION") return summary.state === "ADMITTED";
+  return true;
 }

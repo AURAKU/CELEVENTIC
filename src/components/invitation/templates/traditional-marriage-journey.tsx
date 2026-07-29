@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarHeart, Check, FileDown, Loader2, MapPin, Share2 } from "lucide-react";
+import { CalendarHeart, Check, FileDown, Loader2, MapPin, Share2, ShieldAlert } from "lucide-react";
 import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
 import { setSmartCalendarReminder } from "@/lib/invitation/smart-calendar";
@@ -22,6 +22,11 @@ export interface TraditionalMarriageJourneyProps {
   pdfUrl?: string | null;
   showGifts?: boolean;
   showTimeline?: boolean;
+  /**
+   * Organiser-allocated heads for this invitation.
+   * Used in the Share caution so guests know the pass is strictly personal.
+   */
+  partyAllowance?: number | null;
 }
 
 function scrollToSection(id: string) {
@@ -40,15 +45,25 @@ type QuietLink = {
  * Continue With Us, Directions · Save the Date · Share.
  * Quiet text links only when destinations exist. No chip spam / utility cards.
  */
+function formatShareAdmissionCopy(allowance?: number | null): string {
+  const n = Math.max(1, Math.trunc(allowance ?? 1));
+  if (n <= 1) return "This invitation only admits one guest.";
+  return `This invitation only admits ${n} guests.`;
+}
+
 export function TraditionalMarriageJourney({
   event,
   mapsHref,
   pdfUrl,
   showGifts = false,
   showTimeline = false,
+  partyAllowance = 1,
 }: TraditionalMarriageJourneyProps) {
   const staticPreview = useInvitationStaticPreview();
   const [reminderState, setReminderState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [sharePromptOpen, setSharePromptOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const admissionCopy = formatShareAdmissionCopy(partyAllowance);
 
   const directionsUrl =
     mapsHref ||
@@ -88,8 +103,14 @@ export function TraditionalMarriageJourney({
     });
   }
 
-  async function shareInvitation() {
-    if (staticPreview) return;
+  function requestShare() {
+    if (staticPreview || sharing) return;
+    setSharePromptOpen(true);
+  }
+
+  async function confirmShare() {
+    if (staticPreview || sharing) return;
+    setSharing(true);
     try {
       if (navigator.share) {
         await navigator.share({ title: event.title, url: window.location.href });
@@ -98,6 +119,9 @@ export function TraditionalMarriageJourney({
       }
     } catch {
       /* user cancelled share sheet */
+    } finally {
+      setSharing(false);
+      setSharePromptOpen(false);
     }
   }
 
@@ -240,9 +264,10 @@ export function TraditionalMarriageJourney({
         <button
           type="button"
           disabled={staticPreview}
-          onClick={() => void shareInvitation()}
+          onClick={requestShare}
           className={triadItemClass}
           style={{ outlineColor: PALETTE.bronze, color: PALETTE.bronzeDeep }}
+          aria-haspopup="dialog"
         >
           <Share2 className="h-[18px] w-[18px]" style={{ color: PALETTE.mustard }} aria-hidden />
           <span className="font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.16em] uppercase text-center leading-tight">
@@ -250,6 +275,77 @@ export function TraditionalMarriageJourney({
           </span>
         </button>
       </div>
+
+      {sharePromptOpen && (
+        <div
+          className="fixed inset-0 z-[220] flex items-center justify-center px-4"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-[#1C253A]/55 backdrop-blur-[2px]"
+            aria-label="Dismiss share notice"
+            onClick={() => !sharing && setSharePromptOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tm-share-caution-title"
+            aria-describedby="tm-share-caution-body"
+            className="relative w-full max-w-[22rem] rounded-sm border px-5 py-6 text-center shadow-[0_28px_60px_-28px_rgba(28,37,58,0.55)]"
+            style={{
+              borderColor: PALETTE.border,
+              background: `linear-gradient(168deg, ${PALETTE.linen} 0%, ${PALETTE.peach} 48%, ${PALETTE.peachDeep} 100%)`,
+              color: PALETTE.ink,
+            }}
+          >
+            <div
+              className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border"
+              style={{ borderColor: `${PALETTE.mustard}88`, background: `${PALETTE.mustard}18` }}
+            >
+              <ShieldAlert className="h-5 w-5" style={{ color: PALETTE.mustard }} aria-hidden />
+            </div>
+            <p
+              id="tm-share-caution-title"
+              className="font-[family-name:var(--font-cinzel)] text-[13px] font-semibold uppercase tracking-[0.18em]"
+              style={{ color: PALETTE.bronzeDeep }}
+            >
+              Private invitation
+            </p>
+            <p
+              id="tm-share-caution-body"
+              className="mt-3 font-[family-name:var(--font-cormorant)] text-[15px] leading-relaxed"
+              style={{ color: PALETTE.dress }}
+            >
+              This invitation is strictly by invitation from the host. {admissionCopy} Please only share with care.
+            </p>
+            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                disabled={sharing}
+                onClick={() => setSharePromptOpen(false)}
+                className="rounded-full border px-4 py-2.5 font-[family-name:var(--font-cormorant)] text-[12px] uppercase tracking-[0.16em] transition-opacity hover:opacity-80 disabled:opacity-50"
+                style={{ borderColor: PALETTE.border, color: PALETTE.bronzeDeep, background: PALETTE.linen }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={sharing}
+                onClick={() => void confirmShare()}
+                className="rounded-full px-4 py-2.5 font-[family-name:var(--font-cormorant)] text-[12px] font-semibold uppercase tracking-[0.16em] transition-transform hover:scale-[1.02] disabled:opacity-50"
+                style={{
+                  color: PALETTE.linen,
+                  background: `linear-gradient(135deg, ${PALETTE.bronze}, ${PALETTE.bronzeDeep})`,
+                  boxShadow: `0 12px 24px -16px ${PALETTE.bronzeDeep}`,
+                }}
+              >
+                {sharing ? "Opening…" : "I understand, continue"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {quietLinks.length > 0 && (
         <nav

@@ -4,7 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { qrService } from "@/services/qr/qr.service";
 import { createAuditLog } from "@/lib/audit";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/workspace/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import { rateLimit } from "@/lib/rate-limit";
 import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
@@ -29,7 +30,12 @@ function deviceInfo(req: Request) {
   });
 }
 
-/** Check-in from uploaded QR image (client decodes image, server validates token) */
+/**
+ * Check-in from an uploaded QR image.
+ * The client may decode the image pixels, but admission is never client-trusted:
+ * this endpoint re-validates the token with the same server check-in path
+ * (permissions, event scope, signature/state, replay-safe).
+ */
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -46,7 +52,19 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = uploadScanSchema.parse(body);
 
-    await verifyEventAccess(data.eventId, session.user.id, session.user.role);
+    try {
+      await requireEventPermission(
+        data.eventId,
+        session.user.id,
+        session.user.role as UserRole,
+        EventPermissionKey.SCAN_QR
+      );
+    } catch {
+      return NextResponse.json(
+        { success: false, status: "unauthorized", error: "You do not have permission to work this gate" },
+        { status: 403 }
+      );
+    }
 
     const override = Boolean(data.override) && isAdminRole(session.user.role as UserRole);
 

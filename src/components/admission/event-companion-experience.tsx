@@ -7,6 +7,7 @@ import {
   type PartySeat,
   type SeatingContinuity,
 } from "@/lib/admission/seating-continuity";
+import { resolveCompanionPlace } from "@/lib/admission/event-companion";
 import { EVENT_TIME_ZONE } from "@/lib/constants";
 import type { ResolvedFeature } from "@/lib/invitation-features/registry";
 import { invitationFontVars } from "@/lib/invitation-fonts";
@@ -31,6 +32,8 @@ export type EventCompanionExperienceProps = {
   memoryAlbumUrl: string | null;
   giftUrl: string | null;
   giftTitle: string | null;
+  /** Companion TAKE PART secondary line under the gift title. */
+  giftTeaser?: string | null;
   inviteHref: string;
   /** Optional menu copy for in-event dining guidance. */
   menuBody?: string | null;
@@ -91,6 +94,7 @@ export function EventCompanionExperience({
   memoryAlbumUrl,
   giftUrl,
   giftTitle,
+  giftTeaser = null,
   inviteHref,
   menuBody = null,
   menuUrl = null,
@@ -108,28 +112,11 @@ export function EventCompanionExperience({
   const whenLabel = formatEventWhen(event.startDate);
   const firstName = guestName?.trim().split(/\s+/)[0] ?? null;
 
-  const allocatedSeats =
-    partySeats.length > 0
-      ? partySeats
-      : continuity?.revealed?.length
-        ? continuity.revealed
-        : [];
-  const displaySeat =
-    seat ??
-    (continuity?.tableNumber
-      ? {
-          tableNumber: continuity.tableNumber,
-          seatLabel: allocatedSeats.find((s) => s.tableNumber === continuity.tableNumber)
-            ?.seatLabel ?? null,
-          zone: allocatedSeats.find((s) => s.tableNumber === continuity.tableNumber)?.zone ?? null,
-        }
-      : allocatedSeats[0]
-        ? {
-            tableNumber: allocatedSeats[0].tableNumber,
-            seatLabel: allocatedSeats[0].seatLabel,
-            zone: allocatedSeats[0].zone,
-          }
-        : null);
+  const { place: displaySeat, allocatedSeats } = resolveCompanionPlace(
+    seat,
+    partySeats,
+    continuity
+  );
   const extraPartySeats = displaySeat
     ? allocatedSeats.filter(
         (s) =>
@@ -466,10 +453,10 @@ export function EventCompanionExperience({
               {enabled("GIFT_WALLET") && giftUrl ? (
                 <Link
                   href={giftUrl}
-                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5"
+                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5 transition-colors"
                   style={{
-                    background: `${colors.primary}08`,
-                    border: `1px solid ${colors.secondary}28`,
+                    background: theme.accentWash,
+                    border: `1px solid ${colors.secondary}35`,
                   }}
                 >
                   <span>
@@ -481,13 +468,13 @@ export function EventCompanionExperience({
                         fontWeight: 600,
                       }}
                     >
-                      {giftTitle || "Send a gift"}
+                      {giftTitle || "Gift the Couple"}
                     </span>
                     <span
                       className="mt-1 block text-base sm:text-lg"
                       style={{ color: colors.primary, fontWeight: 500 }}
                     >
-                      Open Gift Wallet
+                      {giftTeaser || "A private blessing for the couple"}
                     </span>
                   </span>
                   <span style={{ color: colors.secondary }} aria-hidden>

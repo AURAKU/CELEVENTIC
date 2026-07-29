@@ -21,12 +21,12 @@ export async function GET(
     const plan = await seatingService.getPlanForEvent(eventId);
     const [guests, guestTotal] = await Promise.all([
       prisma.guest.findMany({
-        where: { eventId },
+        where: { eventId, archivedAt: null },
         select: { id: true, name: true, email: true, phone: true, qrToken: true, status: true },
         orderBy: { name: "asc" },
         take: SEATING_GUEST_LIMIT,
       }),
-      prisma.guest.count({ where: { eventId } }),
+      prisma.guest.count({ where: { eventId, archivedAt: null } }),
     ]);
     return NextResponse.json({
       success: true,

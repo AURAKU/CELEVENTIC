@@ -1,6 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
+import {
+  resolveWishCapabilities,
+  viewerCanDeleteWish,
+  viewerCanEditWish,
+} from "@/lib/invitation/guest-wish-permissions";
 import { authorTokenMatches } from "../guest-wish.service";
 
 describe("guest wish author delete token", () => {
@@ -17,5 +22,72 @@ describe("guest wish author delete token", () => {
     assert.equal(authorTokenMatches(hash, ""), false);
     assert.equal(authorTokenMatches(null, token), false);
     assert.equal(authorTokenMatches(undefined, token), false);
+  });
+});
+
+describe("wish permission matrix", () => {
+  it("anonymous / other guest: add only — no delete, no edit", () => {
+    const caps = resolveWishCapabilities({
+      isModerator: false,
+      hasValidAuthorToken: false,
+    });
+    assert.deepEqual(caps, { canAdd: true, canDelete: false, canEdit: false });
+  });
+
+  it("author with deleteToken: delete own only — no edit", () => {
+    const caps = resolveWishCapabilities({
+      isModerator: false,
+      hasValidAuthorToken: true,
+    });
+    assert.deepEqual(caps, { canAdd: true, canDelete: true, canEdit: false });
+  });
+
+  it("organizer / platform admin: add, edit, and delete any", () => {
+    const caps = resolveWishCapabilities({
+      isModerator: true,
+      hasValidAuthorToken: false,
+    });
+    assert.deepEqual(caps, { canAdd: true, canDelete: true, canEdit: true });
+  });
+
+  it("moderator still edits even when also holding an author token", () => {
+    const caps = resolveWishCapabilities({
+      isModerator: true,
+      hasValidAuthorToken: true,
+    });
+    assert.deepEqual(caps, { canAdd: true, canDelete: true, canEdit: true });
+  });
+});
+
+describe("wish card affordance gating", () => {
+  it("never shows trash for a regular guest without an owned token", () => {
+    assert.equal(
+      viewerCanDeleteWish({ canModerate: false, ownedToken: null }),
+      false
+    );
+    assert.equal(
+      viewerCanDeleteWish({ canModerate: false, ownedToken: undefined }),
+      false
+    );
+    assert.equal(
+      viewerCanDeleteWish({ canModerate: false, ownedToken: "" }),
+      false
+    );
+  });
+
+  it("shows trash only for the guest's own wish (owned token) or moderator", () => {
+    assert.equal(
+      viewerCanDeleteWish({ canModerate: false, ownedToken: "tok_abc" }),
+      true
+    );
+    assert.equal(
+      viewerCanDeleteWish({ canModerate: true, ownedToken: null }),
+      true
+    );
+  });
+
+  it("shows edit only for organizers/admins — never for guests", () => {
+    assert.equal(viewerCanEditWish(false), false);
+    assert.equal(viewerCanEditWish(true), true);
   });
 });

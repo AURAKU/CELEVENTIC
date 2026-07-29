@@ -4,12 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Check,
-  Copy,
-  Download,
-  ExternalLink,
   Eye,
-  Mail,
-  MessageCircle,
   Sparkles,
   UserPlus,
 } from "lucide-react";
@@ -19,11 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PartyAllowanceField } from "./party-allowance-field";
+import { GuestResultCard } from "./guest-result-card";
 import { suggestAllowance } from "@/lib/guest-search/party-allowance";
 import type {
   DuplicateWarning,
   QuickInvitePreview,
-  QuickInviteResult,
   SearchResultCard,
 } from "@/lib/guest-search/types";
 import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
@@ -37,25 +32,21 @@ function publicInviteUrl(url: string): string {
 }
 
 /**
- * Create Personalised Invitation.
+ * Add Guest — one create path for the whole CRM.
  *
- * One required field. The allowance is pre-filled from the name the moment it
- * is typed, "Mr & Mrs Obuah" arrives as two, "The Mensah Family" arrives as a
- * question, and the organiser can always overrule it.
- *
- * Preview is a real dry run against the server, not a client-side guess, so
- * the duplicate warning an organiser sees is the same check that will run when
- * they press Create.
+ * Creates a personalised invitation (link, entry pass, place card). Name is
+ * the only required field; allowance is suggested from the typed name.
  */
 
 interface QuickCreateCardProps {
   eventId: string | null;
   onCreated: (card: SearchResultCard) => void;
+  onChanged: (card: SearchResultCard) => void;
 }
 
 const PREVIEW_DEBOUNCE_MS = 350;
 
-export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
+export function QuickCreateCard({ eventId, onCreated, onChanged }: QuickCreateCardProps) {
   const [name, setName] = useState("");
   const [partySize, setPartySize] = useState(1);
   const [allowanceTouched, setAllowanceTouched] = useState(false);
@@ -65,17 +56,14 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
   const [preview, setPreview] = useState<QuickInvitePreview | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [duplicates, setDuplicates] = useState<DuplicateWarning[]>([]);
-  const [created, setCreated] = useState<QuickInviteResult | null>(null);
+  const [createdCard, setCreatedCard] = useState<SearchResultCard | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [confirmDifferentPerson, setConfirmDifferentPerson] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [copyHint, setCopyHint] = useState("");
 
   const nameRef = useRef<HTMLInputElement>(null);
-
-  // Local suggestion keeps the stepper responsive between server previews;
-  // the server remains the authority on duplicates.
   const suggestion = suggestAllowance(name);
 
   useEffect(() => {
@@ -101,9 +89,10 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
         if (res.ok) {
           setPreview(json.data as QuickInvitePreview);
           setDuplicates((json.data as QuickInvitePreview).duplicates);
+          setConfirmDifferentPerson(false);
         }
       } catch {
-        // An aborted or failed preview is not worth interrupting typing over.
+        // Aborted / failed preview must not interrupt typing.
       }
     }, PREVIEW_DEBOUNCE_MS);
 
@@ -122,11 +111,18 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
     setPreview(null);
     setPreviewOpen(false);
     setDuplicates([]);
+    setConfirmDifferentPerson(false);
     nameRef.current?.focus();
   }, []);
 
   async function submit(acknowledgeDuplicates: boolean) {
     if (!eventId) return;
+    if (duplicates.length > 0 && !acknowledgeDuplicates) {
+      setError(
+        "This name is already on the list. Adjust the name if this is someone else, or tick the confirmation below to create a separate invitation."
+      );
+      return;
+    }
     setSubmitting(true);
     setError("");
 
@@ -147,7 +143,11 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
 
       if (res.status === 409) {
         setDuplicates(json.duplicates ?? []);
-        setError(json.error ?? "This guest may already be on the list.");
+        setConfirmDifferentPerson(false);
+        setError(
+          json.error ??
+            "This guest may already be on the list. Adjust the name, or confirm they are a different person."
+        );
         return;
       }
       if (!res.ok) {
@@ -155,12 +155,16 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
         return;
       }
 
-      const invitation = json.data.invitation as QuickInviteResult;
-      setCreated(invitation);
-      if (json.data.card) onCreated(json.data.card as SearchResultCard);
+      const card = json.data.card as SearchResultCard | undefined;
+      if (card) {
+        setCreatedCard(card);
+        onCreated(card);
+        const shareUrl = publicInviteUrl(card.inviteUrl);
+        const ok = await copyText(shareUrl);
+        setLinkCopied(ok);
+        if (ok) setTimeout(() => setLinkCopied(false), 2500);
+      }
       reset();
-      // Hand the link over immediately, organisers create then paste into WhatsApp.
-      void copyLink(publicInviteUrl(invitation.inviteUrl));
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
     } finally {
@@ -168,41 +172,40 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
     }
   }
 
-  async function copyLink(url: string) {
-    setCopyHint("");
-    const ok = await copyText(url);
-    if (ok) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-      return;
-    }
-    // Keep the invite link visible/selectable, never block sharing on clipboard quirks.
-    setCopyHint("Select the link below and copy it, or use WhatsApp / Email.");
-  }
-
-  const canSubmit = Boolean(eventId) && name.trim().length >= 2 && !submitting;
-  const needsAcknowledgement = duplicates.length > 0;
+  const canSubmit =
+    Boolean(eventId) &&
+    name.trim().length >= 2 &&
+    !submitting &&
+    (duplicates.length === 0 || confirmDifferentPerson);
+  const needsAcknowledgement = duplicates.length > 0 && confirmDifferentPerson;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <UserPlus className="h-4 w-4" /> Create Personalised Invitation
+          <UserPlus className="h-4 w-4" /> Add Guest
         </CardTitle>
+        <p className="text-xs text-slate-500">
+          Creates a personalised invitation with a share link, entry pass and place card.
+        </p>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {created && (
-          <CreatedSummary
-            result={created}
-            copied={copied}
-            copyHint={copyHint}
-            onCopy={copyLink}
-            onDismiss={() => {
-              setCreated(null);
-              setCopyHint("");
-            }}
-          />
+        {createdCard && !createdCard.archivedAt && (
+          <div className="space-y-2">
+            <p className="flex items-center gap-2 text-sm font-semibold text-brand-800">
+              <Check className="h-4 w-4" />
+              {createdCard.name} is invited
+              {linkCopied ? " · link copied" : ""}
+            </p>
+            <GuestResultCard
+              card={createdCard}
+              onChanged={(next) => {
+                setCreatedCard(next.archivedAt ? null : next);
+                onChanged(next);
+              }}
+            />
+          </div>
         )}
 
         <form
@@ -218,7 +221,10 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
               id="quick-name"
               ref={nameRef}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setConfirmDifferentPerson(false);
+              }}
               placeholder="Mr Kofi Obuah"
               autoComplete="off"
               disabled={!eventId}
@@ -279,23 +285,36 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
           {duplicates.length > 0 && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
               <p className="flex items-center gap-2 text-sm font-semibold text-amber-800">
-                <AlertTriangle className="h-4 w-4" /> This may already be on the list
+                <AlertTriangle className="h-4 w-4" /> Name already on this event
               </p>
               <ul className="mt-1.5 space-y-1 text-xs text-amber-700">
                 {duplicates.slice(0, 4).map((duplicate) => (
                   <li key={`${duplicate.kind}-${duplicate.id}`}>{duplicate.message}</li>
                 ))}
               </ul>
-              <p className="mt-2 text-xs text-amber-700">
-                Two guests really can share a name. Creating anyway makes a separate invitation.
+              <p className="mt-2 text-xs text-amber-800">
+                If this is a different person, add a distinguishing detail to the name
+                (for example &quot;Kofi Mensah (Kumasi)&quot;) — or find and edit the existing
+                guest instead of minting a second invitation.
               </p>
+              <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-amber-900">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={confirmDifferentPerson}
+                  onChange={(e) => setConfirmDifferentPerson(e.target.checked)}
+                />
+                <span>
+                  This is a different person — create a separate invitation anyway
+                </span>
+              </label>
             </div>
           )}
 
           {previewOpen && preview && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="flex items-center gap-2 font-semibold text-slate-700">
-                <Sparkles className="h-3.5 w-3.5" /> {preview.displayName || ", "}
+                <Sparkles className="h-3.5 w-3.5" /> {preview.displayName || "—"}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge variant="outline">
@@ -321,116 +340,18 @@ export function QuickCreateCard({ eventId, onCreated }: QuickCreateCardProps) {
               onClick={() => setPreviewOpen((open) => !open)}
               disabled={!preview}
             >
-              <Eye className="h-4 w-4" /> {previewOpen ? "Hide preview" : "Preview Invitation"}
+              <Eye className="h-4 w-4" /> {previewOpen ? "Hide preview" : "Preview"}
             </Button>
             <Button type="submit" disabled={!canSubmit} className="flex-1 sm:flex-none">
               {submitting
                 ? "Creating…"
                 : needsAcknowledgement
-                  ? "Create anyway"
-                  : "Create Invitation"}
+                  ? "Create separate invitation"
+                  : "Add guest"}
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
-  );
-}
-
-/** Success state: the link, the code, and the three ways to hand it over. */
-function CreatedSummary({
-  result,
-  copied,
-  copyHint,
-  onCopy,
-  onDismiss,
-}: {
-  result: QuickInviteResult;
-  copied: boolean;
-  copyHint: string;
-  onCopy: (url: string) => void;
-  onDismiss: () => void;
-}) {
-  const shareUrl = publicInviteUrl(result.inviteUrl);
-  const whatsAppText = `Dear ${result.name},\n\nYou are personally invited. Open your invitation:\n${shareUrl}`;
-  const emailBody = `${whatsAppText}${
-    result.admissionCode ? `\n\nYour admission code: ${result.admissionCode}` : ""
-  }`;
-  const qrHref = result.qrImageUrl.includes("localhost")
-    ? `/api/qr/image?data=${encodeURIComponent(shareUrl)}&mode=pass&size=1024&download=1`
-    : `${result.qrImageUrl}&download=1`;
-
-  return (
-    <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="flex items-center gap-2 text-sm font-semibold text-brand-800">
-            <Check className="h-4 w-4" /> {result.name} is invited
-          </p>
-          <p className="mt-0.5 text-xs text-brand-700">
-            Admits {result.partySize} {result.partySize === 1 ? "person" : "people"}
-            {result.admissionCode ? ` · code ${result.admissionCode}` : ""}
-            {copied ? " · link copied" : ""}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="text-xs text-brand-700 underline underline-offset-2"
-        >
-          Dismiss
-        </button>
-      </div>
-
-      <div className="mt-2.5 flex gap-2">
-        <Input
-          readOnly
-          value={shareUrl}
-          aria-label="Invitation link"
-          onFocus={(e) => e.currentTarget.select()}
-          onClick={(e) => e.currentTarget.select()}
-          className="h-9 flex-1 truncate bg-white font-mono text-xs"
-        />
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="shrink-0"
-          onClick={() => void onCopy(shareUrl)}
-        >
-          <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Copy"}
-        </Button>
-      </div>
-      {copyHint ? <p className="mt-1.5 text-xs text-amber-700">{copyHint}</p> : null}
-
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        <Button size="sm" variant="outline" asChild>
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(whatsAppText)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-          </a>
-        </Button>
-        <Button size="sm" variant="outline" asChild>
-          <a
-            href={`mailto:?subject=${encodeURIComponent(`Your invitation, ${result.name}`)}&body=${encodeURIComponent(emailBody)}`}
-          >
-            <Mail className="h-3.5 w-3.5" /> Email
-          </a>
-        </Button>
-        <Button size="sm" variant="outline" asChild>
-          <a href={qrHref} target="_blank" rel="noopener noreferrer">
-            <Download className="h-3.5 w-3.5" /> QR
-          </a>
-        </Button>
-        <Button size="sm" variant="ghost" asChild>
-          <a href={result.invitePath} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-3.5 w-3.5" /> Open pass
-          </a>
-        </Button>
-      </div>
-    </div>
   );
 }

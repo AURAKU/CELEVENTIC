@@ -149,8 +149,18 @@ function SuccessPanel({
           </Link>
         )}
 
+        {gift.companionReturnUrl ? (
+          <Link
+            href={gift.companionReturnUrl}
+            className="mt-4 inline-flex w-full items-center justify-center px-6 py-3 text-sm font-medium underline-offset-4 hover:underline"
+            style={{ color: "var(--gift-color-ink-muted)" }}
+          >
+            Return to Event Companion
+          </Link>
+        ) : null}
+
         <p className="mt-5 text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
-          Reference {gift.reference}
+          Your reference {gift.reference}
         </p>
       </div>
     </div>

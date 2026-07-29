@@ -388,6 +388,7 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
           pdfUrl={design.media?.find((m) => m.type === "pdf")?.url}
           showGifts={Boolean(features.contributions && hasGiftsSection)}
           showTimeline={Boolean(features.timeline && hasTimelineSection)}
+          partyAllowance={props.placeCard?.party.allowance ?? props.placeCard?.recipient.partySize ?? 1}
         />
       </div>
     </div>

@@ -25,19 +25,28 @@
   isolation: isolate;
 }
 
-/* Live invite: true device fullscreen (no safe-area padding that crops the clip). */
+/*
+ * Live invite: true responsive viewport. `dvh` tracks mobile browser chrome
+ * opening/closing; the `vh` fallback covers older Safari. No shell padding can
+ * shrink or crop the intro frame.
+ */
 .live {
   position: fixed;
   inset: 0;
   z-index: 195;
-  width: 100%;
-  width: 100dvw;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   height: 100dvh;
-  height: 100svh;
-  max-width: 100vw;
-  max-height: 100dvh;
-  max-height: 100svh;
+  min-width: 100%;
+  min-height: 100%;
+  max-width: none;
+  max-height: none;
+}
+
+@supports (height: 100svh) and (not (height: 100dvh)) {
+  .live {
+    height: 100svh;
+  }
 }
 
 /* Catalogue / studio phone frame: fill the preview shell, not the browser. */
@@ -60,21 +69,65 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   background: #040a10;
 }
 
+/*
+ * Aspect-ratio buffer: fills desktop landscape and narrow mobile margins with
+ * a quiet version of the official poster. The foreground video is always
+ * `contain`, so every pixel of the actual clip remains visible.
+ */
+.videoBackdrop {
+  position: absolute;
+  inset: -4%;
+  z-index: 0;
+  overflow: hidden;
+  background: #040a10;
+  transform: scale(1.06);
+}
+
+.videoBackdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 10, 16, 0.34);
+}
+
+.videoBackdrop img {
+  object-fit: cover;
+  object-position: center center;
+  filter: blur(24px) saturate(0.82) brightness(0.58);
+}
+
 .introVideo {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  max-height: 100%;
   object-fit: contain;
   object-position: center center;
-  background: #040a10;
+  background: transparent;
+}
+
+/* Preserve the complete portrait master on narrow and landscape screens. */
+@media (orientation: portrait) {
+  .introVideo {
+    width: 100%;
+    height: 100%;
+    object-position: 50% 50%;
+  }
+}
+
+@media (orientation: landscape) {
+  .introVideo {
+    width: 100%;
+    height: 100%;
+    object-position: 50% 50%;
+  }
 }
 
 .posterStill {
@@ -352,11 +405,74 @@
   border: 0;
 }
 
+/* Live browsers require a guest gesture before video audio can start. */
+.soundGate {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding:
+    1.5rem
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))
+    max(1rem, env(safe-area-inset-left, 0px));
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 58%, rgba(4, 10, 16, 0.52) 100%);
+}
+
+.soundButton {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 3rem;
+  padding: 0.78rem 1.35rem;
+  border: 1px solid rgba(212, 166, 58, 0.55);
+  border-radius: 9999px;
+  background: rgba(4, 10, 16, 0.72);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--soft-ivory);
+  font-family: var(--font-sans, inherit);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  animation: soft-copy-in 0.55s ease both;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.soundButton:hover,
+.soundButton:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(212, 166, 58, 0.85);
+  background: rgba(4, 10, 16, 0.86);
+  outline: 2px solid rgba(212, 166, 58, 0.45);
+  outline-offset: 3px;
+}
+
+.soundIcon {
+  color: var(--soft-gold);
+  font-size: 1rem;
+  line-height: 1;
+}
+
 /* —— Honest, discoverable skip affordance (never a silent auto-skip) —— */
 .skipButton {
   position: absolute;
   right: max(1rem, calc(env(safe-area-inset-right, 0px) + 0.75rem));
-  bottom: max(1.1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+  top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
   z-index: 4;
   padding: 0.5rem 1rem;
   border-radius: 9999px;
@@ -555,6 +671,7 @@
   .cta,
   .ctaDot,
   .skipButton,
+  .soundButton,
   .exiting,
   .exiting .atmospherePlate,
   .exiting .stage,

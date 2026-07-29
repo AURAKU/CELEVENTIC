@@ -3,25 +3,12 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import type { UserRole } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
-import { guestWishService } from "@/services/invitations/guest-wish.service";
+import {
+  guestWishService,
+  isWishEventModerator,
+} from "@/services/invitations/guest-wish.service";
 import { prisma } from "@/lib/prisma";
 import { parsePaginationFromUrl } from "@/lib/pagination";
-import { isPlatformAdmin } from "@/lib/rbac";
-
-/** True when viewer may hard-delete wishes for this event. */
-async function canModerateEventWishes(
-  eventId: string,
-  userId: string | undefined,
-  role: UserRole | undefined
-): Promise<boolean> {
-  if (!userId || !role) return false;
-  if (isPlatformAdmin(role)) return true;
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    select: { organizerId: true },
-  });
-  return event?.organizerId === userId;
-}
 
 const createSchema = z.object({
   eventId: z.string().min(1),
@@ -85,13 +72,17 @@ export async function GET(req: Request) {
   const data = await guestWishService.listForEvent(resolved.eventId, page, Math.min(limit, 100));
 
   const session = await getServerSession(authOptions);
-  const canModerate = await canModerateEventWishes(
+  const canModerate = await isWishEventModerator(
     resolved.eventId,
     session?.user?.id,
     session?.user?.role as UserRole | undefined
   );
 
-  return NextResponse.json({ success: true, data: { ...data, canModerate } });
+  // canEdit mirrors canModerate: only organizers / platform admins may edit.
+  return NextResponse.json({
+    success: true,
+    data: { ...data, canModerate, canEdit: canModerate },
+  });
 }
 
 export async function POST(req: Request) {

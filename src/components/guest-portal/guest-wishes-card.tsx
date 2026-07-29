@@ -1,11 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Heart, Loader2, MessageCircle, Send, Sparkles, Trash2 } from "lucide-react";
+import { Heart, Loader2, MessageCircle, Pencil, Send, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FEED_LIMIT } from "@/lib/pagination";
+import {
+  viewerCanDeleteWish,
+  viewerCanEditWish,
+} from "@/lib/invitation/guest-wish-permissions";
 
 export interface GuestWishItem {
   id: string;
@@ -83,6 +87,10 @@ export function GuestWishesCard({
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAuthorName, setEditAuthorName] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -134,7 +142,9 @@ export function GuestWishesCard({
         if (eventId) params.set("eventId", eventId);
         if (inviteLink) params.set("link", inviteLink);
         if (invitationId) params.set("invitationId", invitationId);
-        const res = await fetch(`/api/invite/wishes?${params.toString()}`);
+        const res = await fetch(`/api/invite/wishes?${params.toString()}`, {
+          credentials: "same-origin",
+        });
         const data = await res.json();
         if (res.ok && data.success) {
           const items = (data.data.items ?? []) as GuestWishItem[];
@@ -165,15 +175,15 @@ export function GuestWishesCard({
   }, [guestName]);
 
   const canDeleteWish = useCallback(
-    (wish: GuestWishItem) => {
-      if (canModerate) return true;
-      if (ownedTokens[wish.id]) return true;
-      // Personalized invite: wishes stamped with this guest may be deleted only
-      // when we also hold the author token (set at create time on this device).
-      return false;
-    },
+    (wish: GuestWishItem) =>
+      viewerCanDeleteWish({
+        canModerate,
+        ownedToken: ownedTokens[wish.id],
+      }),
     [canModerate, ownedTokens]
   );
+
+  const canEditWish = viewerCanEditWish(canModerate);
 
   const ownedCount = useMemo(
     () => wishes.filter((w) => Boolean(ownedTokens[w.id])).length,
@@ -192,6 +202,7 @@ export function GuestWishesCard({
     try {
       const res = await fetch("/api/invite/wishes", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventId: eventId || undefined,
@@ -228,6 +239,63 @@ export function GuestWishesCard({
     }
   }
 
+  function beginEdit(wish: GuestWishItem) {
+    if (!canEditWish) return;
+    setEditingId(wish.id);
+    setEditAuthorName(wish.authorName);
+    setEditMessage(wish.message);
+    setError("");
+    setSuccess("");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditAuthorName("");
+    setEditMessage("");
+  }
+
+  async function saveEdit(wishId: string) {
+    if (!canEditWish || savingEdit) return;
+    setSavingEdit(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/invite/wishes/${wishId}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          authorName: editAuthorName.trim(),
+          message: editMessage.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Could not update wish");
+        return;
+      }
+      if (data.data) {
+        const updated = data.data as GuestWishItem;
+        setWishes((prev) =>
+          prev.map((w) =>
+            w.id === wishId
+              ? {
+                  ...w,
+                  authorName: updated.authorName,
+                  message: updated.message,
+                }
+              : w
+          )
+        );
+      }
+      cancelEdit();
+      setSuccess("Wish updated.");
+    } catch {
+      setError("Could not update wish. Please try again.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
   async function removeWish(wish: GuestWishItem) {
     if (!canDeleteWish(wish) || deletingId) return;
     const isMine = Boolean(ownedTokens[wish.id]);
@@ -243,6 +311,7 @@ export function GuestWishesCard({
       const deleteToken = ownedTokens[wish.id];
       const res = await fetch(`/api/invite/wishes/${wish.id}`, {
         method: "DELETE",
+        credentials: "same-origin",
         headers: deleteToken ? { "Content-Type": "application/json" } : undefined,
         body: deleteToken ? JSON.stringify({ deleteToken }) : undefined,
       });
@@ -252,6 +321,7 @@ export function GuestWishesCard({
         return;
       }
       forgetToken(wish.id);
+      if (editingId === wish.id) cancelEdit();
       setWishes((prev) => prev.filter((w) => w.id !== wish.id));
       setTotal((t) => Math.max(0, t - 1));
     } catch {
@@ -285,7 +355,7 @@ export function GuestWishesCard({
       </div>
       <p className={`text-sm mb-4 ${dark ? "text-white/70" : "text-slate-600"}`}>
         Leave a blessing for the hosts. You can delete only the wishes you wrote
-        {canModerate ? "; as an admin you can remove any wish" : ""}.
+        {canModerate ? "; as an organizer/admin you can edit or remove any wish" : ""}.
       </p>
 
       <form onSubmit={(e) => void submit(e)} className="space-y-3 mb-5">
@@ -331,7 +401,9 @@ export function GuestWishesCard({
         ) : (
           wishes.map((w) => {
             const showDelete = canDeleteWish(w);
+            const showEdit = canEditWish;
             const isMine = Boolean(ownedTokens[w.id]);
+            const isEditing = editingId === w.id;
             return (
               <div
                 key={w.id}
@@ -339,49 +411,129 @@ export function GuestWishesCard({
                   dark ? "bg-white/10 border-white/15" : "bg-white/90 border-rose-100"
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <p
-                    className={`text-sm italic leading-relaxed min-w-0 ${
-                      dark ? "text-white/90" : "text-slate-700"
-                    }`}
-                  >
-                    &ldquo;{w.message}&rdquo;
-                  </p>
-                  {showDelete && (
-                    <button
-                      type="button"
-                      onClick={() => void removeWish(w)}
-                      disabled={deletingId === w.id}
-                      aria-label={
-                        isMine ? "Delete your wish" : `Delete wish from ${w.authorName}`
-                      }
-                      title={isMine ? "Delete your wish" : "Delete wish (admin)"}
-                      className={`shrink-0 -mr-1 -mt-0.5 rounded-md p-1.5 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40 ${
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editAuthorName}
+                      onChange={(e) => setEditAuthorName(e.target.value)}
+                      maxLength={80}
+                      aria-label="Edit author name"
+                      className={
                         dark
-                          ? "text-white/35 hover:text-white/70 hover:bg-white/10 focus-visible:ring-white/30"
-                          : "text-slate-300 hover:text-slate-500 hover:bg-slate-100/80 focus-visible:ring-slate-300"
+                          ? "bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                          : ""
+                      }
+                    />
+                    <Textarea
+                      value={editMessage}
+                      onChange={(e) => setEditMessage(e.target.value)}
+                      rows={3}
+                      maxLength={1000}
+                      aria-label="Edit wish message"
+                      className={
+                        dark
+                          ? "bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                          : ""
+                      }
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={
+                          savingEdit ||
+                          !editAuthorName.trim() ||
+                          editMessage.trim().length < 2
+                        }
+                        onClick={() => void saveEdit(w.id)}
+                        style={{ backgroundColor: accentColor }}
+                      >
+                        {savingEdit ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Save"
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={savingEdit}
+                        onClick={cancelEdit}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-start justify-between gap-2">
+                      <p
+                        className={`text-sm italic leading-relaxed min-w-0 ${
+                          dark ? "text-white/90" : "text-slate-700"
+                        }`}
+                      >
+                        &ldquo;{w.message}&rdquo;
+                      </p>
+                      {(showEdit || showDelete) && (
+                        <div className="flex shrink-0 items-start gap-0.5">
+                          {showEdit && (
+                            <button
+                              type="button"
+                              onClick={() => beginEdit(w)}
+                              disabled={deletingId === w.id}
+                              aria-label={`Edit wish from ${w.authorName}`}
+                              title="Edit wish (organizer)"
+                              className={`rounded-md p-1.5 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40 ${
+                                dark
+                                  ? "text-white/35 hover:text-white/70 hover:bg-white/10 focus-visible:ring-white/30"
+                                  : "text-slate-300 hover:text-slate-500 hover:bg-slate-100/80 focus-visible:ring-slate-300"
+                              }`}
+                            >
+                              <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
+                            </button>
+                          )}
+                          {showDelete && (
+                            <button
+                              type="button"
+                              onClick={() => void removeWish(w)}
+                              disabled={deletingId === w.id}
+                              aria-label={
+                                isMine
+                                  ? "Delete your wish"
+                                  : `Delete wish from ${w.authorName}`
+                              }
+                              title={isMine ? "Delete your wish" : "Delete wish (admin)"}
+                              className={`-mr-1 -mt-0.5 rounded-md p-1.5 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40 ${
+                                dark
+                                  ? "text-white/35 hover:text-white/70 hover:bg-white/10 focus-visible:ring-white/30"
+                                  : "text-slate-300 hover:text-slate-500 hover:bg-slate-100/80 focus-visible:ring-slate-300"
+                              }`}
+                            >
+                              {deletingId === w.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <p
+                      className={`text-xs font-semibold mt-2 flex items-center gap-1 ${
+                        dark ? "text-rose-300" : "text-rose-600"
                       }`}
                     >
-                      {deletingId === w.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      )}
-                    </button>
-                  )}
-                </div>
-                <p
-                  className={`text-xs font-semibold mt-2 flex items-center gap-1 ${
-                    dark ? "text-rose-300" : "text-rose-600"
-                  }`}
-                >
-                  <MessageCircle className="h-3 w-3" />
-                  {w.authorName}
-                  {isMine ? " · you" : ""}
-                </p>
-                <p className={`text-[10px] mt-0.5 ${dark ? "text-white/35" : "text-slate-400"}`}>
-                  {new Date(w.createdAt).toLocaleString()}
-                </p>
+                      <MessageCircle className="h-3 w-3" />
+                      {w.authorName}
+                      {isMine ? " · you" : ""}
+                    </p>
+                    <p className={`text-[10px] mt-0.5 ${dark ? "text-white/35" : "text-slate-400"}`}>
+                      {new Date(w.createdAt).toLocaleString()}
+                    </p>
+                  </>
+                )}
               </div>
             );
           })

@@ -17,6 +17,7 @@ import { TM_PALETTE } from "@/components/invitation/templates/traditional-marria
 import { FA_PALETTE } from "@/components/invitation/templates/forever-afaris-wedding-palette";
 import { VenueMapEmbed } from "@/components/guest-portal/venue-map-embed";
 import { cn } from "@/lib/utils";
+import { resolveEventDetailsItems } from "@/lib/invitation-blocks/event-details";
 
 /**
  * Stationery chrome for wedding templates whose place card / ceremony art
@@ -88,7 +89,8 @@ function BlockHeader({
   chrome?: HeritageChrome | null;
 }) {
   const localized = block.contents?.find((c) => c.language === locale);
-  const title = localized?.title ?? block.title;
+  const rawTitle = localized?.title ?? block.title;
+  const title = rawTitle === "Couple / Event Intro" ? "Couple Intro" : rawTitle;
   const subtitle = localized?.subtitle ?? block.subtitle;
   if (!title && !subtitle) return null;
 
@@ -225,17 +227,7 @@ export function BlockView({ block, ctx }: BlockViewProps) {
           variant={block.styleVariant}
           style={heritage ? heritageShellStyle(heritage) : undefined}
         >
-          <BlockHeader
-            block={{
-              ...block,
-              title:
-                !block.title || block.title === "Couple / Event Intro"
-                  ? "Couple Intro"
-                  : block.title,
-            }}
-            locale={locale}
-            chrome={heritage}
-          />
+          <BlockHeader block={block} locale={locale} chrome={heritage} />
           <p
             className={cn(
               "text-center",
@@ -268,11 +260,7 @@ export function BlockView({ block, ctx }: BlockViewProps) {
         >
           <BlockHeader block={block} locale={locale} chrome={heritage} />
           <div className="space-y-3">
-            {(cj.items ?? [
-              { label: "Date", value: ctx.eventDate },
-              { label: "Time", value: ctx.eventTime },
-              { label: "Venue", value: ctx.venueName ?? ctx.landmark },
-            ]).map((item) => (
+            {resolveEventDetailsItems(cj.items, ctx).map((item) => (
               <div
                 key={item.label}
                 className={cn(
@@ -689,23 +677,16 @@ export function BlockView({ block, ctx }: BlockViewProps) {
     case "SPONSORS":
     case "REGISTRATION":
     case "MENU":
-    case "SEATING_INFO":
       return (
         <BlockShell variant={block.styleVariant}>
           <BlockHeader block={block} locale={locale} />
           {body && <p className="text-slate-600 whitespace-pre-line">{body}</p>}
-          {ctx.seatLookupUrl ? (
-            <div className="mt-4 rounded-xl border border-[#0B8A83]/20 bg-[#0B8A83]/5 p-4 text-center">
-              <p className="text-sm text-slate-600 mb-3">Scan or tap to find your table and seat</p>
-              <Button className="bg-[#0B8A83]" asChild>
-                <a href={ctx.seatLookupUrl} target="_blank" rel="noopener noreferrer">View my seating</a>
-              </Button>
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500 mt-2">Seating assignments will appear here once finalized.</p>
-          )}
         </BlockShell>
       );
+    // Personalized seating belongs exclusively on the place card. Never render
+    // a second seating surface or an empty placeholder in invitation content.
+    case "SEATING_INFO":
+      return null;
     case "HOTEL_TRAVEL":
     case "TRIBUTE_WALL":
     case "CERTIFICATE_INFO":

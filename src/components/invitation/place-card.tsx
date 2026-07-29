@@ -9,6 +9,7 @@ import {
   type PlaceCardFrameStyle,
   type PlaceCardPartyState,
   type PlaceCardRecipientInput,
+  type PlaceCardSeating,
   type PlaceCardTheme,
 } from "@/lib/invitation-features/place-card";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ interface PlaceCardProps {
   config: PlaceCardConfig;
   recipient: PlaceCardRecipientInput;
   party: PlaceCardPartyState;
+  seating?: PlaceCardSeating | null;
   design: InvitationDesignConfig;
   className?: string;
 }
@@ -71,7 +73,18 @@ function frameStyleFor(
   }
 }
 
-export function PlaceCard({ config, recipient, party, design, className }: PlaceCardProps) {
+function placeValue(value: string, prefix: "table" | "seat"): string {
+  return value.replace(new RegExp(`^${prefix}\\s*`, "i"), "").trim() || value;
+}
+
+export function PlaceCard({
+  config,
+  recipient,
+  party,
+  seating,
+  design,
+  className,
+}: PlaceCardProps) {
   const tokens = useMemo(() => resolveFeatureThemeTokens(design), [design]);
   const model = useMemo(
     () => buildPlaceCardViewModel(config, recipient, party),
@@ -106,12 +119,17 @@ export function PlaceCard({ config, recipient, party, design, className }: Place
         {model.monogram && (
           <p
             aria-hidden
-            className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full text-[13px] font-semibold"
+            className={cn(
+              "mx-auto mb-4 flex items-center justify-center rounded-full font-semibold",
+              model.monogram.includes("|")
+                ? "h-12 min-w-12 px-2 text-[11px]"
+                : "h-11 w-11 text-[13px]"
+            )}
             style={{
               border: `${treatment.ruleWidth}px solid ${tokens.secondary}`,
               color: tokens.primary,
               fontFamily: tokens.fontHeading,
-              letterSpacing: "0.08em",
+              letterSpacing: model.monogram.includes("|") ? "0.02em" : "0.08em",
             }}
           >
             {model.monogram}
@@ -142,6 +160,70 @@ export function PlaceCard({ config, recipient, party, design, className }: Place
           {model.recipientLine}
         </p>
 
+        {seating && (
+          <div
+            className={cn(
+              "mx-auto mt-4 grid w-full max-w-[22rem] overflow-hidden rounded-xl border",
+              seating.seatLabel ? "grid-cols-2" : "grid-cols-1"
+            )}
+            style={{
+              borderColor: tokens.border,
+              background: `color-mix(in srgb, ${tokens.secondary} 9%, transparent)`,
+            }}
+            data-testid="place-card-seating"
+            aria-label={`Assigned table ${seating.tableNumber}${
+              seating.seatLabel ? `, seat ${seating.seatLabel}` : ""
+            }`}
+          >
+            <div className="px-4 py-3">
+              <p
+                className="text-[9px] font-semibold uppercase tracking-[0.24em]"
+                style={{ color: tokens.secondary }}
+              >
+                Your table
+              </p>
+              <p
+                className="mt-1 text-lg font-semibold leading-none sm:text-xl"
+                style={{ color: tokens.primary, fontFamily: tokens.fontHeading }}
+              >
+                {placeValue(seating.tableNumber, "table")}
+              </p>
+            </div>
+            {seating.seatLabel && (
+              <div className="border-l px-4 py-3" style={{ borderColor: tokens.border }}>
+                <p
+                  className="text-[9px] font-semibold uppercase tracking-[0.24em]"
+                  style={{ color: tokens.secondary }}
+                >
+                  Your seat
+                </p>
+                <p
+                  className="mt-1 text-lg font-semibold leading-none sm:text-xl"
+                  style={{ color: tokens.primary, fontFamily: tokens.fontHeading }}
+                >
+                  {placeValue(seating.seatLabel, "seat")}
+                </p>
+              </div>
+            )}
+            {seating.zone && (
+              <p
+                className="col-span-full border-t px-4 py-2 text-[10px] uppercase tracking-[0.16em]"
+                style={{ color: tokens.text, borderColor: tokens.border, opacity: 0.78 }}
+              >
+                {seating.zone}
+              </p>
+            )}
+          </div>
+        )}
+
+        <p
+          className="mt-4 text-[13px] font-semibold sm:text-sm"
+          style={{ color: tokens.primary, letterSpacing: "0.06em" }}
+          data-testid="place-card-capacity"
+        >
+          {model.allowanceCopy}
+        </p>
+
         {model.wording && (
           <p
             className="mx-auto mt-4 max-w-[26rem] text-sm leading-relaxed"
@@ -156,17 +238,6 @@ export function PlaceCard({ config, recipient, party, design, className }: Place
           className="mx-auto mt-6 h-px w-16"
           style={{ background: tokens.secondary, opacity: 0.6 }}
         />
-
-        {model.arrivalCopy && (
-          <p
-            className="mt-2 text-xs"
-            style={{ color: tokens.text, opacity: 0.75 }}
-            data-testid="place-card-arrival"
-            aria-live="polite"
-          >
-            {model.arrivalCopy}
-          </p>
-        )}
 
         {model.supportingMessage && (
           <p

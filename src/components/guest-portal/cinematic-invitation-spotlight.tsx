@@ -365,15 +365,10 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
                 eventName={props.event.title}
                 eventDate={props.event.startDate}
                 venueName={props.event.venueName}
-                partySize={props.entryPass.partySize}
-                admittedCount={props.entryPass.admittedCount}
                 status={props.entryPass.status}
-                tableNumber={props.entryPass.tableNumber}
-                seatLabel={props.entryPass.seatLabel}
                 instructions={props.entryPass.instructions}
                 allowDownload={props.entryPass.allowDownload}
                 allowPrint={props.entryPass.allowPrint}
-                showPartySize={props.entryPass.showPartySize}
                 layout={props.design.layout}
                 className="text-left shadow-2xl"
               />

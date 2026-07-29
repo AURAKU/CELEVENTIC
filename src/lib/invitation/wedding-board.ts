@@ -272,7 +272,7 @@ export const DEFAULT_WEDDING_BOARD: Required<
   eyebrow: "TOGETHER WITH THEIR FAMILIES",
   scriptTitle: "The Wedding",
   familyIntro:
-    "The Afari and Opoku families warmly welcome you to share in the joy of this union — the day two families become one.",
+    "The Afari and Opoku families warmly welcome you to share in the joy of this union, the day two families become one.",
   coupleName1: "JEFFERY OWURAKU AFARI",
   coupleName2: "FRANCISCA CHELSY SERWAAH OPOKU",
   invitationCopy:
@@ -319,14 +319,14 @@ export const DEFAULT_WEDDING_BOARD: Required<
 
   storyHeading: "Our Story",
   storyBody:
-    "Two families, one forever. From a first hello to this joyful yes — we can't wait to celebrate the beginning of our always with you.",
+    "Two families, one forever. From a first hello to this joyful yes, we can't wait to celebrate the beginning of our always with you.",
 
   galleryHeading: "Moments",
 
   scratchHeading: "A Little Secret",
   scratchPrompt: "Scratch to reveal",
   scratchMessage:
-    "Save the first dance for us — and stay for the champagne tower at sunset.",
+    "Save the first dance for us, and stay for the champagne tower at sunset.",
 
   rsvpHeading: "R.S.V.P",
   rsvpContacts: [
@@ -368,6 +368,19 @@ export const DEFAULT_WEDDING_BOARD: Required<
 };
 
 export type ResolvedWeddingBoard = typeof DEFAULT_WEDDING_BOARD;
+
+/**
+ * Guest-facing prose: replace em/en dashes (and spaced hyphens) between
+ * words or phrases with a comma so the line reads cleanly without “—”.
+ */
+export function withoutPhraseDashes(value: string | null | undefined): string {
+  return (value ?? "")
+    .replace(/\s*[—–]\s*/g, ", ")
+    .replace(/(\w)\s+-\s+(\w)/g, "$1, $2")
+    .replace(/,\s*,/g, ",")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
 /**
  * Fold invitation display phrases for duplicate detection: case, whitespace,
@@ -446,6 +459,34 @@ export function mergeWeddingBoard(
   // One announcement phrase on the live invite: never echo the hero eyebrow
   // as a second family-section heading (covers legacy saved boards).
   merged.familyHeading = distinctInvitationPhrase(merged.familyHeading, merged.eyebrow);
+
+  // Strip legacy “—” separators from published Studio snapshots and defaults.
+  const proseKeys = [
+    "familyIntro",
+    "invitationCopy",
+    "greetingBody",
+    "dressCodeLadies",
+    "dressCodeGents",
+    "guestPolicyBody",
+    "storyBody",
+    "scratchMessage",
+    "closingMessage",
+    "memoryBody",
+    "receptionText",
+    "accessNote",
+    "heroCaption",
+    "openingInstruction",
+    "envelopeAddressLine",
+    "countdownExpiredMessage",
+  ] as const;
+  for (const key of proseKeys) {
+    merged[key] = withoutPhraseDashes(merged[key]);
+  }
+  merged.programmeItems = merged.programmeItems.map((item) => ({
+    ...item,
+    title: withoutPhraseDashes(item.title),
+    description: item.description ? withoutPhraseDashes(item.description) : item.description,
+  }));
 
   return merged;
 }
