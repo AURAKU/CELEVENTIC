@@ -242,9 +242,8 @@ export function resolvePlaceCardConfig(
 /**
  * Guest-facing invitation capacity.
  *
- * Unassigned invitations show nothing. A solo guest is told the pass admits
- * only them. Companion access is stated without exposing the organiser's
- * allocated headcount.
+ * Unassigned invitations show nothing. Assigned invitations show the exact
+ * number of additional guests so the recipient knows their party allowance.
  */
 export function formatAllowanceCopy(
   _template: string,
@@ -254,9 +253,10 @@ export function formatAllowanceCopy(
   if (!opts?.assigned) return "";
   const capacity = Math.max(1, Math.trunc(partySize));
   if (capacity === 1) return "This invitation admits only you.";
-  return capacity === 2
-    ? "This invitation admits you and a guest."
-    : "This invitation admits you and your guests.";
+  const additionalGuests = capacity - 1;
+  return `This invitation admits you and ${additionalGuests} additional ${
+    additionalGuests === 1 ? "guest" : "guests"
+  }.`;
 }
 
 export interface PlaceCardRecipientInput {

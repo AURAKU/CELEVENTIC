@@ -130,7 +130,7 @@ test("a disabled feature or a disabled card always wins over visibility", () => 
   assert.equal(shouldShowPlaceCard(config({ enabled: false }), true, true), false);
 });
 
-/* ── capacity copy (personalized, never a raw headcount) ───────────────── */
+/* ── capacity copy (personalized, exact additional-guest count) ────────── */
 
 test("unassigned invitations leave capacity blank", () => {
   assert.equal(formatAllowanceCopy("", 19), "");
@@ -150,21 +150,21 @@ test("single-guest capacity addresses the invited guest only", () => {
   );
 });
 
-test("companion access is shown without exposing its allocated headcount", () => {
+test("companion access shows the exact additional-guest allowance", () => {
   assert.equal(
     formatAllowanceCopy("This invitation admits {n} guests", 2, { assigned: true }),
-    "This invitation admits you and a guest."
+    "This invitation admits you and 1 additional guest."
   );
   assert.equal(
     formatAllowanceCopy("", 3, { assigned: true }),
-    "This invitation admits you and your guests."
+    "This invitation admits you and 2 additional guests."
   );
 });
 
 test("organiser templates cannot override the guest-facing capacity line", () => {
   assert.equal(
     formatAllowanceCopy("This table seats {n} guests", 8, { assigned: true }),
-    "This invitation admits you and your guests."
+    "This invitation admits you and 7 additional guests."
   );
 });
 
@@ -283,7 +283,7 @@ test("the view model binds config, recipient and live capacity together", () => 
 
   assert.equal(model.heading, "A place is reserved for you");
   assert.equal(model.recipientLine, "Ama Mensah");
-  assert.equal(model.allowanceCopy, "This invitation admits you and your guests.");
+  assert.equal(model.allowanceCopy, "This invitation admits you and 2 additional guests.");
   assert.equal(model.isGroup, true);
   assert.equal("arrivalCopy" in model, false, "guest place cards must not expose arrival copy");
 });
@@ -330,12 +330,12 @@ test("compact couple initials expand to the pipe seal form", () => {
   assert.equal(model.monogram, "C | J");
 });
 
-test("an already-published invitation does not expose increased companion allocation", () => {
+test("an already-published invitation reflects the current companion allocation", () => {
   const before = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 3 }));
   const after = buildPlaceCardViewModel(config(), recipient(), party({ allowance: 4 }));
 
-  assert.equal(before.allowanceCopy, "This invitation admits you and your guests.");
-  assert.equal(after.allowanceCopy, "This invitation admits you and your guests.");
+  assert.equal(before.allowanceCopy, "This invitation admits you and 2 additional guests.");
+  assert.equal(after.allowanceCopy, "This invitation admits you and 3 additional guests.");
 });
 
 /* ── shared feature layer + template adapters ──────────────────────────── */
