@@ -7,11 +7,20 @@ import { formatDate } from "@/lib/utils";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Badge } from "@/components/ui/badge";
 import { SeatingTableVisual } from "@/components/seating/seating-table-visual";
-import type { GuestAssignmentView, SeatingTableConfig } from "@/lib/seating/seating-types";
+import {
+  tableDisplayName,
+  type GuestAssignmentView,
+  type SeatingTableConfig,
+} from "@/lib/seating/seating-types";
 
 interface SeatLookupData {
   guest: { id: string; name: string; status?: string };
-  event: { id: string; title: string; startDate: string; venueName: string | null };
+  event: {
+    id: string;
+    title: string;
+    startDate: string;
+    venueName: string | null;
+  };
   assignment: {
     tableNumber: string;
     seatLabel: string | null;
@@ -120,7 +129,9 @@ export default function SeatLookupPage() {
                 <Armchair className="h-10 w-10 mx-auto text-[#D4A63A]" />
                 <div>
                   <p className="text-xs uppercase tracking-widest text-white/50">Your table</p>
-                  <p className="font-display text-4xl text-[#D4A63A] mt-1">{assignment.tableNumber}</p>
+                  <p className="font-display text-4xl text-[#D4A63A] mt-1">
+                    {tableDisplayName(assignment.tableNumber)}
+                  </p>
                 </div>
               </div>
             )}
@@ -128,7 +139,7 @@ export default function SeatLookupPage() {
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 space-y-2">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <Badge className="bg-[#D4A63A]/20 text-[#D4A63A] border-[#D4A63A]/40">
-                  Table {assignment.tableNumber}
+                  {tableDisplayName(assignment.tableNumber)}
                 </Badge>
                 {assignment.seatLabel && (
                   <Badge variant="outline" className="border-white/20 text-white/80">
@@ -150,7 +161,9 @@ export default function SeatLookupPage() {
                   <MapPin className="h-4 w-4" /> {assignment.zone}
                 </p>
               )}
-              {assignment.notes && <p className="text-sm text-white/50 italic">{assignment.notes}</p>}
+              {assignment.notes && (
+                <p className="text-sm text-white/50 italic">{assignment.notes}</p>
+              )}
               <p className="text-[10px] text-white/30">{assignment.planName}</p>
             </div>
           </div>

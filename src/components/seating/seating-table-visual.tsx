@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { GuestAssignmentView } from "@/lib/seating/seating-types";
 import { computeSeatPositions } from "@/lib/seating/seating-layout";
-import { normalizeTable } from "@/lib/seating/seating-types";
+import { normalizeTable, tableDisplayName } from "@/lib/seating/seating-types";
 import type { SeatingTableConfig } from "@/lib/seating/seating-types";
 import {
   compareGuestsForSeatingAssign,
@@ -55,7 +55,14 @@ function seatOccupiedClass(status?: string | null, admitted?: boolean): string {
   return "bg-[#0B8A83]/80 border-[#0B8A83] text-white shadow-md";
 }
 
-function SeatSlot({ seatIndex, assignment, interactive, selected, highlighted, onSelect }: SeatSlotProps) {
+function SeatSlot({
+  seatIndex,
+  assignment,
+  interactive,
+  selected,
+  highlighted,
+  onSelect,
+}: SeatSlotProps) {
   const [pinned, setPinned] = useState(false);
   const showPopup = pinned || selected;
   const occupied = Boolean(assignment);
@@ -86,10 +93,14 @@ function SeatSlot({ seatIndex, assignment, interactive, selected, highlighted, o
             : "bg-white border-slate-300 text-slate-400 hover:border-[#0B8A83] hover:text-[#0B8A83]",
           selected && !highlighted && "ring-2 ring-[#D4A63A] ring-offset-2"
         )}
-        aria-label={occupied ? `Seat ${seatIndex}: ${assignment?.guestName}` : `Seat ${seatIndex}: empty`}
+        aria-label={
+          occupied ? `Seat ${seatIndex}: ${assignment?.guestName}` : `Seat ${seatIndex}: empty`
+        }
       >
         {occupied ? (
-          <span className="truncate max-w-[2rem] text-[9px]">{assignment!.guestName.split(" ")[0]?.slice(0, 3)}</span>
+          <span className="truncate max-w-[2rem] text-[9px]">
+            {assignment!.guestName.split(" ")[0]?.slice(0, 3)}
+          </span>
         ) : (
           seatIndex
         )}
@@ -176,8 +187,10 @@ export function SeatingTableVisual({
   return (
     <div className={cn("flex flex-col items-center gap-3", className)}>
       <div className="text-center space-y-0.5">
-        <p className="font-semibold text-sm text-slate-900">{table.label}</p>
-        {table.zone && <p className="text-[10px] text-slate-500 uppercase tracking-wide">{table.zone}</p>}
+        <p className="font-semibold text-sm text-slate-900">{tableDisplayName(table.label)}</p>
+        {table.zone && (
+          <p className="text-[10px] text-slate-500 uppercase tracking-wide">{table.zone}</p>
+        )}
         <p className="text-[10px] text-slate-400">
           {filled}/{capacity} seated · {table.shape}
         </p>
@@ -191,7 +204,7 @@ export function SeatingTableVisual({
           )}
         >
           <span className="font-display text-lg text-[#0B8A83] font-bold text-center px-1 leading-tight">
-            {table.label.replace(/^Table\s*/i, "")}
+            {tableDisplayName(table.label).replace(/^Table\s*/i, "")}
           </span>
         </div>
 

@@ -6,19 +6,20 @@ import { verifyEventAccess } from "@/lib/event-access";
 import { z } from "zod";
 
 const assignSchema = z.object({
-  assignments: z.array(z.object({
-    guestId: z.string(),
-    tableNumber: z.string(),
-    seatLabel: z.string().optional(),
-    zone: z.string().optional(),
-    notes: z.string().optional(),
-  })),
+  assignments: z
+    .array(
+      z.object({
+        guestId: z.string().min(1),
+        tableNumber: z.string().trim().min(1).max(80),
+        seatLabel: z.string().trim().max(20).optional(),
+        zone: z.string().trim().max(80).optional(),
+        notes: z.string().trim().max(500).optional(),
+      })
+    )
+    .max(10_000),
 });
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -34,17 +35,14 @@ export async function POST(
 
   try {
     const body = assignSchema.parse(await req.json());
-    const results = await seatingService.bulkAssign(plan.id, body.assignments);
+    const results = await seatingService.replaceAssignments(plan.id, eventId, body.assignments);
     return NextResponse.json({ success: true, data: results });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Failed" }, { status: 400 });
   }
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

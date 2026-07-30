@@ -54,9 +54,7 @@ const seatingGuestSelect = {
 /** Load every active guest for the event — organizers must not lose roster rows to a silent cap. */
 async function loadAllSeatingGuests(eventId: string) {
   type SeatingGuest = Awaited<
-    ReturnType<
-      typeof prisma.guest.findMany<{ select: typeof seatingGuestSelect }>
-    >
+    ReturnType<typeof prisma.guest.findMany<{ select: typeof seatingGuestSelect }>>
   >[number];
   const guests: SeatingGuest[] = [];
   let cursor: string | undefined;
@@ -76,10 +74,7 @@ async function loadAllSeatingGuests(eventId: string) {
   return guests;
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -148,30 +143,42 @@ export async function GET(
   }
 }
 
-const upsertSchema = z.object({
-  name: z.string().min(1),
-  layout: z.object({
-    tables: z.array(
-      z.object({
-        id: z.string(),
-        label: z.string(),
-        zone: z.string().optional(),
-        capacity: z.number().optional(),
-        shape: z.enum(["round", "square", "rectangle"]).optional(),
-        seatCount: z.number().min(2).max(20).optional(),
-        x: z.number().optional(),
-        y: z.number().optional(),
-      })
-    ),
-    notes: z.string().optional(),
-    expectedGuests: z.number().optional(),
-  }),
-});
+const upsertSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    layout: z.object({
+      tables: z.array(
+        z.object({
+          id: z.string().min(1).max(120),
+          label: z.string().trim().min(1).max(80),
+          zone: z.string().trim().max(80).optional(),
+          capacity: z.number().optional(),
+          shape: z.enum(["round", "square", "rectangle"]).optional(),
+          seatCount: z.number().min(2).max(20).optional(),
+          x: z.number().optional(),
+          y: z.number().optional(),
+        })
+      ),
+      notes: z.string().optional(),
+      expectedGuests: z.number().optional(),
+    }),
+  })
+  .superRefine((value, ctx) => {
+    const seen = new Set<string>();
+    value.layout.tables.forEach((table, index) => {
+      const key = table.label.toLowerCase();
+      if (seen.has(key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["layout", "tables", index, "label"],
+          message: `Duplicate table name: ${table.label}`,
+        });
+      }
+      seen.add(key);
+    });
+  });
 
-export async function PUT(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

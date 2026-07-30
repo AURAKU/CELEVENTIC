@@ -38,6 +38,8 @@ import {
   defaultSeatCount,
   generateTablesForGuests,
   normalizeTable,
+  normalizeTableName,
+  tableDisplayName,
   type GuestAssignmentView,
   type SeatingLayoutConfig,
   type SeatingTableConfig,
@@ -112,50 +114,64 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
   const [genShape, setGenShape] = useState<TableShape>("round");
   const [genSeatsPerTable, setGenSeatsPerTable] = useState(8);
   const [genGuestCount, setGenGuestCount] = useState(0);
+  const [genTablePrefix, setGenTablePrefix] = useState("Table");
   const [resetting, setResetting] = useState(false);
 
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    if (!silent) setLoadError(null);
-    const res = await fetch(`/api/events/${eventId}/seating`);
-    const d = await res.json();
-    if (!res.ok || !d.success) {
-      setLoadError(d.error ?? "Could not load seating plan");
-      if (!silent) setLoading(false);
-      return;
-    }
-    if (d.success) {
-      const guestList: GuestRow[] = d.data.guests ?? [];
-      setGuests(guestList);
-      setGenGuestCount(guestList.length);
-      setGuestsTruncated(Boolean(d.data.guestsTruncated));
-      setGuestTotal(Number(d.data.guestTotal ?? guestList.length));
-
-      if (d.data.plan) {
-        setPlanName(d.data.plan.name);
-        const layout = d.data.plan.layout as SeatingLayoutConfig;
-        const rawTables = layout?.tables ?? [];
-        setTables(rawTables.map((t) => normalizeTable(t)));
-        setExpectedGuests(layout?.expectedGuests ?? guestList.length);
-
-        const map: Record<string, AssignmentRow> = {};
-        for (const a of d.data.plan.assignments ?? []) {
-          map[a.guestId] = {
-            guestId: a.guestId,
-            tableNumber: a.tableNumber,
-            seatLabel: a.seatLabel ?? undefined,
-            zone: a.zone ?? undefined,
-            notes: a.notes ?? undefined,
-          };
-        }
-        setAssignments(map);
-      } else {
-        setTables([]);
-        setExpectedGuests(guestList.length);
+  const load = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      if (!silent) setLoadError(null);
+      const res = await fetch(`/api/events/${eventId}/seating`);
+      const d = await res.json();
+      if (!res.ok || !d.success) {
+        setLoadError(d.error ?? "Could not load seating plan");
+        if (!silent) setLoading(false);
+        return;
       }
-    }
-    if (!silent) setLoading(false);
-  }, [eventId]);
+      if (d.success) {
+        const guestList: GuestRow[] = d.data.guests ?? [];
+        setGuests(guestList);
+        setGenGuestCount(guestList.length);
+        setGuestsTruncated(Boolean(d.data.guestsTruncated));
+        setGuestTotal(Number(d.data.guestTotal ?? guestList.length));
+
+        if (d.data.plan) {
+          setPlanName(d.data.plan.name);
+          const layout = d.data.plan.layout as SeatingLayoutConfig;
+          const rawTables = layout?.tables ?? [];
+          const normalizedTables = rawTables.map((t) => normalizeTable(t));
+          const repairedLabels = new Map(
+            rawTables.map((table, index) => [
+              table.label.trim().toLowerCase(),
+              normalizedTables[index]?.label ?? table.label,
+            ])
+          );
+          setTables(normalizedTables);
+          setExpectedGuests(layout?.expectedGuests ?? guestList.length);
+
+          const map: Record<string, AssignmentRow> = {};
+          for (const a of d.data.plan.assignments ?? []) {
+            const repairedTableNumber =
+              repairedLabels.get(a.tableNumber.trim().toLowerCase()) ??
+              normalizeTableName(a.tableNumber);
+            map[a.guestId] = {
+              guestId: a.guestId,
+              tableNumber: repairedTableNumber,
+              seatLabel: a.seatLabel ?? undefined,
+              zone: a.zone ?? undefined,
+              notes: a.notes ?? undefined,
+            };
+          }
+          setAssignments(map);
+        } else {
+          setTables([]);
+          setExpectedGuests(guestList.length);
+        }
+      }
+      if (!silent) setLoading(false);
+    },
+    [eventId]
+  );
 
   useEffect(() => {
     void load();
@@ -230,18 +246,14 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
         seatLabel: a.seatLabel,
         zone: a.zone,
         notes: a.notes,
-        admitted:
-          (guest?.admission?.admittedCount ?? 0) > 0 || guest?.status === "CHECKED_IN",
+        admitted: (guest?.admission?.admittedCount ?? 0) > 0 || guest?.status === "CHECKED_IN",
       };
     });
   }, [assignments, guests]);
 
   const stats = useMemo(() => {
     const assigned = Object.keys(assignments).length;
-    const partyAdmissions = new Map<
-      string,
-      { admittedCount: number; remainingCount: number }
-    >();
+    const partyAdmissions = new Map<string, { admittedCount: number; remainingCount: number }>();
     for (const guest of guests) {
       if (guest.invitationId && guest.admission && !partyAdmissions.has(guest.invitationId)) {
         partyAdmissions.set(guest.invitationId, guest.admission);
@@ -302,17 +314,23 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
         return;
       }
 
-      void load();
+      await load(true);
+    } catch {
+      setSaveError("Could not save the seating plan. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
   }
 
   function addTable() {
-    const label = newTableLabel.trim();
+    const label = normalizeTableName(newTableLabel);
     if (!label) return;
-    if (tables.some((t) => t.label.toLowerCase() === label.toLowerCase())) return;
+    if (tables.some((t) => t.label.toLowerCase() === label.toLowerCase())) {
+      setSaveError(`A table named "${tableDisplayName(label)}" already exists.`);
+      return;
+    }
 
+    setSaveError(null);
     setTables((prev) => [
       ...prev,
       normalizeTable({
@@ -330,20 +348,92 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
 
   function autoGenerateTables() {
     const count = genGuestCount || guests.length || expectedGuests || 8;
-    const generated = generateTablesForGuests(count, genSeatsPerTable, genShape);
+    if (
+      (tables.length > 0 || Object.keys(assignments).length > 0) &&
+      !window.confirm(
+        "Replace the current table layout?\n\nExisting tables and seat assignments will be cleared. This takes effect when you save."
+      )
+    ) {
+      return;
+    }
+    const generated = generateTablesForGuests(count, genSeatsPerTable, genShape, genTablePrefix);
     setTables(generated.map((t) => normalizeTable(t)));
+    setAssignments({});
+    setSelectedTableId(null);
+    setSelectedSeat(null);
+    setAssignPanelOpen(false);
+    setSaveError(null);
     setExpectedGuests(count);
   }
 
   function updateTable(id: string, patch: Partial<SeatingTableConfig>) {
-    setTables((prev) =>
-      prev.map((t) => (t.id === id ? normalizeTable({ ...t, ...patch }) : t))
+    setTables((prev) => prev.map((t) => (t.id === id ? normalizeTable({ ...t, ...patch }) : t)));
+  }
+
+  function renameTable(id: string, value: string) {
+    const table = tables.find((row) => row.id === id);
+    if (!table) return;
+    const label = normalizeTableName(value);
+    if (!label) {
+      setSaveError("Table name cannot be empty.");
+      return;
+    }
+    if (tables.some((row) => row.id !== id && row.label.toLowerCase() === label.toLowerCase())) {
+      setSaveError(`A table named "${tableDisplayName(label)}" already exists.`);
+      return;
+    }
+
+    const previousLabel = table.label;
+    updateTable(id, { label });
+    setAssignments((current) =>
+      Object.fromEntries(
+        Object.entries(current).map(([guestId, assignment]) => [
+          guestId,
+          assignment.tableNumber.toLowerCase() === previousLabel.toLowerCase()
+            ? { ...assignment, tableNumber: label }
+            : assignment,
+        ])
+      )
     );
+    setSaveError(null);
+  }
+
+  function updateTableSeatCount(id: string, nextSeatCount: number) {
+    const table = tables.find((row) => row.id === id);
+    if (!table) return;
+    const highestAssignedSeat = Object.values(assignments)
+      .filter((assignment) => assignment.tableNumber.toLowerCase() === table.label.toLowerCase())
+      .reduce((highest, assignment) => {
+        const seat = Number.parseInt(assignment.seatLabel ?? "", 10);
+        return Number.isFinite(seat) ? Math.max(highest, seat) : highest;
+      }, 0);
+    if (nextSeatCount < highestAssignedSeat) {
+      setSaveError(
+        `Seat ${highestAssignedSeat} is occupied at ${tableDisplayName(table.label)}. Move that guest before reducing the table.`
+      );
+      return;
+    }
+    updateTable(id, { seatCount: nextSeatCount, capacity: nextSeatCount });
+    setSaveError(null);
   }
 
   function removeTable(id: string) {
     const table = tables.find((t) => t.id === id);
     if (!table) return;
+    const assignedCount = Object.values(assignments).filter(
+      (assignment) => assignment.tableNumber.toLowerCase() === table.label.toLowerCase()
+    ).length;
+    if (
+      !window.confirm(
+        `Remove ${tableDisplayName(table.label)}?${
+          assignedCount > 0
+            ? `\n\n${assignedCount} guest${assignedCount === 1 ? " is" : "s are"} assigned here and will become unassigned.`
+            : ""
+        }`
+      )
+    ) {
+      return;
+    }
     setTables((prev) => prev.filter((t) => t.id !== id));
     setAssignments((prev) => {
       const next = { ...prev };
@@ -444,8 +534,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
       )}
       {guestsTruncated && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Showing {guests.length.toLocaleString()} of {guestTotal.toLocaleString()} guests for seating.
-          Use guest search when assigning from very large lists.
+          Showing {guests.length.toLocaleString()} of {guestTotal.toLocaleString()} guests for
+          seating. Use guest search when assigning from very large lists.
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -479,13 +569,41 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         {[
-          { label: "Tables", value: stats.tableCount, color: "bg-slate-50 text-slate-800" },
-          { label: "Total seats", value: stats.totalSeats, color: "bg-blue-50 text-blue-800" },
-          { label: "Assigned", value: stats.assigned, color: "bg-teal-50 text-teal-800" },
-          { label: "Accepted", value: stats.accepted, color: "bg-teal-50 text-teal-900" },
-          { label: "Opened invite", value: stats.opened, color: "bg-sky-50 text-sky-800" },
-          { label: "Admitted heads", value: stats.admitted, color: "bg-emerald-50 text-emerald-800" },
-          { label: "Still arriving", value: stats.remaining, color: "bg-amber-50 text-amber-800" },
+          {
+            label: "Tables",
+            value: stats.tableCount,
+            color: "bg-slate-50 text-slate-800",
+          },
+          {
+            label: "Total seats",
+            value: stats.totalSeats,
+            color: "bg-blue-50 text-blue-800",
+          },
+          {
+            label: "Assigned",
+            value: stats.assigned,
+            color: "bg-teal-50 text-teal-800",
+          },
+          {
+            label: "Accepted",
+            value: stats.accepted,
+            color: "bg-teal-50 text-teal-900",
+          },
+          {
+            label: "Opened invite",
+            value: stats.opened,
+            color: "bg-sky-50 text-sky-800",
+          },
+          {
+            label: "Admitted heads",
+            value: stats.admitted,
+            color: "bg-emerald-50 text-emerald-800",
+          },
+          {
+            label: "Still arriving",
+            value: stats.remaining,
+            color: "bg-amber-50 text-amber-800",
+          },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
             <p className="text-2xl font-bold">{s.value}</p>
@@ -545,6 +663,19 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                 />
               </div>
               <div className="space-y-1">
+                <Label>Table naming</Label>
+                <Input
+                  value={genTablePrefix}
+                  maxLength={50}
+                  placeholder="Table, VIP, Family…"
+                  onChange={(e) => setGenTablePrefix(e.target.value)}
+                />
+                <p className="text-[11px] text-slate-500">
+                  Generates {tableDisplayName(normalizeTableName(genTablePrefix) || "Table")} 1, 2,
+                  3…
+                </p>
+              </div>
+              <div className="space-y-1">
                 <Label>Table shape</Label>
                 <div className="flex gap-1">
                   {SHAPE_OPTIONS.map(({ id, label, icon: Icon }) => (
@@ -566,7 +697,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                 </div>
               </div>
               <Button variant="secondary" className="w-full" onClick={autoGenerateTables}>
-                Generate {Math.max(1, Math.ceil((genGuestCount || guests.length) / genSeatsPerTable))} tables
+                Generate{" "}
+                {Math.max(1, Math.ceil((genGuestCount || guests.length) / genSeatsPerTable))} tables
               </Button>
             </CardContent>
           </Card>
@@ -612,7 +744,12 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                   onChange={(e) => setNewTableSeats(Number(e.target.value) || 8)}
                 />
               </div>
-              <Button variant="outline" className="w-full gap-2" onClick={addTable} disabled={!newTableLabel.trim()}>
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={addTable}
+                disabled={!newTableLabel.trim()}
+              >
                 <Plus className="h-4 w-4" /> Add table
               </Button>
             </CardContent>
@@ -621,9 +758,37 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
           {selectedTable && (
             <Card className="border-[#0B8A83]/30 bg-brand-50/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">{selectedTable.label}</CardTitle>
+                <CardTitle className="text-base">{tableDisplayName(selectedTable.label)}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label>Table name</Label>
+                  <Input
+                    key={`${selectedTable.id}:${selectedTable.label}`}
+                    defaultValue={selectedTable.label}
+                    maxLength={80}
+                    onBlur={(e) => renameTable(selectedTable.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Use a number or a custom name such as Bridal Party or Family A.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label>Zone</Label>
+                  <Input
+                    value={selectedTable.zone ?? ""}
+                    maxLength={80}
+                    placeholder="Main hall, terrace…"
+                    onChange={(e) =>
+                      updateTable(selectedTable.id, {
+                        zone: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
                 <div className="space-y-1">
                   <Label>Shape</Label>
                   <Select
@@ -650,10 +815,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                     max={20}
                     value={selectedTable.seatCount ?? 8}
                     onChange={(e) =>
-                      updateTable(selectedTable.id, {
-                        seatCount: Number(e.target.value) || 8,
-                        capacity: Number(e.target.value) || 8,
-                      })
+                      updateTableSeatCount(selectedTable.id, Number(e.target.value) || 2)
                     }
                   />
                 </div>
@@ -685,8 +847,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
               <Card>
                 <CardContent className="p-6">
                   <p className="text-xs text-slate-500 mb-4 text-center">
-                    Tap a seat to assign · Teal = accepted · Sky = opened invite · Green = admitted at
-                    gate
+                    Tap a seat to assign · Teal = accepted · Sky = opened invite · Green = admitted
+                    at gate
                   </p>
                   <SeatingFloorPlan
                     tables={tables}
@@ -712,88 +874,94 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                 </CardHeader>
                 <CardContent className="space-y-2 max-h-[60vh] overflow-y-auto">
                   {guests.length === 0 ? (
-                    <p className="text-center text-slate-500 py-8">Add guests from the Guests page first.</p>
+                    <p className="text-center text-slate-500 py-8">
+                      Add guests from the Guests page first.
+                    </p>
                   ) : (
                     guests
                       .slice()
                       .sort(compareGuestsForSeatingAssign)
                       .map((g) => {
-                      const a = assignments[g.id];
-                      const admitted =
-                        (g.admission?.admittedCount ?? 0) > 0 || g.status === "CHECKED_IN";
-                      const fullyAdmitted = g.admission?.state === "ADMITTED";
-                      const partiallyAdmitted = g.admission?.state === "PARTIALLY_ADMITTED";
-                      const statusLabel = seatingPlanningLabel(g.status);
-                      const admissionLabel = g.admission
-                        ? fullyAdmitted
-                          ? `Fully admitted · ${g.admission.admittedCount}/${g.admission.allowance}`
-                          : partiallyAdmitted
-                            ? `Partially admitted · ${g.admission.admittedCount}/${g.admission.allowance} · ${g.admission.remainingCount} remaining`
-                            : `Not admitted · 0/${g.admission.allowance}`
-                        : statusLabel;
-                      return (
-                        <div
-                          key={g.id}
-                          className="flex flex-wrap items-center gap-3 p-3 rounded-xl border bg-white"
-                        >
-                          <div className="flex-1 min-w-[140px]">
-                            <p className="font-medium text-sm">{g.name}</p>
-                            <p className="text-xs text-slate-500">{g.email ?? g.phone ?? "No contact"}</p>
-                          </div>
-                          <Badge
-                            className={cn(
-                              "text-[10px]",
-                              admitted
-                                ? fullyAdmitted
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : "bg-amber-100 text-amber-900"
-                                : g.status === "ACCEPTED"
-                                  ? "bg-teal-100 text-teal-800"
-                                  : g.status === "OPENED"
-                                    ? "bg-sky-100 text-sky-800"
-                                    : "bg-slate-100 text-slate-700"
-                            )}
+                        const a = assignments[g.id];
+                        const admitted =
+                          (g.admission?.admittedCount ?? 0) > 0 || g.status === "CHECKED_IN";
+                        const fullyAdmitted = g.admission?.state === "ADMITTED";
+                        const partiallyAdmitted = g.admission?.state === "PARTIALLY_ADMITTED";
+                        const statusLabel = seatingPlanningLabel(g.status);
+                        const admissionLabel = g.admission
+                          ? fullyAdmitted
+                            ? `Fully admitted · ${g.admission.admittedCount}/${g.admission.allowance}`
+                            : partiallyAdmitted
+                              ? `Partially admitted · ${g.admission.admittedCount}/${g.admission.allowance} · ${g.admission.remainingCount} remaining`
+                              : `Not admitted · 0/${g.admission.allowance}`
+                          : statusLabel;
+                        return (
+                          <div
+                            key={g.id}
+                            className="flex flex-wrap items-center gap-3 p-3 rounded-xl border bg-white"
                           >
-                            {admitted ? (
-                              <span className="inline-flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3" /> {admissionLabel}
-                              </span>
-                            ) : (
-                              admissionLabel
-                            )}
-                          </Badge>
-                          {a ? (
-                            <Badge variant="outline">
-                              {a.tableNumber} · Seat {a.seatLabel ?? "—"}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-slate-400">
-                              Unassigned
-                            </Badge>
-                          )}
-                          {g.invitationId && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              className="border-amber-200 text-amber-900 hover:bg-amber-50 gap-1"
-                              disabled={resetting}
-                              onClick={() => void resetInvitationAdmission(g.invitationId!, g.name)}
-                              title="Reset this invitation admission"
+                            <div className="flex-1 min-w-[140px]">
+                              <p className="font-medium text-sm">{g.name}</p>
+                              <p className="text-xs text-slate-500">
+                                {g.email ?? g.phone ?? "No contact"}
+                              </p>
+                            </div>
+                            <Badge
+                              className={cn(
+                                "text-[10px]",
+                                admitted
+                                  ? fullyAdmitted
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-amber-100 text-amber-900"
+                                  : g.status === "ACCEPTED"
+                                    ? "bg-teal-100 text-teal-800"
+                                    : g.status === "OPENED"
+                                      ? "bg-sky-100 text-sky-800"
+                                      : "bg-slate-100 text-slate-700"
+                              )}
                             >
-                              <RotateCcw className="h-3.5 w-3.5" /> Reset
-                            </Button>
-                          )}
-                          <Link
-                            href={`/seat/${g.qrToken}`}
-                            target="_blank"
-                            className="text-xs text-[#0B8A83] flex items-center gap-1 hover:underline"
-                          >
-                            <QrCode className="h-3.5 w-3.5" /> Preview
-                          </Link>
-                        </div>
-                      );
-                    })
+                              {admitted ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <CheckCircle2 className="h-3 w-3" /> {admissionLabel}
+                                </span>
+                              ) : (
+                                admissionLabel
+                              )}
+                            </Badge>
+                            {a ? (
+                              <Badge variant="outline">
+                                {tableDisplayName(a.tableNumber)} · Seat {a.seatLabel ?? "—"}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-slate-400">
+                                Unassigned
+                              </Badge>
+                            )}
+                            {g.invitationId && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="border-amber-200 text-amber-900 hover:bg-amber-50 gap-1"
+                                disabled={resetting}
+                                onClick={() =>
+                                  void resetInvitationAdmission(g.invitationId!, g.name)
+                                }
+                                title="Reset this invitation admission"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" /> Reset
+                              </Button>
+                            )}
+                            <Link
+                              href={`/seat/${g.qrToken}`}
+                              target="_blank"
+                              className="text-xs text-[#0B8A83] flex items-center gap-1 hover:underline"
+                            >
+                              <QrCode className="h-3.5 w-3.5" /> Preview
+                            </Link>
+                          </div>
+                        );
+                      })
                   )}
                 </CardContent>
               </Card>
@@ -804,7 +972,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
 
       {assignPanelOpen && selectedTable && selectedSeat !== null && (
         <SeatAssignPanel
-          tableLabel={selectedTable.label}
+          tableLabel={tableDisplayName(selectedTable.label)}
           seatIndex={selectedSeat}
           guests={guests.map((g) => ({
             id: g.id,

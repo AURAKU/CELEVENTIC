@@ -48,11 +48,27 @@ export function defaultSeatCount(shape: TableShape): number {
   return DEFAULT_SEAT_COUNTS[shape];
 }
 
+/** Clean user-entered table names and repair the legacy "Table Table 1" display. */
+export function normalizeTableName(value: string): string {
+  let name = value.trim().replace(/\s+/g, " ");
+  while (/^table\s+table(?:\s|$)/i.test(name)) {
+    name = name.replace(/^table\s+/i, "");
+  }
+  return name;
+}
+
+/** Display numeric identifiers as tables without prefixing already-named tables. */
+export function tableDisplayName(value: string): string {
+  const name = normalizeTableName(value);
+  return /^\d+$/.test(name) ? `Table ${name}` : name;
+}
+
 export function normalizeTable(table: SeatingTableConfig): SeatingTableConfig {
   const shape = table.shape ?? "round";
   const seatCount = table.seatCount ?? table.capacity ?? defaultSeatCount(shape);
   return {
     ...table,
+    label: normalizeTableName(table.label),
     shape,
     seatCount,
     capacity: table.capacity ?? seatCount,
@@ -66,9 +82,10 @@ export function generateTablesForGuests(
   prefix = "Table"
 ): SeatingTableConfig[] {
   const count = Math.max(1, Math.ceil(guestCount / seatsPerTable));
+  const cleanPrefix = normalizeTableName(prefix) || "Table";
   return Array.from({ length: count }, (_, i) => ({
     id: `t-${Date.now()}-${i}`,
-    label: `${prefix} ${i + 1}`,
+    label: `${cleanPrefix} ${i + 1}`,
     shape,
     seatCount: seatsPerTable,
     capacity: seatsPerTable,

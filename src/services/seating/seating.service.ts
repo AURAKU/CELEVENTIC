@@ -29,7 +29,14 @@ export class SeatingService {
         assignments: {
           include: {
             guest: {
-              select: { id: true, name: true, email: true, phone: true, qrToken: true, status: true },
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                qrToken: true,
+                status: true,
+              },
             },
           },
           orderBy: { tableNumber: "asc" },
@@ -48,34 +55,74 @@ export class SeatingService {
       });
     }
     return prisma.seatingPlan.create({
-      data: { eventId, name, layout: layout as unknown as Prisma.InputJsonValue },
+      data: {
+        eventId,
+        name,
+        layout: layout as unknown as Prisma.InputJsonValue,
+      },
       include: { assignments: true },
     });
   }
 
-  async bulkAssign(seatingPlanId: string, assignments: SeatingAssignmentInput[]) {
-    const results = [];
-    for (const a of assignments) {
-      const row = await prisma.seatingAssignment.upsert({
-        where: { guestId: a.guestId },
-        create: {
-          seatingPlanId,
-          guestId: a.guestId,
-          tableNumber: a.tableNumber,
-          seatLabel: a.seatLabel,
-          zone: a.zone,
-          notes: a.notes,
-        },
-        update: {
-          tableNumber: a.tableNumber,
-          seatLabel: a.seatLabel,
-          zone: a.zone,
-          notes: a.notes,
+  /**
+   * Make persisted assignments exactly match the organizer's current plan.
+   * This prevents removed/renamed tables from leaving invisible stale rows.
+   */
+  async replaceAssignments(
+    seatingPlanId: string,
+    eventId: string,
+    assignments: SeatingAssignmentInput[]
+  ) {
+    const guestIds = assignments.map((assignment) => assignment.guestId);
+    if (new Set(guestIds).size !== guestIds.length) {
+      throw new Error("A guest cannot be assigned more than once");
+    }
+
+    const occupiedSeats = new Set<string>();
+    for (const assignment of assignments) {
+      const seatKey = `${assignment.tableNumber.trim().toLowerCase()}:${assignment.seatLabel?.trim() ?? ""}`;
+      if (assignment.seatLabel && occupiedSeats.has(seatKey)) {
+        throw new Error(
+          `Seat ${assignment.seatLabel} at ${assignment.tableNumber} is assigned twice`
+        );
+      }
+      if (assignment.seatLabel) occupiedSeats.add(seatKey);
+    }
+
+    const validGuestCount = guestIds.length
+      ? await prisma.guest.count({
+          where: { id: { in: guestIds }, eventId, archivedAt: null },
+        })
+      : 0;
+    if (validGuestCount !== guestIds.length) {
+      throw new Error("One or more guests do not belong to this event");
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.seatingAssignment.deleteMany({
+        where: {
+          OR: [
+            { seatingPlanId },
+            ...(guestIds.length > 0 ? [{ guestId: { in: guestIds } }] : []),
+          ],
         },
       });
-      results.push(row);
-    }
-    return results;
+      if (assignments.length === 0) return [];
+      await tx.seatingAssignment.createMany({
+        data: assignments.map((assignment) => ({
+          seatingPlanId,
+          guestId: assignment.guestId,
+          tableNumber: assignment.tableNumber.trim(),
+          seatLabel: assignment.seatLabel?.trim() || null,
+          zone: assignment.zone?.trim() || null,
+          notes: assignment.notes?.trim() || null,
+        })),
+      });
+      return tx.seatingAssignment.findMany({
+        where: { seatingPlanId },
+        orderBy: [{ tableNumber: "asc" }, { seatLabel: "asc" }],
+      });
+    });
   }
 
   async removeAssignment(guestId: string) {
@@ -86,7 +133,9 @@ export class SeatingService {
     const guest = await prisma.guest.findUnique({
       where: { qrToken },
       include: {
-        event: { select: { id: true, title: true, startDate: true, venueName: true } },
+        event: {
+          select: { id: true, title: true, startDate: true, venueName: true },
+        },
         seatingAssignment: {
           include: { seatingPlan: true },
         },
@@ -95,7 +144,14 @@ export class SeatingService {
     if (!guest) return null;
 
     const assignment = guest.seatingAssignment;
-    const layout = assignment?.seatingPlan?.layout as { tables?: Array<{ label: string; shape?: string; seatCount?: number; zone?: string }> } | null;
+    const layout = assignment?.seatingPlan?.layout as {
+      tables?: Array<{
+        label: string;
+        shape?: string;
+        seatCount?: number;
+        zone?: string;
+      }>;
+    } | null;
     const tableConfig = layout?.tables?.find(
       (t) => t.label.trim().toLowerCase() === assignment?.tableNumber.trim().toLowerCase()
     );
