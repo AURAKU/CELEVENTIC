@@ -49,8 +49,10 @@ export function TraditionalMarriageRespond({
   const [error, setError] = useState("");
   const [guestName, setGuestName] = useState(initialGuestName?.trim() ?? "");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [pressed, setPressed] = useState<RsvpChoice | null>(null);
 
+  const nameLocked = Boolean(guestId && guestName.trim());
   const showReachHosts = Boolean(organizerPhone || organizerEmail);
   if (!showRsvp && !showReachHosts) return null;
 
@@ -64,9 +66,13 @@ export function TraditionalMarriageRespond({
     setLoading(true);
     setPressed(response);
 
+    const contact = {
+      email: email.trim() || undefined,
+      phone: phone.trim() || undefined,
+    };
     const payload = guestId
-      ? { guestId, response }
-      : { invitationId, guestName: guestName.trim(), email: email.trim() || undefined, response };
+      ? { guestId, response, ...contact }
+      : { invitationId, guestName: guestName.trim(), response, ...contact };
 
     if (!guestId && !guestName.trim()) {
       setError(t("rsvp.name_required"));
@@ -180,42 +186,70 @@ export function TraditionalMarriageRespond({
                 Thank you
               </p>
               <p className="font-[family-name:var(--font-cormorant)] text-sm tracking-[0.08em]">
-                Your reply has been received with gratitude.
+                Your reply has been received with gratitude. The hosts have been notified for seating and planning.
               </p>
             </div>
           ) : (
             <>
-              {!guestId && (
-                <div className="space-y-2.5">
-                  <label className="sr-only" htmlFor="tm-rsvp-name">
-                    {t("rsvp.your_name")}
-                  </label>
-                  <input
-                    id="tm-rsvp-name"
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    placeholder={t("rsvp.your_name")}
-                    autoComplete="name"
-                    className={fieldClass}
-                    style={fieldStyle}
-                    disabled={staticPreview || loading}
-                  />
-                  <label className="sr-only" htmlFor="tm-rsvp-email">
-                    {t("rsvp.your_email")}
-                  </label>
-                  <input
-                    id="tm-rsvp-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t("rsvp.your_email")}
-                    autoComplete="email"
-                    className={fieldClass}
-                    style={fieldStyle}
-                    disabled={staticPreview || loading}
-                  />
-                </div>
-              )}
+              <div className="space-y-2.5">
+                <label className="sr-only" htmlFor="tm-rsvp-name">
+                  {t("rsvp.your_name")}
+                </label>
+                <input
+                  id="tm-rsvp-name"
+                  value={guestName}
+                  onChange={(e) => {
+                    if (!nameLocked) setGuestName(e.target.value);
+                  }}
+                  placeholder={t("rsvp.your_name")}
+                  autoComplete="name"
+                  readOnly={nameLocked}
+                  aria-readonly={nameLocked || undefined}
+                  title={nameLocked ? t("rsvp.name_locked") : undefined}
+                  className={cn(
+                    fieldClass,
+                    nameLocked && "cursor-default opacity-90"
+                  )}
+                  style={{
+                    ...fieldStyle,
+                    ...(nameLocked
+                      ? {
+                          backgroundColor: `${PALETTE.peach}F0`,
+                          borderColor: `${PALETTE.mustard}88`,
+                        }
+                      : null),
+                  }}
+                  disabled={staticPreview || loading}
+                />
+                <label className="sr-only" htmlFor="tm-rsvp-email">
+                  {t("rsvp.your_email")}
+                </label>
+                <input
+                  id="tm-rsvp-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("rsvp.your_email")}
+                  autoComplete="email"
+                  className={fieldClass}
+                  style={fieldStyle}
+                  disabled={staticPreview || loading}
+                />
+                <label className="sr-only" htmlFor="tm-rsvp-phone">
+                  {t("rsvp.your_phone")}
+                </label>
+                <input
+                  id="tm-rsvp-phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder={t("rsvp.your_phone")}
+                  autoComplete="tel"
+                  className={fieldClass}
+                  style={fieldStyle}
+                  disabled={staticPreview || loading}
+                />
+              </div>
 
               {error && (
                 <p

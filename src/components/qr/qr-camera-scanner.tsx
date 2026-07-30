@@ -65,20 +65,38 @@ async function stopScanner(scanner: ScannerRef | null) {
   }
 }
 
-async function pickCameraId(): Promise<string | MediaTrackConstraints> {
+const REAR_CAMERA_LABEL = /back|rear|environment|trás|arrière|wide|ultra/i;
+const FRONT_CAMERA_LABEL = /front|user|selfie|facetime/i;
+
+/**
+ * Rear-camera candidates in strict preference order.
+ *
+ * Asking for `environment` first avoids relying on device enumeration order
+ * (which is not standardized and commonly lists the selfie camera last).
+ * Labelled device ids remain useful on browsers that reject exact facingMode.
+ */
+async function rearCameraCandidates(): Promise<Array<string | MediaTrackConstraints>> {
+  const candidates: Array<string | MediaTrackConstraints> = [
+    { facingMode: { exact: "environment" } },
+  ];
+
   try {
     const { Html5Qrcode } = await import("html5-qrcode");
     const cameras = await Html5Qrcode.getCameras();
-    if (!cameras.length) return { facingMode: "environment" };
-
-    const rear =
-      cameras.find((c) => /back|rear|environment|trás|arrière|wide|ultra/i.test(c.label)) ??
-      cameras[cameras.length - 1];
-
-    return rear.id;
+    const rearIds = cameras
+      .filter(
+        (camera) =>
+          REAR_CAMERA_LABEL.test(camera.label) &&
+          !FRONT_CAMERA_LABEL.test(camera.label)
+      )
+      .map((camera) => camera.id);
+    candidates.push(...rearIds);
   } catch {
-    return { facingMode: "environment" };
+    // The semantic constraints below still work when enumeration is blocked.
   }
+
+  candidates.push({ facingMode: { ideal: "environment" } });
+  return candidates;
 }
 
 function sanitizeDomId(raw: string): string {
@@ -190,20 +208,28 @@ export function QrCameraScanner({
         }) as unknown as ScannerRef;
         scannerRef.current = scanner;
 
-        const camera = await pickCameraId();
+        const cameras = await rearCameraCandidates();
         const config = buildScannerConfig(screenScanMode);
 
         const startWithCamera = async (cam: string | MediaTrackConstraints) => {
           await scanner.start(cam, config, (decoded) => handleScan(decoded), () => undefined);
         };
 
-        try {
-          await startWithCamera(camera);
-        } catch {
-          // html5-qrcode applies this camera constraint directly. Keeping
-          // videoConstraints out of the scan config makes this a real fallback
-          // instead of retrying the exact same failed stream constraints.
-          await startWithCamera({ facingMode: "environment" });
+        let lastStartError: unknown = null;
+        let started = false;
+        for (const camera of cameras) {
+          try {
+            await startWithCamera(camera);
+            started = true;
+            break;
+          } catch (error) {
+            lastStartError = error;
+          }
+        }
+        if (!started) {
+          throw lastStartError instanceof Error
+            ? lastStartError
+            : new Error("Rear camera is unavailable on this device.");
         }
 
         if (cancelled) return;
@@ -213,6 +239,14 @@ export function QrCameraScanner({
         const stream = video?.srcObject;
         if (stream instanceof MediaStream) {
           const track = stream.getVideoTracks()[0] ?? null;
+          const facingMode = track?.getSettings?.().facingMode;
+          if (facingMode === "user") {
+            await stopScanner(scanner);
+            scannerRef.current = null;
+            throw new Error(
+              "The browser selected the selfie camera. Choose the rear camera in browser permissions and try again."
+            );
+          }
           videoTrackRef.current = track;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const caps = track?.getCapabilities?.() as any;

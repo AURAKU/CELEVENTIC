@@ -463,11 +463,12 @@ export async function setInvitationLifecycle(params: {
     }
 
     case "DELETE": {
+      const { LIVE_PRODUCTION_ORDER_STATUSES } = await import("@/lib/invitation/studio-access");
       const publishedStudio = await prisma.invitationOrder.findFirst({
         where: {
           invitationId: invitation.id,
           eventId: params.eventId,
-          status: "PUBLISHED",
+          status: { in: [...LIVE_PRODUCTION_ORDER_STATUSES] },
           archivedAt: null,
           shareUrl: { not: null },
         },
@@ -475,7 +476,7 @@ export async function setInvitationLifecycle(params: {
       });
       if (publishedStudio) {
         throw new Error(
-          "This is the event's published Studio invitation. Archive it instead — deleting it would take down the live production template."
+          "This is the event's live Studio invitation. Archive it instead — deleting it would take down the live production template."
         );
       }
 

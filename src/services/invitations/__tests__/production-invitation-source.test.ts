@@ -51,20 +51,22 @@ function readerReturning(
 }
 
 describe("production invitation source", () => {
-  it("inherits the event's published Studio design for a secondary guest invite", async () => {
+  it("inherits the event's live Studio design for a secondary guest invite", async () => {
     const calls: unknown[] = [];
     const source = productionOrder();
     const resolved = await resolveProductionInvitationOrderWithReader(
       "secondary-guest-invitation",
       "event-1",
-      readerReturning([null, source], calls)
+      readerReturning([null, null, source], calls)
     );
 
     assert.equal(resolved?.id, source.id);
-    assert.equal(calls.length, 2);
-    assert.deepEqual((calls[1] as { where: unknown }).where, {
+    assert.equal(calls.length, 3);
+    assert.deepEqual((calls[2] as { where: unknown }).where, {
       eventId: "event-1",
-      status: "PUBLISHED",
+      status: {
+        in: ["PAID", "IN_PRODUCTION", "APPROVED", "PUBLISHED", "REVISION_REQUESTED"],
+      },
       invitationId: { not: null },
       shareUrl: { not: null },
       archivedAt: null,
@@ -73,6 +75,21 @@ describe("production invitation source", () => {
     const design = buildPublishedDesignConfig(resolved!);
     assert.equal(design.layout, STUDIO_LAYOUT);
     assert.notEqual(design.layout, "classic-gold");
+  });
+
+  it("inherits from a PAID Studio order before formal PUBLISHED status", async () => {
+    const paid = {
+      ...productionOrder(),
+      status: "PAID",
+    } as unknown as ProductionInvitationOrder;
+    const resolved = await resolveProductionInvitationOrderWithReader(
+      "secondary-guest-invitation",
+      "event-1",
+      readerReturning([null, null, paid], [])
+    );
+
+    assert.equal(resolved?.id, paid.id);
+    assert.equal(buildPublishedDesignConfig(resolved!).layout, STUDIO_LAYOUT);
   });
 
   it("keeps the canonical invitation on its direct production order", async () => {
@@ -94,7 +111,7 @@ describe("production invitation source", () => {
     const resolved = await resolveProductionInvitationOrderWithReader(
       "secondary-guest-invitation",
       "event-1",
-      readerReturning([null, source], [])
+      readerReturning([null, null, source], [])
     );
     const inheritedDesign = buildPublishedDesignConfig(resolved!);
     const theme = resolveCompanionTheme({
@@ -116,7 +133,7 @@ describe("production invitation source", () => {
     const resolved = await resolveProductionInvitationOrderWithReader(
       "secondary-guest-invitation",
       "event-1",
-      readerReturning([null, source], [])
+      readerReturning([null, null, source], [])
     );
     assert.ok(resolved);
 

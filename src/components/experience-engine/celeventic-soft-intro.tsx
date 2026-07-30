@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { Volume2 } from "lucide-react";
 import Image from "next/image";
 import { useReducedMotion } from "framer-motion";
 import { CELEVENTIC_PALETTE } from "@/lib/experience/celeventic-palette";
@@ -29,11 +30,7 @@ export interface CeleventicSoftIntroProps {
   atmosphereUrl?: string | null;
   accentColor?: string;
   secondaryColor?: string;
-  /**
-   * Returning guest who has already completed the opening once, hold the
-   * branded beat briefly rather than the full first-visit duration, but
-   * never skip it entirely (guests should never feel "nothing happened").
-   */
+  /** Retained for compatibility with older callers and fallback timing. */
   quickHold?: boolean;
   /**
    * When true (catalogue / studio phone frame), fill the parent shell instead
@@ -44,7 +41,8 @@ export interface CeleventicSoftIntroProps {
 
 /**
  * Platform soft launch, canonical Celeventic intro video for every template.
- * Starts immediately and advances only when the full video ends.
+ * Starts immediately and advances when the full video ends or the guest uses
+ * the explicit Skip Intro control.
  * No logo PNG overlay, the clip is the brand beat. Poster is only a still
  * of this same brand clip when motion or playback is unavailable.
  */
@@ -60,6 +58,7 @@ export function CeleventicSoftIntro({
   const [videoFailed, setVideoFailed] = useState(false);
   /** Embedded previews stay silent; live playback attempts full audio first. */
   const [soundEnabled, setSoundEnabled] = useState(!embedded);
+  const [soundBlocked, setSoundBlocked] = useState(false);
   const completed = useRef(false);
   const exitingRef = useRef(false);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -119,6 +118,7 @@ export function CeleventicSoftIntro({
     video.muted = embedded;
     video.volume = 1;
     setSoundEnabled(!embedded);
+    setSoundBlocked(false);
 
     const playback = video.play();
     if (playback && typeof playback.catch === "function") {
@@ -126,6 +126,7 @@ export function CeleventicSoftIntro({
         video.defaultMuted = true;
         video.muted = true;
         setSoundEnabled(false);
+        setSoundBlocked(!embedded);
         const mutedPlayback = video.play();
         if (mutedPlayback && typeof mutedPlayback.catch === "function") {
           mutedPlayback.catch(() => setVideoFailed(true));
@@ -133,6 +134,27 @@ export function CeleventicSoftIntro({
       });
     }
   }, [embedded, reduceMotion, videoFailed]);
+
+  const enableSound = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video || completed.current) return;
+
+    try {
+      video.defaultMuted = false;
+      video.muted = false;
+      video.volume = 1;
+      await video.play();
+      setSoundEnabled(true);
+      setSoundBlocked(false);
+    } catch {
+      // Leave the complete intro playing muted if a browser still rejects
+      // audio after the explicit guest gesture.
+      video.defaultMuted = true;
+      video.muted = true;
+      setSoundEnabled(false);
+      setSoundBlocked(true);
+    }
+  }, []);
 
   const handleVideoEnded = useCallback(() => {
     // The media track naturally ends here; explicitly mute before the exit
@@ -176,17 +198,6 @@ export function CeleventicSoftIntro({
       <div className={styles.atmosphere} aria-hidden>
         {showVideo ? (
           <>
-            {/* A soft, cropped poster fills mismatched aspect-ratio margins.
-                The actual video remains contained above it, fully uncropped. */}
-            <div className={styles.videoBackdrop}>
-              <Image
-                src={CELEVENTIC_INVITATION_INTRO_POSTER}
-                alt=""
-                fill
-                sizes="100vw"
-                priority
-              />
-            </div>
             <video
               ref={videoRef}
               className={styles.introVideo}
@@ -198,6 +209,9 @@ export function CeleventicSoftIntro({
               preload="auto"
               disablePictureInPicture
               controlsList="nodownload nofullscreen noremoteplayback"
+              onLoadedMetadata={(event) => {
+                event.currentTarget.currentTime = 0;
+              }}
               onEnded={handleVideoEnded}
               onError={() => setVideoFailed(true)}
             />
@@ -224,6 +238,30 @@ export function CeleventicSoftIntro({
           <div className={styles.glassMask} aria-hidden />
           <div className={styles.warmBloom} aria-hidden />
         </>
+      )}
+
+      {!embedded && !exiting && (
+        <div className={styles.controls}>
+          {showVideo && soundBlocked && (
+            <button
+              type="button"
+              className={styles.soundButton}
+              onClick={() => void enableSound()}
+              aria-label="Play invitation intro with sound"
+            >
+              <Volume2 size={16} aria-hidden />
+              <span>Tap for sound</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className={styles.skipButton}
+            onClick={beginExit}
+            aria-label="Skip invitation intro video"
+          >
+            Skip intro
+          </button>
+        </div>
       )}
 
     </div>

@@ -6,6 +6,8 @@ import { invitationService } from "@/services/invitations/invitation.service";
 const rsvpByGuestSchema = z.object({
   guestId: z.string(),
   response: z.enum(["ACCEPTED", "DECLINED", "MAYBE"]),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
   message: z.string().optional(),
 });
 
@@ -45,6 +47,14 @@ export async function POST(req: Request) {
           phone: data.phone,
         });
         guest = created.guest;
+      } else if (data.email || data.phone) {
+        guest = await prisma.guest.update({
+          where: { id: guest.id },
+          data: {
+            ...(data.email ? { email: data.email } : {}),
+            ...(data.phone ? { phone: data.phone } : {}),
+          },
+        });
       }
 
       const rsvp = await invitationService.submitRsvp(guest.id, data.response, data.message);
@@ -58,6 +68,15 @@ export async function POST(req: Request) {
     }
 
     const data = rsvpByGuestSchema.parse(body);
+    if (data.email || data.phone) {
+      await prisma.guest.update({
+        where: { id: data.guestId },
+        data: {
+          ...(data.email ? { email: data.email } : {}),
+          ...(data.phone ? { phone: data.phone } : {}),
+        },
+      });
+    }
     const rsvp = await invitationService.submitRsvp(data.guestId, data.response, data.message);
     const guest = await prisma.guest.findUnique({ where: { id: data.guestId } });
     if (guest?.invitationId) {

@@ -17,7 +17,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #040a10;
+  background: #fff;
   color: var(--soft-ivory);
   outline: none;
   isolation: isolate;
@@ -65,7 +65,7 @@
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: #040a10;
+  background: #fff;
 }
 
 /*
@@ -73,28 +73,6 @@
  * a quiet version of the official poster. The foreground video is always
  * `contain`, so every pixel of the actual clip remains visible.
  */
-.videoBackdrop {
-  position: absolute;
-  inset: -4%;
-  z-index: 0;
-  overflow: hidden;
-  background: #040a10;
-  transform: scale(1.06);
-}
-
-.videoBackdrop::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(4, 10, 16, 0.34);
-}
-
-.videoBackdrop img {
-  object-fit: cover;
-  object-position: center center;
-  filter: blur(24px) saturate(0.82) brightness(0.58);
-}
-
 .introVideo {
   position: absolute;
   inset: 0;
@@ -104,7 +82,7 @@
   height: 100%;
   object-fit: contain;
   object-position: center center;
-  background: transparent;
+  background: #fff;
 }
 
 /* Preserve the complete portrait master on narrow and landscape screens. */
@@ -216,6 +194,73 @@
 .videoPlaying .warmBloom {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Guest controls stay above the cinematic clip without obscuring it. */
+.controls {
+  position: absolute;
+  z-index: 4;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.soundButton,
+.skipButton {
+  min-height: 2.65rem;
+  border: 1px solid rgba(250, 248, 244, 0.44);
+  border-radius: 9999px;
+  padding: 0.65rem 1rem;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--soft-navy);
+  font-family: var(--font-cormorant), "Cormorant Garamond", serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.soundButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-color: color-mix(in srgb, var(--soft-gold) 70%, transparent);
+}
+
+.soundButton:hover,
+.soundButton:focus-visible,
+.skipButton:hover,
+.skipButton:focus-visible {
+  border-color: var(--soft-gold);
+  background: rgba(255, 255, 255, 0.96);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+@media (max-width: 420px) {
+  .controls {
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: max(0.75rem, env(safe-area-inset-left));
+    justify-content: flex-end;
+  }
+
+  .soundButton,
+  .skipButton {
+    min-height: 2.5rem;
+    padding: 0.58rem 0.8rem;
+    font-size: 0.7rem;
+  }
 }
 
 .particles {

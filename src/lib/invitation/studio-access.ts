@@ -14,6 +14,19 @@ export const STUDIO_UNLOCKED_STATUSES = new Set([
   "REVISION_REQUESTED",
 ]);
 
+/**
+ * Paid / in-production Studio orders that already have a live guest URL.
+ * Secondary guest invitations for the same event must inherit these — waiting
+ * for status === PUBLISHED left PAID / IN_PRODUCTION events on catalogue DNA.
+ */
+export const LIVE_PRODUCTION_ORDER_STATUSES = [
+  "PAID",
+  "IN_PRODUCTION",
+  "APPROVED",
+  "PUBLISHED",
+  "REVISION_REQUESTED",
+] as const;
+
 export function isStudioUnlocked(status: string | null | undefined): boolean {
   return Boolean(status && STUDIO_UNLOCKED_STATUSES.has(status));
 }

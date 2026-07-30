@@ -266,11 +266,9 @@ export function PremiumInviteWrapper({
    *
    * They still get every beat of the ceremony again on this visit, Tap to
    * Begin and the envelope/gate are never silently skipped, first visit or
-   * not. The only thing this flag changes is the branded preload: it holds
-   * briefly (`quickHold`) instead of the full first-visit duration, and
-   * surfaces an honest, visible "Skip intro" control on that beat so a
-   * repeat guest can choose to move along faster themselves, rather than
-   * the app deciding for them.
+   * not. The branded intro now always exposes an honest "Skip intro" control,
+   * so moving ahead remains the guest's choice rather than an automatic
+   * return-visit shortcut.
    *
    * This is a lazy `useState` initializer rather than an effect so it never
    * changes what gets rendered for the very first paint (that's always
@@ -326,23 +324,9 @@ export function PremiumInviteWrapper({
   function afterSoftIntro() {
     // Tap to Begin and the envelope/curtain reveal are never silently
     // skipped, not on first visit, not on a return visit. A returning
-    // guest only ever gets a shorter preload beat (`quickHold`, wired below)
-    // plus an honest, visible "Skip intro" control on that beat; the
+    // guest can use the visible "Skip intro" control on that beat; the
     // ceremony itself always continues normally from here.
     setPhase(phaseAfterSoftIntro(pipelineFlags));
-  }
-
-  function afterIntro() {
-    if (needsTapGate) {
-      setPhase("tap-to-begin");
-      return;
-    }
-    if (showReveal) {
-      setPhase("reveal");
-      return;
-    }
-    void startAudio();
-    setPhase("portal");
   }
 
   function afterReveal() {

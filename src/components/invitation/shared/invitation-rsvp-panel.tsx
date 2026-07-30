@@ -33,8 +33,10 @@ export function InvitationRsvpPanel({
   const [rsvpStatus, setRsvpStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [guestName, setGuestName] = useState(initialGuestName ?? "");
+  const [guestName, setGuestName] = useState(initialGuestName?.trim() ?? "");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const nameLocked = Boolean(guestId && guestName.trim());
 
   async function handleRsvp(response: "ACCEPTED" | "DECLINED" | "MAYBE") {
     if (isPreviewInvitationId(invitationId)) {
@@ -43,9 +45,13 @@ export function InvitationRsvpPanel({
     }
     setError("");
     setLoading(true);
+    const contact = {
+      email: email.trim() || undefined,
+      phone: phone.trim() || undefined,
+    };
     const payload = guestId
-      ? { guestId, response }
-      : { invitationId, guestName: guestName.trim(), email: email.trim() || undefined, response };
+      ? { guestId, response, ...contact }
+      : { invitationId, guestName: guestName.trim(), response, ...contact };
 
     if (!guestId && !guestName.trim()) {
       setError(t("rsvp.name_required"));
@@ -69,6 +75,8 @@ export function InvitationRsvpPanel({
     : variant === "dark"
       ? "border-white/30 text-white hover:bg-white/10"
       : "";
+  const fieldClass =
+    variant === "dark" ? "bg-white/10 border-white/20 text-white placeholder:text-white/50" : "";
 
   if (rsvpStatus) {
     return (
@@ -83,23 +91,36 @@ export function InvitationRsvpPanel({
 
   return (
     <div className="space-y-3">
-      {!guestId && (
-        <div className="space-y-2">
-          <Input
-            placeholder={t("rsvp.your_name")}
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            className={variant === "dark" ? "bg-white/10 border-white/20 text-white placeholder:text-white/50" : ""}
-          />
-          <Input
-            type="email"
-            placeholder={t("rsvp.your_email")}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={variant === "dark" ? "bg-white/10 border-white/20 text-white placeholder:text-white/50" : ""}
-          />
-        </div>
-      )}
+      <div className="space-y-2">
+        <Input
+          placeholder={t("rsvp.your_name")}
+          value={guestName}
+          onChange={(e) => {
+            if (!nameLocked) setGuestName(e.target.value);
+          }}
+          readOnly={nameLocked}
+          aria-readonly={nameLocked || undefined}
+          title={nameLocked ? t("rsvp.name_locked") : undefined}
+          className={`${fieldClass}${nameLocked ? " cursor-default opacity-90" : ""}`}
+          disabled={loading}
+        />
+        <Input
+          type="email"
+          placeholder={t("rsvp.your_email")}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={fieldClass}
+          disabled={loading}
+        />
+        <Input
+          type="tel"
+          placeholder={t("rsvp.your_phone")}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className={fieldClass}
+          disabled={loading}
+        />
+      </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" className={btnClass} onClick={() => handleRsvp("ACCEPTED")} disabled={loading}>

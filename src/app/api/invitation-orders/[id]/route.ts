@@ -119,3 +119,26 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isAdminRole(session.user.role)) {
+    return NextResponse.json({ error: "Only admins can permanently delete invitation orders." }, { status: 403 });
+  }
+
+  const { id } = await params;
+  try {
+    const result = await invitationOrderService.hardDeleteOrder(id, session.user.id);
+    return NextResponse.json({ success: true, data: result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Delete failed";
+    const status = message === "Order not found" ? 404 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
+}

@@ -184,8 +184,15 @@ export class GiftCampaignService {
     let templateSlug = input.invitationTemplateSlug ?? null;
 
     if (!design || !templateSlug) {
+      const { LIVE_PRODUCTION_ORDER_STATUSES } = await import("@/lib/invitation/studio-access");
       const order = await prisma.invitationOrder.findFirst({
-        where: { eventId },
+        where: {
+          eventId,
+          archivedAt: null,
+          status: { in: [...LIVE_PRODUCTION_ORDER_STATUSES] },
+          invitationId: { not: null },
+          shareUrl: { not: null },
+        },
         orderBy: { updatedAt: "desc" },
         select: { designConfig: true, templateSlug: true },
       });

@@ -148,7 +148,7 @@ export default async function InvitePage({
   // Guest personalization, the order/design record, custom blocks, and the
   // memory-vault links are all independent reads keyed off `invitation.id` /
   // `event.id`, fetch them concurrently rather than as a serial waterfall.
-  const [personalizedGuest, order, invitationBlocks, memoryLinks] = await Promise.all([
+  const [tokenGuest, order, invitationBlocks, memoryLinks] = await Promise.all([
     guestToken
       ? invitationService.getGuestForInvitation(invitation.id, guestToken)
       : Promise.resolve(null),
@@ -157,6 +157,15 @@ export default async function InvitePage({
     // Always provision Album QR for published invites so guests can upload/view live.
     ensureEventMemoryLinks(event.id),
   ]);
+
+  // Guest-specific invite links (one guest on this invitation) should lock the
+  // RSVP name even when `?guest=` is missing from a copied/shared URL.
+  const soleAssignedGuest =
+    !tokenGuest && !guestToken
+      ? (invitation.guests ?? []).filter((g) => !g.archivedAt)
+      : [];
+  const personalizedGuest =
+    tokenGuest ?? (soleAssignedGuest.length === 1 ? soleAssignedGuest[0] : null);
 
   let qrDataUrl = "";
   let admissionQrDataUrl = "";

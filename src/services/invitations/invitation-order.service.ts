@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { slugify, generateToken } from "@/lib/utils";
+import { createAuditLog } from "@/lib/audit";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { catalogService } from "@/services/commerce/catalog.service";
 import { pricingService } from "@/services/commerce/pricing.service";
@@ -547,6 +548,72 @@ export class InvitationOrderService {
     }
 
     return { order: updated, invitation, event, shareUrl };
+  }
+
+  /**
+   * Permanently remove an Invitation Store order.
+   * Detaches payment records for audit, removes Studio media rows, and deletes
+   * the linked published invitation + its guests so the store card is gone.
+   */
+  async hardDeleteOrder(orderId: string, adminUserId: string) {
+    const order = await prisma.invitationOrder.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        invitationId: true,
+        eventId: true,
+        eventTitle: true,
+        templateSlug: true,
+        status: true,
+        shareUrl: true,
+        userId: true,
+      },
+    });
+    if (!order) throw new Error("Order not found");
+
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.payment.updateMany({
+          where: { invitationOrderId: orderId },
+          data: { invitationOrderId: null },
+        });
+
+        await tx.invitationMedia.deleteMany({ where: { invitationOrderId: orderId } });
+
+        if (order.invitationId) {
+          await tx.guest.deleteMany({ where: { invitationId: order.invitationId } });
+          const invitation = await tx.invitation.findUnique({
+            where: { id: order.invitationId },
+            select: { id: true },
+          });
+          if (invitation) {
+            await tx.invitation.delete({ where: { id: invitation.id } });
+          }
+        }
+
+        await tx.invitationOrder.delete({ where: { id: orderId } });
+      },
+      { timeout: 20_000, maxWait: 10_000 }
+    );
+
+    await createAuditLog({
+      userId: adminUserId,
+      action: "DELETE",
+      entity: "invitation_order",
+      entityId: orderId,
+      details: {
+        kind: "invitation_order_hard_delete",
+        eventId: order.eventId,
+        invitationId: order.invitationId,
+        eventTitle: order.eventTitle,
+        templateSlug: order.templateSlug,
+        status: order.status,
+        shareUrl: order.shareUrl,
+        ownerUserId: order.userId,
+      },
+    });
+
+    return { deleted: true as const, orderId };
   }
 }
 

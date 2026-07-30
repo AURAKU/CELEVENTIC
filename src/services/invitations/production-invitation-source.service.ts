@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { LIVE_PRODUCTION_ORDER_STATUSES } from "@/lib/invitation/studio-access";
 
 const productionOrderInclude = {
   languageVersions: true,
@@ -57,8 +58,23 @@ export async function resolveProductionInvitationOrderWithReader(
   eventId: string,
   reader: ProductionOrderReader
 ): Promise<ProductionInvitationOrder | null> {
-  // The canonical published invitation remains the strongest match.
+  // The canonical invitation remains the strongest match. Prefer a live
+  // production status so an older archived/draft row cannot win.
   const direct = await reader.invitationOrder.findFirst({
+    where: {
+      invitationId,
+      eventId,
+      archivedAt: null,
+      status: { in: [...LIVE_PRODUCTION_ORDER_STATUSES] },
+    },
+    include: productionOrderInclude,
+    orderBy: { updatedAt: "desc" },
+  });
+  if (direct) return direct;
+
+  // Fallback: any non-archived order still linked to this invitation
+  // (legacy rows that predate the live-status filter).
+  const legacyDirect = await reader.invitationOrder.findFirst({
     where: {
       invitationId,
       eventId,
@@ -67,15 +83,15 @@ export async function resolveProductionInvitationOrderWithReader(
     include: productionOrderInclude,
     orderBy: { updatedAt: "desc" },
   });
-  if (direct) return direct;
+  if (legacyDirect) return legacyDirect;
 
   // Guest-specific invitations do not own an order. Inherit the most recently
-  // updated live production source for their event, never a draft, unpaid
-  // order, archived order, or a share URL belonging to another event.
+  // updated live production source for their event — PAID / IN_PRODUCTION /
+  // APPROVED / PUBLISHED — never a draft, unpaid, or archived order.
   return reader.invitationOrder.findFirst({
     where: {
       eventId,
-      status: "PUBLISHED",
+      status: { in: [...LIVE_PRODUCTION_ORDER_STATUSES] },
       invitationId: { not: null },
       shareUrl: { not: null },
       archivedAt: null,

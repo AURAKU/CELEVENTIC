@@ -12,6 +12,7 @@ import {
 } from "@/lib/invitation-features/place-card";
 import { mergeVisionBoard, resolveSealInitials } from "@/lib/invitation/vision-board";
 import { parseCoupleNames } from "@/lib/invitation-templates";
+import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 
@@ -82,15 +83,15 @@ export async function resolvePlaceCard(
   const feature = features.find((f) => f.key === "PLACE_CARD");
   const baseConfig = resolvePlaceCardConfig(feature?.config);
 
-  // Prefer the event's published Studio design so place-card seals follow the
-  // live production template, not a catalogue layout stamped at invite create.
+  // Prefer the event's live Studio design so place-card seals follow the
+  // production template, not a catalogue layout stamped at invite create.
   let design = designFromUnknown(invitation.designConfig);
   const productionOrder = await resolveProductionInvitationOrder(
     invitation.id,
     invitation.eventId
   );
-  if (productionOrder?.designConfig) {
-    design = designFromUnknown(productionOrder.designConfig);
+  if (productionOrder) {
+    design = buildPublishedDesignConfig(productionOrder);
   }
 
   const board = mergeVisionBoard(

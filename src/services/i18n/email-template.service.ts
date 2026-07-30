@@ -6,6 +6,7 @@ export type EmailTemplateType =
   | "payment_confirmation"
   | "invitation_ready"
   | "rsvp_confirmation"
+  | "rsvp_organizer"
   | "guest_reminder"
   | "admin_notification";
 

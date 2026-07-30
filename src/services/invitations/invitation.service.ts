@@ -249,12 +249,32 @@ export class InvitationService {
     // RSVP is a seating / planning signal — never demote gate admission.
     const guest = await prisma.guest.findUnique({
       where: { id: guestId },
-      select: { status: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        eventId: true,
+        invitationId: true,
+        event: {
+          select: {
+            id: true,
+            title: true,
+            organizerId: true,
+            organizer: { select: { id: true, email: true, name: true } },
+            collaborators: {
+              where: { isActive: true },
+              select: { userId: true, user: { select: { email: true } } },
+            },
+          },
+        },
+      },
     });
+    if (!guest) throw new Error("Guest not found");
 
     const [rsvp] = await Promise.all([
       prisma.rsvp.create({ data: { guestId, response, message } }),
-      guest?.status === "CHECKED_IN"
+      guest.status === "CHECKED_IN"
         ? Promise.resolve(null)
         : prisma.guest.update({
             where: { id: guestId },
@@ -262,7 +282,122 @@ export class InvitationService {
           }),
     ]);
 
+    // Organizer/admin planning signal — never fail the guest's RSVP if notify lags.
+    await this.notifyOrganizersOfRsvp({
+      guestId: guest.id,
+      guestName: guest.name,
+      guestEmail: guest.email,
+      eventId: guest.event.id,
+      eventTitle: guest.event.title,
+      organizerId: guest.event.organizerId,
+      organizerEmail: guest.event.organizer.email,
+      collaboratorUserIds: guest.event.collaborators.map((c) => c.userId),
+      collaboratorEmails: guest.event.collaborators
+        .map((c) => c.user.email)
+        .filter((email): email is string => Boolean(email)),
+      response,
+      message,
+    }).catch((error) => {
+      console.error("[rsvp] organizer notify failed", { guestId, response, error });
+    });
+
     return rsvp;
+  }
+
+  private async notifyOrganizersOfRsvp(input: {
+    guestId: string;
+    guestName: string;
+    guestEmail: string | null;
+    eventId: string;
+    eventTitle: string;
+    organizerId: string;
+    organizerEmail: string | null;
+    collaboratorUserIds: string[];
+    collaboratorEmails: string[];
+    response: "ACCEPTED" | "DECLINED" | "MAYBE";
+    message?: string;
+  }) {
+    const { notificationService } = await import("@/services/notifications/notification.service");
+    const { emailTemplateService } = await import("@/services/i18n/email-template.service");
+    const { languageService } = await import("@/services/i18n/language.service");
+    const { createAuditLog } = await import("@/lib/audit");
+
+    const decision =
+      input.response === "ACCEPTED"
+        ? "Accepted"
+        : input.response === "DECLINED"
+          ? "Declined"
+          : "Maybe";
+    const guestsLink = `/dashboard/guests?eventId=${encodeURIComponent(input.eventId)}`;
+    const seatingLink = `/dashboard/seating?eventId=${encodeURIComponent(input.eventId)}`;
+    const title = `${input.guestName} ${decision}`;
+    const body = [
+      `${input.guestName} responded ${decision} for ${input.eventTitle}.`,
+      input.message?.trim() ? `Note: ${input.message.trim()}` : null,
+      "Use Guests and Seating to plan tables and headcount.",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const recipientIds = Array.from(
+      new Set([input.organizerId, ...input.collaboratorUserIds].filter(Boolean))
+    );
+
+    await Promise.all(
+      recipientIds.map((userId) =>
+        notificationService.notify(userId, {
+          type: "GUEST_RSVP",
+          title,
+          message: body,
+          link: guestsLink,
+        })
+      )
+    );
+
+    const locale = await languageService.getUserPreference(input.organizerId);
+    const emailRecipients = Array.from(
+      new Set(
+        [input.organizerEmail, ...input.collaboratorEmails]
+          .map((email) => email?.trim().toLowerCase())
+          .filter((email): email is string => Boolean(email))
+      )
+    );
+
+    await Promise.all(
+      emailRecipients.map((to) =>
+        emailTemplateService.sendLocalized("rsvp_organizer", to, locale, {
+          guest: input.guestName,
+          response: decision,
+          event: input.eventTitle,
+          guestsUrl: `${getAppUrlFromEnv()}${guestsLink}`,
+          seatingUrl: `${getAppUrlFromEnv()}${seatingLink}`,
+        })
+      )
+    );
+
+    if (input.guestEmail?.trim()) {
+      await emailTemplateService
+        .sendLocalized("rsvp_confirmation", input.guestEmail.trim(), locale, {
+          name: input.guestName,
+          response: decision,
+          event: input.eventTitle,
+        })
+        .catch(() => undefined);
+    }
+
+    await createAuditLog({
+      userId: input.organizerId,
+      action: "CREATE",
+      entity: "rsvp",
+      entityId: input.guestId,
+      details: {
+        kind: "guest_rsvp",
+        eventId: input.eventId,
+        response: input.response,
+        guestName: input.guestName,
+        notifiedUserIds: recipientIds,
+      },
+    });
   }
 
   async getEventGuests(
