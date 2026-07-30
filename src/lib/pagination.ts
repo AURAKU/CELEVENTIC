@@ -16,8 +16,10 @@ export const ADMIN_TABLE_LIMIT = 20;
 export const FEED_LIMIT = 20;
 /** Event picker / switcher bulk list */
 export const PICKER_LIMIT = 200;
-/** Seating chart guest roster (needs most guests; hard safety cap) */
-export const SEATING_GUEST_LIMIT = 500;
+/** Seating chart guest roster batch size (API pages until every guest is loaded). */
+export const SEATING_GUEST_BATCH = 500;
+/** Absolute safety cap so a runaway query cannot OOM the process. */
+export const SEATING_GUEST_LIMIT = 10_000;
 /** Offline QR sync batch size (cursor batches) */
 export const OFFLINE_SYNC_BATCH = 500;
 export const MAX_LIMIT = 100;

@@ -21,6 +21,7 @@ const querySchema = z.object({
   page: z.coerce.number().int().min(1).max(10_000).optional(),
   includeArchived: z.enum(["0", "1"]).optional(),
   includeGeneralPasses: z.enum(["0", "1"]).optional(),
+  status: z.string().max(40).optional(),
 });
 
 export async function GET(req: Request) {
@@ -33,13 +34,14 @@ export async function GET(req: Request) {
     page: url.searchParams.get("page") ?? undefined,
     includeArchived: url.searchParams.get("includeArchived") ?? undefined,
     includeGeneralPasses: url.searchParams.get("includeGeneralPasses") ?? undefined,
+    status: url.searchParams.get("status") ?? undefined,
   });
 
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
   }
 
-  const { eventId, q, limit, page, includeArchived, includeGeneralPasses } = parsed.data;
+  const { eventId, q, limit, page, includeArchived, includeGeneralPasses, status } = parsed.data;
 
   const auth = await authorizeSearch(eventId);
   if (auth.error) return auth.error;
@@ -55,7 +57,9 @@ export async function GET(req: Request) {
       limit,
       page,
       includeArchived: includeArchived === "1",
-      includeGeneralPasses: includeGeneralPasses === "1",
+      // Default ON so organizer CRM never hides general-pass invitations.
+      includeGeneralPasses: includeGeneralPasses !== "0",
+      status,
     });
     return NextResponse.json(
       { success: true, data: result },

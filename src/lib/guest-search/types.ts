@@ -78,6 +78,8 @@ export interface SearchResponse {
   limit?: number;
   /** True when ranking ran against a truncated candidate set. */
   truncated: boolean;
+  /** Archived invitations not returned because includeArchived is off. */
+  archivedHiddenCount?: number;
   /** Milliseconds spent server-side, surfaced in the UI in dev. */
   tookMs: number;
 }

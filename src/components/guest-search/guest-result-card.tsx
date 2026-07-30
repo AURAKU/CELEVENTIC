@@ -170,6 +170,7 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
     card.admittedCount > 0 ||
     card.guestStatus === "CHECKED_IN" ||
     card.members.some((m) => m.admitted);
+  const showResetAdmission = !card.archivedAt;
 
   return (
     <div
@@ -234,16 +235,16 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
             </Badge>
           )}
 
-          {canResetAdmission && (
+          {showResetAdmission && (
             <Button
               size="sm"
               variant="outline"
               className="border-amber-200 text-amber-900 hover:bg-amber-50"
               onClick={() => void resetAdmission()}
               disabled={busy}
-              title="Reset so they can re-enter; invite link starts from the intro again"
+              title="Reset this invitation so they can re-enter; invite link starts from the intro again"
             >
-              <RotateCcw className="h-3.5 w-3.5" /> Reset admission
+              <RotateCcw className="h-3.5 w-3.5" /> Reset invitation
             </Button>
           )}
           <Button

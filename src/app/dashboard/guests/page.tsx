@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { Upload } from "lucide-react";
+import { RotateCcw, Upload } from "lucide-react";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { SmartGuestSearch } from "@/components/guest-search/smart-guest-search";
@@ -25,6 +25,8 @@ export default function GuestsPage() {
   const [filter, setFilter] = useState<string>("all");
   const [refreshToken, setRefreshToken] = useState(0);
   const [recentlyCreated, setRecentlyCreated] = useState<SearchResultCard[]>([]);
+  const [resettingAll, setResettingAll] = useState(false);
+  const [resetError, setResetError] = useState("");
 
   const loadStats = useCallback(async () => {
     if (!eventId) {
@@ -43,6 +45,7 @@ export default function GuestsPage() {
   useEffect(() => {
     setRecentlyCreated([]);
     setFilter("all");
+    setResetError("");
     setRefreshToken((token) => token + 1);
   }, [eventId]);
 
@@ -68,6 +71,33 @@ export default function GuestsPage() {
     bumpList();
   }
 
+  async function resetAllAdmissions() {
+    if (!eventId) return;
+    const ok = window.confirm(
+      "Reset ALL invitation admissions for this event?\n\nEveryone can be scanned again like first entry.\nEvent Companion locks for all until re-admit.\nInvite links start from the invitation intro again."
+    );
+    if (!ok) return;
+    setResettingAll(true);
+    setResetError("");
+    try {
+      const res = await fetch("/api/qr/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "event", eventId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResetError(data.error ?? "Could not reset all admissions.");
+        return;
+      }
+      bumpList();
+    } catch {
+      setResetError("Could not reach the server.");
+    } finally {
+      setResettingAll(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -77,12 +107,32 @@ export default function GuestsPage() {
             Select an event to manage only that celebration&apos;s guests — never mixed with another list.
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/guests/import">
-            <Upload className="h-4 w-4" /> Bulk import
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {eventId && (
+            <Button
+              type="button"
+              variant="outline"
+              className="border-amber-200 text-amber-900 hover:bg-amber-50"
+              disabled={resettingAll}
+              onClick={() => void resetAllAdmissions()}
+            >
+              <RotateCcw className="h-4 w-4" />
+              {resettingAll ? "Resetting…" : "Reset all admissions"}
+            </Button>
+          )}
+          <Button asChild variant="outline">
+            <Link href="/dashboard/guests/import">
+              <Upload className="h-4 w-4" /> Bulk import
+            </Link>
+          </Button>
+        </div>
       </div>
+
+      {resetError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {resetError}
+        </div>
+      )}
 
       <Card>
         <CardContent className="p-4">

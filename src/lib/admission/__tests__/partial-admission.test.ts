@@ -59,11 +59,11 @@ test("a group with places open is asked how many are arriving now", () => {
   assert.match(d.message, /how many are arriving now/i);
 });
 
-test("the safe auto rule (fast admission) skips the prompt and admits the remainder", () => {
+test("fast admission cannot silently admit a multi-person remainder", () => {
   const d = decideAdmission(pass({ partySize: 4 }), settings({ fastAdmissionMode: true }), ctx());
-  assert.equal(d.requiresQuantityConfirmation, false);
-  assert.equal(d.admitQuantity, 4);
-  assert.equal(d.outcome, "ADMIT");
+  assert.equal(d.requiresQuantityConfirmation, true);
+  assert.equal(d.admitQuantity, 0);
+  assert.match(d.message, /how many are arriving now/i);
 });
 
 test("answering the prompt writes exactly the confirmed quantity", () => {
@@ -90,14 +90,15 @@ test("the last remaining head needs no prompt", () => {
   assert.equal(d.outcome, "ADMIT");
 });
 
-test("events that forbid partial arrival never show the quantity prompt", () => {
+test("multi-person accountability allows a confirmed partial arrival", () => {
   const d = decideAdmission(
     pass({ partySize: 3 }),
     settings({ allowPartialArrival: false }),
-    ctx()
+    ctx({ requestedQuantity: 1, quantityConfirmed: true })
   );
   assert.equal(d.requiresQuantityConfirmation, false);
-  assert.equal(d.admitQuantity, 3, "the whole party arrives together or not at all");
+  assert.equal(d.admitQuantity, 1);
+  assert.equal(d.resultingStatus, "PARTIALLY_ADMITTED");
 });
 
 test("needsQuantityPrompt encodes every suppression rule", () => {
@@ -107,7 +108,8 @@ test("needsQuantityPrompt encodes every suppression rule", () => {
   assert.equal(needsQuantityPrompt(0, s, {}), false, "party is already inside");
   assert.equal(needsQuantityPrompt(3, s, { quantityConfirmed: true }), false);
   assert.equal(needsQuantityPrompt(3, s, { requestedQuantity: 2 }), false);
-  assert.equal(needsQuantityPrompt(3, settings({ fastAdmissionMode: true }), {}), false);
+  assert.equal(needsQuantityPrompt(3, settings({ fastAdmissionMode: true }), {}), true);
+  assert.equal(needsQuantityPrompt(3, settings({ allowPartialArrival: false }), {}), true);
 });
 
 /* ── the party of three ────────────────────────────────────────────────── */

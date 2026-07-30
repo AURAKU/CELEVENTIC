@@ -376,15 +376,18 @@ export function QrAdmissionClient() {
     (raw: string) => {
       const trimmed = raw.trim();
       if (!trimmed) return;
+      const platformToken = parseQrToken(trimmed);
       // Client decode only routes — admit always happens server-side.
-      if (prefersEntryPassAdmit(trimmed) && entryPassScanRef.current) {
-        entryPassScanRef.current(trimmed);
+      // Existing guest QR credentials are bridged to their invitation's
+      // GuestPass so old links/printouts get the same partial-arrival count.
+      if ((prefersEntryPassAdmit(trimmed) || platformToken) && entryPassScanRef.current) {
+        entryPassScanRef.current(prefersEntryPassAdmit(trimmed) ? trimmed : platformToken!);
         return;
       }
       // Reject unrelated consumer/payment/contact QRs locally. Legacy platform
       // tokens still proceed to the server, where event ownership and current
       // admission state are authoritative.
-      if (!parseQrToken(trimmed)) {
+      if (!platformToken) {
         setResult({
           status: "invalid",
           selectedEventTitle,

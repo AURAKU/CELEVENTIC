@@ -87,7 +87,7 @@ export interface AdmissionDecision {
   /**
    * True when the operator must be asked "how many are arriving now?" before
    * anything is written. Only ever set for a party with more than one place
-   * still open, and never when a safe auto rule (fast admission) is on.
+   * still open.
    */
   requiresQuantityConfirmation: boolean;
 }
@@ -119,19 +119,19 @@ function deny(
  *
  * Yes for any group with more than one place still open, that is the whole
  * point of partial admission. No for a single guest (nothing to choose), no
- * once the operator has answered, and no when the organiser turned on the safe
- * auto rule (fast admission), which admits the remainder in one tap.
+ * once the operator has answered. Multi-person invitations always require an
+ * explicit headcount so a scan can never silently admit companions who have
+ * not arrived yet.
  */
 export function needsQuantityPrompt(
   remaining: number,
-  settings: Pick<ResolvedAdmissionSettings, "allowPartialArrival" | "fastAdmissionMode">,
+  _settings: Pick<ResolvedAdmissionSettings, "allowPartialArrival" | "fastAdmissionMode">,
   ctx: Pick<AdmissionContext, "quantityConfirmed" | "requestedQuantity">
 ): boolean {
   if (remaining <= 1) return false;
   if (ctx.quantityConfirmed) return false;
   if (typeof ctx.requestedQuantity === "number") return false;
-  if (settings.fastAdmissionMode) return false;
-  return settings.allowPartialArrival;
+  return true;
 }
 
 /** Effective validity window: explicit pass expiry, then the event window. */
@@ -323,15 +323,6 @@ export function decideAdmission(
   }
 
   const isPartial = requested < remaining;
-  if (isPartial && !settings.allowPartialArrival) {
-    return deny(
-      "PARTIAL_NOT_ALLOWED",
-      "This event admits the whole party together. Please wait for everyone before scanning.",
-      pass,
-      "amber"
-    );
-  }
-
   const resulting = alreadyIn + requested;
   const complete = resulting >= allowance;
 

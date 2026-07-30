@@ -349,9 +349,52 @@ describe("admission at the gate", () => {
       scannerUserId: organizerId,
       dryRun: true,
     });
-    assert.equal(preview.decision.outcome, "ADMIT");
+    assert.equal(preview.decision.outcome, "PARTIAL_ADMIT");
+    assert.equal(preview.decision.requiresQuantityConfirmation, true);
+    assert.equal(preview.decision.admitQuantity, 0);
     assert.equal(preview.pass?.admittedCount, 0, "dry run must not write");
     assert.equal(preview.party.length, 1);
+  });
+
+  it("routes an existing guest QR through the same partial-arrival counter", async () => {
+    const { ensureInvitationPass, admitByPass } = await import("../guest-pass.service");
+    const invitationId = await createInvitation(eventId, "Legacy QR Party", 1, 1);
+    const issued = await ensureInvitationPass(invitationId);
+    assert.ok(issued);
+
+    const db = await loadPrisma();
+    const guest = await db.guest.findFirstOrThrow({
+      where: { invitationId },
+      select: { qrToken: true },
+    });
+
+    const preview = await admitByPass({
+      eventId,
+      legacyToken: guest.qrToken,
+      scannerUserId: organizerId,
+      dryRun: true,
+    });
+    assert.equal(preview.decision.requiresQuantityConfirmation, true);
+    assert.equal(preview.pass?.id, issued.pass.id);
+
+    const first = await admitByPass({
+      eventId,
+      legacyToken: guest.qrToken,
+      quantity: 1,
+      quantityConfirmed: true,
+      scannerUserId: organizerId,
+    });
+    assert.equal(first.decision.resultingStatus, "PARTIALLY_ADMITTED");
+    assert.equal(first.pass?.admittedCount, 1);
+
+    const final = await admitByPass({
+      eventId,
+      legacyToken: guest.qrToken,
+      scannerUserId: organizerId,
+    });
+    assert.equal(final.decision.admitQuantity, 1);
+    assert.equal(final.pass?.admittedCount, 2);
+    assert.equal(final.pass?.status, "ADMITTED");
   });
 
   it("two scanners racing a single-seat pass admit exactly once", async () => {
@@ -427,9 +470,20 @@ describe("regeneration and revocation", () => {
     assert.equal(replacement.pass.admittedCount, 2);
     assert.equal(replacement.pass.status, "PARTIALLY_ADMITTED");
 
+    const restPreview = await admitByPass({
+      eventId,
+      token: replacement.token,
+      scannerUserId: organizerId,
+      dryRun: true,
+    });
+    assert.equal(restPreview.decision.requiresQuantityConfirmation, true);
+    assert.equal(restPreview.decision.admitQuantity, 0);
+
     const rest = await admitByPass({
       eventId,
       token: replacement.token,
+      quantity: 2,
+      quantityConfirmed: true,
       scannerUserId: organizerId,
     });
     assert.equal(rest.decision.admitQuantity, 2, "only the 2 who had not arrived");

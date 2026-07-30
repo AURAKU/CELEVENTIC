@@ -15,7 +15,6 @@ import {
   Wifi,
   WifiOff,
   XCircle,
-  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,14 +113,16 @@ export function EntryPassGate({
   const [error, setError] = useState("");
   const [result, setResult] = useState<GateResult | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [pendingScan, setPendingScan] = useState<{ token?: string; code?: string } | null>(null);
+  const [pendingScan, setPendingScan] = useState<{
+    token?: string;
+    legacyToken?: string;
+    code?: string;
+  } | null>(null);
   /** Operator's answer to "how many are arriving now?". */
   const [arrivingNow, setArrivingNow] = useState(1);
 
   const [online, setOnline] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
-  /** Fast mode default on, entrance queues must not wait on dry-run confirms. */
-  const [fastMode, setFastMode] = useState(true);
   const [pkg, setPkg] = useState<OfflinePackage | null>(null);
   const [queue, setQueue] = useState<QueuedAdmission[]>([]);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -265,6 +266,7 @@ export function EntryPassGate({
   const admitOffline = useCallback(
     async (input: {
       token?: string;
+      legacyToken?: string;
       code?: string;
       quantity?: number;
       guestIds?: string[];
@@ -347,9 +349,7 @@ export function EntryPassGate({
         input.preview === true &&
         remaining > 1 &&
         input.quantity == null &&
-        !(input.guestIds?.length) &&
-        pkg.settings.allowPartialArrival &&
-        !pkg.settings.fastAdmissionMode;
+        !(input.guestIds?.length);
 
       if (promptForQuantity) {
         return show({
@@ -455,6 +455,7 @@ export function EntryPassGate({
   const admitOnline = useCallback(
     async (input: {
       token?: string;
+      legacyToken?: string;
       code?: string;
       quantity?: number;
       guestIds?: string[];
@@ -510,23 +511,27 @@ export function EntryPassGate({
    * One entry point for both the camera and the keypad.
    *
    * A single-guest pass admits on the spot, there is nothing to ask. Anything
-   * larger is previewed first so the operator can say how many of the party
-   * have actually turned up, unless fast admission is on.
+   * larger is previewed first so the operator must say how many of the party
+   * have actually turned up.
    */
   const beginAdmission = useCallback(
-    async (source: { token?: string; code?: string }) => {
+    async (source: { token?: string; legacyToken?: string; code?: string }) => {
       setArrivingNow(1);
 
       if (usingOffline) {
+        if (source.legacyToken && onUnresolvedCode) {
+          onUnresolvedCode(source.legacyToken);
+          return;
+        }
         const preview = await admitOffline({ ...source, preview: true });
         if (
           preview?.decision.reason === "NOT_FOUND" &&
-          source.code &&
+          (source.code || source.legacyToken) &&
           onUnresolvedCode
         ) {
           setResult(null);
           setError("");
-          onUnresolvedCode(source.code);
+          onUnresolvedCode(source.code ?? source.legacyToken!);
           return;
         }
         if (preview?.decision.requiresQuantityConfirmation) {
@@ -538,33 +543,17 @@ export function EntryPassGate({
         return;
       }
 
-      if (fastMode) {
-        const result = await admitOnline({ ...source, quantityConfirmed: true });
-        if (
-          result?.decision.reason === "NOT_FOUND" &&
-          source.code &&
-          onUnresolvedCode
-        ) {
-          setResult(null);
-          setError("");
-          onUnresolvedCode(source.code);
-          return;
-        }
-        setPendingScan(null);
-        return;
-      }
-
       const preview = await admitOnline({ ...source, dryRun: true });
       if (!preview) return;
 
       if (
         preview.decision.reason === "NOT_FOUND" &&
-        source.code &&
+        (source.code || source.legacyToken) &&
         onUnresolvedCode
       ) {
         setResult(null);
         setError("");
-        onUnresolvedCode(source.code);
+        onUnresolvedCode(source.code ?? source.legacyToken!);
         return;
       }
 
@@ -587,7 +576,7 @@ export function EntryPassGate({
 
       setPendingScan(source);
     },
-    [admitOffline, admitOnline, fastMode, onUnresolvedCode, usingOffline]
+    [admitOffline, admitOnline, onUnresolvedCode, usingOffline]
   );
 
   const handleScan = useCallback(
@@ -612,8 +601,13 @@ export function EntryPassGate({
         return;
       }
 
-      // Parent unified scanner falls through to legacy check-in for non-pass QR.
-      // If this panel was called directly, surface a clear message.
+      if (classified.raw) {
+        setSelectedMembers([]);
+        setError("");
+        await beginAdmission({ legacyToken: classified.raw });
+        return;
+      }
+
       setError("That QR isn't a Celeventic entry pass.");
       playScanFeedback(false);
     },
@@ -700,17 +694,9 @@ export function EntryPassGate({
 
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-          <label className="flex items-center gap-2 text-sm">
-            <Switch
-              checked={fastMode}
-              onCheckedChange={setFastMode}
-              aria-label="Fast admission mode"
-            />
-            <span className="flex items-center gap-1 font-medium text-slate-700">
-              <Zap className="h-3.5 w-3.5 text-amber-500" aria-hidden />
-              Fast admission
-            </span>
-          </label>
+          <p className="text-xs font-medium text-slate-700">
+            Multi-person passes always confirm the arriving headcount.
+          </p>
           <label className="flex items-center gap-2 text-sm">
             <Switch
               checked={offlineMode}

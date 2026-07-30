@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { GuestStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getServerAppUrl } from "@/lib/app-url";
 import {
@@ -34,6 +34,14 @@ const MAX_LIMIT = 50;
 /** Below this many hits, stage two runs. */
 const WIDEN_THRESHOLD = 3;
 
+const RESPONDED_STATUSES: GuestStatus[] = [
+  "ACCEPTED",
+  "DECLINED",
+  "MAYBE",
+  "CHECKED_IN",
+  "OPENED",
+];
+
 export interface SearchOptions {
   eventId: string;
   query: string;
@@ -42,8 +50,43 @@ export interface SearchOptions {
   page?: number;
   /** Include archived invitations. Off by default — archive means "hidden". */
   includeArchived?: boolean;
-  /** Include unnamed general-admission passes. Off by default. */
+  /**
+   * Include unnamed general-admission passes.
+   * Organizer CRM defaults this on so every event invitation is manageable.
+   */
   includeGeneralPasses?: boolean;
+  /**
+   * Filter by primary guest RSVP/admission status (browse + search).
+   * `"NO_RESPONSE"` = not yet opened/accepted/declined/maybe/checked-in.
+   */
+  status?: string;
+}
+
+function guestStatusWhere(
+  eventId: string,
+  status?: string
+): Prisma.InvitationWhereInput | undefined {
+  if (!status || status === "all") return undefined;
+  if (status === "NO_RESPONSE") {
+    return {
+      guests: {
+        some: {
+          eventId,
+          archivedAt: null,
+          status: { notIn: RESPONDED_STATUSES },
+        },
+      },
+    };
+  }
+  return {
+    guests: {
+      some: {
+        eventId,
+        archivedAt: null,
+        status: status as GuestStatus,
+      },
+    },
+  };
 }
 
 function invitationSelectFor(eventId: string) {
@@ -141,7 +184,9 @@ function buildWhere(
   const where: Prisma.InvitationWhereInput = {
     eventId: options.eventId,
     ...(options.includeArchived ? {} : { archivedAt: null }),
-    ...(options.includeGeneralPasses ? {} : { isGeneralPass: false }),
+    // Organizer lists default to showing every invitation, including general passes.
+    ...(options.includeGeneralPasses === false ? { isGeneralPass: false } : {}),
+    ...guestStatusWhere(options.eventId, options.status),
   };
 
   if (or.length > 0) where.OR = or;
@@ -250,8 +295,19 @@ export async function searchGuests(options: SearchOptions): Promise<SearchRespon
   const baseWhere: Prisma.InvitationWhereInput = {
     eventId: options.eventId,
     ...(options.includeArchived ? {} : { archivedAt: null }),
-    ...(options.includeGeneralPasses ? {} : { isGeneralPass: false }),
+    ...(options.includeGeneralPasses === false ? { isGeneralPass: false } : {}),
+    ...guestStatusWhere(options.eventId, options.status),
   };
+
+  const archivedHiddenCount = options.includeArchived
+    ? 0
+    : await prisma.invitation.count({
+        where: {
+          eventId: options.eventId,
+          archivedAt: { not: null },
+          ...(options.includeGeneralPasses === false ? { isGeneralPass: false } : {}),
+        },
+      });
 
   // Empty query = browse this event's guest list only (newest first), paged.
   if (query.isEmpty) {
@@ -275,6 +331,7 @@ export async function searchGuests(options: SearchOptions): Promise<SearchRespon
       pages,
       limit,
       truncated: total > safePage * limit,
+      archivedHiddenCount,
       tookMs: Date.now() - startedAt,
     };
   }
@@ -319,6 +376,7 @@ export async function searchGuests(options: SearchOptions): Promise<SearchRespon
     pages: 1,
     limit,
     truncated,
+    archivedHiddenCount,
     tookMs: Date.now() - startedAt,
   };
 }

@@ -388,6 +388,40 @@ export async function findPassByToken(token: string): Promise<GuestPass | null> 
 }
 
 /**
+ * Bridge existing guest QR credentials into invitation-level admission.
+ * This keeps old printed/shared guest QRs useful while making GuestPass the
+ * single authoritative counter for partial and repeat arrivals.
+ */
+export async function findPassByLegacyToken(
+  eventId: string,
+  rawToken: string
+): Promise<GuestPass | null> {
+  const token = rawToken.trim();
+  if (!token) return null;
+
+  const guest = await prisma.guest.findFirst({
+    where: {
+      eventId,
+      OR: [
+        { qrToken: token },
+        { qrCodes: { some: { token, eventId } } },
+      ],
+    },
+    select: { invitationId: true },
+  });
+  if (!guest?.invitationId) return null;
+
+  return prisma.guestPass.findFirst({
+    where: {
+      eventId,
+      invitationId: guest.invitationId,
+      status: { in: ACTIVE_STATUSES },
+    },
+    orderBy: { tokenVersion: "desc" },
+  });
+}
+
+/**
  * Resolve a typed admission code within one event. The final comparison is
  * constant-time so response timing cannot be used to confirm a partial code.
  */
@@ -409,6 +443,8 @@ export interface AdmitInput {
   eventId: string;
   /** Signed pass token from the camera. */
   token?: string;
+  /** Existing guest QR token; resolved to its invitation's active pass. */
+  legacyToken?: string;
   /** Admission code typed by the operator. */
   code?: string;
   /** Heads to admit. Defaults to the whole remaining party. */
@@ -452,10 +488,12 @@ export interface AdmitResult {
 export async function admitByPass(input: AdmitInput): Promise<AdmitResult> {
   const settings = await getEventAdmissionSettings(input.eventId);
   const now = input.offlineCreatedAt ?? new Date();
-  const source = input.token ? "qr" : "manual_code";
+  const source = input.token || input.legacyToken ? "qr" : "manual_code";
 
   const pass = input.token
     ? await findPassByToken(input.token)
+    : input.legacyToken
+      ? await findPassByLegacyToken(input.eventId, input.legacyToken)
     : input.code
       ? await findPassByCode(input.eventId, input.code)
       : null;

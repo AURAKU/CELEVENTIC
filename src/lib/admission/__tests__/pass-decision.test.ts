@@ -76,14 +76,15 @@ test("a pass can never admit more heads than its allowance", () => {
   assert.equal(partial.admitQuantity, 0);
 });
 
-test("partial arrival can be switched off", () => {
+test("confirmed partial arrival remains countable for accountability", () => {
   const d = decideAdmission(
     pass({ partySize: 4 }),
     settings({ allowPartialArrival: false }),
-    ctx({ requestedQuantity: 2 })
+    ctx({ requestedQuantity: 2, quantityConfirmed: true })
   );
-  assert.equal(d.reason, "PARTIAL_NOT_ALLOWED");
-  assert.equal(d.tone, "amber");
+  assert.equal(d.reason, "OK_PARTIAL");
+  assert.equal(d.tone, "green");
+  assert.equal(d.resultingAdmittedCount, 2);
 });
 
 test("duplicate policy decides what a second scan does", () => {

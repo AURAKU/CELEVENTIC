@@ -11,6 +11,7 @@ const admitSchema = z
   .object({
     eventId: z.string().min(1),
     token: z.string().min(1).max(200).optional(),
+    legacyToken: z.string().min(1).max(500).optional(),
     code: z.string().min(1).max(20).optional(),
     quantity: z.number().int().positive().max(200).optional(),
     guestIds: z.array(z.string().min(1)).max(200).optional(),
@@ -20,7 +21,7 @@ const admitSchema = z
     /** The operator answered the "how many now?" prompt. */
     quantityConfirmed: z.boolean().optional(),
   })
-  .refine((v) => Boolean(v.token || v.code), {
+  .refine((v) => Boolean(v.token || v.legacyToken || v.code), {
     message: "A pass QR or admission code is required",
   });
 
@@ -72,6 +73,7 @@ export async function POST(req: Request) {
   const result = await admitByPass({
     eventId: data.eventId,
     token: data.token,
+    legacyToken: data.legacyToken,
     code: data.code ? normalizeAdmissionCode(data.code) : undefined,
     quantity: data.quantity,
     guestIds: data.guestIds,
@@ -89,7 +91,7 @@ export async function POST(req: Request) {
     entityId: result.pass?.id,
     details: {
       kind: data.dryRun ? "pass_preview" : "pass_admit",
-      channel: data.code ? "manual_code" : "qr",
+      channel: data.code ? "manual_code" : data.legacyToken ? "legacy_qr" : "qr",
       eventId: data.eventId,
       outcome: result.decision.outcome,
       reason: result.decision.reason,

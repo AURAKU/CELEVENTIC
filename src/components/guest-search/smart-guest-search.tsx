@@ -29,7 +29,7 @@ interface SmartGuestSearchProps {
   /** Invitations created this session, shown above search results. */
   recentlyCreated: SearchResultCard[];
   onCardChanged: (card: SearchResultCard) => void;
-  /** Optional RSVP/status filter applied client-side on the current results. */
+  /** Optional RSVP/status filter applied server-side so every page stays complete. */
   statusFilter?: string;
   /** Bump to reload browse/search results after a create/edit/delete. */
   refreshToken?: number;
@@ -65,9 +65,12 @@ export function SmartGuestSearch({
           eventId,
           q: query,
           limit: String(searching ? SEARCH_LIMIT : BROWSE_LIMIT),
+          // Always include general passes so organizers see every invitation for the event.
+          includeGeneralPasses: "1",
         });
         if (!searching) params.set("page", String(nextPage));
         if (archived) params.set("includeArchived", "1");
+        if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
         const res = await fetch(`/api/guest-search?${params}`, { signal });
         const json = await res.json();
         if (id !== requestId.current) return;
@@ -86,7 +89,7 @@ export function SmartGuestSearch({
         if (id === requestId.current) setLoading(false);
       }
     },
-    [eventId, searching]
+    [eventId, searching, statusFilter]
   );
 
   // Switching events must drop the previous celebration's rows immediately.
@@ -135,27 +138,23 @@ export function SmartGuestSearch({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const results = useMemo(() => {
-    const rows = response?.results ?? [];
-    if (statusFilter === "all") return rows;
-    if (statusFilter === "NO_RESPONSE") {
-      return rows.filter(
-        (card) =>
-          !card.guestStatus ||
-          !["ACCEPTED", "DECLINED", "MAYBE", "CHECKED_IN", "OPENED"].includes(card.guestStatus)
-      );
-    }
-    return rows.filter((card) => card.guestStatus === statusFilter);
-  }, [response?.results, statusFilter]);
-
+  const results = response?.results ?? [];
   const shownIds = new Set(results.map((r) => r.invitationId));
   const pinned = recentlyCreated.filter(
-    (card) => !shownIds.has(card.invitationId) && !card.archivedAt
+    (card) =>
+      !shownIds.has(card.invitationId) &&
+      (includeArchived || !card.archivedAt) &&
+      (statusFilter === "all" ||
+        (statusFilter === "NO_RESPONSE"
+          ? !card.guestStatus ||
+            !["ACCEPTED", "DECLINED", "MAYBE", "CHECKED_IN", "OPENED"].includes(card.guestStatus)
+          : card.guestStatus === statusFilter))
   );
 
   const browseTotal = response?.total ?? 0;
   const browsePages = response?.pages ?? Math.max(1, Math.ceil(browseTotal / BROWSE_LIMIT));
   const browsePage = response?.page ?? page;
+  const archivedHidden = response?.archivedHiddenCount ?? 0;
 
   return (
     <div className="space-y-3">
@@ -192,15 +191,26 @@ export function SmartGuestSearch({
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-xs text-slate-500">
-        <input
-          type="checkbox"
-          checked={includeArchived}
-          onChange={(e) => setIncludeArchived(e.target.checked)}
-          className="h-3.5 w-3.5 rounded border-slate-300"
-        />
-        Include archived invitations
-      </label>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeArchived}
+            onChange={(e) => setIncludeArchived(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-slate-300"
+          />
+          Include archived invitations
+        </label>
+        {!includeArchived && archivedHidden > 0 && (
+          <button
+            type="button"
+            className="text-amber-800 underline-offset-2 hover:underline"
+            onClick={() => setIncludeArchived(true)}
+          >
+            {archivedHidden.toLocaleString()} archived hidden — show them
+          </button>
+        )}
+      </div>
 
       {error && <p className="rounded-lg bg-red-50 p-2.5 text-sm text-red-600">{error}</p>}
 
@@ -257,7 +267,7 @@ export function SmartGuestSearch({
               ? `${response?.total ?? results.length} match${
                   (response?.total ?? results.length) === 1 ? "" : "es"
                 }`
-              : `Guest list · ${browseTotal} for this event`}
+              : `Guest list · ${browseTotal.toLocaleString()} for this event`}
           </p>
           {results.map((card) => (
             <GuestResultCard

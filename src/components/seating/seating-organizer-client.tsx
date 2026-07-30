@@ -16,6 +16,7 @@ import {
   QrCode,
   LayoutGrid,
   List,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,14 @@ interface GuestRow {
   phone: string | null;
   qrToken: string;
   status?: string;
+  plusOnes: number;
+  invitationId: string | null;
+  admission: {
+    allowance: number;
+    admittedCount: number;
+    remainingCount: number;
+    state: "NOT_ADMITTED" | "PARTIALLY_ADMITTED" | "ADMITTED";
+  } | null;
   /** Private organizer CRM tags for seating arrangement. */
   tags?: { id: string; label: string }[];
 }
@@ -103,15 +112,16 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
   const [genShape, setGenShape] = useState<TableShape>("round");
   const [genSeatsPerTable, setGenSeatsPerTable] = useState(8);
   const [genGuestCount, setGenGuestCount] = useState(0);
+  const [resetting, setResetting] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    if (!silent) setLoadError(null);
     const res = await fetch(`/api/events/${eventId}/seating`);
     const d = await res.json();
     if (!res.ok || !d.success) {
       setLoadError(d.error ?? "Could not load seating plan");
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
     if (d.success) {
@@ -144,12 +154,69 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
         setExpectedGuests(guestList.length);
       }
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [eventId]);
 
   useEffect(() => {
     void load();
+    const interval = window.setInterval(() => void load(true), 15_000);
+    return () => window.clearInterval(interval);
   }, [load]);
+
+  async function resetAllAdmissions() {
+    const ok = window.confirm(
+      "Reset ALL invitation admissions for this event?\n\nEveryone can be scanned again like first entry.\nEvent Companion locks for all until re-admit.\nInvite links start from the invitation intro again."
+    );
+    if (!ok) return;
+    setResetting(true);
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/qr/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "event", eventId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSaveError(data.error ?? "Could not reset all admissions.");
+        return;
+      }
+      await load(true);
+    } catch {
+      setSaveError("Could not reach the server to reset admissions.");
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  async function resetInvitationAdmission(invitationId: string, guestName: string) {
+    const ok = window.confirm(
+      `Reset admission for ${guestName}?\n\nTheir QR / code works again like first entry.\nEvent Companion locks.\nTheir invite link starts from the invitation intro again.`
+    );
+    if (!ok) return;
+    setResetting(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/invitations/${invitationId}/admission/reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scope: "entire",
+          reason: "Organiser seating reset for exit / re-entry",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSaveError(data.error ?? "Could not reset invitation admission.");
+        return;
+      }
+      await load(true);
+    } catch {
+      setSaveError("Could not reach the server to reset admission.");
+    } finally {
+      setResetting(false);
+    }
+  }
 
   const assignmentViews: GuestAssignmentView[] = useMemo(() => {
     return Object.values(assignments).map((a) => {
@@ -163,27 +230,44 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
         seatLabel: a.seatLabel,
         zone: a.zone,
         notes: a.notes,
-        admitted: guest?.status === "CHECKED_IN",
+        admitted:
+          (guest?.admission?.admittedCount ?? 0) > 0 || guest?.status === "CHECKED_IN",
       };
     });
   }, [assignments, guests]);
 
   const stats = useMemo(() => {
     const assigned = Object.keys(assignments).length;
-    const admitted = assignmentViews.filter((a) => a.admitted).length;
+    const partyAdmissions = new Map<
+      string,
+      { admittedCount: number; remainingCount: number }
+    >();
+    for (const guest of guests) {
+      if (guest.invitationId && guest.admission && !partyAdmissions.has(guest.invitationId)) {
+        partyAdmissions.set(guest.invitationId, guest.admission);
+      }
+    }
+    const admitted =
+      Array.from(partyAdmissions.values()).reduce((sum, row) => sum + row.admittedCount, 0) +
+      guests.filter((g) => !g.admission && g.status === "CHECKED_IN").length;
+    const remaining = Array.from(partyAdmissions.values()).reduce(
+      (sum, row) => sum + row.remainingCount,
+      0
+    );
     const accepted = guests.filter((g) => g.status === "ACCEPTED").length;
     const opened = guests.filter((g) => g.status === "OPENED").length;
     const totalSeats = tables.reduce((sum, t) => sum + (normalizeTable(t).seatCount ?? 8), 0);
     return {
       assigned,
       admitted,
+      remaining,
       accepted,
       opened,
       unassigned: guests.length - assigned,
       totalSeats,
       tableCount: tables.length,
     };
-  }, [assignments, assignmentViews, guests, tables]);
+  }, [assignments, guests, tables]);
 
   const selectedTable = tables.find((t) => t.id === selectedTableId) ?? null;
 
@@ -371,24 +455,37 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
             Seating arrangement
           </h1>
           <p className="page-subtitle">
-            Design your floor plan and seat guests using invite opens and RSVPs. Gate admission is
-            separate — only QR / manual code unlocks Event Companion for the guest.
+            Design your floor plan with live RSVP and gate accountability. Partial arrivals update
+            automatically, including how many people remain on each invitation.
           </p>
         </div>
-        <Button onClick={() => void savePlan()} disabled={saving} className="bg-[#0B8A83] gap-2">
-          <Save className="h-4 w-4" />
-          {saving ? "Saving…" : "Save plan"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-amber-200 text-amber-900 hover:bg-amber-50 gap-2"
+            disabled={resetting}
+            onClick={() => void resetAllAdmissions()}
+          >
+            <RotateCcw className="h-4 w-4" />
+            {resetting ? "Resetting…" : "Reset all admissions"}
+          </Button>
+          <Button onClick={() => void savePlan()} disabled={saving} className="bg-[#0B8A83] gap-2">
+            <Save className="h-4 w-4" />
+            {saving ? "Saving…" : "Save plan"}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         {[
           { label: "Tables", value: stats.tableCount, color: "bg-slate-50 text-slate-800" },
           { label: "Total seats", value: stats.totalSeats, color: "bg-blue-50 text-blue-800" },
           { label: "Assigned", value: stats.assigned, color: "bg-teal-50 text-teal-800" },
           { label: "Accepted", value: stats.accepted, color: "bg-teal-50 text-teal-900" },
           { label: "Opened invite", value: stats.opened, color: "bg-sky-50 text-sky-800" },
-          { label: "Admitted", value: stats.admitted, color: "bg-emerald-50 text-emerald-800" },
+          { label: "Admitted heads", value: stats.admitted, color: "bg-emerald-50 text-emerald-800" },
+          { label: "Still arriving", value: stats.remaining, color: "bg-amber-50 text-amber-800" },
         ].map((s) => (
           <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
             <p className="text-2xl font-bold">{s.value}</p>
@@ -609,7 +706,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    Guests ({guests.length})
+                    Guests ({guests.length.toLocaleString()}
+                    {guestTotal > guests.length ? ` of ${guestTotal.toLocaleString()}` : ""})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -621,8 +719,18 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                       .sort(compareGuestsForSeatingAssign)
                       .map((g) => {
                       const a = assignments[g.id];
-                      const admitted = g.status === "CHECKED_IN";
+                      const admitted =
+                        (g.admission?.admittedCount ?? 0) > 0 || g.status === "CHECKED_IN";
+                      const fullyAdmitted = g.admission?.state === "ADMITTED";
+                      const partiallyAdmitted = g.admission?.state === "PARTIALLY_ADMITTED";
                       const statusLabel = seatingPlanningLabel(g.status);
+                      const admissionLabel = g.admission
+                        ? fullyAdmitted
+                          ? `Fully admitted · ${g.admission.admittedCount}/${g.admission.allowance}`
+                          : partiallyAdmitted
+                            ? `Partially admitted · ${g.admission.admittedCount}/${g.admission.allowance} · ${g.admission.remainingCount} remaining`
+                            : `Not admitted · 0/${g.admission.allowance}`
+                        : statusLabel;
                       return (
                         <div
                           key={g.id}
@@ -636,7 +744,9 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                             className={cn(
                               "text-[10px]",
                               admitted
-                                ? "bg-emerald-100 text-emerald-800"
+                                ? fullyAdmitted
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-amber-100 text-amber-900"
                                 : g.status === "ACCEPTED"
                                   ? "bg-teal-100 text-teal-800"
                                   : g.status === "OPENED"
@@ -646,10 +756,10 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                           >
                             {admitted ? (
                               <span className="inline-flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3" /> {statusLabel}
+                                <CheckCircle2 className="h-3 w-3" /> {admissionLabel}
                               </span>
                             ) : (
-                              statusLabel
+                              admissionLabel
                             )}
                           </Badge>
                           {a ? (
@@ -660,6 +770,19 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                             <Badge variant="outline" className="text-slate-400">
                               Unassigned
                             </Badge>
+                          )}
+                          {g.invitationId && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="border-amber-200 text-amber-900 hover:bg-amber-50 gap-1"
+                              disabled={resetting}
+                              onClick={() => void resetInvitationAdmission(g.invitationId!, g.name)}
+                              title="Reset this invitation admission"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" /> Reset
+                            </Button>
                           )}
                           <Link
                             href={`/seat/${g.qrToken}`}
