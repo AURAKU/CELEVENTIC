@@ -34,6 +34,7 @@ const WEDDING_TERMINOLOGY: Record<string, string> = {
   venue: "Venue",
   qr_admission: "QR Admission",
   communications: "Communications",
+  event_companion: "Event Companion",
 };
 
 const FUNERAL_TERMINOLOGY: Record<string, string> = {
@@ -58,6 +59,7 @@ const FUNERAL_TERMINOLOGY: Record<string, string> = {
   livestream: "Livestream",
   legacy_archive: "Legacy Archive",
   qr_admission: "QR Attendance",
+  event_companion: "Event Companion",
 };
 
 const BIRTHDAY_TERMINOLOGY: Record<string, string> = {
@@ -84,6 +86,7 @@ const BIRTHDAY_TERMINOLOGY: Record<string, string> = {
   venue: "Venue",
   qr_admission: "QR Admission",
   ticketing: "Tickets",
+  event_companion: "Event Companion",
 };
 
 const CONFERENCE_TERMINOLOGY: Record<string, string> = {
@@ -108,6 +111,7 @@ const CONFERENCE_TERMINOLOGY: Record<string, string> = {
   settings: "Settings",
   qr_admission: "QR Check-In",
   venue: "Venue Map",
+  event_companion: "Event Companion",
 };
 
 const CONCERT_TERMINOLOGY: Record<string, string> = {
@@ -132,6 +136,7 @@ const CONCERT_TERMINOLOGY: Record<string, string> = {
   settings: "Settings",
   qr_admission: "QR Admission",
   venue: "Venue",
+  event_companion: "Event Companion",
 };
 
 const WEDDING_BLUEPRINT: EventBlueprint = {
@@ -146,6 +151,7 @@ const WEDDING_BLUEPRINT: EventBlueprint = {
     { id: "vendors", featureKey: FeatureKey.VENDORS, href: (id) => `/dashboard/vendors?eventId=${id}`, icon: "Store", labelKey: "vendors", sortOrder: 6 },
     { id: "contributions", featureKey: FeatureKey.CONTRIBUTIONS, href: (id) => `/dashboard/contributions?eventId=${id}`, icon: "Gift", labelKey: "contributions", sortOrder: 7 },
     { id: "qr", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/qr-admission?eventId=${id}`, icon: "QrCode", labelKey: "qr_admission", sortOrder: 8 },
+    { id: "post-admission", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/events/${id}/post-admission`, icon: "Sparkles", labelKey: "event_companion", sortOrder: 8.5 },
     { id: "gallery", featureKey: FeatureKey.GALLERY, href: (id) => `/dashboard/events/${id}/memories`, icon: "Image", labelKey: "gallery", sortOrder: 9 },
     { id: "memory", featureKey: FeatureKey.MEMORY_VAULT, href: (id) => `/dashboard/events/${id}/memories`, icon: "Heart", labelKey: "memory_vault", sortOrder: 10 },
     { id: "thankyou", featureKey: FeatureKey.THANK_YOU, href: (id) => `/dashboard/events/${id}/thank-you`, icon: "Sparkles", labelKey: "thank_you", sortOrder: 11 },
@@ -178,6 +184,7 @@ const FUNERAL_BLUEPRINT: EventBlueprint = {
     { id: "livestream", featureKey: FeatureKey.LIVESTREAM, href: (id) => `/dashboard/funeral?eventId=${id}`, icon: "Video", labelKey: "livestream", sortOrder: 7 },
     { id: "seating", featureKey: FeatureKey.SEATING, href: (id) => `/dashboard/seating?eventId=${id}`, icon: "Armchair", labelKey: "seating", sortOrder: 8 },
     { id: "qr", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/qr-admission?eventId=${id}`, icon: "QrCode", labelKey: "qr_admission", sortOrder: 9 },
+    { id: "post-admission", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/events/${id}/post-admission`, icon: "Sparkles", labelKey: "event_companion", sortOrder: 9.5 },
     { id: "gallery", featureKey: FeatureKey.GALLERY, href: (id) => `/dashboard/events/${id}/memories`, icon: "Image", labelKey: "gallery", sortOrder: 10 },
     { id: "legacy", featureKey: FeatureKey.LEGACY_ARCHIVE, href: (id) => `/dashboard/funeral?eventId=${id}`, icon: "Archive", labelKey: "legacy_archive", sortOrder: 11 },
     { id: "memory", featureKey: FeatureKey.MEMORY_VAULT, href: (id) => `/dashboard/events/${id}/memories`, icon: "Heart", labelKey: "memory_vault", sortOrder: 12 },
@@ -209,6 +216,7 @@ const BIRTHDAY_BLUEPRINT: EventBlueprint = {
     { id: "theme", featureKey: FeatureKey.THEME, href: (id) => `/dashboard/invitations?eventId=${id}`, icon: "Palette", labelKey: "theme", sortOrder: 4 },
     { id: "vendors", featureKey: FeatureKey.VENDORS, href: (id) => `/dashboard/vendors?eventId=${id}`, icon: "Store", labelKey: "vendors", sortOrder: 5 },
     { id: "qr", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/qr-admission?eventId=${id}`, icon: "QrCode", labelKey: "qr_admission", sortOrder: 6 },
+    { id: "post-admission", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/events/${id}/post-admission`, icon: "Sparkles", labelKey: "event_companion", sortOrder: 6.5 },
     { id: "gallery", featureKey: FeatureKey.GALLERY, href: (id) => `/dashboard/events/${id}/memories`, icon: "Image", labelKey: "gallery", sortOrder: 7 },
     { id: "memory", featureKey: FeatureKey.MEMORY_VAULT, href: (id) => `/dashboard/events/${id}/memories`, icon: "Heart", labelKey: "memory_vault", sortOrder: 8 },
     { id: "thankyou", featureKey: FeatureKey.THANK_YOU, href: (id) => `/dashboard/events/${id}/thank-you`, icon: "Sparkles", labelKey: "thank_you", sortOrder: 9 },
@@ -238,6 +246,7 @@ const CONFERENCE_BLUEPRINT: EventBlueprint = {
     { id: "agenda", featureKey: FeatureKey.AGENDA, href: (id) => `/dashboard/events/${id}/workspace?tab=tasks`, icon: "Calendar", labelKey: "agenda", sortOrder: 4 },
     { id: "communications", featureKey: FeatureKey.COMMUNICATIONS, href: (id) => `/dashboard/campaigns?eventId=${id}`, icon: "MessageSquare", labelKey: "communications", sortOrder: 5 },
     { id: "qr", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/qr-admission?eventId=${id}`, icon: "QrCode", labelKey: "qr_admission", sortOrder: 6 },
+    { id: "post-admission", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/events/${id}/post-admission`, icon: "Sparkles", labelKey: "event_companion", sortOrder: 6.5 },
     { id: "analytics", featureKey: FeatureKey.ANALYTICS, href: (id) => `/dashboard/events/${id}/workspace?tab=activity`, icon: "BarChart3", labelKey: "analytics", sortOrder: 7 },
     { id: "vendors", featureKey: FeatureKey.VENDORS, href: (id) => `/dashboard/vendors?eventId=${id}`, icon: "Store", labelKey: "vendors", sortOrder: 8 },
   ]),
@@ -265,6 +274,7 @@ const CONCERT_BLUEPRINT: EventBlueprint = {
     { id: "artists", featureKey: FeatureKey.ARTISTS, href: (id) => `/dashboard/events/${id}/workspace?tab=tasks`, icon: "Mic", labelKey: "artists", sortOrder: 3 },
     { id: "timeline", featureKey: FeatureKey.TIMELINE, href: (id) => `/dashboard/events/${id}/workspace?tab=activity`, icon: "Clock", labelKey: "timeline", sortOrder: 4 },
     { id: "qr", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/qr-admission?eventId=${id}`, icon: "QrCode", labelKey: "qr_admission", sortOrder: 5 },
+    { id: "post-admission", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/events/${id}/post-admission`, icon: "Sparkles", labelKey: "event_companion", sortOrder: 5.5 },
     { id: "staff", featureKey: FeatureKey.STAFF_PASSES, href: (id) => `/dashboard/qr-admission?eventId=${id}`, icon: "BadgeCheck", labelKey: "staff_passes", sortOrder: 6 },
     { id: "vip", featureKey: FeatureKey.VIP_ACCESS, href: (id) => `/dashboard/tickets?eventId=${id}`, icon: "Star", labelKey: "vip_access", sortOrder: 7 },
     { id: "communications", featureKey: FeatureKey.COMMUNICATIONS, href: (id) => `/dashboard/campaigns?eventId=${id}`, icon: "MessageSquare", labelKey: "communications", sortOrder: 8 },
@@ -296,6 +306,7 @@ const FESTIVAL_BLUEPRINT: EventBlueprint = {
     { id: "stages", featureKey: FeatureKey.STAGES, href: (id) => `/dashboard/events/${id}/workspace?tab=tasks`, icon: "Map", labelKey: "stages", sortOrder: 2 },
     { id: "artists", featureKey: FeatureKey.ARTISTS, href: (id) => `/dashboard/events/${id}/workspace?tab=tasks`, icon: "Mic", labelKey: "artists", sortOrder: 3 },
     { id: "qr", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/qr-admission?eventId=${id}`, icon: "QrCode", labelKey: "qr_admission", sortOrder: 4 },
+    { id: "post-admission", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/events/${id}/post-admission`, icon: "Sparkles", labelKey: "event_companion", sortOrder: 4.5 },
     { id: "vendors", featureKey: FeatureKey.VENDORS, href: (id) => `/dashboard/vendors?eventId=${id}`, icon: "Store", labelKey: "vendors", sortOrder: 5 },
     { id: "memory", featureKey: FeatureKey.MEMORY_VAULT, href: (id) => `/dashboard/events/${id}/memories`, icon: "Heart", labelKey: "memory_vault", sortOrder: 6 },
   ]),
@@ -312,6 +323,7 @@ const GENERIC_BLUEPRINT: EventBlueprint = {
     { id: "guests", featureKey: FeatureKey.GUEST_LIST, href: (id) => `/dashboard/guests?eventId=${id}`, icon: "Users", labelKey: "guest_list", sortOrder: 2 },
     { id: "ticketing", featureKey: FeatureKey.TICKETING, href: (id) => `/dashboard/tickets?eventId=${id}`, icon: "Ticket", labelKey: "ticketing", sortOrder: 3 },
     { id: "qr", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/qr-admission?eventId=${id}`, icon: "QrCode", labelKey: "qr_admission", sortOrder: 4 },
+    { id: "post-admission", featureKey: FeatureKey.QR_ADMISSION, href: (id) => `/dashboard/events/${id}/post-admission`, icon: "Sparkles", labelKey: "event_companion", sortOrder: 4.5 },
     { id: "communications", featureKey: FeatureKey.COMMUNICATIONS, href: (id) => `/dashboard/campaigns?eventId=${id}`, icon: "MessageSquare", labelKey: "communications", sortOrder: 5 },
     { id: "vendors", featureKey: FeatureKey.VENDORS, href: (id) => `/dashboard/vendors?eventId=${id}`, icon: "Store", labelKey: "vendors", sortOrder: 6 },
     { id: "memory", featureKey: FeatureKey.MEMORY_VAULT, href: (id) => `/dashboard/events/${id}/memories`, icon: "Heart", labelKey: "memory_vault", sortOrder: 7 },
@@ -338,6 +350,7 @@ const GENERIC_BLUEPRINT: EventBlueprint = {
     memory_vault: "Memory Vault",
     vendors: "Vendors",
     communications: "Communications",
+    event_companion: "Event Companion",
   },
   starterFeatures: [FeatureKey.OVERVIEW, FeatureKey.INVITATIONS, FeatureKey.GUEST_LIST, FeatureKey.QR_ADMISSION],
   premiumFeatures: [FeatureKey.TICKETING, FeatureKey.SEATING, FeatureKey.COMMUNICATIONS],

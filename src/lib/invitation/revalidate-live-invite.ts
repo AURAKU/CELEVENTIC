@@ -12,7 +12,10 @@ export async function revalidateLiveInvite(input: {
   eventSlug?: string | null;
 }): Promise<void> {
   const paths: string[] = [];
-  if (input.uniqueLink) paths.push(`/invite/${input.uniqueLink}`);
+  if (input.uniqueLink) {
+    paths.push(`/invite/${input.uniqueLink}`);
+    paths.push(`/invite/${input.uniqueLink}/event-day`);
+  }
   if (input.eventSlug) {
     paths.push(`/e/${input.eventSlug}`, `/events/${input.eventSlug}`);
   }

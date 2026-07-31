@@ -18,6 +18,7 @@ import {
   allocateInvitationSlug,
   ensureGuestGateCode,
   featureConfigFor,
+  loadEventCompanionFeatureConfig,
   newUniqueLink,
 } from "@/services/invitations/personalised-invitation";
 
@@ -167,6 +168,7 @@ export async function createQuickInvitation(
   const publish = input.publishImmediately ?? true;
 
   const slug = await allocateInvitationSlug(displayName);
+  const companion = await loadEventCompanionFeatureConfig(input.eventId);
 
   const created = await prisma.$transaction(async (tx) => {
     const invitation = await tx.invitation.create({
@@ -179,7 +181,12 @@ export async function createQuickInvitation(
         message: input.message || undefined,
         status: publish ? "ACTIVE" : "DRAFT",
         admissionAllowance: partySize,
-        featureConfig: featureConfigFor({ enablePlaceCard, issueEntryPass }),
+        postAdmissionEnabled: companion?.postAdmissionEnabled ?? false,
+        featureConfig: featureConfigFor({
+          enablePlaceCard,
+          issueEntryPass,
+          companionFeatureConfig: companion?.featureConfig,
+        }),
       },
       select: { id: true, uniqueLink: true, status: true },
     });

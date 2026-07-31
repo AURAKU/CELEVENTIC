@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { mergeCompanionFeatureConfig } from "@/lib/admission/companion-studio";
 
 /**
  * The primitives every personalised invitation is built from.
@@ -44,6 +45,12 @@ export interface InvitationFeatureOptions {
   enablePlaceCard: boolean;
   /** Issue a Guest Entry Pass (signed QR + admission code). */
   issueEntryPass: boolean;
+  /**
+   * Optional Event Companion studio config (usually from the event's
+   * canonical invitation). Copied onto new links so already-configured
+   * menu / programme / gift toggles apply without re-saving studio.
+   */
+  companionFeatureConfig?: unknown;
 }
 
 /**
@@ -51,19 +58,43 @@ export interface InvitationFeatureOptions {
  *
  * Written as explicit per-invitation overrides rather than event-level flips,
  * so creating one invitation can never change how an organiser's *existing*
- * invitations behave.
+ * invitations behave — except companion keys, which are intentionally
+ * inherited from the event companion studio source when provided.
  */
 export function featureConfigFor(
   options: InvitationFeatureOptions
 ): Prisma.InputJsonValue | undefined {
-  const config: Record<string, unknown> = {};
+  let config: Record<string, unknown> = {};
   if (options.enablePlaceCard) config.PLACE_CARD = { enabled: true };
   if (options.issueEntryPass) {
     config.ENTRY_PASS = { enabled: true };
     config.MANUAL_ADMISSION_CODE = { enabled: true };
     config.PARTY_ADMISSION = { enabled: true };
   }
+  if (options.companionFeatureConfig) {
+    config = mergeCompanionFeatureConfig(
+      config,
+      options.companionFeatureConfig as Record<string, unknown>
+    );
+  }
   return Object.keys(config).length > 0 ? (config as Prisma.InputJsonValue) : undefined;
+}
+
+/** Pull the latest Event Companion studio keys for an event, if any. */
+export async function loadEventCompanionFeatureConfig(eventId: string): Promise<{
+  featureConfig: unknown;
+  postAdmissionEnabled: boolean;
+} | null> {
+  const donor = await prisma.invitation.findFirst({
+    where: { eventId },
+    orderBy: [{ postAdmissionEnabled: "desc" }, { updatedAt: "desc" }],
+    select: { featureConfig: true, postAdmissionEnabled: true },
+  });
+  if (!donor) return null;
+  return {
+    featureConfig: donor.featureConfig,
+    postAdmissionEnabled: donor.postAdmissionEnabled,
+  };
 }
 
 /**

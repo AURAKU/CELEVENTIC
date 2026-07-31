@@ -101,10 +101,13 @@ export function resolveCompanionTheme(invitation: {
     | undefined;
   let programmeItems: WeddingBoardProgrammeItem[] = [];
   try {
-    if (design.layout === "forever-afaris-wedding") {
-      programmeItems = mergeWeddingBoard(
-        studio?.weddingBoard as Parameters<typeof mergeWeddingBoard>[0]
-      ).programmeItems;
+    // Wedding-board programme is the studio source of truth for Event Companion
+    // (any layout that stores items there — not only Forever Afaris).
+    const fromBoard = mergeWeddingBoard(
+      studio?.weddingBoard as Parameters<typeof mergeWeddingBoard>[0]
+    ).programmeItems;
+    if (fromBoard.length > 0) {
+      programmeItems = fromBoard;
     } else if (studio?.visionBoard?.programmeItems?.length) {
       programmeItems = studio.visionBoard.programmeItems;
     }
