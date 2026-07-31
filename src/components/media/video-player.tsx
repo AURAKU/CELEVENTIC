@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Loader2, AlertTriangle, RotateCcw, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { inferVideoSourceMime, resolvePublicMediaUrl } from "@/lib/uploads/media-url";
 
 /** Module-level registry so at most N videos autoplay/play concurrently across the whole page (feeds, cards, galleries). */
 const MAX_CONCURRENT_PLAYING = 2;
@@ -78,7 +79,11 @@ export function VideoPlayer({
 
   const isProcessing = status === "UPLOADING" || status === "UPLOADED" || status === "QUEUED" || status === "PROCESSING";
   const isFailed = status === "FAILED" || status === "CANCELLED";
-  const playableSrc = hlsSrc || src;
+  const resolvedSrc = resolvePublicMediaUrl(src);
+  const resolvedHls = resolvePublicMediaUrl(hlsSrc);
+  const resolvedPoster = resolvePublicMediaUrl(poster);
+  const playableSrc = resolvedHls || resolvedSrc;
+  const mp4Mime = inferVideoSourceMime(resolvedSrc);
 
   const attachHls = useCallback(async (video: HTMLVideoElement, url: string) => {
     const canNativeHls = video.canPlayType("application/vnd.apple.mpegurl") !== "";
@@ -92,21 +97,21 @@ export function VideoPlayer({
       hls.loadSource(url);
       hls.attachMedia(video);
       hlsInstanceRef.current = hls;
-    } else if (src) {
+    } else if (resolvedSrc) {
       // No HLS support at all (very old browser), fall back to progressive MP4.
-      video.src = src;
+      video.src = resolvedSrc;
     }
-  }, [src]);
+  }, [resolvedSrc]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !playableSrc || isProcessing || isFailed) return;
     setLoadError(false);
 
-    if (hlsSrc) {
-      void attachHls(video, hlsSrc);
-    } else if (src) {
-      video.src = src;
+    if (resolvedHls) {
+      void attachHls(video, resolvedHls);
+    } else if (resolvedSrc) {
+      video.src = resolvedSrc;
     }
 
     return () => {
@@ -116,7 +121,7 @@ export function VideoPlayer({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playableSrc, hlsSrc, src, isProcessing, isFailed]);
+  }, [playableSrc, resolvedHls, resolvedSrc, isProcessing, isFailed]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -159,7 +164,7 @@ export function VideoPlayer({
       >
         {poster ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={poster} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 blur-sm" />
+          <img src={resolvedPoster} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 blur-sm" />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-100 animate-pulse" />
         )}
@@ -197,7 +202,7 @@ export function VideoPlayer({
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video
         ref={videoRef}
-        poster={poster ?? undefined}
+        poster={resolvedPoster || undefined}
         controls={controls}
         muted={autoPlayMuted}
         autoPlay={autoPlayMuted}
@@ -209,7 +214,7 @@ export function VideoPlayer({
         onError={() => setLoadError(true)}
       >
         {captionsUrl && <track kind="captions" src={captionsUrl} label={captionsLabel} default />}
-        {!hlsSrc && src && <source src={src} type="video/mp4" />}
+        {!resolvedHls && resolvedSrc && <source src={resolvedSrc} type={mp4Mime} />}
       </video>
       {autoPlayMuted && (
         <button

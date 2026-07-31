@@ -8,8 +8,6 @@ import {
   CloudUpload,
   Keyboard,
   Loader2,
-  Minus,
-  Plus,
   ShieldAlert,
   Users,
   Wifi,
@@ -23,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { playScanFeedback } from "@/components/qr/qr-camera-scanner";
+import { AdmissionScanPrompt } from "@/components/admission/admission-scan-prompt";
 import { cn } from "@/lib/utils";
 import { formatAdmissionCode, normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import { classifyGateInput } from "@/lib/admission/gate-scan";
@@ -121,6 +120,8 @@ export function EntryPassGate({
   } | null>(null);
   /** Operator's answer to "how many are arriving now?". */
   const [arrivingNow, setArrivingNow] = useState(1);
+  /** Full-screen organiser prompt after every scan outcome. */
+  const [promptOpen, setPromptOpen] = useState(false);
 
   const [online, setOnline] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
@@ -281,6 +282,7 @@ export function EntryPassGate({
 
       const show = (result: GateResult) => {
         setResult(result);
+        setPromptOpen(true);
         return result;
       };
 
@@ -496,10 +498,12 @@ export function EntryPassGate({
           offline: false,
         };
         setResult(next);
+        setPromptOpen(true);
         return next;
       } catch {
         setError("Network problem. Switch on offline mode to keep admitting.");
         playScanFeedback(false);
+        setPromptOpen(false);
         return null;
       } finally {
         setBusy(false);
@@ -611,6 +615,30 @@ export function EntryPassGate({
 
       setError("That QR isn't a Celeventic entry pass.");
       playScanFeedback(false);
+      setPromptOpen(false);
+      setResult({
+        decision: {
+          outcome: "DENY",
+          tone: "red",
+          reason: "NOT_FOUND",
+          message: "That QR isn't a Celeventic entry pass. Ask for the admission QR or 4/6-digit gate code.",
+          admitQuantity: 0,
+          resultingAdmittedCount: 0,
+          resultingStatus: "ACTIVE",
+          requiresConfirmation: false,
+          allowance: 0,
+          remaining: 0,
+          requiresQuantityConfirmation: false,
+        },
+        passCode: null,
+        displayName: null,
+        partySize: 0,
+        admittedCount: 0,
+        party: [],
+        seating: null,
+        offline: false,
+      });
+      setPromptOpen(true);
     },
     [beginAdmission, busy]
   );
@@ -657,10 +685,11 @@ export function EntryPassGate({
   const awaitingQuantity =
     Boolean(pendingScan) && Boolean(result?.decision.requiresQuantityConfirmation);
   const awaitingConfirm =
-    Boolean(pendingScan) && result !== null && result.decision.admitQuantity > 0;
+    Boolean(pendingScan) &&
+    result !== null &&
+    result.decision.admitQuantity > 0 &&
+    !result.decision.requiresQuantityConfirmation;
 
-  // Ticking named members off overrides the counter: their plus-ones are part
-  // of the head count, so the two must never be added together.
   const selectedHeads = useMemo(
     () =>
       result?.party
@@ -668,12 +697,49 @@ export function EntryPassGate({
         .reduce((sum, m) => sum + 1 + Math.max(0, m.plusOnes), 0) ?? 0,
     [result, selectedMembers]
   );
-  const namedUnadmitted = result?.party.filter((m) => !m.admitted).length ?? 0;
-  /** Heads with no name on the guest list, admitted purely as a quantity. */
-  const unnamedCompanions = Math.max(0, remaining - namedUnadmitted);
+
+  const seatingLabel = result?.seating
+    ? `${tableDisplayName(result.seating.tableNumber)}${
+        result.seating.seatLabel ? ` · ${seatDisplayName(result.seating.seatLabel)}` : ""
+      }`
+    : null;
 
   return (
     <Card className={cn("border-slate-200", className)}>
+      {result && (
+        <AdmissionScanPrompt
+          open={promptOpen}
+          decision={result.decision}
+          displayName={result.displayName}
+          passCode={result.passCode}
+          partySize={result.partySize}
+          admittedCount={result.admittedCount}
+          party={result.party}
+          seatingLabel={seatingLabel}
+          offline={result.offline}
+          awaitingQuantity={awaitingQuantity}
+          arrivingNow={arrivingNow}
+          onArrivingNowChange={setArrivingNow}
+          selectedMembers={selectedMembers}
+          onSelectedMembersChange={setSelectedMembers}
+          busy={busy}
+          onAdmit={(quantity) => void confirmAdmission(quantity)}
+          onAdmitAllRemaining={() => void confirmAdmission(remaining)}
+          onDismiss={() => {
+            setPromptOpen(false);
+            if (awaitingQuantity || awaitingConfirm) {
+              setPendingScan(null);
+              setResult(null);
+              setSelectedMembers([]);
+              setArrivingNow(1);
+            }
+          }}
+          awaitingConfirm={awaitingConfirm}
+          onConfirmAdmit={() =>
+            void confirmAdmission(selectedMembers.length ? undefined : remaining || undefined)
+          }
+        />
+      )}
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
@@ -830,106 +896,11 @@ export function EntryPassGate({
               </div>
             </div>
 
-            {awaitingQuantity && (
+            {awaitingQuantity && !promptOpen && (
               <div className="mt-4 space-y-3 border-t border-black/10 pt-3">
-                <fieldset>
-                  <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wide">
-                    How many are arriving now?
-                  </legend>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      aria-label="One fewer guest"
-                      disabled={arrivingNow <= 1 || selectedMembers.length > 0}
-                      onClick={() => setArrivingNow((n) => Math.max(1, n - 1))}
-                    >
-                      <Minus className="h-4 w-4" aria-hidden />
-                    </Button>
-                    <output
-                      aria-live="polite"
-                      className="min-w-[3.5rem] rounded-lg border border-black/10 bg-white px-3 py-1.5 text-center text-xl font-semibold tabular-nums"
-                    >
-                      {selectedMembers.length ? selectedHeads : arrivingNow}
-                    </output>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      aria-label="One more guest"
-                      disabled={arrivingNow >= remaining || selectedMembers.length > 0}
-                      onClick={() => setArrivingNow((n) => Math.min(remaining, n + 1))}
-                    >
-                      <Plus className="h-4 w-4" aria-hidden />
-                    </Button>
-                    <span className="text-xs opacity-80">of {remaining} still to arrive</span>
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {Array.from({ length: Math.min(remaining, 8) }, (_, i) => i + 1).map((n) => (
-                      <Button
-                        key={n}
-                        type="button"
-                        size="sm"
-                        variant={!selectedMembers.length && arrivingNow === n ? "default" : "outline"}
-                        disabled={selectedMembers.length > 0}
-                        onClick={() => setArrivingNow(n)}
-                        className="min-w-[2.25rem] px-2"
-                      >
-                        {n}
-                      </Button>
-                    ))}
-                  </div>
-                </fieldset>
-
-                {namedUnadmitted > 0 && result.party.length > 1 && (
-                  <fieldset>
-                    <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wide">
-                      Or tick who has arrived
-                    </legend>
-                    <div className="flex flex-wrap gap-2">
-                      {result.party.map((member) => (
-                        <label
-                          key={member.id}
-                          className={cn(
-                            "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs",
-                            member.admitted
-                              ? "cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : selectedMembers.includes(member.id)
-                                ? "border-slate-900 bg-slate-900 text-white"
-                                : "border-slate-300 bg-white text-slate-700"
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            className="sr-only"
-                            disabled={member.admitted}
-                            checked={selectedMembers.includes(member.id)}
-                            onChange={(e) =>
-                              setSelectedMembers((prev) =>
-                                e.target.checked
-                                  ? [...prev, member.id]
-                                  : prev.filter((id) => id !== member.id)
-                              )
-                            }
-                          />
-                          {member.name}
-                          {member.plusOnes > 0 && ` +${member.plusOnes}`}
-                          {member.admitted && " ✓"}
-                        </label>
-                      ))}
-                    </div>
-                    {unnamedCompanions > 0 && (
-                      <p className="mt-2 text-xs opacity-80">
-                        {unnamedCompanions} companion{unnamedCompanions === 1 ? "" : "s"} on this
-                        pass {unnamedCompanions === 1 ? "is" : "are"} not named, use the counter
-                        above for {unnamedCompanions === 1 ? "them" : "those"}.
-                      </p>
-                    )}
-                  </fieldset>
-                )}
-
+                <p className="text-sm font-medium">
+                  {remaining} place{remaining === 1 ? "" : "s"} still open — choose how many to admit.
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     onClick={() =>
@@ -963,48 +934,8 @@ export function EntryPassGate({
               </div>
             )}
 
-            {!awaitingQuantity && awaitingConfirm && (
+            {!awaitingQuantity && awaitingConfirm && !promptOpen && (
               <div className="mt-4 space-y-3 border-t border-black/10 pt-3">
-                {result.party.length > 1 && (
-                  <fieldset>
-                    <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wide">
-                      Who has arrived?
-                    </legend>
-                    <div className="flex flex-wrap gap-2">
-                      {result.party.map((member) => (
-                        <label
-                          key={member.id}
-                          className={cn(
-                            "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs",
-                            member.admitted
-                              ? "cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : selectedMembers.includes(member.id)
-                                ? "border-slate-900 bg-slate-900 text-white"
-                                : "border-slate-300 bg-white text-slate-700"
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            className="sr-only"
-                            disabled={member.admitted}
-                            checked={selectedMembers.includes(member.id)}
-                            onChange={(e) =>
-                              setSelectedMembers((prev) =>
-                                e.target.checked
-                                  ? [...prev, member.id]
-                                  : prev.filter((id) => id !== member.id)
-                              )
-                            }
-                          />
-                          {member.name}
-                          {member.plusOnes > 0 && ` +${member.plusOnes}`}
-                          {member.admitted && " ✓"}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                )}
-
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={() => void confirmAdmission()} disabled={busy}>
                     Admit {selectedMembers.length ? "selected" : `all ${remaining}`}
@@ -1026,6 +957,17 @@ export function EntryPassGate({
                   </Button>
                 </div>
               </div>
+            )}
+
+            {!awaitingQuantity && !awaitingConfirm && !promptOpen && result.decision.tone === "green" && result.decision.admitQuantity > 0 && (
+              <p className="mt-3 text-sm font-medium text-emerald-800">
+                Organiser notified: admission recorded successfully.
+              </p>
+            )}
+            {!awaitingQuantity && !awaitingConfirm && !promptOpen && result.decision.outcome === "ALREADY_ADMITTED" && (
+              <p className="mt-3 text-sm font-medium text-amber-900">
+                Already admitted — no additional entry was counted.
+              </p>
             )}
           </div>
         )}

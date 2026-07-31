@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import { resolveMediaUrl, shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
-import { cn } from "@/lib/utils";
+import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
+import { CeleventicImage, CeleventicVideo } from "@/components/media/celeventic-media";
 
 interface UploadedMediaProps {
   src: string | null | undefined;
@@ -22,6 +21,9 @@ interface UploadedMediaProps {
   sizes?: string;
 }
 
+/**
+ * Unified uploaded media renderer — routes through shared URL resolver + CeleventicImage/Video.
+ */
 export function UploadedMedia({
   src,
   alt = "",
@@ -38,62 +40,39 @@ export function UploadedMedia({
   priority,
   sizes,
 }: UploadedMediaProps) {
-  const resolved = resolveMediaUrl(src);
+  const resolved = resolvePublicMediaUrl(src);
   if (!resolved) return null;
 
-  // Never point a <video> element's src at an image (a caller-forced `video` combined with a
-  // thumbnail-only `src`, e.g. a grid tile falling back to a poster JPEG, must still render
-  // as an image). Extension sniffing here is a safety net, not the primary signal.
   const looksLikeImage = /\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(resolved);
   const isVideo =
-    !looksLikeImage && (video ?? (/\.(mp4|webm|mov)(\?|$)/i.test(resolved) || resolved.includes("video/")));
-  const unoptimized = shouldUnoptimizeNextImage(resolved);
+    !looksLikeImage &&
+    (video ?? (/\.(mp4|webm|mov)(\?|$)/i.test(resolved) || resolved.includes("video/")));
 
   if (isVideo) {
     return (
-      <video
+      <CeleventicVideo
         src={resolved}
-        poster={poster ?? undefined}
+        poster={poster}
         className={className}
-        autoPlay={autoPlay}
-        muted={muted}
+        autoPlayMuted={autoPlay && muted}
         loop={loop}
-        playsInline
-        controls={controls}
-      />
-    );
-  }
-
-  if (fill) {
-    return (
-      <Image
-        src={resolved}
-        alt={alt}
-        fill
-        className={cn("object-cover", className)}
-        sizes={sizes ?? "(max-width: 768px) 100vw, 480px"}
-        unoptimized={unoptimized}
-        priority={priority}
-      />
-    );
-  }
-
-  if (width && height) {
-    return (
-      <Image
-        src={resolved}
-        alt={alt}
-        width={width}
-        height={height}
-        className={className}
-        unoptimized={unoptimized}
-        priority={priority}
+        controls={controls || !(autoPlay && muted)}
+        preload="metadata"
+        pauseOffscreen
       />
     );
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={resolved} alt={alt} className={className} loading={priority ? "eager" : "lazy"} />
+    <CeleventicImage
+      src={resolved}
+      alt={alt}
+      className={className}
+      fill={fill}
+      width={width}
+      height={height}
+      priority={priority}
+      sizes={sizes}
+    />
   );
 }

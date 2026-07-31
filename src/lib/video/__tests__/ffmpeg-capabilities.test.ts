@@ -132,12 +132,20 @@ describe("getHdrTonemapCapabilities", () => {
 
   it("reports both capabilities available on a full-featured build", async () => {
     const mockProbe = async () => UBUNTU_VPS_FILTERS_WITH_ZSCALE;
-    assert.deepEqual(await getHdrTonemapCapabilities(mockProbe), { hasZscale: true, hasTonemap: true });
+    assert.deepEqual(await getHdrTonemapCapabilities(mockProbe), {
+      hasZscale: true,
+      hasTonemap: true,
+      hasColorspace: false,
+    });
   });
 
   it("reports both unavailable on a build missing zscale/tonemap", async () => {
     const mockProbe = async () => HOMEBREW_MACOS_FILTERS_WITHOUT_ZSCALE;
-    assert.deepEqual(await getHdrTonemapCapabilities(mockProbe), { hasZscale: false, hasTonemap: false });
+    assert.deepEqual(await getHdrTonemapCapabilities(mockProbe), {
+      hasZscale: false,
+      hasTonemap: false,
+      hasColorspace: false,
+    });
   });
 });
 
@@ -267,7 +275,14 @@ describe("getFfmpegFullCapabilities", () => {
       encoders: async () => ENCODERS_WITH_LIBX264_AND_AAC,
       decoders: async () => DECODERS_WITH_HEVC,
     });
-    assert.deepEqual(caps, { hasZscale: true, hasTonemap: true, hasLibx264: true, hasAac: true, hasHevcDecoder: true });
+    assert.deepEqual(caps, {
+      hasZscale: true,
+      hasTonemap: true,
+      hasColorspace: false,
+      hasLibx264: true,
+      hasAac: true,
+      hasHevcDecoder: true,
+    });
   });
 
   it("reflects a constrained build (e.g. Homebrew macOS without libzimg) accurately", async () => {
@@ -276,6 +291,13 @@ describe("getFfmpegFullCapabilities", () => {
       encoders: async () => ENCODERS_WITH_LIBX264_AND_AAC,
       decoders: async () => DECODERS_WITH_HEVC,
     });
-    assert.deepEqual(caps, { hasZscale: false, hasTonemap: false, hasLibx264: true, hasAac: true, hasHevcDecoder: true });
+    assert.deepEqual(caps, {
+      hasZscale: false,
+      hasTonemap: false,
+      hasColorspace: false,
+      hasLibx264: true,
+      hasAac: true,
+      hasHevcDecoder: true,
+    });
   });
 });

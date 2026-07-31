@@ -31,9 +31,14 @@ export function resolveUploadPath(relativePath: string): string {
   return full;
 }
 
-/** Public URL — API route for local disk; absolute CDN/S3 URL when AWS is configured. */
+/** Public URL for local disk — prefer `/uploads/` so Nginx (prod) / Next public (dev) serve Range. */
 export function getPublicUploadUrl(relativePath: string): string {
-  return `/api/uploads/${normalizeRelativePath(relativePath)}`;
+  const normalized = normalizeRelativePath(relativePath);
+  // When operators force the legacy API proxy (e.g. UPLOAD_DIR outside public/), honour it.
+  if (process.env.MEDIA_PUBLIC_PREFIX?.trim() === "/api/uploads") {
+    return `/api/uploads/${normalized}`;
+  }
+  return `/uploads/${normalized}`;
 }
 
 /**

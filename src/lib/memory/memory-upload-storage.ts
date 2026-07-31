@@ -80,12 +80,33 @@ export async function storeMemoryFile(
 
   const ext = EXT_MAP[file.type] ?? ".bin";
   const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+  try {
+    const { processImageBuffer } = await import("@/lib/media/image-processor");
+    const processed = await processImageBuffer(buffer, {
+      category: "memories",
+      subPath: eventId,
+      baseName: safeName.replace(/\.[^.]+$/, ""),
+      keepOriginal: true,
+    });
+    if (processed.status === "READY") {
+      return {
+        url: processed.optimisedUrl || processed.originalUrl,
+        thumbnailUrl: processed.thumbnailUrl,
+        mediaType: "image",
+        sizeBytes: processed.byteSize || file.size,
+      };
+    }
+  } catch {
+    /* fall through to legacy sharp thumb path */
+  }
+
   const stored = await storeUploadFile("memories", eventId, safeName, buffer);
   let thumbnailUrl: string | null = null;
 
   try {
     const thumbName = `thumb-${safeName.replace(ext, ".jpg")}`;
     const thumbBuffer = await sharp(buffer)
+      .rotate()
       .resize(400, 400, { fit: "inside", withoutEnlargement: true })
       .jpeg({ quality: 80, mozjpeg: true })
       .toBuffer();

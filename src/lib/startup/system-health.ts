@@ -1,5 +1,6 @@
 import { getAwsStorageHealth, isAwsS3Configured } from "@/lib/uploads/aws-s3";
 import { getVideoWorkerHealth } from "@/lib/video/worker-health";
+import { getMediaPipelineHealth } from "@/lib/media/media-health";
 import { checkDatabaseHealth, type HealthStatus } from "./db-health";
 import {
   getEnvironmentHealthSummary,
@@ -52,6 +53,7 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
   const storageSummary = getStorageEnvSummary();
   const db = await checkDatabaseHealth();
   const videoWorker = await getVideoWorkerHealth();
+  const mediaPipeline = await getMediaPipelineHealth();
 
   const authSecret = envChecks.find((c) => c.key === "NEXTAUTH_SECRET")?.present;
   const authUrl =
@@ -124,8 +126,15 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
           : []),
         isAwsS3Configured()
           ? "Uploads route to S3 when credentials resolve"
-          : "Uploads fall back to local disk /api/uploads",
+          : "Uploads fall back to local disk /uploads (Nginx) or /api/uploads",
       ],
+    },
+    {
+      id: "media_pipeline",
+      label: "Media Pipeline (FFmpeg)",
+      status: mediaPipeline.status,
+      message: mediaPipeline.message,
+      details: mediaPipeline.details,
     },
     {
       id: "video_worker",

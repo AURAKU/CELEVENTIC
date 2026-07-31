@@ -817,6 +817,8 @@ export function QrAdmissionClient() {
               statusLabel={statusLabel(result.status, result)}
               resetting={resetting}
               onResetGuest={(guestId) => void resetAdmission("guest", guestId)}
+              asPrompt
+              onDismissPrompt={() => setResult(null)}
             />
           )}
         </div>

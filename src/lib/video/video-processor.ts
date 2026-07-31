@@ -330,7 +330,7 @@ export function isAlreadyBrowserCompatible(probe: ProbeResult): boolean {
 const ASSUME_HDR_CAPABLE: FfmpegCapabilities = { hasZscale: true, hasTonemap: true };
 
 /** Which filter pipeline `buildVideoFilter` chose — surfaced so callers can log/tag/tune output args. */
-export type VideoFilterPipeline = "sdr" | "hdr-tonemap" | "hdr-fallback";
+export type VideoFilterPipeline = "sdr" | "hdr-tonemap" | "hdr-colorspace" | "hdr-fallback";
 
 export interface VideoFilterResult {
   /** The `-vf` filter-graph string to pass to ffmpeg. */
@@ -413,6 +413,14 @@ export function buildVideoFilter(probe: ProbeResult, caps: FfmpegCapabilities = 
     };
   }
 
+  // Tier B: colorspace filter when zscale is unavailable (common on Homebrew macOS ffmpeg).
+  if (probe.isHdr && caps.hasColorspace) {
+    return {
+      pipeline: "hdr-colorspace",
+      filter: `${scale},colorspace=all=bt709:iall=bt2020nc:fast=1,format=yuv420p`,
+    };
+  }
+
   return {
     pipeline: probe.isHdr ? "hdr-fallback" : "sdr",
     filter: `${scale},format=yuv420p`,
@@ -471,7 +479,7 @@ export function buildTranscodeArgs(
     "-crf", "21",
     "-pix_fmt", "yuv420p"
   );
-  if (pipeline === "sdr" || pipeline === "hdr-fallback") {
+  if (pipeline === "sdr" || pipeline === "hdr-fallback" || pipeline === "hdr-colorspace") {
     // `format=yuv420p` relabels the pixel format but does not itself resolve a full-range source
     // (e.g. `yuvj420p`, common from MJPEG/some phone or screen-recording encoders) down to the
     // limited ("tv") range `yuv420p` implies — without this, full-range source data can get
@@ -480,8 +488,8 @@ export function buildTranscodeArgs(
     // double-tagged here.
     args.push("-color_range", "tv");
   }
-  if (pipeline === "hdr-fallback") {
-    // We didn't actually tone-map (zscale/tonemap unavailable) — stamp explicit BT.709 tags on
+  if (pipeline === "hdr-fallback" || pipeline === "hdr-colorspace") {
+    // We didn't actually tone-map via zscale — stamp explicit BT.709 tags on
     // the *output* so players never inherit/guess a stale PQ/HLG color tag from the source and
     // render it washed-out/broken; the pixels are the plain scale/format chain's output either way.
     args.push("-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709");

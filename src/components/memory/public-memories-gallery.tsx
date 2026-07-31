@@ -5,6 +5,8 @@ import { Grid3X3, ImageIcon, Video, X, Download, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
+import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
+import { CeleventicVideo } from "@/components/media/celeventic-media";
 import type { ThankYouTemplate } from "@/lib/thank-you/templates";
 
 export interface MemoryGalleryItem {
@@ -118,18 +120,18 @@ export function PublicMemoriesGallery({
                       // needed just to show a thumbnail. Never point a <video> src at a JPEG.
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={item.thumbnailUrl}
+                        src={resolvePublicMediaUrl(item.thumbnailUrl)}
                         alt={item.caption ?? "Video memory"}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                       />
                     ) : (
-                      <video
+                      <CeleventicVideo
                         src={item.mediaUrl}
-                        poster={item.thumbnailUrl ?? undefined}
+                        poster={item.thumbnailUrl}
                         className="w-full h-full object-cover"
-                        muted
-                        playsInline
+                        autoPlayMuted={false}
+                        controls={false}
                         preload="metadata"
                       />
                     )}
@@ -140,7 +142,7 @@ export function PublicMemoriesGallery({
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={item.thumbnailUrl ?? item.mediaUrl}
+                    src={resolvePublicMediaUrl(item.thumbnailUrl ?? item.mediaUrl)}
                     alt={item.caption ?? "Memory"}
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
@@ -178,11 +180,19 @@ export function PublicMemoriesGallery({
           </div>
           <div className="flex-1 flex items-center justify-center px-2 min-h-0">
             {lightbox.mediaType === "video" ? (
-              <video src={lightbox.mediaUrl} controls autoPlay className="max-w-full max-h-full rounded-lg" />
+              <CeleventicVideo
+                src={lightbox.mediaUrl}
+                poster={lightbox.thumbnailUrl}
+                className="max-w-full max-h-[80vh] rounded-lg"
+                controls
+                autoPlayMuted={false}
+                preload="metadata"
+                pauseOffscreen={false}
+              />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={lightbox.mediaUrl}
+                src={resolvePublicMediaUrl(lightbox.mediaUrl)}
                 alt={lightbox.caption ?? ""}
                 className="max-w-full max-h-full object-contain"
               />
@@ -197,7 +207,7 @@ export function PublicMemoriesGallery({
             )}
             {allowDownloads && (
               <Button variant="secondary" size="sm" className="gap-1" asChild>
-                <a href={lightbox.mediaUrl} download target="_blank" rel="noopener noreferrer">
+                <a href={resolvePublicMediaUrl(lightbox.mediaUrl)} download target="_blank" rel="noopener noreferrer">
                   <Download className="h-4 w-4" /> Download
                 </a>
               </Button>

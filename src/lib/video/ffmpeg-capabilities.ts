@@ -29,6 +29,8 @@ function getFfmpegBin(): string {
 export interface FfmpegCapabilities {
   hasZscale: boolean;
   hasTonemap: boolean;
+  /** Optional Tier-B HDR helper when zscale is missing (Ubuntu/macOS ffmpeg often ship this). */
+  hasColorspace?: boolean;
 }
 
 /**
@@ -42,6 +44,7 @@ export interface FfmpegFullCapabilities extends FfmpegCapabilities {
   hasLibx264: boolean;
   hasAac: boolean;
   hasHevcDecoder: boolean;
+  hasColorspace: boolean;
 }
 
 /** Returns the raw stdout of `ffmpeg -hide_banner -filters`. Swappable in tests via `supportsFilter`'s/`getAvailableFfmpegFilters`'s optional `probe` param. */
@@ -202,10 +205,14 @@ export async function supportsDecoder(name: string, probe?: FfmpegDecodersProbe)
   return decoders.has(name);
 }
 
-/** Convenience: both filters required by the HDR→SDR tonemap pipeline are present. */
+/** Convenience: filters required by the HDR→SDR tonemap pipeline (Tier A) / colorspace (Tier B). */
 export async function getHdrTonemapCapabilities(probe?: FfmpegFiltersProbe): Promise<FfmpegCapabilities> {
-  const [hasZscale, hasTonemap] = await Promise.all([supportsFilter("zscale", probe), supportsFilter("tonemap", probe)]);
-  return { hasZscale, hasTonemap };
+  const [hasZscale, hasTonemap, hasColorspace] = await Promise.all([
+    supportsFilter("zscale", probe),
+    supportsFilter("tonemap", probe),
+    supportsFilter("colorspace", probe),
+  ]);
+  return { hasZscale, hasTonemap, hasColorspace };
 }
 
 /**
@@ -218,14 +225,15 @@ export async function getFfmpegFullCapabilities(probes?: {
   encoders?: FfmpegEncodersProbe;
   decoders?: FfmpegDecodersProbe;
 }): Promise<FfmpegFullCapabilities> {
-  const [hasZscale, hasTonemap, hasLibx264, hasAac, hasHevcDecoder] = await Promise.all([
+  const [hasZscale, hasTonemap, hasColorspace, hasLibx264, hasAac, hasHevcDecoder] = await Promise.all([
     supportsFilter("zscale", probes?.filters),
     supportsFilter("tonemap", probes?.filters),
+    supportsFilter("colorspace", probes?.filters),
     supportsEncoder("libx264", probes?.encoders),
     supportsEncoder("aac", probes?.encoders),
     supportsDecoder("hevc", probes?.decoders),
   ]);
-  return { hasZscale, hasTonemap, hasLibx264, hasAac, hasHevcDecoder };
+  return { hasZscale, hasTonemap, hasColorspace, hasLibx264, hasAac, hasHevcDecoder };
 }
 
 /** Test-only escape hatch — clears the in-process cache so tests can probe a fresh mocked binary. */
