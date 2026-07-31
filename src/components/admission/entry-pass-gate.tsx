@@ -32,6 +32,7 @@ import {
   describeHeldSeats,
   type SeatingContinuity,
 } from "@/lib/admission/seating-continuity";
+import { seatDisplayName, tableDisplayName } from "@/lib/seating/seating-types";
 import {
   clearPackage,
   dequeue,
@@ -815,8 +816,10 @@ export function EntryPassGate({
                   )}
                   {result.seating && (
                     <Badge variant="outline">
-                      Table {result.seating.tableNumber}
-                      {result.seating.seatLabel ? ` · Seat ${result.seating.seatLabel}` : ""}
+                      {tableDisplayName(result.seating.tableNumber)}
+                      {result.seating.seatLabel
+                        ? ` · ${seatDisplayName(result.seating.seatLabel)}`
+                        : ""}
                     </Badge>
                   )}
                   {result.offline && <Badge variant="secondary">Queued offline</Badge>}
@@ -1046,7 +1049,9 @@ function SeatingContinuityNote({ continuity }: { continuity: SeatingContinuity }
           <span className="font-semibold">Seat now:</span>{" "}
           {continuity.revealed
             .map((s) =>
-              s.seatLabel ? `${s.guestName}, Table ${s.tableNumber}, Seat ${s.seatLabel}` : `${s.guestName}, Table ${s.tableNumber}`
+              s.seatLabel
+                ? `${s.guestName}, ${tableDisplayName(s.tableNumber)}, ${seatDisplayName(s.seatLabel)}`
+                : `${s.guestName}, ${tableDisplayName(s.tableNumber)}`
             )
             .join(" · ")}
         </p>

@@ -1,5 +1,6 @@
 import { RowIssueCode, type ImportOptions, type NormalizedRow } from "./types";
 import { nameKey } from "./name";
+import { tableDisplayName } from "@/lib/seating/seating-types";
 
 /**
  * Duplicate detection.
@@ -188,8 +189,8 @@ export function markSeatConflicts(
         severity: "warning",
         message:
           prior != null
-            ? `Table ${row.tableNumber} seat ${row.seatLabel} is also claimed by row ${prior + 1}.`
-            : `Table ${row.tableNumber} seat ${row.seatLabel} is already assigned to another guest.`,
+            ? `${tableDisplayName(row.tableNumber)} seat ${row.seatLabel} is also claimed by row ${prior + 1}.`
+            : `${tableDisplayName(row.tableNumber)} seat ${row.seatLabel} is already assigned to another guest.`,
       });
       if (row.status === "READY") row.status = "NEEDS_REVIEW";
     } else {

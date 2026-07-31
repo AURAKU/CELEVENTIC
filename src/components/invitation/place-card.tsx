@@ -12,6 +12,7 @@ import {
   type PlaceCardSeating,
   type PlaceCardTheme,
 } from "@/lib/invitation-features/place-card";
+import { seatDisplayName, tableCaptionValue, tableDisplayName } from "@/lib/seating/seating-types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -74,7 +75,8 @@ function frameStyleFor(
 }
 
 function placeValue(value: string, prefix: "table" | "seat"): string {
-  return value.replace(new RegExp(`^${prefix}\\s*`, "i"), "").trim() || value;
+  if (prefix === "table") return tableCaptionValue(value);
+  return seatDisplayName(value).replace(/^seat\s+/i, "").trim() || value;
 }
 
 export function PlaceCard({
@@ -184,8 +186,8 @@ export function PlaceCard({
               background: `color-mix(in srgb, ${tokens.secondary} 9%, transparent)`,
             }}
             data-testid="place-card-seating"
-            aria-label={`Assigned table ${seating.tableNumber}${
-              seating.seatLabel ? `, seat ${seating.seatLabel}` : ""
+            aria-label={`Assigned ${tableDisplayName(seating.tableNumber)}${
+              seating.seatLabel ? `, ${seatDisplayName(seating.seatLabel)}` : ""
             }`}
           >
             <div className="px-4 py-3">

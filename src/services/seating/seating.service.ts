@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { tablesMatch } from "@/lib/seating/seating-types";
 
 export interface SeatingTable {
   id: string;
@@ -152,8 +153,8 @@ export class SeatingService {
         zone?: string;
       }>;
     } | null;
-    const tableConfig = layout?.tables?.find(
-      (t) => t.label.trim().toLowerCase() === assignment?.tableNumber.trim().toLowerCase()
+    const tableConfig = layout?.tables?.find((t) =>
+      tablesMatch(t.label, assignment?.tableNumber ?? "")
     );
 
     if (!assignment) {

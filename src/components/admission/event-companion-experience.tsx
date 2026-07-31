@@ -12,6 +12,7 @@ import { EVENT_TIME_ZONE } from "@/lib/constants";
 import type { ResolvedFeature } from "@/lib/invitation-features/registry";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
+import { tableDisplayName } from "@/lib/seating/seating-types";
 import { cn } from "@/lib/utils";
 
 export type EventCompanionExperienceProps = {
@@ -238,7 +239,7 @@ export function EventCompanionExperience({
                   className="mt-4 text-5xl font-semibold tracking-tight sm:text-6xl"
                   style={{ color: colors.primary, fontFamily: fonts.heading }}
                 >
-                  Table {displaySeat.tableNumber}
+                  {tableDisplayName(displaySeat.tableNumber)}
                 </p>
                 {displaySeat.seatLabel ? (
                   <p
@@ -266,7 +267,7 @@ export function EventCompanionExperience({
                       >
                         <span className="font-semibold">{s.guestName}</span>
                         <span style={{ opacity: 0.8 }}>
-                          {`, Table ${s.tableNumber}`}
+                          {`, ${tableDisplayName(s.tableNumber)}`}
                           {s.seatLabel ? `, Seat ${s.seatLabel}` : ""}
                         </span>
                       </li>

@@ -18,6 +18,7 @@ import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
 import { PlaceCard } from "@/components/invitation/place-card";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
+import { seatDisplayName, tableDisplayName } from "@/lib/seating/seating-types";
 
 export type TraditionalMarriageProps = InvitationRenderProps & {
   seatLabel?: string | null;
@@ -93,7 +94,10 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
   const showCardRsvpContacts = board.rsvpContacts.length > 0;
   const seatDisplay =
     seatTable || seatLabel
-      ? [seatTable ? `Table ${seatTable}` : null, seatLabel ? (/^seat\b/i.test(seatLabel) ? seatLabel : `Seat ${seatLabel}`) : null]
+      ? [
+          seatTable ? tableDisplayName(seatTable) : null,
+          seatLabel ? seatDisplayName(seatLabel) : null,
+        ]
           .filter(Boolean)
           .join(" · ")
       : null;

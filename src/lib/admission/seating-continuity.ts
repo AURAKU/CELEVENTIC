@@ -11,6 +11,8 @@
  * package without a second query or a schema change.
  */
 
+import { tableDisplayName } from "@/lib/seating/seating-types";
+
 export interface PartySeat {
   guestId: string;
   guestName: string;
@@ -95,7 +97,9 @@ export function describeHeldSeats(continuity: SeatingContinuity): string | null 
   const held = continuity.reserved.length + continuity.unseatedCount;
   if (held <= 0) return null;
 
-  const where = continuity.tableNumber ? ` at Table ${continuity.tableNumber}` : "";
+  const where = continuity.tableNumber
+    ? ` at ${tableDisplayName(continuity.tableNumber)}`
+    : "";
   return held === 1
     ? `1 more place is being held for your party${where}.`
     : `${held} more places are being held for your party${where}.`;

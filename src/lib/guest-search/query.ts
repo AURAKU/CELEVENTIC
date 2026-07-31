@@ -1,4 +1,5 @@
 import { cleanName, foldDiacritics, stripTitles } from "@/lib/guest-import/name";
+import { tableDisplayName } from "@/lib/seating/seating-types";
 
 /**
  * Smart Guest Search — query understanding and ranking.
@@ -299,7 +300,11 @@ export function scoreCandidate(query: ParsedQuery, candidate: RankableCandidate)
   // ── Table ──
   if (query.tableNumber && candidate.tableNumber) {
     if (candidate.tableNumber.toUpperCase() === query.tableNumber) {
-      return { score: SCORE.table, field: "table", reason: `Table ${candidate.tableNumber}` };
+      return {
+        score: SCORE.table,
+        field: "table",
+        reason: tableDisplayName(candidate.tableNumber),
+      };
     }
   }
 

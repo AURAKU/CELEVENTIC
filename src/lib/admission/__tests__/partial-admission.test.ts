@@ -274,6 +274,15 @@ test("a partly-seated party counts both held seats and unseated heads", () => {
   assert.equal(describeHeldSeats(c), "3 more places are being held for your party at Table 7.");
 });
 
+test("held-seat copy never doubles the Table prefix", () => {
+  const c = resolveSeatingContinuity(
+    [seat(1, true, "Table 7"), seat(2, false, "Table 7")],
+    2,
+    1
+  );
+  assert.equal(describeHeldSeats(c), "1 more place is being held for your party at Table 7.");
+});
+
 test("nothing is described as held once the whole party is seated and inside", () => {
   const c = resolveSeatingContinuity([seat(1, true), seat(2, true)], 2, 2);
   assert.equal(describeHeldSeats(c), null);

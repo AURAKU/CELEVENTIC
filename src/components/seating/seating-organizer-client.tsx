@@ -40,6 +40,7 @@ import {
   normalizeTable,
   normalizeTableName,
   tableDisplayName,
+  tablesMatch,
   type GuestAssignmentView,
   type SeatingLayoutConfig,
   type SeatingTableConfig,
@@ -325,7 +326,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
   function addTable() {
     const label = normalizeTableName(newTableLabel);
     if (!label) return;
-    if (tables.some((t) => t.label.toLowerCase() === label.toLowerCase())) {
+    if (tables.some((t) => tablesMatch(t.label, label))) {
       setSaveError(`A table named "${tableDisplayName(label)}" already exists.`);
       return;
     }
@@ -378,7 +379,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
       setSaveError("Table name cannot be empty.");
       return;
     }
-    if (tables.some((row) => row.id !== id && row.label.toLowerCase() === label.toLowerCase())) {
+    if (tables.some((row) => row.id !== id && tablesMatch(row.label, label))) {
       setSaveError(`A table named "${tableDisplayName(label)}" already exists.`);
       return;
     }
@@ -389,7 +390,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
       Object.fromEntries(
         Object.entries(current).map(([guestId, assignment]) => [
           guestId,
-          assignment.tableNumber.toLowerCase() === previousLabel.toLowerCase()
+          tablesMatch(assignment.tableNumber, previousLabel)
             ? { ...assignment, tableNumber: label }
             : assignment,
         ])
@@ -402,7 +403,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
     const table = tables.find((row) => row.id === id);
     if (!table) return;
     const highestAssignedSeat = Object.values(assignments)
-      .filter((assignment) => assignment.tableNumber.toLowerCase() === table.label.toLowerCase())
+      .filter((assignment) => tablesMatch(assignment.tableNumber, table.label))
       .reduce((highest, assignment) => {
         const seat = Number.parseInt(assignment.seatLabel ?? "", 10);
         return Number.isFinite(seat) ? Math.max(highest, seat) : highest;
@@ -420,8 +421,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
   function removeTable(id: string) {
     const table = tables.find((t) => t.id === id);
     if (!table) return;
-    const assignedCount = Object.values(assignments).filter(
-      (assignment) => assignment.tableNumber.toLowerCase() === table.label.toLowerCase()
+    const assignedCount = Object.values(assignments).filter((assignment) =>
+      tablesMatch(assignment.tableNumber, table.label)
     ).length;
     if (
       !window.confirm(
@@ -438,7 +439,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
     setAssignments((prev) => {
       const next = { ...prev };
       for (const [guestId, a] of Object.entries(next)) {
-        if (a.tableNumber.toLowerCase() === table.label.toLowerCase()) delete next[guestId];
+        if (tablesMatch(a.tableNumber, table.label)) delete next[guestId];
       }
       return next;
     });
@@ -462,10 +463,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
     setAssignments((prev) => {
       const next = { ...prev };
       for (const [id, a] of Object.entries(next)) {
-        if (
-          a.tableNumber.toLowerCase() === table.label.toLowerCase() &&
-          a.seatLabel === String(selectedSeat)
-        ) {
+        if (tablesMatch(a.tableNumber, table.label) && a.seatLabel === String(selectedSeat)) {
           delete next[id];
         }
       }
@@ -484,9 +482,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
     const table = tables.find((t) => t.id === selectedTableId);
     if (!table || selectedSeat === null) return;
     const existing = Object.entries(assignments).find(
-      ([, a]) =>
-        a.tableNumber.toLowerCase() === table.label.toLowerCase() &&
-        a.seatLabel === String(selectedSeat)
+      ([, a]) => tablesMatch(a.tableNumber, table.label) && a.seatLabel === String(selectedSeat)
     );
     if (existing) {
       const next = { ...assignments };
@@ -505,9 +501,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
     const table = tables.find((t) => t.id === selectedTableId);
     if (!table || selectedSeat === null) return undefined;
     const entry = Object.entries(assignments).find(
-      ([, a]) =>
-        a.tableNumber.toLowerCase() === table.label.toLowerCase() &&
-        a.seatLabel === String(selectedSeat)
+      ([, a]) => tablesMatch(a.tableNumber, table.label) && a.seatLabel === String(selectedSeat)
     );
     return entry?.[0];
   }, [assignments, selectedTableId, selectedSeat, tables]);

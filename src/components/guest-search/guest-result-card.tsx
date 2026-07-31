@@ -27,6 +27,7 @@ import { describeAllowance } from "@/lib/guest-search/party-allowance";
 import type { SearchResultCard } from "@/lib/guest-search/types";
 import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
 import { copyText } from "@/lib/clipboard";
+import { tableDisplayName } from "@/lib/seating/seating-types";
 
 function publicInviteUrl(url: string): string {
   const base = getClientAppUrl();
@@ -198,7 +199,7 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
             )}
             {card.tableNumber && (
               <span>
-                Table {card.tableNumber}
+                {tableDisplayName(card.tableNumber)}
                 {card.seatLabel ? ` · seat ${card.seatLabel}` : ""}
               </span>
             )}

@@ -8,6 +8,7 @@ import { parseQrToken } from "@/lib/qr/parse-qr-payload";
 import { ensureGuestManualCode, isManualAdmissionCode } from "@/lib/qr/manual-code";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { syncAdmissionAfterCheckIn, resetAdmission } from "@/services/admission/admission.service";
+import { seatDisplayName, tableDisplayName } from "@/lib/seating/seating-types";
 
 export type QrAdmissionStatus =
   | "valid"
@@ -749,11 +750,10 @@ export class QrService {
         const ticket = s.ticket ?? s.qrCode?.ticket ?? null;
         const seatParts: string[] = [];
         if (guest?.seatingAssignment?.tableNumber) {
-          seatParts.push(`Table ${guest.seatingAssignment.tableNumber}`);
+          seatParts.push(tableDisplayName(guest.seatingAssignment.tableNumber));
         }
         if (guest?.seatingAssignment?.seatLabel) {
-          const label = guest.seatingAssignment.seatLabel;
-          seatParts.push(/^seat\b/i.test(label) ? label : `Seat ${label}`);
+          seatParts.push(seatDisplayName(guest.seatingAssignment.seatLabel));
         }
         return {
           id: s.id,

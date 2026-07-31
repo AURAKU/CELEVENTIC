@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { GuestAssignmentView } from "@/lib/seating/seating-types";
 import { computeSeatPositions } from "@/lib/seating/seating-layout";
-import { normalizeTable, tableDisplayName } from "@/lib/seating/seating-types";
+import {
+  normalizeTable,
+  tableCaptionValue,
+  tableDisplayName,
+  tablesMatch,
+} from "@/lib/seating/seating-types";
 import type { SeatingTableConfig } from "@/lib/seating/seating-types";
 import {
   compareGuestsForSeatingAssign,
@@ -159,9 +164,7 @@ export function SeatingTableVisual({
 }: SeatingTableVisualProps) {
   const table = normalizeTable(rawTable);
   const seats = computeSeatPositions(table.shape!, table.seatCount!);
-  const tableAssignments = assignments.filter(
-    (a) => a.tableNumber.trim().toLowerCase() === table.label.trim().toLowerCase()
-  );
+  const tableAssignments = assignments.filter((a) => tablesMatch(a.tableNumber, table.label));
 
   function assignmentForSeat(seatIndex: number): GuestAssignmentView | undefined {
     const label = String(seatIndex);
@@ -204,7 +207,7 @@ export function SeatingTableVisual({
           )}
         >
           <span className="font-display text-lg text-[#0B8A83] font-bold text-center px-1 leading-tight">
-            {tableDisplayName(table.label).replace(/^Table\s*/i, "")}
+            {tableCaptionValue(table.label)}
           </span>
         </div>
 

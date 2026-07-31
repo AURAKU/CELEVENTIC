@@ -4,7 +4,10 @@ import {
   generateTablesForGuests,
   normalizeTable,
   normalizeTableName,
+  seatDisplayName,
+  tableCaptionValue,
   tableDisplayName,
+  tablesMatch,
 } from "../seating-types";
 
 describe("seating table names", () => {
@@ -18,7 +21,29 @@ describe("seating table names", () => {
     assert.equal(tableDisplayName("1"), "Table 1");
     assert.equal(tableDisplayName("Table 1"), "Table 1");
     assert.equal(tableDisplayName("Table Table 1"), "Table 1");
+    assert.equal(tableDisplayName(" table 2 "), "Table 2");
     assert.equal(tableDisplayName("Family A"), "Family A");
+    assert.equal(tableDisplayName("VIP"), "VIP");
+    assert.equal(tableDisplayName("Head Table"), "Head Table");
+  });
+
+  it("keeps caption values free of a repeated Table word", () => {
+    assert.equal(tableCaptionValue("Table 1"), "1");
+    assert.equal(tableCaptionValue("1"), "1");
+    assert.equal(tableCaptionValue("Bridal Party"), "Bridal Party");
+  });
+
+  it("matches bare numbers with prefixed table labels", () => {
+    assert.equal(tablesMatch("1", "Table 1"), true);
+    assert.equal(tablesMatch(" table 1 ", "Table 1"), true);
+    assert.equal(tablesMatch("VIP", "Table VIP"), true);
+    assert.equal(tablesMatch("1", "Table 2"), false);
+    assert.equal(tablesMatch("VIP", "Family A"), false);
+  });
+
+  it("formats seat labels without double prefixes", () => {
+    assert.equal(seatDisplayName("3"), "Seat 3");
+    assert.equal(seatDisplayName("Seat 3"), "Seat 3");
   });
 
   it("generates custom table names and preserves seat settings", () => {

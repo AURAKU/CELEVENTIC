@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { paginatedResult, parsePaginationFromUrl } from "@/lib/pagination";
+import { seatDisplayName, tableDisplayName } from "@/lib/seating/seating-types";
 import type { Prisma, QrScanResult } from "@prisma/client";
 
 function formatSeatNumber(
@@ -8,11 +9,10 @@ function formatSeatNumber(
   if (!assignment) return null;
   const parts: string[] = [];
   if (assignment.tableNumber?.trim()) {
-    parts.push(`Table ${assignment.tableNumber.trim()}`);
+    parts.push(tableDisplayName(assignment.tableNumber));
   }
   if (assignment.seatLabel?.trim()) {
-    const label = assignment.seatLabel.trim();
-    parts.push(/^seat\b/i.test(label) ? label : `Seat ${label}`);
+    parts.push(seatDisplayName(assignment.seatLabel));
   }
   return parts.length > 0 ? parts.join(" · ") : null;
 }

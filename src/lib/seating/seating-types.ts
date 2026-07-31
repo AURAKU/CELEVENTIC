@@ -57,10 +57,45 @@ export function normalizeTableName(value: string): string {
   return name;
 }
 
+/**
+ * Canonical match key so "1", "Table 1", and " table 1 " resolve together.
+ * Custom names keep their own identity after whitespace folding.
+ */
+export function canonicalTableKey(value: string): string {
+  const name = normalizeTableName(value);
+  if (!name) return "";
+  return name.replace(/^tables?\s+/i, "").toLowerCase();
+}
+
+export function tablesMatch(a: string, b: string): boolean {
+  const left = canonicalTableKey(a);
+  const right = canonicalTableKey(b);
+  return Boolean(left) && left === right;
+}
+
 /** Display numeric identifiers as tables without prefixing already-named tables. */
 export function tableDisplayName(value: string): string {
   const name = normalizeTableName(value);
-  return /^\d+$/.test(name) ? `Table ${name}` : name;
+  if (!name) return name;
+  if (/^tables?\b/i.test(name)) {
+    return name.replace(/^tables?\b/i, "Table");
+  }
+  if (/^[\d]+[A-Za-z]?$/i.test(name) || /^t-?\d+$/i.test(name)) {
+    return `Table ${name}`;
+  }
+  return name;
+}
+
+/** Compact value under a "Your table" caption — never repeats the word Table. */
+export function tableCaptionValue(value: string): string {
+  const display = tableDisplayName(value);
+  return display.replace(/^tables?\s+/i, "").trim() || display;
+}
+
+export function seatDisplayName(value: string): string {
+  const name = value.trim().replace(/\s+/g, " ");
+  if (!name) return name;
+  return /^seat\b/i.test(name) ? name : `Seat ${name}`;
 }
 
 export function normalizeTable(table: SeatingTableConfig): SeatingTableConfig {
