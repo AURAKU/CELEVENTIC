@@ -5,6 +5,7 @@ import { buildRenderContextFromEvent } from "@/lib/template-variables";
 import { personalizeText } from "@/lib/template-variables";
 import type { TemplateBlock, TemplateSchema } from "@/types/template-engine";
 import { EXPORT_DIMENSIONS } from "@/types/template-engine";
+import { parsePaginationInput, paginatedResult } from "@/lib/pagination";
 
 export interface GenerateEventDesignsInput {
   userId: string;
@@ -104,12 +105,23 @@ export class DesignGeneratorService {
     }
   }
 
-  async getUserDesigns(userId: string, eventId?: string) {
-    return prisma.generatedDesign.findMany({
-      where: { userId, ...(eventId ? { eventId } : {}) },
-      include: { template: { select: { name: true, thumbnailUrl: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+  async getUserDesigns(userId: string, eventId?: string, page = 1, limit = 12) {
+    const { page: p, limit: take, skip } = parsePaginationInput(
+      { page, limit },
+      { limit: 12, maxLimit: 100 }
+    );
+    const where = { userId, ...(eventId ? { eventId } : {}) };
+    const [items, total] = await Promise.all([
+      prisma.generatedDesign.findMany({
+        where,
+        include: { template: { select: { name: true, thumbnailUrl: true } } },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.generatedDesign.count({ where }),
+    ]);
+    return paginatedResult(items, total, p, take);
   }
 }
 

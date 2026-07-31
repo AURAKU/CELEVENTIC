@@ -46,11 +46,15 @@ export class MessageService {
     return message;
   }
 
-  async getInbox(userId: string) {
+  async getInbox(userId: string, page = 1, limit = 20) {
+    const take = Math.min(100, Math.max(1, limit));
+    const safePage = Math.max(1, page);
+
+    // Pull a bounded recent window, collapse to threads, then page the thread list.
     const messages = await prisma.userMessage.findMany({
       where: { OR: [{ senderId: userId }, { recipientId: userId }] },
       orderBy: { createdAt: "desc" },
-      take: 200,
+      take: 500,
       include: {
         sender: { select: { id: true, name: true, role: true } },
         recipient: { select: { id: true, name: true, role: true } },
@@ -99,9 +103,20 @@ export class MessageService {
       }
     }
 
-    return Array.from(threads.values()).sort(
+    const all = Array.from(threads.values()).sort(
       (a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime()
     );
+    const total = all.length;
+    const pages = Math.max(1, Math.ceil(total / take));
+    const skip = (safePage - 1) * take;
+    return {
+      items: all.slice(skip, skip + take),
+      total,
+      page: safePage,
+      limit: take,
+      pages,
+      hasMore: safePage < pages,
+    };
   }
 
   async getThread(userId: string, threadId: string, page = 1, limit = 50) {

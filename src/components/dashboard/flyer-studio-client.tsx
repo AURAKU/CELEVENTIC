@@ -22,7 +22,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EventPicker } from "@/components/dashboard/event-picker";
+import { PaginationBar } from "@/components/ui/pagination";
 import { useEventContext } from "@/hooks/use-event-context";
+import { usePagination } from "@/hooks/use-pagination";
+import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 
 interface Design {
@@ -45,25 +48,43 @@ export function FlyerStudioClient() {
   const router = useRouter();
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
   const [designs, setDesigns] = useState<Design[]>([]);
+  const [designTotal, setDesignTotal] = useState(0);
+  const [designPages, setDesignPages] = useState(1);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [form, setForm] = useState({ name: "", type: "FLYER" });
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { page, setPage, resetPage, appendToParams } = usePagination(PUBLIC_GRID_LIMIT);
 
   async function loadDesigns() {
-    const qs = eventId ? `?eventId=${eventId}` : "";
-    const res = await fetch(`/api/flyers${qs}`);
+    const params = appendToParams(new URLSearchParams());
+    if (eventId) params.set("eventId", eventId);
+    const res = await fetch(`/api/flyers?${params}`);
     const d = await res.json();
     if (d.success) {
-      setDesigns(d.data.designs);
-      setTemplates(d.data.templates);
+      const payload = d.data.designs;
+      if (Array.isArray(payload)) {
+        setDesigns(payload);
+        setDesignTotal(payload.length);
+        setDesignPages(1);
+      } else {
+        setDesigns(payload?.items ?? []);
+        setDesignTotal(payload?.total ?? 0);
+        setDesignPages(payload?.pages ?? 1);
+      }
+      setTemplates(d.data.templates ?? []);
     }
   }
 
   useEffect(() => {
+    resetPage();
+  }, [eventId, resetPage]);
+
+  useEffect(() => {
     void loadDesigns();
-  }, [eventId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, page]);
 
   function exportUrl(design: Design) {
     const templateId = design.config?.designTemplateId;
@@ -250,6 +271,13 @@ export function FlyerStudioClient() {
                 ))}
               </div>
             )}
+            <PaginationBar
+              page={page}
+              pages={designPages}
+              total={designTotal}
+              limit={PUBLIC_GRID_LIMIT}
+              onPageChange={setPage}
+            />
           </CardContent>
         </Card>
       </div>

@@ -6,23 +6,42 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { VendorCard, type VendorCardData } from "@/components/vendor-os/vendor-card";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 export default function MyCollectionPage() {
+  const { page, setPage, appendToParams } = usePagination(PUBLIC_GRID_LIMIT);
   const [favorites, setFavorites] = useState<{ vendor: VendorCardData }[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/vendor-os/favorites")
+    const params = appendToParams(new URLSearchParams());
+    fetch(`/api/vendor-os/favorites?${params}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) setFavorites(d.data);
-        else setError(d.error ?? "Failed to load collection");
+        if (!d.success) {
+          setError(d.error ?? "Failed to load collection");
+          return;
+        }
+        const data = d.data;
+        if (Array.isArray(data)) {
+          setFavorites(data);
+          setTotal(data.length);
+          setPages(1);
+        } else {
+          setFavorites(data.items ?? []);
+          setTotal(data.total ?? 0);
+          setPages(data.pages ?? 1);
+        }
       })
       .catch(() => setError("Failed to load collection"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [appendToParams]);
 
   return (
     <DashboardPageShell
@@ -45,6 +64,7 @@ export default function MyCollectionPage() {
           <VendorCard key={f.vendor.id} vendor={f.vendor} />
         ))}
       </div>
+      <PaginationBar page={page} pages={pages} total={total} limit={PUBLIC_GRID_LIMIT} onPageChange={setPage} />
     </DashboardPageShell>
   );
 }

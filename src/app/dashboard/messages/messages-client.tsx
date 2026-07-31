@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Send, MessageSquare } from "lucide-react";
 import { PaginationBar } from "@/components/ui/pagination";
-import { paginateList } from "@/lib/pagination-client";
+import { usePagination } from "@/hooks/use-pagination";
 
 interface ThreadRow {
   threadId: string;
@@ -41,15 +41,28 @@ export function MessagesClient() {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [threadPage, setThreadPage] = useState(1);
-  const THREADS_PER_PAGE = 12;
+  const { page: threadPage, setPage: setThreadPage, appendToParams } = usePagination(12);
+  const [threadTotal, setThreadTotal] = useState(0);
+  const [threadPages, setThreadPages] = useState(1);
 
   const loadThreads = useCallback(async () => {
-    const res = await fetch("/api/messages");
+    const params = appendToParams(new URLSearchParams());
+    const res = await fetch(`/api/messages?${params}`);
     const d = await res.json();
-    if (d.success) setThreads(d.data);
+    if (d.success) {
+      const payload = d.data;
+      if (Array.isArray(payload)) {
+        setThreads(payload);
+        setThreadTotal(payload.length);
+        setThreadPages(1);
+      } else {
+        setThreads(payload.items ?? []);
+        setThreadTotal(payload.total ?? 0);
+        setThreadPages(payload.pages ?? 1);
+      }
+    }
     setLoading(false);
-  }, []);
+  }, [appendToParams]);
 
   const loadThread = useCallback(async (threadId: string, pageNum = 1, append = false) => {
     if (append) setLoadingOlder(true);
@@ -103,8 +116,6 @@ export function MessagesClient() {
     return <p className="text-slate-500 py-12 text-center">Loading messages…</p>;
   }
 
-  const threadSlice = paginateList(threads, threadPage, THREADS_PER_PAGE);
-
   return (
     <div className="space-y-6">
       <div>
@@ -124,7 +135,7 @@ export function MessagesClient() {
             {threads.length === 0 ? (
               <p className="p-4 text-sm text-slate-500">No conversations yet.</p>
             ) : (
-              threadSlice.items.map((t) => (
+              threads.map((t) => (
                 <button
                   key={t.threadId}
                   type="button"
@@ -144,12 +155,12 @@ export function MessagesClient() {
               ))
             )}
             </div>
-            {threadSlice.pages > 1 && (
+            {threadPages > 1 && (
               <PaginationBar
-                page={threadSlice.page}
-                pages={threadSlice.pages}
-                total={threadSlice.total}
-                limit={THREADS_PER_PAGE}
+                page={threadPage}
+                pages={threadPages}
+                total={threadTotal}
+                limit={12}
                 onPageChange={setThreadPage}
                 className="px-3 pb-3"
                 showSummary={false}

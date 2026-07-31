@@ -30,7 +30,8 @@ export async function GET(req: Request) {
     });
   }
 
-  const inbox = await messageService.getInbox(session.user.id);
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: 12 });
+  const inbox = await messageService.getInbox(session.user.id, page, limit);
   return NextResponse.json({ success: true, data: inbox });
 }
 

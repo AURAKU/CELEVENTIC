@@ -8,26 +8,41 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Star, MapPin, CheckCircle } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 export default function FindOrganizersPage() {
   const searchParams = useSearchParams();
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [organizers, setOrganizers] = useState<Record<string, unknown>[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const { page, setPage, resetPage, appendToParams } = usePagination(PUBLIC_GRID_LIMIT);
 
-  async function search() {
+  async function search(reset = false) {
+    if (reset) resetPage();
     setLoading(true);
-    const params = new URLSearchParams();
+    const params = appendToParams(new URLSearchParams());
     if (q) params.set("q", q);
+    if (reset) {
+      params.set("page", "1");
+    }
     const res = await fetch(`/api/organizers?${params}`);
     const d = await res.json();
-    if (res.ok) setOrganizers(d.data.items ?? []);
+    if (res.ok) {
+      setOrganizers(d.data.items ?? []);
+      setTotal(d.data.total ?? 0);
+      setPages(d.data.pages ?? 1);
+    }
     setLoading(false);
   }
 
   useEffect(() => {
-    search();
-  }, []);
+    void search();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   return (
     <div className="space-y-6">
@@ -41,9 +56,9 @@ export default function FindOrganizersPage() {
           placeholder="Name, company, location, specialty..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && search()}
+          onKeyDown={(e) => e.key === "Enter" && void search(true)}
         />
-        <Button onClick={search} disabled={loading}>
+        <Button onClick={() => void search(true)} disabled={loading}>
           <Search className="h-4 w-4" />
         </Button>
       </div>
@@ -97,6 +112,8 @@ export default function FindOrganizersPage() {
           );
         })}
       </div>
+
+      <PaginationBar page={page} pages={pages} total={total} limit={PUBLIC_GRID_LIMIT} onPageChange={setPage} />
     </div>
   );
 }

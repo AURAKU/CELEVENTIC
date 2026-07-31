@@ -42,11 +42,22 @@ export class FraudService {
     return null;
   }
 
-  async getUnresolved(eventId?: string) {
-    return prisma.fraudDetectionLog.findMany({
-      where: { resolved: false, ...(eventId ? { eventId } : {}) },
-      orderBy: { createdAt: "desc" },
-    });
+  async getUnresolved(eventId?: string, page = 1, limit = 20) {
+    const take = Math.min(100, Math.max(1, limit));
+    const safePage = Math.max(1, page);
+    const skip = (safePage - 1) * take;
+    const where = { resolved: false, ...(eventId ? { eventId } : {}) };
+    const [items, total] = await Promise.all([
+      prisma.fraudDetectionLog.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.fraudDetectionLog.count({ where }),
+    ]);
+    const pages = Math.max(1, Math.ceil(total / take));
+    return { items, total, page: safePage, limit: take, pages, hasMore: safePage < pages };
   }
 
   async resolve(id: string) {

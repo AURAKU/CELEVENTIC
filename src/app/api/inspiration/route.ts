@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { inspirationService } from "@/services/inspiration/inspiration.service";
+import { parsePaginationFromUrl } from "@/lib/pagination";
 
 const uploadSchema = z.object({
   eventId: z.string().optional(),
@@ -15,11 +16,12 @@ const generateSchema = z.object({
   upgradeStyle: z.enum(["INSPIRED", "SIMILAR", "LUXURY", "IMPROVED", "MODERN", "TRADITIONAL_GHANAIAN"]),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const uploads = await inspirationService.getUserUploads(session.user.id);
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: 20 });
+  const uploads = await inspirationService.getUserUploads(session.user.id, page, limit);
   return NextResponse.json({ success: true, data: uploads });
 }
 

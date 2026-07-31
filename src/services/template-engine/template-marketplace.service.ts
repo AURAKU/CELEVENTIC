@@ -1,22 +1,39 @@
 import { prisma } from "@/lib/prisma";
 import { hasFullPackageAccess } from "@/lib/access/package-access";
+import { parsePaginationInput, paginatedResult } from "@/lib/pagination";
 import type { UserRole } from "@prisma/client";
 
 export class TemplateMarketplaceService {
-  async getMarketplace(filters?: { category?: string; premium?: boolean }) {
-    return prisma.designTemplate.findMany({
-      where: {
-        isActive: true,
-        approvalStatus: "APPROVED",
-        ...(filters?.category ? { category: filters.category } : {}),
-        ...(filters?.premium !== undefined ? { isPremium: filters.premium } : {}),
-      },
-      orderBy: [{ isFeatured: "desc" }, { popularity: "desc" }],
-      include: {
-        designer: { select: { id: true, name: true } },
-        _count: { select: { purchases: true, favorites: true } },
-      },
-    });
+  async getMarketplace(filters?: {
+    category?: string;
+    premium?: boolean;
+    page?: number;
+    limit?: number;
+  }) {
+    const { page, limit, skip } = parsePaginationInput(
+      { page: filters?.page, limit: filters?.limit },
+      { limit: 12, maxLimit: 100 }
+    );
+    const where = {
+      isActive: true,
+      approvalStatus: "APPROVED" as const,
+      ...(filters?.category ? { category: filters.category } : {}),
+      ...(filters?.premium !== undefined ? { isPremium: filters.premium } : {}),
+    };
+    const [items, total] = await Promise.all([
+      prisma.designTemplate.findMany({
+        where,
+        orderBy: [{ isFeatured: "desc" }, { popularity: "desc" }],
+        skip,
+        take: limit,
+        include: {
+          designer: { select: { id: true, name: true } },
+          _count: { select: { purchases: true, favorites: true } },
+        },
+      }),
+      prisma.designTemplate.count({ where }),
+    ]);
+    return paginatedResult(items, total, page, limit);
   }
 
   async purchaseTemplate(userId: string, templateId: string) {
@@ -53,12 +70,23 @@ export class TemplateMarketplaceService {
     return { favorited: true };
   }
 
-  async getFavorites(userId: string) {
-    return prisma.templateFavorite.findMany({
-      where: { userId },
-      include: { template: true },
-      orderBy: { createdAt: "desc" },
-    });
+  async getFavorites(userId: string, page = 1, limit = 24) {
+    const { page: p, limit: take, skip } = parsePaginationInput(
+      { page, limit },
+      { limit: 24, maxLimit: 100 }
+    );
+    const where = { userId };
+    const [items, total] = await Promise.all([
+      prisma.templateFavorite.findMany({
+        where,
+        include: { template: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.templateFavorite.count({ where }),
+    ]);
+    return paginatedResult(items, total, p, take);
   }
 
   async submitDesignerTemplate(userId: string, templateId: string) {

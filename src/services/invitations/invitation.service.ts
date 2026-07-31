@@ -438,26 +438,10 @@ export class InvitationService {
             select: {
               admissionAllowance: true,
               admittedCount: true,
-              guestPasses: {
-                where: {
-                  status: {
-                    in: [
-                      "ACTIVE",
-                      "PARTIALLY_ADMITTED",
-                      "ADMITTED",
-                      "PENDING_SYNC",
-                      "CONFLICT",
-                      "MANUAL_REVIEW",
-                    ],
-                  },
-                },
-                orderBy: { tokenVersion: "desc" },
-                take: 1,
-                select: { partySize: true, admittedCount: true },
-              },
             },
           },
         },
+        take: 10_000,
       }),
       prisma.invitation.findFirst({
         where: { eventId, status: { not: "EXPIRED" }, archivedAt: null },
@@ -468,15 +452,9 @@ export class InvitationService {
 
     const peopleStats = computeGuestCrmPeopleStats(
       peopleRows.map((guest) => {
-        const pass = guest.invitation?.guestPasses[0];
         const allowance =
-          guest.invitation?.admissionAllowance ??
-          pass?.partySize ??
-          1 + Math.max(0, guest.plusOnes);
-        const admittedCount = Math.max(
-          0,
-          pass?.admittedCount ?? guest.invitation?.admittedCount ?? 0
-        );
+          guest.invitation?.admissionAllowance ?? 1 + Math.max(0, guest.plusOnes);
+        const admittedCount = Math.max(0, guest.invitation?.admittedCount ?? 0);
         return {
           id: guest.id,
           invitationId: guest.invitationId,

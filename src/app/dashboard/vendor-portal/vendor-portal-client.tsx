@@ -14,6 +14,9 @@ import { UploadedMedia } from "@/components/media/uploaded-media";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Store, MessageSquare, ExternalLink, Send, Calendar, Users, Package, Clock, Star, Receipt, Trash2 } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 interface VendorMediaItem {
   id: string;
@@ -44,6 +47,9 @@ export default function VendorPortalClient() {
   const [vendor, setVendor] = useState<{ id: string; slug: string; businessName: string; profileImage?: string | null; plan?: { name: string } } | null>(null);
   const [usage, setUsage] = useState<{ limits: Record<string, number>; usage: Record<string, number> } | null>(null);
   const [leads, setLeads] = useState<{ id: string; contactName?: string; status: string; eventType?: string; message?: string }[]>([]);
+  const [leadTotal, setLeadTotal] = useState(0);
+  const [leadPages, setLeadPages] = useState(1);
+  const { page: leadPage, setPage: setLeadPage, appendToParams: appendLeadParams } = usePagination(ADMIN_TABLE_LIMIT);
   const [bookings, setBookings] = useState<{ id: string; status: string; serviceName?: string; organizer?: { name: string } }[]>([]);
   const [quoteLead, setQuoteLead] = useState<string | null>(null);
   const [quoteForm, setQuoteForm] = useState({ title: "", amount: "", description: "" });
@@ -55,9 +61,28 @@ export default function VendorPortalClient() {
   const [portfolioMedia, setPortfolioMedia] = useState<VendorMediaItem[]>([]);
   const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
 
+  function applyLeadsPayload(data: unknown) {
+    if (Array.isArray(data)) {
+      setLeads(data as typeof leads);
+      setLeadTotal(data.length);
+      setLeadPages(1);
+      return;
+    }
+    const payload = data as {
+      items?: typeof leads;
+      total?: number;
+      pages?: number;
+      page?: number;
+    };
+    setLeads(payload.items ?? []);
+    setLeadTotal(payload.total ?? 0);
+    setLeadPages(payload.pages ?? 1);
+  }
+
   function loadLeads() {
-    return fetch("/api/vendor-os/leads").then((r) => r.json()).then((leadsRes) => {
-      if (leadsRes.success) setLeads(leadsRes.data);
+    const params = appendLeadParams(new URLSearchParams());
+    return fetch(`/api/vendor-os/leads?${params}`).then((r) => r.json()).then((leadsRes) => {
+      if (leadsRes.success) applyLeadsPayload(leadsRes.data);
     });
   }
 
@@ -87,21 +112,28 @@ export default function VendorPortalClient() {
   }
 
   useEffect(() => {
+    const params = appendLeadParams(new URLSearchParams());
     Promise.all([
       fetch("/api/vendor-os/me").then((r) => r.json()),
-      fetch("/api/vendor-os/leads").then((r) => r.json()),
+      fetch(`/api/vendor-os/leads?${params}`).then((r) => r.json()),
       fetch("/api/marketplace/bookings").then((r) => r.json()),
     ]).then(([me, leadsRes, bookingsRes]) => {
       if (me.success && me.data) {
         setVendor(me.data.vendor);
         setUsage(me.data.usage);
       }
-      if (leadsRes.success) setLeads(leadsRes.data);
+      if (leadsRes.success) applyLeadsPayload(leadsRes.data);
       if (bookingsRes.success) setBookings(bookingsRes.data.items);
       setLoading(false);
     });
     void loadPortfolioMedia();
-  }, []);
+  }, [appendLeadParams]);
+
+  useEffect(() => {
+    if (!loading) void loadLeads();
+    // Reload when page changes after initial mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadPage]);
 
   useEffect(() => {
     if (sectionParam && SECTION_TO_TAB[sectionParam]) {
@@ -226,6 +258,15 @@ export default function VendorPortalClient() {
           )}
         </div>
       ))}
+      <PaginationBar
+        page={leadPage}
+        pages={leadPages}
+        total={leadTotal}
+        limit={ADMIN_TABLE_LIMIT}
+        onPageChange={(p) => {
+          setLeadPage(p);
+        }}
+      />
     </div>
   );
 

@@ -72,12 +72,29 @@ export class VendorLeadService {
     return lead;
   }
 
-  async getVendorLeads(vendorId: string, status?: string) {
-    return prisma.vendorLead.findMany({
-      where: { vendorId, ...(status ? { status: status as never } : {}) },
-      include: { organizer: { select: { name: true, email: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+  async getVendorLeads(
+    vendorId: string,
+    options?: { status?: string; page?: number; limit?: number }
+  ) {
+    const page = Math.max(1, options?.page ?? 1);
+    const limit = Math.min(100, Math.max(1, options?.limit ?? 20));
+    const skip = (page - 1) * limit;
+    const where = {
+      vendorId,
+      ...(options?.status ? { status: options.status as never } : {}),
+    };
+    const [items, total] = await Promise.all([
+      prisma.vendorLead.findMany({
+        where,
+        include: { organizer: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.vendorLead.count({ where }),
+    ]);
+    const pages = Math.max(1, Math.ceil(total / limit));
+    return { items, total, page, limit, pages, hasMore: page < pages };
   }
 
   async updateLeadStatus(leadId: string, vendorId: string, status: string) {
@@ -87,12 +104,28 @@ export class VendorLeadService {
     });
   }
 
-  async getOrganizerLeads(organizerId: string) {
-    return prisma.vendorLead.findMany({
-      where: { organizerId },
-      include: { vendor: { select: { businessName: true, slug: true, profileImage: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+  async getOrganizerLeads(
+    organizerId: string,
+    options?: { page?: number; limit?: number }
+  ) {
+    const page = Math.max(1, options?.page ?? 1);
+    const limit = Math.min(100, Math.max(1, options?.limit ?? 20));
+    const skip = (page - 1) * limit;
+    const where = { organizerId };
+    const [items, total] = await Promise.all([
+      prisma.vendorLead.findMany({
+        where,
+        include: {
+          vendor: { select: { businessName: true, slug: true, profileImage: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.vendorLead.count({ where }),
+    ]);
+    const pages = Math.max(1, Math.ceil(total / limit));
+    return { items, total, page, limit, pages, hasMore: page < pages };
   }
 }
 

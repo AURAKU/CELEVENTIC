@@ -94,12 +94,13 @@ function TemplateLibraryPageInner() {
   }, [eventId]);
 
   useEffect(() => {
-    fetch("/api/design-templates/marketplace")
+    fetch("/api/design-templates/marketplace?limit=100")
       .then((r) => r.json())
       .then(async (d) => {
         if (!d.success) return;
         const owned = new Set<string>();
-        for (const t of d.data) {
+        const rows = Array.isArray(d.data) ? d.data : d.data?.items ?? [];
+        for (const t of rows) {
           if (!t.isPremium) owned.add(t.id);
         }
         const favRes = await fetch("/api/design-templates/favorites");

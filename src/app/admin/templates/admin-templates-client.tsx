@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Star, Check, X } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { paginateList } from "@/lib/pagination-client";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 interface LegacyTemplate { id: string; name: string; category: string; isActive: boolean; config?: { primary?: string; secondary?: string } }
 interface DesignTemplateRow {
@@ -17,11 +20,21 @@ interface DesignTemplateRow {
 export function AdminTemplatesClient({ legacyTemplates, designTemplates: initial }: { legacyTemplates: LegacyTemplate[]; designTemplates: DesignTemplateRow[] }) {
   const [designTemplates, setDesignTemplates] = useState(initial);
   const [tab, setTab] = useState<"engine" | "legacy">("engine");
+  const [enginePage, setEnginePage] = useState(1);
+  const [legacyPage, setLegacyPage] = useState(1);
+
+  const engineSlice = useMemo(
+    () => paginateList(designTemplates, enginePage, ADMIN_TABLE_LIMIT),
+    [designTemplates, enginePage]
+  );
+  const legacySlice = useMemo(
+    () => paginateList(legacyTemplates, legacyPage, ADMIN_TABLE_LIMIT),
+    [legacyTemplates, legacyPage]
+  );
 
   async function updateTemplate(id: string, data: Record<string, unknown>) {
     const res = await fetch(`/api/design-templates/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
     if (res.ok) {
-      const d = await res.json();
       setDesignTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } as DesignTemplateRow : t)));
     }
   }
@@ -34,14 +47,14 @@ export function AdminTemplatesClient({ legacyTemplates, designTemplates: initial
       </div>
 
       <div className="flex gap-2 border-b pb-2">
-        <Button variant={tab === "engine" ? "default" : "ghost"} size="sm" onClick={() => setTab("engine")}>Design Engine ({designTemplates.length})</Button>
-        <Button variant={tab === "legacy" ? "default" : "ghost"} size="sm" onClick={() => setTab("legacy")}>Event Themes ({legacyTemplates.length})</Button>
+        <Button variant={tab === "engine" ? "default" : "ghost"} size="sm" onClick={() => { setTab("engine"); setEnginePage(1); }}>Design Engine ({designTemplates.length})</Button>
+        <Button variant={tab === "legacy" ? "default" : "ghost"} size="sm" onClick={() => { setTab("legacy"); setLegacyPage(1); }}>Event Themes ({legacyTemplates.length})</Button>
       </div>
 
       {tab === "engine" && (
         <div className="space-y-4 mt-4">
           <div className="grid gap-4">
-            {designTemplates.map((t) => (
+            {engineSlice.items.map((t) => (
               <Card key={t.id}>
                 <CardContent className="p-4 flex flex-wrap items-center justify-between gap-4">
                   <div>
@@ -71,13 +84,20 @@ export function AdminTemplatesClient({ legacyTemplates, designTemplates: initial
               </Card>
             ))}
           </div>
+          <PaginationBar
+            page={engineSlice.page}
+            pages={engineSlice.pages}
+            total={engineSlice.total}
+            limit={ADMIN_TABLE_LIMIT}
+            onPageChange={setEnginePage}
+          />
         </div>
       )}
 
       {tab === "legacy" && (
-        <div className="mt-4">
+        <div className="mt-4 space-y-4">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {legacyTemplates.map((template) => (
+            {legacySlice.items.map((template) => (
               <Card key={template.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -91,6 +111,13 @@ export function AdminTemplatesClient({ legacyTemplates, designTemplates: initial
               </Card>
             ))}
           </div>
+          <PaginationBar
+            page={legacySlice.page}
+            pages={legacySlice.pages}
+            total={legacySlice.total}
+            limit={ADMIN_TABLE_LIMIT}
+            onPageChange={setLegacyPage}
+          />
         </div>
       )}
     </div>

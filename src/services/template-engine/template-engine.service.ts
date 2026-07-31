@@ -168,6 +168,7 @@ export class TemplateEngineService {
   async adminList() {
     return prisma.designTemplate.findMany({
       orderBy: { createdAt: "desc" },
+      take: 200,
       include: { createdBy: { select: { name: true } }, _count: { select: { purchases: true } } },
     });
   }

@@ -75,11 +75,22 @@ export class InspirationService {
     });
   }
 
-  async getUserUploads(userId: string) {
-    return prisma.inspirationUpload.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-    });
+  async getUserUploads(userId: string, page = 1, limit = 20) {
+    const take = Math.min(100, Math.max(1, limit));
+    const safePage = Math.max(1, page);
+    const skip = (safePage - 1) * take;
+    const where = { userId };
+    const [items, total] = await Promise.all([
+      prisma.inspirationUpload.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.inspirationUpload.count({ where }),
+    ]);
+    const pages = Math.max(1, Math.ceil(total / take));
+    return { items, total, page: safePage, limit: take, pages, hasMore: safePage < pages };
   }
 }
 

@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { templateMarketplaceService } from "@/services/template-engine/template-marketplace.service";
+import { parsePaginationFromUrl, PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: PUBLIC_GRID_LIMIT });
   const templates = await templateMarketplaceService.getMarketplace({
     category: params.get("category") ?? undefined,
     premium: params.get("premium") === "true" ? true : undefined,
+    page,
+    limit,
   });
   return NextResponse.json({ success: true, data: templates });
 }

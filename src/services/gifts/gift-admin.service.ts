@@ -103,9 +103,11 @@ export class GiftAdminService {
     const filteringByMethod = Boolean(filters.method && filters.method !== "ALL");
 
     if (filteringByMethod) {
+      // Metadata method lives in JSON — page a capped recent window in memory.
       const all = await prisma.eventGiftPayment.findMany({
         where,
         orderBy: { createdAt: "desc" },
+        take: 2_000,
         include: { receipt: { select: { id: true } } },
       });
       const matched = all.filter((gift) => matchesMethod(gift.metadata, filters.method));

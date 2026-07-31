@@ -26,6 +26,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PaginationBar } from "@/components/ui/pagination";
+import { paginateList } from "@/lib/pagination-client";
 import { SeatAssignPanel } from "@/components/seating/seating-table-visual";
 import { StudioTableVisual } from "@/components/seating/studio-table-visual";
 import {
@@ -126,6 +128,8 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   const [view, setView] = useState<"canvas" | "list">("canvas");
   const [guestFilter, setGuestFilter] = useState("unassigned");
   const [guestQuery, setGuestQuery] = useState("");
+  const [guestListPage, setGuestListPage] = useState(1);
+  const GUEST_LIST_PAGE_SIZE = 40;
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -850,6 +854,15 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       .slice()
       .sort(compareGuestsForSeatingAssign);
   }, [guests, guestQuery, guestFilter, assignments]);
+
+  useEffect(() => {
+    setGuestListPage(1);
+  }, [guestQuery, guestFilter]);
+
+  const guestListSlice = useMemo(
+    () => paginateList(filteredGuests, guestListPage, GUEST_LIST_PAGE_SIZE),
+    [filteredGuests, guestListPage]
+  );
 
   if (loading) return <PageLoader label="Opening Seating Studio…" />;
   if (loadError) {
@@ -1595,7 +1608,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                 ))}
               </div>
               <div className="max-h-[42vh] space-y-2 overflow-y-auto">
-                {filteredGuests.slice(0, 80).map((guest) => {
+                {guestListSlice.items.map((guest) => {
                   const assignment = assignments[guest.id];
                   return (
                     <div key={guest.id} className="rounded-xl border p-2.5">
@@ -1655,6 +1668,14 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                   );
                 })}
               </div>
+              <PaginationBar
+                page={guestListSlice.page}
+                pages={guestListSlice.pages}
+                total={guestListSlice.total}
+                limit={GUEST_LIST_PAGE_SIZE}
+                onPageChange={setGuestListPage}
+                showSummary={guestListSlice.pages > 1}
+              />
             </CardContent>
           </Card>
 

@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { TemplateCanvas } from "@/components/template-engine/template-canvas";
 import type { TemplateBlock, TemplateCanvas as CanvasType } from "@/types/template-engine";
 import { Store, Heart, ArrowLeft, Check } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 interface MarketplaceTemplate {
   id: string;
@@ -23,19 +26,37 @@ interface MarketplaceTemplate {
 }
 
 export default function MarketplacePage() {
+  const { page, setPage, appendToParams } = usePagination(PUBLIC_GRID_LIMIT);
   const [templates, setTemplates] = useState<MarketplaceTemplate[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [purchased, setPurchased] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    const params = appendToParams(new URLSearchParams());
     Promise.all([
-      fetch("/api/design-templates/marketplace").then((r) => r.json()),
-      fetch("/api/design-templates/favorites").then((r) => r.json()),
+      fetch(`/api/design-templates/marketplace?${params}`).then((r) => r.json()),
+      fetch("/api/design-templates/favorites?limit=100").then((r) => r.json()),
     ]).then(([market, fav]) => {
-      if (market.success) setTemplates(market.data);
-      if (fav.success) setFavorites(new Set(fav.data.map((f: { templateId: string }) => f.templateId)));
+      if (market.success) {
+        const data = market.data;
+        if (Array.isArray(data)) {
+          setTemplates(data);
+          setTotal(data.length);
+          setPages(1);
+        } else {
+          setTemplates(data.items ?? []);
+          setTotal(data.total ?? 0);
+          setPages(data.pages ?? 1);
+        }
+      }
+      if (fav.success) {
+        const favRows = Array.isArray(fav.data) ? fav.data : fav.data?.items ?? [];
+        setFavorites(new Set(favRows.map((f: { templateId: string }) => f.templateId)));
+      }
     });
-  }, []);
+  }, [appendToParams]);
 
   async function purchase(id: string, isPremium: boolean) {
     const res = await fetch("/api/design-templates/marketplace", {
@@ -122,6 +143,8 @@ export default function MarketplacePage() {
           );
         })}
       </div>
+
+      <PaginationBar page={page} pages={pages} total={total} limit={PUBLIC_GRID_LIMIT} onPageChange={setPage} />
     </div>
   );
 }

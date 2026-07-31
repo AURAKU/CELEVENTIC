@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { vendorLeadService } from "@/services/vendor-os/vendor-lead.service";
 import { rateLimit } from "@/lib/rate-limit";
 import { vendorProfileService } from "@/services/vendor-os/vendor-profile.service";
+import { parsePaginationFromUrl, ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 const leadSchema = z.object({
   vendorId: z.string(),
@@ -24,12 +25,14 @@ export async function GET(req: Request) {
   const session = await getSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: ADMIN_TABLE_LIMIT });
+  const status = new URL(req.url).searchParams.get("status") ?? undefined;
   const vendor = await vendorProfileService.getByUserId(session.user.id);
   if (vendor) {
-    const leads = await vendorLeadService.getVendorLeads(vendor.id);
+    const leads = await vendorLeadService.getVendorLeads(vendor.id, { status, page, limit });
     return NextResponse.json({ success: true, data: leads });
   }
-  const leads = await vendorLeadService.getOrganizerLeads(session.user.id);
+  const leads = await vendorLeadService.getOrganizerLeads(session.user.id, { page, limit });
   return NextResponse.json({ success: true, data: leads });
 }
 

@@ -2,23 +2,31 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parsePaginationFromUrl, paginatedResult, PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const favorites = await prisma.vendorFavorite.findMany({
-    where: { userId: session.user.id },
-    include: {
-      vendor: {
-        select: {
-          id: true, slug: true, businessName: true, category: true, city: true,
-          profileImage: true, rating: true, isVerified: true, isFeatured: true,
+  const { page, limit, skip } = parsePaginationFromUrl(req.url, { limit: PUBLIC_GRID_LIMIT });
+  const where = { userId: session.user.id };
+  const [items, total] = await Promise.all([
+    prisma.vendorFavorite.findMany({
+      where,
+      include: {
+        vendor: {
+          select: {
+            id: true, slug: true, businessName: true, category: true, city: true,
+            profileImage: true, rating: true, isVerified: true, isFeatured: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json({ success: true, data: favorites });
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.vendorFavorite.count({ where }),
+  ]);
+  return NextResponse.json({ success: true, data: paginatedResult(items, total, page, limit) });
 }
 
 export async function POST(req: Request) {

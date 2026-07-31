@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { walletService } from "@/services/wallet/wallet.service";
 import { verifyEventAccess } from "@/lib/event-access";
 import { createAuditLog } from "@/lib/audit";
+import { parsePaginationFromUrl } from "@/lib/pagination";
 
 const expenseSchema = z.object({
   eventId: z.string(),
@@ -22,7 +23,8 @@ export async function GET(req: Request) {
 
   try {
     await verifyEventAccess(eventId, session.user.id, session.user.role);
-    const summary = await walletService.getWalletSummary(eventId);
+    const { page, limit } = parsePaginationFromUrl(req.url, { limit: 10 });
+    const summary = await walletService.getWalletSummary(eventId, { page, limit });
     return NextResponse.json({ success: true, data: summary });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Access denied" }, { status: 403 });
@@ -45,7 +47,8 @@ export async function POST(req: Request) {
       entityId: data.eventId,
       details: { type: "expense", category: data.category, amount: data.amount },
     });
-    const summary = await walletService.getWalletSummary(data.eventId);
+    const { page, limit } = parsePaginationFromUrl(req.url, { limit: 10 });
+    const summary = await walletService.getWalletSummary(data.eventId, { page, limit });
     return NextResponse.json({ success: true, data: summary });
   } catch (error) {
     if (error instanceof z.ZodError) {

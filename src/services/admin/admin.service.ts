@@ -367,7 +367,7 @@ export class AdminService {
   }
 
   async getTemplates() {
-    return prisma.eventTemplate.findMany({ orderBy: { name: "asc" } });
+    return prisma.eventTemplate.findMany({ orderBy: { name: "asc" }, take: 200 });
   }
 
   async updateLegacyTemplate(id: string, data: { name?: string; isActive?: boolean; category?: string }) {

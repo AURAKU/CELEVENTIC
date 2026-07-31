@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { TemplateCanvas } from "@/components/template-engine/template-canvas";
 import type { TemplateSchema } from "@/types/template-engine";
 import { Download, ArrowLeft, ExternalLink } from "lucide-react";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 
 interface GeneratedDesign {
   id: string;
@@ -29,18 +32,38 @@ export default function GeneratedDesignsPage() {
 
 function GeneratedDesignsPageInner() {
   const eventId = useSearchParams().get("eventId");
+  const { page, setPage, resetPage, appendToParams } = usePagination(PUBLIC_GRID_LIMIT);
   const [designs, setDesigns] = useState<GeneratedDesign[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState("");
 
   useEffect(() => {
-    const url = new URL("/api/design-templates/generated", window.location.origin);
-    if (eventId) url.searchParams.set("eventId", eventId);
-    fetch(url.toString())
+    resetPage();
+  }, [eventId, resetPage]);
+
+  useEffect(() => {
+    setLoading(true);
+    const params = appendToParams(new URLSearchParams());
+    if (eventId) params.set("eventId", eventId);
+    fetch(`/api/design-templates/generated?${params}`)
       .then((r) => r.json())
-      .then((d) => { if (d.success) setDesigns(d.data); })
+      .then((d) => {
+        if (!d.success) return;
+        const data = d.data;
+        if (Array.isArray(data)) {
+          setDesigns(data);
+          setTotal(data.length);
+          setPages(1);
+        } else {
+          setDesigns(data.items ?? []);
+          setTotal(data.total ?? 0);
+          setPages(data.pages ?? 1);
+        }
+      })
       .finally(() => setLoading(false));
-  }, [eventId]);
+  }, [eventId, appendToParams]);
 
   async function exportDesign(design: GeneratedDesign, format: string) {
     setExporting(design.id);
@@ -89,44 +112,47 @@ function GeneratedDesignsPageInner() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {designs.map((d) => (
-            <Card key={d.id} className="card-glow">
-              <div className="bg-slate-100 p-3 flex justify-center">
-                <TemplateCanvas canvas={d.config.canvas} blocks={d.config.blocks} scale={0.15} />
-              </div>
-              <CardContent className="p-4 space-y-3">
-                <Badge variant="outline">{d.productType.replace(/_/g, " ")}</Badge>
-                <h3 className="font-medium text-sm">{d.name}</h3>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={exporting === d.id}
-                    onClick={() => exportDesign(d, "PNG")}
-                  >
-                    <Download className="h-3 w-3" /> SVG
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={exporting === d.id}
-                    onClick={() => exportDesign(d, "PDF")}
-                  >
-                    <Download className="h-3 w-3" /> PDF
-                  </Button>
-                  {d.productType === "INVITATION" && (
-                    <Button size="sm" variant="ghost" asChild>
-                      <Link href={`/dashboard/invitations?eventId=${d.eventId}`}>
-                        <ExternalLink className="h-3 w-3" /> Share
-                      </Link>
-                    </Button>
-                  )}
+        <>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {designs.map((d) => (
+              <Card key={d.id} className="card-glow">
+                <div className="bg-slate-100 p-3 flex justify-center">
+                  <TemplateCanvas canvas={d.config.canvas} blocks={d.config.blocks} scale={0.15} />
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <CardContent className="p-4 space-y-3">
+                  <Badge variant="outline">{d.productType.replace(/_/g, " ")}</Badge>
+                  <h3 className="font-medium text-sm">{d.name}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={exporting === d.id}
+                      onClick={() => exportDesign(d, "PNG")}
+                    >
+                      <Download className="h-3 w-3" /> SVG
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={exporting === d.id}
+                      onClick={() => exportDesign(d, "PDF")}
+                    >
+                      <Download className="h-3 w-3" /> PDF
+                    </Button>
+                    {d.productType === "INVITATION" && (
+                      <Button size="sm" variant="ghost" asChild>
+                        <Link href={`/dashboard/invitations?eventId=${d.eventId}`}>
+                          <ExternalLink className="h-3 w-3" /> Share
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <PaginationBar page={page} pages={pages} total={total} limit={PUBLIC_GRID_LIMIT} onPageChange={setPage} />
+        </>
       )}
     </div>
   );

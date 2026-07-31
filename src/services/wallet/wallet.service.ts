@@ -195,33 +195,42 @@ export class WalletService {
     return { eventId, amount: net, fee, type: "ticket_revenue" };
   }
 
-  async getWalletSummary(eventId: string) {
+  async getWalletSummary(
+    eventId: string,
+    options?: { page?: number; limit?: number }
+  ) {
+    const page = Math.max(1, options?.page ?? 1);
+    const limit = Math.min(100, Math.max(1, options?.limit ?? 10));
+    const skip = (page - 1) * limit;
+
     const wallet = await prisma.wallet.findUnique({
       where: { eventId },
       include: {
-        transactions: {
-          orderBy: { createdAt: "desc" },
-          take: 50,
-          include: { creator: { select: { name: true } } },
-        },
         eventExpenses: { orderBy: { createdAt: "desc" }, take: 10 },
       },
     });
 
     const resolvedWallet = wallet ?? (await this.getOrCreateEventWallet(eventId));
-    const walletWithRelations = wallet
+    const walletBase = wallet
       ? wallet
       : await prisma.wallet.findUnique({
           where: { id: resolvedWallet.id },
           include: {
-            transactions: {
-              orderBy: { createdAt: "desc" },
-              take: 50,
-              include: { creator: { select: { name: true } } },
-            },
             eventExpenses: { orderBy: { createdAt: "desc" }, take: 10 },
           },
         });
+
+    const walletId = walletBase?.id ?? resolvedWallet.id;
+    const [transactions, transactionTotal] = await Promise.all([
+      prisma.walletTransaction.findMany({
+        where: { walletId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: { creator: { select: { name: true } } },
+      }),
+      prisma.walletTransaction.count({ where: { walletId } }),
+    ]);
 
     const contributions = await prisma.contribution.aggregate({
       where: { eventId },
@@ -229,13 +238,24 @@ export class WalletService {
       _count: true,
     });
 
-    const revenue = Number(walletWithRelations?.revenue ?? 0);
-    const expenses = Number(walletWithRelations?.expenses ?? 0);
-    const balance = Number(walletWithRelations?.balance ?? 0);
+    const revenue = Number(walletBase?.revenue ?? 0);
+    const expenses = Number(walletBase?.expenses ?? 0);
+    const balance = Number(walletBase?.balance ?? 0);
     const contributionTotal = Number(contributions._sum.amount ?? 0);
+    const pages = Math.max(1, Math.ceil(transactionTotal / limit));
 
     return {
-      wallet: walletWithRelations,
+      wallet: {
+        ...walletBase,
+        transactions,
+      },
+      transactionsMeta: {
+        total: transactionTotal,
+        page,
+        limit,
+        pages,
+        hasMore: page < pages,
+      },
       contributions: { total: contributionTotal, count: contributions._count },
       profitLoss: {
         revenue,
