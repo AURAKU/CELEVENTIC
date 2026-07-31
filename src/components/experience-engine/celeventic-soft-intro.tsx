@@ -85,20 +85,24 @@ export function CeleventicSoftIntro({
   }, [finish, reduceMotion]);
 
   useEffect(() => {
+    // Always arm a hard ceiling so a stalled buffer / broken autoplay path
+    // cannot leave guests on a blank brand screen forever. Normal playback
+    // ends via `onEnded` well before this timer fires.
+    const fallback = setTimeout(finish, SOFT_INTRO_FALLBACK_MS);
+
     // Reduced motion / failed video: timed brand beat, no full clip.
     if (reduceMotion || videoFailed) {
       const hold = softIntroHoldMs(Boolean(reduceMotion), quickHold);
       const auto = setTimeout(() => beginExit(), hold);
-      const fallback = setTimeout(finish, SOFT_INTRO_FALLBACK_MS);
       return () => {
         clearTimeout(auto);
         clearTimeout(fallback);
       };
     }
 
-    // Successful video playback owns completion through `onEnded`, ensuring
-    // the canonical intro is never cut short by a timer or incidental tap.
-    return;
+    return () => {
+      clearTimeout(fallback);
+    };
   }, [beginExit, finish, reduceMotion, quickHold, videoFailed]);
 
   useEffect(() => {
@@ -206,7 +210,7 @@ export function CeleventicSoftIntro({
               muted={!soundEnabled}
               playsInline
               autoPlay
-              preload="auto"
+              preload="metadata"
               disablePictureInPicture
               controlsList="nodownload nofullscreen noremoteplayback"
               onLoadedMetadata={(event) => {
@@ -214,6 +218,16 @@ export function CeleventicSoftIntro({
               }}
               onEnded={handleVideoEnded}
               onError={() => setVideoFailed(true)}
+              onStalled={() => {
+                // Prolonged stall on cellular/WebViews — fall back to poster beat.
+                const video = videoRef.current;
+                if (!video || video.readyState >= 2) return;
+                window.setTimeout(() => {
+                  if (videoRef.current && videoRef.current.readyState < 2 && !completed.current) {
+                    setVideoFailed(true);
+                  }
+                }, 8_000);
+              }}
             />
           </>
         ) : (

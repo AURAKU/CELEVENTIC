@@ -2,6 +2,15 @@
     "name": "celeventic",
     "version": "0.1.0",
     "private": true,
+    "browserslist": [
+        "defaults",
+        "iOS >= 15",
+        "Safari >= 15",
+        "Chrome >= 90",
+        "Firefox >= 90",
+        "Samsung >= 15",
+        "not dead"
+    ],
     "scripts": {
         "dev": "next dev",
         "dev:3000": "next dev -p 3000",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { useSession } from "next-auth/react";
+import { storageGet, storageSet } from "@/lib/browser/safe-storage";
 
 const CONSENT_KEY = "celeventic_cookie_consent";
 
@@ -17,7 +18,7 @@ export function CookieConsent() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const stored = localStorage.getItem(CONSENT_KEY);
+    const stored = storageGet(CONSENT_KEY);
     if (stored) {
       setVisible(false);
       setChecked(true);
@@ -32,7 +33,7 @@ export function CookieConsent() {
         .then((d) => {
           const level = d.success ? d.data?.cookieConsent : null;
           if (level) {
-            localStorage.setItem(CONSENT_KEY, level);
+            storageSet(CONSENT_KEY, level);
             setVisible(false);
           } else {
             setVisible(true);
@@ -51,7 +52,7 @@ export function CookieConsent() {
   }, [session?.user, status]);
 
   async function accept(level: "essential" | "all") {
-    localStorage.setItem(CONSENT_KEY, level);
+    storageSet(CONSENT_KEY, level);
     setVisible(false);
 
     if (session?.user) {

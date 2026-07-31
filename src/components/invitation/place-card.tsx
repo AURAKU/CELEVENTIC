@@ -12,7 +12,7 @@ import {
   type PlaceCardSeating,
   type PlaceCardTheme,
 } from "@/lib/invitation-features/place-card";
-import { seatDisplayName, tableCaptionValue, tableDisplayName } from "@/lib/seating/seating-types";
+import { GuestSeatingCard } from "@/components/seating/guest-seating-card";
 import { cn } from "@/lib/utils";
 
 /**
@@ -72,11 +72,6 @@ function frameStyleFor(
     default:
       return { border: `1px solid ${border}`, borderRadius: radius };
   }
-}
-
-function placeValue(value: string, prefix: "table" | "seat"): string {
-  if (prefix === "table") return tableCaptionValue(value);
-  return seatDisplayName(value).replace(/^seat\s+/i, "").trim() || value;
 }
 
 export function PlaceCard({
@@ -176,58 +171,17 @@ export function PlaceCard({
         ) : null}
 
         {seating && (
-          <div
-            className={cn(
-              "mx-auto mt-5 grid w-full max-w-[22rem] overflow-hidden rounded-xl border",
-              seating.seatLabel ? "grid-cols-2" : "grid-cols-1"
-            )}
-            style={{
-              borderColor: tokens.border,
-              background: `color-mix(in srgb, ${tokens.secondary} 9%, transparent)`,
-            }}
-            data-testid="place-card-seating"
-            aria-label={`Assigned ${tableDisplayName(seating.tableNumber)}${
-              seating.seatLabel ? `, ${seatDisplayName(seating.seatLabel)}` : ""
-            }`}
-          >
-            <div className="px-4 py-3">
-              <p
-                className="text-[9px] font-semibold uppercase tracking-[0.24em]"
-                style={{ color: tokens.secondary }}
-              >
-                Your table
-              </p>
-              <p
-                className="mt-1 text-lg font-semibold leading-none sm:text-xl"
-                style={{ color: tokens.primary, fontFamily: tokens.fontHeading }}
-              >
-                {placeValue(seating.tableNumber, "table")}
-              </p>
-            </div>
-            {seating.seatLabel && (
-              <div className="border-l px-4 py-3" style={{ borderColor: tokens.border }}>
-                <p
-                  className="text-[9px] font-semibold uppercase tracking-[0.24em]"
-                  style={{ color: tokens.secondary }}
-                >
-                  Your seat
-                </p>
-                <p
-                  className="mt-1 text-lg font-semibold leading-none sm:text-xl"
-                  style={{ color: tokens.primary, fontFamily: tokens.fontHeading }}
-                >
-                  {placeValue(seating.seatLabel, "seat")}
-                </p>
-              </div>
-            )}
-            {seating.zone && (
-              <p
-                className="col-span-full border-t px-4 py-2 text-[10px] uppercase tracking-[0.16em]"
-                style={{ color: tokens.text, borderColor: tokens.border, opacity: 0.78 }}
-              >
-                {seating.zone}
-              </p>
-            )}
+          <div className="mx-auto mt-5 w-full max-w-[22rem]" data-testid="place-card-seating">
+            <GuestSeatingCard
+              design={design}
+              guestName={model.recipientLine}
+              tableNumber={seating.tableNumber}
+              seatLabel={seating.seatLabel}
+              zone={seating.zone}
+              allowance={party.allowance}
+              settings={{ revealMode: "immediate" }}
+              className="shadow-none"
+            />
           </div>
         )}
 

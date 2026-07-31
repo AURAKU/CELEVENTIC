@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RefreshCw, Home, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constants";
+import { safeSessionStorage } from "@/lib/browser/safe-storage";
 
 /**
  * Route-segment error boundary. Catches render errors thrown anywhere below the root
@@ -24,10 +25,12 @@ const RELOAD_ONCE_KEY = "celeventic:stale-asset-reload";
 
 function recoverFromStaleAssets(error: Error): boolean {
   if (!STALE_ASSET_ERROR.test(`${error.name} ${error.message}`)) return false;
+  const session = safeSessionStorage();
+  if (!session) return false;
   try {
     // One attempt per session, a reload loop is worse than the error card.
-    if (window.sessionStorage.getItem(RELOAD_ONCE_KEY)) return false;
-    window.sessionStorage.setItem(RELOAD_ONCE_KEY, "1");
+    if (session.getItem(RELOAD_ONCE_KEY)) return false;
+    session.setItem(RELOAD_ONCE_KEY, "1");
   } catch {
     return false;
   }

@@ -6,12 +6,13 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { storageGet, storageRemove, storageSet } from "@/lib/browser/safe-storage";
 
 const LEGAL_ACCEPT_KEY = "celeventic_legal_accepted";
 
 function cacheLegalAcceptance(termsVersion: string, privacyVersion: string) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(
+  storageSet(
     LEGAL_ACCEPT_KEY,
     JSON.stringify({ termsVersion, privacyVersion, at: new Date().toISOString() })
   );
@@ -19,13 +20,13 @@ function cacheLegalAcceptance(termsVersion: string, privacyVersion: string) {
 
 function clearLegalAcceptanceCache() {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(LEGAL_ACCEPT_KEY);
+  storageRemove(LEGAL_ACCEPT_KEY);
 }
 
 function hasCachedLegalAcceptance(termsVersion: string, privacyVersion: string) {
   if (typeof window === "undefined") return false;
   try {
-    const raw = localStorage.getItem(LEGAL_ACCEPT_KEY);
+    const raw = storageGet(LEGAL_ACCEPT_KEY);
     if (!raw) return false;
     const parsed = JSON.parse(raw) as { termsVersion?: string; privacyVersion?: string };
     return parsed.termsVersion === termsVersion && parsed.privacyVersion === privacyVersion;

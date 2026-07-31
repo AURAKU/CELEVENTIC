@@ -11,8 +11,8 @@
  */
 
 /** Canonical Celeventic invitation intro — every template, every guest. */
-export const CELEVENTIC_INVITATION_INTRO_VIDEO = "/brand/celeventic-invitation-intro.mp4?v=20260728b";
-export const CELEVENTIC_INVITATION_INTRO_POSTER = "/brand/celeventic-invitation-intro-poster.jpg?v=20260728b";
+export const CELEVENTIC_INVITATION_INTRO_VIDEO = "/brand/celeventic-invitation-intro.mp4?v=20260731a";
+export const CELEVENTIC_INVITATION_INTRO_POSTER = "/brand/celeventic-invitation-intro-poster.jpg?v=20260731a";
 
 /** Fallback hold when the video element cannot report duration (reduced motion / errors). */
 export const SOFT_INTRO_DURATION_MS = 12_500;

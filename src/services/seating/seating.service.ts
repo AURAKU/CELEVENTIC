@@ -140,35 +140,78 @@ export class SeatingService {
         seatingAssignment: {
           include: { seatingPlan: true },
         },
+        invitation: {
+          select: {
+            id: true,
+            name: true,
+            admissionAllowance: true,
+            admittedCount: true,
+            guests: {
+              where: { archivedAt: null },
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                seatingAssignment: {
+                  select: { seatLabel: true, tableNumber: true },
+                },
+              },
+            },
+          },
+        },
       },
     });
     if (!guest) return null;
 
     const assignment = guest.seatingAssignment;
-    const layout = assignment?.seatingPlan?.layout as {
+    const layout = (assignment?.seatingPlan?.layout ?? null) as {
       tables?: Array<{
         label: string;
         shape?: string;
         seatCount?: number;
         zone?: string;
       }>;
+      status?: "draft" | "published";
+      settings?: Record<string, unknown>;
     } | null;
     const tableConfig = layout?.tables?.find((t) =>
       tablesMatch(t.label, assignment?.tableNumber ?? "")
     );
+    const partyMembers =
+      guest.invitation?.guests.map((member) => ({
+        id: member.id,
+        name: member.name,
+        seatLabel: member.seatingAssignment?.seatLabel ?? null,
+        admitted: member.status === "CHECKED_IN",
+      })) ?? [];
+
+    const base = {
+      guest: { id: guest.id, name: guest.name, status: guest.status },
+      event: guest.event,
+      planStatus: layout?.status === "draft" ? "draft" : "published",
+      settings: layout?.settings ?? {},
+      party: guest.invitation
+        ? {
+            allowance: Math.max(
+              guest.invitation.admissionAllowance ?? 1,
+              partyMembers.length || 1
+            ),
+            admittedCount: guest.invitation.admittedCount ?? 0,
+            members: partyMembers,
+          }
+        : undefined,
+    } as const;
 
     if (!assignment) {
       return {
-        guest: { id: guest.id, name: guest.name, status: guest.status },
-        event: guest.event,
+        ...base,
         assignment: null,
         table: null,
       };
     }
 
     return {
-      guest: { id: guest.id, name: guest.name, status: guest.status },
-      event: guest.event,
+      ...base,
       assignment: {
         tableNumber: assignment.tableNumber,
         seatLabel: assignment.seatLabel,

@@ -4,7 +4,9 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { seatingService } from "@/services/seating/seating.service";
 import type { SeatingLayout } from "@/services/seating/seating.service";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission, verifyEventAccess } from "@/lib/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
+import type { UserRole } from "@prisma/client";
 import { z } from "zod";
 import { SEATING_GUEST_BATCH, SEATING_GUEST_LIMIT } from "@/lib/pagination";
 
@@ -146,22 +148,66 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 const upsertSchema = z
   .object({
     name: z.string().trim().min(1).max(120),
-    layout: z.object({
-      tables: z.array(
-        z.object({
-          id: z.string().min(1).max(120),
-          label: z.string().trim().min(1).max(80),
-          zone: z.string().trim().max(80).optional(),
-          capacity: z.number().optional(),
-          shape: z.enum(["round", "square", "rectangle"]).optional(),
-          seatCount: z.number().min(2).max(20).optional(),
-          x: z.number().optional(),
-          y: z.number().optional(),
-        })
-      ),
-      notes: z.string().optional(),
-      expectedGuests: z.number().optional(),
-    }),
+    layout: z
+      .object({
+        tables: z.array(
+          z.object({
+            id: z.string().min(1).max(120),
+            label: z.string().trim().min(1).max(80),
+            zone: z.string().trim().max(80).optional(),
+            zoneId: z.string().max(120).optional(),
+            kind: z.string().max(40).optional(),
+            capacity: z.number().optional(),
+            shape: z.enum(["round", "square", "rectangle"]).optional(),
+            seatCount: z.number().min(2).max(20).optional(),
+            x: z.number().optional(),
+            y: z.number().optional(),
+            rotation: z.number().optional(),
+            locked: z.boolean().optional(),
+            vip: z.boolean().optional(),
+            category: z.string().max(80).optional(),
+            color: z.string().max(40).optional(),
+            notes: z.string().max(500).optional(),
+            seatsAtEnds: z.boolean().optional(),
+            numberingClockwise: z.boolean().optional(),
+          })
+        ),
+        zones: z
+          .array(
+            z.object({
+              id: z.string().min(1).max(120),
+              name: z.string().trim().min(1).max(80),
+              color: z.string().max(40),
+              description: z.string().max(240).optional(),
+              capacity: z.number().optional(),
+              priority: z.number().optional(),
+            })
+          )
+          .optional(),
+        elements: z
+          .array(
+            z.object({
+              id: z.string().min(1).max(120),
+              kind: z.string().min(1).max(40),
+              label: z.string().max(80),
+              x: z.number(),
+              y: z.number(),
+              width: z.number().optional(),
+              height: z.number().optional(),
+              rotation: z.number().optional(),
+              locked: z.boolean().optional(),
+              notes: z.string().max(500).optional(),
+            })
+          )
+          .optional(),
+        notes: z.string().optional(),
+        expectedGuests: z.number().optional(),
+        status: z.enum(["draft", "published"]).optional(),
+        publishedAt: z.string().nullable().optional(),
+        revision: z.number().optional(),
+        settings: z.record(z.any()).optional(),
+      })
+      .passthrough(),
   })
   .superRefine((value, ctx) => {
     const seen = new Set<string>();
@@ -184,7 +230,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const { id: eventId } = await params;
   try {
-    await verifyEventAccess(eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.EDIT_SEATING
+    );
+  } catch {
+    return NextResponse.json({ error: "You do not have permission to edit seating" }, { status: 403 });
+  }
+
+  try {
     const body = upsertSchema.parse(await req.json());
     const plan = await seatingService.upsertPlan(eventId, body.name, body.layout as SeatingLayout);
     return NextResponse.json({ success: true, data: plan });

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { DisplayCurrency } from "@/lib/commerce/constants";
+import { storageGet, storageSet } from "@/lib/browser/safe-storage";
 
 interface CurrencyContextValue {
   currency: DisplayCurrency;
@@ -39,7 +40,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as DisplayCurrency | null;
+    const stored = storageGet(STORAGE_KEY) as DisplayCurrency | null;
     if (stored && ["GHS", "USD", "GBP"].includes(stored)) setCurrencyState(stored);
 
     refreshRates();
@@ -56,7 +57,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
 
   const setCurrency = useCallback((c: DisplayCurrency) => {
     setCurrencyState(c);
-    localStorage.setItem(STORAGE_KEY, c);
+    storageSet(STORAGE_KEY, c);
   }, []);
 
   const convert = useCallback(

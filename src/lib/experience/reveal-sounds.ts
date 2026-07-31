@@ -1,8 +1,11 @@
 /** Lightweight Web Audio reveal sounds — no external files required */
 
+import { createAudioContext } from "@/lib/browser/safe-storage";
+
 export function playWaxCrackSound() {
   try {
-    const ctx = new AudioContext();
+    const ctx = createAudioContext();
+    if (!ctx) return;
     const duration = 0.35;
     const buffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -18,7 +21,7 @@ export function playWaxCrackSound() {
     src.connect(filter);
     filter.connect(ctx.destination);
     src.start();
-    setTimeout(() => ctx.close(), 500);
+    setTimeout(() => void ctx.close(), 500);
   } catch {
     // silent fail — browsers may block without gesture (we call after tap)
   }
@@ -26,7 +29,8 @@ export function playWaxCrackSound() {
 
 export function playPaperUnfoldSound() {
   try {
-    const ctx = new AudioContext();
+    const ctx = createAudioContext();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
@@ -38,7 +42,7 @@ export function playPaperUnfoldSound() {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.6);
-    setTimeout(() => ctx.close(), 700);
+    setTimeout(() => void ctx.close(), 700);
   } catch {
     // ignore
   }

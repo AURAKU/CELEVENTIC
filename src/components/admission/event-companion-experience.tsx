@@ -12,8 +12,9 @@ import { EVENT_TIME_ZONE } from "@/lib/constants";
 import type { ResolvedFeature } from "@/lib/invitation-features/registry";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
-import { tableDisplayName } from "@/lib/seating/seating-types";
+import { GuestSeatingCard } from "@/components/seating/guest-seating-card";
 import { cn } from "@/lib/utils";
+import type { InvitationDesignConfig } from "@/types/invitation-design";
 
 export type EventCompanionExperienceProps = {
   theme: CompanionTheme;
@@ -215,75 +216,56 @@ export function EventCompanionExperience({
         </header>
 
         {showSeat ? (
-          <section
-            className="mt-12 text-center"
-            aria-labelledby="ec-seat-heading"
-            style={{
-              background: `linear-gradient(165deg, ${theme.accentWash}, ${colors.background}cc)`,
-              border: `1px solid ${colors.secondary}40`,
-              borderRadius: "1.75rem",
-              padding: "2rem 1.5rem",
-              boxShadow: `0 24px 60px -36px ${colors.primary}55`,
-            }}
-          >
-            <h2
-              id="ec-seat-heading"
-              className="text-xs uppercase tracking-[0.32em] sm:text-sm"
-              style={{ color: colors.secondary, fontFamily: fonts.eyebrow, fontWeight: 600 }}
-            >
+          <section className="mt-12" aria-labelledby="ec-seat-heading">
+            <h2 id="ec-seat-heading" className="sr-only">
               Your place
             </h2>
-            {displaySeat ? (
-              <>
-                <p
-                  className="mt-4 text-5xl font-semibold tracking-tight sm:text-6xl"
-                  style={{ color: colors.primary, fontFamily: fonts.heading }}
-                >
-                  {tableDisplayName(displaySeat.tableNumber)}
-                </p>
-                {displaySeat.seatLabel ? (
-                  <p
-                    className="mt-3 text-lg sm:text-xl"
-                    style={{ opacity: 0.92, fontWeight: 500 }}
-                  >
-                    Seat {displaySeat.seatLabel}
-                  </p>
-                ) : null}
-                {displaySeat.zone ? (
-                  <p
-                    className="mt-2 text-sm uppercase tracking-[0.18em]"
-                    style={{ color: colors.secondary, opacity: 0.9, fontWeight: 600 }}
-                  >
-                    {displaySeat.zone}
-                  </p>
-                ) : null}
-                {extraPartySeats.length > 0 ? (
-                  <ul className="mt-6 space-y-2 text-left">
-                    {extraPartySeats.map((s) => (
-                      <li
-                        key={s.guestId}
-                        className="text-base sm:text-lg"
-                        style={{ color: colors.primary }}
-                      >
-                        <span className="font-semibold">{s.guestName}</span>
-                        <span style={{ opacity: 0.8 }}>
-                          {`, ${tableDisplayName(s.tableNumber)}`}
-                          {s.seatLabel ? `, Seat ${s.seatLabel}` : ""}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </>
-            ) : (
-              <p
-                className="mt-4 text-base leading-relaxed sm:text-lg"
-                style={{ opacity: 0.88, fontWeight: 500 }}
-              >
-                Your table will appear here once seating is assigned. An usher can guide you in
-                the meantime.
-              </p>
-            )}
+            <GuestSeatingCard
+              design={
+                {
+                  layout: theme.layout,
+                  colors: theme.colors,
+                  fonts: theme.fonts,
+                } as InvitationDesignConfig
+              }
+              guestName={guestName ?? "Guest"}
+              tableNumber={displaySeat?.tableNumber}
+              seatLabel={displaySeat?.seatLabel}
+              zone={displaySeat?.zone}
+              members={allocatedSeats.map((s) => ({
+                id: s.guestId,
+                name: s.guestName,
+                seatLabel: s.seatLabel,
+                admitted: s.admitted,
+              }))}
+              allowance={Math.max(
+                1,
+                allocatedSeats.length + (continuity?.unseatedCount ?? 0),
+                (continuity?.revealed.length ?? 0) +
+                  (continuity?.reserved.length ?? 0) +
+                  (continuity?.unseatedCount ?? 0)
+              )}
+              admittedCount={
+                continuity?.revealed.length ??
+                allocatedSeats.filter((s) => s.admitted).length
+              }
+              isPortal
+              settings={{ revealMode: "immediate" }}
+              className="mx-auto max-w-lg text-left shadow-[0_24px_60px_-36px_var(--ec-primary)]"
+            />
+            {extraPartySeats.length > 0 ? (
+              <ul className="mx-auto mt-4 max-w-lg space-y-2 text-left text-sm" style={{ color: colors.primary }}>
+                {extraPartySeats.map((s) => (
+                  <li key={s.guestId}>
+                    <span className="font-semibold">{s.guestName}</span>
+                    <span style={{ opacity: 0.8 }}>
+                      {s.seatLabel ? ` · Seat ${s.seatLabel}` : ""}
+                      {s.admitted ? " · Arrived" : " · Awaiting arrival"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
         ) : null}
 

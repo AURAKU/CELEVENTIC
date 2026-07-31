@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { seatingService } from "@/services/seating/seating.service";
-import { verifyEventAccess } from "@/lib/event-access";
+import { requireEventPermission } from "@/lib/event-access";
+import { EventPermissionKey } from "@/lib/workspace/permission-keys";
+import type { UserRole } from "@prisma/client";
 import { z } from "zod";
 
 const assignSchema = z.object({
@@ -25,9 +27,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { id: eventId } = await params;
   try {
-    await verifyEventAccess(eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.EDIT_SEATING
+    );
   } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "You do not have permission to edit seating" }, { status: 403 });
   }
 
   const plan = await seatingService.getPlanForEvent(eventId);
@@ -48,9 +55,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   const { id: eventId } = await params;
   try {
-    await verifyEventAccess(eventId, session.user.id, session.user.role);
+    await requireEventPermission(
+      eventId,
+      session.user.id,
+      session.user.role as UserRole,
+      EventPermissionKey.EDIT_SEATING
+    );
   } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "You do not have permission to edit seating" }, { status: 403 });
   }
 
   const { guestId } = (await req.json()) as { guestId?: string };

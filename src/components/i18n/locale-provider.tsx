@@ -20,6 +20,7 @@ import {
 import { localeCookieHeader } from "@/lib/i18n/locale-cookie";
 import { mergeMessageDictionaries, STATIC_MESSAGE_DICTIONARIES, type LocaleMessages } from "@/lib/i18n/static-messages";
 import { resolveTranslation } from "@/lib/i18n/translate";
+import { storageSet } from "@/lib/browser/safe-storage";
 
 interface LocaleContextValue {
   locale: AppLocale;
@@ -68,7 +69,7 @@ export function LocaleProvider({
   useEffect(() => {
     if (hydrated.current) return;
     hydrated.current = true;
-    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    storageSet(LOCALE_STORAGE_KEY, locale);
     document.documentElement.lang = locale;
   }, [locale]);
 
@@ -99,7 +100,7 @@ export function LocaleProvider({
         if (d.success && isAppLocale(d.data.languageCode)) {
           setLocaleState((current) => {
             if (current === d.data.languageCode) return current;
-            localStorage.setItem(LOCALE_STORAGE_KEY, d.data.languageCode);
+            storageSet(LOCALE_STORAGE_KEY, d.data.languageCode);
             document.cookie = localeCookieHeader(d.data.languageCode);
             document.documentElement.lang = d.data.languageCode;
             return d.data.languageCode;
@@ -111,7 +112,7 @@ export function LocaleProvider({
   const setLocale = useCallback(
     (next: AppLocale) => {
       setLocaleState(next);
-      localStorage.setItem(LOCALE_STORAGE_KEY, next);
+      storageSet(LOCALE_STORAGE_KEY, next);
       document.cookie = localeCookieHeader(next);
       document.documentElement.lang = next;
       if (session?.user?.id) {
