@@ -25,6 +25,8 @@ export const ImportField = {
   TABLE_NUMBER: "tableNumber",
   SEAT_LABEL: "seatLabel",
   NOTES: "notes",
+  /** Organizer-only CRM tags (comma-separated labels). */
+  TAGS: "tags",
   /** Explicitly ignore this column. */
   IGNORE: "ignore",
 } as const;
@@ -42,19 +44,21 @@ export const MAPPABLE_FIELDS: ImportField[] = [
   ImportField.TABLE_NUMBER,
   ImportField.SEAT_LABEL,
   ImportField.NOTES,
+  ImportField.TAGS,
 ];
 
 export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
-  name: "Guest / invitation name",
+  name: "Guest name",
   email: "Email (optional)",
   phone: "Phone (optional)",
-  partySize: "Party allowance",
+  partySize: "People admitted",
   partyType: "Invitation type",
   memberNames: "Party member names",
   groupName: "Group / table group",
   tableNumber: "Table",
   seatLabel: "Seat",
   notes: "Notes",
+  tags: "Tags (organizer only)",
   ignore: "Do not import",
 };
 
@@ -118,6 +122,8 @@ export interface NormalizedRow {
   partyType: GuestPartyType;
   partySize: number;
   memberNames: string[];
+  /** Organizer CRM tag labels from the Tags column (resolved at generation). */
+  tagLabels: string[];
   groupName: string | null;
   tableNumber: string | null;
   seatLabel: string | null;
@@ -158,6 +164,11 @@ export interface ImportOptions {
   deliveryChannels: ("EMAIL" | "SMS" | "WHATSAPP")[];
   /** Default decision applied to detected duplicates until reviewed. */
   duplicatePolicy: "REVIEW" | "SKIP" | "CREATE_ANYWAY";
+  /**
+   * Event guest tags applied to every generated primary guest.
+   * Organizer/admin CRM only — never shown on invitations.
+   */
+  defaultTagIds: string[];
 }
 
 export const DEFAULT_IMPORT_OPTIONS: ImportOptions = {
@@ -174,6 +185,7 @@ export const DEFAULT_IMPORT_OPTIONS: ImportOptions = {
   publishImmediately: true,
   deliveryChannels: [],
   duplicatePolicy: "REVIEW",
+  defaultTagIds: [],
 };
 
 /** Rows generated per background-job pass. Keeps each tick short and resumable. */
@@ -186,5 +198,12 @@ export const MAX_IMPORT_ROWS = 5000;
 export const MAX_IMPORT_FILE_BYTES = 8 * 1024 * 1024;
 
 export function mergeImportOptions(partial?: Partial<ImportOptions> | null): ImportOptions {
-  return { ...DEFAULT_IMPORT_OPTIONS, ...(partial ?? {}) };
+  const merged = { ...DEFAULT_IMPORT_OPTIONS, ...(partial ?? {}) };
+  merged.defaultTagIds = Array.isArray(partial?.defaultTagIds)
+    ? Array.from(new Set(partial.defaultTagIds.filter(Boolean))).slice(0, 20)
+    : [...DEFAULT_IMPORT_OPTIONS.defaultTagIds];
+  merged.deliveryChannels = Array.isArray(partial?.deliveryChannels)
+    ? partial.deliveryChannels
+    : [...DEFAULT_IMPORT_OPTIONS.deliveryChannels];
+  return merged;
 }

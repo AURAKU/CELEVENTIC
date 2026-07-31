@@ -17,7 +17,7 @@ import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import { mapLegacyRevealMode } from "@/lib/experience/opening-experiences";
-import { createInvitationAudioManager } from "@/lib/music/invitation-audio-manager";
+import { createInvitationAudioManager, pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
 import {
   phaseAfterSoftIntro,
   resolveInitialInvitePhase,
@@ -40,6 +40,7 @@ import {
 } from "@/lib/invitation/wedding-board";
 import { onInvitationReplay } from "@/lib/experience/replay-invitation";
 import {
+  forgetOpeningSeen,
   hasSeenOpening,
   openingMemoryKey,
   rememberOpeningSeen,
@@ -170,13 +171,16 @@ export function PremiumInviteWrapper({
   const needsTapGate = Boolean(!skipTapGate && !curtainOwnsTap);
   const introEnabled = false;
 
-  const pipelineFlags = {
-    skipSoftIntro,
-    skipIntro,
-    introEnabled,
-    needsTapGate,
-    showReveal,
-  };
+  const pipelineFlags = useMemo(
+    () => ({
+      skipSoftIntro,
+      skipIntro,
+      introEnabled,
+      needsTapGate,
+      showReveal,
+    }),
+    [skipSoftIntro, skipIntro, introEnabled, needsTapGate, showReveal]
+  );
 
   const layoutMedia = getLayoutMediaPack(enrichedDesign.layout);
   // TM soft intro must match embroidery pre-reveal, never the printed card art.
@@ -248,6 +252,8 @@ export function PremiumInviteWrapper({
   const [phase, setPhase] = useState<ExperiencePhase>(() =>
     resolveInitialInvitePhase(pipelineFlags)
   );
+  /** Bumps on Replay Opening so soft-intro / tap / reveal remount from frame 0. */
+  const [ceremonyGeneration, setCeremonyGeneration] = useState(0);
   const tracked = useRef(false);
   const audioStarted = useRef(false);
 
@@ -349,20 +355,43 @@ export function PremiumInviteWrapper({
     }
   }, [phase, hasMusic, wantsAutoplay, startAudio]);
 
-  // "Replay the opening" inside a template restarts the ceremony, not the page.
-  useEffect(() => {
-    return onInvitationReplay(() => {
-      // An explicit replay request always plays the full ceremony again,
-      // even for a guest who'd otherwise get the quick returning-guest path.
-      setIsReturningGuest(false);
-      if (showReveal) {
-        setPhase("reveal");
-        return;
+  const restartOpeningCeremony = useCallback(() => {
+    // Full pipeline again: brand video → tap gate / reveal → portal.
+    setIsReturningGuest(false);
+    forgetOpeningSeen(ceremonyMemoryKey);
+    audioStarted.current = false;
+    pauseAllInvitationAudio();
+    try {
+      const audio = audioManager?.getAudio();
+      if (audio) {
+        audio.currentTime = musicSelection?.startSec ?? 0;
       }
-      setPhase(resolveInitialInvitePhase(pipelineFlags));
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showReveal, skipSoftIntro, skipIntro, introEnabled, needsTapGate]);
+    } catch {
+      /* ignore */
+    }
+    try {
+      window.scrollTo(0, 0);
+    } catch {
+      /* ignore */
+    }
+    setCeremonyGeneration((n) => n + 1);
+    setPhase(resolveInitialInvitePhase(pipelineFlags));
+  }, [audioManager, ceremonyMemoryKey, musicSelection?.startSec, pipelineFlags]);
+
+  // "Replay Opening" inside a template restarts from the brand video intro.
+  useEffect(() => onInvitationReplay(restartOpeningCeremony), [restartOpeningCeremony]);
+
+  // Back-forward cache can restore the portal mid-ceremony without remounting —
+  // treat that like a fresh open and restart from the video intro.
+  useEffect(() => {
+    if (embedded || skipSoftIntro === true) return;
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      restartOpeningCeremony();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [embedded, restartOpeningCeremony, skipSoftIntro]);
 
   const showAudioControls = Boolean(
     audioManager && hasMusic && (phase === "portal" || phase === "reveal" || phase === "tap-to-begin")
@@ -429,6 +458,7 @@ export function PremiumInviteWrapper({
       <>
         {admissionHandoff}
         <CeleventicSoftIntro
+          key={`soft-intro-${ceremonyGeneration}`}
           onComplete={afterSoftIntro}
           accentColor={softAccent}
           secondaryColor={softSecondary}
@@ -448,6 +478,7 @@ export function PremiumInviteWrapper({
       <>
         {admissionHandoff}
         <TapToBeginExperience
+          key={`tap-begin-${ceremonyGeneration}`}
           onBegin={handleTapBegin}
           eventTitle={props.event.title}
           hostName={props.event.hostName}
@@ -510,6 +541,7 @@ export function PremiumInviteWrapper({
       <>
         {admissionHandoff}
         <InteractiveReveal
+          key={`reveal-${ceremonyGeneration}`}
           openingExperience={openingExperience}
           guestName={props.guestName}
           eventTitle={props.event.title}

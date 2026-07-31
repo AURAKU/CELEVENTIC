@@ -5,6 +5,7 @@ import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { resolveFeatureThemeTokens } from "@/lib/invitation-features/adapters";
 import {
   buildPlaceCardViewModel,
+  placeCardHasSeating,
   type PlaceCardConfig,
   type PlaceCardFrameStyle,
   type PlaceCardPartyState,
@@ -170,16 +171,21 @@ export function PlaceCard({
           </p>
         ) : null}
 
-        {seating && (
+        {placeCardHasSeating(seating) && seating && (
           <div className="mx-auto mt-5 w-full max-w-[22rem]" data-testid="place-card-seating">
             <GuestSeatingCard
+              variant="placeCard"
               design={design}
               guestName={model.recipientLine}
-              tableNumber={seating.tableNumber}
-              seatLabel={seating.seatLabel}
-              zone={seating.zone}
+              tableNumber={seating.reception?.tableNumber}
+              seatLabel={seating.reception?.seatLabel}
+              zone={seating.reception?.zone}
+              receptionMode={seating.reception?.mode}
+              ceremonyRowLabel={seating.ceremony?.rowLabel}
+              ceremonySeatLabel={seating.ceremony?.seatLabel}
+              ceremonyZone={seating.ceremony?.zone}
               allowance={party.allowance}
-              settings={{ revealMode: "immediate" }}
+              settings={{ revealMode: "immediate", showFindMySeat: true }}
               className="shadow-none"
             />
           </div>

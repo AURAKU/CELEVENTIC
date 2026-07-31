@@ -30,6 +30,7 @@ import {
   resolveSeatingContinuity,
   type SeatingContinuity,
 } from "@/lib/admission/seating-continuity";
+import { pickSeatingAssignment } from "@/lib/seating/assignment-pick";
 
 /**
  * Guest Entry Pass lifecycle.
@@ -186,17 +187,27 @@ export async function ensureInvitationPass(
     });
 
     if (existing) {
-      const needsWidening = opts.refreshPartySize !== false && partySize > existing.partySize;
-      const pass = needsWidening
-        ? await tx.guestPass.update({
-            where: { id: existing.id },
-            data: {
-              partySize,
-              // A widened party that was "fully in" is only partially in now.
-              status: existing.status === "ADMITTED" ? "PARTIALLY_ADMITTED" : existing.status,
-            },
-          })
-        : existing;
+      const shouldRefresh = opts.refreshPartySize !== false && partySize !== existing.partySize;
+      if (!shouldRefresh) {
+        return { pass: existing, token: passTokenFromNonce(existing.tokenNonce) };
+      }
+
+      const admittedCount = Math.min(existing.admittedCount, partySize);
+      let nextStatus = existing.status;
+      if (existing.status === "ADMITTED" || existing.status === "PARTIALLY_ADMITTED" || existing.status === "ACTIVE") {
+        if (admittedCount <= 0) nextStatus = "ACTIVE";
+        else if (admittedCount >= partySize) nextStatus = "ADMITTED";
+        else nextStatus = "PARTIALLY_ADMITTED";
+      }
+
+      const pass = await tx.guestPass.update({
+        where: { id: existing.id },
+        data: {
+          partySize,
+          admittedCount,
+          status: nextStatus,
+        },
+      });
       return { pass, token: passTokenFromNonce(pass.tokenNonce) };
     }
 
@@ -650,8 +661,13 @@ async function loadPassContext(
           name: true,
           plusOnes: true,
           status: true,
-          seatingAssignment: {
-            select: { tableNumber: true, seatLabel: true, zone: true },
+          seatingAssignments: {
+            select: {
+              tableNumber: true,
+              seatLabel: true,
+              zone: true,
+              seatingPlan: { select: { planType: true } },
+            },
           },
         },
         orderBy: { createdAt: "asc" },
@@ -669,21 +685,28 @@ async function loadPassContext(
     };
   }
 
-  const seatingSource = invitation.guests.find((g) => g.seatingAssignment)?.seatingAssignment;
+  const seatingSource =
+    invitation.guests
+      .map((g) => pickSeatingAssignment(g.seatingAssignments))
+      .find((a) => a != null) ?? null;
   const revealSeating =
     !settings.hideSeatingUntilAdmitted || pass.admittedCount > 0;
 
   const continuity = resolveSeatingContinuity(
     invitation.guests
-      .filter((g) => g.seatingAssignment)
-      .map((g) => ({
-        guestId: g.id,
-        guestName: g.name,
-        tableNumber: g.seatingAssignment!.tableNumber,
-        seatLabel: g.seatingAssignment!.seatLabel,
-        zone: g.seatingAssignment!.zone,
-        admitted: g.status === "CHECKED_IN",
-      })),
+      .map((g) => {
+        const seating = pickSeatingAssignment(g.seatingAssignments);
+        if (!seating) return null;
+        return {
+          guestId: g.id,
+          guestName: g.name,
+          tableNumber: seating.tableNumber,
+          seatLabel: seating.seatLabel,
+          zone: seating.zone,
+          admitted: g.status === "CHECKED_IN",
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row != null),
     pass.partySize,
     pass.admittedCount
   );

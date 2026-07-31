@@ -333,6 +333,12 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
                 invitationId={props.invitation.id}
                 guestId={props.guestId}
                 guestName={props.guestName}
+                partyAllowance={
+                  props.partyAllowance ??
+                  props.placeCard?.party.allowance ??
+                  props.placeCard?.recipient.partySize ??
+                  1
+                }
                 accentColor={accent}
                 variant="dark"
                 buttonStyle={props.design.studio?.buttonStyle}

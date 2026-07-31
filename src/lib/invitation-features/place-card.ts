@@ -445,15 +445,29 @@ export interface PlaceCardViewData {
   seating: PlaceCardSeating | null;
 }
 
+/** Personalized guest seating for the invitation place card (dual-stage). */
 export interface PlaceCardSeating {
-  tableNumber: string;
-  seatLabel: string | null;
-  zone: string | null;
+  reception: {
+    tableNumber: string;
+    seatLabel: string | null;
+    zone: string | null;
+    /** Organiser choice: table-only capacity vs table + chair. */
+    mode: "TABLE_ONLY" | "TABLE_AND_CHAIR";
+  } | null;
+  ceremony: {
+    rowLabel: string;
+    seatLabel: string | null;
+    zone: string | null;
+  } | null;
 }
 
 /** Personalized invitation capacity. Admission state is intentionally excluded. */
 export interface PlaceCardPartyState {
   allowance: number;
+}
+
+export function placeCardHasSeating(seating: PlaceCardSeating | null | undefined): boolean {
+  return Boolean(seating?.reception?.tableNumber || seating?.ceremony?.rowLabel || seating?.ceremony?.seatLabel);
 }
 
 export interface PlaceCardViewModel {

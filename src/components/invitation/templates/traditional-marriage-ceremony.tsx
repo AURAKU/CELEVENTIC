@@ -395,7 +395,12 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
           pdfUrl={design.media?.find((m) => m.type === "pdf")?.url}
           showGifts={Boolean(features.contributions && hasGiftsSection)}
           showTimeline={Boolean(features.timeline && hasTimelineSection)}
-          partyAllowance={props.placeCard?.party.allowance ?? props.placeCard?.recipient.partySize ?? 1}
+          partyAllowance={
+            props.partyAllowance ??
+            props.placeCard?.party.allowance ??
+            props.placeCard?.recipient.partySize ??
+            1
+          }
         />
 
         {showRespondSection && (
@@ -406,6 +411,12 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
             eventTitle={event.title}
             rsvpHeading={board.rsvpHeading || "R.S.V.P"}
             showRsvp={Boolean(features.rsvp)}
+            partyAllowance={
+              props.partyAllowance ??
+              props.placeCard?.party.allowance ??
+              props.placeCard?.recipient.partySize ??
+              1
+            }
             organizerPhone={organizerPhone}
             organizerEmail={organizerEmail}
           />

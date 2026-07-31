@@ -8,6 +8,7 @@ import {
   isTerminalDenied,
   summarize,
   applyPortalUnlockPolicy,
+  resolveInvitationAllowance,
 } from "../admission-logic";
 
 test("computeAllowance: individual, couple, group with plus-ones", () => {
@@ -22,6 +23,14 @@ test("computeAllowance: stored override wins when positive", () => {
   assert.equal(computeAllowance([{ plusOnes: 0 }], 8), 8);
   assert.equal(computeAllowance([{ plusOnes: 0 }], 0), 1); // 0 override ignored → derive
   assert.equal(computeAllowance([{ plusOnes: 0 }], null), 1);
+});
+
+test("resolveInvitationAllowance: organiser allowance never inflated by stale pass", () => {
+  assert.equal(resolveInvitationAllowance([{ plusOnes: 0 }], 4, 21), 4);
+  assert.equal(resolveInvitationAllowance([{ plusOnes: 20 }], 3, 21), 3);
+  assert.equal(resolveInvitationAllowance([{ plusOnes: 2 }], null, 21), 3);
+  assert.equal(resolveInvitationAllowance([], null, 5), 5);
+  assert.equal(resolveInvitationAllowance([], null, null), 1);
 });
 
 test("clampAdmitted: never below zero or above allowance", () => {

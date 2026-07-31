@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, SeatingPlanType } from "@prisma/client";
 import { tablesMatch } from "@/lib/seating/seating-types";
+import { normalizeStudioLayout } from "@/lib/seating/studio-engine";
+import { splitSeatingAssignments } from "@/lib/seating/assignment-pick";
 
 export interface SeatingTable {
   id: string;
@@ -12,6 +14,7 @@ export interface SeatingTable {
 export interface SeatingLayout {
   tables: SeatingTable[];
   notes?: string;
+  [key: string]: unknown;
 }
 
 export interface SeatingAssignmentInput {
@@ -22,36 +25,66 @@ export interface SeatingAssignmentInput {
   notes?: string;
 }
 
-export class SeatingService {
-  async getPlanForEvent(eventId: string) {
-    return prisma.seatingPlan.findFirst({
-      where: { eventId },
-      include: {
-        assignments: {
-          include: {
-            guest: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                qrToken: true,
-                status: true,
-              },
-            },
-          },
-          orderBy: { tableNumber: "asc" },
+const planInclude = {
+  assignments: {
+    include: {
+      guest: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          qrToken: true,
+          status: true,
         },
       },
+    },
+    orderBy: { tableNumber: "asc" as const },
+  },
+} as const;
+
+export class SeatingService {
+  async getPlansForEvent(eventId: string) {
+    return prisma.seatingPlan.findMany({
+      where: { eventId },
+      include: planInclude,
+      orderBy: { planType: "asc" },
     });
   }
 
-  async upsertPlan(eventId: string, name: string, layout: SeatingLayout) {
-    const existing = await prisma.seatingPlan.findFirst({ where: { eventId } });
+  /** Backward-compatible: reception plan first, else any plan. */
+  async getPlanForEvent(eventId: string) {
+    const plans = await this.getPlansForEvent(eventId);
+    return plans.find((plan) => plan.planType === "RECEPTION") ?? plans[0] ?? null;
+  }
+
+  async getPlanByType(eventId: string, planType: SeatingPlanType) {
+    return prisma.seatingPlan.findUnique({
+      where: { eventId_planType: { eventId, planType } },
+      include: planInclude,
+    });
+  }
+
+  async upsertPlan(
+    eventId: string,
+    name: string,
+    layout: SeatingLayout,
+    planType: SeatingPlanType = "RECEPTION"
+  ) {
+    const normalized = normalizeStudioLayout({
+      ...layout,
+      planKind: planType,
+    });
+    const existing = await prisma.seatingPlan.findUnique({
+      where: { eventId_planType: { eventId, planType } },
+    });
     if (existing) {
       return prisma.seatingPlan.update({
         where: { id: existing.id },
-        data: { name, layout: layout as unknown as Prisma.InputJsonValue },
+        data: {
+          name,
+          layout: normalized as unknown as Prisma.InputJsonValue,
+        },
         include: { assignments: true },
       });
     }
@@ -59,7 +92,8 @@ export class SeatingService {
       data: {
         eventId,
         name,
-        layout: layout as unknown as Prisma.InputJsonValue,
+        planType,
+        layout: normalized as unknown as Prisma.InputJsonValue,
       },
       include: { assignments: true },
     });
@@ -67,7 +101,7 @@ export class SeatingService {
 
   /**
    * Make persisted assignments exactly match the organizer's current plan.
-   * This prevents removed/renamed tables from leaving invisible stale rows.
+   * Scoped to this seatingPlanId only — never deletes the other plan's seats.
    */
   async replaceAssignments(
     seatingPlanId: string,
@@ -76,7 +110,7 @@ export class SeatingService {
   ) {
     const guestIds = assignments.map((assignment) => assignment.guestId);
     if (new Set(guestIds).size !== guestIds.length) {
-      throw new Error("A guest cannot be assigned more than once");
+      throw new Error("A guest cannot be assigned more than once on the same plan");
     }
 
     const occupiedSeats = new Set<string>();
@@ -100,14 +134,7 @@ export class SeatingService {
     }
 
     return prisma.$transaction(async (tx) => {
-      await tx.seatingAssignment.deleteMany({
-        where: {
-          OR: [
-            { seatingPlanId },
-            ...(guestIds.length > 0 ? [{ guestId: { in: guestIds } }] : []),
-          ],
-        },
-      });
+      await tx.seatingAssignment.deleteMany({ where: { seatingPlanId } });
       if (assignments.length === 0) return [];
       await tx.seatingAssignment.createMany({
         data: assignments.map((assignment) => ({
@@ -126,8 +153,62 @@ export class SeatingService {
     });
   }
 
-  async removeAssignment(guestId: string) {
-    await prisma.seatingAssignment.deleteMany({ where: { guestId } });
+  /** Auto-save a single guest (or replace one guest's seats on this plan). */
+  async upsertGuestAssignment(
+    seatingPlanId: string,
+    eventId: string,
+    assignment: SeatingAssignmentInput
+  ) {
+    const guest = await prisma.guest.findFirst({
+      where: { id: assignment.guestId, eventId, archivedAt: null },
+      select: { id: true },
+    });
+    if (!guest) throw new Error("Guest not found on this event");
+
+    if (assignment.seatLabel) {
+      const clash = await prisma.seatingAssignment.findFirst({
+        where: {
+          seatingPlanId,
+          tableNumber: assignment.tableNumber.trim(),
+          seatLabel: assignment.seatLabel.trim(),
+          NOT: { guestId: assignment.guestId },
+        },
+      });
+      if (clash) {
+        throw new Error(
+          `Seat ${assignment.seatLabel} at ${assignment.tableNumber} is already assigned`
+        );
+      }
+    }
+
+    return prisma.seatingAssignment.upsert({
+      where: {
+        guestId_seatingPlanId: {
+          guestId: assignment.guestId,
+          seatingPlanId,
+        },
+      },
+      create: {
+        seatingPlanId,
+        guestId: assignment.guestId,
+        tableNumber: assignment.tableNumber.trim(),
+        seatLabel: assignment.seatLabel?.trim() || null,
+        zone: assignment.zone?.trim() || null,
+        notes: assignment.notes?.trim() || null,
+      },
+      update: {
+        tableNumber: assignment.tableNumber.trim(),
+        seatLabel: assignment.seatLabel?.trim() || null,
+        zone: assignment.zone?.trim() || null,
+        notes: assignment.notes?.trim() || null,
+      },
+    });
+  }
+
+  async removeAssignment(guestId: string, seatingPlanId?: string) {
+    await prisma.seatingAssignment.deleteMany({
+      where: seatingPlanId ? { guestId, seatingPlanId } : { guestId },
+    });
   }
 
   async lookupByGuestToken(qrToken: string) {
@@ -137,8 +218,10 @@ export class SeatingService {
         event: {
           select: { id: true, title: true, startDate: true, venueName: true },
         },
-        seatingAssignment: {
-          include: { seatingPlan: true },
+        seatingAssignments: {
+          include: {
+            seatingPlan: true,
+          },
         },
         invitation: {
           select: {
@@ -152,8 +235,10 @@ export class SeatingService {
                 id: true,
                 name: true,
                 status: true,
-                seatingAssignment: {
-                  select: { seatLabel: true, tableNumber: true },
+                seatingAssignments: {
+                  include: {
+                    seatingPlan: { select: { planType: true } },
+                  },
                 },
               },
             },
@@ -163,33 +248,48 @@ export class SeatingService {
     });
     if (!guest) return null;
 
-    const assignment = guest.seatingAssignment;
-    const layout = (assignment?.seatingPlan?.layout ?? null) as {
-      tables?: Array<{
-        label: string;
-        shape?: string;
-        seatCount?: number;
-        zone?: string;
-      }>;
+    const { reception, ceremony } = splitSeatingAssignments(guest.seatingAssignments);
+    const receptionLayout = (reception?.seatingPlan?.layout ?? null) as {
+      tables?: Array<{ label: string; shape?: string; seatCount?: number; zone?: string }>;
       status?: "draft" | "published";
       settings?: Record<string, unknown>;
     } | null;
-    const tableConfig = layout?.tables?.find((t) =>
-      tablesMatch(t.label, assignment?.tableNumber ?? "")
-    );
-    const partyMembers =
-      guest.invitation?.guests.map((member) => ({
-        id: member.id,
-        name: member.name,
-        seatLabel: member.seatingAssignment?.seatLabel ?? null,
-        admitted: member.status === "CHECKED_IN",
-      })) ?? [];
+    const ceremonyLayout = (ceremony?.seatingPlan?.layout ?? null) as {
+      ceremonyRows?: Array<{ label: string; chairs?: Array<{ label: string }> }>;
+      ceremonySections?: Array<{ id: string; name: string }>;
+      status?: "draft" | "published";
+      settings?: Record<string, unknown>;
+    } | null;
 
-    const base = {
+    const tableConfig = receptionLayout?.tables?.find((t) =>
+      tablesMatch(t.label, reception?.tableNumber ?? "")
+    );
+
+    const partyMembers =
+      guest.invitation?.guests.map((member) => {
+        const split = splitSeatingAssignments(member.seatingAssignments);
+        return {
+          id: member.id,
+          name: member.name,
+          seatLabel: split.reception?.seatLabel ?? null,
+          ceremonySeatLabel: split.ceremony?.seatLabel ?? null,
+          admitted: member.status === "CHECKED_IN",
+        };
+      }) ?? [];
+
+    const receptionPublished =
+      !reception || receptionLayout?.status !== "draft";
+    const ceremonyPublished =
+      !ceremony || ceremonyLayout?.status !== "draft";
+
+    return {
       guest: { id: guest.id, name: guest.name, status: guest.status },
       event: guest.event,
-      planStatus: layout?.status === "draft" ? "draft" : "published",
-      settings: layout?.settings ?? {},
+      planStatus: receptionPublished ? "published" : "draft",
+      settings: {
+        ...(ceremonyLayout?.settings ?? {}),
+        ...(receptionLayout?.settings ?? {}),
+      },
       party: guest.invitation
         ? {
             allowance: Math.max(
@@ -200,26 +300,30 @@ export class SeatingService {
             members: partyMembers,
           }
         : undefined,
-    } as const;
-
-    if (!assignment) {
-      return {
-        ...base,
-        assignment: null,
-        table: null,
-      };
-    }
-
-    return {
-      ...base,
-      assignment: {
-        tableNumber: assignment.tableNumber,
-        seatLabel: assignment.seatLabel,
-        zone: assignment.zone,
-        notes: assignment.notes,
-        planName: assignment.seatingPlan.name,
-        admitted: guest.status === "CHECKED_IN",
-      },
+      assignment:
+        reception && receptionPublished
+          ? {
+              tableNumber: reception.tableNumber,
+              seatLabel: reception.seatLabel,
+              zone: reception.zone,
+              notes: reception.notes,
+              planName: reception.seatingPlan.name,
+              planType: "RECEPTION" as const,
+              admitted: guest.status === "CHECKED_IN",
+            }
+          : null,
+      ceremonyAssignment:
+        ceremony && ceremonyPublished
+          ? {
+              rowLabel: ceremony.tableNumber,
+              seatLabel: ceremony.seatLabel,
+              zone: ceremony.zone,
+              notes: ceremony.notes,
+              planName: ceremony.seatingPlan.name,
+              planType: "CEREMONY" as const,
+              admitted: guest.status === "CHECKED_IN",
+            }
+          : null,
       table: tableConfig
         ? {
             label: tableConfig.label,
@@ -228,7 +332,8 @@ export class SeatingService {
             zone: tableConfig.zone,
           }
         : null,
-      layout: layout ?? null,
+      layout: receptionLayout ?? null,
+      ceremonyLayout: ceremonyLayout ?? null,
     };
   }
 
@@ -252,7 +357,11 @@ export class SeatingService {
         ],
       },
       take: 20,
-      include: { seatingAssignment: true },
+      include: {
+        seatingAssignments: {
+          include: { seatingPlan: { select: { planType: true, name: true } } },
+        },
+      },
       orderBy: { name: "asc" },
     });
   }

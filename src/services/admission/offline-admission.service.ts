@@ -5,6 +5,7 @@ import { getEventAdmissionSettings } from "@/services/admission/guest-pass.servi
 import { applyPassAdmission } from "@/services/admission/admission.service";
 import { decideAdmission } from "@/lib/admission/pass-decision";
 import type { ResolvedAdmissionSettings } from "@/lib/admission/admission-settings";
+import { pickSeatingAssignment } from "@/lib/seating/assignment-pick";
 
 /**
  * Offline admission: the downloadable gate package and its reconciliation.
@@ -129,7 +130,13 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
               name: true,
               plusOnes: true,
               status: true,
-              seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+              seatingAssignments: {
+                select: {
+                  tableNumber: true,
+                  seatLabel: true,
+                  seatingPlan: { select: { planType: true } },
+                },
+              },
             },
             orderBy: { createdAt: "asc" },
           },
@@ -165,7 +172,10 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
 
   const issuedAt = new Date();
   const records: OfflinePassRecord[] = passes.map((p) => {
-    const seating = p.invitation.guests.find((g) => g.seatingAssignment)?.seatingAssignment;
+    const seating =
+      p.invitation.guests
+        .map((g) => pickSeatingAssignment(g.seatingAssignments))
+        .find((a) => a != null) ?? null;
     return {
       h: p.tokenHash,
       c: p.code,
@@ -175,16 +185,19 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
       r: Math.max(0, p.partySize - p.admittedCount),
       status: p.status,
       expiresAt: p.expiresAt ? p.expiresAt.toISOString() : null,
-      members: p.invitation.guests.map((g) => ({
-        id: g.id,
-        name: g.name,
-        plusOnes: Math.max(0, g.plusOnes ?? 0),
-        admitted: g.status === "CHECKED_IN",
-        table: settings.showTableOnPass
-          ? (g.seatingAssignment?.tableNumber ?? null)
-          : null,
-        seat: settings.showSeatOnPass ? (g.seatingAssignment?.seatLabel ?? null) : null,
-      })),
+      members: p.invitation.guests.map((g) => {
+        const memberSeat = pickSeatingAssignment(g.seatingAssignments);
+        return {
+          id: g.id,
+          name: g.name,
+          plusOnes: Math.max(0, g.plusOnes ?? 0),
+          admitted: g.status === "CHECKED_IN",
+          table: settings.showTableOnPass
+            ? (memberSeat?.tableNumber ?? null)
+            : null,
+          seat: settings.showSeatOnPass ? (memberSeat?.seatLabel ?? null) : null,
+        };
+      }),
       table: settings.showTableOnPass ? (seating?.tableNumber ?? null) : null,
       seat: settings.showSeatOnPass ? (seating?.seatLabel ?? null) : null,
       history: historyByInvitation.get(p.invitationId) ?? [],

@@ -29,6 +29,29 @@ export function computeAllowance(
   return Math.max(0, derived);
 }
 
+/**
+ * Guest-facing / gate capacity for one invitation.
+ *
+ * Organiser `admissionAllowance` always wins. A stale GuestPass.partySize must
+ * never inflate the place-card copy or gate beyond what the organiser set.
+ * Pass size is only a fallback when no stored allowance and no guest rows yet.
+ */
+export function resolveInvitationAllowance(
+  members: PartyMemberLike[],
+  storedAllowance?: number | null,
+  passPartySize?: number | null
+): number {
+  if (typeof storedAllowance === "number" && storedAllowance > 0) {
+    return Math.max(1, Math.trunc(storedAllowance));
+  }
+  const derived = computeAllowance(members, null);
+  if (derived > 0) return derived;
+  if (typeof passPartySize === "number" && passPartySize > 0) {
+    return Math.max(1, Math.trunc(passPartySize));
+  }
+  return 1;
+}
+
 /** Clamp a proposed admitted count into the valid [0, allowance] range. */
 export function clampAdmitted(next: number, allowance: number): number {
   if (!Number.isFinite(next)) return 0;

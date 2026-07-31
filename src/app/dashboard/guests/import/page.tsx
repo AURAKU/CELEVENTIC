@@ -35,8 +35,8 @@ export default function GuestImportPage() {
         </Link>
         <h1 className="mt-1 text-2xl font-bold">Bulk guest import</h1>
         <p className="page-subtitle">
-          Turn a list of names into personalised invitations, entry passes and place
-          cards. A name on its own is enough, phone and email are optional.
+          Paste or upload names → personalised invitations with admission allowance, entry
+          passes, place cards and CRM tags. Review duplicates before anything is created.
         </p>
       </div>
 

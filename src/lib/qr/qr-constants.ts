@@ -32,11 +32,10 @@ export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
  * *encoded* verify URL logic changes, so disk-cached PNGs regenerate (the
  * cache key doesn't include the encoded URL — see `qr-cache.ts` — only the
  * token/size/center/logoSize, so a stale PNG baked from an old resolved app
- * URL would otherwise keep being served forever). Bumped for the localhost
- * URL-leak fix so any already-published invitation's cached admission/verify
- * QR gets regenerated against the current live domain on next request.
+ * URL would otherwise keep being served forever). Bumped for crisp module
+ * rendering + tighter pass-mode center logos for gate screen scans.
  */
-export const QR_COMPOSITE_CACHE_VERSION = "v4-no-localhost-verify-url";
+export const QR_COMPOSITE_CACHE_VERSION = "v5-crisp-pass-modules";
 
 /** Default Celeventic QR center mark (public asset; contain-fitted in generator) */
 export const CELEVENTIC_OFFICIAL_LOGO = "/brand/logo-full.png";
@@ -56,6 +55,9 @@ export function parseQrLogoSize(raw: unknown): QrLogoSizePreset {
 
 /** Minimum on-screen pass QR size (px) for reliable phone-to-phone scanning */
 export const QR_PASS_DISPLAY_MIN_PX = 280;
+
+/** Preferred source resolution for on-screen entry-pass QR (retina + crisp downscale). */
+export const QR_PASS_DISPLAY_SOURCE_PX: QrExportSize = 1024;
 
 /** Balanced decode rate: responsive in queues without starving mobile autofocus. */
 export const QR_SCANNER_FPS = 15;

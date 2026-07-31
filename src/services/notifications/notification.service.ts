@@ -53,6 +53,24 @@ export class NotificationService {
     });
   }
 
+  async getForUser(userId: string, id: string) {
+    return prisma.notification.findFirst({
+      where: { id, userId },
+    });
+  }
+
+  async deleteOne(userId: string, id: string) {
+    return prisma.notification.deleteMany({
+      where: { id, userId },
+    });
+  }
+
+  async clearAll(userId: string) {
+    return prisma.notification.deleteMany({
+      where: { userId },
+    });
+  }
+
   async unreadCount(userId: string) {
     return prisma.notification.count({ where: { userId, isRead: false } });
   }

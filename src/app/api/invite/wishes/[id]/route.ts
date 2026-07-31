@@ -5,7 +5,6 @@ import type { UserRole } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { resolveWishCapabilities } from "@/lib/invitation/guest-wish-permissions";
 import {
-  authorTokenMatches,
   guestWishService,
   isWishEventModerator,
 } from "@/services/invitations/guest-wish.service";
@@ -19,24 +18,6 @@ const updateSchema = z
     message: "Nothing to update",
   });
 
-async function readDeleteToken(req: Request): Promise<string | undefined> {
-  let deleteToken: string | undefined;
-  try {
-    const contentType = req.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      const body = (await req.json().catch(() => null)) as { deleteToken?: string } | null;
-      deleteToken = body?.deleteToken?.trim() || undefined;
-    }
-  } catch {
-    deleteToken = undefined;
-  }
-  if (!deleteToken) {
-    const url = new URL(req.url);
-    deleteToken = url.searchParams.get("deleteToken")?.trim() || undefined;
-  }
-  return deleteToken;
-}
-
 async function resolveModeratorForWish(eventId: string): Promise<boolean> {
   const session = await getServerSession(authOptions);
   return isWishEventModerator(
@@ -49,16 +30,11 @@ async function resolveModeratorForWish(eventId: string): Promise<boolean> {
 /**
  * Hard-delete a guest wish.
  *
- * Allowed for:
- * - Platform ADMIN / SUPER_ADMIN
- * - The event organizer
- * - The wish author, proving ownership with the one-time `deleteToken`
- *   issued when the wish was created (no account required)
- *
- * Authors may not edit; edit is moderator-only via PATCH.
+ * Allowed for platform ADMIN / SUPER_ADMIN and the event organizer only.
+ * Guests (including authors) cannot delete wishes.
  */
 export async function DELETE(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -72,18 +48,15 @@ export async function DELETE(
   }
 
   const allowedAsModerator = await resolveModeratorForWish(wish.eventId);
-  const deleteToken = await readDeleteToken(req);
-  const allowedAsAuthor = authorTokenMatches(wish.authorTokenHash, deleteToken ?? "");
   const caps = resolveWishCapabilities({
     isModerator: allowedAsModerator,
-    hasValidAuthorToken: allowedAsAuthor,
   });
 
   if (!caps.canDelete) {
     return NextResponse.json(
       {
         error:
-          "Forbidden — only the person who wrote this wish, or an organizer/admin, can delete it",
+          "Forbidden — only the event organizer or a platform admin can delete wishes",
       },
       { status: 403 }
     );
@@ -93,7 +66,7 @@ export async function DELETE(
     await guestWishService.hardDelete(id);
     return NextResponse.json({
       success: true,
-      data: { id, deletedBy: allowedAsModerator ? "moderator" : "author" },
+      data: { id, deletedBy: "moderator" },
     });
   } catch (error) {
     return NextResponse.json(
@@ -105,7 +78,7 @@ export async function DELETE(
 
 /**
  * Edit a guest wish. Organizer / platform admin only.
- * Guests (including authors with a deleteToken) cannot edit.
+ * Guests cannot edit.
  */
 export async function PATCH(
   req: Request,
@@ -124,7 +97,6 @@ export async function PATCH(
   const isModerator = await resolveModeratorForWish(wish.eventId);
   const caps = resolveWishCapabilities({
     isModerator,
-    hasValidAuthorToken: false,
   });
 
   if (!caps.canEdit) {

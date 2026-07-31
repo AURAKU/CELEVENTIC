@@ -503,7 +503,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             <div className="py-1">{displayDate}</div>
           </div>
           <div
-            className="flex min-w-[4.75rem] flex-col justify-center whitespace-nowrap text-left text-sm font-semibold uppercase tracking-[0.14em]"
+            className="flex min-w-[5.25rem] flex-col justify-center whitespace-nowrap text-left text-base font-semibold uppercase tracking-[0.12em] sm:text-lg"
             style={{ color: C.cocoa }}
           >
             <span>{timeLabel}</span>
@@ -697,6 +697,12 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           eventTitle={event.title}
           rsvpHeading={board.rsvpHeading}
           showRsvp={Boolean(features.rsvp)}
+          partyAllowance={
+            props.partyAllowance ??
+            props.placeCard?.party.allowance ??
+            props.placeCard?.recipient.partySize ??
+            1
+          }
           organizerPhone={organizerPhone}
           organizerEmail={organizerEmail}
         />

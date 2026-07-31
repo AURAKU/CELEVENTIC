@@ -540,7 +540,8 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
           </h1>
           <p className="page-subtitle">
             Design your floor plan with live RSVP and gate accountability. Partial arrivals update
-            automatically, including how many people remain on each invitation.
+            automatically, including how many people remain on each invitation. Seat any guest —
+            RSVP status only sorts priority, it never locks who you can place.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -605,6 +606,10 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
           </div>
         ))}
       </div>
+      <p className="text-xs text-slate-500 -mt-2">
+        Accepted RSVPs help you prioritise seating, but you can assign seats to any guest —
+        including invited, opened, maybe, or declined — whenever you need.
+      </p>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">

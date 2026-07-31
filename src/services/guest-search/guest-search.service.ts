@@ -9,6 +9,7 @@ import {
   type RankableCandidate,
 } from "@/lib/guest-search/query";
 import type { SearchResponse, SearchResultCard } from "@/lib/guest-search/types";
+import { pickSeatingAssignment } from "@/lib/seating/assignment-pick";
 
 /**
  * Smart Guest Search.
@@ -116,7 +117,13 @@ function invitationSelectFor(eventId: string) {
         notes: true,
         qrToken: true,
         eventId: true,
-        seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+        seatingAssignments: {
+          select: {
+            tableNumber: true,
+            seatLabel: true,
+            seatingPlan: { select: { planType: true } },
+          },
+        },
         tagAssignments: {
           orderBy: { tag: { sortOrder: "asc" as const } },
           select: {
@@ -177,7 +184,11 @@ function buildWhere(
 
   if (query.tableNumber) {
     or.push({
-      guests: { some: { seatingAssignment: { tableNumber: query.tableNumber } } },
+      guests: {
+        some: {
+          seatingAssignments: { some: { tableNumber: query.tableNumber } },
+        },
+      },
     });
   }
 
@@ -195,7 +206,10 @@ function buildWhere(
 
 function toCandidate(row: InvitationRow): RankableCandidate & { row: InvitationRow } {
   const primary = row.guests[0] ?? null;
-  const seating = row.guests.find((g) => g.seatingAssignment)?.seatingAssignment ?? null;
+  const seating =
+    row.guests
+      .map((g) => pickSeatingAssignment(g.seatingAssignments))
+      .find((a) => a != null) ?? null;
 
   return {
     row,
@@ -229,7 +243,10 @@ function toCard(
   appUrl: string
 ): SearchResultCard {
   const primary = row.guests[0] ?? null;
-  const seating = row.guests.find((g) => g.seatingAssignment)?.seatingAssignment ?? null;
+  const seating =
+    row.guests
+      .map((g) => pickSeatingAssignment(g.seatingAssignments))
+      .find((a) => a != null) ?? null;
   const pass = row.guestPasses[0] ?? null;
   const tags =
     primary?.tagAssignments?.map((assignment) => ({

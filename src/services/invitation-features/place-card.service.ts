@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { resolveInvitationFeatures } from "@/services/invitation-features/feature-resolver";
-import { computeAllowance } from "@/lib/admission/admission-logic";
+import { resolveInvitationAllowance } from "@/lib/admission/admission-logic";
 import {
   deriveGuestPlaceCardMonogram,
   formatPlaceCardMonogram,
@@ -14,7 +14,9 @@ import { mergeVisionBoard, resolveSealInitials } from "@/lib/invitation/vision-b
 import { parseCoupleNames } from "@/lib/invitation-templates";
 import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
+import { splitSeatingAssignments } from "@/lib/seating/assignment-pick";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
+import type { ReceptionAssignmentMode } from "@/lib/seating/studio-types";
 
 /**
  * Personalised Place Card — server resolution.
@@ -43,6 +45,19 @@ function designFromUnknown(value: unknown): Partial<InvitationDesignConfig> {
     : {};
 }
 
+type PlanLayout = {
+  status?: "draft" | "published";
+  settings?: { receptionMode?: ReceptionAssignmentMode };
+} | null;
+
+function isPublishedAssignment(layout: PlanLayout): boolean {
+  return layout?.status !== "draft";
+}
+
+function resolveReceptionMode(layout: PlanLayout): ReceptionAssignmentMode {
+  return layout?.settings?.receptionMode === "TABLE_ONLY" ? "TABLE_ONLY" : "TABLE_AND_CHAIR";
+}
+
 /**
  * Resolve the place card for one invitation, or null when it should not render.
  *
@@ -68,8 +83,18 @@ export async function resolvePlaceCard(
           name: true,
           plusOnes: true,
           group: { select: { name: true } },
-          seatingAssignment: {
-            select: { tableNumber: true, seatLabel: true, zone: true },
+          seatingAssignments: {
+            select: {
+              tableNumber: true,
+              seatLabel: true,
+              zone: true,
+              seatingPlan: {
+                select: {
+                  planType: true,
+                  layout: true,
+                },
+              },
+            },
           },
         },
         orderBy: { createdAt: "asc" },
@@ -163,10 +188,10 @@ export async function resolvePlaceCard(
     return null;
   }
 
-  const allowance = Math.max(
-    computeAllowance(invitation.guests, invitation.admissionAllowance),
-    pass?.partySize ?? 0,
-    1
+  const allowance = resolveInvitationAllowance(
+    invitation.guests,
+    invitation.admissionAllowance,
+    pass?.partySize
   );
   const personalizedGuest =
     (guestId ? invitation.guests.find((guest) => guest.id === guestId) : null) ??
@@ -183,7 +208,30 @@ export async function resolvePlaceCard(
         )
       : null) ??
     (invitation.guests.length === 1 ? invitation.guests[0] : null);
-  const seating = personalizedGuest?.seatingAssignment ?? null;
+  const { reception, ceremony } = splitSeatingAssignments(personalizedGuest?.seatingAssignments);
+  const receptionLayout = (reception?.seatingPlan?.layout ?? null) as PlanLayout;
+  const ceremonyLayout = (ceremony?.seatingPlan?.layout ?? null) as PlanLayout;
+  const receptionLive =
+    reception &&
+    reception.tableNumber?.trim() &&
+    isPublishedAssignment(receptionLayout)
+      ? {
+          tableNumber: reception.tableNumber.trim(),
+          seatLabel: reception.seatLabel?.trim() || null,
+          zone: reception.zone?.trim() || null,
+          mode: resolveReceptionMode(receptionLayout),
+        }
+      : null;
+  const ceremonyLive =
+    ceremony &&
+    (ceremony.tableNumber?.trim() || ceremony.seatLabel?.trim()) &&
+    isPublishedAssignment(ceremonyLayout)
+      ? {
+          rowLabel: ceremony.tableNumber?.trim() || "Reserved section",
+          seatLabel: ceremony.seatLabel?.trim() || null,
+          zone: ceremony.zone?.trim() || null,
+        }
+      : null;
 
   return {
     config,
@@ -197,12 +245,12 @@ export async function resolvePlaceCard(
     party: {
       allowance,
     },
-    seating: seating?.tableNumber?.trim()
-      ? {
-          tableNumber: seating.tableNumber.trim(),
-          seatLabel: seating.seatLabel?.trim() || null,
-          zone: seating.zone?.trim() || null,
-        }
-      : null,
+    seating:
+      receptionLive || ceremonyLive
+        ? {
+            reception: receptionLive,
+            ceremony: ceremonyLive,
+          }
+        : null,
   };
 }

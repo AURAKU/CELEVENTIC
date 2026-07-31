@@ -99,30 +99,30 @@ export default function GuestsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Guest CRM</h1>
-          <p className="page-subtitle">
+    <div className="mx-auto w-full min-w-0 max-w-full space-y-5 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold sm:text-2xl">Guest CRM</h1>
+          <p className="page-subtitle mt-1 max-w-2xl text-sm sm:text-base">
             Select an event to manage only that celebration&apos;s guests — never mixed with another list.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
           {eventId && (
             <Button
               type="button"
               variant="outline"
-              className="border-amber-200 text-amber-900 hover:bg-amber-50"
+              className="w-full justify-center border-amber-200 text-amber-900 hover:bg-amber-50 sm:w-auto"
               disabled={resettingAll}
               onClick={() => void resetAllAdmissions()}
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-4 w-4 shrink-0" />
               {resettingAll ? "Resetting…" : "Reset all admissions"}
             </Button>
           )}
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
             <Link href="/dashboard/guests/import">
-              <Upload className="h-4 w-4" /> Bulk import
+              <Upload className="h-4 w-4 shrink-0" /> Bulk import
             </Link>
           </Button>
         </div>
@@ -134,61 +134,72 @@ export default function GuestsPage() {
         </div>
       )}
 
-      <Card>
-        <CardContent className="p-4">
+      <Card className="min-w-0 overflow-hidden">
+        <CardContent className="p-3 sm:p-4">
           <EventPicker events={events} value={eventId} onChange={setEventId} loading={eventsLoading} />
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="space-y-4 lg:col-span-3">
-          {eventId && stats.total > 0 && (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8">
-              {[
-                { key: "all", label: "All", count: stats.total },
-                ...CRM_STATUSES.map((s) => ({
-                  key: s,
-                  label: s.replace("_", " "),
-                  count: stats.counts[s] ?? 0,
-                })),
-                { key: "NO_RESPONSE", label: "No Response", count: stats.noResponse },
-              ].map((s) => (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => setFilter(s.key)}
-                  className={`rounded-xl border p-3 text-center text-xs transition-colors ${
-                    filter === s.key
-                      ? "border-[#0B8A83] bg-[#0B8A83]/10"
-                      : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <p className="text-lg font-bold">{s.count}</p>
-                  <p className="mt-0.5 capitalize text-slate-500">{s.label}</p>
-                </button>
-              ))}
-            </div>
-          )}
+      <div className="min-w-0">
+        <QuickCreateCard
+          eventId={eventId}
+          onCreated={(card) => {
+            upsertRecent(card);
+            bumpList();
+          }}
+          onChanged={handleCardChanged}
+        />
+      </div>
 
-          <SmartGuestSearch
-            eventId={eventId}
-            recentlyCreated={recentlyCreated}
-            statusFilter={filter}
-            refreshToken={refreshToken}
-            onCardChanged={handleCardChanged}
-          />
-        </div>
+      <div className="min-w-0 space-y-4">
+        {eventId && stats.total > 0 && (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
+            {[
+              { key: "all", label: "All", count: stats.total },
+              ...CRM_STATUSES.map((s) => ({
+                key: s,
+                label: s.replace("_", " "),
+                count: stats.counts[s] ?? 0,
+              })),
+              { key: "NO_RESPONSE", label: "No Response", count: stats.noResponse },
+            ].map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setFilter(s.key)}
+                title={
+                  s.key === "all"
+                    ? "Expected people including plus-ones / admission allowance"
+                    : s.key === "CHECKED_IN"
+                      ? "People admitted at the gate (including partial party arrivals)"
+                      : undefined
+                }
+                className={`min-w-0 rounded-xl border p-2.5 text-center text-xs transition-colors sm:p-3 ${
+                  filter === s.key
+                    ? "border-[#0B8A83] bg-[#0B8A83]/10"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <p className="text-base font-bold tabular-nums sm:text-lg">{s.count}</p>
+                <p className="mt-0.5 leading-tight capitalize text-slate-500">
+                  {s.key === "all"
+                    ? "All people"
+                    : s.key === "CHECKED_IN"
+                      ? "Checked in"
+                      : s.label}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
 
-        <div className="lg:col-span-2">
-          <QuickCreateCard
-            eventId={eventId}
-            onCreated={(card) => {
-              upsertRecent(card);
-              bumpList();
-            }}
-            onChanged={handleCardChanged}
-          />
-        </div>
+        <SmartGuestSearch
+          eventId={eventId}
+          recentlyCreated={recentlyCreated}
+          statusFilter={filter}
+          refreshToken={refreshToken}
+          onCardChanged={handleCardChanged}
+        />
       </div>
     </div>
   );

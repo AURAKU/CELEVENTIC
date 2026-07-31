@@ -143,6 +143,47 @@ describe("normalizeRows", () => {
     assert.equal(rows[0].partySize, 2);
     assert.equal(rows[0].status, "READY");
   });
+
+  it("parses Tags into tagLabels without blocking the row", () => {
+    const table = parseTable(
+      "Guest name,Tags\nKofi Mensah,\"Friends of groom, Family of bride\""
+    );
+    const rows = normalizeRows(
+      table,
+      { 0: ImportField.NAME, 1: ImportField.TAGS },
+      OPTIONS
+    );
+    assert.deepEqual(rows[0].tagLabels, ["Friends of groom", "Family of bride"]);
+    assert.equal(rows[0].status, "READY");
+  });
+});
+
+describe("downloadable template", () => {
+  it("maps every template header onto the matching import field", async () => {
+    const { TEMPLATE_HEADERS } = await import("../template");
+    const { toCsv } = await import("../csv-safety");
+    const table = parseTable(
+      toCsv([[...TEMPLATE_HEADERS], ["Ama Serwaa", "", "", "1", "Individual", "", "Friends of bride", "", "", "", ""]])
+    );
+    const mapping = mappingFromSuggestions(suggestColumnMapping(table));
+    assert.equal(mapping[0], ImportField.NAME);
+    assert.equal(mapping[1], ImportField.EMAIL);
+    assert.equal(mapping[2], ImportField.PHONE);
+    assert.equal(mapping[3], ImportField.PARTY_SIZE);
+    assert.equal(mapping[4], ImportField.PARTY_TYPE);
+    assert.equal(mapping[5], ImportField.MEMBER_NAMES);
+    assert.equal(mapping[6], ImportField.TAGS);
+    assert.equal(mapping[7], ImportField.GROUP_NAME);
+    assert.equal(mapping[8], ImportField.TABLE_NUMBER);
+    assert.equal(mapping[9], ImportField.SEAT_LABEL);
+    assert.equal(mapping[10], ImportField.NOTES);
+
+    const rows = normalizeRows(table, mapping, OPTIONS);
+    assert.equal(rows[0].name, "Ama Serwaa");
+    assert.equal(rows[0].partySize, 1);
+    assert.equal(rows[0].partyType, "INDIVIDUAL");
+    assert.deepEqual(rows[0].tagLabels, ["Friends of bride"]);
+  });
 });
 
 describe("CSV injection", () => {

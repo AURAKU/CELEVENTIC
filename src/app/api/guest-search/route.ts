@@ -51,6 +51,15 @@ export async function GET(req: Request) {
   if (limited) return limited;
 
   try {
+    // Promote general-template RSVP guests into personalised cards so they
+    // appear in the organizer guest list with shareable invite links.
+    const { promoteOpenHostRsvpGuests } = await import(
+      "@/services/guest-search/rsvp-self-registration.service"
+    );
+    await promoteOpenHostRsvpGuests(eventId, auth.ctx.userId).catch((error) => {
+      console.error("[guest-search] promote open-host RSVP guests failed", error);
+    });
+
     const result = await searchGuests({
       eventId,
       query: q,

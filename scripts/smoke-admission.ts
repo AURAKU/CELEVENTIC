@@ -58,8 +58,8 @@ async function main() {
     const invAfterReset = await prisma.invitation.findUnique({ where: { id: invitation.id }, select: { portalTokenVersion: true } });
     check("portalTokenVersion bumped on relock", (invAfterReset?.portalTokenVersion ?? 0) > (invAfterPartial?.portalTokenVersion ?? 0));
 
-    // Seating preserved by default
-    const seat = await prisma.seatingAssignment.findUnique({ where: { guestId: a.id } });
+    // Seating preserved by default (guestId is no longer unique — dual-stage)
+    const seat = await prisma.seatingAssignment.findFirst({ where: { guestId: a.id } });
     check("seating preserved after reset (default)", seat !== null && seat.tableNumber === "6");
 
     // Append-only trail preserved (>= 5 events: 2 admits + 3 reset-recompute rows)

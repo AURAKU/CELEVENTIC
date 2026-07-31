@@ -195,6 +195,8 @@ export interface BlockRenderContext {
   invitationId?: string;
   guestId?: string;
   guestName?: string;
+  /** Heads this invitation admits — RSVP companion slots. */
+  partyAllowance?: number;
   qrDataUrl?: string;
   admissionManualCode?: string | null;
   memoryVaultEnabled?: boolean;

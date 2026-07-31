@@ -9,16 +9,19 @@ import {
   RotateCcw,
   Send,
   Sparkles,
+  Tags,
   Upload,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { PartyAllowanceField } from "@/components/guest-search/party-allowance-field";
+import { cn } from "@/lib/utils";
+import { TEMPLATE_COLUMN_GUIDE } from "@/lib/guest-import/template";
 import { ColumnMappingPanel } from "./column-mapping-panel";
 import { ImportPreviewTable } from "./import-preview-table";
 import type { BatchProgress, ColumnSuggestionView, ImportBatchView } from "./types";
@@ -48,9 +51,23 @@ interface ImportSettings {
   issueEntryPass: boolean;
   enablePlaceCard: boolean;
   applySeating: boolean;
+  seatingPlanId: string | null;
   normalizeGhanaPhones: boolean;
   publishImmediately: boolean;
+  duplicatePolicy: "REVIEW" | "SKIP" | "CREATE_ANYWAY";
+  defaultTagIds: string[];
   message: string;
+}
+
+interface TagOption {
+  id: string;
+  label: string;
+}
+
+interface SeatingPlanOption {
+  id: string;
+  label: string;
+  planType?: string;
 }
 
 const DEFAULT_SETTINGS: ImportSettings = {
@@ -58,8 +75,11 @@ const DEFAULT_SETTINGS: ImportSettings = {
   issueEntryPass: true,
   enablePlaceCard: true,
   applySeating: false,
+  seatingPlanId: null,
   normalizeGhanaPhones: true,
   publishImmediately: true,
+  duplicatePolicy: "REVIEW",
+  defaultTagIds: [],
   message: "",
 };
 
@@ -73,6 +93,8 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [tags, setTags] = useState<TagOption[]>([]);
+  const [seatingPlans, setSeatingPlans] = useState<SeatingPlanOption[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const optionsPayload = useCallback(
@@ -81,12 +103,68 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
       issueEntryPass: settings.issueEntryPass,
       enablePlaceCard: settings.enablePlaceCard,
       applySeating: settings.applySeating,
+      seatingPlanId: settings.applySeating ? settings.seatingPlanId : null,
       normalizeGhanaPhones: settings.normalizeGhanaPhones,
       publishImmediately: settings.publishImmediately,
+      duplicatePolicy: settings.duplicatePolicy,
+      defaultTagIds: settings.defaultTagIds,
       message: settings.message.trim() || null,
     }),
     [settings]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadHelpers() {
+      try {
+        const [tagRes, seatingRes] = await Promise.all([
+          fetch(`/api/events/${eventId}/guest-tags`),
+          fetch(`/api/events/${eventId}/seating`),
+        ]);
+        const tagJson = await tagRes.json().catch(() => ({}));
+        const seatingJson = await seatingRes.json().catch(() => ({}));
+        if (cancelled) return;
+        if (tagRes.ok) {
+          setTags(
+            ((tagJson.data?.tags as TagOption[]) ?? []).map((tag) => ({
+              id: tag.id,
+              label: tag.label,
+            }))
+          );
+        }
+        if (seatingRes.ok) {
+          const plans = (seatingJson.data?.plans as Array<{
+            id: string;
+            planType?: string;
+            name?: string;
+          }>) ?? [];
+          const mapped = plans.map((plan) => ({
+            id: plan.id,
+            planType: plan.planType,
+            label:
+              plan.planType === "CEREMONY"
+                ? "Main Ceremony"
+                : plan.planType === "RECEPTION"
+                  ? "Reception"
+                  : plan.name || "Seating plan",
+          }));
+          setSeatingPlans(mapped);
+          setSettings((current) => {
+            if (current.seatingPlanId || mapped.length === 0) return current;
+            const reception =
+              mapped.find((plan) => plan.planType === "RECEPTION") ?? mapped[0]!;
+            return { ...current, seatingPlanId: reception.id };
+          });
+        }
+      } catch {
+        /* helpers are optional for paste/upload */
+      }
+    }
+    void loadHelpers();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
 
   const handleStaged = useCallback(
     (data: { batch: ImportBatchView; suggestions: ColumnSuggestionView[]; truncated?: boolean }) => {
@@ -175,6 +253,19 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
     if (!batch) return;
     setBusy(true);
     setError("");
+    // Persist latest organiser choices (message, tags, allowance, duplicates)
+    // before generation starts — review-step edits must not be lost.
+    const persist = await fetch(`/api/guest-import/batches/${batch.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ options: optionsPayload() }),
+    });
+    if (!persist.ok) {
+      const data = await persist.json().catch(() => ({}));
+      setBusy(false);
+      setError(data.error ?? "Could not save import settings.");
+      return;
+    }
     const res = await fetch(`/api/guest-import/batches/${batch.id}/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -270,30 +361,45 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={stagePaste} disabled={busy || !pasted.trim()}>
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  Preview list
-                </Button>
-                <Button variant="outline" onClick={() => fileInput.current?.click()} disabled={busy}>
-                  <Upload className="h-4 w-4" /> Upload CSV or Excel
-                </Button>
-                <Button variant="ghost" asChild>
-                  <a href="/api/guest-import/template" download>
-                    <Download className="h-4 w-4" /> Download template
-                  </a>
-                </Button>
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void stageFile(file);
-                    e.target.value = "";
-                  }}
-                />
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={stagePaste} disabled={busy || !pasted.trim()}>
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Preview list
+                  </Button>
+                  <Button variant="outline" onClick={() => fileInput.current?.click()} disabled={busy}>
+                    <Upload className="h-4 w-4" /> Upload CSV or Excel
+                  </Button>
+                  <Button variant="ghost" asChild>
+                    <a href="/api/guest-import/template" download>
+                      <Download className="h-4 w-4" /> Download template
+                    </a>
+                  </Button>
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void stageFile(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+                <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2.5 text-xs text-slate-600">
+                  <p className="font-medium text-slate-800">
+                    Template columns match Guest CRM — open in Excel, Numbers, or Google Sheets.
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {TEMPLATE_COLUMN_GUIDE.map((col) => (
+                      <li key={col.header}>
+                        <span className="font-medium text-slate-700">{col.header}</span>
+                        {col.required ? " (required)" : ""} — {col.help}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -301,26 +407,65 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">What each guest gets</CardTitle>
+              <p className="text-sm text-slate-500">
+                Matches Guest CRM: personalised invitation, admission allowance, entry pass,
+                place card, and optional tags for seating plans.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="rounded-xl border border-[#0B8A83]/25 bg-[#0B8A83]/5 px-3 py-2.5 text-xs leading-relaxed text-slate-700">
+                <p className="inline-flex items-center gap-1.5 font-semibold text-[#0B8A83]">
+                  <Sparkles className="h-3.5 w-3.5" /> Smart defaults
+                </p>
+                <p className="mt-1">
+                  Names like “Mr &amp; Mrs”, “and family”, or “+1” auto-set party size. Phone and
+                  email stay optional. Duplicates are flagged before anything is created.
+                </p>
+              </div>
+
               <SettingRow
                 label="Guest Entry Pass"
-                hint="A unique QR and admission code per invitation."
+                hint="Unique QR and admission code — same stack used at the gate."
                 checked={settings.issueEntryPass}
                 onChange={(v) => setSettings((s) => ({ ...s, issueEntryPass: v }))}
               />
               <SettingRow
                 label="Place card"
-                hint="Personalised place card on the invitation."
+                hint="Personalised place card with capacity and seating reveal."
                 checked={settings.enablePlaceCard}
                 onChange={(v) => setSettings((s) => ({ ...s, enablePlaceCard: v }))}
               />
               <SettingRow
                 label="Apply table & seat columns"
-                hint="Writes seating assignments during the import."
+                hint="Writes seating during import when your list includes Table/Seat."
                 checked={settings.applySeating}
                 onChange={(v) => setSettings((s) => ({ ...s, applySeating: v }))}
               />
+              {settings.applySeating && seatingPlans.length > 0 && (
+                <div className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <Label htmlFor="import-seating-plan">Seating plan</Label>
+                  <select
+                    id="import-seating-plan"
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                    value={settings.seatingPlanId ?? ""}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        seatingPlanId: e.target.value || null,
+                      }))
+                    }
+                  >
+                    {seatingPlans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-slate-500">
+                    Dual-stage events: pick Reception or Main Ceremony for imported seats.
+                  </p>
+                </div>
+              )}
               <SettingRow
                 label="Normalise Ghana numbers"
                 hint="0244… becomes +233244…"
@@ -329,26 +474,83 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
               />
               <SettingRow
                 label="Publish immediately"
-                hint="Off keeps every invitation as a draft."
+                hint="Off keeps every invitation as a draft until you publish."
                 checked={settings.publishImmediately}
                 onChange={(v) => setSettings((s) => ({ ...s, publishImmediately: v }))}
               />
 
               <div className="space-y-1.5">
-                <Label htmlFor="default-party">Default allowance</Label>
-                <Input
-                  id="default-party"
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={settings.defaultPartySize}
+                <Label htmlFor="import-duplicate-policy">Duplicate names</Label>
+                <select
+                  id="import-duplicate-policy"
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                  value={settings.duplicatePolicy}
                   onChange={(e) =>
-                    setSettings((s) => ({ ...s, defaultPartySize: Number(e.target.value) || 1 }))
+                    setSettings((s) => ({
+                      ...s,
+                      duplicatePolicy: e.target.value as ImportSettings["duplicatePolicy"],
+                    }))
                   }
-                />
-                <p className="text-xs text-slate-500">
-                  Used when a row does not say. Couples, plus-ones and confirmed
-                  families override it.
+                >
+                  <option value="REVIEW">Flag for review (recommended)</option>
+                  <option value="SKIP">Skip duplicates automatically</option>
+                  <option value="CREATE_ANYWAY">Create anyway</option>
+                </select>
+                <p className="text-[11px] text-slate-500">
+                  Protects against importing the same guest twice from WhatsApp lists or
+                  spreadsheets.
+                </p>
+              </div>
+
+              <PartyAllowanceField
+                label="Default people admitted"
+                value={settings.defaultPartySize}
+                onChange={(value) => setSettings((s) => ({ ...s, defaultPartySize: value }))}
+                hint="Used when a row has no party size. Couples, plus-ones and named families override it automatically."
+              />
+
+              <div className="space-y-2">
+                <Label className="inline-flex items-center gap-1.5">
+                  <Tags className="h-3.5 w-3.5" />
+                  Apply tags to every imported guest
+                  <span className="font-normal text-slate-500">(organizer only)</span>
+                </Label>
+                {tags.length === 0 ? (
+                  <p className="text-xs text-slate-500">
+                    No tags yet — add them in Guest CRM, or continue without tags.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => {
+                      const selected = settings.defaultTagIds.includes(tag.id);
+                      return (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() =>
+                            setSettings((current) => ({
+                              ...current,
+                              defaultTagIds: selected
+                                ? current.defaultTagIds.filter((id) => id !== tag.id)
+                                : [...current.defaultTagIds, tag.id],
+                            }))
+                          }
+                          className={cn(
+                            "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                            selected
+                              ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                          )}
+                          aria-pressed={selected}
+                        >
+                          {tag.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <p className="text-[11px] text-slate-500">
+                  Private seating labels — guests never see these on their invitation.
                 </p>
               </div>
             </CardContent>

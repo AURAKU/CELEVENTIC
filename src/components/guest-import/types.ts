@@ -79,12 +79,13 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export const IMPORT_FIELD_OPTIONS: { value: string; label: string }[] = [
-  { value: "name", label: "Guest / invitation name" },
+  { value: "name", label: "Guest name" },
   { value: "email", label: "Email (optional)" },
   { value: "phone", label: "Phone (optional)" },
-  { value: "partySize", label: "Party allowance" },
+  { value: "partySize", label: "People admitted" },
   { value: "partyType", label: "Invitation type" },
   { value: "memberNames", label: "Party member names" },
+  { value: "tags", label: "Tags (organizer only)" },
   { value: "groupName", label: "Group" },
   { value: "tableNumber", label: "Table" },
   { value: "seatLabel", label: "Seat" },

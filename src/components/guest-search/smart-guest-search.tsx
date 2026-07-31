@@ -157,8 +157,8 @@ export function SmartGuestSearch({
   const archivedHidden = response?.archivedHiddenCount ?? 0;
 
   return (
-    <div className="space-y-3">
-      <div className="relative">
+    <div className="min-w-0 space-y-3">
+      <div className="relative min-w-0">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           ref={inputRef}
@@ -169,7 +169,7 @@ export function SmartGuestSearch({
           placeholder="Search a name, phone, email, admission code or table"
           aria-label="Search guests"
           autoComplete="off"
-          className="h-12 w-full rounded-xl border border-slate-200 bg-white/80 pl-10 pr-20 text-sm shadow-sm transition-all placeholder:text-slate-400 focus-visible:border-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white/80 pl-10 pr-20 text-sm shadow-sm transition-all placeholder:text-slate-400 focus-visible:border-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50"
         />
         <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2">
           {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
@@ -254,7 +254,7 @@ export function SmartGuestSearch({
           <CardContent className="py-8 text-center">
             <p className="text-sm text-slate-500">No guests yet for this event.</p>
             <p className="mt-1 text-xs text-slate-400">
-              Add a guest invitation beside this list to get started.
+              Add a guest invitation above to get started.
             </p>
           </CardContent>
         </Card>

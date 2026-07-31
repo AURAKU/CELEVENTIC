@@ -10,6 +10,15 @@ import type { UserRole } from "@prisma/client";
 import { z } from "zod";
 import { SEATING_GUEST_BATCH, SEATING_GUEST_LIMIT } from "@/lib/pagination";
 
+const LIVE_PASS_STATUSES = [
+  "ACTIVE",
+  "PARTIALLY_ADMITTED",
+  "ADMITTED",
+  "PENDING_SYNC",
+  "CONFLICT",
+  "MANUAL_REVIEW",
+] as ("ACTIVE" | "PARTIALLY_ADMITTED" | "ADMITTED" | "PENDING_SYNC" | "CONFLICT" | "MANUAL_REVIEW")[];
+
 const seatingGuestSelect = {
   id: true,
   name: true,
@@ -27,14 +36,7 @@ const seatingGuestSelect = {
       guestPasses: {
         where: {
           status: {
-            in: [
-              "ACTIVE",
-              "PARTIALLY_ADMITTED",
-              "ADMITTED",
-              "PENDING_SYNC",
-              "CONFLICT",
-              "MANUAL_REVIEW",
-            ],
+            in: LIVE_PASS_STATUSES,
           },
         },
         orderBy: { tokenVersion: "desc" as const },
@@ -51,7 +53,7 @@ const seatingGuestSelect = {
     orderBy: { tag: { sortOrder: "asc" as const } },
     select: { tag: { select: { id: true, label: true } } },
   },
-} as const;
+};
 
 /** Load every active guest for the event — organizers must not lose roster rows to a silent cap. */
 async function loadAllSeatingGuests(eventId: string) {
@@ -83,7 +85,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id: eventId } = await params;
   try {
     await verifyEventAccess(eventId, session.user.id, session.user.role);
-    const plan = await seatingService.getPlanForEvent(eventId);
+    const plans = await seatingService.getPlansForEvent(eventId);
+    const plan = plans.find((row) => row.planType === "RECEPTION") ?? plans[0] ?? null;
     const [guests, guestTotal] = await Promise.all([
       loadAllSeatingGuests(eventId),
       prisma.guest.count({ where: { eventId, archivedAt: null } }),
@@ -92,13 +95,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       success: true,
       data: {
         plan,
+        plans,
         guests: guests.map((guest) => {
           const pass = guest.invitation?.guestPasses[0];
           const allowance = guest.invitation
             ? Math.max(
                 1,
-                pass?.partySize ??
-                  guest.invitation.admissionAllowance ??
+                guest.invitation.admissionAllowance ??
+                  pass?.partySize ??
                   1 + Math.max(0, guest.plusOnes)
               )
             : 1 + Math.max(0, guest.plusOnes);
@@ -122,6 +126,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             status: guest.status,
             plusOnes: guest.plusOnes,
             invitationId: guest.invitationId,
+            partySize: allowance,
             admission: guest.invitation
               ? {
                   allowance,
@@ -148,30 +153,35 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 const upsertSchema = z
   .object({
     name: z.string().trim().min(1).max(120),
+    planType: z.enum(["RECEPTION", "CEREMONY"]).optional().default("RECEPTION"),
     layout: z
       .object({
-        tables: z.array(
-          z.object({
-            id: z.string().min(1).max(120),
-            label: z.string().trim().min(1).max(80),
-            zone: z.string().trim().max(80).optional(),
-            zoneId: z.string().max(120).optional(),
-            kind: z.string().max(40).optional(),
-            capacity: z.number().optional(),
-            shape: z.enum(["round", "square", "rectangle"]).optional(),
-            seatCount: z.number().min(2).max(20).optional(),
-            x: z.number().optional(),
-            y: z.number().optional(),
-            rotation: z.number().optional(),
-            locked: z.boolean().optional(),
-            vip: z.boolean().optional(),
-            category: z.string().max(80).optional(),
-            color: z.string().max(40).optional(),
-            notes: z.string().max(500).optional(),
-            seatsAtEnds: z.boolean().optional(),
-            numberingClockwise: z.boolean().optional(),
-          })
-        ),
+        tables: z
+          .array(
+            z.object({
+              id: z.string().min(1).max(120),
+              label: z.string().trim().min(1).max(80),
+              zone: z.string().trim().max(80).optional(),
+              zoneId: z.string().max(120).optional(),
+              kind: z.string().max(40).optional(),
+              capacity: z.number().optional(),
+              shape: z.enum(["round", "square", "rectangle"]).optional(),
+              seatCount: z.number().min(2).max(20).optional(),
+              x: z.number().optional(),
+              y: z.number().optional(),
+              rotation: z.number().optional(),
+              locked: z.boolean().optional(),
+              vip: z.boolean().optional(),
+              category: z.string().max(80).optional(),
+              color: z.string().max(40).optional(),
+              notes: z.string().max(500).optional(),
+              seatsAtEnds: z.boolean().optional(),
+              numberingClockwise: z.boolean().optional(),
+            })
+          )
+          .default([]),
+        ceremonyRows: z.array(z.any()).optional(),
+        ceremonySections: z.array(z.any()).optional(),
         zones: z
           .array(
             z.object({
@@ -206,10 +216,12 @@ const upsertSchema = z
         publishedAt: z.string().nullable().optional(),
         revision: z.number().optional(),
         settings: z.record(z.any()).optional(),
+        planKind: z.enum(["RECEPTION", "CEREMONY"]).optional(),
       })
       .passthrough(),
   })
   .superRefine((value, ctx) => {
+    if (value.planType === "CEREMONY") return;
     const seen = new Set<string>();
     value.layout.tables.forEach((table, index) => {
       const key = table.label.toLowerCase();
@@ -242,7 +254,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const body = upsertSchema.parse(await req.json());
-    const plan = await seatingService.upsertPlan(eventId, body.name, body.layout as SeatingLayout);
+    const plan = await seatingService.upsertPlan(
+      eventId,
+      body.name,
+      body.layout as SeatingLayout,
+      body.planType
+    );
     return NextResponse.json({ success: true, data: plan });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Failed" }, { status: 400 });

@@ -8,6 +8,7 @@ import { getAppUrlFromEnv } from "@/lib/app-url";
 import { cleanName } from "@/lib/guest-import/name";
 import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact";
 import { assertNoActiveGuestDuplicate } from "@/lib/guest-search/duplicate-guests";
+import { computeGuestCrmPeopleStats } from "@/lib/seating/people-stats";
 
 export interface CreateInvitationInput {
   eventId: string;
@@ -417,7 +418,7 @@ export class InvitationService {
       }
     }
 
-    const [guests, total, statusGroups, primaryInvite] = await Promise.all([
+    const [guests, total, peopleRows, primaryInvite] = await Promise.all([
       prisma.guest.findMany({
         where,
         include: { rsvps: { orderBy: { createdAt: "desc" }, take: 1 }, invitation: true },
@@ -426,10 +427,37 @@ export class InvitationService {
         take: limit,
       }),
       prisma.guest.count({ where }),
-      prisma.guest.groupBy({
-        by: ["status"],
+      prisma.guest.findMany({
         where: { eventId, archivedAt: null },
-        _count: true,
+        select: {
+          id: true,
+          invitationId: true,
+          plusOnes: true,
+          status: true,
+          invitation: {
+            select: {
+              admissionAllowance: true,
+              admittedCount: true,
+              guestPasses: {
+                where: {
+                  status: {
+                    in: [
+                      "ACTIVE",
+                      "PARTIALLY_ADMITTED",
+                      "ADMITTED",
+                      "PENDING_SYNC",
+                      "CONFLICT",
+                      "MANUAL_REVIEW",
+                    ],
+                  },
+                },
+                orderBy: { tokenVersion: "desc" },
+                take: 1,
+                select: { partySize: true, admittedCount: true },
+              },
+            },
+          },
+        },
       }),
       prisma.invitation.findFirst({
         where: { eventId, status: { not: "EXPIRED" }, archivedAt: null },
@@ -438,23 +466,38 @@ export class InvitationService {
       }),
     ]);
 
-    const counts: Record<string, number> = {
-      INVITED: 0,
-      OPENED: 0,
-      ACCEPTED: 0,
-      DECLINED: 0,
-      MAYBE: 0,
-      CHECKED_IN: 0,
-    };
-    for (const g of statusGroups) counts[g.status] = g._count;
-
-    const eventTotal = Object.values(counts).reduce((a, b) => a + b, 0);
-    const responded = counts.ACCEPTED + counts.DECLINED + counts.MAYBE + counts.CHECKED_IN;
-    const noResponse = Math.max(0, eventTotal - responded - counts.OPENED);
+    const peopleStats = computeGuestCrmPeopleStats(
+      peopleRows.map((guest) => {
+        const pass = guest.invitation?.guestPasses[0];
+        const allowance =
+          guest.invitation?.admissionAllowance ??
+          pass?.partySize ??
+          1 + Math.max(0, guest.plusOnes);
+        const admittedCount = Math.max(
+          0,
+          pass?.admittedCount ?? guest.invitation?.admittedCount ?? 0
+        );
+        return {
+          id: guest.id,
+          invitationId: guest.invitationId,
+          partySize: Math.max(1, allowance),
+          status: guest.status,
+          admission: {
+            allowance: Math.max(1, allowance),
+            admittedCount,
+          },
+        };
+      })
+    );
 
     return {
       ...paginatedResult(guests, total, page, limit),
-      stats: { counts, total: eventTotal, noResponse },
+      stats: {
+        counts: peopleStats.counts,
+        total: peopleStats.total,
+        noResponse: peopleStats.noResponse,
+        invitationRecords: peopleStats.invitationRecords,
+      },
       defaultInviteUniqueLink: primaryInvite?.uniqueLink ?? null,
     };
   }

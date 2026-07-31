@@ -48,6 +48,10 @@ export type SeatingRevealMode =
 
 export type PlanPublicationStatus = "draft" | "published";
 
+export type SeatingPlanKind = "RECEPTION" | "CEREMONY";
+
+export type ReceptionAssignmentMode = "TABLE_ONLY" | "TABLE_AND_CHAIR";
+
 export type ConflictSeverity = "CRITICAL" | "WARNING" | "SUGGESTION" | "RESOLVED";
 
 export type VenueElementKind =
@@ -123,10 +127,19 @@ export interface StudioSettings {
   snapToGrid: boolean;
   showGrid: boolean;
   directionsFromEntrance?: string[];
+  /** Reception only — TABLE_ONLY reserves capacity without chair labels. */
+  receptionMode?: ReceptionAssignmentMode;
+  guestCountSource?: "MAXIMUM_INVITED" | "RSVP_CONFIRMED" | "CUSTOM";
+  customExpectedPeople?: number;
+  ceremonyDirections?: string[];
+  receptionDirections?: string[];
 }
 
 export interface StudioLayout {
   tables: StudioTableConfig[];
+  /** Ceremony chairs-only layout. Ignored for reception plans. */
+  ceremonyRows?: import("./ceremony-engine").CeremonyRow[];
+  ceremonySections?: import("./ceremony-engine").CeremonySection[];
   zones?: StudioZone[];
   elements?: StudioVenueElement[];
   notes?: string;
@@ -135,6 +148,7 @@ export interface StudioLayout {
   publishedAt?: string | null;
   revision?: number;
   settings?: Partial<StudioSettings>;
+  planKind?: SeatingPlanKind;
 }
 
 export const DEFAULT_STUDIO_SETTINGS: StudioSettings = {
@@ -148,11 +162,25 @@ export const DEFAULT_STUDIO_SETTINGS: StudioSettings = {
   gridSize: 24,
   snapToGrid: true,
   showGrid: true,
+  receptionMode: "TABLE_AND_CHAIR",
+  guestCountSource: "MAXIMUM_INVITED",
   directionsFromEntrance: [
     "Enter through the main entrance",
     "Continue into the main hall",
     "Look for your seating zone signs",
     "Your table number is marked on the centerpiece",
+  ],
+  ceremonyDirections: [
+    "Enter through the Main Entrance",
+    "Use the centre aisle",
+    "Proceed to your section",
+    "An usher can help you find your row",
+  ],
+  receptionDirections: [
+    "Enter the Reception Hall",
+    "Continue past the gift table",
+    "Look for your table number",
+    "An usher can guide you to your places",
   ],
 };
 

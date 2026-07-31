@@ -164,4 +164,9 @@ export interface InvitationRenderProps {
    * it off or the invitation has nobody assigned to it.
    */
   placeCard?: PlaceCardViewData | null;
+  /**
+   * Heads this invitation admits (organiser allowance). Used by RSVP party-slot
+   * controls even when the place-card feature is off.
+   */
+  partyAllowance?: number;
 }

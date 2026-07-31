@@ -36,14 +36,19 @@ const LOGO_MIN_PAD_RATIO = 0.06;
 const BRAND_DARK = "#0B8A83";
 const BRAND_LIGHT = "#FFFFFF";
 
-/** Pass mode — pure black/white, wider quiet zone, smaller logo for screen scanning */
+/** Pass mode — pure black/white, wider quiet zone, compact logo for screen scanning */
 const PASS_DARK = "#000000";
 const PASS_LIGHT = "#FFFFFF";
-const PASS_MARGIN = 8;
+/** ISO quiet zone is 4; pass uses 6 so phone bezels / screenshots keep a clean border. */
+const PASS_MARGIN = 6;
+/**
+ * Keep the framed center mark small on passes. Large couple photos over modules
+ * are the #1 cause of slow or failed gate scans from phone screens.
+ */
 const PASS_LOGO_RATIOS: Record<QrLogoSizePreset, number> = {
-  subtle: 0.12,
-  balanced: 0.14,
-  bold: 0.15,
+  subtle: 0.1,
+  balanced: 0.11,
+  bold: 0.12,
 };
 
 function resolveLogoRatio(mode: QrDisplayMode, logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE): number {
@@ -55,6 +60,63 @@ function colorsForMode(mode: QrDisplayMode, logoSize: QrLogoSizePreset = QR_DEFA
   return mode === "pass"
     ? { dark: PASS_DARK, light: PASS_LIGHT, margin: PASS_MARGIN, logoRatio: resolveLogoRatio(mode, logoSize) }
     : { dark: BRAND_DARK, light: BRAND_LIGHT, margin: QR_MARGIN, logoRatio: resolveLogoRatio(mode, logoSize) };
+}
+
+/**
+ * Render QR modules as whole pixels (no anti-aliased soft edges), then
+ * nearest-neighbor scale to the export size. Soft modules are the main reason
+ * phone-to-phone gate scans fail under bright tents or low brightness.
+ */
+async function renderCrispQrPng(
+  targetUrl: string,
+  size: number,
+  opts: { dark: string; light: string; margin: number }
+): Promise<Buffer> {
+  const matrix = QRCode.create(targetUrl, { errorCorrectionLevel: ERROR_LEVEL });
+  const moduleCount = matrix.modules.size + opts.margin * 2;
+  // Integer scale → whole-pixel modules. Prefer floor+pad over stretch when close.
+  let scale = Math.max(4, Math.floor(size / moduleCount));
+  if (moduleCount * scale < Math.floor(size * 0.9)) {
+    scale = Math.max(4, Math.ceil(size / moduleCount));
+  }
+  const raw = await QRCode.toBuffer(targetUrl, {
+    type: "png",
+    scale,
+    margin: opts.margin,
+    errorCorrectionLevel: ERROR_LEVEL,
+    color: { dark: opts.dark, light: opts.light },
+  });
+  const rawSize = moduleCount * scale;
+  if (rawSize === size) return raw;
+
+  if (rawSize < size) {
+    const pad = Math.floor((size - rawSize) / 2);
+    return sharp({
+      create: {
+        width: size,
+        height: size,
+        channels: 3,
+        background: hexToRgb(opts.light),
+      },
+    })
+      .composite([{ input: raw, top: pad, left: pad }])
+      .png()
+      .toBuffer();
+  }
+
+  return sharp(raw)
+    .resize(size, size, {
+      kernel: sharp.kernel.nearest,
+      fit: "fill",
+    })
+    .png()
+    .toBuffer();
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace("#", "");
+  const n = Number.parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
 /** Geometry for the white inset + contained logo (shared by PNG + SVG). */
@@ -189,21 +251,29 @@ async function buildLogoOverlay(
   const { logoRatio } = colorsForMode(mode, logoSize);
   const logoSource = await loadCenterImageBuffer(centerImageUrl);
   const { frameSize, radius, pad, innerLogo } = logoInsetLayout(size, logoRatio);
-  const shadowBlur = Math.max(4, Math.round(frameSize * 0.04));
-  const shadowOffset = Math.max(2, Math.round(frameSize * 0.02));
+  const passMode = mode === "pass";
+  // Pass mode: no soft shadow / grey stroke — those halos confuse phone scanners.
+  const shadowBlur = passMode ? 0 : Math.max(4, Math.round(frameSize * 0.04));
+  const shadowOffset = passMode ? 0 : Math.max(2, Math.round(frameSize * 0.02));
   const canvasSize = frameSize + shadowBlur * 2 + shadowOffset;
+  const stroke = passMode ? "none" : "#E2E8F0";
+  const strokeWidth = passMode ? 0 : 2;
 
   const resizedLogo = await containLogoPng(logoSource, innerLogo);
 
   const frameSvg = Buffer.from(
-    `<svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
+    passMode
+      ? `<svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="${frameSize}" height="${frameSize}" rx="${radius}" ry="${radius}" fill="#FFFFFF"/>
+    </svg>`
+      : `<svg width="${canvasSize}" height="${canvasSize}" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="0" dy="${shadowOffset}" stdDeviation="${shadowBlur / 2}" flood-color="rgba(15,23,42,0.18)"/>
         </filter>
       </defs>
       <g filter="url(#shadow)">
-        <rect x="${shadowBlur}" y="${shadowBlur}" width="${frameSize}" height="${frameSize}" rx="${radius}" ry="${radius}" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/>
+        <rect x="${shadowBlur}" y="${shadowBlur}" width="${frameSize}" height="${frameSize}" rx="${radius}" ry="${radius}" fill="#FFFFFF" stroke="${stroke}" stroke-width="${strokeWidth}"/>
       </g>
     </svg>`
   );
@@ -237,19 +307,13 @@ export async function generateBrandedQrPng(
   logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE
 ): Promise<Buffer> {
   const { dark, light, margin } = colorsForMode(mode, logoSize);
-  const qrBuffer = await QRCode.toBuffer(targetUrl, {
-    type: "png",
-    width: size,
-    margin,
-    errorCorrectionLevel: ERROR_LEVEL,
-    color: { dark, light },
-  });
+  const qrBuffer = await renderCrispQrPng(targetUrl, size, { dark, light, margin });
 
   const { logoOnFrame, offset } = await buildLogoOverlay(size, centerImageUrl, mode, logoSize);
 
   return sharp(qrBuffer)
     .composite([{ input: logoOnFrame, top: offset, left: offset }])
-    .png({ compressionLevel: 6 })
+    .png({ compressionLevel: 6, palette: false })
     .toBuffer();
 }
 
@@ -279,10 +343,14 @@ export async function generateBrandedQrSvg(
   // Same contain pipeline as PNG — never embed a raw JPEG as image/png.
   const contained = await containLogoPng(logoSource, innerLogo);
   const logoB64 = contained.toString("base64");
+  const passMode = mode === "pass";
+  const frameAttrs = passMode
+    ? `fill="#FFFFFF"`
+    : `fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" filter="drop-shadow(0px 4px 8px rgba(15,23,42,0.15))"`;
 
   const overlay = `
     <g>
-      <rect x="${frameX}" y="${frameY}" width="${frameSize}" height="${frameSize}" rx="${radius}" ry="${radius}" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2" filter="drop-shadow(0px 4px 8px rgba(15,23,42,0.15))"/>
+      <rect x="${frameX}" y="${frameY}" width="${frameSize}" height="${frameSize}" rx="${radius}" ry="${radius}" ${frameAttrs}/>
       <image href="data:image/png;base64,${logoB64}" x="${logoX}" y="${logoY}" width="${innerLogo}" height="${innerLogo}" preserveAspectRatio="xMidYMid meet"/>
     </g>`;
 

@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 import {
   applyPortalUnlockPolicy,
-  computeAllowance,
+  resolveInvitationAllowance,
   summarize,
   type AdmissionSummary,
 } from "@/lib/admission/admission-logic";
@@ -86,10 +86,11 @@ async function recomputeProjection(
   if (!invitation) throw new Error(`Invitation ${invitationId} not found`);
 
   const pass = await livePass(tx, invitationId);
-  const allowance = Math.max(
-    computeAllowance(invitation.guests, invitation.admissionAllowance),
-    pass?.partySize ?? 0
-  );
+    const allowance = resolveInvitationAllowance(
+      invitation.guests,
+      invitation.admissionAllowance,
+      pass?.partySize
+    );
   const previous = invitation.admittedCount;
   // Guest rows and the pass are two views of the same truth written by two
   // paths (legacy scanner vs. entry pass). Taking the larger keeps them
@@ -204,10 +205,11 @@ async function applyExactAdmittedCount(
   if (!invitation) throw new Error(`Invitation ${invitationId} not found`);
 
   const pass = await livePass(tx, invitationId);
-  const allowance = Math.max(
-    computeAllowance(invitation.guests, invitation.admissionAllowance),
-    pass?.partySize ?? 0
-  );
+    const allowance = resolveInvitationAllowance(
+      invitation.guests,
+      invitation.admissionAllowance,
+      pass?.partySize
+    );
   const clamped = Math.max(0, Math.min(Math.trunc(target), allowance));
 
   const admit: string[] = [];
@@ -484,9 +486,10 @@ export async function correctAdmission(
     if (!invitation) throw new Error(`Invitation ${invitationId} not found`);
 
     const pass = await livePass(tx, invitationId);
-    const allowance = Math.max(
-      computeAllowance(invitation.guests, invitation.admissionAllowance),
-      pass?.partySize ?? 0
+    const allowance = resolveInvitationAllowance(
+      invitation.guests,
+      invitation.admissionAllowance,
+      pass?.partySize
     );
     const current = Math.max(invitation.admittedCount, pass?.admittedCount ?? 0);
 
@@ -533,23 +536,41 @@ export async function correctAdmission(
           ? [input.guestId]
           : invitation.guests.map((g) => g.id);
 
-        // A restore needs a plan to attach to. Reuse the party's existing plan
-        // when there is one; otherwise fall back to the event's only plan.
-        const anchor = await tx.seatingAssignment.findFirst({
-          where: { guestId: { in: invitation.guests.map((g) => g.id) } },
-          select: { seatingPlanId: true },
-        });
+        // A restore needs a plan to attach to. Prefer the party's reception plan
+        // when there is one; otherwise fall back to any existing plan, then the
+        // event's reception (or only) plan.
+        const guestIdsOnInvite = invitation.guests.map((g) => g.id);
+        const anchor =
+          (await tx.seatingAssignment.findFirst({
+            where: {
+              guestId: { in: guestIdsOnInvite },
+              seatingPlan: { planType: "RECEPTION" },
+            },
+            select: { seatingPlanId: true },
+          })) ??
+          (await tx.seatingAssignment.findFirst({
+            where: { guestId: { in: guestIdsOnInvite } },
+            select: { seatingPlanId: true },
+          }));
         const seatingPlanId =
           anchor?.seatingPlanId ??
-          (await tx.seatingPlan.findFirst({
-            where: { eventId: invitation.eventId },
-            select: { id: true },
-          }))?.id;
+          (
+            (await tx.seatingPlan.findFirst({
+              where: { eventId: invitation.eventId, planType: "RECEPTION" },
+              select: { id: true },
+            })) ??
+            (await tx.seatingPlan.findFirst({
+              where: { eventId: invitation.eventId },
+              select: { id: true },
+            }))
+          )?.id;
         if (!seatingPlanId) throw new Error("This event has no seating plan to restore into");
 
         for (const guestId of guestIds) {
           await tx.seatingAssignment.upsert({
-            where: { guestId },
+            where: {
+              guestId_seatingPlanId: { guestId, seatingPlanId },
+            },
             create: {
               seatingPlanId,
               guestId,
@@ -641,10 +662,11 @@ export async function getInvitationAdmission(invitationId: string): Promise<
     where: { invitationId, status: { in: [...LIVE_PASS_STATUSES] } },
     orderBy: { tokenVersion: "desc" },
   });
-  const allowance = Math.max(
-    computeAllowance(invitation.guests, invitation.admissionAllowance),
-    pass?.partySize ?? 0
-  );
+    const allowance = resolveInvitationAllowance(
+      invitation.guests,
+      invitation.admissionAllowance,
+      pass?.partySize
+    );
   const wasReset = invitation.admissionState === "ADMISSION_RESET";
   const summary = summarize(
     Math.max(admittedHeads(invitation.guests), pass?.admittedCount ?? 0),
@@ -745,8 +767,9 @@ export async function applyPassAdmission(
     });
     if (!invitation) return null;
 
-    const allowance = Math.max(
-      computeAllowance(invitation.guests, invitation.admissionAllowance),
+    const allowance = resolveInvitationAllowance(
+      invitation.guests,
+      invitation.admissionAllowance,
       current.partySize
     );
     const summary = summarize(resulting, allowance);

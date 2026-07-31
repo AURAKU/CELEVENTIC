@@ -33,16 +33,18 @@ export function EventPicker({ events, value, onChange, loading, label = "Select 
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 min-w-0">
       <Label>{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
+        <SelectTrigger className="h-auto min-h-10 w-full max-w-full [&>span]:line-clamp-2 [&>span]:text-left">
           <SelectValue placeholder="Choose an event" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-w-[min(100vw-2rem,28rem)]">
           {events.map((e) => (
-            <SelectItem key={e.id} value={e.id}>
-              {e.title}, {formatDate(e.startDate)}
+            <SelectItem key={e.id} value={e.id} className="whitespace-normal">
+              <span className="line-clamp-2 text-left">
+                {e.title}, {formatDate(e.startDate)}
+              </span>
             </SelectItem>
           ))}
         </SelectContent>

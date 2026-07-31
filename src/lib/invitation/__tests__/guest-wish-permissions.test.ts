@@ -7,14 +7,14 @@ import {
 } from "../guest-wish-permissions";
 
 describe("guest wish permissions", () => {
-  it("enforces the product matrix for add / edit / delete", () => {
+  it("enforces organizer-only edit and delete", () => {
     assert.deepEqual(
       resolveWishCapabilities({ isModerator: false, hasValidAuthorToken: false }),
       { canAdd: true, canDelete: false, canEdit: false }
     );
     assert.deepEqual(
       resolveWishCapabilities({ isModerator: false, hasValidAuthorToken: true }),
-      { canAdd: true, canDelete: true, canEdit: false }
+      { canAdd: true, canDelete: false, canEdit: false }
     );
     assert.deepEqual(
       resolveWishCapabilities({ isModerator: true, hasValidAuthorToken: false }),
@@ -22,9 +22,9 @@ describe("guest wish permissions", () => {
     );
   });
 
-  it("hides trash from guests who do not own the wish token", () => {
+  it("never shows trash to guests, even with an owned author token", () => {
     assert.equal(viewerCanDeleteWish({ canModerate: false, ownedToken: null }), false);
-    assert.equal(viewerCanDeleteWish({ canModerate: false, ownedToken: "mine" }), true);
+    assert.equal(viewerCanDeleteWish({ canModerate: false, ownedToken: "mine" }), false);
     assert.equal(viewerCanDeleteWish({ canModerate: true, ownedToken: null }), true);
   });
 

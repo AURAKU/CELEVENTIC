@@ -31,6 +31,12 @@ interface SeatLookupData {
     planName: string;
     admitted?: boolean;
   } | null;
+  ceremonyAssignment?: {
+    rowLabel: string;
+    seatLabel: string | null;
+    zone: string | null;
+    planName: string;
+  } | null;
   table: {
     label: string;
     shape: string;
@@ -142,6 +148,13 @@ export default function SeatLookupPage() {
           tableNumber={assignment?.tableNumber}
           seatLabel={assignment?.seatLabel}
           zone={assignment?.zone}
+          ceremonyRowLabel={data.ceremonyAssignment?.rowLabel}
+          ceremonySeatLabel={data.ceremonyAssignment?.seatLabel}
+          ceremonyZone={data.ceremonyAssignment?.zone}
+          receptionMode={
+            (data.settings as { receptionMode?: "TABLE_ONLY" | "TABLE_AND_CHAIR" } | undefined)
+              ?.receptionMode
+          }
           guestStatus={guest.status}
           admittedCount={assignment?.admitted ? 1 : data.party?.admittedCount ?? 0}
           allowance={data.party?.allowance}

@@ -561,7 +561,7 @@ model Guest {
   qrCodes           QrCode[]
   qrScans           QrScan[]
   tickets           Ticket[]
-  seatingAssignment SeatingAssignment?
+  seatingAssignments SeatingAssignment[]
   memoryUploads     EventMemoryUpload[]
   guestWishes       InvitationGuestWish[]
   giftPayments      EventGiftPayment[]
@@ -582,17 +582,19 @@ model Guest {
  * Visible only to organizers/admins in Guest CRM — never on guest surfaces.
  */
 model EventGuestTag {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   eventId   String
   /// Display label, e.g. "Family of bride"
   label     String
   /// Normalized unique key within the event
   slug      String
   /// True when seeded from the wedding preset catalog
-  isPreset  Boolean  @default(false)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isPreset  Boolean   @default(false)
+  sortOrder Int       @default(0)
+  /// Soft-deleted by organizer; keeps slug so presets are not re-seeded
+  archivedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   event        Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assignments  GuestTagAssignment[]
@@ -2189,24 +2191,30 @@ model EventStaff {
 }
 
 model SeatingPlan {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   eventId   String
   name      String
+  /// RECEPTION (tables) or CEREMONY (chairs/rows). One of each per event.
+  planType  SeatingPlanType @default(RECEPTION)
   layout    Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   event       Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assignments SeatingAssignment[]
 
+  @@unique([eventId, planType])
+  @@index([eventId])
   @@map("seating_plans")
 }
 
 model SeatingAssignment {
   id            String   @id @default(cuid())
   seatingPlanId String
-  guestId       String   @unique
+  guestId       String
+  /// Reception table label, or ceremony row label (e.g. "Row D").
   tableNumber   String
+  /// Reception chair / ceremony chair label. Null in TABLE_ONLY reception mode.
   seatLabel     String?
   zone          String?
   notes         String?
@@ -2216,8 +2224,15 @@ model SeatingAssignment {
   seatingPlan SeatingPlan @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
   guest       Guest       @relation(fields: [guestId], references: [id], onDelete: Cascade)
 
+  @@unique([guestId, seatingPlanId])
   @@index([seatingPlanId])
+  @@index([guestId])
   @@map("seating_assignments")
+}
+
+enum SeatingPlanType {
+  RECEPTION
+  CEREMONY
 }
 
 // ─── Fraud Detection ────────────────────────────────────────────
@@ -5082,6 +5097,8 @@ model GuestImportRow {
   partySize   Int            @default(1)
   /// Named party members beyond the primary guest.
   memberNames Json?
+  /// Organizer CRM tag labels from the Tags column (resolved to IDs at generation).
+  tagLabels   Json?
   groupName   String?
   tableNumber String?
   seatLabel   String?

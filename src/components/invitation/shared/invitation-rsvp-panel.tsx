@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { Check, X, HelpCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, HelpCircle, Minus, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "@/components/i18n/locale-provider";
 import type { ButtonStyle } from "@/lib/invitation-studio/studio-types";
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import { styledInvitationButton } from "@/lib/invitation/invitation-button-styles";
+import {
+  clampAttendingCount,
+  rsvpAcceptedThankYou,
+  rsvpPartyCapacityLine,
+  rsvpPartySlotGuidance,
+} from "@/lib/invitation/rsvp-party-slots";
 
 interface InvitationRsvpPanelProps {
   invitationId: string;
@@ -18,6 +24,8 @@ interface InvitationRsvpPanelProps {
   variant?: "light" | "dark";
   buttonStyle?: ButtonStyle | string;
   label?: string;
+  /** Organiser-set heads this invitation admits. */
+  partyAllowance?: number;
 }
 
 export function InvitationRsvpPanel({
@@ -28,15 +36,28 @@ export function InvitationRsvpPanel({
   variant = "light",
   buttonStyle,
   label,
+  partyAllowance = 1,
 }: InvitationRsvpPanelProps) {
   const { t } = useLocale();
+  const allowance = Math.max(1, Math.trunc(partyAllowance || 1));
   const [rsvpStatus, setRsvpStatus] = useState<string | null>(null);
+  const [confirmedAttending, setConfirmedAttending] = useState(allowance);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [guestName, setGuestName] = useState(initialGuestName?.trim() ?? "");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [attendingCount, setAttendingCount] = useState(allowance);
   const nameLocked = Boolean(guestId && guestName.trim());
+  const capacityCopy = rsvpPartyCapacityLine(allowance);
+  const slotGuidance = useMemo(
+    () => rsvpPartySlotGuidance(allowance, attendingCount),
+    [allowance, attendingCount]
+  );
+
+  useEffect(() => {
+    setAttendingCount((prev) => clampAttendingCount(prev, allowance));
+  }, [allowance]);
 
   async function handleRsvp(response: "ACCEPTED" | "DECLINED" | "MAYBE") {
     if (isPreviewInvitationId(invitationId)) {
@@ -45,9 +66,11 @@ export function InvitationRsvpPanel({
     }
     setError("");
     setLoading(true);
+    const cappedAttending = clampAttendingCount(attendingCount, allowance);
     const contact = {
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
+      ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
     const payload = guestId
       ? { guestId, response, ...contact }
@@ -65,8 +88,10 @@ export function InvitationRsvpPanel({
       body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
-    if (res.ok) setRsvpStatus(response);
-    else setError(data.error || t("rsvp.submit_failed"));
+    if (res.ok) {
+      setConfirmedAttending(cappedAttending);
+      setRsvpStatus(response);
+    } else setError(data.error || t("rsvp.submit_failed"));
     setLoading(false);
   }
 
@@ -81,16 +106,33 @@ export function InvitationRsvpPanel({
   if (rsvpStatus) {
     return (
       <div
-        className="text-center p-4 rounded-lg font-medium inv-fade-in"
+        className="text-center p-4 rounded-lg font-medium inv-fade-in space-y-1"
         style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
       >
-        {t("rsvp.title")}: {rsvpStatus.replace(/_/g, " ")}, {t("rsvp.thank_you")}
+        <p>
+          {t("rsvp.title")}: {rsvpStatus.replace(/_/g, " ")}, {t("rsvp.thank_you")}
+        </p>
+        {rsvpStatus === "ACCEPTED" && allowance > 1 ? (
+          <p className="text-sm font-normal opacity-90">
+            {rsvpAcceptedThankYou(confirmedAttending, allowance)}
+          </p>
+        ) : null}
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      {label ? (
+        <p className="text-sm font-medium" style={{ color: accentColor }}>
+          {label}
+        </p>
+      ) : null}
+      {capacityCopy ? (
+        <p className="text-xs font-semibold tracking-wide" style={{ color: accentColor }} data-testid="rsvp-capacity">
+          {capacityCopy}
+        </p>
+      ) : null}
       <div className="space-y-2">
         <Input
           placeholder={t("rsvp.your_name")}
@@ -120,6 +162,51 @@ export function InvitationRsvpPanel({
           className={fieldClass}
           disabled={loading}
         />
+        {allowance > 1 ? (
+          <div
+            className={`rounded-lg border px-3 py-3 space-y-2 ${
+              variant === "dark" ? "border-white/20 bg-white/5" : "border-slate-200 bg-slate-50/80"
+            }`}
+            data-testid="rsvp-party-slots"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: accentColor }}>
+              Party seats
+            </p>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className={btnClass}
+                disabled={loading || attendingCount <= 1}
+                aria-label="Fewer attending"
+                onClick={() => setAttendingCount((n) => clampAttendingCount(n - 1, allowance))}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 text-center">
+                <p className="text-lg font-semibold tabular-nums" data-testid="rsvp-attending-count">
+                  {slotGuidance.confirmed} / {allowance}
+                </p>
+                <p className="text-xs opacity-80">{slotGuidance.summary}</p>
+              </div>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className={btnClass}
+                disabled={loading || attendingCount >= allowance}
+                aria-label="More attending"
+                onClick={() => setAttendingCount((n) => clampAttendingCount(n + 1, allowance))}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-center opacity-80" data-testid="rsvp-remaining-slots">
+              {slotGuidance.detail}
+            </p>
+          </div>
+        ) : null}
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
       <div className="flex flex-wrap gap-2">

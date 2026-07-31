@@ -120,6 +120,7 @@ function rowCreateData(batchId: string, row: NormalizedRow): Prisma.GuestImportR
     partyType: row.partyType,
     partySize: row.partySize,
     memberNames: row.memberNames as unknown as Prisma.InputJsonValue,
+    tagLabels: row.tagLabels as unknown as Prisma.InputJsonValue,
     groupName: row.groupName,
     tableNumber: row.tableNumber,
     seatLabel: row.seatLabel,

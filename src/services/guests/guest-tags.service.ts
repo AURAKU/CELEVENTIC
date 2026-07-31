@@ -36,7 +36,7 @@ export async function listEventGuestTags(eventId: string): Promise<GuestTagDto[]
   await ensurePresetGuestTags(eventId);
 
   const rows = await prisma.eventGuestTag.findMany({
-    where: { eventId },
+    where: { eventId, archivedAt: null },
     orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
   });
   return rows.map(toDto);
@@ -44,6 +44,7 @@ export async function listEventGuestTags(eventId: string): Promise<GuestTagDto[]
 
 /** Idempotent seed of the wedding preset catalog for one event. */
 export async function ensurePresetGuestTags(eventId: string): Promise<void> {
+  // Include archived rows so a deleted preset is not silently recreated.
   const existing = await prisma.eventGuestTag.findMany({
     where: { eventId, isPreset: true },
     select: { slug: true },
@@ -70,6 +71,13 @@ export class GuestTagConflictError extends Error {
   }
 }
 
+export class GuestTagNotFoundError extends Error {
+  constructor(message = "Tag not found") {
+    super(message);
+    this.name = "GuestTagNotFoundError";
+  }
+}
+
 /** Create a custom organizer tag for the event. */
 export async function createCustomGuestTag(
   eventId: string,
@@ -87,15 +95,26 @@ export async function createCustomGuestTag(
     where: { eventId_slug: { eventId, slug } },
   });
   if (clash) {
-    // Same label already exists — return it instead of duplicating.
-    if (clash.label.toLowerCase() === label.toLowerCase()) {
+    if (!clash.archivedAt && clash.label.toLowerCase() === label.toLowerCase()) {
       return toDto(clash);
+    }
+    if (clash.archivedAt) {
+      const restored = await prisma.eventGuestTag.update({
+        where: { id: clash.id },
+        data: {
+          label,
+          archivedAt: null,
+          isPreset: false,
+          sortOrder: clash.sortOrder,
+        },
+      });
+      return toDto(restored);
     }
     slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
   }
 
   const maxSort = await prisma.eventGuestTag.aggregate({
-    where: { eventId },
+    where: { eventId, archivedAt: null },
     _max: { sortOrder: true },
   });
 
@@ -118,6 +137,61 @@ export async function createCustomGuestTag(
 }
 
 /**
+ * Soft-delete an event tag from the organizer catalog.
+ * Clears guest assignments and keeps the slug so presets are not re-seeded.
+ */
+export async function deleteEventGuestTag(
+  eventId: string,
+  tagId: string
+): Promise<GuestTagDto> {
+  const tag = await prisma.eventGuestTag.findFirst({
+    where: { id: tagId, eventId, archivedAt: null },
+  });
+  if (!tag) throw new GuestTagNotFoundError();
+
+  const [, archived] = await prisma.$transaction([
+    prisma.guestTagAssignment.deleteMany({ where: { tagId: tag.id } }),
+    prisma.eventGuestTag.update({
+      where: { id: tag.id },
+      data: { archivedAt: new Date() },
+    }),
+  ]);
+
+  return toDto(archived);
+}
+
+/**
+ * Resolve spreadsheet tag labels to event tag IDs.
+ * Matches presets/custom tags case-insensitively; creates custom tags when needed.
+ */
+export async function resolveGuestTagLabels(
+  eventId: string,
+  labels: string[]
+): Promise<string[]> {
+  const cleaned = Array.from(
+    new Set(
+      labels
+        .map((label) => label.trim().replace(/\s+/g, " "))
+        .filter((label) => label.length >= 2 && label.length <= 80)
+    )
+  ).slice(0, 10);
+  if (cleaned.length === 0) return [];
+
+  await ensurePresetGuestTags(eventId);
+
+  const ids: string[] = [];
+  for (const label of cleaned) {
+    try {
+      const tag = await createCustomGuestTag(eventId, label);
+      ids.push(tag.id);
+    } catch {
+      // Skip a single bad label; import generation must continue.
+    }
+  }
+  return Array.from(new Set(ids));
+}
+
+/**
  * Replace the private tag set on a guest. Tags must belong to the same event
  * as the guest. Empty array clears all tags.
  */
@@ -137,7 +211,7 @@ export async function setGuestTags(options: {
   const uniqueIds = Array.from(new Set(options.tagIds.filter(Boolean)));
   if (uniqueIds.length > 0) {
     const tags = await prisma.eventGuestTag.findMany({
-      where: { eventId: options.eventId, id: { in: uniqueIds } },
+      where: { eventId: options.eventId, id: { in: uniqueIds }, archivedAt: null },
       select: { id: true },
     });
     if (tags.length !== uniqueIds.length) {
@@ -172,7 +246,7 @@ export async function mapGuestTags(
   if (guestIds.length === 0) return map;
 
   const rows = await prisma.guestTagAssignment.findMany({
-    where: { guestId: { in: guestIds } },
+    where: { guestId: { in: guestIds }, tag: { archivedAt: null } },
     include: { tag: true },
     orderBy: { tag: { sortOrder: "asc" } },
   });

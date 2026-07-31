@@ -10,6 +10,19 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const url = new URL(req.url);
+  const id = url.searchParams.get("id")?.trim();
+  if (id) {
+    const item = await notificationService.getForUser(session.user.id, id);
+    if (!item) {
+      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    }
+    return NextResponse.json({
+      success: true,
+      data: { ...item, createdAt: item.createdAt.toISOString() },
+    });
+  }
+
   const { page, limit } = parsePaginationFromUrl(req.url, { limit: FEED_LIMIT });
   const data = await notificationService.listForUser(session.user.id, page, limit);
   return NextResponse.json({
@@ -53,4 +66,40 @@ export async function PATCH(req: Request) {
   }
 
   return NextResponse.json({ error: "id or markAll required" }, { status: 400 });
+}
+
+const deleteSchema = z
+  .object({
+    id: z.string().optional(),
+    clearAll: z.boolean().optional(),
+  })
+  .refine((value) => Boolean(value.id) || value.clearAll === true, {
+    message: "id or clearAll required",
+  });
+
+export async function DELETE(req: Request) {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = deleteSchema.parse(await req.json().catch(() => ({})));
+
+    if (body.clearAll) {
+      const result = await notificationService.clearAll(session.user.id);
+      return NextResponse.json({ success: true, data: { deleted: result.count } });
+    }
+
+    const result = await notificationService.deleteOne(session.user.id, body.id!);
+    if (result.count === 0) {
+      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, data: { deleted: 1 } });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors[0]?.message ?? "Invalid request" }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Failed to delete notifications" }, { status: 500 });
+  }
 }

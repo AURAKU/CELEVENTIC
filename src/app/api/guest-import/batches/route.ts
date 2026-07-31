@@ -39,6 +39,7 @@ const optionsSchema = z
     publishImmediately: z.boolean().optional(),
     deliveryChannels: z.array(z.enum(["EMAIL", "SMS", "WHATSAPP"])).optional(),
     duplicatePolicy: z.enum(["REVIEW", "SKIP", "CREATE_ANYWAY"]).optional(),
+    defaultTagIds: z.array(z.string().min(1)).max(20).optional(),
   })
   .partial();
 

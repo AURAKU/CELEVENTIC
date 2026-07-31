@@ -2,9 +2,8 @@
  * Capability matrix for the invitation wishes guestbook.
  *
  * - Anyone may add a wish (public guestbook).
- * - Authors may delete only their own wish (via one-time deleteToken).
- * - Organizers / platform admins may add, edit, and delete any wish.
- * - Guests never get edit (including on their own wish).
+ * - Only organizers / platform admins may edit or delete wishes.
+ * - Guests (including authors) never get edit or delete.
  *
  * Kept free of Node/Prisma imports so client UI can share the same rules.
  */
@@ -16,28 +15,27 @@ export type WishCapabilities = {
 
 export function resolveWishCapabilities(input: {
   isModerator: boolean;
-  hasValidAuthorToken: boolean;
+  /** @deprecated Author tokens no longer grant delete. Kept for call-site compatibility. */
+  hasValidAuthorToken?: boolean;
 }): WishCapabilities {
   return {
     canAdd: true,
-    canDelete: input.isModerator || input.hasValidAuthorToken,
+    canDelete: input.isModerator,
     canEdit: input.isModerator,
   };
 }
 
 /**
- * Client delete affordance: organizers/admins see trash on every card; guests
- * see trash only for wishes whose deleteToken they hold (created on this
- * device). Never key off guestId/name alone — that would incorrectly expose
- * delete on other guests' wishes.
+ * Delete affordance: organizers/admins only.
+ * Guests never see trash — wishes stay on the invitation for everyone.
  */
 export function viewerCanDeleteWish(input: {
   canModerate: boolean;
+  /** @deprecated Ignored — author tokens no longer unlock delete. */
   ownedToken?: string | null;
 }): boolean {
   return resolveWishCapabilities({
     isModerator: input.canModerate,
-    hasValidAuthorToken: Boolean(input.ownedToken),
   }).canDelete;
 }
 
@@ -45,6 +43,5 @@ export function viewerCanDeleteWish(input: {
 export function viewerCanEditWish(canModerate: boolean): boolean {
   return resolveWishCapabilities({
     isModerator: Boolean(canModerate),
-    hasValidAuthorToken: false,
   }).canEdit;
 }

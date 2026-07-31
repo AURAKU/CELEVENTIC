@@ -9,6 +9,7 @@ import { ensureGuestManualCode, isManualAdmissionCode } from "@/lib/qr/manual-co
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { syncAdmissionAfterCheckIn, resetAdmission } from "@/services/admission/admission.service";
 import { seatDisplayName, tableDisplayName } from "@/lib/seating/seating-types";
+import { pickSeatingAssignment } from "@/lib/seating/assignment-pick";
 
 export type QrAdmissionStatus =
   | "valid"
@@ -526,7 +527,13 @@ export class QrService {
             id: true,
             name: true,
             invitation: { select: { name: true } },
-            seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+            seatingAssignments: {
+              select: {
+                tableNumber: true,
+                seatLabel: true,
+                seatingPlan: { select: { planType: true } },
+              },
+            },
           },
         },
         ticket: { select: { id: true, name: true } },
@@ -538,7 +545,13 @@ export class QrService {
                 id: true,
                 name: true,
                 invitation: { select: { name: true } },
-                seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+                seatingAssignments: {
+                  select: {
+                    tableNumber: true,
+                    seatLabel: true,
+                    seatingPlan: { select: { planType: true } },
+                  },
+                },
               },
             },
             ticket: { select: { id: true, name: true } },
@@ -712,7 +725,13 @@ export class QrService {
             select: {
               name: true,
               invitation: { select: { name: true } },
-              seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+              seatingAssignments: {
+                select: {
+                  tableNumber: true,
+                  seatLabel: true,
+                  seatingPlan: { select: { planType: true } },
+                },
+              },
             },
           },
           ticket: { select: { name: true } },
@@ -722,7 +741,13 @@ export class QrService {
                 select: {
                   name: true,
                   invitation: { select: { name: true } },
-                  seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+                  seatingAssignments: {
+                    select: {
+                      tableNumber: true,
+                      seatLabel: true,
+                      seatingPlan: { select: { planType: true } },
+                    },
+                  },
                 },
               },
               ticket: { select: { name: true } },
@@ -748,12 +773,13 @@ export class QrService {
       lastScanned: recentValid.map((s) => {
         const guest = s.guest ?? s.qrCode?.guest ?? null;
         const ticket = s.ticket ?? s.qrCode?.ticket ?? null;
+        const seating = pickSeatingAssignment(guest?.seatingAssignments);
         const seatParts: string[] = [];
-        if (guest?.seatingAssignment?.tableNumber) {
-          seatParts.push(tableDisplayName(guest.seatingAssignment.tableNumber));
+        if (seating?.tableNumber) {
+          seatParts.push(tableDisplayName(seating.tableNumber));
         }
-        if (guest?.seatingAssignment?.seatLabel) {
-          seatParts.push(seatDisplayName(guest.seatingAssignment.seatLabel));
+        if (seating?.seatLabel) {
+          seatParts.push(seatDisplayName(seating.seatLabel));
         }
         return {
           id: s.id,

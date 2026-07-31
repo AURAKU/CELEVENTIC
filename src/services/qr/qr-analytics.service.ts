@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { paginatedResult, parsePaginationFromUrl } from "@/lib/pagination";
 import { seatDisplayName, tableDisplayName } from "@/lib/seating/seating-types";
+import { pickSeatingAssignment } from "@/lib/seating/assignment-pick";
 import type { Prisma, QrScanResult } from "@prisma/client";
 
 function formatSeatNumber(
@@ -21,7 +22,11 @@ type ScanGuestShape = {
   id: string;
   name: string;
   invitation?: { name: string } | null;
-  seatingAssignment?: { tableNumber: string; seatLabel: string | null } | null;
+  seatingAssignments?: Array<{
+    tableNumber: string;
+    seatLabel: string | null;
+    seatingPlan?: { planType?: string | null } | null;
+  }>;
 } | null;
 
 type ScanTicketShape = { id: string; name: string } | null;
@@ -43,7 +48,7 @@ function resolveScanIdentity(s: {
   const ticketName = ticket?.name?.trim() || null;
   const displayName =
     guestName || invitationName || ticketName || null;
-  const seatNumber = formatSeatNumber(guest?.seatingAssignment);
+  const seatNumber = formatSeatNumber(pickSeatingAssignment(guest?.seatingAssignments));
 
   return {
     guestId: guest?.id ?? null,
@@ -55,13 +60,19 @@ function resolveScanIdentity(s: {
   };
 }
 
+const seatingSelect = {
+  tableNumber: true,
+  seatLabel: true,
+  seatingPlan: { select: { planType: true } },
+} as const;
+
 const scanHistoryInclude = {
   guest: {
     select: {
       id: true,
       name: true,
       invitation: { select: { name: true } },
-      seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+      seatingAssignments: { select: seatingSelect },
     },
   },
   ticket: { select: { id: true, name: true } },
@@ -73,7 +84,7 @@ const scanHistoryInclude = {
           id: true,
           name: true,
           invitation: { select: { name: true } },
-          seatingAssignment: { select: { tableNumber: true, seatLabel: true } },
+          seatingAssignments: { select: seatingSelect },
         },
       },
       ticket: { select: { id: true, name: true } },
@@ -92,15 +103,15 @@ export class QrAnalyticsService {
       where.OR = [
         { guest: { name: { contains: q } } },
         { guest: { invitation: { name: { contains: q } } } },
-        { guest: { seatingAssignment: { seatLabel: { contains: q } } } },
-        { guest: { seatingAssignment: { tableNumber: { contains: q } } } },
+        { guest: { seatingAssignments: { some: { seatLabel: { contains: q } } } } },
+        { guest: { seatingAssignments: { some: { tableNumber: { contains: q } } } } },
         { guest: { manualCode: { contains: q } } },
         { ticket: { name: { contains: q } } },
         { gate: { contains: q } },
         { qrCode: { guest: { name: { contains: q } } } },
         { qrCode: { guest: { invitation: { name: { contains: q } } } } },
-        { qrCode: { guest: { seatingAssignment: { seatLabel: { contains: q } } } } },
-        { qrCode: { guest: { seatingAssignment: { tableNumber: { contains: q } } } } },
+        { qrCode: { guest: { seatingAssignments: { some: { seatLabel: { contains: q } } } } } },
+        { qrCode: { guest: { seatingAssignments: { some: { tableNumber: { contains: q } } } } } },
         { qrCode: { ticket: { name: { contains: q } } } },
       ];
     }

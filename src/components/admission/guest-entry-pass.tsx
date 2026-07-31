@@ -9,6 +9,10 @@ import {
   resolveEntryPassPreset,
   type EntryPassPreset,
 } from "@/components/admission/entry-pass-theme";
+import {
+  QR_PASS_DISPLAY_MIN_PX,
+  QR_PASS_DISPLAY_SOURCE_PX,
+} from "@/lib/qr/qr-constants";
 
 export interface GuestEntryPassProps {
   /** Signed pass token, the QR payload. Never a database id. */
@@ -40,7 +44,9 @@ export interface GuestEntryPassProps {
   className?: string;
 }
 
-const QR_DISPLAY_PX = 240;
+const QR_DISPLAY_PX = QR_PASS_DISPLAY_MIN_PX;
+/** Prefer pixelated (Chromium) with crisp-edges fallback for Safari. */
+const QR_IMAGE_RENDERING = { imageRendering: "pixelated" as const };
 
 /**
  * The Guest Entry Pass shown at the bottom of a published invitation.
@@ -155,19 +161,19 @@ export function GuestEntryPass({
             type="button"
             onClick={() => setFullscreen(true)}
             aria-label="Enlarge entry pass QR code for scanning"
-            className="rounded-2xl border border-slate-300 bg-white p-3 transition-transform active:scale-[0.98] print:border-black"
-            style={{ width: QR_DISPLAY_PX + 24, height: QR_DISPLAY_PX + 24 }}
+            className="rounded-2xl border border-slate-300 bg-white p-4 transition-transform active:scale-[0.98] print:border-black"
+            style={{ width: QR_DISPLAY_PX + 32, height: QR_DISPLAY_PX + 32 }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={imageUrl(512)}
+              src={imageUrl(QR_PASS_DISPLAY_SOURCE_PX)}
               alt={`Entry pass QR code for ${displayName}`}
               width={QR_DISPLAY_PX}
               height={QR_DISPLAY_PX}
               loading="eager"
               decoding="sync"
-              className="h-full w-full rounded-xl object-contain"
-              style={{ imageRendering: "crisp-edges" }}
+              className="h-full w-full object-contain"
+              style={QR_IMAGE_RENDERING}
             />
           </button>
 
@@ -316,10 +322,10 @@ export function GuestEntryPass({
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={imageUrl(1024)}
+            src={imageUrl(QR_PASS_DISPLAY_SOURCE_PX)}
             alt={`Entry pass QR code for ${displayName}`}
-            className="h-[min(82vw,380px)] w-[min(82vw,380px)] object-contain"
-            style={{ imageRendering: "crisp-edges" }}
+            className="h-[min(82vw,420px)] w-[min(82vw,420px)] bg-white object-contain p-3"
+            style={QR_IMAGE_RENDERING}
           />
 
           <p className="mt-5 font-mono text-3xl font-bold tabular-nums tracking-[0.3em] text-slate-900">

@@ -84,6 +84,8 @@ export interface PremiumInviteExperienceProps {
    * turned the feature off or nobody is assigned to this invitation.
    */
   placeCard?: PlaceCardViewData | null;
+  /** Heads this invitation admits — drives RSVP companion-slot controls. */
+  partyAllowance?: number;
 }
 
 function Countdown({ target, begunLabel, label }: { target: string; begunLabel: string; label: string }) {

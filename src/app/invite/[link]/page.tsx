@@ -30,6 +30,7 @@ import {
   wantsInviteCeremonyView,
 } from "@/lib/admission/event-companion";
 import { resolvePlaceCard } from "@/services/invitation-features/place-card.service";
+import { resolveInvitationAllowance } from "@/lib/admission/admission-logic";
 import type { GuestEntryPassData } from "@/types/invitation-design";
 import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
@@ -37,6 +38,7 @@ import {
   resolveGuestFacingEventInstant,
   resolveGuestFacingVenue,
 } from "@/lib/invitation/guest-event-details";
+import { isOpenHostInvitation } from "@/services/guest-search/rsvp-self-registration.service";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -160,8 +162,16 @@ export default async function InvitePage({
 
   // Guest-specific invite links (one guest on this invitation) should lock the
   // RSVP name even when `?guest=` is missing from a copied/shared URL.
+  // Open / general template invitations must never lock — each RSVP mints its
+  // own personalised invitation instead of attaching to the shared link.
+  const openHost = isOpenHostInvitation({
+    name: invitation.name,
+    isGeneralPass: invitation.isGeneralPass,
+    eventTitle: event.title,
+    guests: (invitation.guests ?? []).filter((g) => !g.archivedAt),
+  });
   const soleAssignedGuest =
-    !tokenGuest && !guestToken
+    !tokenGuest && !guestToken && !openHost
       ? (invitation.guests ?? []).filter((g) => !g.archivedAt)
       : [];
   const personalizedGuest =
@@ -358,6 +368,13 @@ export default async function InvitePage({
     return null;
   });
 
+  // RSVP companion slots must follow organiser allowance even when place card is off.
+  const partyAllowance = resolveInvitationAllowance(
+    invitation.guests,
+    invitation.admissionAllowance,
+    entryPass?.partySize ?? placeCard?.party.allowance
+  );
+
   const catalogTemplate = productionOrder?.template;
   const revealMode = design.studio?.revealMode;
   const resolvedBackground = resolveBackgroundMedia(design, catalogTemplate);
@@ -405,6 +422,7 @@ export default async function InvitePage({
       admissionManualCode={admissionManualCode || null}
       entryPass={entryPass}
       placeCard={placeCard}
+      partyAllowance={partyAllowance}
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       companionUrl={companionUrl}

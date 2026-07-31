@@ -56,3 +56,6 @@ public/uploads/**
 
 # celeventic-video-worker liveness heartbeat (src/lib/video/worker-heartbeat.ts) — runtime state, regenerated every tick.
 /var/video-worker/
+
+# Alternate Next build output dirs
+.next-ship-check/

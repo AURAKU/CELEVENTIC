@@ -1,7 +1,8 @@
 /**
- * Replay bridge — lets a template's "replay the opening" control restart the
- * invitation pipeline (soft intro → template intro → reveal) without a page
- * reload. `PremiumInviteWrapper` owns the phase state and listens for this.
+ * Replay bridge — lets a template's "Replay Opening" control restart the
+ * invitation pipeline from the brand video intro (soft intro → tap → reveal)
+ * without a full page reload. `PremiumInviteWrapper` owns the phase state and
+ * listens for this event.
  */
 export const INVITATION_REPLAY_EVENT = "celeventic:replay-invitation";
 

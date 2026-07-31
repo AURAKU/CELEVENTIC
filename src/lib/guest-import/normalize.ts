@@ -124,6 +124,7 @@ export function normalizeRow(
 
   const memberNames = parseMemberNames(cell(row, mapping, ImportField.MEMBER_NAMES));
   const combinedMembers = memberNames.length > 0 ? memberNames : analysis.memberNames;
+  const tagLabels = parseMemberNames(cell(row, mapping, ImportField.TAGS)).slice(0, 10);
 
   let partySize = explicitSize ?? Math.max(analysis.partySize, combinedMembers.length || 1);
   let allowanceConfirmed = explicitSize != null || analysis.allowanceConfirmed;
@@ -212,6 +213,7 @@ export function normalizeRow(
     partyType,
     partySize,
     memberNames: combinedMembers,
+    tagLabels,
     groupName: sanitizedText(ImportField.GROUP_NAME),
     tableNumber: sanitizedText(ImportField.TABLE_NUMBER),
     seatLabel: sanitizedText(ImportField.SEAT_LABEL),

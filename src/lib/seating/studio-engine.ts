@@ -9,6 +9,7 @@ import {
   type StudioLayout,
   type StudioSettings,
   type StudioTableConfig,
+  type StudioTableKind,
 } from "@/lib/seating/studio-types";
 import {
   normalizeTable,
@@ -26,6 +27,8 @@ export function normalizeStudioLayout(raw: unknown): StudioLayout {
   const tables = (layout.tables ?? []).map((table) => normalizeStudioTable(table));
   return {
     tables,
+    ceremonyRows: layout.ceremonyRows ?? [],
+    ceremonySections: layout.ceremonySections ?? [],
     zones: layout.zones ?? [],
     elements: layout.elements ?? [],
     notes: layout.notes,
@@ -34,12 +37,13 @@ export function normalizeStudioLayout(raw: unknown): StudioLayout {
     publishedAt: layout.publishedAt ?? null,
     revision: layout.revision ?? 1,
     settings: resolveStudioSettings(layout),
+    planKind: layout.planKind === "CEREMONY" ? "CEREMONY" : "RECEPTION",
   };
 }
 
 export function normalizeStudioTable(table: StudioTableConfig): StudioTableConfig {
-  const kind = table.kind ?? inferKind(table);
-  const preset = TABLE_KIND_PRESETS[kind];
+  const kind: StudioTableKind = table.kind ?? inferKind(table);
+  const preset = TABLE_KIND_PRESETS[kind] ?? TABLE_KIND_PRESETS.round;
   const shape = table.shape ?? preset.shape;
   const seatCount = Math.max(2, Math.min(20, table.seatCount ?? table.capacity ?? preset.defaultSeats));
   const base = normalizeTable({
@@ -64,7 +68,7 @@ export function normalizeStudioTable(table: StudioTableConfig): StudioTableConfi
   };
 }
 
-function inferKind(table: StudioTableConfig): StudioTableConfig["kind"] {
+function inferKind(table: StudioTableConfig): StudioTableKind {
   if (table.kind) return table.kind;
   if (table.vip) return "vip";
   if (table.shape === "square") return "square";

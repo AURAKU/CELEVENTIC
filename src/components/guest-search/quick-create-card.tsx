@@ -180,17 +180,17 @@ export function QuickCreateCard({ eventId, onCreated, onChanged }: QuickCreateCa
   const needsAcknowledgement = duplicates.length > 0 && confirmDifferentPerson;
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="min-w-0 overflow-hidden">
+      <CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
         <CardTitle className="flex items-center gap-2 text-base">
-          <UserPlus className="h-4 w-4" /> Add Guest
+          <UserPlus className="h-4 w-4 shrink-0" /> Add Guest
         </CardTitle>
         <p className="text-xs text-slate-500">
           Creates a personalised invitation with a share link, entry pass and place card.
         </p>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-4 pb-4 sm:px-6 sm:pb-6">
         {createdCard && !createdCard.archivedAt && (
           <div className="space-y-2">
             <p className="flex items-center gap-2 text-sm font-semibold text-brand-800">
@@ -199,6 +199,7 @@ export function QuickCreateCard({ eventId, onCreated, onChanged }: QuickCreateCa
               {linkCopied ? " · link copied" : ""}
             </p>
             <GuestResultCard
+              eventId={eventId!}
               card={createdCard}
               onChanged={(next) => {
                 setCreatedCard(next.archivedAt ? null : next);

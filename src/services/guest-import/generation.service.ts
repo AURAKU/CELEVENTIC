@@ -10,6 +10,7 @@ import { ensureInvitationPass } from "@/services/admission/guest-pass.service";
 import {
   allocateInvitationSlug,
   featureConfigFor,
+  loadEventCompanionFeatureConfig,
   newUniqueLink,
   resolveGuestGroupId,
   tryAllocateManualCode,
@@ -67,14 +68,26 @@ async function resolveSeatingPlanId(
     if (plan) return plan.id;
   }
   const existing = await tx.seatingPlan.findFirst({
-    where: { eventId },
+    where: { eventId, planType: "RECEPTION" },
     orderBy: { createdAt: "asc" },
     select: { id: true },
   });
   if (existing) return existing.id;
 
+  const anyPlan = await tx.seatingPlan.findFirst({
+    where: { eventId },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (anyPlan) return anyPlan.id;
+
   const created = await tx.seatingPlan.create({
-    data: { eventId, name: "Imported seating", layout: { tables: [] } as Prisma.InputJsonValue },
+    data: {
+      eventId,
+      name: "Imported seating",
+      planType: "RECEPTION",
+      layout: { tables: [] } as Prisma.InputJsonValue,
+    },
   });
   return created.id;
 }
@@ -107,6 +120,7 @@ async function generateRow(
 
   if (!invitationId) {
     const slug = await allocateInvitationSlug(row.name);
+    const companion = await loadEventCompanionFeatureConfig(eventId);
     const created = await prisma.$transaction(async (tx) => {
       const invitation = await tx.invitation.create({
         data: {
@@ -119,7 +133,11 @@ async function generateRow(
           status: options.publishImmediately ? "ACTIVE" : "DRAFT",
           admissionAllowance: partySize,
           importBatchId: batch.id,
-          featureConfig: featureConfigFor(options),
+          postAdmissionEnabled: companion?.postAdmissionEnabled ?? false,
+          featureConfig: featureConfigFor({
+            ...options,
+            companionFeatureConfig: companion?.featureConfig,
+          }),
         },
       });
 
@@ -194,6 +212,25 @@ async function generateRow(
   // ── Seating (optional, conflict-aware) ──
   if (options.applySeating && row.tableNumber?.trim() && guestId) {
     await applySeating(eventId, guestId, row, options);
+  }
+
+  // ── CRM tags (organizer-only): row Tags column + batch defaults ──
+  if (guestId) {
+    try {
+      const { resolveGuestTagLabels, setGuestTags } = await import(
+        "@/services/guests/guest-tags.service"
+      );
+      const rowLabels = Array.isArray(row.tagLabels) ? (row.tagLabels as string[]) : [];
+      const fromRow = await resolveGuestTagLabels(eventId, rowLabels);
+      const tagIds = Array.from(
+        new Set([...fromRow, ...(options.defaultTagIds ?? [])].filter(Boolean))
+      );
+      if (tagIds.length > 0) {
+        await setGuestTags({ eventId, guestId, tagIds });
+      }
+    } catch {
+      // Tag failure must not roll back a successful invitation mint.
+    }
   }
 
   // ── Guest Entry Pass: the same signed QR + code stack the gate already uses ──
@@ -286,6 +323,24 @@ async function attachToExisting(
     guestId = anyGuest?.id ?? "";
   }
 
+  if (guestId) {
+    try {
+      const { resolveGuestTagLabels, setGuestTags } = await import(
+        "@/services/guests/guest-tags.service"
+      );
+      const rowLabels = Array.isArray(row.tagLabels) ? (row.tagLabels as string[]) : [];
+      const fromRow = await resolveGuestTagLabels(batch.eventId, rowLabels);
+      const tagIds = Array.from(
+        new Set([...fromRow, ...(options.defaultTagIds ?? [])].filter(Boolean))
+      );
+      if (tagIds.length > 0) {
+        await setGuestTags({ eventId: batch.eventId, guestId, tagIds });
+      }
+    } catch {
+      /* non-fatal */
+    }
+  }
+
   return { invitationId, guestId, guestPassId, heads: 0 };
 }
 
@@ -312,18 +367,18 @@ async function applySeating(
           // Seat the guest at the table without the contested chair rather than
           // failing the row: they still get a table, and the organiser sees the note.
           await tx.seatingAssignment.upsert({
-            where: { guestId },
+            where: { guestId_seatingPlanId: { guestId, seatingPlanId } },
             create: { seatingPlanId, guestId, tableNumber, notes: `Seat ${seatLabel} was already taken` },
-            update: { seatingPlanId, tableNumber, notes: `Seat ${seatLabel} was already taken` },
+            update: { tableNumber, notes: `Seat ${seatLabel} was already taken` },
           });
           return;
         }
       }
 
       await tx.seatingAssignment.upsert({
-        where: { guestId },
+        where: { guestId_seatingPlanId: { guestId, seatingPlanId } },
         create: { seatingPlanId, guestId, tableNumber, seatLabel },
-        update: { seatingPlanId, tableNumber, seatLabel },
+        update: { tableNumber, seatLabel },
       });
     });
   } catch (error) {

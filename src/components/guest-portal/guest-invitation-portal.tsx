@@ -206,6 +206,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     invitationId: props.invitation.id,
     guestId: props.guestId,
     guestName: props.guestName,
+    partyAllowance: props.partyAllowance,
     qrDataUrl: props.qrDataUrl,
     admissionManualCode: props.admissionManualCode,
     memoryVaultEnabled: props.memoryVaultEnabled,
@@ -406,6 +407,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           admissionQrDataUrl={props.admissionQrDataUrl}
           entryPass={props.entryPass}
           placeCard={props.placeCard}
+          partyAllowance={props.partyAllowance}
           seatTable={props.seatTable}
           seatLabel={props.seatLabel}
           memoryUploadUrl={props.memoryUploadUrl}
@@ -633,6 +635,12 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                   invitationId={props.invitation.id}
                   guestId={props.guestId}
                   guestName={props.guestName}
+                  partyAllowance={
+                    props.partyAllowance ??
+                    props.placeCard?.party.allowance ??
+                    props.placeCard?.recipient.partySize ??
+                    1
+                  }
                   accentColor={props.design.colors?.accent ?? "#0B8A83"}
                 />
               </div>

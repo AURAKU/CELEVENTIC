@@ -30,7 +30,10 @@ export default withAuth(
       if (!role || !canAccessAdminPanel(role)) {
         return NextResponse.redirect(new URL("/dashboard?error=admin_forbidden", req.url));
       }
-      if (adminViewMode === "user" || token?.isAdminView) {
+      // Organizer “user view” cookie blocks /admin until return-to-admin clears it.
+      // Do not also gate on token.isAdminView here — that JWT flag is optional and
+      // was stranding live-domain admins when only the cookie had been cleared.
+      if (adminViewMode === "user") {
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
     }

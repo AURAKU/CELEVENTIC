@@ -30,6 +30,8 @@ describe("seating table names", () => {
   it("keeps caption values free of a repeated Table word", () => {
     assert.equal(tableCaptionValue("Table 1"), "1");
     assert.equal(tableCaptionValue("1"), "1");
+    assert.equal(tableCaptionValue("TABLE"), "—");
+    assert.equal(tableCaptionValue("Table"), "—");
     assert.equal(tableCaptionValue("Bridal Party"), "Bridal Party");
   });
 

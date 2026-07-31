@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Download, Maximize2, X, Sun } from "lucide-react";
-import { QR_EXPORT_SIZES, QR_PASS_DISPLAY_MIN_PX, type QrDisplayMode } from "@/lib/qr/qr-constants";
+import { QR_EXPORT_SIZES, QR_PASS_DISPLAY_MIN_PX, QR_PASS_DISPLAY_SOURCE_PX, type QrDisplayMode } from "@/lib/qr/qr-constants";
 
 interface BrandedQrImageProps {
   /** Data URL or API path */
@@ -52,10 +52,10 @@ export function BrandedQrImage({
 }: BrandedQrImageProps) {
   const [fullscreen, setFullscreen] = useState(false);
   const displaySize = mode === "pass" ? Math.max(size, QR_PASS_DISPLAY_MIN_PX) : size;
-  const apiSize = mode === "pass" ? 512 : 512;
+  const apiSize = mode === "pass" ? QR_PASS_DISPLAY_SOURCE_PX : 512;
   const displaySrc = resolveDisplaySrc(src, token, mode, apiSize);
   const fullscreenSrc = token
-    ? resolveDisplaySrc(src, token, mode, 1024)
+    ? resolveDisplaySrc(src, token, mode, QR_PASS_DISPLAY_SOURCE_PX)
     : displaySrc;
 
   return (
@@ -65,11 +65,11 @@ export function BrandedQrImage({
           type="button"
           onClick={() => allowFullscreen && setFullscreen(true)}
           className={cn(
-            "rounded-2xl border bg-white p-3 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-transform",
+            "rounded-2xl border bg-white p-4 shadow-[0_4px_24px_rgba(15,23,42,0.06)] transition-transform",
             mode === "pass" ? "border-slate-300" : "border-slate-200/80",
             allowFullscreen && "cursor-pointer active:scale-[0.98] hover:shadow-lg touch-manipulation"
           )}
-          style={{ width: displaySize + 24, height: displaySize + 24 }}
+          style={{ width: displaySize + 32, height: displaySize + 32 }}
           aria-label={allowFullscreen ? "Tap to enlarge QR pass" : undefined}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -80,8 +80,11 @@ export function BrandedQrImage({
             height={displaySize}
             loading="eager"
             decoding="sync"
-            className="w-full h-full object-contain rounded-xl qr-crisp"
-            style={{ imageRendering: "crisp-edges" }}
+            className={cn(
+              "h-full w-full object-contain qr-crisp",
+              mode !== "pass" && "rounded-xl"
+            )}
+            style={{ imageRendering: "pixelated" }}
           />
         </button>
 
@@ -146,8 +149,8 @@ export function BrandedQrImage({
           <img
             src={fullscreenSrc}
             alt={alt}
-            className="w-[min(85vw,360px)] h-[min(85vw,360px)] object-contain qr-crisp"
-            style={{ imageRendering: "crisp-edges" }}
+            className="h-[min(85vw,420px)] w-[min(85vw,420px)] bg-white object-contain p-3 qr-crisp"
+            style={{ imageRendering: "pixelated" }}
           />
           <p className="mt-6 text-xs text-slate-500 text-center max-w-xs flex items-center justify-center gap-1">
             <Sun className="h-3.5 w-3.5 text-amber-500" />

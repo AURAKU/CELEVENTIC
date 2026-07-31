@@ -223,12 +223,21 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
 
       {isAdmin && (
         <div className="shrink-0 p-4 border-t border-white/10 space-y-2">
-          <Button variant="secondary" className="w-full min-h-[44px]" asChild>
-            <Link href="/admin" onClick={onClose}>
+          {/*
+            Must POST return-to-admin so organizer-view cookie is cleared.
+            A plain Link to /admin is redirected back to /dashboard while that cookie is set.
+          */}
+          <form action="/api/admin/return-to-admin" method="POST" className="w-full">
+            <Button
+              type="submit"
+              variant="secondary"
+              className="w-full min-h-[44px]"
+              onClick={onClose}
+            >
               <Shield className="h-4 w-4" />
               {t("dashboard.admin_control_center")}
-            </Link>
-          </Button>
+            </Button>
+          </form>
         </div>
       )}
 
