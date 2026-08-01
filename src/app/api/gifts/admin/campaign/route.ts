@@ -33,9 +33,15 @@ const updateSchema = z.object({
   requireGuestContact: z.boolean().optional(),
   allowAnonymous: z.boolean().optional(),
   showOnInvitation: z.boolean().optional(),
+  showOnCompanion: z.boolean().optional(),
   themeSource: z.enum(["INVITATION", "PRESET"]).optional(),
   themePresetId: z.string().trim().max(80).nullable().optional(),
+  opensAt: z.string().datetime().nullable().optional(),
   closesAt: z.string().datetime().nullable().optional(),
+  settlementDelayHours: z.number().int().min(0).max(8760).optional(),
+  withdrawAfterEventOnly: z.boolean().optional(),
+  minWithdrawalMinor: z.number().int().positive().optional(),
+  maxWithdrawalMinor: z.number().int().positive().nullable().optional(),
   rotateToken: z.boolean().optional(),
 });
 
@@ -134,10 +140,28 @@ export async function PATCH(req: Request) {
       ...(data.showOnInvitation !== undefined
         ? { showOnInvitation: data.showOnInvitation }
         : {}),
+      ...(data.showOnCompanion !== undefined
+        ? { showOnCompanion: data.showOnCompanion }
+        : {}),
       ...(data.themeSource ? { themeSource: data.themeSource } : {}),
       ...(data.themePresetId !== undefined ? { themePresetId: data.themePresetId } : {}),
+      ...(data.opensAt !== undefined
+        ? { opensAt: data.opensAt ? new Date(data.opensAt) : null }
+        : {}),
       ...(data.closesAt !== undefined
         ? { closesAt: data.closesAt ? new Date(data.closesAt) : null }
+        : {}),
+      ...(data.settlementDelayHours !== undefined
+        ? { settlementDelayHours: data.settlementDelayHours }
+        : {}),
+      ...(data.withdrawAfterEventOnly !== undefined
+        ? { withdrawAfterEventOnly: data.withdrawAfterEventOnly }
+        : {}),
+      ...(data.minWithdrawalMinor !== undefined
+        ? { minWithdrawalMinor: data.minWithdrawalMinor }
+        : {}),
+      ...(data.maxWithdrawalMinor !== undefined
+        ? { maxWithdrawalMinor: data.maxWithdrawalMinor }
         : {}),
     });
 

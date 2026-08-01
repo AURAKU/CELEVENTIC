@@ -3,6 +3,26 @@ import { thankYouService } from "@/services/thank-you/thank-you.service";
 import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
 import { getServerAppUrl } from "@/lib/app-url";
 
+function publicPayload(
+  page: NonNullable<Awaited<ReturnType<typeof thankYouService.getPublishedByShareToken>>>,
+  baseUrl: string,
+  uploadToken: string
+) {
+  const formatted = thankYouService.formatPublicPage(page);
+  return {
+    page: {
+      ...formatted,
+      shareToken: page.shareToken,
+    },
+    event: {
+      ...page.event,
+      startDate: page.event.startDate,
+    },
+    uploadUrl: `${baseUrl}/memory-upload/${uploadToken}`,
+    memoriesUrl: `${baseUrl}/events/${page.event.slug}/memories`,
+  };
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ token: string }> }
@@ -18,18 +38,6 @@ export async function GET(
 
   return NextResponse.json({
     success: true,
-    data: {
-      page: {
-        title: page.title,
-        message: page.message,
-        flyerUrl: page.flyerUrl,
-        hostPhotoUrl: page.hostPhotoUrl,
-        audioUrl: page.audioUrl,
-        template: page.template,
-      },
-      event: page.event,
-      uploadUrl: `${baseUrl}/memory-upload/${uploadToken.token}`,
-      memoriesUrl: `${baseUrl}/events/${page.event.slug}/memories`,
-    },
+    data: publicPayload(page, baseUrl, uploadToken.token),
   });
 }

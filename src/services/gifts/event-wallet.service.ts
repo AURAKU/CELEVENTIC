@@ -49,6 +49,9 @@ const CREDIT_TYPES: EventWalletLedgerType[] = [
   "WITHDRAWAL_REVERSAL",
 ];
 
+/** Soft holds: signed debit amount, but balance stays put while reserved rises. */
+const RESERVE_TYPES: EventWalletLedgerType[] = ["WITHDRAWAL_RESERVE"];
+
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
@@ -91,6 +94,7 @@ export class EventWalletService {
       throw new Error("Ledger entries cannot be zero");
     }
 
+    const isReserve = RESERVE_TYPES.includes(input.type);
     const expectedCredit = CREDIT_TYPES.includes(input.type);
     if (expectedCredit && input.amountMinor < 0) {
       throw new Error(`${input.type} must be a credit (positive amount)`);
@@ -116,8 +120,30 @@ export class EventWalletService {
     if (account.status === "CLOSED") {
       throw new Error("This event wallet is closed and cannot accept new entries");
     }
+    if (account.status === "FROZEN" && input.type !== "ADJUSTMENT_CREDIT") {
+      throw new Error("This event wallet is frozen");
+    }
 
-    const balanceAfter = account.balanceMinor + input.amountMinor;
+    const absAmount = Math.abs(input.amountMinor);
+    // Reserves hold availability without moving cash balance.
+    const balanceAfter = isReserve ? account.balanceMinor : account.balanceMinor + input.amountMinor;
+    let nextReserved = account.reservedMinor;
+
+    if (isReserve) {
+      if (account.availableMinor < absAmount) {
+        throw new Error("Insufficient available balance to reserve for withdrawal");
+      }
+      nextReserved = account.reservedMinor + absAmount;
+    } else if (input.type === "WITHDRAWAL_DEBIT") {
+      nextReserved = Math.max(0, account.reservedMinor - absAmount);
+    } else if (input.type === "WITHDRAWAL_REVERSAL") {
+      // Reversal restores balance; reserved should already have been released on failure paths.
+      nextReserved = account.reservedMinor;
+    }
+
+    if (balanceAfter < 0) {
+      throw new Error("Ledger balance cannot go negative");
+    }
 
     let entry: EventWalletLedgerEntry;
     try {
@@ -149,11 +175,14 @@ export class EventWalletService {
       throw error;
     }
 
+    const availableAfter = Math.max(0, balanceAfter - nextReserved);
+
     const updated = await client.eventWalletAccount.update({
       where: { id: account.id },
       data: {
         balanceMinor: balanceAfter,
-        availableMinor: balanceAfter - account.reservedMinor,
+        reservedMinor: nextReserved,
+        availableMinor: availableAfter,
         lastLedgerAt: entry.createdAt,
         ...(input.type === "GIFT_CREDIT"
           ? {
@@ -171,6 +200,29 @@ export class EventWalletService {
     });
 
     return { entry, account: updated, alreadyApplied: false };
+  }
+
+  /**
+   * Release a previously reserved amount without posting a balance-moving debit.
+   * Used when a withdrawal is rejected, cancelled, or a payout fails before PAID.
+   */
+  async releaseReservation(
+    eventId: string,
+    amountMinor: number,
+    client: LedgerTxClient = prisma
+  ): Promise<EventWalletAccount> {
+    if (!Number.isInteger(amountMinor) || amountMinor <= 0) {
+      throw new Error("Reservation release amount must be a positive integer");
+    }
+    const account = await this.getOrCreateAccount(eventId, undefined, client);
+    const nextReserved = Math.max(0, account.reservedMinor - amountMinor);
+    return client.eventWalletAccount.update({
+      where: { id: account.id },
+      data: {
+        reservedMinor: nextReserved,
+        availableMinor: Math.max(0, account.balanceMinor - nextReserved),
+      },
+    });
   }
 
   /** Ledger truth vs. cached projection — used by the reconcile action. */
@@ -233,6 +285,10 @@ export class EventWalletService {
       }),
     ]);
 
+    const disputedCount = await prisma.eventGiftPayment.count({
+      where: { eventId, status: "DISPUTED" },
+    });
+
     return {
       account,
       recentEntries,
@@ -244,6 +300,11 @@ export class EventWalletService {
         refundedMinor: refundAggregate._sum.amountMinor ?? 0,
         refundedCount: refundAggregate._count,
         pendingCount,
+        disputedCount,
+        reservedMinor: account.reservedMinor,
+        availableMinor: account.availableMinor,
+        balanceMinor: account.balanceMinor,
+        withdrawnMinor: account.lifetimeWithdrawnMinor,
       },
     };
   }

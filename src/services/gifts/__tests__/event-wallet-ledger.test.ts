@@ -96,6 +96,7 @@ function createFakeClient(options: { accountStatus?: string } = {}) {
         if (!account) throw new Error("account not found");
         account.balanceMinor = applyNumericUpdate(account.balanceMinor, data.balanceMinor);
         account.availableMinor = applyNumericUpdate(account.availableMinor, data.availableMinor);
+        account.reservedMinor = applyNumericUpdate(account.reservedMinor, data.reservedMinor);
         account.lifetimeGiftMinor = applyNumericUpdate(
           account.lifetimeGiftMinor,
           data.lifetimeGiftMinor

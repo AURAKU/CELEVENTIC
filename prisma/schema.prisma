@@ -174,6 +174,10 @@ model User {
   giftCampaignsCreated       EventGiftCampaign[]      @relation("EventGiftCampaignCreator")
   giftPaymentsMade           EventGiftPayment[]       @relation("EventGiftPaymentGuest")
   giftLedgerEntriesCreated   EventWalletLedgerEntry[] @relation("EventWalletLedgerCreator")
+  giftWithdrawalsRequested   EventWalletWithdrawalRequest[] @relation("GiftWithdrawalRequester")
+  giftWithdrawalsReviewed    EventWalletWithdrawalRequest[] @relation("GiftWithdrawalReviewer")
+  sharedAccessPassesCreated  SharedEventAccessPass[]        @relation("SharedAccessPassCreator")
+  eventQrLinksCreated        EventQrLink[]                  @relation("EventQrLinkCreator")
   guestImportBatches         GuestImportBatch[]       @relation("GuestImportBatchCreator")
   generalPassBatches         GeneralPassBatch[]       @relation("GeneralPassBatchCreator")
 
@@ -317,7 +321,7 @@ model Event {
   staff                EventStaff[]
   seatingPlans         SeatingPlan[]
   seatingCompanionHolds SeatingCompanionHold[]
-  seatingPartyPlans     SeatingPartyPlan[]
+  seatingPartyPlans    SeatingPartyPlan[]
   expenses             EventExpense[]
   wallet               Wallet?
   fraudLogs            FraudDetectionLog[]
@@ -351,6 +355,9 @@ model Event {
   giftPayments         EventGiftPayment[]
   giftWallet           EventWalletAccount?
   giftLedgerEntries    EventWalletLedgerEntry[]
+  giftWithdrawals      EventWalletWithdrawalRequest[]
+  sharedAccessPasses   SharedEventAccessPass[]
+  eventQrLinks         EventQrLink[]
   admissionSettings    EventAdmissionSettings?
   guestPasses          GuestPass[]
   guestImportBatches   GuestImportBatch[]
@@ -501,8 +508,6 @@ model Invitation {
   event            Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   template         EventTemplate?            @relation(fields: [templateId], references: [id])
   guests           Guest[]
-  seatingCompanionHolds SeatingCompanionHold[]
-  seatingPartyPlans     SeatingPartyPlan[]
   blocks           InvitationBlock[]
   guestWishes      InvitationGuestWish[]
   giftCampaigns    EventGiftCampaign[]
@@ -512,6 +517,8 @@ model Invitation {
   generalPassBatch GeneralPassBatch?         @relation(fields: [generalPassBatchId], references: [id], onDelete: SetNull)
   importRows       GuestImportRow[]
   generalPassRegistrations GeneralPassRegistration[]
+  seatingCompanionHolds SeatingCompanionHold[]
+  seatingPartyPlans     SeatingPartyPlan[]
 
   @@index([eventId])
   @@index([importBatchId])
@@ -1921,16 +1928,34 @@ model InvitationGuestWish {
   guestId         String?
   authorName      String
   message         String
-  /** SHA-256 of the one-time author delete token (never store the raw token). */
+  /** Optional short heading for thank-you / guestbook write-ups. */
+  title           String?
+  /** Optional guest profile photo (validated upload URL). */
+  avatarUrl       String?
+  /** APPROVED | PENDING | HIDDEN | REJECTED | REMOVED */
+  status          String   @default("APPROVED")
+  /** INVITATION | EVENT_COMPANION | THANK_YOU_PAGE | ADMIN_IMPORT */
+  source          String   @default("INVITATION")
+  isPinned        Boolean  @default(false)
+  isFeatured      Boolean  @default(false)
+  isAnonymous     Boolean  @default(false)
+  /** SHA-256 of the one-time author management token (never store the raw token). */
   authorTokenHash String?
   isVisible       Boolean  @default(true)
+  editedAt        DateTime?
+  moderatedAt     DateTime?
+  moderatedById   String?
+  moderationReason String?
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 
   event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   invitation Invitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
   guest      Guest?      @relation(fields: [guestId], references: [id], onDelete: SetNull)
 
   @@index([eventId, createdAt])
+  @@index([eventId, status, createdAt])
+  @@index([eventId, source])
   @@index([invitationId])
   @@index([authorTokenHash])
   @@map("invitation_guest_wishes")
@@ -2207,8 +2232,8 @@ model SeatingPlan {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
-  event       Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  assignments SeatingAssignment[]
+  event          Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignments    SeatingAssignment[]
   companionHolds SeatingCompanionHold[]
   partyPlans     SeatingPartyPlan[]
 
@@ -2221,9 +2246,9 @@ model SeatingAssignment {
   id            String   @id @default(cuid())
   seatingPlanId String
   guestId       String
-  /// Reception table label, or ceremony row label (e.g. "Row D").
+  /// Event seating table label, or ceremony row label (e.g. "Row D").
   tableNumber   String
-  /// Reception chair / ceremony chair label. Null in TABLE_ONLY reception mode.
+  /// Event seating chair / ceremony chair label. Null in TABLE_ONLY event mode.
   seatLabel     String?
   zone          String?
   notes         String?
@@ -2241,6 +2266,10 @@ model SeatingAssignment {
   @@map("seating_assignments")
 }
 
+/**
+ * Unnamed expected companion places for a party (plus-ones).
+ * Never create fake Guest rows — holds consume table capacity until converted.
+ */
 model SeatingCompanionHold {
   id               String    @id @default(cuid())
   eventId          String
@@ -2277,6 +2306,9 @@ model SeatingCompanionHold {
   @@map("seating_companion_holds")
 }
 
+/**
+ * Party-level seating strategy so intentional splits are not treated as conflicts.
+ */
 model SeatingPartyPlan {
   id                 String    @id @default(cuid())
   seatingPlanId      String
@@ -3139,19 +3171,44 @@ enum EventMemoryTokenType {
 }
 
 model ThankYouPage {
-  id           String             @id @default(cuid())
-  eventId      String             @unique
-  templateId   String             @default("luxury-wedding")
-  title        String?
-  message      String?
-  flyerUrl     String?
-  hostPhotoUrl String?
-  audioUrl     String?
-  shareToken   String?            @unique
-  status       ThankYouPageStatus @default(DRAFT)
-  publishedAt  DateTime?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id                    String             @id @default(cuid())
+  eventId               String             @unique
+  templateId            String             @default("luxury-wedding")
+  title                 String?
+  message               String?
+  eyebrow               String?
+  subtitle              String?
+  closingMessage        String?
+  signatureLine         String?
+  hostNames             String?
+  eventHashtag          String?
+  footerText            String?
+  flyerUrl              String?
+  hostPhotoUrl          String?
+  heroImageUrl          String?
+  backgroundImageUrl    String?
+  backgroundVideoUrl    String?
+  signatureImageUrl     String?
+  audioUrl              String?
+  /** INVITATION | PRESET | CUSTOM — how colours/fonts are resolved. */
+  themeSource           String             @default("INVITATION")
+  designConfig          Json?
+  sectionConfig         Json?
+  guestbookConfig       Json?
+  sharingConfig         Json?
+  seoConfig             Json?
+  /** Ordered EventMemoryUpload ids featured on the public page. */
+  featuredMemoryIds     Json?
+  version               Int                @default(1)
+  lastPublishedSnapshot Json?
+  updatedById           String?
+  scheduledPublishAt    DateTime?
+  archivedAt            DateTime?
+  shareToken            String?            @unique
+  status                ThankYouPageStatus @default(DRAFT)
+  publishedAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -4642,8 +4699,37 @@ enum EventWalletLedgerType {
   FEE_DEBIT
   ADJUSTMENT_CREDIT
   ADJUSTMENT_DEBIT
+  /// Soft hold: increments reservedMinor without moving balance until paid.
+  WITHDRAWAL_RESERVE
   WITHDRAWAL_DEBIT
   WITHDRAWAL_REVERSAL
+}
+
+enum EventWalletWithdrawalStatus {
+  DRAFT
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  REJECTED
+  REVERSED
+}
+
+enum EventWalletPayoutMethod {
+  MTN_MOMO
+  TELECEL_CASH
+  AIRTELTIGO_MONEY
+  GHANA_BANK
+}
+
+enum EventWalletPayoutKind {
+  /// Recorded by authorised finance staff with evidence — no automatic provider call.
+  MANUAL_PAYOUT
+  /// Reserved for future Paystack Transfer integration (not claimed unless confirmed).
+  PROVIDER_TRANSFER
 }
 
 model EventGiftCampaign {
@@ -4686,14 +4772,25 @@ model EventGiftCampaign {
   /// Render the gift section inside the digital invitation. Turning this off
   /// keeps the campaign live for the printed QR and the shared link only.
   showOnInvitation Boolean @default(true)
+  /// Render the gift card inside Event Companion (post-admission TAKE PART).
+  showOnCompanion  Boolean @default(true)
 
   /// INVITATION — inherit the invitation template theme; PRESET — use themePresetId
   themeSource   String    @default("INVITATION")
   themePresetId String?
+  opensAt       DateTime?
   closesAt      DateTime?
-  metadata      Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+
+  /// Hours after event end before withdrawals become eligible (0 = immediately when policy allows).
+  settlementDelayHours Int @default(24)
+  /// When true, withdrawals are only allowed after the event start/end has passed + settlement delay.
+  withdrawAfterEventOnly Boolean @default(true)
+  minWithdrawalMinor     Int     @default(1000)
+  maxWithdrawalMinor     Int?
+
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   event      Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   invitation Invitation?        @relation(fields: [invitationId], references: [id], onDelete: SetNull)
@@ -4820,8 +4917,71 @@ model EventWalletAccount {
 
   event         Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   ledgerEntries EventWalletLedgerEntry[]
+  withdrawals   EventWalletWithdrawalRequest[]
 
   @@map("event_wallet_accounts")
+}
+
+/// Organiser withdrawal / payout request against an event gift wallet.
+/// Paystack Transfers are not claimed unless a confirmed provider path exists —
+/// default payout kind is MANUAL_PAYOUT with admin evidence.
+model EventWalletWithdrawalRequest {
+  id          String                      @id @default(cuid())
+  eventId     String
+  accountId   String
+  requestedById String
+  reviewedById  String?
+
+  amountMinor Int
+  currency    String @default("GHS")
+  status      EventWalletWithdrawalStatus @default(REQUESTED)
+
+  payoutMethod        EventWalletPayoutMethod
+  payoutKind          EventWalletPayoutKind   @default(MANUAL_PAYOUT)
+  mobileMoneyNetwork  String?
+  /// Masked display form (e.g. 233****5678) — never show full number in lists.
+  payoutPhoneMasked   String?
+  /// Encrypted / tokenised destination payload (JSON) — not guest-facing.
+  payoutDestinationEnc String?
+  bankCode            String?
+  bankAccountMasked   String?
+  accountName         String?
+
+  provider              String  @default("MANUAL")
+  providerRecipientCode String?
+  providerTransferCode  String?
+  providerReference     String?
+  idempotencyKey        String  @unique
+
+  reason           String?
+  internalNote     String?
+  failureReason    String?
+  evidenceReference String?
+
+  requestedAt  DateTime  @default(now())
+  approvedAt   DateTime?
+  processingAt DateTime?
+  paidAt       DateTime?
+  failedAt     DateTime?
+  cancelledAt  DateTime?
+  reversedAt   DateTime?
+  rejectedAt   DateTime?
+
+  reserveLedgerEntryId String?
+  debitLedgerEntryId   String?
+  metadata             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  account     EventWalletAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  requestedBy User               @relation("GiftWithdrawalRequester", fields: [requestedById], references: [id])
+  reviewedBy  User?              @relation("GiftWithdrawalReviewer", fields: [reviewedById], references: [id])
+
+  @@index([eventId, status, createdAt])
+  @@index([accountId, status])
+  @@index([requestedById])
+  @@map("event_wallet_withdrawal_requests")
 }
 
 model EventWalletLedgerEntry {
@@ -5329,4 +5489,156 @@ model GuestImportDelivery {
   @@index([batchId, status])
   @@index([status, queuedAt])
   @@map("guest_import_deliveries")
+}
+
+// ─── Event QR & Pass Hub ─────────────────────────────────────────
+
+enum EventQrLinkType {
+  MENU
+  SEATING_LOOKUP
+  PROGRAMME
+  VENUE
+  HELP
+  COMPANION_LANDING
+  CUSTOM
+}
+
+enum EventQrLinkStatus {
+  ACTIVE
+  DISABLED
+  EXPIRED
+  REVOKED
+}
+
+enum SharedAccessPassType {
+  VENDOR_GENERAL
+}
+
+enum SharedAccessPassStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+  REVOKED
+  REISSUED
+}
+
+/// Public, event-scoped QR destinations (menu, seating lookup, programme, etc.).
+model EventQrLink {
+  id          String            @id @default(cuid())
+  eventId     String
+  type        EventQrLinkType
+  publicToken String            @unique
+  status      EventQrLinkStatus @default(ACTIVE)
+  title       String
+  subtitle    String?
+  heading     String?
+  footerText  String?
+  /// For CUSTOM links only — validated absolute https URL.
+  destinationUrl String?
+  sortOrder   Int               @default(0)
+  expiresAt   DateTime?
+  designJson  Json?
+  metadata    Json?
+  createdById String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("EventQrLinkCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, type, title])
+  @@index([eventId, type, status])
+  @@index([publicToken])
+  @@map("event_qr_links")
+}
+
+/// One reusable shared vendor access credential per event (not a GuestPass).
+model SharedEventAccessPass {
+  id            String                 @id @default(cuid())
+  eventId       String
+  type          SharedAccessPassType   @default(VENDOR_GENERAL)
+  displayName   String                 @default("Vendor Access")
+  tokenHash     String                 @unique
+  tokenNonce    String
+  tokenPrefix   String                 @default("cvs1")
+  tokenVersion  Int                    @default(1)
+  manualCode    String
+  codeLength    Int                    @default(6)
+  status        SharedAccessPassStatus @default(ACTIVE)
+  reusable      Boolean                @default(true)
+  /// JSON string array of gate ids/labels; empty = all gates.
+  allowedGates  Json?
+  validFrom     DateTime?
+  validUntil    DateTime?
+  revokedAt     DateTime?
+  revokedReason String?
+  createdById   String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  event     Event                        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User?                        @relation("SharedAccessPassCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  scans     SharedAccessPassScan[]
+  variants  SharedAccessPassPrintVariant[]
+
+  @@unique([eventId, type, tokenVersion])
+  @@unique([eventId, manualCode])
+  @@index([eventId, status])
+  @@index([tokenHash])
+  @@map("shared_event_access_passes")
+}
+
+/// Print-only badge variants that share the same underlying vendor credential.
+model SharedAccessPassPrintVariant {
+  id           String   @id @default(cuid())
+  passId       String
+  roleKey      String
+  roleHeading  String
+  companyName  String?
+  accentColor  String?
+  instructions String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  pass SharedEventAccessPass @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@unique([passId, roleKey])
+  @@index([passId])
+  @@map("shared_access_pass_print_variants")
+}
+
+enum SharedAccessScanResult {
+  VALID
+  EXPIRED
+  REVOKED
+  WRONG_EVENT
+  OUTSIDE_ACCESS_WINDOW
+  GATE_NOT_ALLOWED
+  INVALID_CODE
+  RATE_LIMITED
+  PAUSED
+}
+
+model SharedAccessPassScan {
+  id              String                  @id @default(cuid())
+  passId          String
+  eventId         String
+  result          SharedAccessScanResult
+  scannedById     String?
+  gate            String?
+  deviceInfo      String?
+  operatorRoleNote String?
+  vendorLabel     String?
+  offline         Boolean                 @default(false)
+  clientRecordId  String?
+  metadata        Json?
+  createdAt       DateTime                @default(now())
+
+  pass SharedEventAccessPass @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
+  @@index([passId, createdAt])
+  @@unique([clientRecordId])
+  @@map("shared_access_pass_scans")
 }

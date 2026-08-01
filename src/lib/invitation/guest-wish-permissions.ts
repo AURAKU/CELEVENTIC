@@ -1,12 +1,15 @@
 /**
- * Capability matrix for the invitation wishes guestbook.
+ * Capability matrix for invitation wishes + Thank You guest messages.
  *
- * - Anyone may add a wish (public guestbook).
- * - Only organizers / platform admins may edit or delete wishes.
- * - Guests (including authors) never get edit or delete.
+ * Invitation guestbook (default):
+ * - Anyone may add
+ * - Only organizers / platform admins may edit or delete
  *
- * Kept free of Node/Prisma imports so client UI can share the same rules.
+ * Thank You Page (allowAuthorSelfManage):
+ * - Authors with a valid ownership token may edit/delete their own message
+ * - Moderators may always edit/delete
  */
+
 export type WishCapabilities = {
   canAdd: boolean;
   canDelete: boolean;
@@ -15,33 +18,47 @@ export type WishCapabilities = {
 
 export function resolveWishCapabilities(input: {
   isModerator: boolean;
-  /** @deprecated Author tokens no longer grant delete. Kept for call-site compatibility. */
   hasValidAuthorToken?: boolean;
+  /**
+   * When true (Thank You Page / companion write-ups), a valid author token
+   * unlocks edit + delete for that message only.
+   */
+  allowAuthorSelfManage?: boolean;
 }): WishCapabilities {
+  const authorCanManage =
+    Boolean(input.allowAuthorSelfManage) && Boolean(input.hasValidAuthorToken);
   return {
     canAdd: true,
-    canDelete: input.isModerator,
-    canEdit: input.isModerator,
+    canDelete: input.isModerator || authorCanManage,
+    canEdit: input.isModerator || authorCanManage,
   };
 }
 
 /**
- * Delete affordance: organizers/admins only.
- * Guests never see trash — wishes stay on the invitation for everyone.
+ * Delete affordance.
+ * - Moderators always
+ * - Authors only when self-manage is enabled and they own the token
  */
 export function viewerCanDeleteWish(input: {
   canModerate: boolean;
-  /** @deprecated Ignored — author tokens no longer unlock delete. */
   ownedToken?: string | null;
+  allowAuthorSelfManage?: boolean;
 }): boolean {
   return resolveWishCapabilities({
     isModerator: input.canModerate,
+    hasValidAuthorToken: Boolean(input.ownedToken),
+    allowAuthorSelfManage: input.allowAuthorSelfManage,
   }).canDelete;
 }
 
-/** Edit affordance is organizer/admin only — guests never get edit UI. */
-export function viewerCanEditWish(canModerate: boolean): boolean {
+/** Edit affordance — moderators, or authors with self-manage + token. */
+export function viewerCanEditWish(
+  canModerate: boolean,
+  options?: { ownedToken?: string | null; allowAuthorSelfManage?: boolean }
+): boolean {
   return resolveWishCapabilities({
     isModerator: Boolean(canModerate),
+    hasValidAuthorToken: Boolean(options?.ownedToken),
+    allowAuthorSelfManage: options?.allowAuthorSelfManage,
   }).canEdit;
 }

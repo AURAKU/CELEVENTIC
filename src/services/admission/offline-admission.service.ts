@@ -21,7 +21,7 @@ import { pickSeatingAssignment } from "@/lib/seating/assignment-pick";
  * held seats — with no network. Devices still holding a v1 package keep
  * working: every v2 field is optional on read and derived when absent.
  */
-export const OFFLINE_PACKAGE_VERSION = 2;
+export const OFFLINE_PACKAGE_VERSION = 3;
 
 export interface OfflinePartyMember {
   id: string;
@@ -90,6 +90,18 @@ export interface OfflinePackage {
     | "showSeatOnPass"
   > & { validFrom: string | null; validUntil: string | null };
   passes: OfflinePassRecord[];
+  /** Shared vendor access — reusable; never increments guest admission. */
+  vendorAccess?: {
+    id: string;
+    h: string;
+    c: string;
+    v: number;
+    status: string;
+    reusable: boolean;
+    validFrom: string | null;
+    validUntil: string | null;
+    allowedGates: unknown;
+  } | null;
   checksum: string;
 }
 
@@ -204,6 +216,11 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
     };
   });
 
+  const { sharedVendorAccessService } = await import(
+    "@/services/qr-hub/shared-vendor-access.service"
+  );
+  const vendorAccess = await sharedVendorAccessService.offlineSlice(eventId);
+
   const body = {
     version: OFFLINE_PACKAGE_VERSION,
     eventId,
@@ -229,6 +246,7 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
       validUntil: settings.validUntil ? settings.validUntil.toISOString() : null,
     },
     passes: records,
+    vendorAccess,
   };
 
   return {

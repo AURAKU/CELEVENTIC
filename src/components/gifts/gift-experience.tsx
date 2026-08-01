@@ -295,10 +295,19 @@ function LandingStep({
         {campaign.subtitle}
       </p>
       <p className="mt-5 text-sm leading-relaxed">{campaign.description}</p>
+      <p
+        className="mt-4 text-xs font-semibold uppercase tracking-[0.16em]"
+        style={{ color: "var(--gift-color-accent)" }}
+      >
+        Entirely optional · Securely processed
+      </p>
 
       <button type="button" onClick={onStart} className="gift-cta mt-8 w-full px-6 py-4 text-sm font-medium tracking-wide">
-        {campaign.ctaLabel}
+        Continue
       </button>
+      <p className="mt-3 text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
+        You may close this page at any time — gifting is never required.
+      </p>
     </div>
   );
 }
@@ -417,6 +426,9 @@ function DetailsStep({
   return (
     <div className="gift-card gift-step-enter p-6">
       <StepHeading title="Who is this gift from?" step={2} onBack={onBack} />
+      <p className="mt-2 text-sm" style={{ color: "var(--gift-color-ink-muted)" }}>
+        Share your name only if you would like the hosts to know who the gift is from.
+      </p>
 
       <div className="mt-5 space-y-4">
         {!isAnonymous && (

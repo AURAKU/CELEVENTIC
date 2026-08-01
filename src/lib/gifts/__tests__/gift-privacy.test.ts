@@ -127,8 +127,8 @@ test("provider statuses collapse into four UI states", () => {
 
 test("anonymous gifts never surface a name, even to the organiser", () => {
   assert.equal(displayGiftGuestName("Yaa", false), "Yaa");
-  assert.equal(displayGiftGuestName("Yaa", true), "Anonymous guest");
-  assert.equal(displayGiftGuestName("   ", false), "Anonymous guest");
-  assert.equal(displayGiftGuestName(null, false), "Anonymous guest");
+  assert.equal(displayGiftGuestName("Yaa", true), "Anonymous Guest");
+  assert.equal(displayGiftGuestName("   ", false), "Anonymous Guest");
+  assert.equal(displayGiftGuestName(null, false), "Anonymous Guest");
   assert.equal(displayGiftGuestName(undefined, false, "Guest"), "Guest");
 });

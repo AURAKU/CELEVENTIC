@@ -121,15 +121,30 @@ function SuccessPanel({
     <div className="relative">
       <Petals />
       <div className="gift-card gift-step-enter relative p-8 text-center">
-        <CheckCircle2
-          className="mx-auto h-10 w-10"
+        <div
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full"
+          style={{
+            background: "color-mix(in srgb, var(--gift-color-accent) 18%, transparent)",
+            boxShadow: "0 0 40px color-mix(in srgb, var(--gift-color-accent) 35%, transparent)",
+          }}
+        >
+          <CheckCircle2
+            className="h-9 w-9"
+            style={{ color: "var(--gift-color-accent)" }}
+            aria-hidden
+          />
+        </div>
+        <p
+          className="mt-6 text-xs font-bold uppercase tracking-[0.28em]"
           style={{ color: "var(--gift-color-accent)" }}
-          aria-hidden
-        />
-        <h1 className="gift-display mt-6 text-3xl">{thankYou.title}</h1>
+        >
+          Thank you
+        </p>
+        <h1 className="gift-display mt-3 text-3xl">{thankYou.title}</h1>
         <div className="gift-rule mx-auto mt-5 w-24" />
         <p className="mt-5 text-sm leading-relaxed" style={{ color: "var(--gift-color-ink-muted)" }}>
-          {thankYou.message}
+          {thankYou.message ||
+            "Your gift has been received successfully. Your kindness and warm wishes are deeply appreciated."}
         </p>
 
         <p className="gift-script mt-7 text-2xl" style={{ color: "var(--gift-color-accent)" }}>
@@ -138,30 +153,54 @@ function SuccessPanel({
         <p className="mt-1 text-xs uppercase tracking-[0.24em]" style={{ color: "var(--gift-color-ink-muted)" }}>
           {hostName} · {eventTitle}
         </p>
-
-        {gift.receiptUrl && (
-          <Link
-            href={gift.receiptUrl}
-            className="gift-cta mt-8 inline-flex w-full items-center justify-center gap-2 px-6 py-4 text-sm font-medium"
-          >
-            <FileText className="h-4 w-4" aria-hidden />
-            View your receipt
-          </Link>
-        )}
+        <dl className="mx-auto mt-6 max-w-sm space-y-2 text-left text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
+          <div className="flex justify-between gap-3">
+            <dt>Reference</dt>
+            <dd className="font-semibold">{gift.reference}</dd>
+          </div>
+          {gift.method ? (
+            <div className="flex justify-between gap-3">
+              <dt>Method</dt>
+              <dd className="font-semibold">{gift.method}</dd>
+            </div>
+          ) : null}
+          {gift.paidAt ? (
+            <div className="flex justify-between gap-3">
+              <dt>Paid</dt>
+              <dd className="font-semibold">{new Date(gift.paidAt).toLocaleString()}</dd>
+            </div>
+          ) : null}
+        </dl>
 
         {gift.companionReturnUrl ? (
           <Link
             href={gift.companionReturnUrl}
-            className="mt-4 inline-flex w-full items-center justify-center px-6 py-3 text-sm font-medium underline-offset-4 hover:underline"
-            style={{ color: "var(--gift-color-ink-muted)" }}
+            className="gift-cta mt-8 inline-flex w-full items-center justify-center gap-2 px-6 py-4 text-sm font-medium"
           >
-            Return to Event Companion
+            Return to the Celebration
           </Link>
         ) : null}
 
-        <p className="mt-5 text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
-          Your reference {gift.reference}
-        </p>
+        {gift.receiptUrl && (
+          <>
+            <Link
+              href={gift.receiptUrl}
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 px-6 py-3 text-sm font-medium underline-offset-4 hover:underline"
+              style={{ color: "var(--gift-color-ink-muted)" }}
+            >
+              <FileText className="h-4 w-4" aria-hidden />
+              View Receipt
+            </Link>
+            <a
+              href={gift.receiptUrl}
+              download
+              className="mt-1 inline-flex w-full items-center justify-center px-6 py-2 text-sm font-medium underline-offset-4 hover:underline"
+              style={{ color: "var(--gift-color-ink-muted)" }}
+            >
+              Download Receipt
+            </a>
+          </>
+        )}
       </div>
     </div>
   );
@@ -185,11 +224,11 @@ function PendingPanel({
         style={{ color: "var(--gift-color-accent)" }}
         aria-hidden
       />
-      <h1 className="gift-display mt-6 text-2xl">Awaiting confirmation</h1>
+      <h1 className="gift-display mt-6 text-2xl">Confirming your gift</h1>
       <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--gift-color-ink-muted)" }}>
-        Approve the prompt on your phone if you have not already. We will confirm
-        here the moment your bank or network completes the payment, please keep
-        this page open.
+        Your payment is still being confirmed. You may safely leave this page and
+        check again shortly. Approve any prompt on your phone if you have not
+        already.
       </p>
 
       <p className="gift-display mt-6 text-xl">
@@ -244,18 +283,30 @@ function FailedPanel({
   return (
     <div className="gift-card gift-step-enter p-8 text-center">
       <XCircle className="mx-auto h-9 w-9" style={{ color: "#b91c1c" }} aria-hidden />
-      <h1 className="gift-display mt-6 text-2xl">This gift did not go through</h1>
+      <h1 className="gift-display mt-6 text-2xl">Gift not completed</h1>
       <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--gift-color-ink-muted)" }}>
-        {gift.failureReason ?? "The payment was not completed."} No money has left
-        your account.
+        {gift.failureReason?.toLowerCase().includes("mismatch")
+          ? "We could not safely confirm this payment. The Celeventic finance team has been alerted."
+          : gift.failureReason ??
+            "We could not complete this gift. No successful payment has been recorded."}
       </p>
 
       <Link
         href={`/gift/${publicToken}`}
         className="gift-cta mt-7 inline-flex w-full items-center justify-center px-6 py-4 text-sm font-medium"
       >
-        Try again
+        Retry
       </Link>
+
+      {gift.companionReturnUrl ? (
+        <Link
+          href={gift.companionReturnUrl}
+          className="mt-3 inline-flex w-full items-center justify-center px-6 py-3 text-sm font-medium underline-offset-4 hover:underline"
+          style={{ color: "var(--gift-color-ink-muted)" }}
+        >
+          Return to Event Companion
+        </Link>
+      ) : null}
 
       <p className="mt-5 text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
         Reference {gift.reference}

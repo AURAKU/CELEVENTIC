@@ -36,6 +36,9 @@ export type EventCompanionExperienceProps = {
   giftTitle: string | null;
   /** Companion TAKE PART secondary line under the gift title. */
   giftTeaser?: string | null;
+  giftHeadline?: string | null;
+  giftCtaLabel?: string | null;
+  giftOptionalNote?: string | null;
   inviteHref: string;
   /** Optional menu copy for in-event dining guidance. */
   menuBody?: string | null;
@@ -97,6 +100,9 @@ export function EventCompanionExperience({
   giftUrl,
   giftTitle,
   giftTeaser = null,
+  giftHeadline = null,
+  giftCtaLabel = null,
+  giftOptionalNote = null,
   inviteHref,
   menuBody = null,
   menuUrl = null,
@@ -436,32 +442,50 @@ export function EventCompanionExperience({
               {enabled("GIFT_WALLET") && giftUrl ? (
                 <Link
                   href={giftUrl}
-                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5 transition-colors"
+                  className="block rounded-2xl px-5 py-5 transition-colors"
                   style={{
-                    background: theme.accentWash,
-                    border: `1px solid ${colors.secondary}35`,
+                    background: `linear-gradient(145deg, ${theme.accentWash}, ${colors.background})`,
+                    border: `1px solid ${colors.secondary}40`,
+                    boxShadow: `0 18px 40px -32px ${colors.primary}`,
                   }}
+                  data-testid="companion-gift-card"
                 >
-                  <span>
-                    <span
-                      className="block text-xs uppercase tracking-[0.2em] sm:text-sm"
-                      style={{
-                        color: colors.secondary,
-                        fontFamily: fonts.eyebrow,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {giftTitle || "Gift the Couple"}
-                    </span>
-                    <span
-                      className="mt-1 block text-base sm:text-lg"
-                      style={{ color: colors.primary, fontWeight: 500 }}
-                    >
-                      {giftTeaser || "A private blessing for the couple"}
-                    </span>
+                  <span
+                    className="block text-xs font-bold uppercase tracking-[0.22em] sm:text-sm"
+                    style={{
+                      color: colors.primary,
+                      fontFamily: fonts.eyebrow,
+                    }}
+                  >
+                    {giftHeadline || "A gift, from the heart"}
                   </span>
-                  <span style={{ color: colors.secondary }} aria-hidden>
-                    →
+                  <span
+                    className="mt-2 block text-lg font-bold leading-snug sm:text-xl"
+                    style={{ color: colors.primary, fontFamily: fonts.heading }}
+                  >
+                    {giftTitle || "Send a Gift"}
+                  </span>
+                  <span
+                    className="mt-2 block text-sm leading-relaxed sm:text-base"
+                    style={{ color: colors.text, opacity: 0.92 }}
+                  >
+                    {giftTeaser ||
+                      "Your presence at this celebration means the most. Should you wish to send a gift to the celebrants, you may do so securely here."}
+                  </span>
+                  <span
+                    className="mt-4 inline-flex min-h-[48px] items-center justify-center rounded-full px-5 text-sm font-bold"
+                    style={{
+                      background: colors.primary,
+                      color: colors.background,
+                    }}
+                  >
+                    {giftCtaLabel || "Send a Gift"}
+                  </span>
+                  <span
+                    className="mt-3 block text-xs font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: colors.secondary }}
+                  >
+                    {giftOptionalNote || "Entirely optional · Securely processed"}
                   </span>
                 </Link>
               ) : null}

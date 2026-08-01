@@ -16,8 +16,8 @@ export async function POST(
     await verifyEventAccess(eventId, session.user.id, session.user.role);
     const body = await req.json().catch(() => ({}));
     const page = body.unpublish
-      ? await thankYouService.unpublish(eventId)
-      : await thankYouService.publish(eventId);
+      ? await thankYouService.unpublish(eventId, session.user.id)
+      : await thankYouService.publish(eventId, session.user.id);
     return NextResponse.json({ success: true, data: page });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to publish" }, { status: 500 });

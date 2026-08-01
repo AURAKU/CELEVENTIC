@@ -341,6 +341,9 @@ export default async function EventDayPortal({
         giftUrl={giftPlacement?.giftUrl ?? null}
         giftTitle={giftPlacement?.title ?? null}
         giftTeaser={giftPlacement?.teaser ?? null}
+        giftHeadline={giftPlacement?.headline ?? null}
+        giftCtaLabel={giftPlacement?.ctaLabel ?? null}
+        giftOptionalNote={giftPlacement?.optionalNote ?? null}
         menuBody={menuBody}
         menuUrl={menuUrl}
         inviteHref={inviteHref}

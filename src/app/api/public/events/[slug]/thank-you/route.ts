@@ -15,17 +15,14 @@ export async function GET(
 
   const uploadToken = await eventMemoryTokenService.getOrCreateUploadToken(page.eventId);
   const baseUrl = await getServerAppUrl();
+  const formatted = thankYouService.formatPublicPage(page);
 
   return NextResponse.json({
     success: true,
     data: {
       page: {
-        title: page.title,
-        message: page.message,
-        flyerUrl: page.flyerUrl,
-        hostPhotoUrl: page.hostPhotoUrl,
-        audioUrl: page.audioUrl,
-        template: page.template,
+        ...formatted,
+        shareToken: page.shareToken,
       },
       event: page.event,
       uploadUrl: `${baseUrl}/memory-upload/${uploadToken.token}`,

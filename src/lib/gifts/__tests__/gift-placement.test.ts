@@ -149,6 +149,7 @@ test("wedding companion teaser and copy stay celebratory", () => {
   assert.equal(copy.title, "Gift the Couple");
   assert.equal(copy.ctaLabel, "Gift the Couple");
   assert.match(copy.thankYouMessage, /couple/i);
-  assert.equal(companionGiftTeaser("WEDDING_GIFT"), "A private blessing for the couple");
-  assert.equal(companionGiftTeaser("FUNERAL_SUPPORT"), "Stand with the family privately");
+  assert.match(companionGiftTeaser("WEDDING_GIFT"), /presence/i);
+  assert.doesNotMatch(companionGiftTeaser("WEDDING_GIFT"), /donate|donation|goal|raised/i);
+  assert.match(companionGiftTeaser("FUNERAL_SUPPORT"), /support/i);
 });

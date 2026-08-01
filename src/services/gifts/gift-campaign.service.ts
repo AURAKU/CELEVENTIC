@@ -5,6 +5,8 @@ import { generateGiftPublicToken } from "@/lib/gifts/tokens";
 import {
   DEFAULT_MIN_AMOUNT_MINOR,
   DEFAULT_SUGGESTED_AMOUNTS_MINOR,
+  companionGiftHeadline,
+  companionGiftOptionalNote,
   companionGiftTeaser,
   defaultGiftTypeForEvent,
   resolveGiftCopy,
@@ -354,6 +356,8 @@ export class GiftCampaignService {
     subtitle: string;
     ctaLabel: string;
     teaser: string;
+    headline: string;
+    optionalNote: string;
     privacyNote: string;
   } | null> {
     const campaign = await this.getByEvent(eventId);
@@ -373,8 +377,10 @@ export class GiftCampaignService {
       giftUrl,
       title: copy.title,
       subtitle: copy.subtitle,
-      ctaLabel: copy.ctaLabel,
+      ctaLabel: copy.ctaLabel || "Send a Gift",
       teaser: companionGiftTeaser(campaign.giftType),
+      headline: companionGiftHeadline(campaign.giftType),
+      optionalNote: companionGiftOptionalNote(),
       privacyNote: copy.privacyNote,
     };
   }

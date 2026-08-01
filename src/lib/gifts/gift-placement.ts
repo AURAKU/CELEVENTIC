@@ -12,7 +12,16 @@ export type GiftPlacementSurface = "invitation" | "companion";
 export interface GiftCampaignPlacementInput {
   status: string;
   showOnInvitation: boolean;
+  /** Defaults true for legacy campaigns that pre-date the column. */
+  showOnCompanion?: boolean;
+  opensAt?: Date | string | null;
   closesAt?: Date | string | null;
+}
+
+function asDate(value: Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = typeof value === "string" ? new Date(value) : value;
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /** True when the campaign is open for guests on the given surface. */
@@ -23,16 +32,13 @@ export function isCampaignPlaceable(
 ): boolean {
   if (campaign.status !== "ACTIVE") return false;
   if (surface === "invitation" && !campaign.showOnInvitation) return false;
+  if (surface === "companion" && campaign.showOnCompanion === false) return false;
 
-  if (campaign.closesAt) {
-    const closesAt =
-      typeof campaign.closesAt === "string"
-        ? new Date(campaign.closesAt)
-        : campaign.closesAt;
-    if (!Number.isNaN(closesAt.getTime()) && closesAt.getTime() <= now.getTime()) {
-      return false;
-    }
-  }
+  const opensAt = asDate(campaign.opensAt);
+  if (opensAt && opensAt.getTime() > now.getTime()) return false;
+
+  const closesAt = asDate(campaign.closesAt);
+  if (closesAt && closesAt.getTime() <= now.getTime()) return false;
 
   return true;
 }

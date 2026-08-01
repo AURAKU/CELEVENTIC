@@ -237,20 +237,34 @@ export const GIFT_TYPE_LABELS: Record<EventGiftType, string> = {
   GENERAL_GIFT: "Gift",
 };
 
+/** Companion card eyebrow — never fundraising language. */
+export function companionGiftHeadline(giftType: EventGiftType): string {
+  switch (giftType) {
+    case "FUNERAL_SUPPORT":
+      return "A gesture of support";
+    default:
+      return "A gift, from the heart";
+  }
+}
+
 /** Short companion TAKE PART teaser — warm gesture language, never ecommerce. */
 export function companionGiftTeaser(giftType: EventGiftType): string {
   switch (giftType) {
     case "WEDDING_GIFT":
     case "ANNIVERSARY_GIFT":
-      return "A private blessing for the couple";
+      return "Your presence at this celebration means the most. Should you wish to send a gift to the celebrants, you may do so securely here.";
     case "FUNERAL_SUPPORT":
-      return "Stand with the family privately";
+      return "Your presence means so much. Should you wish to send support to the family, you may do so securely here.";
     case "BABY_GIFT":
     case "NAMING_CEREMONY_GIFT":
-      return "A private blessing for the family";
+      return "Your presence means the most. Should you wish to send a gift to the family, you may do so securely here.";
     default:
-      return "A private gift for the hosts";
+      return "Your presence at this celebration means the most. Should you wish to send a gift to the hosts, you may do so securely here.";
   }
+}
+
+export function companionGiftOptionalNote(): string {
+  return "Entirely optional · Securely processed";
 }
 
 /** Default suggested amounts in minor units (GHS pesewas). */

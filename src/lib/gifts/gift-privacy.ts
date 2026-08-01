@@ -148,7 +148,7 @@ export function isConfirmedGiftSuccess(status: string): boolean {
 export function displayGiftGuestName(
   name: string | null | undefined,
   isAnonymous: boolean,
-  fallback = "Anonymous guest"
+  fallback = "Anonymous Guest"
 ): string {
   if (isAnonymous) return fallback;
   const trimmed = name?.trim();

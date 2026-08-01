@@ -101,6 +101,23 @@ interface Links {
   qrDownloadUrl: string;
 }
 
+interface WithdrawalRow {
+  id: string;
+  amountMinor: number;
+  currency: string;
+  status: string;
+  payoutMethod: string;
+  payoutKind: string;
+  payoutPhoneMasked: string | null;
+  bankAccountMasked: string | null;
+  accountName: string | null;
+  evidenceReference: string | null;
+  failureReason: string | null;
+  requestedAt: string;
+  paidAt: string | null;
+  requestedBy: { id: string; name: string | null; email: string | null } | null;
+}
+
 const STATUS_VARIANT: Record<string, "success" | "warning" | "destructive" | "outline"> = {
   SUCCESS: "success",
   PENDING: "warning",
@@ -116,16 +133,27 @@ const METHOD_LABELS = new Map(GIFT_PAYMENT_METHODS.map((m) => [m.id, m.shortLabe
 
 export function GiftWalletClient() {
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
-  const [tab, setTab] = useState<"transactions" | "settings">("transactions");
+  const [tab, setTab] = useState<
+    "overview" | "transactions" | "pending" | "refunds" | "withdrawals" | "settings"
+  >("overview");
 
   const [campaign, setCampaign] = useState<CampaignState | null>(null);
   const [links, setLinks] = useState<Links | null>(null);
   const [canRefund, setCanRefund] = useState(false);
+  const [canApproveWithdrawals, setCanApproveWithdrawals] = useState(false);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+  const [actorId, setActorId] = useState<string | null>(null);
 
   const [transactions, setTransactions] = useState<GiftTransaction[]>([]);
   const [summary, setSummary] = useState<GiftSummary | null>(null);
   const [walletBalanceMinor, setWalletBalanceMinor] = useState(0);
+  const [availableMinor, setAvailableMinor] = useState(0);
+  const [reservedMinor, setReservedMinor] = useState(0);
+  const [withdrawnMinor, setWithdrawnMinor] = useState(0);
   const [currency, setCurrency] = useState("GHS");
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
+  const [wdPage, setWdPage] = useState(1);
+  const [wdPages, setWdPages] = useState(1);
 
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -175,9 +203,32 @@ export function GiftWalletClient() {
     setTotal(data.data.transactions.total);
     setSummary(data.data.summary);
     setWalletBalanceMinor(data.data.wallet.balanceMinor);
+    setAvailableMinor(data.data.wallet.availableMinor ?? data.data.wallet.balanceMinor);
+    setReservedMinor(data.data.wallet.reservedMinor ?? 0);
+    setWithdrawnMinor(data.data.wallet.lifetimeWithdrawnMinor ?? 0);
     setCurrency(data.data.wallet.currency);
     setCanRefund(Boolean(data.data.permissions?.canRefund));
   }, [eventId, page, status, method, search]);
+
+  const loadWithdrawals = useCallback(async () => {
+    if (!eventId) return;
+    const params = new URLSearchParams({ eventId, page: String(wdPage) });
+    const res = await fetch(`/api/gifts/admin/withdrawals?${params}`);
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Could not load withdrawals");
+      return;
+    }
+    setWithdrawals(data.data.withdrawals.items);
+    setWdPages(data.data.withdrawals.pages);
+    setAvailableMinor(data.data.wallet.availableMinor);
+    setReservedMinor(data.data.wallet.reservedMinor);
+    setWithdrawnMinor(data.data.wallet.withdrawnMinor);
+    setWalletBalanceMinor(data.data.wallet.balanceMinor);
+    setCanApproveWithdrawals(Boolean(data.data.permissions?.canApproveWithdrawals));
+    setIsPlatformAdmin(Boolean(data.data.permissions?.isPlatformAdmin));
+    setActorId(data.data.permissions?.actorId ?? null);
+  }, [eventId, wdPage]);
 
   useEffect(() => {
     if (eventId) void loadCampaign();
@@ -188,8 +239,18 @@ export function GiftWalletClient() {
   }, [eventId, loadTransactions]);
 
   useEffect(() => {
+    if (eventId && (tab === "withdrawals" || tab === "overview")) void loadWithdrawals();
+  }, [eventId, tab, loadWithdrawals]);
+
+  useEffect(() => {
     setPage(1);
   }, [eventId, status, method, search]);
+
+  useEffect(() => {
+    if (tab === "pending") setStatus("PENDING");
+    else if (tab === "refunds") setStatus("REFUNDED");
+    else if (tab === "transactions" || tab === "overview") setStatus("ALL");
+  }, [tab]);
 
   async function act(id: string, body: Record<string, unknown>, successMessage: string) {
     setBusy(id);
@@ -280,6 +341,9 @@ export function GiftWalletClient() {
             summary={summary}
             currency={currency}
             walletBalanceMinor={walletBalanceMinor}
+            availableMinor={availableMinor}
+            reservedMinor={reservedMinor}
+            withdrawnMinor={withdrawnMinor}
           />
 
           {links && campaign && (
@@ -293,17 +357,47 @@ export function GiftWalletClient() {
             />
           )}
 
-          <div className="flex gap-2 border-b">
-            <TabButton active={tab === "transactions"} onClick={() => setTab("transactions")}>
-              Transactions
-            </TabButton>
-            <TabButton active={tab === "settings"} onClick={() => setTab("settings")}>
-              <Settings2 className="mr-1.5 inline h-3.5 w-3.5" />
-              Gift settings
-            </TabButton>
+          <div className="flex flex-wrap gap-2 border-b">
+            {(
+              [
+                ["overview", "Overview"],
+                ["transactions", "Gifts"],
+                ["pending", "Pending"],
+                ["refunds", "Refunds"],
+                ["withdrawals", "Withdrawals"],
+                ["settings", "Campaign Settings"],
+              ] as const
+            ).map(([id, label]) => (
+              <TabButton key={id} active={tab === id} onClick={() => setTab(id)}>
+                {id === "settings" ? <Settings2 className="mr-1.5 inline h-3.5 w-3.5" /> : null}
+                {label}
+              </TabButton>
+            ))}
           </div>
 
-          {tab === "transactions" ? (
+          {tab === "withdrawals" ? (
+            <WithdrawalsPanel
+              eventId={eventId}
+              currency={currency}
+              availableMinor={availableMinor}
+              withdrawals={withdrawals}
+              page={wdPage}
+              pages={wdPages}
+              canApprove={canApproveWithdrawals}
+              isPlatformAdmin={isPlatformAdmin}
+              actorId={actorId}
+              busy={busy}
+              onPage={setWdPage}
+              onRefresh={() => void loadWithdrawals()}
+              onBusy={setBusy}
+              onError={setError}
+              onNotice={setNotice}
+            />
+          ) : tab === "settings" ? (
+            campaign && (
+              <SettingsPanel campaign={campaign} onSave={saveCampaign} busy={busy === "campaign"} />
+            )
+          ) : (
             <TransactionsPanel
               transactions={transactions}
               loading={loading}
@@ -321,10 +415,6 @@ export function GiftWalletClient() {
               onSearch={setSearch}
               onAction={act}
             />
-          ) : (
-            campaign && (
-              <SettingsPanel campaign={campaign} onSave={saveCampaign} busy={busy === "campaign"} />
-            )
           )}
         </>
       )}
@@ -336,35 +426,65 @@ function SummaryCards({
   summary,
   currency,
   walletBalanceMinor,
+  availableMinor = 0,
+  reservedMinor = 0,
+  withdrawnMinor = 0,
 }: {
   summary: GiftSummary | null;
   currency: string;
   walletBalanceMinor: number;
+  availableMinor?: number;
+  reservedMinor?: number;
+  withdrawnMinor?: number;
 }) {
   const cards = [
     {
-      label: "Gift wallet balance",
-      value: formatMinor(walletBalanceMinor, currency),
+      label: "Available to withdraw",
+      value: formatMinor(availableMinor, currency),
       icon: Wallet,
       tone: "text-brand-600",
     },
     {
-      label: "Gifts received",
+      label: "Gross gifts",
+      value: formatMinor(summary?.grossMinor ?? 0, currency),
+      icon: Gift,
+      tone: "text-emerald-600",
+    },
+    {
+      label: "Provider fees",
+      value: formatMinor(summary?.feesMinor ?? 0, currency),
+      icon: Wallet,
+      tone: "text-slate-600",
+    },
+    {
+      label: "Wallet balance",
+      value: formatMinor(walletBalanceMinor, currency),
+      icon: Wallet,
+      tone: "text-emerald-600",
+    },
+    {
+      label: "Reserved",
+      value: formatMinor(reservedMinor, currency),
+      icon: Wallet,
+      tone: "text-amber-600",
+    },
+    {
+      label: "Withdrawn",
+      value: formatMinor(withdrawnMinor, currency),
+      icon: Wallet,
+      tone: "text-slate-600",
+    },
+    {
+      label: "Successful gifts",
       value: String(summary?.giftCount ?? 0),
       icon: Gift,
       tone: "text-emerald-600",
     },
     {
-      label: "Total gifted",
-      value: formatMinor(summary?.grossMinor ?? 0, currency),
-      icon: Wallet,
-      tone: "text-emerald-600",
-    },
-    {
-      label: "Average gift",
-      value: formatMinor(summary?.averageMinor ?? 0, currency),
+      label: "Refunded",
+      value: formatMinor(summary?.refundedMinor ?? 0, currency),
       icon: Gift,
-      tone: "text-slate-600",
+      tone: "text-red-600",
     },
   ];
 
@@ -916,6 +1036,225 @@ function SettingsPanel({
         </Button>
       </CardContent>
     </Card>
+  );
+}
+
+function WithdrawalsPanel({
+  eventId,
+  currency,
+  availableMinor,
+  withdrawals,
+  page,
+  pages,
+  canApprove,
+  isPlatformAdmin,
+  actorId,
+  busy,
+  onPage,
+  onRefresh,
+  onBusy,
+  onError,
+  onNotice,
+}: {
+  eventId: string;
+  currency: string;
+  availableMinor: number;
+  withdrawals: WithdrawalRow[];
+  page: number;
+  pages: number;
+  canApprove: boolean;
+  isPlatformAdmin: boolean;
+  actorId: string | null;
+  busy: string | null;
+  onPage: (page: number) => void;
+  onRefresh: () => void;
+  onBusy: (id: string | null) => void;
+  onError: (msg: string) => void;
+  onNotice: (msg: string) => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [phone, setPhone] = useState("");
+  const [method, setMethod] = useState("MTN_MOMO");
+  const [accountName, setAccountName] = useState("");
+  const [evidence, setEvidence] = useState("");
+
+  async function requestWithdrawal() {
+    onBusy("wd-request");
+    onError("");
+    onNotice("");
+    let amountMinor: number;
+    try {
+      amountMinor = toMinorUnits(amount, currency);
+    } catch (err) {
+      onBusy(null);
+      onError(err instanceof MoneyError ? err.message : "Invalid amount");
+      return;
+    }
+    const res = await fetch("/api/gifts/admin/withdrawals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventId,
+        amountMinor,
+        payoutMethod: method,
+        payoutPhone: method === "GHANA_BANK" ? undefined : phone,
+        bankAccountNumber: method === "GHANA_BANK" ? phone : undefined,
+        accountName: accountName || undefined,
+      }),
+    });
+    const data = await res.json();
+    onBusy(null);
+    if (!res.ok) {
+      onError(data.error ?? "Could not request withdrawal");
+      return;
+    }
+    onNotice("Withdrawal requested. Available balance is reserved pending review.");
+    setAmount("");
+    onRefresh();
+  }
+
+  async function act(id: string, action: string, extra: Record<string, unknown> = {}) {
+    onBusy(id);
+    onError("");
+    const res = await fetch(`/api/gifts/admin/withdrawals/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId, action, ...extra }),
+    });
+    const data = await res.json();
+    onBusy(null);
+    if (!res.ok) {
+      onError(data.error ?? "Withdrawal action failed");
+      return;
+    }
+    onNotice(`Withdrawal ${action.replace("_", " ")} completed.`);
+    onRefresh();
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Request withdrawal</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-slate-600">
+            Available funds become eligible for withdrawal after successful payment
+            verification and the configured settlement period. Payouts are recorded as{" "}
+            <strong>manual payouts</strong> until a provider transfer is confirmed —
+            Celeventic never claims an automatic Paystack transfer unless one is verified.
+          </p>
+          <p className="text-sm">
+            Available now: <strong>{formatMinor(availableMinor, currency)}</strong>
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Amount ({currency})</Label>
+              <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="200.00" />
+            </div>
+            <div className="space-y-1">
+              <Label>Destination</Label>
+              <select
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+              >
+                <option value="MTN_MOMO">MTN Mobile Money</option>
+                <option value="TELECEL_CASH">Telecel Cash</option>
+                <option value="AIRTELTIGO_MONEY">AirtelTigo / AT Money</option>
+                <option value="GHANA_BANK">Ghana bank account</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>{method === "GHANA_BANK" ? "Account number" : "Mobile money number"}</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Account name</Label>
+              <Input value={accountName} onChange={(e) => setAccountName(e.target.value)} />
+            </div>
+          </div>
+          <Button disabled={busy === "wd-request"} onClick={() => void requestWithdrawal()}>
+            {busy === "wd-request" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request withdrawal"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Withdrawal history</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {withdrawals.length === 0 ? (
+            <p className="text-sm text-slate-500">No withdrawals yet.</p>
+          ) : (
+            withdrawals.map((row) => {
+              const isRequester = actorId && row.requestedBy?.id === actorId;
+              const mayReview = canApprove && (isPlatformAdmin || !isRequester);
+              return (
+                <div
+                  key={row.id}
+                  className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-semibold">
+                      {formatMinor(row.amountMinor, row.currency)} · {row.status}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {row.payoutMethod} · {row.payoutKind} ·{" "}
+                      {row.payoutPhoneMasked || row.bankAccountMasked || "—"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {row.status === "REQUESTED" && mayReview ? (
+                      <>
+                        <Button size="sm" variant="outline" disabled={busy === row.id} onClick={() => void act(row.id, "approve")}>
+                          Approve
+                        </Button>
+                        <Button size="sm" variant="outline" disabled={busy === row.id} onClick={() => void act(row.id, "reject", { reason: "Rejected by reviewer" })}>
+                          Reject
+                        </Button>
+                      </>
+                    ) : null}
+                    {row.status === "APPROVED" && mayReview ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Input
+                          className="h-8 w-40"
+                          placeholder="Evidence ref"
+                          value={evidence}
+                          onChange={(e) => setEvidence(e.target.value)}
+                        />
+                        <Button
+                          size="sm"
+                          disabled={busy === row.id}
+                          onClick={() =>
+                            void act(row.id, "mark_paid", { evidenceReference: evidence || `manual-${row.id}` })
+                          }
+                        >
+                          Mark paid (manual)
+                        </Button>
+                      </div>
+                    ) : null}
+                    {row.status === "REQUESTED" && isRequester ? (
+                      <Button size="sm" variant="outline" disabled={busy === row.id} onClick={() => void act(row.id, "cancel")}>
+                        Cancel
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <PaginationBar
+            page={page}
+            pages={pages}
+            total={withdrawals.length}
+            limit={25}
+            onPageChange={onPage}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

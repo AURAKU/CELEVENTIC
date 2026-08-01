@@ -213,6 +213,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "dashboard", key: "search_no_results", enValue: "No results found", frValue: "Aucun résultat" },
   { namespace: "dashboard", key: "nav_tickets", enValue: "Tickets", frValue: "Billets" },
   { namespace: "dashboard", key: "nav_qr", enValue: "QR Admission", frValue: "Admission QR" },
+  { namespace: "dashboard", key: "nav_qr_hub", enValue: "QR & Pass Hub", frValue: "Hub QR & Passes" },
   { namespace: "dashboard", key: "nav_messages", enValue: "Messages", frValue: "Messages" },
   { namespace: "dashboard", key: "nav_communications", enValue: "Communications", frValue: "Communications" },
   { namespace: "dashboard", key: "nav_discovery", enValue: "Discovery", frValue: "Découverte" },

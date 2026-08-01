@@ -88,6 +88,7 @@ export const ORGANIZER_NAV: NavSection[] = [
       { href: "/dashboard/tickets", labelKey: "dashboard.nav_tickets", icon: Ticket },
       { href: "/dashboard/seating", labelKey: "dashboard.nav_seating", icon: Armchair },
       { href: "/dashboard/qr-admission", labelKey: "dashboard.nav_qr", icon: QrCode },
+      { href: "/dashboard/qr-hub", labelKey: "dashboard.nav_qr_hub", icon: QrCode },
     ],
   },
   {
