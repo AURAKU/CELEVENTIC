@@ -54,6 +54,10 @@ public/uploads/**
 # never committed; regenerated per run, may contain local file paths/DB content.
 /var/video-backfill/
 
+# media audit + URL-fix runtime state (reports, dry-runs, rollback manifests)
+/var/media-audit/
+/var/media-url-fix/
+
 # celeventic-video-worker liveness heartbeat (src/lib/video/worker-heartbeat.ts) — runtime state, regenerated every tick.
 /var/video-worker/
 

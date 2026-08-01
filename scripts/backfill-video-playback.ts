@@ -52,6 +52,9 @@ import {
   type BackfillManifestEntry,
   type RollbackRecord,
 } from "../src/lib/video/backfill-utils";
+import {
+  sourcePlaybackMapFromManifest,
+} from "../src/lib/video/media-audit-utils";
 
 const prisma = new PrismaClient();
 
@@ -62,6 +65,7 @@ const STATE_DIR = process.env.VIDEO_BACKFILL_STATE_DIR
   ? path.resolve(process.env.VIDEO_BACKFILL_STATE_DIR)
   : path.join(PROJECT_ROOT, "var", "video-backfill");
 const MANIFEST_PATH = path.join(STATE_DIR, "manifest.json");
+const SOURCE_MAP_PATH = path.join(STATE_DIR, "source-playback-map.json");
 const LOCK_PATH = path.join(STATE_DIR, ".lock");
 const BACKUP_DIR = path.join(STATE_DIR, "backups");
 
@@ -140,6 +144,12 @@ async function saveManifest(manifest: BackfillManifest): Promise<void> {
   await writeFile(tmpPath, JSON.stringify(manifest, null, 2), "utf8");
   // Atomic-ish replace — avoids ever leaving a half-written manifest.json behind on a crash.
   await import("node:fs/promises").then((fs) => fs.rename(tmpPath, MANIFEST_PATH));
+
+  // Durable source→playback map for media:audit (does not rely on filename heuristics).
+  const map = sourcePlaybackMapFromManifest(manifest);
+  const mapTmp = `${SOURCE_MAP_PATH}.tmp`;
+  await writeFile(mapTmp, JSON.stringify(map, null, 2), "utf8");
+  await import("node:fs/promises").then((fs) => fs.rename(mapTmp, SOURCE_MAP_PATH));
 }
 
 async function appendAudit(runId: string, entry: Record<string, unknown>): Promise<void> {
