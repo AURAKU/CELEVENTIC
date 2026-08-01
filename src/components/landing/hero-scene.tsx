@@ -32,8 +32,15 @@ function AnimatedOrb() {
 
 export function HeroScene() {
   return (
-    <div className="absolute inset-0 opacity-40 pointer-events-none">
-      <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
+    <div className="absolute inset-0 opacity-40 pointer-events-none [&>div]:!bg-transparent">
+      <Canvas
+        camera={{ position: [0, 0, 5], fov: 45 }}
+        gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
+        style={{ background: "transparent" }}
+        onCreated={({ gl }) => {
+          gl.setClearColor(0x000000, 0);
+        }}
+      >
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} color="#D4AF37" />
         <AnimatedOrb />

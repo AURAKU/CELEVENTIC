@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Play, Calendar, Ticket, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandMotto } from "@/components/brand/brand-motto";
@@ -16,6 +16,7 @@ const HeroScene = dynamic(() => import("@/components/landing/hero-scene").then((
 
 export function Hero() {
   const { t } = useLocale();
+  const reduceMotion = useReducedMotion();
 
   const stats = [
     { icon: Calendar, label: t("landing.stat_events") },
@@ -30,27 +31,34 @@ export function Hero() {
     t("landing.dash_revenue"),
   ];
 
+  // Critical LCP content must never start at opacity 0 — if CSS fails to load or JS
+  // is delayed, `initial={{ opacity: 0 }}` leaves the hero permanently blank.
+  const copyMotion = reduceMotion
+    ? undefined
+    : { initial: { opacity: 1, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.55 } };
+  const panelMotion = reduceMotion
+    ? undefined
+    : { initial: { opacity: 1, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.55, delay: 0.12 } };
+
   return (
     <section className="relative overflow-hidden bg-gradient-hero text-white">
       <ClientErrorBoundary>
-        <HeroScene />
+        <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
+          <HeroScene />
+        </div>
       </ClientErrorBoundary>
-      <div className="absolute inset-0 grid-pattern opacity-20" />
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 z-0 grid-pattern opacity-20 pointer-events-none" aria-hidden />
+      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
         <div className="absolute top-20 left-10 w-96 h-96 bg-brand-500/30 rounded-full blur-3xl animate-shimmer" />
         <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-accent-500/20 rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gold-400/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:py-24 sm:px-6 lg:px-8 lg:py-36">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:py-24 sm:px-6 lg:px-8 lg:py-36">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
+          <motion.div {...copyMotion}>
             <BrandMotto size="xl" variant="hero" className="mb-5 sm:mb-7" />
-            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight">
+            <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight text-white">
               {t("landing.hero_title_1")}{" "}
               <span className="text-gradient-gold">{t("landing.hero_title_event")}</span>{" "}
               {t("landing.hero_title_2")}
@@ -87,12 +95,7 @@ export function Hero() {
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="hidden lg:block"
-          >
+          <motion.div {...panelMotion} className="hidden lg:block">
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-brand-500/20 to-accent-500/20 rounded-3xl blur-2xl" />
               <div className="relative rounded-2xl glass-dark border border-white/15 p-6 shadow-2xl animate-float">

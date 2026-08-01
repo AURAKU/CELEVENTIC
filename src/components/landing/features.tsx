@@ -47,9 +47,9 @@ export function Features() {
           {FEATURE_KEYS.map((feature, i) => (
             <motion.div
               key={feature.title}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 1, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.2 }}
               transition={{ delay: i * 0.04 }}
             >
               <Card className="card-glow h-full group hover:shadow-[0_16px_48px_rgba(11,138,131,0.14)] hover:border-brand-300/50">
