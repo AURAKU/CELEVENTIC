@@ -31,6 +31,19 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://www.celeventic.com/invitations
 
 **Never run `pm2 restart all`** on this box.
 
+## TransformStream runtime error (permanent fix)
+
+If PM2 logs `TypeError: controller[kState].transformAlgorithm is not a function` (digest e.g. `3225108298`), that is a **Node.js Web Streams race** triggered by Next.js RSC streaming under Node 20/22 — not a broken invitation/media route.
+
+Permanent fix (Celeventic only):
+
+```bash
+cd /var/www/CELEVENTIC
+bash scripts/upgrade-node-transformstream-fix.sh
+```
+
+Details: [TRANSFORMSTREAM-RACE.md](./TRANSFORMSTREAM-RACE.md)
+
 ## Verify from laptop
 
 ```bash

@@ -23,6 +23,10 @@
  * may be running under the same PM2 daemon. Always target these two process names explicitly:
  *   pm2 restart celeventic --update-env
  *   pm2 restart celeventic-video-worker --update-env
+ *
+ * Node runtime: Celeventic should run on Node >= 24.15.0 to permanently eliminate
+ * `controller[kState].transformAlgorithm is not a function` (see docs/ops/TRANSFORMSTREAM-RACE.md).
+ * Ensure the shell that starts PM2 has that Node on PATH (nvm use / .nvmrc).
  */
 module.exports = {
   apps: [

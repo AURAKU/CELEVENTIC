@@ -2,6 +2,9 @@
     "name": "celeventic",
     "version": "0.1.0",
     "private": true,
+    "engines": {
+        "node": ">=20.20.2"
+    },
     "browserslist": [
         "defaults",
         "iOS >= 15",
@@ -46,6 +49,9 @@
         "media:urls:fix": "tsx scripts/media-urls-fix.ts",
         "test:media-url": "tsx --test src/lib/uploads/__tests__/media-url.test.ts",
         "test:media-audit": "tsx --test src/lib/video/__tests__/media-audit-utils.test.ts",
+        "test:transformstream-race": "tsx --test src/lib/runtime/__tests__/transformstream-race.test.ts",
+        "test:uploads-stream-safe": "tsx --test src/app/api/uploads/__tests__/uploads-route.stream-safe.test.ts src/app/api/uploads/__tests__/range.test.ts",
+        "probe:transformstream-race": "node scripts/probe-transformstream-race.cjs",
         "admission:backfill": "tsx scripts/backfill-guest-passes.ts",
         "admission:backfill:dry-run": "tsx scripts/backfill-guest-passes.ts --dry-run",
         "smoke-test": "node scripts/smoke-test-local.mjs",
@@ -69,7 +75,7 @@
         "test:guest-import-e2e": "tsx --test --test-concurrency=1 src/services/guest-import/__tests__/*.test.ts",
         "test:guest-search": "tsx --test src/lib/guest-search/__tests__/*.test.ts",
         "test:guest-search-e2e": "tsx --test --test-concurrency=1 src/services/guest-search/__tests__/*.test.ts",
-        "test:all": "npm run test:auth && npm run test:video && npm run test:media-audit && npm run test:video-pipeline && npm run test:uploads && npm run test:experience-engine && npm run test:live-editability && npm run test:currency && npm run test:social && npm run test:app-url && npm run test:invitation-sharing && npm run test:gifts && npm run test:admission && npm run test:admission-passes && npm run test:guest-import && npm run test:guest-import-e2e && npm run test:guest-search && npm run test:guest-search-e2e",
+        "test:all": "npm run test:auth && npm run test:video && npm run test:media-audit && npm run test:transformstream-race && npm run test:uploads-stream-safe && npm run test:video-pipeline && npm run test:uploads && npm run test:experience-engine && npm run test:live-editability && npm run test:currency && npm run test:social && npm run test:app-url && npm run test:invitation-sharing && npm run test:gifts && npm run test:admission && npm run test:admission-passes && npm run test:guest-import && npm run test:guest-import-e2e && npm run test:guest-search && npm run test:guest-search-e2e",
         "db:studio": "prisma studio",
         "brand:assets": "node scripts/setup-brand-assets.mjs",
         "prepare:local": "node scripts/setup-brand-assets.mjs && npm run db:push",

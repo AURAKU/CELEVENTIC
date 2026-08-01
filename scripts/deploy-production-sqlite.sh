@@ -156,6 +156,19 @@ rm -rf .next
 npm run build
 [[ -f .next/BUILD_ID ]] || die ".next/BUILD_ID missing after build"
 
+# TransformStream race probe (nodejs/node#62036). Warn on vulnerable Node; do not block deploy
+# unless CELEVENTIC_REQUIRE_SAFE_NODE=1. Permanent fix: bash scripts/upgrade-node-transformstream-fix.sh
+if [[ -f scripts/probe-transformstream-race.cjs ]]; then
+  if CELEVENTIC_ALLOW_TRANSFORMSTREAM_RACE=1 node scripts/probe-transformstream-race.cjs; then
+    log "TransformStream race probe completed"
+  else
+    log "TransformStream race probe reported vulnerability — upgrade Node with scripts/upgrade-node-transformstream-fix.sh"
+  fi
+  if [[ "${CELEVENTIC_REQUIRE_SAFE_NODE:-0}" == "1" ]]; then
+    node scripts/probe-transformstream-race.cjs || die "Node runtime still vulnerable to TransformStream race"
+  fi
+fi
+
 pm2 restart "$APP_NAME" --update-env
 pm2 save
 

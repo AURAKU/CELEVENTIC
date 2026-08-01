@@ -3,6 +3,10 @@ import { open, stat } from "fs/promises";
 import path from "path";
 import { resolveUploadPath, getUploadRoot } from "@/lib/uploads/file-storage";
 import { parseRange } from "@/lib/uploads/range";
+import {
+  buildTransformStreamRaceDiagnostics,
+  isTransformStreamRaceError,
+} from "@/lib/runtime/transformstream-race";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,10 +20,11 @@ export const dynamic = "force-dynamic";
  *   - environments without the Nginx alias
  *   - Range probes / health checks
  *
- * Critical: never pipe media through Web TransformStreams / CompressionStream — that is the
- * historical source of `controller[kState].transformAlgorithm is not a function` under
- * mixed Node/undici stream implementations. We only return discrete Buffer/Uint8Array bodies
- * (range slices via `fs.open` + positional read), or a redirect to the static `/uploads/` path.
+ * Critical: never pipe media through Web TransformStreams / CompressionStream / Node→Web
+ * stream conversions. That historically contributed to
+ * `controller[kState].transformAlgorithm is not a function` under mixed Node/undici stream
+ * implementations. We only return discrete Uint8Array bodies (range slices via `fs.open` +
+ * positional read), or a redirect to the static `/uploads/` path.
  */
 
 const MIME: Record<string, string> = {
@@ -70,10 +75,18 @@ async function readSlice(filePath: string, start: number, end: number): Promise<
   try {
     const buffer = Buffer.alloc(length);
     const { bytesRead } = await fh.read(buffer, 0, length, start);
-    return new Uint8Array(buffer.buffer, buffer.byteOffset, bytesRead);
+    // Copy into a standalone Uint8Array (no Buffer/ArrayBuffer sharing surprises for Response).
+    return Uint8Array.from(buffer.subarray(0, bytesRead));
   } finally {
     await fh.close();
   }
+}
+
+function assertBinaryBody(body: Uint8Array): Uint8Array {
+  if (!(body instanceof Uint8Array) || ArrayBuffer.isView(body) === false) {
+    throw new TypeError("uploads route must return Uint8Array bodies only");
+  }
+  return body;
 }
 
 export async function GET(
@@ -116,7 +129,7 @@ export async function GET(
 
   try {
     if (range) {
-      const chunk = await readSlice(filePath, range.start, range.end);
+      const chunk = assertBinaryBody(await readSlice(filePath, range.start, range.end));
       return new NextResponse(chunk, {
         status: 206,
         headers: {
@@ -141,7 +154,7 @@ export async function GET(
       });
     }
 
-    const body = await readSlice(filePath, 0, size - 1);
+    const body = assertBinaryBody(await readSlice(filePath, 0, size - 1));
     return new NextResponse(body, {
       status: 200,
       headers: {
@@ -150,10 +163,26 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("[uploads] serve failed", {
-      relative,
-      message: error instanceof Error ? error.message : "unknown",
-    });
+    if (isTransformStreamRaceError(error)) {
+      console.error(
+        "[uploads] transformstream race while serving media",
+        buildTransformStreamRaceDiagnostics({
+          error,
+          requestPath: `/api/uploads/${relative}`,
+          requestMethod: "GET",
+          routeName: "api/uploads/[...path]",
+          mediaUrl: `/api/uploads/${relative}`,
+          routeType: "route",
+        })
+      );
+    } else {
+      console.error("[uploads] serve failed", {
+        relative,
+        message: error instanceof Error ? error.message : "unknown",
+        processVersion: process.version,
+        runtime: "nodejs",
+      });
+    }
     return NextResponse.json({ error: "Failed to read file" }, { status: 500 });
   }
 }

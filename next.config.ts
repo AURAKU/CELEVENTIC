@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   // Allows building to a scratch dir (NEXT_DIST_DIR=.next-verify) without clobbering
   // the .next that a running `next start` is serving from.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Disable Next's gzip TransformStream layer. Media is served by Nginx; HTML compression
+  // can be handled at the reverse proxy. Reduces one TransformStream pipeline involved in
+  // `controller[kState].transformAlgorithm is not a function` races under Node < 24.15.
+  compress: false,
   // Large app: eslint during `next build` routinely exceeds agent kill windows (SIGTERM ~8m).
   // Lint separately via `npm run lint`; keep production compile focused on page generation.
   eslint: { ignoreDuringBuilds: true },
