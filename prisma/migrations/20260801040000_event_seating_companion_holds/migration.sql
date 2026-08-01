@@ -1,5 +1,7 @@
 -- Event Seating companion holds + party plans (SQLite-safe, additive).
 -- Internal planType RECEPTION is unchanged. Organiser UI labels it Event Seating.
+-- Verified SQLite-safe: ALTER ADD locked uses constant DEFAULT 0;
+-- CURRENT_TIMESTAMP appears only on CREATE TABLE (allowed), not ALTER ADD COLUMN.
 
 ALTER TABLE "seating_assignments" ADD COLUMN "locked" BOOLEAN NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS "seating_assignments_seatingPlanId_tableNumber_idx"

@@ -1,62 +1,25 @@
--- Premium Thank You Page + unified guest-message fields (SQLite-safe, additive).
+-- Recovery SQL for production databases that partially applied
+-- 20260801030000_thank_you_premium before it failed on:
+--   ALTER TABLE ... ADD COLUMN "updatedAt" ... DEFAULT CURRENT_TIMESTAMP
 --
--- SQLite rejects non-constant DEFAULT on ALTER TABLE ADD COLUMN
--- (error: "Cannot add a column with non-constant default").
--- Therefore updatedAt is:
---   1) added as nullable with no default
---   2) backfilled from createdAt
---   3) enforced NOT NULL via table rebuild
+-- Preconditions (checked by deploy script):
+--   - thank_you_pages already has premium columns (e.g. eyebrow)
+--   - invitation_guest_wishes already has title/status/source/... columns
+--   - invitation_guest_wishes does NOT yet have a usable NOT NULL updatedAt
 --
--- If production already applied earlier ADD COLUMN statements from a partial
--- failed run, use scripts/sql/recover-thank-you-premium-partial.sql instead
--- of re-running this file, then:
+-- After this file succeeds:
 --   npx prisma migrate resolve --applied 20260801030000_thank_you_premium
 
--- ThankYouPage content / design / publish metadata (constant or null defaults only)
-ALTER TABLE "thank_you_pages" ADD COLUMN "eyebrow" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "subtitle" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "closingMessage" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "signatureLine" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "hostNames" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "eventHashtag" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "footerText" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "heroImageUrl" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "backgroundImageUrl" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "backgroundVideoUrl" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "signatureImageUrl" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "themeSource" TEXT NOT NULL DEFAULT 'INVITATION';
-ALTER TABLE "thank_you_pages" ADD COLUMN "designConfig" JSON;
-ALTER TABLE "thank_you_pages" ADD COLUMN "sectionConfig" JSON;
-ALTER TABLE "thank_you_pages" ADD COLUMN "guestbookConfig" JSON;
-ALTER TABLE "thank_you_pages" ADD COLUMN "sharingConfig" JSON;
-ALTER TABLE "thank_you_pages" ADD COLUMN "seoConfig" JSON;
-ALTER TABLE "thank_you_pages" ADD COLUMN "featuredMemoryIds" JSON;
-ALTER TABLE "thank_you_pages" ADD COLUMN "version" INTEGER NOT NULL DEFAULT 1;
-ALTER TABLE "thank_you_pages" ADD COLUMN "lastPublishedSnapshot" JSON;
-ALTER TABLE "thank_you_pages" ADD COLUMN "updatedById" TEXT;
-ALTER TABLE "thank_you_pages" ADD COLUMN "scheduledPublishAt" DATETIME;
-ALTER TABLE "thank_you_pages" ADD COLUMN "archivedAt" DATETIME;
+-- Add updatedAt as nullable (SQLite-safe: no non-constant DEFAULT on ALTER ADD).
+-- Ignore if a previous recovery attempt already added a nullable column.
+-- SQLite has no ADD COLUMN IF NOT EXISTS — deploy script checks first.
 
--- InvitationGuestWish: thank-you / companion / moderation fields (constant defaults)
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "title" TEXT;
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "avatarUrl" TEXT;
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "status" TEXT NOT NULL DEFAULT 'APPROVED';
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "source" TEXT NOT NULL DEFAULT 'INVITATION';
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "isPinned" BOOLEAN NOT NULL DEFAULT 0;
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "isFeatured" BOOLEAN NOT NULL DEFAULT 0;
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "isAnonymous" BOOLEAN NOT NULL DEFAULT 0;
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "editedAt" DATETIME;
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "moderatedAt" DATETIME;
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "moderatedById" TEXT;
-ALTER TABLE "invitation_guest_wishes" ADD COLUMN "moderationReason" TEXT;
-
--- updatedAt cannot use DEFAULT CURRENT_TIMESTAMP on ALTER TABLE ADD COLUMN.
 ALTER TABLE "invitation_guest_wishes" ADD COLUMN "updatedAt" DATETIME;
+
 UPDATE "invitation_guest_wishes"
 SET "updatedAt" = COALESCE("createdAt", CURRENT_TIMESTAMP)
 WHERE "updatedAt" IS NULL;
 
--- Enforce NOT NULL updatedAt while preserving rows and foreign keys.
 PRAGMA foreign_keys=OFF;
 
 CREATE TABLE "new_invitation_guest_wishes" (

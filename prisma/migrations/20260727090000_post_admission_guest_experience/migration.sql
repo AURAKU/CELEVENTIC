@@ -10,7 +10,7 @@ ALTER TABLE "invitations" ADD COLUMN "admittedCount" INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE "invitations" ADD COLUMN "admissionAllowance" INTEGER;
 ALTER TABLE "invitations" ADD COLUMN "postAdmissionEnabled" BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE "invitations" ADD COLUMN "portalTokenVersion" INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE "invitations" ADD COLUMN "portalConfig" JSONB;
+ALTER TABLE "invitations" ADD COLUMN "portalConfig" JSON;
 
 -- CreateTable: append-only admission ledger (never deleted on reset)
 CREATE TABLE "admission_events" (

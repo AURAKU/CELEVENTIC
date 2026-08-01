@@ -34,6 +34,8 @@
         "db:ensure-admin": "tsx scripts/ensure-admin.ts",
         "seed:admin": "tsx scripts/seed-admin.ts",
         "db:deploy": "prisma db push && tsx scripts/seed-admin.ts",
+        "migrations:validate:sqlite": "tsx scripts/validate-sqlite-migrations.ts",
+        "migrations:test:sqlite": "tsx scripts/test-sqlite-migrations.ts",
         "jobs:worker": "tsx scripts/video-jobs-worker.ts",
         "video:worker": "tsx scripts/video-jobs-worker.ts",
         "video:backfill": "tsx scripts/backfill-video-playback.ts",
