@@ -107,12 +107,22 @@ function renderVenueElement(element: StudioVenueElement): string {
 
 function renderCeremonyRow(row: CeremonyRow, section?: CeremonySection): string {
   const color = section?.color ?? "#0B8A83";
-  const labelX = row.x ?? 0;
-  const labelY = (row.y ?? 0) - 8;
+  const originX = row.x ?? 0;
+  const originY = row.y ?? 0;
+  const rowWidth = Math.max(
+    120,
+    ...row.chairs.map((chair) => ((chair.x ?? originX) - originX) + 40)
+  );
+  const cx = originX + (rowWidth + 16) / 2;
+  const cy = originY + 36;
+  const rotation = row.rotation ?? 0;
+  const transform = rotation ? ` transform="rotate(${rotation} ${cx} ${cy})"` : "";
+  const labelX = originX;
+  const labelY = originY - 8;
   const chairs = row.chairs
     .map((chair) => {
-      const x = chair.x ?? row.x ?? 0;
-      const y = chair.y ?? row.y ?? 0;
+      const x = chair.x ?? originX;
+      const y = chair.y ?? originY;
       return `
         <g>
           <rect x="${x}" y="${y}" width="32" height="32" rx="6"
@@ -125,7 +135,7 @@ function renderCeremonyRow(row: CeremonyRow, section?: CeremonySection): string 
     .join("");
 
   return `
-    <g>
+    <g${transform}>
       <text x="${labelX}" y="${labelY}" font-size="11" font-weight="700" fill="#0F172A"
         font-family="system-ui, sans-serif">${escapeXml(row.label)}${
           section ? ` · ${escapeXml(section.name)}` : ""
@@ -140,12 +150,16 @@ function renderTable(table: StudioTableConfig): string {
   const y = (table.y ?? 0) + 20;
   const color = table.color ?? "#0B8A83";
   const seats = table.seatCount ?? table.capacity ?? 8;
+  const cx = x + 50;
+  const cy = y + 50;
+  const rotation = table.rotation ?? 0;
+  const transform = rotation ? ` transform="rotate(${rotation} ${cx} ${cy})"` : "";
   return `
-    <g>
-      <circle cx="${x + 50}" cy="${y + 50}" r="42" fill="${color}22" stroke="${color}" stroke-width="2.5" />
-      <text x="${x + 50}" y="${y + 46}" text-anchor="middle" font-size="12" font-weight="700" fill="#0F172A"
+    <g${transform}>
+      <circle cx="${cx}" cy="${cy}" r="42" fill="${color}22" stroke="${color}" stroke-width="2.5" />
+      <text x="${cx}" y="${y + 46}" text-anchor="middle" font-size="12" font-weight="700" fill="#0F172A"
         font-family="system-ui, sans-serif">${escapeXml(table.label)}</text>
-      <text x="${x + 50}" y="${y + 62}" text-anchor="middle" font-size="10" fill="#64748B"
+      <text x="${cx}" y="${y + 62}" text-anchor="middle" font-size="10" fill="#64748B"
         font-family="system-ui, sans-serif">${seats} seats${table.zone ? ` · ${escapeXml(table.zone)}` : ""}</text>
     </g>
   `;

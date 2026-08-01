@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } fro
 import Link from "next/link";
 import {
   Armchair,
+  ChevronDown,
+  ChevronUp,
   Download,
   Eraser,
   Eye,
@@ -145,9 +147,7 @@ function ceremonyRowLetter(label: string): string {
 }
 
 function normalizeRotationDegrees(degrees: number): number {
-  let value = ((degrees % 360) + 360) % 360;
-  if (value > 180) value -= 360;
-  return Math.round(value);
+  return Math.round(((degrees % 360) + 360) % 360);
 }
 
 function snapRotationDegrees(degrees: number, step = 15): number {
@@ -207,6 +207,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [paletteDropActive, setPaletteDropActive] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenChromeOpen, setFullscreenChromeOpen] = useState(false);
   const [canvasSelectMode, setCanvasSelectMode] = useState<CanvasSelectMode>("all");
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [customVenueLabel, setCustomVenueLabel] = useState("");
@@ -225,11 +226,13 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   } | null>(null);
   const rotateRef = useRef<{
     elementId: string;
+    kind: "element" | "table" | "row";
     centerX: number;
     centerY: number;
     startAngle: number;
     origRotation: number;
   } | null>(null);
+  const chromeSwipeRef = useRef<{ startY: number; opened: boolean } | null>(null);
   const panning = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const canvasSurfaceRef = useRef<HTMLDivElement | null>(null);
   const studioWorkspaceRef = useRef<HTMLDivElement | null>(null);
@@ -571,30 +574,47 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   async function toggleStudioFullscreen() {
     const node = studioWorkspaceRef.current;
     if (!node) return;
-    try {
+
+    if (isFullscreen) {
       if (document.fullscreenElement === node) {
-        await document.exitFullscreen();
-        return;
+        try {
+          await document.exitFullscreen();
+        } catch {
+          /* ignore */
+        }
       }
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
+      setIsFullscreen(false);
+      setFullscreenChromeOpen(false);
+      return;
+    }
+
+    setIsFullscreen(true);
+    setFullscreenChromeOpen(false);
+    setView("canvas");
+    setTimeout(() => canvasSurfaceRef.current?.focus({ preventScroll: true }), 0);
+    try {
+      if (!document.fullscreenElement) {
+        await node.requestFullscreen();
       }
-      await node.requestFullscreen();
-    } catch (error) {
-      setSaveError(
-        error instanceof Error
-          ? `Fullscreen unavailable: ${error.message}`
-          : "Fullscreen is not available in this browser."
-      );
+    } catch {
+      // Immersive CSS mode still covers the viewport when Fullscreen API is blocked.
     }
   }
 
   useEffect(() => {
     function onFullscreenChange() {
       const active = document.fullscreenElement === studioWorkspaceRef.current;
-      setIsFullscreen(active);
       if (active) {
+        setIsFullscreen(true);
+        setFullscreenChromeOpen(false);
+        setView("canvas");
         setTimeout(() => canvasSurfaceRef.current?.focus({ preventScroll: true }), 0);
+        return;
+      }
+      // Native Escape / exit — drop immersive shell only when no element is fullscreen.
+      if (!document.fullscreenElement) {
+        setIsFullscreen(false);
+        setFullscreenChromeOpen(false);
       }
     }
     document.addEventListener("fullscreenchange", onFullscreenChange);
@@ -1652,19 +1672,68 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   }
 
   function rotateVenueElement(elementId: string, deltaDegrees: number, absolute?: number) {
+    rotateCanvasItem("element", elementId, deltaDegrees, absolute);
+  }
+
+  function rotateCanvasItem(
+    kind: "element" | "table" | "row",
+    id: string,
+    deltaDegrees: number,
+    absolute?: number,
+    options?: { history?: boolean }
+  ) {
     if (previewMode) return;
-    const current = (layout.elements ?? []).find((element) => element.id === elementId);
+    const withHistory = options?.history !== false;
+    if (kind === "element") {
+      const current = (layout.elements ?? []).find((element) => element.id === id);
+      if (!current || current.locked) return;
+      if (withHistory) pushHistory();
+      else dirtyRef.current = true;
+      const nextRotation =
+        absolute !== undefined
+          ? normalizeRotationDegrees(absolute)
+          : normalizeRotationDegrees((current.rotation ?? 0) + deltaDegrees);
+      setLayout((layoutCurrent) => ({
+        ...layoutCurrent,
+        elements: (layoutCurrent.elements ?? []).map((element) =>
+          element.id === id ? { ...element, rotation: nextRotation } : element
+        ),
+      }));
+      return;
+    }
+    if (kind === "table") {
+      const current = tables.find((table) => table.id === id);
+      if (!current || current.locked) return;
+      if (withHistory) pushHistory();
+      else dirtyRef.current = true;
+      const nextRotation =
+        absolute !== undefined
+          ? normalizeRotationDegrees(absolute)
+          : normalizeRotationDegrees((current.rotation ?? 0) + deltaDegrees);
+      setTables((currentTables) =>
+        currentTables.map((table) =>
+          table.id === id ? { ...table, rotation: nextRotation } : table
+        )
+      );
+      return;
+    }
+    const current = ceremonyRows.find((row) => row.id === id);
     if (!current || current.locked) return;
-    pushHistory();
+    if (withHistory) pushHistory();
+    else dirtyRef.current = true;
     const nextRotation =
       absolute !== undefined
         ? normalizeRotationDegrees(absolute)
         : normalizeRotationDegrees((current.rotation ?? 0) + deltaDegrees);
+    setCeremonyRows((rows) =>
+      rows.map((row) => (row.id === id ? { ...row, rotation: nextRotation } : row))
+    );
     setLayout((layoutCurrent) => ({
       ...layoutCurrent,
-      elements: (layoutCurrent.elements ?? []).map((element) =>
-        element.id === elementId ? { ...element, rotation: nextRotation } : element
+      ceremonyRows: (layoutCurrent.ceremonyRows ?? []).map((row) =>
+        row.id === id ? { ...row, rotation: nextRotation } : row
       ),
+      planKind: "CEREMONY",
     }));
   }
 
@@ -1991,20 +2060,37 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         undo();
         return;
       }
-      if (selectedElementId && canInteractWithFeatures()) {
+      if (event.key === "Escape" && isFullscreen && !document.fullscreenElement) {
+        event.preventDefault();
+        setIsFullscreen(false);
+        setFullscreenChromeOpen(false);
+        return;
+      }
+      const rotateTarget =
+        selectedElementId && canInteractWithFeatures()
+          ? ({ kind: "element" as const, id: selectedElementId })
+          : selectedTable && planType === "RECEPTION" && canInteractWithRows() && !selectedTable.locked
+            ? ({ kind: "table" as const, id: selectedTable.id })
+            : selectedCeremonyRow &&
+                planType === "CEREMONY" &&
+                canInteractWithRows() &&
+                !selectedCeremonyRow.locked
+              ? ({ kind: "row" as const, id: selectedCeremonyRow.id })
+              : null;
+      if (rotateTarget) {
         if (event.key === "[" || event.key.toLowerCase() === "q") {
           event.preventDefault();
-          rotateVenueElement(selectedElementId, event.shiftKey ? -90 : -15);
+          rotateCanvasItem(rotateTarget.kind, rotateTarget.id, event.shiftKey ? -90 : -15);
           return;
         }
         if (event.key === "]" || event.key.toLowerCase() === "e") {
           event.preventDefault();
-          rotateVenueElement(selectedElementId, event.shiftKey ? 90 : 15);
+          rotateCanvasItem(rotateTarget.kind, rotateTarget.id, event.shiftKey ? 90 : 15);
           return;
         }
         if (event.key.toLowerCase() === "r" && !event.metaKey && !event.ctrlKey) {
           event.preventDefault();
-          rotateVenueElement(selectedElementId, 0, 0);
+          rotateCanvasItem(rotateTarget.kind, rotateTarget.id, 0, 0);
           return;
         }
       }
@@ -2028,7 +2114,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
     // Intentionally bound to selection identity only — handlers close over latest render.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- selection-driven shortcut
-  }, [previewMode, selectedElementId, selectedTable?.id, selectedRowIds.join(","), planType, canvasSelectMode]);
+  }, [previewMode, selectedElementId, selectedTable?.id, selectedRowIds.join(","), planType, canvasSelectMode, isFullscreen]);
 
   const hasCanvasContent =
     planType === "CEREMONY"
@@ -2389,12 +2475,316 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       <div
         ref={studioWorkspaceRef}
         className={cn(
-          "grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]",
-          isFullscreen &&
-            "h-screen overflow-auto bg-[#F7FAF9] p-4 xl:grid-rows-[minmax(0,1fr)]"
+          "relative",
+          isFullscreen
+            ? "fixed inset-0 z-[100] flex h-[100dvh] w-screen flex-col overflow-hidden bg-[#0F172A]"
+            : "grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]"
         )}
       >
-        <div className={cn("space-y-4", isFullscreen && "max-h-screen overflow-y-auto pr-1")}>
+        {isFullscreen && (
+          <>
+            {/* Immersive tools drawer — hidden until pulled/tapped */}
+            <div
+              className={cn(
+                "absolute inset-x-0 top-0 z-[70] transition-transform duration-300 ease-out",
+                fullscreenChromeOpen ? "translate-y-0" : "-translate-y-[calc(100%-2.75rem)]"
+              )}
+              onPointerDown={(event) => {
+                const target = event.target as HTMLElement;
+                if (!target.closest("[data-chrome-handle]")) return;
+                chromeSwipeRef.current = {
+                  startY: event.clientY,
+                  opened: fullscreenChromeOpen,
+                };
+                try {
+                  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+                } catch {
+                  /* ignore */
+                }
+              }}
+              onPointerMove={(event) => {
+                const swipe = chromeSwipeRef.current;
+                if (!swipe) return;
+                const dy = event.clientY - swipe.startY;
+                if (!swipe.opened && dy > 48) {
+                  setFullscreenChromeOpen(true);
+                  chromeSwipeRef.current = { ...swipe, opened: true, startY: event.clientY };
+                } else if (swipe.opened && dy < -48) {
+                  setFullscreenChromeOpen(false);
+                  chromeSwipeRef.current = { ...swipe, opened: false, startY: event.clientY };
+                }
+              }}
+              onPointerUp={() => {
+                chromeSwipeRef.current = null;
+              }}
+              onPointerCancel={() => {
+                chromeSwipeRef.current = null;
+              }}
+            >
+              <div className="mx-auto max-h-[min(52vh,420px)] overflow-y-auto rounded-b-2xl border border-white/10 bg-slate-950/95 px-3 pb-2 pt-3 text-white shadow-2xl backdrop-blur-md">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold tracking-wide text-white/90">
+                    {seatingPlanDisplayName(planType)} tools
+                  </p>
+                  <div className="ml-auto flex flex-wrap items-center gap-1">
+                    <span className="mr-1 text-[11px] tabular-nums text-white/60">
+                      {Math.round(zoom * 100)}%
+                    </span>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-8 w-8 border-white/20 bg-white/5 text-white hover:bg-white/10"
+                      onClick={() => zoomBy(0.1)}
+                    >
+                      <ZoomIn className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-8 w-8 border-white/20 bg-white/5 text-white hover:bg-white/10"
+                      onClick={() => zoomBy(-0.1)}
+                    >
+                      <ZoomOut className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-8 w-8 border-white/20 bg-white/5 text-white hover:bg-white/10"
+                      onClick={resetCanvasView}
+                    >
+                      <Focus className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1.5 bg-[#0B8A83] hover:bg-[#097a74]"
+                      onClick={() => void toggleStudioFullscreen()}
+                    >
+                      <Minimize2 className="h-3.5 w-3.5" /> Exit
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      { id: "all" as const, label: "All", icon: SquareStack },
+                      {
+                        id: "rows" as const,
+                        label: planType === "CEREMONY" ? "Rows" : "Tables",
+                        icon: planType === "CEREMONY" ? Rows3 : LayoutGrid,
+                      },
+                      { id: "features" as const, label: "Features", icon: MapPin },
+                    ] as const
+                  ).map((mode) => {
+                    const Icon = mode.icon;
+                    const active = canvasSelectMode === mode.id;
+                    return (
+                      <Button
+                        key={mode.id}
+                        type="button"
+                        size="sm"
+                        variant={active ? "default" : "outline"}
+                        className={cn(
+                          "h-8 gap-1.5 border-white/20",
+                          active
+                            ? "bg-[#0B8A83] hover:bg-[#097a74]"
+                            : "bg-white/5 text-white hover:bg-white/10"
+                        )}
+                        onClick={() => setCanvasSelectMode(mode.id)}
+                      >
+                        <Icon className="h-3.5 w-3.5" /> {mode.label}
+                      </Button>
+                    );
+                  })}
+                  {planType === "CEREMONY" ? (
+                    <>
+                      <Button
+                        size="sm"
+                        className="h-8 gap-1.5 bg-[#0B8A83]"
+                        disabled={previewMode}
+                        onClick={generateCeremony}
+                      >
+                        <Wand2 className="h-3.5 w-3.5" /> Auto rows
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1.5 border-white/20 bg-white/5 text-white"
+                        disabled={previewMode}
+                        onClick={addCeremonyRow}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Add row
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1.5 border-white/20 bg-white/5 text-white"
+                        disabled={previewMode}
+                        onClick={addCeremonySection}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> New zone
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        size="sm"
+                        className="h-8 gap-1.5 bg-[#0B8A83]"
+                        disabled={previewMode}
+                        onClick={autoGenerateTables}
+                      >
+                        <Wand2 className="h-3.5 w-3.5" /> Auto tables
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1.5 border-white/20 bg-white/5 text-white"
+                        disabled={previewMode}
+                        onClick={() => addTable("round")}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Add table
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+                  {VENUE_FEATURE_PRESETS.map((preset) => (
+                    <button
+                      key={`fs-${preset.kind}`}
+                      type="button"
+                      disabled={previewMode}
+                      title={preset.hint}
+                      className="h-16 w-28 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-white text-left shadow-sm"
+                      onClick={() => addVenueElement(preset.kind, preset.label)}
+                    >
+                      <VenueFeatureVisual
+                        kind={preset.kind}
+                        label={preset.label}
+                        color={preset.color}
+                        variant="palette"
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                {(selectedElement || selectedTable || selectedCeremonyRow) && !previewMode && (
+                  <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+                      Rotate
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 border-white/20 bg-white/5 text-white"
+                      onClick={() => {
+                        if (selectedElement) rotateCanvasItem("element", selectedElement.id, -15);
+                        else if (selectedTable) rotateCanvasItem("table", selectedTable.id, -15);
+                        else if (selectedCeremonyRow)
+                          rotateCanvasItem("row", selectedCeremonyRow.id, -15);
+                      }}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" /> −15°
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 border-white/20 bg-white/5 text-white"
+                      onClick={() => {
+                        if (selectedElement) rotateCanvasItem("element", selectedElement.id, 15);
+                        else if (selectedTable) rotateCanvasItem("table", selectedTable.id, 15);
+                        else if (selectedCeremonyRow)
+                          rotateCanvasItem("row", selectedCeremonyRow.id, 15);
+                      }}
+                    >
+                      <RotateCw className="h-3.5 w-3.5" /> +15°
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 border-white/20 bg-white/5 text-white"
+                      onClick={() => {
+                        if (selectedElement) rotateCanvasItem("element", selectedElement.id, 90);
+                        else if (selectedTable) rotateCanvasItem("table", selectedTable.id, 90);
+                        else if (selectedCeremonyRow)
+                          rotateCanvasItem("row", selectedCeremonyRow.id, 90);
+                      }}
+                    >
+                      +90°
+                    </Button>
+                    <span className="text-xs tabular-nums text-white/80">
+                      {Math.round(
+                        selectedElement?.rotation ??
+                          selectedTable?.rotation ??
+                          selectedCeremonyRow?.rotation ??
+                          0
+                      )}
+                      °
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={359}
+                      step={1}
+                      value={Math.round(
+                        selectedElement?.rotation ??
+                          selectedTable?.rotation ??
+                          selectedCeremonyRow?.rotation ??
+                          0
+                      )}
+                      className="h-8 min-w-[140px] flex-1 accent-[#0B8A83]"
+                      onChange={(event) => {
+                        const value = Number(event.target.value);
+                        if (selectedElement)
+                          rotateCanvasItem("element", selectedElement.id, 0, value, {
+                            history: false,
+                          });
+                        else if (selectedTable)
+                          rotateCanvasItem("table", selectedTable.id, 0, value, {
+                            history: false,
+                          });
+                        else if (selectedCeremonyRow)
+                          rotateCanvasItem("row", selectedCeremonyRow.id, 0, value, {
+                            history: false,
+                          });
+                      }}
+                      onPointerDown={() => {
+                        if (selectedElement || selectedTable || selectedCeremonyRow) pushHistory();
+                      }}
+                    />
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  data-chrome-handle
+                  className="mx-auto mt-1 flex w-full max-w-sm flex-col items-center gap-1 rounded-xl px-3 py-2 text-white/80 hover:bg-white/5"
+                  onClick={() => setFullscreenChromeOpen((open) => !open)}
+                >
+                  <span className="h-1 w-12 rounded-full bg-white/40" />
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.16em]">
+                    {fullscreenChromeOpen ? (
+                      <>
+                        <ChevronUp className="h-3.5 w-3.5" /> Hide tools
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3.5 w-3.5" /> Tools & features
+                      </>
+                    )}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div
+          className={cn(
+            "space-y-4",
+            isFullscreen && "hidden"
+          )}
+        >
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Plan</CardTitle>
@@ -2849,8 +3239,18 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           )}
         </div>
 
-        <div className={cn("space-y-3", isFullscreen && "min-h-0 flex flex-col")}>
-          <div className="flex flex-wrap items-center gap-2">
+        <div
+          className={cn(
+            "space-y-3",
+            isFullscreen && "relative flex min-h-0 w-full flex-1 flex-col"
+          )}
+        >
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2",
+              isFullscreen && "hidden"
+            )}
+          >
             <Tabs value={view} onValueChange={(value) => setView(value as "canvas" | "list")}>
               <TabsList>
                 <TabsTrigger value="canvas" className="gap-1.5">
@@ -2979,14 +3379,20 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           </div>
 
           {view === "canvas" ? (
-            <Card className={cn(isFullscreen && "min-h-0 flex-1")}>
-              <CardContent className={cn("p-0", isFullscreen && "h-full")}>
+            <Card
+              className={cn(
+                isFullscreen && "flex min-h-0 flex-1 flex-col border-0 bg-transparent shadow-none"
+              )}
+            >
+              <CardContent className={cn("p-0", isFullscreen && "flex min-h-0 flex-1 flex-col")}>
                 <div
                   ref={canvasSurfaceRef}
                   tabIndex={0}
                   className={cn(
-                    "relative overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top,#f8fafc,transparent_55%),linear-gradient(#e2e8f022_1px,transparent_1px),linear-gradient(90deg,#e2e8f022_1px,transparent_1px)] bg-[size:auto,24px_24px,24px_24px] outline-none",
-                    isFullscreen ? "h-[min(100%,calc(100vh-7rem))] min-h-[70vh]" : "h-[70vh]",
+                    "relative overflow-hidden bg-[radial-gradient(circle_at_top,#f8fafc,transparent_55%),linear-gradient(#e2e8f022_1px,transparent_1px),linear-gradient(90deg,#e2e8f022_1px,transparent_1px)] bg-[size:auto,24px_24px,24px_24px] outline-none",
+                    isFullscreen
+                      ? "min-h-0 flex-1 rounded-none"
+                      : "h-[70vh] rounded-xl",
                     paletteDropActive && "ring-2 ring-[#0B8A83] ring-offset-2"
                   )}
                   onWheel={(event) => {
@@ -3068,14 +3474,37 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                       if (event.shiftKey) next = snapRotationDegrees(next, 15);
                       else next = normalizeRotationDegrees(next);
                       dirtyRef.current = true;
-                      setLayout((current) => ({
-                        ...current,
-                        elements: (current.elements ?? []).map((element) =>
-                          element.id === rotating.elementId
-                            ? { ...element, rotation: next }
-                            : element
-                        ),
-                      }));
+                      if (rotating.kind === "element") {
+                        setLayout((current) => ({
+                          ...current,
+                          elements: (current.elements ?? []).map((element) =>
+                            element.id === rotating.elementId
+                              ? { ...element, rotation: next }
+                              : element
+                          ),
+                        }));
+                      } else if (rotating.kind === "table") {
+                        setTables((current) =>
+                          current.map((table) =>
+                            table.id === rotating.elementId
+                              ? { ...table, rotation: next }
+                              : table
+                          )
+                        );
+                      } else {
+                        setCeremonyRows((current) =>
+                          current.map((row) =>
+                            row.id === rotating.elementId ? { ...row, rotation: next } : row
+                          )
+                        );
+                        setLayout((current) => ({
+                          ...current,
+                          ceremonyRows: (current.ceremonyRows ?? []).map((row) =>
+                            row.id === rotating.elementId ? { ...row, rotation: next } : row
+                          ),
+                          planKind: "CEREMONY",
+                        }));
+                      }
                       return;
                     }
                     const drag = dragRef.current;
@@ -3252,6 +3681,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                                     pushHistory();
                                     rotateRef.current = {
                                       elementId: element.id,
+                                      kind: "element",
                                       centerX,
                                       centerY,
                                       startAngle:
@@ -3349,7 +3779,10 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                       ceremonyRows.length === 0 ? (
                         <div
                           data-canvas-ui
-                          className="flex h-[70vh] w-[720px] flex-col items-center justify-center gap-3 px-6 text-center"
+                          className={cn(
+                            "flex flex-col items-center justify-center gap-3 px-6 text-center",
+                            isFullscreen ? "h-[100dvh] w-[min(100vw,920px)]" : "h-[70vh] w-[720px]"
+                          )}
                           onPointerDown={(event) => event.stopPropagation()}
                         >
                           <div className="rounded-2xl border border-dashed border-[#0B8A83]/40 bg-[#0B8A83]/5 px-8 py-10">
@@ -3424,134 +3857,257 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                                 (chair) => ((chair.x ?? row.x ?? 0) - (row.x ?? 0)) + 40
                               )
                             );
+                            const rowBoxWidth = rowWidth + 16;
+                            const rowBoxHeight = 72;
                             const rowInteractive = canInteractWithRows();
                             const selected =
                               selectedRowIds.includes(row.id) || selectedTableId === row.id;
                             const zoneColor = section?.color;
+                            const rotation = row.rotation ?? 0;
                             return (
                               <div
                                 key={row.id}
-                                data-ceremony-row
-                                className={cn(
-                                  "absolute z-10 rounded-xl p-2 transition",
-                                  rowInteractive
-                                    ? "cursor-grab active:cursor-grabbing"
-                                    : "pointer-events-none opacity-35 grayscale-[0.35]",
-                                  selected
-                                    ? "ring-2 ring-[#0B8A83]/60"
-                                    : rowInteractive && !zoneColor && "hover:bg-slate-50/80",
-                                  row.locked && "opacity-80"
-                                )}
-                                style={{
-                                  left: row.x ?? 0,
-                                  top: row.y ?? 0,
-                                  background: zoneColor
-                                    ? selected
-                                      ? `${zoneColor}28`
-                                      : `${zoneColor}16`
-                                    : selected
-                                      ? "rgba(11,138,131,0.10)"
-                                      : undefined,
-                                  boxShadow: zoneColor
-                                    ? `inset 4px 0 0 ${zoneColor}`
-                                    : undefined,
-                                }}
-                                onPointerDown={(event) => {
-                                  if (previewMode || row.locked || !rowInteractive) return;
-                                  if ((event.target as HTMLElement).closest("button")) return;
-                                  event.stopPropagation();
-                                  const additive = event.metaKey || event.ctrlKey || event.shiftKey;
-                                  toggleRowSelection(row.id, additive);
-                                  pushHistory();
-                                  dragRef.current = {
-                                    tableId: `row:${row.id}`,
-                                    startX: event.clientX,
-                                    startY: event.clientY,
-                                    origX: row.x ?? 0,
-                                    origY: row.y ?? 0,
-                                  };
-                                  try {
-                                    canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
-                                  } catch {
-                                    /* ignore */
-                                  }
-                                }}
+                                className="absolute z-10"
+                                style={{ left: row.x ?? 0, top: row.y ?? 0 }}
                               >
-                                <div className="mb-1.5 flex items-center gap-2">
-                                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
-                                    {row.label}
-                                  </p>
-                                  {section && (
-                                    <span
-                                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-sm"
-                                      style={{ background: section.color }}
-                                    >
-                                      {section.name}
-                                    </span>
+                                <div
+                                  data-ceremony-row
+                                  className={cn(
+                                    "relative rounded-xl p-2 transition",
+                                    rowInteractive
+                                      ? "cursor-grab active:cursor-grabbing"
+                                      : "pointer-events-none opacity-35 grayscale-[0.35]",
+                                    selected
+                                      ? "ring-2 ring-[#0B8A83]/60"
+                                      : rowInteractive && !zoneColor && "hover:bg-slate-50/80",
+                                    row.locked && "opacity-80"
                                   )}
-                                  {row.locked && (
-                                    <span className="text-[9px] font-medium uppercase tracking-wide text-slate-400">
-                                      Locked
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="relative h-11" style={{ width: rowWidth }}>
-                                  {row.chairs.map((chair) => {
-                                    const occupied = assignmentViews.find(
-                                      (assignment) =>
-                                        assignment.seatLabel === chair.label ||
-                                        (tablesMatch(assignment.tableNumber, row.label) &&
-                                          assignment.seatLabel === chair.label)
-                                    );
-                                    const seatSelected =
-                                      selected && selectedSeat === chair.index;
-                                    return (
+                                  style={{
+                                    transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                                    background: zoneColor
+                                      ? selected
+                                        ? `${zoneColor}28`
+                                        : `${zoneColor}16`
+                                      : selected
+                                        ? "rgba(11,138,131,0.10)"
+                                        : undefined,
+                                    boxShadow: zoneColor
+                                      ? `inset 4px 0 0 ${zoneColor}`
+                                      : undefined,
+                                  }}
+                                  onPointerDown={(event) => {
+                                    if (previewMode || row.locked || !rowInteractive) return;
+                                    if (
+                                      (event.target as HTMLElement).closest(
+                                        "button,[data-rotate-handle],[data-canvas-ui]"
+                                      )
+                                    ) {
+                                      return;
+                                    }
+                                    event.stopPropagation();
+                                    const additive =
+                                      event.metaKey || event.ctrlKey || event.shiftKey;
+                                    toggleRowSelection(row.id, additive);
+                                    pushHistory();
+                                    dragRef.current = {
+                                      tableId: `row:${row.id}`,
+                                      startX: event.clientX,
+                                      startY: event.clientY,
+                                      origX: row.x ?? 0,
+                                      origY: row.y ?? 0,
+                                    };
+                                    try {
+                                      canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
+                                    } catch {
+                                      /* ignore */
+                                    }
+                                  }}
+                                  title={
+                                    previewMode || !rowInteractive
+                                      ? row.label
+                                      : row.locked
+                                        ? `${row.label} (locked)`
+                                        : "Drag to move · top handle to rotate"
+                                  }
+                                >
+                                  <div className="mb-1.5 flex items-center gap-2">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
+                                      {row.label}
+                                    </p>
+                                    {section && (
+                                      <span
+                                        className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-sm"
+                                        style={{ background: section.color }}
+                                      >
+                                        {section.name}
+                                      </span>
+                                    )}
+                                    {row.locked && (
+                                      <span className="text-[9px] font-medium uppercase tracking-wide text-slate-400">
+                                        Locked
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="relative h-11" style={{ width: rowWidth }}>
+                                    {row.chairs.map((chair) => {
+                                      const occupied = assignmentViews.find(
+                                        (assignment) =>
+                                          assignment.seatLabel === chair.label ||
+                                          (tablesMatch(assignment.tableNumber, row.label) &&
+                                            assignment.seatLabel === chair.label)
+                                      );
+                                      const seatSelected =
+                                        selected && selectedSeat === chair.index;
+                                      return (
+                                        <button
+                                          key={chair.id}
+                                          type="button"
+                                          title={
+                                            occupied
+                                              ? `${chair.label} · ${occupied.guestName}${
+                                                  section ? ` · ${section.name}` : ""
+                                                }`
+                                              : `${chair.label} available${
+                                                  section ? ` · ${section.name}` : ""
+                                                }`
+                                          }
+                                          className={cn(
+                                            "absolute flex h-9 w-9 flex-col items-center justify-center rounded-md border text-[9px] font-semibold shadow-sm transition",
+                                            occupied
+                                              ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                                              : zoneColor
+                                                ? "bg-white text-slate-700"
+                                                : "border-slate-300 bg-white text-slate-700 hover:border-[#0B8A83]",
+                                            seatSelected && "ring-2 ring-[#0B8A83] ring-offset-1",
+                                            chair.accessible && "border-emerald-400"
+                                          )}
+                                          style={{
+                                            left: (chair.x ?? row.x ?? 0) - (row.x ?? 0),
+                                            top: 0,
+                                            ...(!occupied && zoneColor
+                                              ? {
+                                                  borderColor: zoneColor,
+                                                  boxShadow: `inset 0 0 0 1px ${zoneColor}55`,
+                                                }
+                                              : {}),
+                                          }}
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            if (previewMode || row.locked || !rowInteractive) return;
+                                            toggleRowSelection(row.id, false);
+                                            setSelectedSeat(chair.index);
+                                            setAssignOpen(true);
+                                          }}
+                                        >
+                                          <Armchair className="h-3.5 w-3.5" aria-hidden />
+                                          <span>{chair.label}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  {selected && !previewMode && !row.locked && rowInteractive && (
+                                    <>
+                                      <div className="pointer-events-none absolute left-1/2 top-0 h-5 w-px -translate-x-1/2 -translate-y-full bg-[#0B8A83]/70" />
                                       <button
-                                        key={chair.id}
                                         type="button"
-                                        title={
-                                          occupied
-                                            ? `${chair.label} · ${occupied.guestName}${
-                                                section ? ` · ${section.name}` : ""
-                                              }`
-                                            : `${chair.label} available${
-                                                section ? ` · ${section.name}` : ""
-                                              }`
-                                        }
-                                        className={cn(
-                                          "absolute flex h-9 w-9 flex-col items-center justify-center rounded-md border text-[9px] font-semibold shadow-sm transition",
-                                          occupied
-                                            ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-                                            : zoneColor
-                                              ? "bg-white text-slate-700"
-                                              : "border-slate-300 bg-white text-slate-700 hover:border-[#0B8A83]",
-                                          seatSelected && "ring-2 ring-[#0B8A83] ring-offset-1",
-                                          chair.accessible && "border-emerald-400"
-                                        )}
-                                        style={{
-                                          left: (chair.x ?? row.x ?? 0) - (row.x ?? 0),
-                                          top: 0,
-                                          ...(!occupied && zoneColor
-                                            ? {
-                                                borderColor: zoneColor,
-                                                boxShadow: `inset 0 0 0 1px ${zoneColor}55`,
-                                              }
-                                            : {}),
-                                        }}
-                                        onClick={(event) => {
+                                        data-rotate-handle
+                                        aria-label="Rotate row"
+                                        title="Drag to rotate · hold Shift to snap 15°"
+                                        className="absolute left-1/2 top-0 z-20 flex h-6 w-6 -translate-x-1/2 -translate-y-[128%] cursor-grab items-center justify-center rounded-full border-2 border-white bg-[#0B8A83] text-white shadow-md active:cursor-grabbing"
+                                        onPointerDown={(event) => {
+                                          event.preventDefault();
                                           event.stopPropagation();
-                                          if (previewMode || row.locked || !rowInteractive) return;
-                                          toggleRowSelection(row.id, false);
-                                          setSelectedSeat(chair.index);
-                                          setAssignOpen(true);
+                                          const centerX = (row.x ?? 0) + rowBoxWidth / 2;
+                                          const centerY = (row.y ?? 0) + rowBoxHeight / 2;
+                                          const point = clientToCanvasPoint(
+                                            event.clientX,
+                                            event.clientY
+                                          );
+                                          if (!point) return;
+                                          pushHistory();
+                                          rotateRef.current = {
+                                            elementId: row.id,
+                                            kind: "row",
+                                            centerX,
+                                            centerY,
+                                            startAngle:
+                                              (Math.atan2(
+                                                point.y - centerY,
+                                                point.x - centerX
+                                              ) *
+                                                180) /
+                                              Math.PI,
+                                            origRotation: rotation,
+                                          };
+                                          try {
+                                            canvasSurfaceRef.current?.setPointerCapture(
+                                              event.pointerId
+                                            );
+                                          } catch {
+                                            /* ignore */
+                                          }
                                         }}
                                       >
-                                        <Armchair className="h-3.5 w-3.5" aria-hidden />
-                                        <span>{chair.label}</span>
+                                        <RotateCw className="h-3 w-3" aria-hidden />
                                       </button>
-                                    );
-                                  })}
+                                    </>
+                                  )}
                                 </div>
+                                {selected && !previewMode && !row.locked && rowInteractive && (
+                                  <div
+                                    data-canvas-ui
+                                    className="absolute -top-10 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1"
+                                    onPointerDown={(event) => event.stopPropagation()}
+                                  >
+                                    <button
+                                      type="button"
+                                      title="Rotate −15° (Shift −90°)"
+                                      aria-label="Rotate row left"
+                                      className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        rotateCanvasItem(
+                                          "row",
+                                          row.id,
+                                          event.shiftKey ? -90 : -15
+                                        );
+                                      }}
+                                    >
+                                      <RotateCcw className="h-3.5 w-3.5" />
+                                    </button>
+                                    <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold tabular-nums text-slate-700 shadow-sm ring-1 ring-slate-200">
+                                      {Math.round(rotation)}°
+                                    </span>
+                                    <button
+                                      type="button"
+                                      title="Rotate +15° (Shift +90°)"
+                                      aria-label="Rotate row right"
+                                      className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        rotateCanvasItem(
+                                          "row",
+                                          row.id,
+                                          event.shiftKey ? 90 : 15
+                                        );
+                                      }}
+                                    >
+                                      <RotateCw className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      title="Reset rotation"
+                                      aria-label="Reset row rotation"
+                                      className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        rotateCanvasItem("row", row.id, 0, 0);
+                                      }}
+                                    >
+                                      0°
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
@@ -3560,7 +4116,10 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                     ) : tables.length === 0 && !(layout.elements ?? []).length ? (
                       <div
                         data-canvas-ui
-                        className="flex h-[70vh] w-[720px] flex-col items-center justify-center gap-3 px-6 text-center"
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-3 px-6 text-center",
+                          isFullscreen ? "h-[100dvh] w-[min(100vw,920px)]" : "h-[70vh] w-[720px]"
+                        )}
                         onPointerDown={(event) => event.stopPropagation()}
                       >
                         <div className="rounded-2xl border border-dashed border-[#0B8A83]/40 bg-[#0B8A83]/5 px-8 py-10">
@@ -3607,61 +4166,181 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                     ) : (
                       tables.map((table) => {
                         const tableInteractive = canInteractWithRows();
+                        const rotation = table.rotation ?? 0;
+                        const selected = selectedTableId === table.id;
+                        const tableNodeW = 220;
+                        const tableNodeH = 280;
                         return (
                         <div
                           key={table.id}
-                          data-table-node
-                          className={cn(
-                            "absolute z-10 transition",
-                            table.locked
-                              ? "cursor-default"
-                              : tableInteractive
-                                ? "cursor-grab active:cursor-grabbing"
-                                : "pointer-events-none opacity-35 grayscale-[0.35]"
-                          )}
+                          className="absolute z-10"
                           style={{ left: table.x ?? 0, top: table.y ?? 0 }}
-                          onPointerDown={(event) => {
-                            if (previewMode || !tableInteractive) return;
-                            event.stopPropagation();
-                            selectTable(table.id);
-                            if (table.locked) return;
-                            pushHistory();
-                            dragRef.current = {
-                              tableId: table.id,
-                              startX: event.clientX,
-                              startY: event.clientY,
-                              origX: table.x ?? 0,
-                              origY: table.y ?? 0,
-                            };
-                            try {
-                              canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
-                            } catch {
-                              /* ignore */
-                            }
-                          }}
                         >
-                          <StudioTableVisual
-                            table={table}
-                            assignments={assignmentViews}
-                            selected={selectedTableId === table.id}
-                            interactive={!previewMode && tableInteractive}
-                            selectedSeat={selectedTableId === table.id ? selectedSeat : null}
-                            companionHoldCount={
-                              companionHolds.filter(
-                                (hold) => hold.status === "ACTIVE" && tablesMatch(hold.tableNumber, table.label)
-                              ).length
+                          <div
+                            data-table-node
+                            className={cn(
+                              "relative transition",
+                              table.locked
+                                ? "cursor-default"
+                                : tableInteractive
+                                  ? "cursor-grab active:cursor-grabbing"
+                                  : "pointer-events-none opacity-35 grayscale-[0.35]"
+                            )}
+                            style={{
+                              transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                            }}
+                            onPointerDown={(event) => {
+                              if (previewMode || !tableInteractive) return;
+                              if (
+                                (event.target as HTMLElement).closest(
+                                  "[data-rotate-handle],[data-canvas-ui]"
+                                )
+                              ) {
+                                return;
+                              }
+                              event.stopPropagation();
+                              selectTable(table.id);
+                              if (table.locked) return;
+                              pushHistory();
+                              dragRef.current = {
+                                tableId: table.id,
+                                startX: event.clientX,
+                                startY: event.clientY,
+                                origX: table.x ?? 0,
+                                origY: table.y ?? 0,
+                              };
+                              try {
+                                canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
+                              } catch {
+                                /* ignore */
+                              }
+                            }}
+                            title={
+                              previewMode || !tableInteractive
+                                ? table.label
+                                : table.locked
+                                  ? `${table.label} (locked)`
+                                  : "Drag to move · top handle to rotate"
                             }
-                            onSelect={() => {
-                              if (previewMode || !tableInteractive) return;
-                              selectTable(table.id);
-                            }}
-                            onSeatSelect={(seatIndex) => {
-                              if (previewMode || !tableInteractive) return;
-                              selectTable(table.id);
-                              setSelectedSeat(seatIndex);
-                              setAssignOpen(true);
-                            }}
-                          />
+                          >
+                            <StudioTableVisual
+                              table={table}
+                              assignments={assignmentViews}
+                              selected={selected}
+                              interactive={!previewMode && tableInteractive}
+                              selectedSeat={selected ? selectedSeat : null}
+                              companionHoldCount={
+                                companionHolds.filter(
+                                  (hold) =>
+                                    hold.status === "ACTIVE" &&
+                                    tablesMatch(hold.tableNumber, table.label)
+                                ).length
+                              }
+                              onSelect={() => {
+                                if (previewMode || !tableInteractive) return;
+                                selectTable(table.id);
+                              }}
+                              onSeatSelect={(seatIndex) => {
+                                if (previewMode || !tableInteractive) return;
+                                selectTable(table.id);
+                                setSelectedSeat(seatIndex);
+                                setAssignOpen(true);
+                              }}
+                            />
+                            {selected && !previewMode && !table.locked && tableInteractive && (
+                              <>
+                                <div className="pointer-events-none absolute left-1/2 top-0 h-5 w-px -translate-x-1/2 -translate-y-full bg-[#0B8A83]/70" />
+                                <button
+                                  type="button"
+                                  data-rotate-handle
+                                  aria-label="Rotate table"
+                                  title="Drag to rotate · hold Shift to snap 15°"
+                                  className="absolute left-1/2 top-0 z-20 flex h-6 w-6 -translate-x-1/2 -translate-y-[128%] cursor-grab items-center justify-center rounded-full border-2 border-white bg-[#0B8A83] text-white shadow-md active:cursor-grabbing"
+                                  onPointerDown={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    const centerX = (table.x ?? 0) + tableNodeW / 2;
+                                    const centerY = (table.y ?? 0) + tableNodeH / 2;
+                                    const point = clientToCanvasPoint(event.clientX, event.clientY);
+                                    if (!point) return;
+                                    pushHistory();
+                                    rotateRef.current = {
+                                      elementId: table.id,
+                                      kind: "table",
+                                      centerX,
+                                      centerY,
+                                      startAngle:
+                                        (Math.atan2(point.y - centerY, point.x - centerX) * 180) /
+                                        Math.PI,
+                                      origRotation: rotation,
+                                    };
+                                    try {
+                                      canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
+                                    } catch {
+                                      /* ignore */
+                                    }
+                                  }}
+                                >
+                                  <RotateCw className="h-3 w-3" aria-hidden />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          {selected && !previewMode && !table.locked && tableInteractive && (
+                            <div
+                              data-canvas-ui
+                              className="absolute -top-10 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1"
+                              onPointerDown={(event) => event.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                title="Rotate −15° (Shift −90°)"
+                                aria-label="Rotate table left"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  rotateCanvasItem(
+                                    "table",
+                                    table.id,
+                                    event.shiftKey ? -90 : -15
+                                  );
+                                }}
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold tabular-nums text-slate-700 shadow-sm ring-1 ring-slate-200">
+                                {Math.round(rotation)}°
+                              </span>
+                              <button
+                                type="button"
+                                title="Rotate +15° (Shift +90°)"
+                                aria-label="Rotate table right"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  rotateCanvasItem(
+                                    "table",
+                                    table.id,
+                                    event.shiftKey ? 90 : 15
+                                  );
+                                }}
+                              >
+                                <RotateCw className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                title="Reset rotation"
+                                aria-label="Reset table rotation"
+                                className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  rotateCanvasItem("table", table.id, 0, 0);
+                                }}
+                              >
+                                0°
+                              </button>
+                            </div>
+                          )}
                         </div>
                         );
                       })
@@ -3708,7 +4387,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         </div>
 
         <div
-          className={cn("space-y-4", isFullscreen && "max-h-screen overflow-y-auto pl-1")}
+          className={cn("space-y-4", isFullscreen && "hidden")}
           ref={guestPanelRef}
         >
           <Card>

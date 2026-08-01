@@ -98,8 +98,8 @@ export function VenueFeatureInspector({
   }
 
   function commitRotation() {
-    const next = Math.round(rotationDraft);
-    if (next === rotation) return;
+    const next = ((Math.round(rotationDraft) % 360) + 360) % 360;
+    if (next === (((rotation % 360) + 360) % 360)) return;
     onUpdate({ rotation: next });
   }
 
@@ -258,14 +258,14 @@ export function VenueFeatureInspector({
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor={`venue-rot-${element.id}`}>Rotation ({rotationDraft}°)</Label>
+          <Label htmlFor={`venue-rot-${element.id}`}>Rotation ({Math.round(rotationDraft)}°)</Label>
           <Input
             id={`venue-rot-${element.id}`}
             type="range"
-            min={-180}
-            max={180}
-            step={5}
-            value={rotationDraft}
+            min={0}
+            max={359}
+            step={1}
+            value={((Math.round(rotationDraft) % 360) + 360) % 360}
             disabled={previewMode || element.locked}
             onChange={(event) => setRotationDraft(Number(event.target.value))}
             onPointerUp={commitRotation}
@@ -346,8 +346,9 @@ export function VenueFeatureInspector({
           </Button>
         </div>
         <p className="text-[11px] leading-relaxed text-slate-500">
-          Drag on the canvas to rearrange. Use the top rotation handle (or ±15° / Shift ±90°) and the
-          corner handle to resize. Locked features stay put until unlocked.
+          Drag on the canvas to rearrange. Use the top rotation handle for a full 360° spin (or ±15° /
+          Shift ±90° / [ ] keys), and the corner handle to resize. Locked features stay put until
+          unlocked.
         </p>
       </CardContent>
     </Card>

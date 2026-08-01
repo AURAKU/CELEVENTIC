@@ -31,6 +31,8 @@ export interface CeremonyRow {
   y?: number;
   curved?: boolean;
   locked?: boolean;
+  /** Degrees 0–359 for canvas orientation. */
+  rotation?: number;
 }
 
 export interface CeremonySection {
