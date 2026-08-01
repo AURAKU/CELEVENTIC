@@ -10,29 +10,29 @@ export type SeatingPlanTypeLike = SeatingPlanKind | "RECEPTION" | "CEREMONY" | s
 /** Organiser + guest facing plan title. */
 export function seatingPlanDisplayName(planType?: SeatingPlanTypeLike | null): string {
   if (planType === "CEREMONY") return "Main Ceremony";
-  return "Event Seating";
+  return "Reception";
 }
 
 /** Default draft plan name when creating a plan. */
 export function seatingPlanDefaultName(planType?: SeatingPlanTypeLike | null): string {
   if (planType === "CEREMONY") return "Main ceremony";
-  return "Main Event Seating";
+  return "Reception";
 }
 
 /** Short tab / toggle label. */
 export function seatingPlanShortLabel(planType?: SeatingPlanTypeLike | null): string {
   if (planType === "CEREMONY") return "Main Ceremony";
-  return "Event Seating";
+  return "Reception";
 }
 
 /** Capacity metric label in the studio header. */
 export function seatingCapacityLabel(planType?: SeatingPlanTypeLike | null): string {
   if (planType === "CEREMONY") return "Ceremony chairs";
-  return "Event seating capacity";
+  return "Reception capacity";
 }
 
 /** Guest-facing stage eyebrow on the seating card. */
 export function seatingStageEyebrow(planType?: SeatingPlanTypeLike | null): string {
   if (planType === "CEREMONY") return "Ceremony";
-  return "Event Seating";
+  return "Reception";
 }

@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Calendar, Sparkles } from "lucide-react";
+import { Calendar, Download, Sparkles } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { PageLoader } from "@/components/ui/page-loader";
+import { Button } from "@/components/ui/button";
 import { SeatingTableVisual } from "@/components/seating/seating-table-visual";
 import { GuestSeatingCard } from "@/components/seating/guest-seating-card";
 import {
@@ -13,7 +14,7 @@ import {
   type SeatingTableConfig,
 } from "@/lib/seating/seating-types";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
-import type { StudioSettings } from "@/lib/seating/studio-types";
+import { DEFAULT_STUDIO_SETTINGS, type StudioSettings } from "@/lib/seating/studio-types";
 
 interface SeatLookupData {
   guest: { id: string; name: string; status?: string };
@@ -114,6 +115,16 @@ export default function SeatLookupPage() {
     ? parseInt(data.assignment.seatLabel, 10) || undefined
     : undefined;
 
+  const settings = {
+    ...DEFAULT_STUDIO_SETTINGS,
+    ...(data?.settings as Partial<StudioSettings> | undefined),
+  };
+  const canDownloadMap =
+    Boolean(data) &&
+    settings.showMapToGuests &&
+    data?.planStatus !== "draft" &&
+    (Boolean(data?.ceremonyAssignment) || Boolean(data?.assignment));
+
   if (!data && !error) {
     return <PageLoader label="Finding your seat…" className="min-h-screen" />;
   }
@@ -165,6 +176,33 @@ export default function SeatLookupPage() {
           className="text-left"
         />
 
+        {canDownloadMap && (
+          <div className="flex flex-wrap justify-center gap-2">
+            {data.ceremonyAssignment && (
+              <Button
+                asChild
+                variant="outline"
+                className="border-[#D4A63A]/40 bg-white/5 text-white hover:bg-white/10"
+              >
+                <a href={`/api/seating/${token}/map?plan=CEREMONY`} download>
+                  <Download className="h-4 w-4" /> Ceremony map
+                </a>
+              </Button>
+            )}
+            {assignment && (
+              <Button
+                asChild
+                variant="outline"
+                className="border-[#D4A63A]/40 bg-white/5 text-white hover:bg-white/10"
+              >
+                <a href={`/api/seating/${token}/map?plan=RECEPTION`} download>
+                  <Download className="h-4 w-4" /> Reception map
+                </a>
+              </Button>
+            )}
+          </div>
+        )}
+
         {assignment && tableConfig && (
           <div className="rounded-2xl border border-[#D4A63A]/30 bg-white/5 p-6 backdrop-blur">
             <p className="mb-4 text-xs uppercase tracking-widest text-white/50">
@@ -181,7 +219,11 @@ export default function SeatLookupPage() {
           </div>
         )}
 
-        <p className="text-xs text-white/40">Save this page or scan at the venue</p>
+        <p className="text-xs text-white/40">
+          {canDownloadMap
+            ? "Download the venue map to navigate on the day — or save this page"
+            : "Save this page or scan at the venue"}
+        </p>
       </div>
     </div>
   );

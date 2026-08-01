@@ -1,17 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import Link from "next/link";
 import {
   Armchair,
+  Download,
+  Eraser,
   Eye,
   Focus,
+  GripVertical,
   LayoutGrid,
   List,
+  MapPin,
+  Maximize2,
+  Minimize2,
   Plus,
   Redo2,
+  RotateCcw,
+  RotateCw,
+  Rows3,
   Save,
   Sparkles,
+  SquareStack,
   Trash2,
   Undo2,
   Users,
@@ -25,12 +35,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaginationBar } from "@/components/ui/pagination";
 import { paginateList } from "@/lib/pagination-client";
 import { SeatAssignPanel } from "@/components/seating/seating-table-visual";
 import { StudioTableVisual } from "@/components/seating/studio-table-visual";
 import { TableInspector } from "@/components/seating/table-inspector";
+import { VenueFeatureInspector } from "@/components/seating/venue-feature-inspector";
+import { VenueFeatureVisual } from "@/components/seating/venue-feature-visual";
+import { ZoneManager } from "@/components/seating/zone-manager";
 import {
   autoAssignGuests,
   computeCapacitySnapshot,
@@ -44,6 +57,13 @@ import {
   suggestSeatingForParty,
 } from "@/lib/seating/studio-engine";
 import {
+  clampVenueFeatureSize,
+  VENUE_FEATURE_COLOR_PRESETS,
+  VENUE_FEATURE_PRESETS,
+  venueFeaturePreset,
+} from "@/lib/seating/venue-feature-presets";
+import { downloadVenueMapPng } from "@/lib/seating/venue-map-export";
+import {
   seatingCapacityLabel,
   seatingPlanDefaultName,
   seatingPlanDisplayName,
@@ -54,14 +74,15 @@ import {
   type SeatingCompanionHoldView,
 } from "@/lib/seating/party-capacity";
 import {
-  CEREMONY_SECTION_PRESETS,
   detectCeremonyConflicts,
+  defaultCeremonySections,
   generateCeremonyRows,
   findAdjacentCeremonyChairs,
   suggestCeremonyForParty,
   type CeremonyAisleLayout,
   type CeremonyChair,
   type CeremonyRow,
+  type CeremonySection,
 } from "@/lib/seating/ceremony-engine";
 import {
   computePeopleSeatingStats,
@@ -123,27 +144,37 @@ function ceremonyRowLetter(label: string): string {
   return label.replace(/^Row\s+/i, "").trim() || label;
 }
 
-const VENUE_ELEMENT_PRESETS: Array<{ kind: VenueElementKind; label: string }> = [
-  { kind: "stage", label: "Stage" },
-  { kind: "dance_floor", label: "Dance floor" },
-  { kind: "dj", label: "DJ booth" },
-  { kind: "buffet", label: "Buffet" },
-  { kind: "bar", label: "Bar" },
-  { kind: "cake", label: "Cake table" },
-  { kind: "gift", label: "Gift table" },
-  { kind: "photo_booth", label: "Photo booth" },
-  { kind: "entrance", label: "Entrance" },
-  { kind: "exit", label: "Exit" },
-  { kind: "restroom", label: "Restroom" },
-  { kind: "vip_lounge", label: "VIP lounge" },
-  { kind: "registration", label: "Registration" },
-];
+function normalizeRotationDegrees(degrees: number): number {
+  let value = ((degrees % 360) + 360) % 360;
+  if (value > 180) value -= 360;
+  return Math.round(value);
+}
+
+function snapRotationDegrees(degrees: number, step = 15): number {
+  return normalizeRotationDegrees(Math.round(degrees / step) * step);
+}
+
+const PALETTE_MIME = "application/x-celeventic-seating-palette";
+
+type PaletteDragPayload =
+  | { type: "table"; kind: StudioTableKind }
+  | { type: "element"; kind: VenueElementKind; label: string };
+
+/** Canvas hit-target filter — matches Main Ceremony “select rows” vs venue features. */
+type CanvasSelectMode = "all" | "rows" | "features";
+
+function venueElementSize(kind: VenueElementKind): { width: number; height: number } {
+  const preset = venueFeaturePreset(kind);
+  return { width: preset.width, height: preset.height };
+}
 
 export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [mapExporting, setMapExporting] = useState(false);
+  const [mapExportNotice, setMapExportNotice] = useState<string | null>(null);
   const [planName, setPlanName] = useState(() => seatingPlanDefaultName("RECEPTION"));
   const [planType, setPlanType] = useState<SeatingPlanKind>("RECEPTION");
   const [planId, setPlanId] = useState<string | null>(null);
@@ -169,16 +200,39 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   const [guestListPage, setGuestListPage] = useState(1);
   const GUEST_LIST_PAGE_SIZE = 40;
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [paletteDropActive, setPaletteDropActive] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [canvasSelectMode, setCanvasSelectMode] = useState<CanvasSelectMode>("all");
+  const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
+  const [customVenueLabel, setCustomVenueLabel] = useState("");
+  const [customVenueColor, setCustomVenueColor] = useState<string>(VENUE_FEATURE_COLOR_PRESETS[0]!);
   const [suggestions, setSuggestions] = useState<SeatingSuggestion[]>([]);
   const [past, setPast] = useState<HistorySnapshot[]>([]);
   const [future, setFuture] = useState<HistorySnapshot[]>([]);
   const dirtyRef = useRef(false);
   const dragRef = useRef<{ tableId: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const resizeRef = useRef<{
+    elementId: string;
+    startX: number;
+    startY: number;
+    origW: number;
+    origH: number;
+  } | null>(null);
+  const rotateRef = useRef<{
+    elementId: string;
+    centerX: number;
+    centerY: number;
+    startAngle: number;
+    origRotation: number;
+  } | null>(null);
   const panning = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const canvasSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const studioWorkspaceRef = useRef<HTMLDivElement | null>(null);
 
   const settings = resolveStudioSettings(layout);
 
@@ -194,7 +248,26 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       return;
     }
 
-    const guestList: StudioGuest[] = (json.data.guests ?? []).map((guest: any) => ({
+    type ApiGuest = {
+      id: string;
+      name: string;
+      email?: string;
+      phone?: string;
+      qrToken?: string;
+      status?: StudioGuest["status"];
+      plusOnes?: number;
+      invitationId?: string | null;
+      partySize?: number;
+      tags?: Array<{ label: string }>;
+      admission?: {
+        allowance: number;
+        admittedCount: number;
+        remainingCount: number;
+        state: NonNullable<StudioGuest["admission"]>["state"];
+      } | null;
+    };
+
+    const guestList: StudioGuest[] = ((json.data.guests ?? []) as ApiGuest[]).map((guest) => ({
       id: guest.id,
       name: guest.name,
       email: guest.email,
@@ -208,9 +281,9 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         guest.admission?.allowance ??
         Math.max(1, 1 + Math.max(0, guest.plusOnes ?? 0)),
       tags: guest.tags ?? [],
-      vip: Boolean(guest.tags?.some((tag: { label: string }) => /vip/i.test(tag.label))),
+      vip: Boolean(guest.tags?.some((tag) => /vip/i.test(tag.label))),
       accessible: Boolean(
-        guest.tags?.some((tag: { label: string }) => /access|wheelchair/i.test(tag.label))
+        guest.tags?.some((tag) => /access|wheelchair/i.test(tag.label))
       ),
       admission: guest.admission
         ? {
@@ -263,7 +336,16 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       });
       setTables(withPositions);
       setCeremonyRows(normalized.ceremonyRows ?? []);
-      setLayout({ ...normalized, tables: withPositions });
+      const seededLayout =
+        (selected.planType ?? activeType) === "CEREMONY" &&
+        !(normalized.ceremonySections ?? []).length
+          ? {
+              ...normalized,
+              tables: withPositions,
+              ceremonySections: defaultCeremonySections(),
+            }
+          : { ...normalized, tables: withPositions };
+      setLayout(seededLayout);
       const map: Record<string, StudioAssignment> = {};
       for (const row of selected.assignments ?? []) {
         map[row.guestId] = {
@@ -296,7 +378,14 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       setPast([]);
       setFuture([]);
       setPlanName(seatingPlanDefaultName(activeType));
-      setLayout(normalizeStudioLayout({ status: "draft", planKind: activeType, tables: [] }));
+      setLayout(
+        normalizeStudioLayout({
+          status: "draft",
+          planKind: activeType,
+          tables: [],
+          ceremonySections: activeType === "CEREMONY" ? defaultCeremonySections() : [],
+        })
+      );
       dirtyRef.current = false;
     }
     if (!silent) setLoading(false);
@@ -375,12 +464,142 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
 
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null;
   const selectedCeremonyRow = ceremonyRows.find((row) => row.id === selectedTableId) ?? null;
+  const selectedElement =
+    (layout.elements ?? []).find((element) => element.id === selectedElementId) ?? null;
   const assignTargetLabel =
     planType === "CEREMONY"
       ? selectedCeremonyRow?.label ?? null
       : selectedTable
         ? tableDisplayName(selectedTable.label)
         : null;
+
+  function selectTable(tableId: string | null) {
+    if (tableId !== null && canvasSelectMode === "features") return;
+    setSelectedTableId(tableId);
+    setSelectedElementId(null);
+    if (tableId && planType === "CEREMONY") {
+      setSelectedRowIds((current) => (current.includes(tableId) ? current : [tableId]));
+    } else if (!tableId) {
+      setSelectedRowIds([]);
+    }
+  }
+
+  function selectElement(elementId: string | null) {
+    if (elementId !== null && canvasSelectMode === "rows") return;
+    setSelectedElementId(elementId);
+    setSelectedTableId(null);
+    setSelectedSeat(null);
+    setSelectedRowIds([]);
+  }
+
+  function clearCanvasSelection() {
+    setSelectedTableId(null);
+    setSelectedElementId(null);
+    setSelectedSeat(null);
+    setSelectedRowIds([]);
+  }
+
+  function toggleRowSelection(rowId: string, additive: boolean) {
+    if (canvasSelectMode === "features") return;
+    setSelectedElementId(null);
+    setSelectedSeat(null);
+    setSelectedTableId(rowId);
+    setSelectedRowIds((current) => {
+      if (!additive) return [rowId];
+      return current.includes(rowId)
+        ? current.filter((id) => id !== rowId)
+        : [...current, rowId];
+    });
+  }
+
+  function canInteractWithRows() {
+    return canvasSelectMode !== "features";
+  }
+
+  function canInteractWithFeatures() {
+    return canvasSelectMode !== "rows";
+  }
+
+  function clientToCanvasPoint(clientX: number, clientY: number): { x: number; y: number } | null {
+    const surface = canvasSurfaceRef.current;
+    if (!surface) return null;
+    const rect = surface.getBoundingClientRect();
+    const x = (clientX - rect.left - pan.x) / zoom;
+    const y = (clientY - rect.top - pan.y) / zoom;
+    return {
+      x: snapToGrid(x, settings.gridSize, settings.snapToGrid),
+      y: snapToGrid(y, settings.gridSize, settings.snapToGrid),
+    };
+  }
+
+  function beginPaletteDrag(event: DragEvent, payload: PaletteDragPayload) {
+    event.dataTransfer.setData(PALETTE_MIME, JSON.stringify(payload));
+    event.dataTransfer.setData("text/plain", payload.type === "table" ? payload.kind : payload.label);
+    event.dataTransfer.effectAllowed = "copy";
+  }
+
+  function handleCanvasPaletteDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setPaletteDropActive(false);
+    if (previewMode) return;
+    const raw = event.dataTransfer.getData(PALETTE_MIME);
+    if (!raw) return;
+    let payload: PaletteDragPayload;
+    try {
+      payload = JSON.parse(raw) as PaletteDragPayload;
+    } catch {
+      return;
+    }
+    const point = clientToCanvasPoint(event.clientX, event.clientY);
+    if (!point) return;
+    if (payload.type === "table") {
+      addTable(payload.kind, point);
+      return;
+    }
+    addVenueElement(payload.kind, payload.label, point);
+  }
+
+  function zoomBy(delta: number) {
+    setZoom((value) => Math.min(2.4, Math.max(0.4, Number((value + delta).toFixed(2)))));
+  }
+
+  function resetCanvasView() {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }
+
+  async function toggleStudioFullscreen() {
+    const node = studioWorkspaceRef.current;
+    if (!node) return;
+    try {
+      if (document.fullscreenElement === node) {
+        await document.exitFullscreen();
+        return;
+      }
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+      await node.requestFullscreen();
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? `Fullscreen unavailable: ${error.message}`
+          : "Fullscreen is not available in this browser."
+      );
+    }
+  }
+
+  useEffect(() => {
+    function onFullscreenChange() {
+      const active = document.fullscreenElement === studioWorkspaceRef.current;
+      setIsFullscreen(active);
+      if (active) {
+        setTimeout(() => canvasSurfaceRef.current?.focus({ preventScroll: true }), 0);
+      }
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
 
   function pushHistory() {
     dirtyRef.current = true;
@@ -419,6 +638,112 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     setCeremonyRows(next.ceremonyRows);
     setAssignments(next.assignments);
     setLayout(next.layout);
+  }
+
+  /** Clears canvas content but keeps undo history so organisers can restore. */
+  function clearAllCanvas(options?: { keepAssignments?: boolean }) {
+    if (previewMode) return;
+    const hasCeremony = ceremonyRows.length > 0 || (layout.elements ?? []).length > 0;
+    const hasReception = tables.length > 0 || (layout.elements ?? []).length > 0;
+    if (planType === "CEREMONY" && !hasCeremony) return;
+    if (planType === "RECEPTION" && !hasReception) return;
+
+    const message =
+      planType === "CEREMONY"
+        ? "Clear all ceremony rows and venue features from this draft?\n\nAssignments on cleared chairs will be removed. You can Undo immediately after."
+        : "Clear all tables and venue features from this draft?\n\nGuests on cleared tables will be unassigned. You can Undo immediately after.";
+    if (!window.confirm(message)) return;
+
+    pushHistory();
+    if (planType === "CEREMONY") {
+      const clearedRows = ceremonyRows;
+      setCeremonyRows([]);
+      if (!options?.keepAssignments) {
+        setAssignments((current) => {
+          const next = { ...current };
+          for (const [guestId, assignment] of Object.entries(next)) {
+            const onRow = clearedRows.some(
+              (row) =>
+                tablesMatch(assignment.tableNumber, row.label) ||
+                row.chairs.some((chair) => chair.label === assignment.seatLabel)
+            );
+            if (onRow) {
+              delete next[guestId];
+              void autoRemoveAssignment(guestId);
+            }
+          }
+          return next;
+        });
+      }
+      setLayout((current) => ({
+        ...current,
+        ceremonyRows: [],
+        elements: [],
+        planKind: "CEREMONY",
+      }));
+    } else {
+      const clearedTables = tables;
+      setTables([]);
+      if (!options?.keepAssignments) {
+        setAssignments((current) => {
+          const next = { ...current };
+          for (const [guestId, assignment] of Object.entries(next)) {
+            if (clearedTables.some((table) => tablesMatch(assignment.tableNumber, table.label))) {
+              delete next[guestId];
+              void autoRemoveAssignment(guestId);
+            }
+          }
+          return next;
+        });
+        setCompanionHolds([]);
+      }
+      setLayout((current) => ({
+        ...current,
+        tables: [],
+        elements: [],
+        planKind: "RECEPTION",
+      }));
+    }
+    clearCanvasSelection();
+    setSaveError(null);
+  }
+
+  function clearSelectedRows() {
+    if (previewMode || planType !== "CEREMONY" || selectedRowIds.length === 0) return;
+    const rows = ceremonyRows.filter((row) => selectedRowIds.includes(row.id));
+    if (!rows.length) return;
+    const ok = window.confirm(
+      `Remove ${rows.length} selected row${rows.length === 1 ? "" : "s"}?\n\nYou can Undo right after.`
+    );
+    if (!ok) return;
+    pushHistory();
+    const removeIds = new Set(rows.map((row) => row.id));
+    const removeLabels = new Set(rows.map((row) => row.label.toLowerCase()));
+    const removeChairs = new Set(
+      rows.flatMap((row) => row.chairs.map((chair) => chair.label.toLowerCase()))
+    );
+    setCeremonyRows((current) => current.filter((row) => !removeIds.has(row.id)));
+    setAssignments((current) => {
+      const next = { ...current };
+      for (const [guestId, assignment] of Object.entries(next)) {
+        const onRow =
+          removeLabels.has(assignment.tableNumber.toLowerCase()) ||
+          (assignment.seatLabel
+            ? removeChairs.has(assignment.seatLabel.toLowerCase())
+            : false);
+        if (onRow) {
+          delete next[guestId];
+          void autoRemoveAssignment(guestId);
+        }
+      }
+      return next;
+    });
+    setLayout((current) => ({
+      ...current,
+      ceremonyRows: (current.ceremonyRows ?? []).filter((row) => !removeIds.has(row.id)),
+      planKind: "CEREMONY",
+    }));
+    clearCanvasSelection();
   }
 
   async function persist(nextStatus?: "draft" | "published") {
@@ -478,10 +803,61 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       setPlanId(planData.data?.id ?? planId);
       dirtyRef.current = false;
       await load(true, planType);
+      if (nextStatus === "published") {
+        setMapExportNotice(
+          "Published. Download the guest venue map PNG to share for navigation on the day."
+        );
+      }
     } catch {
       setSaveError("Could not save seating studio. Check your connection and try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function downloadGuestVenueMap() {
+    const isPublished = layout.status === "published";
+    if (!isPublished) {
+      setSaveError("Publish this seating plan first, then download the guest venue map.");
+      return;
+    }
+    const hasContent =
+      planType === "CEREMONY"
+        ? ceremonyRows.length > 0 || (layout.elements ?? []).length > 0
+        : tables.length > 0 || (layout.elements ?? []).length > 0;
+    if (!hasContent) {
+      setSaveError("Add rows/tables or venue features before downloading the map.");
+      return;
+    }
+    setMapExporting(true);
+    setSaveError(null);
+    try {
+      const directions =
+        planType === "CEREMONY"
+          ? settings.ceremonyDirections ?? settings.directionsFromEntrance ?? []
+          : settings.receptionDirections ?? settings.directionsFromEntrance ?? [];
+      await downloadVenueMapPng({
+        planName,
+        planType,
+        layout: {
+          ...layout,
+          tables: planType === "RECEPTION" ? tables : [],
+          ceremonyRows: planType === "CEREMONY" ? ceremonyRows : layout.ceremonyRows,
+          status: "published",
+          planKind: planType,
+        },
+        tables,
+        ceremonyRows,
+        directions,
+        scale: 2,
+      });
+      setMapExportNotice("Venue map downloaded — share the PNG with guests for easy navigation.");
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "Could not download the venue map image."
+      );
+    } finally {
+      setMapExporting(false);
     }
   }
 
@@ -535,13 +911,16 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     if (next === planType) return;
     if (dirtyRef.current) {
       const ok = window.confirm(
-        `Switch to ${next === "CEREMONY" ? "Main Ceremony" : "Event Seating"}? Unsaved layout edits on this plan stay local until you Save Draft or Publish.`
+        `Switch to ${next === "CEREMONY" ? "Main Ceremony" : "Reception"}? Unsaved layout edits on this plan stay local until you Save Draft or Publish.`
       );
       if (!ok) return;
     }
     dirtyRef.current = false;
     setPlanType(next);
+    setCanvasSelectMode("all");
     setSelectedTableId(null);
+    setSelectedElementId(null);
+    setSelectedRowIds([]);
     setSelectedSeat(null);
     setSuggestions([]);
     setPast([]);
@@ -551,50 +930,25 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
 
   function generateCeremony() {
     pushHistory();
+    const sections = getCeremonySections(true);
+    const needsSeed = !(layout.ceremonySections ?? []).length;
     const rows = generateCeremonyRows({
       rows: ceremonyGen.rows,
       chairsPerRow: ceremonyGen.chairsPerRow,
       aisle: ceremonyGen.aisle,
       naming: "letters",
-      sectionId: ceremonyGen.sectionId || undefined,
+      sectionId: ceremonyGen.sectionId || sections.find((s) => s.id === "general")?.id || sections[0]?.id,
     });
     setCeremonyRows(rows);
     setSelectedTableId(rows[0]?.id ?? null);
-    setLayout((current) => ({ ...current, ceremonyRows: rows, planKind: "CEREMONY" }));
+    setSelectedRowIds(rows[0] ? [rows[0].id] : []);
+    setLayout((current) => ({
+      ...current,
+      ceremonyRows: rows,
+      ceremonySections: needsSeed ? sections : current.ceremonySections,
+      planKind: "CEREMONY",
+    }));
     setSaveError(null);
-  }
-
-  function addCeremonyRow() {
-    pushHistory();
-    const nextIndex = ceremonyRows.length;
-    const sectionId = ceremonyGen.sectionId || undefined;
-    const relabeled = generateCeremonyRows({
-      rows: ceremonyRows.length + 1,
-      chairsPerRow: ceremonyGen.chairsPerRow,
-      aisle: ceremonyGen.aisle,
-      naming: "letters",
-      sectionId,
-      startY: 40 + nextIndex * 72,
-    });
-    const appended = relabeled[relabeled.length - 1]!;
-    // Keep existing rows in place; only append the new back row.
-    const next = [
-      ...ceremonyRows,
-      {
-        ...appended,
-        sectionId: sectionId ?? appended.sectionId,
-        x: 40,
-        y: 40 + nextIndex * 72,
-        chairs: appended.chairs.map((chair) => ({
-          ...chair,
-          y: 40 + nextIndex * 72,
-          x: (chair.x ?? 40) - (appended.x ?? 40) + 40,
-        })),
-      },
-    ];
-    setCeremonyRows(next);
-    setSelectedTableId(next[next.length - 1]?.id ?? null);
-    setLayout((current) => ({ ...current, ceremonyRows: next, planKind: "CEREMONY" }));
   }
 
   function updateCeremonyRow(rowId: string, patch: Partial<CeremonyRow>) {
@@ -703,7 +1057,8 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       }
       return next;
     });
-    setSelectedTableId(null);
+    setSelectedTableId((current) => (current === rowId ? null : current));
+    setSelectedRowIds((current) => current.filter((id) => id !== rowId));
     setSelectedSeat(null);
     setLayout((current) => ({
       ...current,
@@ -712,64 +1067,358 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     }));
   }
 
-  function addCeremonySection() {
+  function selectAllCeremonyRows() {
+    if (canvasSelectMode === "features") return;
+    const ids = ceremonyRows.map((row) => row.id);
+    setSelectedRowIds(ids);
+    setSelectedTableId(ids[0] ?? null);
+    setSelectedElementId(null);
+    setSelectedSeat(null);
+  }
+
+  function clearRowSelection() {
+    setSelectedRowIds([]);
+    setSelectedTableId(null);
+    setSelectedSeat(null);
+  }
+
+  function getCeremonySections(seedIfEmpty = true): CeremonySection[] {
+    const existing = layout.ceremonySections ?? [];
+    if (existing.length > 0 || !seedIfEmpty) return existing;
+    return defaultCeremonySections();
+  }
+
+  function applyHighlightToRows(rowIds: string[], sectionId: string | null) {
+    if (previewMode || planType !== "CEREMONY" || rowIds.length === 0) return;
+    const sections = getCeremonySections(true);
+    const needsSeed = !(layout.ceremonySections ?? []).length;
+    const section = sectionId ? sections.find((item) => item.id === sectionId) : null;
+    if (sectionId && !section) return;
     pushHistory();
-    const used = new Set((layout.ceremonySections ?? []).map((section) => section.name));
-    const preset =
-      CEREMONY_SECTION_PRESETS.find((section) => !used.has(section.name)) ??
-      CEREMONY_SECTION_PRESETS[CEREMONY_SECTION_PRESETS.length - 1]!;
-    const section = {
-      ...preset,
-      id: `section-${Date.now()}`,
-      name: used.has(preset.name) ? `${preset.name} ${used.size + 1}` : preset.name,
-    };
+    const idSet = new Set(rowIds);
+    const nextRows = ceremonyRows.map((row) =>
+      idSet.has(row.id) ? { ...row, sectionId: section?.id ?? undefined } : row
+    );
+    setCeremonyRows(nextRows);
+    if (section) {
+      setAssignments((current) => {
+        const next = { ...current };
+        const targetRows = ceremonyRows.filter((row) => idSet.has(row.id));
+        for (const [guestId, assignment] of Object.entries(next)) {
+          const onRow = targetRows.some(
+            (row) =>
+              tablesMatch(assignment.tableNumber, row.label) ||
+              row.chairs.some((chair) => chair.label === assignment.seatLabel)
+          );
+          if (onRow) next[guestId] = { ...assignment, zone: section.name };
+        }
+        return next;
+      });
+    }
     setLayout((current) => ({
       ...current,
-      ceremonySections: [...(current.ceremonySections ?? []), section],
+      ceremonyRows: nextRows,
+      ceremonySections: needsSeed ? sections : current.ceremonySections,
+      zones: needsSeed
+        ? [
+            ...(current.zones ?? []).filter(
+              (zone) => !sections.some((item) => item.name === zone.name)
+            ),
+            ...sections.map((item) => ({
+              id: `z-${item.id}`,
+              name: item.name,
+              color: item.color,
+            })),
+          ]
+        : current.zones,
+      planKind: "CEREMONY",
+    }));
+    setCeremonyGen((current) => ({ ...current, sectionId: section?.id ?? "" }));
+  }
+
+  function addCeremonyRow() {
+    pushHistory();
+    const sections = getCeremonySections(true);
+    const needsSeed = !(layout.ceremonySections ?? []).length;
+    const nextIndex = ceremonyRows.length;
+    const sectionId = ceremonyGen.sectionId || undefined;
+    const anchor =
+      selectedRowIds.length > 0
+        ? ceremonyRows.find((row) => row.id === selectedRowIds[selectedRowIds.length - 1])
+        : selectedCeremonyRow;
+    const startY = anchor ? (anchor.y ?? 40) + 72 : 40 + nextIndex * 72;
+    const relabeled = generateCeremonyRows({
+      rows: ceremonyRows.length + 1,
+      chairsPerRow: ceremonyGen.chairsPerRow,
+      aisle: ceremonyGen.aisle,
+      naming: "letters",
+      sectionId: sectionId || sections.find((s) => s.id === "general")?.id || sections[0]?.id,
+      startY,
+    });
+    const appended = relabeled[relabeled.length - 1]!;
+    const resolvedSectionId = sectionId || appended.sectionId;
+    const nextRow = {
+      ...appended,
+      sectionId: resolvedSectionId,
+      x: anchor?.x ?? 40,
+      y: startY,
+      chairs: appended.chairs.map((chair) => ({
+        ...chair,
+        y: startY,
+        x: (chair.x ?? 40) - (appended.x ?? 40) + (anchor?.x ?? 40),
+      })),
+    };
+    const insertAt = anchor
+      ? ceremonyRows.findIndex((row) => row.id === anchor.id) + 1
+      : ceremonyRows.length;
+    const next = [...ceremonyRows.slice(0, insertAt), nextRow, ...ceremonyRows.slice(insertAt)];
+    setCeremonyRows(next);
+    setSelectedTableId(nextRow.id);
+    setSelectedRowIds([nextRow.id]);
+    setLayout((current) => ({
+      ...current,
+      ceremonyRows: next,
+      ceremonySections: needsSeed ? sections : current.ceremonySections,
+      planKind: "CEREMONY",
+    }));
+  }
+
+  function addCeremonySection() {
+    createCeremonyZone({
+      name: `Zone ${(layout.ceremonySections ?? []).length + 1}`,
+      color: VENUE_FEATURE_COLOR_PRESETS[
+        (layout.ceremonySections ?? []).length % VENUE_FEATURE_COLOR_PRESETS.length
+      ]!,
+    });
+  }
+
+  function createCeremonyZone(input: { name: string; color: string }) {
+    const name = input.name.trim();
+    if (!name) return;
+    pushHistory();
+    const baseSections = layout.ceremonySections ?? [];
+    const section = {
+      id: `section-${Date.now()}`,
+      name,
+      color: input.color,
+      side: "custom" as const,
+      priority: 3,
+    };
+    const ids = [...selectedRowIds];
+    const nextRows =
+      ids.length > 0
+        ? ceremonyRows.map((row) =>
+            ids.includes(row.id) ? { ...row, sectionId: section.id } : row
+          )
+        : ceremonyRows;
+    if (ids.length > 0) setCeremonyRows(nextRows);
+    setLayout((current) => ({
+      ...current,
+      ceremonyRows: ids.length > 0 ? nextRows : current.ceremonyRows,
+      ceremonySections: [...baseSections, section],
       zones: [
         ...(current.zones ?? []),
-        { id: `z-${Date.now()}`, name: section.name, color: section.color },
+        { id: `z-${section.id}`, name: section.name, color: section.color },
       ],
       planKind: "CEREMONY",
     }));
     setCeremonyGen((current) => ({ ...current, sectionId: section.id }));
   }
 
+  function updateCeremonyZone(zoneId: string, patch: { name?: string; color?: string }) {
+    const current = (layout.ceremonySections ?? []).find((section) => section.id === zoneId);
+    if (!current) return;
+    const nextName = patch.name?.trim() || current.name;
+    const nextColor = patch.color || current.color;
+    if (nextName === current.name && nextColor === current.color) return;
+    pushHistory();
+    setLayout((layoutCurrent) => ({
+      ...layoutCurrent,
+      ceremonySections: (layoutCurrent.ceremonySections ?? []).map((section) =>
+        section.id === zoneId ? { ...section, name: nextName, color: nextColor } : section
+      ),
+      zones: (layoutCurrent.zones ?? []).map((zone) =>
+        zone.name === current.name || zone.id === `z-${zoneId}`
+          ? { ...zone, name: nextName, color: nextColor }
+          : zone
+      ),
+      planKind: "CEREMONY",
+    }));
+    if (nextName !== current.name) {
+      setAssignments((assignmentCurrent) => {
+        const next = { ...assignmentCurrent };
+        for (const [guestId, assignment] of Object.entries(next)) {
+          if (assignment.zone === current.name) {
+            next[guestId] = { ...assignment, zone: nextName };
+          }
+        }
+        return next;
+      });
+    }
+  }
+
+  function deleteCeremonyZone(zoneId: string) {
+    const current = (layout.ceremonySections ?? []).find((section) => section.id === zoneId);
+    if (!current) return;
+    pushHistory();
+    setCeremonyRows((rows) =>
+      rows.map((row) => (row.sectionId === zoneId ? { ...row, sectionId: undefined } : row))
+    );
+    setLayout((layoutCurrent) => ({
+      ...layoutCurrent,
+      ceremonyRows: (layoutCurrent.ceremonyRows ?? []).map((row) =>
+        row.sectionId === zoneId ? { ...row, sectionId: undefined } : row
+      ),
+      ceremonySections: (layoutCurrent.ceremonySections ?? []).filter(
+        (section) => section.id !== zoneId
+      ),
+      zones: (layoutCurrent.zones ?? []).filter(
+        (zone) => zone.name !== current.name && zone.id !== `z-${zoneId}`
+      ),
+      planKind: "CEREMONY",
+    }));
+    setCeremonyGen((gen) =>
+      gen.sectionId === zoneId ? { ...gen, sectionId: "" } : gen
+    );
+  }
+
+  function createReceptionZone(input: { name: string; color: string }) {
+    const name = input.name.trim();
+    if (!name) return;
+    if ((layout.zones ?? []).some((zone) => zone.name.toLowerCase() === name.toLowerCase())) {
+      setSaveError(`Zone “${name}” already exists.`);
+      return;
+    }
+    pushHistory();
+    setLayout((current) => ({
+      ...current,
+      zones: [...(current.zones ?? []), { id: `z-${Date.now()}`, name, color: input.color }],
+    }));
+    setSaveError(null);
+  }
+
+  function updateReceptionZone(zoneId: string, patch: { name?: string; color?: string }) {
+    const current = (layout.zones ?? []).find((zone) => zone.id === zoneId);
+    if (!current) return;
+    const nextName = patch.name?.trim() || current.name;
+    const nextColor = patch.color || current.color;
+    if (nextName === current.name && nextColor === current.color) return;
+    pushHistory();
+    setLayout((layoutCurrent) => ({
+      ...layoutCurrent,
+      zones: (layoutCurrent.zones ?? []).map((zone) =>
+        zone.id === zoneId ? { ...zone, name: nextName, color: nextColor } : zone
+      ),
+    }));
+    if (nextName !== current.name) {
+      setTables((tablesCurrent) =>
+        tablesCurrent.map((table) =>
+          table.zone === current.name ? { ...table, zone: nextName } : table
+        )
+      );
+      setAssignments((assignmentCurrent) => {
+        const next = { ...assignmentCurrent };
+        for (const [guestId, assignment] of Object.entries(next)) {
+          if (assignment.zone === current.name) {
+            next[guestId] = { ...assignment, zone: nextName };
+          }
+        }
+        return next;
+      });
+    }
+  }
+
+  function deleteReceptionZone(zoneId: string) {
+    const current = (layout.zones ?? []).find((zone) => zone.id === zoneId);
+    if (!current) return;
+    pushHistory();
+    setLayout((layoutCurrent) => ({
+      ...layoutCurrent,
+      zones: (layoutCurrent.zones ?? []).filter((zone) => zone.id !== zoneId),
+    }));
+    setTables((tablesCurrent) =>
+      tablesCurrent.map((table) =>
+        table.zone === current.name ? { ...table, zone: undefined } : table
+      )
+    );
+  }
+
+  function addCustomVenueFeature() {
+    const label = customVenueLabel.trim() || "Custom feature";
+    pushHistory();
+    const count = layout.elements?.length ?? 0;
+    const element: StudioVenueElement = {
+      id: `el-${Date.now()}`,
+      kind: "custom",
+      label,
+      x: 40 + (count % 4) * 140,
+      y: 40 + Math.floor(count / 4) * 90,
+      width: 120,
+      height: 72,
+      color: customVenueColor,
+      rotation: 0,
+    };
+    setLayout((current) => ({
+      ...current,
+      elements: [...(current.elements ?? []), element],
+    }));
+    selectElement(element.id);
+    setCustomVenueLabel("");
+  }
+
   function autoGenerateTables() {
-    const plan = requiredTablesForPeople(peopleStats.expectedPeople, 8);
+    if (previewMode) return;
+    const seatsPerTable = 8;
+    const expected = peopleStats.expectedPeople;
+    const usingStarter = expected <= 0;
+    const peopleForPlan = usingStarter ? 32 : expected; // 4 starter tables when guest count unknown
+    const plan = requiredTablesForPeople(peopleForPlan, seatsPerTable);
     if (plan.tables <= 0) {
-      setSaveError("No expected people yet — add guests or set a custom expected total first.");
+      setSaveError("Could not generate tables — try Add Table instead.");
       return;
     }
     if (tables.length > 0) {
       const ok = window.confirm(
-        `Replace the current ${tables.length} table(s) with ${plan.tables} round tables of 8 for ${peopleStats.expectedPeople} expected people?`
+        `Replace the current ${tables.length} table(s) with ${plan.tables} round tables of ${seatsPerTable} for ${
+          usingStarter ? "a starter floor plan" : `${expected} expected people`
+        }?`
       );
       if (!ok) return;
     }
     pushHistory();
+    if (canvasSelectMode === "features") setCanvasSelectMode("all");
+    const stamp = Date.now();
     const next = Array.from({ length: plan.tables }, (_, index) => {
       const pos = defaultTablePosition(index, settings.gridSize);
       return normalizeStudioTable({
-        id: `t-gen-${Date.now()}-${index}`,
+        id: `t-gen-${stamp}-${index}`,
         label: normalizeTableName(`Table ${index + 1}`),
         kind: "round",
         shape: "round",
-        seatCount: 8,
-        capacity: 8,
+        seatCount: seatsPerTable,
+        capacity: seatsPerTable,
         x: pos.x,
         y: pos.y,
       });
     });
     setTables(next);
     setAssignments({});
+    setCompanionHolds([]);
+    setSelectedTableId(next[0]?.id ?? null);
+    setSelectedElementId(null);
+    setSelectedSeat(null);
     setLayout((current) => ({
       ...current,
       tables: next,
       planKind: "RECEPTION",
-      expectedGuests: peopleStats.expectedPeople,
+      expectedGuests: usingStarter ? peopleForPlan : expected,
     }));
     setSaveError(null);
+    if (usingStarter) {
+      setMapExportNotice(
+        `Starter reception layout ready — ${plan.tables} tables of ${seatsPerTable}. Add guests anytime; regenerate to match headcount.`
+      );
+    }
   }
 
   function focusAssignGuests() {
@@ -856,7 +1505,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       )
     );
     setTables((current) => current.filter((table) => table.id !== selectedTable.id));
-    setSelectedTableId(null);
+    selectTable(null);
     setSelectedSeat(null);
     for (const guestId of removedGuestIds) void autoRemoveAssignment(guestId);
     for (const hold of holdsOnTable) void releaseHold(hold.id);
@@ -911,11 +1560,13 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     }));
   }
 
-  function addTable(kind: StudioTableKind = "round") {
+  function addTable(kind: StudioTableKind = "round", position?: { x: number; y: number }) {
+    if (previewMode) return;
     pushHistory();
+    if (canvasSelectMode === "features") setCanvasSelectMode("all");
     const preset = TABLE_KIND_PRESETS[kind];
     const index = tables.length;
-    const pos = defaultTablePosition(index, settings.gridSize);
+    const pos = position ?? defaultTablePosition(index, settings.gridSize);
     const label = normalizeTableName(`${preset.label} ${index + 1}`);
     const table = normalizeStudioTable({
       id: `t-${Date.now()}`,
@@ -929,36 +1580,42 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       y: pos.y,
     });
     setTables((current) => [...current, table]);
-    setSelectedTableId(table.id);
-  }
-
-  function addZonePreset(name: string, color: string) {
-    pushHistory();
     setLayout((current) => ({
       ...current,
-      zones: [
-        ...(current.zones ?? []),
-        { id: `z-${Date.now()}`, name, color },
-      ],
+      tables: [...(current.tables ?? []).filter((item) => item.id !== table.id), table],
+      planKind: "RECEPTION",
     }));
+    setSelectedElementId(null);
+    setSelectedSeat(null);
+    setSelectedTableId(table.id);
+    setSaveError(null);
   }
 
-  function addVenueElement(kind: VenueElementKind, label: string) {
+  function addVenueElement(
+    kind: VenueElementKind,
+    label: string,
+    position?: { x: number; y: number }
+  ) {
     pushHistory();
     const count = layout.elements?.length ?? 0;
+    const size = venueElementSize(kind);
+    const preset = venueFeaturePreset(kind);
     const element: StudioVenueElement = {
       id: `el-${Date.now()}`,
       kind,
       label,
-      x: 40 + (count % 4) * 140,
-      y: 40 + Math.floor(count / 4) * 90,
-      width: kind === "dance_floor" || kind === "stage" ? 180 : 110,
-      height: kind === "dance_floor" || kind === "stage" ? 100 : 56,
+      x: position?.x ?? 40 + (count % 4) * 140,
+      y: position?.y ?? 40 + Math.floor(count / 4) * 90,
+      width: size.width,
+      height: size.height,
+      color: preset.color,
+      rotation: 0,
     };
     setLayout((current) => ({
       ...current,
       elements: [...(current.elements ?? []), element],
     }));
+    selectElement(element.id);
   }
 
   function removeVenueElement(elementId: string) {
@@ -966,6 +1623,48 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     setLayout((current) => ({
       ...current,
       elements: (current.elements ?? []).filter((element) => element.id !== elementId),
+    }));
+    if (selectedElementId === elementId) setSelectedElementId(null);
+  }
+
+  function renameSelectedElement(nextLabel: string) {
+    if (!selectedElement) return;
+    const label = nextLabel.trim();
+    if (!label || label === selectedElement.label) return;
+    pushHistory();
+    setLayout((current) => ({
+      ...current,
+      elements: (current.elements ?? []).map((element) =>
+        element.id === selectedElement.id ? { ...element, label } : element
+      ),
+    }));
+  }
+
+  function updateSelectedElement(patch: Partial<StudioVenueElement>) {
+    if (!selectedElement) return;
+    pushHistory();
+    setLayout((current) => ({
+      ...current,
+      elements: (current.elements ?? []).map((element) =>
+        element.id === selectedElement.id ? { ...element, ...patch } : element
+      ),
+    }));
+  }
+
+  function rotateVenueElement(elementId: string, deltaDegrees: number, absolute?: number) {
+    if (previewMode) return;
+    const current = (layout.elements ?? []).find((element) => element.id === elementId);
+    if (!current || current.locked) return;
+    pushHistory();
+    const nextRotation =
+      absolute !== undefined
+        ? normalizeRotationDegrees(absolute)
+        : normalizeRotationDegrees((current.rotation ?? 0) + deltaDegrees);
+    setLayout((layoutCurrent) => ({
+      ...layoutCurrent,
+      elements: (layoutCurrent.elements ?? []).map((element) =>
+        element.id === elementId ? { ...element, rotation: nextRotation } : element
+      ),
     }));
   }
 
@@ -1270,6 +1969,73 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     setGuestListPage(1);
   }, [guestQuery, guestFilter]);
 
+  useEffect(() => {
+    if (canvasSelectMode === "features") {
+      setSelectedTableId(null);
+      setSelectedRowIds([]);
+      setSelectedSeat(null);
+    } else if (canvasSelectMode === "rows") {
+      setSelectedElementId(null);
+    }
+  }, [canvasSelectMode]);
+
+  useEffect(() => {
+    if (previewMode) return;
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey) {
+        event.preventDefault();
+        undo();
+        return;
+      }
+      if (selectedElementId && canInteractWithFeatures()) {
+        if (event.key === "[" || event.key.toLowerCase() === "q") {
+          event.preventDefault();
+          rotateVenueElement(selectedElementId, event.shiftKey ? -90 : -15);
+          return;
+        }
+        if (event.key === "]" || event.key.toLowerCase() === "e") {
+          event.preventDefault();
+          rotateVenueElement(selectedElementId, event.shiftKey ? 90 : 15);
+          return;
+        }
+        if (event.key.toLowerCase() === "r" && !event.metaKey && !event.ctrlKey) {
+          event.preventDefault();
+          rotateVenueElement(selectedElementId, 0, 0);
+          return;
+        }
+      }
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      if (selectedElementId && canInteractWithFeatures()) {
+        event.preventDefault();
+        removeVenueElement(selectedElementId);
+        return;
+      }
+      if (planType === "CEREMONY" && selectedRowIds.length > 0 && canInteractWithRows()) {
+        event.preventDefault();
+        clearSelectedRows();
+        return;
+      }
+      if (selectedTable && planType === "RECEPTION" && canInteractWithRows()) {
+        event.preventDefault();
+        deleteSelectedTable();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // Intentionally bound to selection identity only — handlers close over latest render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selection-driven shortcut
+  }, [previewMode, selectedElementId, selectedTable?.id, selectedRowIds.join(","), planType, canvasSelectMode]);
+
+  const hasCanvasContent =
+    planType === "CEREMONY"
+      ? ceremonyRows.length > 0 || (layout.elements ?? []).length > 0
+      : tables.length > 0 || (layout.elements ?? []).length > 0;
+  const hasStagedCanvasEdits = past.length > 0;
+
   const guestListSlice = useMemo(
     () => paginateList(filteredGuests, guestListPage, GUEST_LIST_PAGE_SIZE),
     [filteredGuests, guestListPage]
@@ -1292,6 +2058,26 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       {saveError && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {saveError}
+        </div>
+      )}
+      {mapExportNotice && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#0B8A83]/25 bg-[#0B8A83]/5 px-4 py-3 text-sm text-slate-800">
+          <p>{mapExportNotice}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              className="bg-[#0B8A83] hover:bg-[#097a74]"
+              disabled={mapExporting || layout.status !== "published"}
+              onClick={() => void downloadGuestVenueMap()}
+            >
+              <Download className="h-4 w-4" />
+              {mapExporting ? "Preparing…" : "Download guest map"}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setMapExportNotice(null)}>
+              Dismiss
+            </Button>
+          </div>
         </div>
       )}
 
@@ -1433,7 +2219,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                 <Wand2 className="h-4 w-4" /> Auto-Generate Rows
               </Button>
               <Button variant="outline" disabled={previewMode} onClick={addCeremonySection}>
-                <Plus className="h-4 w-4" /> Add Section
+                <Plus className="h-4 w-4" /> New Zone
               </Button>
               <Button variant="outline" disabled={previewMode} onClick={addCeremonyRow}>
                 <Plus className="h-4 w-4" /> Add Row
@@ -1473,6 +2259,21 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           <Button variant="outline" size="sm" onClick={redo} disabled={!future.length || previewMode}>
             <Redo2 className="h-4 w-4" /> Redo
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-rose-200 text-rose-700 hover:bg-rose-50"
+            onClick={() => clearAllCanvas()}
+            disabled={!hasCanvasContent || previewMode}
+            title="Clear canvas — Undo restores the previous draft state"
+          >
+            <Eraser className="h-4 w-4" /> Clear All
+          </Button>
+          {hasStagedCanvasEdits && (
+            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-900">
+              Staged edits — Undo or Clear All
+            </Badge>
+          )}
           <Button variant="outline" onClick={() => void persist("draft")} disabled={saving || previewMode}>
             <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save Draft"}
           </Button>
@@ -1482,6 +2283,19 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
             disabled={saving || previewMode}
           >
             Publish
+          </Button>
+          <Button
+            variant="outline"
+            disabled={mapExporting || previewMode || layout.status !== "published"}
+            title={
+              layout.status === "published"
+                ? "Download a guest-ready venue map PNG"
+                : "Publish the plan first to unlock the guest map download"
+            }
+            onClick={() => void downloadGuestVenueMap()}
+          >
+            <Download className="h-4 w-4" />
+            {mapExporting ? "Preparing map…" : "Download map"}
           </Button>
         </div>
 
@@ -1572,8 +2386,15 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         )}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-        <div className="space-y-4">
+      <div
+        ref={studioWorkspaceRef}
+        className={cn(
+          "grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]",
+          isFullscreen &&
+            "h-screen overflow-auto bg-[#F7FAF9] p-4 xl:grid-rows-[minmax(0,1fr)]"
+        )}
+      >
+        <div className={cn("space-y-4", isFullscreen && "max-h-screen overflow-y-auto pr-1")}>
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Plan</CardTitle>
@@ -1588,52 +2409,105 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                 />
               </div>
               {planType === "RECEPTION" ? (
-                <div className="flex flex-wrap gap-2">
-                  {(Object.keys(TABLE_KIND_PRESETS) as StudioTableKind[]).slice(0, 8).map((kind) => (
-                    <Button
-                      key={kind}
-                      size="sm"
-                      variant="outline"
-                      disabled={previewMode}
-                      onClick={() => addTable(kind)}
-                    >
-                      <Plus className="h-3.5 w-3.5" /> {TABLE_KIND_PRESETS[kind].label}
-                    </Button>
-                  ))}
-                </div>
-              ) : (
                 <div className="space-y-2">
-                  <p className="text-xs text-slate-500">
-                    Ceremony sections: {(layout.ceremonySections ?? []).length || "none yet"}
+                  <p className="text-[11px] leading-relaxed text-slate-500">
+                    Drag a table onto the canvas, or tap to place. Select any item to rename or
+                    delete it in the inspector.
                   </p>
-                  <div className="flex flex-wrap gap-1">
-                    {(layout.ceremonySections ?? []).map((section) => (
-                      <button
-                        key={section.id}
-                        type="button"
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.keys(TABLE_KIND_PRESETS) as StudioTableKind[]).slice(0, 8).map((kind) => (
+                      <Button
+                        key={kind}
+                        size="sm"
+                        variant="outline"
                         disabled={previewMode}
-                        onClick={() =>
-                          setCeremonyGen((current) => ({
-                            ...current,
-                            sectionId: section.id,
-                          }))
-                        }
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition",
-                          ceremonyGen.sectionId === section.id
-                            ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                        )}
+                        draggable={!previewMode}
+                        className="cursor-grab active:cursor-grabbing"
+                        onDragStart={(event) => beginPaletteDrag(event, { type: "table", kind })}
+                        onClick={() => addTable(kind)}
                       >
-                        <span className="h-2 w-2 rounded-full" style={{ background: section.color }} />
-                        {section.name}
-                      </button>
+                        <GripVertical className="h-3.5 w-3.5 opacity-50" />
+                        {TABLE_KIND_PRESETS[kind].label}
+                      </Button>
                     ))}
                   </div>
-                  <p className="text-[11px] leading-relaxed text-slate-500">
-                    Tip: select a section, then Auto-Generate or Add Row to place chairs into that
-                    family block. Click a row to edit, drag to arrange, click a chair to assign.
-                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <ZoneManager
+                    title="Row zones"
+                    hint="Create, rename, recolour, or delete zones. With rows selected, tap a zone to highlight them (Reserved / Family / Special Guests, or your own)."
+                    zones={(layout.ceremonySections ?? []).map((section) => ({
+                      id: section.id,
+                      name: section.name,
+                      color: section.color,
+                    }))}
+                    previewMode={previewMode}
+                    activeZoneId={ceremonyGen.sectionId || null}
+                    onSelect={(zoneId) => {
+                      if (selectedRowIds.length > 0) {
+                        applyHighlightToRows(selectedRowIds, zoneId);
+                        return;
+                      }
+                      setCeremonyGen((current) => ({ ...current, sectionId: zoneId }));
+                    }}
+                    onCreate={createCeremonyZone}
+                    onUpdate={updateCeremonyZone}
+                    onDelete={deleteCeremonyZone}
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8"
+                      disabled={previewMode || ceremonyRows.length === 0}
+                      onClick={selectAllCeremonyRows}
+                    >
+                      Select all rows
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8"
+                      disabled={previewMode || selectedRowIds.length === 0}
+                      onClick={clearRowSelection}
+                    >
+                      Clear selection
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8"
+                      disabled={previewMode}
+                      onClick={addCeremonyRow}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Add row
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 border-rose-200 text-rose-700 hover:bg-rose-50"
+                      disabled={previewMode || selectedRowIds.length === 0}
+                      onClick={clearSelectedRows}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete selected
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-slate-600"
+                      disabled={previewMode || selectedRowIds.length === 0}
+                      onClick={() => applyHighlightToRows(selectedRowIds, null)}
+                    >
+                      Clear highlight
+                    </Button>
+                  </div>
                 </div>
               )}
               <Button
@@ -1647,50 +2521,192 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Zones</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {ZONE_PRESETS.map((zone) => (
-                <Button
-                  key={zone.name}
-                  size="sm"
-                  variant="outline"
-                  disabled={previewMode}
-                  onClick={() => addZonePreset(zone.name, zone.color)}
-                >
-                  <span className="mr-1.5 h-2.5 w-2.5 rounded-full" style={{ background: zone.color }} />
-                  {zone.name}
-                </Button>
-              ))}
-              {(layout.zones ?? []).map((zone) => (
-                <Badge key={zone.id} variant="outline" className="gap-1">
-                  <span className="h-2 w-2 rounded-full" style={{ background: zone.color }} />
-                  {zone.name}
-                </Badge>
-              ))}
-            </CardContent>
-          </Card>
+          {planType === "RECEPTION" && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Zones</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  Quick presets, or create your own zone and edit or delete anytime.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {ZONE_PRESETS.slice(0, 6).map((zone) => (
+                    <Button
+                      key={zone.name}
+                      size="sm"
+                      variant="outline"
+                      className="h-8"
+                      disabled={previewMode}
+                      onClick={() => createReceptionZone({ name: zone.name, color: zone.color })}
+                    >
+                      <span
+                        className="mr-1.5 h-2.5 w-2.5 rounded-full"
+                        style={{ background: zone.color }}
+                      />
+                      {zone.name}
+                    </Button>
+                  ))}
+                </div>
+                <ZoneManager
+                  title="Your zones"
+                  zones={(layout.zones ?? []).map((zone) => ({
+                    id: zone.id,
+                    name: zone.name,
+                    color: zone.color,
+                  }))}
+                  previewMode={previewMode}
+                  onCreate={createReceptionZone}
+                  onUpdate={updateReceptionZone}
+                  onDelete={deleteReceptionZone}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Venue features</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {VENUE_ELEMENT_PRESETS.map((preset) => (
-                <Button
-                  key={preset.kind}
-                  size="sm"
-                  variant="outline"
+            <CardContent className="space-y-3">
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Drag map markers onto the floor plan, or add a custom feature. Select a placed
+                marker to rotate (top handle or ±15°), resize, recolour, or delete.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {VENUE_FEATURE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.kind}
+                    type="button"
+                    disabled={previewMode}
+                    draggable={!previewMode}
+                    title={preset.hint}
+                    className={cn(
+                      "group flex h-[72px] flex-col overflow-hidden rounded-xl border border-[#0B8A83]/25 bg-white text-left shadow-sm transition",
+                      "hover:border-[#0B8A83]/55 hover:shadow-md",
+                      "cursor-grab active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+                    )}
+                    onDragStart={(event) =>
+                      beginPaletteDrag(event, {
+                        type: "element",
+                        kind: preset.kind,
+                        label: preset.label,
+                      })
+                    }
+                    onClick={() => addVenueElement(preset.kind, preset.label)}
+                  >
+                    <VenueFeatureVisual
+                      kind={preset.kind}
+                      label={preset.label}
+                      color={preset.color}
+                      variant="palette"
+                    />
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-dashed border-[#0B8A83]/30 bg-[#0B8A83]/5 p-3">
+                <p className="text-xs font-semibold text-slate-700">Custom feature</p>
+                <Input
+                  value={customVenueLabel}
                   disabled={previewMode}
-                  onClick={() => addVenueElement(preset.kind, preset.label)}
+                  placeholder="Name — e.g. Coat check"
+                  onChange={(event) => setCustomVenueLabel(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addCustomVenueFeature();
+                    }
+                  }}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {VENUE_FEATURE_COLOR_PRESETS.slice(0, 8).map((swatch) => (
+                    <button
+                      key={swatch}
+                      type="button"
+                      disabled={previewMode}
+                      className={cn(
+                        "h-6 w-6 rounded-full border-2",
+                        customVenueColor === swatch
+                          ? "scale-110 border-slate-900"
+                          : "border-white ring-1 ring-slate-200"
+                      )}
+                      style={{ background: swatch }}
+                      onClick={() => setCustomVenueColor(swatch)}
+                    />
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="w-full bg-[#0B8A83]"
+                  disabled={previewMode}
+                  onClick={addCustomVenueFeature}
                 >
-                  <Plus className="h-3.5 w-3.5" /> {preset.label}
+                  <Plus className="h-3.5 w-3.5" /> Add custom feature
                 </Button>
-              ))}
+              </div>
+
+              {(layout.elements ?? []).length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    On the map
+                  </p>
+                  {(layout.elements ?? []).map((element) => {
+                    const active = selectedElementId === element.id;
+                    return (
+                      <div
+                        key={element.id}
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg border px-2 py-1.5",
+                          active
+                            ? "border-[#0B8A83] bg-[#0B8A83]/10"
+                            : "border-slate-200 bg-white"
+                        )}
+                      >
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 text-left"
+                          disabled={previewMode}
+                          onClick={() => selectElement(element.id)}
+                        >
+                          <span className="block truncate text-sm font-medium text-slate-800">
+                            {element.label}
+                          </span>
+                          <span className="text-[10px] capitalize text-slate-500">
+                            {element.kind.replace(/_/g, " ")}
+                          </span>
+                        </button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-rose-600 hover:bg-rose-50"
+                          disabled={previewMode}
+                          title="Delete feature"
+                          onClick={() => removeVenueElement(element.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {selectedElement && !previewMode && (
+            <VenueFeatureInspector
+              element={selectedElement}
+              previewMode={previewMode}
+              variant="drawer"
+              className="hidden lg:flex"
+              onRename={renameSelectedElement}
+              onUpdate={updateSelectedElement}
+              onDelete={() => removeVenueElement(selectedElement.id)}
+            />
+          )}
 
           {selectedTable && planType === "RECEPTION" && !previewMode && (
             <TableInspector
@@ -1754,37 +2770,56 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Section</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    value={selectedCeremonyRow.sectionId ?? ""}
-                    onChange={(event) => {
-                      pushHistory();
-                      const sectionId = event.target.value || undefined;
-                      const sectionName = (layout.ceremonySections ?? []).find(
-                        (section) => section.id === sectionId
-                      )?.name;
-                      updateCeremonyRow(selectedCeremonyRow.id, { sectionId });
-                      if (sectionName) {
-                        setAssignments((current) => {
-                          const next = { ...current };
-                          for (const [guestId, assignment] of Object.entries(next)) {
-                            if (tablesMatch(assignment.tableNumber, selectedCeremonyRow.label)) {
-                              next[guestId] = { ...assignment, zone: sectionName };
-                            }
+                  <Label>Highlight zone</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(layout.ceremonySections ?? []).map((section) => {
+                      const active = selectedCeremonyRow.sectionId === section.id;
+                      return (
+                        <button
+                          key={section.id}
+                          type="button"
+                          disabled={previewMode}
+                          className={cn(
+                            "rounded-full px-2.5 py-1 text-[11px] font-semibold transition",
+                            active ? "text-white shadow-sm" : "border border-slate-200 bg-white text-slate-700"
+                          )}
+                          style={active ? { background: section.color } : undefined}
+                          onClick={() =>
+                            applyHighlightToRows(
+                              selectedRowIds.length > 1 ? selectedRowIds : [selectedCeremonyRow.id],
+                              section.id
+                            )
                           }
-                          return next;
-                        });
+                        >
+                          {!active && (
+                            <span
+                              className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
+                              style={{ background: section.color }}
+                            />
+                          )}
+                          {section.name}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      disabled={previewMode}
+                      className="rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-medium text-slate-500"
+                      onClick={() =>
+                        applyHighlightToRows(
+                          selectedRowIds.length > 1 ? selectedRowIds : [selectedCeremonyRow.id],
+                          null
+                        )
                       }
-                    }}
-                  >
-                    <option value="">Unassigned</option>
-                    {(layout.ceremonySections ?? []).map((section) => (
-                      <option key={section.id} value={section.id}>
-                        {section.name}
-                      </option>
-                    ))}
-                  </select>
+                    >
+                      None
+                    </button>
+                  </div>
+                  {selectedRowIds.length > 1 && (
+                    <p className="text-[11px] text-slate-500">
+                      Applying to all {selectedRowIds.length} selected rows.
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -1814,7 +2849,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           )}
         </div>
 
-        <div className="space-y-3">
+        <div className={cn("space-y-3", isFullscreen && "min-h-0 flex flex-col")}>
           <div className="flex flex-wrap items-center gap-2">
             <Tabs value={view} onValueChange={(value) => setView(value as "canvas" | "list")}>
               <TabsList>
@@ -1826,40 +2861,174 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <div className="ml-auto flex flex-wrap gap-1">
-              <Button size="icon" variant="outline" onClick={() => setZoom((value) => Math.min(1.8, value + 0.1))}>
+            <div className="inline-flex rounded-xl border bg-slate-50 p-1">
+              {(
+                [
+                  { id: "all" as const, label: "All", icon: SquareStack },
+                  {
+                    id: "rows" as const,
+                    label: planType === "CEREMONY" ? "Rows" : "Tables",
+                    icon: planType === "CEREMONY" ? Rows3 : LayoutGrid,
+                  },
+                  { id: "features" as const, label: "Features", icon: MapPin },
+                ] as const
+              ).map((mode) => {
+                const Icon = mode.icon;
+                const active = canvasSelectMode === mode.id;
+                return (
+                  <Button
+                    key={mode.id}
+                    type="button"
+                    size="sm"
+                    variant={active ? "default" : "ghost"}
+                    className={cn("h-8 gap-1.5 px-2.5", active && "bg-[#0B8A83] hover:bg-[#097a74]")}
+                    disabled={previewMode}
+                    aria-pressed={active}
+                    title={`Select ${mode.label.toLowerCase()} only`}
+                    onClick={() => setCanvasSelectMode(mode.id)}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{mode.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+            {planType === "CEREMONY" && selectedRowIds.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-medium text-slate-500">
+                  {selectedRowIds.length} selected
+                </span>
+                {(layout.ceremonySections ?? []).slice(0, 6).map((section) => (
+                  <button
+                    key={`bar-${section.id}`}
+                    type="button"
+                    disabled={previewMode}
+                    title={`Mark as ${section.name}`}
+                    className="h-7 rounded-full px-2.5 text-[11px] font-semibold text-white shadow-sm"
+                    style={{ background: section.color }}
+                    onClick={() => applyHighlightToRows(selectedRowIds, section.id)}
+                  >
+                    {section.name}
+                  </button>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  disabled={previewMode}
+                  onClick={addCeremonyRow}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add after
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 border-rose-200 text-rose-700 hover:bg-rose-50"
+                  disabled={previewMode}
+                  onClick={clearSelectedRows}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                </Button>
+              </div>
+            )}
+            <div className="ml-auto flex flex-wrap items-center gap-1">
+              <span className="mr-1 hidden text-[11px] font-medium tabular-nums text-slate-500 sm:inline">
+                {Math.round(zoom * 100)}%
+              </span>
+              <Button
+                size="icon"
+                variant="outline"
+                title="Zoom in"
+                aria-label="Zoom in"
+                onClick={() => zoomBy(0.1)}
+              >
                 <ZoomIn className="h-4 w-4" />
               </Button>
-              <Button size="icon" variant="outline" onClick={() => setZoom((value) => Math.max(0.55, value - 0.1))}>
+              <Button
+                size="icon"
+                variant="outline"
+                title="Zoom out"
+                aria-label="Zoom out"
+                onClick={() => zoomBy(-0.1)}
+              >
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <Button
                 size="icon"
                 variant="outline"
-                onClick={() => {
-                  setZoom(1);
-                  setPan({ x: 0, y: 0 });
-                }}
+                title="Reset view"
+                aria-label="Reset view"
+                onClick={resetCanvasView}
               >
                 <Focus className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant={isFullscreen ? "default" : "outline"}
+                className={isFullscreen ? "bg-[#0B8A83] hover:bg-[#097a74]" : undefined}
+                title={isFullscreen ? "Exit fullscreen" : "Open fullscreen"}
+                aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen"}
+                aria-pressed={isFullscreen}
+                onClick={() => void toggleStudioFullscreen()}
+              >
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
           {view === "canvas" ? (
-            <Card>
-              <CardContent className="p-0">
+            <Card className={cn(isFullscreen && "min-h-0 flex-1")}>
+              <CardContent className={cn("p-0", isFullscreen && "h-full")}>
                 <div
-                  className="relative h-[70vh] overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top,#f8fafc,transparent_55%),linear-gradient(#e2e8f022_1px,transparent_1px),linear-gradient(90deg,#e2e8f022_1px,transparent_1px)] bg-[size:auto,24px_24px,24px_24px]"
+                  ref={canvasSurfaceRef}
+                  tabIndex={0}
+                  className={cn(
+                    "relative overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top,#f8fafc,transparent_55%),linear-gradient(#e2e8f022_1px,transparent_1px),linear-gradient(90deg,#e2e8f022_1px,transparent_1px)] bg-[size:auto,24px_24px,24px_24px] outline-none",
+                    isFullscreen ? "h-[min(100%,calc(100vh-7rem))] min-h-[70vh]" : "h-[70vh]",
+                    paletteDropActive && "ring-2 ring-[#0B8A83] ring-offset-2"
+                  )}
+                  onWheel={(event) => {
+                    if (event.ctrlKey || event.metaKey || isFullscreen) {
+                      event.preventDefault();
+                      zoomBy(event.deltaY > 0 ? -0.08 : 0.08);
+                    }
+                  }}
+                  onDragOver={(event) => {
+                    if (previewMode) return;
+                    if (![...event.dataTransfer.types].includes(PALETTE_MIME)) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "copy";
+                    setPaletteDropActive(true);
+                  }}
+                  onDragLeave={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                      setPaletteDropActive(false);
+                    }
+                  }}
+                  onDrop={handleCanvasPaletteDrop}
                   onPointerDown={(event) => {
-                    if ((event.target as HTMLElement).closest("[data-table-node],[data-venue-node],[data-ceremony-row]"))
+                    const target = event.target as HTMLElement;
+                    if (
+                      target.closest(
+                        "[data-table-node],[data-venue-node],[data-ceremony-row],[data-canvas-ui],button,a,input,select,textarea,label"
+                      )
+                    ) {
                       return;
+                    }
+                    clearCanvasSelection();
                     panning.current = {
                       startX: event.clientX,
                       startY: event.clientY,
                       origX: pan.x,
                       origY: pan.y,
                     };
+                    try {
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                    } catch {
+                      /* ignore */
+                    }
                   }}
                   onPointerMove={(event) => {
                     if (panning.current) {
@@ -1867,6 +3036,46 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                         x: panning.current.origX + (event.clientX - panning.current.startX),
                         y: panning.current.origY + (event.clientY - panning.current.startY),
                       });
+                      return;
+                    }
+                    const resizing = resizeRef.current;
+                    if (resizing) {
+                      const dw = (event.clientX - resizing.startX) / zoom;
+                      const dh = (event.clientY - resizing.startY) / zoom;
+                      const next = clampVenueFeatureSize(
+                        resizing.origW + dw,
+                        resizing.origH + dh
+                      );
+                      dirtyRef.current = true;
+                      setLayout((current) => ({
+                        ...current,
+                        elements: (current.elements ?? []).map((element) =>
+                          element.id === resizing.elementId
+                            ? { ...element, width: next.width, height: next.height }
+                            : element
+                        ),
+                      }));
+                      return;
+                    }
+                    const rotating = rotateRef.current;
+                    if (rotating) {
+                      const point = clientToCanvasPoint(event.clientX, event.clientY);
+                      if (!point) return;
+                      const angle =
+                        (Math.atan2(point.y - rotating.centerY, point.x - rotating.centerX) * 180) /
+                        Math.PI;
+                      let next = rotating.origRotation + (angle - rotating.startAngle);
+                      if (event.shiftKey) next = snapRotationDegrees(next, 15);
+                      else next = normalizeRotationDegrees(next);
+                      dirtyRef.current = true;
+                      setLayout((current) => ({
+                        ...current,
+                        elements: (current.elements ?? []).map((element) =>
+                          element.id === rotating.elementId
+                            ? { ...element, rotation: next }
+                            : element
+                        ),
+                      }));
                       return;
                     }
                     const drag = dragRef.current;
@@ -1919,77 +3128,280 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                       )
                     );
                   }}
-                  onPointerUp={() => {
+                  onPointerUp={(event) => {
                     dragRef.current = null;
+                    resizeRef.current = null;
+                    rotateRef.current = null;
                     panning.current = null;
+                    try {
+                      event.currentTarget.releasePointerCapture(event.pointerId);
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                  onPointerCancel={() => {
+                    dragRef.current = null;
+                    resizeRef.current = null;
+                    rotateRef.current = null;
+                    panning.current = null;
+                    setPaletteDropActive(false);
                   }}
                 >
                   <div
                     className="absolute left-0 top-0 origin-top-left"
                     style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
                   >
-                    {(layout.elements ?? []).map((element) => (
-                      <div
-                        key={element.id}
-                        data-venue-node
-                        className="absolute z-0 flex cursor-grab flex-col items-center justify-center rounded-xl border border-slate-300/80 bg-white/85 px-2 text-center shadow-sm active:cursor-grabbing"
-                        style={{
-                          left: element.x,
-                          top: element.y,
-                          width: element.width ?? 110,
-                          height: element.height ?? 56,
-                        }}
-                        onPointerDown={(event) => {
-                          if (previewMode) return;
-                          event.stopPropagation();
-                          pushHistory();
-                          dragRef.current = {
-                            tableId: `element:${element.id}`,
-                            startX: event.clientX,
-                            startY: event.clientY,
-                            origX: element.x,
-                            origY: element.y,
-                          };
-                        }}
-                        onDoubleClick={() => {
-                          if (previewMode) return;
-                          removeVenueElement(element.id);
-                        }}
-                        title={previewMode ? element.label : "Double-click to remove"}
-                      >
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          {element.kind.replace(/_/g, " ")}
-                        </span>
-                        <span className="text-xs font-medium text-slate-800">{element.label}</span>
-                      </div>
-                    ))}
+                    {(layout.elements ?? []).map((element) => {
+                      const featureInteractive = canInteractWithFeatures();
+                      const preset = venueFeaturePreset(element.kind);
+                      const width = element.width ?? preset.width;
+                      const height = element.height ?? preset.height;
+                      const accent = element.color?.trim() || preset.color;
+                      const selected = selectedElementId === element.id;
+                      const rotation = element.rotation ?? 0;
+                      return (
+                        <div
+                          key={element.id}
+                          className="absolute z-[5]"
+                          style={{ left: element.x, top: element.y, width, height }}
+                        >
+                          <div
+                            data-venue-node
+                            className={cn(
+                              "relative h-full w-full overflow-visible rounded-xl border bg-white/90 shadow-sm transition",
+                              selected
+                                ? "border-[#0B8A83] ring-2 ring-[#0B8A83]/45"
+                                : "border-slate-300/80",
+                              element.locked
+                                ? "cursor-default opacity-90"
+                                : featureInteractive
+                                  ? "cursor-grab active:cursor-grabbing"
+                                  : "pointer-events-none opacity-35",
+                              !featureInteractive && "grayscale-[0.35]"
+                            )}
+                            style={{
+                              transform: rotation ? `rotate(${rotation}deg)` : undefined,
+                              boxShadow: selected
+                                ? `0 8px 24px ${accent}33`
+                                : "0 4px 16px rgba(15,23,42,0.08)",
+                            }}
+                            onPointerDown={(event) => {
+                              if (previewMode || !featureInteractive) return;
+                              if (
+                                (event.target as HTMLElement).closest(
+                                  "[data-resize-handle],[data-rotate-handle]"
+                                )
+                              ) {
+                                return;
+                              }
+                              event.stopPropagation();
+                              selectElement(element.id);
+                              if (element.locked) return;
+                              pushHistory();
+                              dragRef.current = {
+                                tableId: `element:${element.id}`,
+                                startX: event.clientX,
+                                startY: event.clientY,
+                                origX: element.x,
+                                origY: element.y,
+                              };
+                              try {
+                                canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
+                              } catch {
+                                /* ignore */
+                              }
+                            }}
+                            title={
+                              previewMode
+                                ? element.label
+                                : !featureInteractive
+                                  ? "Switch select mode to Features to edit"
+                                  : element.locked
+                                    ? `${element.label} (locked)`
+                                    : "Drag to move · top handle to rotate · corner to resize"
+                            }
+                          >
+                            <VenueFeatureVisual
+                              kind={element.kind}
+                              label={element.label}
+                              color={accent}
+                              variant="canvas"
+                              className="rounded-[inherit]"
+                            />
+                            {element.locked && (
+                              <span className="pointer-events-none absolute left-1.5 top-1.5 rounded bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500 shadow-sm">
+                                Locked
+                              </span>
+                            )}
+                            {selected && !previewMode && !element.locked && featureInteractive && (
+                              <>
+                                <div className="pointer-events-none absolute left-1/2 top-0 h-5 w-px -translate-x-1/2 -translate-y-full bg-[#0B8A83]/70" />
+                                <button
+                                  type="button"
+                                  data-rotate-handle
+                                  aria-label="Rotate venue feature"
+                                  title="Drag to rotate · hold Shift to snap 15°"
+                                  className="absolute left-1/2 top-0 z-20 flex h-6 w-6 -translate-x-1/2 -translate-y-[128%] cursor-grab items-center justify-center rounded-full border-2 border-white bg-[#0B8A83] text-white shadow-md active:cursor-grabbing"
+                                  onPointerDown={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    const centerX = element.x + width / 2;
+                                    const centerY = element.y + height / 2;
+                                    const point = clientToCanvasPoint(event.clientX, event.clientY);
+                                    if (!point) return;
+                                    pushHistory();
+                                    rotateRef.current = {
+                                      elementId: element.id,
+                                      centerX,
+                                      centerY,
+                                      startAngle:
+                                        (Math.atan2(point.y - centerY, point.x - centerX) * 180) /
+                                        Math.PI,
+                                      origRotation: rotation,
+                                    };
+                                    try {
+                                      canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
+                                    } catch {
+                                      /* ignore */
+                                    }
+                                  }}
+                                >
+                                  <RotateCw className="h-3 w-3" aria-hidden />
+                                </button>
+                                <button
+                                  type="button"
+                                  data-resize-handle
+                                  aria-label="Resize venue feature"
+                                  title="Drag to resize"
+                                  className="absolute -bottom-1.5 -right-1.5 z-20 h-4 w-4 cursor-nwse-resize rounded-sm border-2 border-white bg-[#0B8A83] shadow-md"
+                                  onPointerDown={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    pushHistory();
+                                    resizeRef.current = {
+                                      elementId: element.id,
+                                      startX: event.clientX,
+                                      startY: event.clientY,
+                                      origW: width,
+                                      origH: height,
+                                    };
+                                    try {
+                                      canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
+                                    } catch {
+                                      /* ignore */
+                                    }
+                                  }}
+                                />
+                              </>
+                            )}
+                          </div>
+                          {selected && !previewMode && !element.locked && featureInteractive && (
+                            <div
+                              data-canvas-ui
+                              className="absolute -top-10 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1"
+                              onPointerDown={(event) => event.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                title="Rotate −15° (Shift −90°)"
+                                aria-label="Rotate left"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  rotateVenueElement(element.id, event.shiftKey ? -90 : -15);
+                                }}
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold tabular-nums text-slate-700 shadow-sm ring-1 ring-slate-200">
+                                {Math.round(rotation)}°
+                              </span>
+                              <button
+                                type="button"
+                                title="Rotate +15° (Shift +90°)"
+                                aria-label="Rotate right"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  rotateVenueElement(element.id, event.shiftKey ? 90 : 15);
+                                }}
+                              >
+                                <RotateCw className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                title="Reset rotation"
+                                aria-label="Reset rotation"
+                                className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 shadow-sm hover:border-[#0B8A83] hover:text-[#0B8A83]"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  rotateVenueElement(element.id, 0, 0);
+                                }}
+                              >
+                                0°
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                     {planType === "CEREMONY" ? (
                       ceremonyRows.length === 0 ? (
-                        <div className="flex h-[70vh] w-[720px] flex-col items-center justify-center gap-3 px-6 text-center">
+                        <div
+                          data-canvas-ui
+                          className="flex h-[70vh] w-[720px] flex-col items-center justify-center gap-3 px-6 text-center"
+                          onPointerDown={(event) => event.stopPropagation()}
+                        >
                           <div className="rounded-2xl border border-dashed border-[#0B8A83]/40 bg-[#0B8A83]/5 px-8 py-10">
+                            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-[#0B8A83]/20">
+                              <Armchair className="h-6 w-6 text-[#0B8A83]" aria-hidden />
+                            </div>
                             <p className="text-base font-semibold text-slate-800">
                               Build your ceremony seating
                             </p>
                             <p className="mt-2 max-w-sm text-sm text-slate-500">
                               Auto-generate rows with a centre aisle, add family sections, then click
-                              chairs to assign guests — same workflow as event tables.
+                              chairs to assign guests — same workflow as reception tables.
                             </p>
                             <div className="mt-4 flex flex-wrap justify-center gap-2">
                               <Button
+                                type="button"
                                 size="sm"
-                                className="bg-[#0B8A83]"
+                                className="bg-[#0B8A83] hover:bg-[#097a74]"
                                 disabled={previewMode}
-                                onClick={generateCeremony}
+                                onPointerDown={(event) => event.stopPropagation()}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  generateCeremony();
+                                }}
                               >
                                 <Wand2 className="h-4 w-4" /> Auto-Generate Rows
                               </Button>
                               <Button
+                                type="button"
                                 size="sm"
                                 variant="outline"
                                 disabled={previewMode}
-                                onClick={addCeremonySection}
+                                onPointerDown={(event) => event.stopPropagation()}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  addCeremonySection();
+                                }}
                               >
-                                <Plus className="h-4 w-4" /> Add Section
+                                <Plus className="h-4 w-4" /> New Zone
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={previewMode}
+                                onPointerDown={(event) => event.stopPropagation()}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  addCeremonyRow();
+                                }}
+                              >
+                                <Plus className="h-4 w-4" /> Add Row
                               </Button>
                             </div>
                           </div>
@@ -2012,25 +3424,45 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                                 (chair) => ((chair.x ?? row.x ?? 0) - (row.x ?? 0)) + 40
                               )
                             );
-                            const selected = selectedTableId === row.id;
+                            const rowInteractive = canInteractWithRows();
+                            const selected =
+                              selectedRowIds.includes(row.id) || selectedTableId === row.id;
+                            const zoneColor = section?.color;
                             return (
                               <div
                                 key={row.id}
                                 data-ceremony-row
                                 className={cn(
-                                  "absolute z-10 cursor-grab rounded-xl p-2 active:cursor-grabbing",
+                                  "absolute z-10 rounded-xl p-2 transition",
+                                  rowInteractive
+                                    ? "cursor-grab active:cursor-grabbing"
+                                    : "pointer-events-none opacity-35 grayscale-[0.35]",
                                   selected
-                                    ? "bg-[#0B8A83]/10 ring-2 ring-[#0B8A83]/50"
-                                    : "hover:bg-slate-50/80",
+                                    ? "ring-2 ring-[#0B8A83]/60"
+                                    : rowInteractive && !zoneColor && "hover:bg-slate-50/80",
                                   row.locked && "opacity-80"
                                 )}
-                                style={{ left: row.x ?? 0, top: row.y ?? 0 }}
+                                style={{
+                                  left: row.x ?? 0,
+                                  top: row.y ?? 0,
+                                  background: zoneColor
+                                    ? selected
+                                      ? `${zoneColor}28`
+                                      : `${zoneColor}16`
+                                    : selected
+                                      ? "rgba(11,138,131,0.10)"
+                                      : undefined,
+                                  boxShadow: zoneColor
+                                    ? `inset 4px 0 0 ${zoneColor}`
+                                    : undefined,
+                                }}
                                 onPointerDown={(event) => {
-                                  if (previewMode || row.locked) return;
+                                  if (previewMode || row.locked || !rowInteractive) return;
                                   if ((event.target as HTMLElement).closest("button")) return;
                                   event.stopPropagation();
+                                  const additive = event.metaKey || event.ctrlKey || event.shiftKey;
+                                  toggleRowSelection(row.id, additive);
                                   pushHistory();
-                                  setSelectedTableId(row.id);
                                   dragRef.current = {
                                     tableId: `row:${row.id}`,
                                     startX: event.clientX,
@@ -2038,19 +3470,20 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                                     origX: row.x ?? 0,
                                     origY: row.y ?? 0,
                                   };
-                                }}
-                                onClick={() => {
-                                  if (previewMode) return;
-                                  setSelectedTableId(row.id);
+                                  try {
+                                    canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
+                                  } catch {
+                                    /* ignore */
+                                  }
                                 }}
                               >
                                 <div className="mb-1.5 flex items-center gap-2">
-                                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
                                     {row.label}
                                   </p>
                                   {section && (
                                     <span
-                                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white"
+                                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-sm"
                                       style={{ background: section.color }}
                                     >
                                       {section.name}
@@ -2078,25 +3511,37 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                                         type="button"
                                         title={
                                           occupied
-                                            ? `${chair.label} · ${occupied.guestName}`
-                                            : `${chair.label} available`
+                                            ? `${chair.label} · ${occupied.guestName}${
+                                                section ? ` · ${section.name}` : ""
+                                              }`
+                                            : `${chair.label} available${
+                                                section ? ` · ${section.name}` : ""
+                                              }`
                                         }
                                         className={cn(
                                           "absolute flex h-9 w-9 flex-col items-center justify-center rounded-md border text-[9px] font-semibold shadow-sm transition",
                                           occupied
                                             ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-                                            : "border-slate-300 bg-white text-slate-700 hover:border-[#0B8A83]",
+                                            : zoneColor
+                                              ? "bg-white text-slate-700"
+                                              : "border-slate-300 bg-white text-slate-700 hover:border-[#0B8A83]",
                                           seatSelected && "ring-2 ring-[#0B8A83] ring-offset-1",
                                           chair.accessible && "border-emerald-400"
                                         )}
                                         style={{
                                           left: (chair.x ?? row.x ?? 0) - (row.x ?? 0),
                                           top: 0,
+                                          ...(!occupied && zoneColor
+                                            ? {
+                                                borderColor: zoneColor,
+                                                boxShadow: `inset 0 0 0 1px ${zoneColor}55`,
+                                              }
+                                            : {}),
                                         }}
                                         onClick={(event) => {
                                           event.stopPropagation();
-                                          if (previewMode || row.locked) return;
-                                          setSelectedTableId(row.id);
+                                          if (previewMode || row.locked || !rowInteractive) return;
+                                          toggleRowSelection(row.id, false);
                                           setSelectedSeat(chair.index);
                                           setAssignOpen(true);
                                         }}
@@ -2113,21 +3558,74 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                         </>
                       )
                     ) : tables.length === 0 && !(layout.elements ?? []).length ? (
-                      <div className="flex h-[70vh] w-[720px] items-center justify-center text-sm text-slate-500">
-                        Add a table or venue feature to start designing the floor plan.
+                      <div
+                        data-canvas-ui
+                        className="flex h-[70vh] w-[720px] flex-col items-center justify-center gap-3 px-6 text-center"
+                        onPointerDown={(event) => event.stopPropagation()}
+                      >
+                        <div className="rounded-2xl border border-dashed border-[#0B8A83]/40 bg-[#0B8A83]/5 px-8 py-10">
+                          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-[#0B8A83]/20">
+                            <Armchair className="h-6 w-6 text-[#0B8A83]" aria-hidden />
+                          </div>
+                          <p className="text-base font-semibold text-slate-800">
+                            Build your reception floor plan
+                          </p>
+                          <p className="mt-2 max-w-sm text-sm text-slate-500">
+                            Auto-generate tables from your guest count, or add one table to place and
+                            arrange on the grid.
+                          </p>
+                          <div className="mt-4 flex flex-wrap justify-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="bg-[#0B8A83] hover:bg-[#097a74]"
+                              disabled={previewMode}
+                              onPointerDown={(event) => event.stopPropagation()}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                autoGenerateTables();
+                              }}
+                            >
+                              <Wand2 className="h-4 w-4" /> Auto-Generate Tables
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={previewMode}
+                              onPointerDown={(event) => event.stopPropagation()}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                addTable("round");
+                              }}
+                            >
+                              <Plus className="h-4 w-4" /> Add Table
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     ) : (
-                      tables.map((table) => (
+                      tables.map((table) => {
+                        const tableInteractive = canInteractWithRows();
+                        return (
                         <div
                           key={table.id}
                           data-table-node
-                          className="absolute z-10 cursor-grab active:cursor-grabbing"
+                          className={cn(
+                            "absolute z-10 transition",
+                            table.locked
+                              ? "cursor-default"
+                              : tableInteractive
+                                ? "cursor-grab active:cursor-grabbing"
+                                : "pointer-events-none opacity-35 grayscale-[0.35]"
+                          )}
                           style={{ left: table.x ?? 0, top: table.y ?? 0 }}
                           onPointerDown={(event) => {
-                            if (previewMode) return;
+                            if (previewMode || !tableInteractive) return;
                             event.stopPropagation();
+                            selectTable(table.id);
+                            if (table.locked) return;
                             pushHistory();
-                            setSelectedTableId(table.id);
                             dragRef.current = {
                               tableId: table.id,
                               startX: event.clientX,
@@ -2135,13 +3633,18 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                               origX: table.x ?? 0,
                               origY: table.y ?? 0,
                             };
+                            try {
+                              canvasSurfaceRef.current?.setPointerCapture(event.pointerId);
+                            } catch {
+                              /* ignore */
+                            }
                           }}
                         >
                           <StudioTableVisual
                             table={table}
                             assignments={assignmentViews}
                             selected={selectedTableId === table.id}
-                            interactive={!previewMode}
+                            interactive={!previewMode && tableInteractive}
                             selectedSeat={selectedTableId === table.id ? selectedSeat : null}
                             companionHoldCount={
                               companionHolds.filter(
@@ -2149,18 +3652,19 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                               ).length
                             }
                             onSelect={() => {
-                              if (previewMode) return;
-                              setSelectedTableId(table.id);
+                              if (previewMode || !tableInteractive) return;
+                              selectTable(table.id);
                             }}
                             onSeatSelect={(seatIndex) => {
-                              if (previewMode) return;
-                              setSelectedTableId(table.id);
+                              if (previewMode || !tableInteractive) return;
+                              selectTable(table.id);
                               setSelectedSeat(seatIndex);
                               setAssignOpen(true);
                             }}
                           />
                         </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -2203,7 +3707,10 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           )}
         </div>
 
-        <div className="space-y-4" ref={guestPanelRef}>
+        <div
+          className={cn("space-y-4", isFullscreen && "max-h-screen overflow-y-auto pl-1")}
+          ref={guestPanelRef}
+        >
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">
@@ -2365,6 +3872,18 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           </Card>
         </div>
       </div>
+
+      {selectedElement && !previewMode && (
+        <VenueFeatureInspector
+          element={selectedElement}
+          previewMode={previewMode}
+          variant="sheet"
+          className="fixed inset-x-0 bottom-0 z-40 max-h-[50vh] overflow-y-auto rounded-t-2xl border bg-white p-4 shadow-2xl lg:hidden"
+          onRename={renameSelectedElement}
+          onUpdate={updateSelectedElement}
+          onDelete={() => removeVenueElement(selectedElement.id)}
+        />
+      )}
 
       {selectedTable && planType === "RECEPTION" && !previewMode && (
         <TableInspector

@@ -90,6 +90,8 @@ export interface StudioVenueElement {
   width?: number;
   height?: number;
   rotation?: number;
+  /** Accent fill for the map glyph (hex). */
+  color?: string;
   locked?: boolean;
   notes?: string;
 }

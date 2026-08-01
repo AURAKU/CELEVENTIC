@@ -186,12 +186,20 @@ export function suggestCeremonyForParty(input: {
 }
 
 export const CEREMONY_SECTION_PRESETS: CeremonySection[] = [
-  { id: "bridal-family", name: "Bridal Family", color: "#EC4899", side: "left", priority: 1 },
-  { id: "groom-family", name: "Groom Family", color: "#3B82F6", side: "right", priority: 1 },
+  { id: "reserved", name: "Reserved", color: "#F59E0B", side: "centre", priority: 1 },
+  { id: "family", name: "Family", color: "#EC4899", side: "centre", priority: 1 },
+  { id: "special-guests", name: "Special Guests", color: "#8B5CF6", side: "centre", priority: 2 },
+  { id: "bridal-family", name: "Bridal Family", color: "#DB2777", side: "left", priority: 1 },
+  { id: "groom-family", name: "Groom Family", color: "#2563EB", side: "right", priority: 1 },
   { id: "vip", name: "VIP", color: "#D4A63A", side: "centre", priority: 2 },
   { id: "general", name: "General Guests", color: "#64748B", side: "centre", priority: 5 },
   { id: "accessibility", name: "Accessibility", color: "#10B981", side: "left", priority: 2 },
 ];
+
+/** Stable starter zones for ceremony maps (Reserved / Family / Special Guests first). */
+export function defaultCeremonySections(): CeremonySection[] {
+  return CEREMONY_SECTION_PRESETS.slice(0, 6).map((section) => ({ ...section }));
+}
 
 export interface CeremonyConflict {
   id: string;

@@ -9,11 +9,11 @@ import {
 } from "../plan-display";
 
 describe("seating plan display labels", () => {
-  it("maps RECEPTION to Event Seating across organiser surfaces", () => {
-    assert.equal(seatingPlanDisplayName("RECEPTION"), "Event Seating");
-    assert.equal(seatingPlanShortLabel("RECEPTION"), "Event Seating");
-    assert.equal(seatingStageEyebrow("RECEPTION"), "Event Seating");
-    assert.equal(seatingCapacityLabel("RECEPTION"), "Event seating capacity");
+  it("maps RECEPTION to Reception across organiser surfaces", () => {
+    assert.equal(seatingPlanDisplayName("RECEPTION"), "Reception");
+    assert.equal(seatingPlanShortLabel("RECEPTION"), "Reception");
+    assert.equal(seatingStageEyebrow("RECEPTION"), "Reception");
+    assert.equal(seatingCapacityLabel("RECEPTION"), "Reception capacity");
   });
 
   it("maps CEREMONY to Main Ceremony across organiser surfaces", () => {
@@ -23,15 +23,15 @@ describe("seating plan display labels", () => {
     assert.equal(seatingCapacityLabel("CEREMONY"), "Ceremony chairs");
   });
 
-  it("defaults unknown plan types to Event Seating naming", () => {
-    assert.equal(seatingPlanDisplayName(undefined), "Event Seating");
-    assert.equal(seatingPlanDisplayName(null), "Event Seating");
-    assert.equal(seatingPlanDisplayName("OTHER"), "Event Seating");
+  it("defaults unknown plan types to Reception naming", () => {
+    assert.equal(seatingPlanDisplayName(undefined), "Reception");
+    assert.equal(seatingPlanDisplayName(null), "Reception");
+    assert.equal(seatingPlanDisplayName("OTHER"), "Reception");
   });
 
   it("provides default draft plan names", () => {
-    assert.equal(seatingPlanDefaultName("RECEPTION"), "Main Event Seating");
+    assert.equal(seatingPlanDefaultName("RECEPTION"), "Reception");
     assert.equal(seatingPlanDefaultName("CEREMONY"), "Main ceremony");
-    assert.equal(seatingPlanDefaultName(), "Main Event Seating");
+    assert.equal(seatingPlanDefaultName(), "Reception");
   });
 });
