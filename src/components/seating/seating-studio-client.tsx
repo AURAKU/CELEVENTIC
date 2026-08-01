@@ -30,12 +30,12 @@ import { PaginationBar } from "@/components/ui/pagination";
 import { paginateList } from "@/lib/pagination-client";
 import { SeatAssignPanel } from "@/components/seating/seating-table-visual";
 import { StudioTableVisual } from "@/components/seating/studio-table-visual";
+import { TableInspector } from "@/components/seating/table-inspector";
 import {
   autoAssignGuests,
   computeCapacitySnapshot,
   defaultTablePosition,
   detectSeatingConflicts,
-  freeSeatLabels,
   normalizeStudioLayout,
   normalizeStudioTable,
   partyGuestIds,
@@ -44,10 +44,22 @@ import {
   suggestSeatingForParty,
 } from "@/lib/seating/studio-engine";
 import {
+  seatingCapacityLabel,
+  seatingPlanDefaultName,
+  seatingPlanDisplayName,
+  seatingPlanShortLabel,
+} from "@/lib/seating/plan-display";
+import {
+  tableOccupancyCount,
+  type SeatingCompanionHoldView,
+} from "@/lib/seating/party-capacity";
+import {
   CEREMONY_SECTION_PRESETS,
+  detectCeremonyConflicts,
   generateCeremonyRows,
   findAdjacentCeremonyChairs,
   suggestCeremonyForParty,
+  type CeremonyAisleLayout,
   type CeremonyChair,
   type CeremonyRow,
 } from "@/lib/seating/ceremony-engine";
@@ -88,9 +100,28 @@ interface SeatingStudioClientProps {
 
 type HistorySnapshot = {
   tables: StudioTableConfig[];
+  ceremonyRows: CeremonyRow[];
   assignments: Record<string, StudioAssignment>;
   layout: StudioLayout;
 };
+
+function snapshotOf(input: {
+  tables: StudioTableConfig[];
+  ceremonyRows: CeremonyRow[];
+  assignments: Record<string, StudioAssignment>;
+  layout: StudioLayout;
+}): HistorySnapshot {
+  return {
+    tables: structuredClone(input.tables),
+    ceremonyRows: structuredClone(input.ceremonyRows),
+    assignments: structuredClone(input.assignments),
+    layout: structuredClone(input.layout),
+  };
+}
+
+function ceremonyRowLetter(label: string): string {
+  return label.replace(/^Row\s+/i, "").trim() || label;
+}
 
 const VENUE_ELEMENT_PRESETS: Array<{ kind: VenueElementKind; label: string }> = [
   { kind: "stage", label: "Stage" },
@@ -113,16 +144,23 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [planName, setPlanName] = useState("Main reception");
+  const [planName, setPlanName] = useState(() => seatingPlanDefaultName("RECEPTION"));
   const [planType, setPlanType] = useState<SeatingPlanKind>("RECEPTION");
   const [planId, setPlanId] = useState<string | null>(null);
   const [guests, setGuests] = useState<StudioGuest[]>([]);
+  const [companionHolds, setCompanionHolds] = useState<SeatingCompanionHoldView[]>([]);
+  const [partyPlans, setPartyPlans] = useState<Array<{ invitationId: string; splitConfirmed: boolean }>>([]);
   const [tables, setTables] = useState<StudioTableConfig[]>([]);
   const [ceremonyRows, setCeremonyRows] = useState<CeremonyRow[]>([]);
   const [assignments, setAssignments] = useState<Record<string, StudioAssignment>>({});
   const [layout, setLayout] = useState<StudioLayout>(normalizeStudioLayout({}));
   const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
-  const [ceremonyGen, setCeremonyGen] = useState({ rows: 12, chairsPerRow: 10 });
+  const [ceremonyGen, setCeremonyGen] = useState<{
+    rows: number;
+    chairsPerRow: number;
+    aisle: CeremonyAisleLayout;
+    sectionId: string;
+  }>({ rows: 12, chairsPerRow: 10, aisle: "centre", sectionId: "" });
   const [previewMode, setPreviewMode] = useState(false);
   const guestPanelRef = useRef<HTMLDivElement | null>(null);
   const [view, setView] = useState<"canvas" | "list">("canvas");
@@ -138,6 +176,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   const [suggestions, setSuggestions] = useState<SeatingSuggestion[]>([]);
   const [past, setPast] = useState<HistorySnapshot[]>([]);
   const [future, setFuture] = useState<HistorySnapshot[]>([]);
+  const dirtyRef = useRef(false);
   const dragRef = useRef<{ tableId: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
   const panning = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
 
@@ -197,11 +236,14 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         notes?: string | null;
       }>;
     }>;
+    // Never fall back across plan types — Main Ceremony and Reception are independent.
     const selected =
-      plans.find((plan) => (plan.planType ?? "RECEPTION") === activeType) ??
-      plans.find((plan) => (plan.planType ?? "RECEPTION") === "RECEPTION") ??
-      plans[0] ??
-      null;
+      plans.find((plan) => (plan.planType ?? "RECEPTION") === activeType) ?? null;
+
+    // While the organizer is editing, keep refreshing guest admission data only.
+    if (silent && dirtyRef.current) {
+      return;
+    }
 
     if (selected) {
       setPlanId(selected.id);
@@ -233,13 +275,29 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         };
       }
       setAssignments(map);
+      const pack = json.data.holdsByPlanId?.[selected.id];
+      const isReceptionPrimary = selected.id === json.data.plan?.id;
+      setCompanionHolds(pack?.companionHolds ?? (isReceptionPrimary ? json.data.companionHolds : []) ?? []);
+      setPartyPlans(pack?.partyPlans ?? (isReceptionPrimary ? json.data.partyPlans : []) ?? []);
+      dirtyRef.current = false;
+    } else if (silent) {
+      // No saved plan for this type yet — preserve the in-progress local draft.
     } else {
       setPlanId(null);
+      setPlanType(activeType);
       setTables([]);
       setCeremonyRows([]);
       setAssignments({});
-      setPlanName(activeType === "CEREMONY" ? "Main ceremony" : "Main reception");
+      setCompanionHolds([]);
+      setPartyPlans([]);
+      setSelectedTableId(null);
+      setSelectedSeat(null);
+      setSuggestions([]);
+      setPast([]);
+      setFuture([]);
+      setPlanName(seatingPlanDefaultName(activeType));
       setLayout(normalizeStudioLayout({ status: "draft", planKind: activeType, tables: [] }));
+      dirtyRef.current = false;
     }
     if (!silent) setLoading(false);
   }, [eventId, planType]);
@@ -251,9 +309,22 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   }, [load]);
 
   const assignmentList = useMemo(() => Object.values(assignments), [assignments]);
+  const confirmedSplitInvitationIds = useMemo(
+    () => new Set(partyPlans.filter((plan) => plan.splitConfirmed).map((plan) => plan.invitationId)),
+    [partyPlans]
+  );
   const conflicts = useMemo(
-    () => detectSeatingConflicts({ guests, tables, assignments: assignmentList }),
-    [guests, tables, assignmentList]
+    () =>
+      planType === "CEREMONY"
+        ? detectCeremonyConflicts({ guests, rows: ceremonyRows, assignments: assignmentList })
+        : detectSeatingConflicts({
+            guests,
+            tables,
+            assignments: assignmentList,
+            companionHolds,
+            confirmedSplitInvitationIds,
+          }),
+    [planType, guests, tables, ceremonyRows, assignmentList, companionHolds, confirmedSplitInvitationIds]
   );
   const capacity = useMemo(
     () =>
@@ -312,13 +383,10 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         : null;
 
   function pushHistory() {
+    dirtyRef.current = true;
     setPast((current) => [
       ...current.slice(-29),
-      {
-        tables: structuredClone(tables),
-        assignments: structuredClone(assignments),
-        layout: structuredClone(layout),
-      },
+      snapshotOf({ tables, ceremonyRows, assignments, layout }),
     ]);
     setFuture([]);
   }
@@ -326,12 +394,14 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   function undo() {
     const previous = past[past.length - 1];
     if (!previous) return;
+    dirtyRef.current = true;
     setFuture((current) => [
-      { tables: structuredClone(tables), assignments: structuredClone(assignments), layout: structuredClone(layout) },
+      snapshotOf({ tables, ceremonyRows, assignments, layout }),
       ...current,
     ]);
     setPast((current) => current.slice(0, -1));
     setTables(previous.tables);
+    setCeremonyRows(previous.ceremonyRows);
     setAssignments(previous.assignments);
     setLayout(previous.layout);
   }
@@ -339,12 +409,14 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   function redo() {
     const next = future[0];
     if (!next) return;
+    dirtyRef.current = true;
     setPast((current) => [
       ...current,
-      { tables: structuredClone(tables), assignments: structuredClone(assignments), layout: structuredClone(layout) },
+      snapshotOf({ tables, ceremonyRows, assignments, layout }),
     ]);
     setFuture((current) => current.slice(1));
     setTables(next.tables);
+    setCeremonyRows(next.ceremonyRows);
     setAssignments(next.assignments);
     setLayout(next.layout);
   }
@@ -370,10 +442,22 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       const planRes = await fetch(`/api/events/${eventId}/seating`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: planName, planType, layout: nextLayout }),
+        body: JSON.stringify({
+          name: planName,
+          planType,
+          expectedRevision: layout.revision ?? 0,
+          layout: nextLayout,
+        }),
       });
       const planData = await planRes.json();
       if (!planRes.ok || !planData.success) {
+        if (planRes.status === 409 || planData.code === "STALE_REVISION") {
+          setSaveError(
+            planData.error ??
+              "This seating plan was updated by another organiser. Review the latest version before saving."
+          );
+          return;
+        }
         setSaveError(planData.error ?? "Failed to save seating studio");
         return;
       }
@@ -392,6 +476,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       }
       setLayout(nextLayout);
       setPlanId(planData.data?.id ?? planId);
+      dirtyRef.current = false;
       await load(true, planType);
     } catch {
       setSaveError("Could not save seating studio. Check your connection and try again.");
@@ -425,12 +510,42 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     }
   }
 
+  async function autoRemoveAssignment(guestId: string) {
+    setAutoSaveState("saving");
+    try {
+      const res = await fetch(`/api/events/${eventId}/seating/assignments`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guestId, planType }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        setAutoSaveState("failed");
+        setSaveError(json.error ?? "Could not unassign seat");
+        return;
+      }
+      setAutoSaveState("saved");
+      window.setTimeout(() => setAutoSaveState("idle"), 1600);
+    } catch {
+      setAutoSaveState("failed");
+    }
+  }
+
   async function switchPlanType(next: SeatingPlanKind) {
     if (next === planType) return;
+    if (dirtyRef.current) {
+      const ok = window.confirm(
+        `Switch to ${next === "CEREMONY" ? "Main Ceremony" : "Event Seating"}? Unsaved layout edits on this plan stay local until you Save Draft or Publish.`
+      );
+      if (!ok) return;
+    }
+    dirtyRef.current = false;
     setPlanType(next);
     setSelectedTableId(null);
     setSelectedSeat(null);
     setSuggestions([]);
+    setPast([]);
+    setFuture([]);
     await load(false, next);
   }
 
@@ -439,34 +554,162 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     const rows = generateCeremonyRows({
       rows: ceremonyGen.rows,
       chairsPerRow: ceremonyGen.chairsPerRow,
-      aisle: "centre",
+      aisle: ceremonyGen.aisle,
       naming: "letters",
+      sectionId: ceremonyGen.sectionId || undefined,
     });
     setCeremonyRows(rows);
+    setSelectedTableId(rows[0]?.id ?? null);
     setLayout((current) => ({ ...current, ceremonyRows: rows, planKind: "CEREMONY" }));
+    setSaveError(null);
   }
 
   function addCeremonyRow() {
     pushHistory();
     const nextIndex = ceremonyRows.length;
-    const generated = generateCeremonyRows({
-      rows: 1,
-      chairsPerRow: ceremonyGen.chairsPerRow,
-      aisle: "centre",
-      naming: "letters",
-      startY: 40 + nextIndex * 72,
-    });
-    // Relabel so appended rows continue the alphabet from existing count.
+    const sectionId = ceremonyGen.sectionId || undefined;
     const relabeled = generateCeremonyRows({
       rows: ceremonyRows.length + 1,
       chairsPerRow: ceremonyGen.chairsPerRow,
-      aisle: "centre",
+      aisle: ceremonyGen.aisle,
       naming: "letters",
+      sectionId,
+      startY: 40 + nextIndex * 72,
     });
-    const appended = relabeled[relabeled.length - 1] ?? generated[0]!;
-    const next = [...ceremonyRows, appended];
+    const appended = relabeled[relabeled.length - 1]!;
+    // Keep existing rows in place; only append the new back row.
+    const next = [
+      ...ceremonyRows,
+      {
+        ...appended,
+        sectionId: sectionId ?? appended.sectionId,
+        x: 40,
+        y: 40 + nextIndex * 72,
+        chairs: appended.chairs.map((chair) => ({
+          ...chair,
+          y: 40 + nextIndex * 72,
+          x: (chair.x ?? 40) - (appended.x ?? 40) + 40,
+        })),
+      },
+    ];
     setCeremonyRows(next);
+    setSelectedTableId(next[next.length - 1]?.id ?? null);
     setLayout((current) => ({ ...current, ceremonyRows: next, planKind: "CEREMONY" }));
+  }
+
+  function updateCeremonyRow(rowId: string, patch: Partial<CeremonyRow>) {
+    dirtyRef.current = true;
+    setCeremonyRows((current) => {
+      const next = current.map((row) => (row.id === rowId ? { ...row, ...patch } : row));
+      setLayout((layoutCurrent) => ({
+        ...layoutCurrent,
+        ceremonyRows: next,
+        planKind: "CEREMONY",
+      }));
+      return next;
+    });
+  }
+
+  function renameCeremonyRow(rowId: string, nextLabel: string) {
+    const label = nextLabel.trim();
+    if (!label) return;
+    const row = ceremonyRows.find((item) => item.id === rowId);
+    if (!row || row.label === label) return;
+    pushHistory();
+    const letter = ceremonyRowLetter(label);
+    const previous = row.label;
+    const nextChairs = row.chairs.map((chair, index) => ({
+      ...chair,
+      id: `chair-${letter}-${index + 1}`,
+      label: `${letter}${index + 1}`,
+    }));
+    setCeremonyRows((current) =>
+      current.map((item) =>
+        item.id === rowId ? { ...item, label, chairs: nextChairs } : item
+      )
+    );
+    setAssignments((current) => {
+      const next = { ...current };
+      for (const [guestId, assignment] of Object.entries(next)) {
+        if (!tablesMatch(assignment.tableNumber, previous)) continue;
+        const oldChair = row.chairs.find((chair) => chair.label === assignment.seatLabel);
+        const mapped = oldChair
+          ? nextChairs.find((chair) => chair.index === oldChair.index)
+          : undefined;
+        next[guestId] = {
+          ...assignment,
+          tableNumber: label,
+          seatLabel: mapped?.label ?? assignment.seatLabel,
+        };
+      }
+      return next;
+    });
+  }
+
+  function resizeCeremonyRow(rowId: string, chairCount: number) {
+    const count = Math.max(1, Math.min(40, Math.trunc(chairCount) || 1));
+    const row = ceremonyRows.find((item) => item.id === rowId);
+    if (!row || row.chairCount === count) return;
+    pushHistory();
+    const letter = ceremonyRowLetter(row.label);
+    const generated = generateCeremonyRows({
+      rows: 1,
+      chairsPerRow: count,
+      aisle: ceremonyGen.aisle,
+      naming: "letters",
+      sectionId: row.sectionId,
+      startX: row.x ?? 40,
+      startY: row.y ?? 40,
+    })[0]!;
+    const chairs = generated.chairs.map((chair, index) => ({
+      ...chair,
+      id: `chair-${letter}-${index + 1}`,
+      label: `${letter}${index + 1}`,
+    }));
+    const keptLabels = new Set(chairs.map((chair) => chair.label.toLowerCase()));
+    setCeremonyRows((current) =>
+      current.map((item) =>
+        item.id === rowId ? { ...item, chairCount: count, chairs } : item
+      )
+    );
+    setAssignments((current) => {
+      const next = { ...current };
+      for (const [guestId, assignment] of Object.entries(next)) {
+        if (!tablesMatch(assignment.tableNumber, row.label)) continue;
+        if (!assignment.seatLabel || !keptLabels.has(assignment.seatLabel.toLowerCase())) {
+          delete next[guestId];
+          void autoRemoveAssignment(guestId);
+        }
+      }
+      return next;
+    });
+  }
+
+  function removeCeremonyRow(rowId: string) {
+    const row = ceremonyRows.find((item) => item.id === rowId);
+    if (!row) return;
+    pushHistory();
+    setCeremonyRows((current) => current.filter((item) => item.id !== rowId));
+    setAssignments((current) => {
+      const next = { ...current };
+      for (const [guestId, assignment] of Object.entries(next)) {
+        const onRow =
+          tablesMatch(assignment.tableNumber, row.label) ||
+          row.chairs.some((chair) => chair.label === assignment.seatLabel);
+        if (onRow) {
+          delete next[guestId];
+          void autoRemoveAssignment(guestId);
+        }
+      }
+      return next;
+    });
+    setSelectedTableId(null);
+    setSelectedSeat(null);
+    setLayout((current) => ({
+      ...current,
+      ceremonyRows: (current.ceremonyRows ?? []).filter((item) => item.id !== rowId),
+      planKind: "CEREMONY",
+    }));
   }
 
   function addCeremonySection() {
@@ -483,9 +726,13 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     setLayout((current) => ({
       ...current,
       ceremonySections: [...(current.ceremonySections ?? []), section],
+      zones: [
+        ...(current.zones ?? []),
+        { id: `z-${Date.now()}`, name: section.name, color: section.color },
+      ],
       planKind: "CEREMONY",
     }));
-    addZonePreset(section.name, section.color);
+    setCeremonyGen((current) => ({ ...current, sectionId: section.id }));
   }
 
   function autoGenerateTables() {
@@ -529,6 +776,131 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     setGuestFilter("unassigned");
     setPreviewMode(false);
     guestPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  async function releaseHold(holdId: string) {
+    try {
+      const res = await fetch(`/api/events/${eventId}/seating/party`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "release_hold", holdId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) {
+        setSaveError(json.error ?? "Could not release companion place");
+      }
+    } catch {
+      setSaveError("Could not release companion place. Check your connection and try again.");
+    }
+  }
+
+  function renameSelectedTable(nextLabel: string) {
+    if (!selectedTable) return;
+    const label = normalizeTableName(nextLabel);
+    if (!label || label === selectedTable.label) return;
+    pushHistory();
+    const previous = selectedTable.label;
+    setTables((current) =>
+      current.map((table) =>
+        table.id === selectedTable.id ? normalizeStudioTable({ ...table, label }) : table
+      )
+    );
+    setAssignments((current) =>
+      Object.fromEntries(
+        Object.entries(current).map(([guestId, assignment]) => [
+          guestId,
+          tablesMatch(assignment.tableNumber, previous)
+            ? { ...assignment, tableNumber: label }
+            : assignment,
+        ])
+      )
+    );
+    setCompanionHolds((current) =>
+      current.map((hold) =>
+        tablesMatch(hold.tableNumber, previous) ? { ...hold, tableNumber: label } : hold
+      )
+    );
+  }
+
+  function deleteSelectedTable() {
+    if (!selectedTable) return;
+    const occupants = tableOccupancyCount({
+      tableLabel: selectedTable.label,
+      assignments: assignmentList,
+      holds: companionHolds,
+    });
+    if (occupants > 0) {
+      const choice = window.confirm(
+        `This table contains ${occupants} assigned places.\n\nOK = return everyone to Unassigned and delete table\nCancel = keep table`
+      );
+      if (!choice) return;
+    }
+    pushHistory();
+    const removedGuestIds: string[] = [];
+    setAssignments((current) => {
+      const next = { ...current };
+      for (const [guestId, assignment] of Object.entries(next)) {
+        if (tablesMatch(assignment.tableNumber, selectedTable.label)) {
+          removedGuestIds.push(guestId);
+          delete next[guestId];
+        }
+      }
+      return next;
+    });
+    const holdsOnTable = companionHolds.filter(
+      (hold) => hold.status === "ACTIVE" && tablesMatch(hold.tableNumber, selectedTable.label)
+    );
+    setCompanionHolds((current) =>
+      current.filter(
+        (hold) => !(hold.status === "ACTIVE" && tablesMatch(hold.tableNumber, selectedTable.label))
+      )
+    );
+    setTables((current) => current.filter((table) => table.id !== selectedTable.id));
+    setSelectedTableId(null);
+    setSelectedSeat(null);
+    for (const guestId of removedGuestIds) void autoRemoveAssignment(guestId);
+    for (const hold of holdsOnTable) void releaseHold(hold.id);
+  }
+
+  function unassignGuestFromSelectedTable(guestId: string) {
+    pushHistory();
+    setAssignments((current) => {
+      const next = { ...current };
+      delete next[guestId];
+      return next;
+    });
+    void autoRemoveAssignment(guestId);
+  }
+
+  async function unassignHoldFromSelectedTable(holdId: string) {
+    setCompanionHolds((current) => current.filter((hold) => hold.id !== holdId));
+    await releaseHold(holdId);
+  }
+
+  function unassignAllOnSelectedTable() {
+    if (!selectedTable) return;
+    pushHistory();
+    const removedGuestIds: string[] = [];
+    setAssignments((current) => {
+      const next = { ...current };
+      for (const [guestId, assignment] of Object.entries(next)) {
+        if (tablesMatch(assignment.tableNumber, selectedTable.label)) {
+          removedGuestIds.push(guestId);
+          delete next[guestId];
+        }
+      }
+      return next;
+    });
+    const holdsOnTable = companionHolds.filter(
+      (hold) => hold.status === "ACTIVE" && tablesMatch(hold.tableNumber, selectedTable.label)
+    );
+    setCompanionHolds((current) =>
+      current.filter(
+        (hold) => !(hold.status === "ACTIVE" && tablesMatch(hold.tableNumber, selectedTable.label))
+      )
+    );
+    for (const guestId of removedGuestIds) void autoRemoveAssignment(guestId);
+    for (const hold of holdsOnTable) void releaseHold(hold.id);
   }
 
   function setReceptionMode(mode: ReceptionAssignmentMode) {
@@ -616,6 +988,14 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
   function applySuggestion(suggestion: SeatingSuggestion) {
     pushHistory();
     const created: StudioAssignment[] = [];
+    const ceremonySectionName =
+      planType === "CEREMONY"
+        ? (layout.ceremonySections ?? []).find(
+            (section) =>
+              section.id ===
+              ceremonyRows.find((row) => row.label === suggestion.tableLabel)?.sectionId
+          )?.name
+        : undefined;
     setAssignments((current) => {
       const next = { ...current };
       suggestion.guestIds.forEach((guestId, index) => {
@@ -629,7 +1009,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           zone:
             planType === "RECEPTION"
               ? tables.find((table) => table.id === suggestion.tableId)?.zone
-              : suggestion.tableLabel,
+              : ceremonySectionName ?? suggestion.tableLabel,
         };
         next[guestId] = row;
         created.push(row);
@@ -728,7 +1108,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     }
   }
 
-  function assignGuestToSeat(guestId: string) {
+  async function assignGuestToSeat(guestId: string) {
     if (previewMode) return;
     if (planType === "CEREMONY") {
       const row = ceremonyRows.find((item) => item.id === selectedTableId);
@@ -742,6 +1122,9 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       occupied.delete(chair.label);
       const match = findAdjacentCeremonyChairs([row], party.partySize, occupied);
       const block: CeremonyChair[] = match?.chairs ?? [chair];
+      const sectionName = (layout.ceremonySections ?? []).find(
+        (section) => section.id === row.sectionId
+      )?.name;
       const created: StudioAssignment[] = [];
       setAssignments((current) => {
         const next = { ...current };
@@ -751,7 +1134,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
             guestId: id,
             tableNumber: row.label,
             seatLabel: seat.label,
-            zone: row.sectionId,
+            zone: sectionName ?? row.sectionId,
           };
           next[id] = assignment;
           created.push(assignment);
@@ -765,52 +1148,75 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
 
     if (!selectedTable || selectedSeat == null) return;
     pushHistory();
-    const party = partyGuestIds(guests, guestId);
     const tableOnly = settings.receptionMode === "TABLE_ONLY";
-    const free = freeSeatLabels(selectedTable, assignmentList.filter((row) => row.guestId !== guestId));
-    const seatsNeeded = Math.max(1, party.partySize - party.guestIds.filter((id) => assignments[id]).length);
-    const seats = free.slice(0, Math.max(1, seatsNeeded));
-    const created: StudioAssignment[] = [];
-    setAssignments((current) => {
-      const next = { ...current };
-      for (const [id, row] of Object.entries(next)) {
-        if (
-          tablesMatch(row.tableNumber, selectedTable.label) &&
-          row.seatLabel === String(selectedSeat)
-        ) {
-          delete next[id];
+    const mode: "FULL_PARTY" | "SELECTED_ONLY" = window.confirm(
+      "Assign the full party (including companion places) to this table?\n\nOK = Full party\nCancel = Selected guest only"
+    )
+      ? "FULL_PARTY"
+      : "SELECTED_ONLY";
+
+    const attempt = async (confirmPartial: boolean): Promise<void> => {
+      try {
+        const res = await fetch(`/api/events/${eventId}/seating/party`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "assign",
+            planType: "RECEPTION",
+            guestId,
+            tableNumber: selectedTable.label,
+            mode,
+            tableOnly,
+            confirmPartial,
+            zone: selectedTable.zone,
+            seatLabels: tableOnly ? undefined : [String(selectedSeat)],
+            tables,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          if (json.code === "PARTY_DOES_NOT_FIT" && !confirmPartial) {
+            const force = window.confirm(
+              `${json.error}\n\nAssign what fits and leave the rest unassigned?`
+            );
+            if (force) {
+              await attempt(true);
+              return;
+            }
+          }
+          setSaveError(json.error ?? "Could not assign party");
+          return;
         }
-      }
-      const primary: StudioAssignment = {
-        guestId,
-        tableNumber: selectedTable.label,
-        seatLabel: tableOnly ? undefined : String(selectedSeat),
-        zone: selectedTable.zone,
-        notes: tableOnly ? `TABLE_ONLY:${party.partySize}` : undefined,
-      };
-      next[guestId] = primary;
-      created.push(primary);
-      if (!tableOnly) {
-        const others = party.guestIds.filter((id) => id !== guestId && !next[id]);
-        seats
-          .filter((seat) => seat !== String(selectedSeat))
-          .forEach((seat, index) => {
-            const otherId = others[index];
-            if (!otherId) return;
-            const row: StudioAssignment = {
-              guestId: otherId,
-              tableNumber: selectedTable.label,
-              seatLabel: seat,
-              zone: selectedTable.zone,
+        const createdAssignments = (json.data?.assignments ?? []) as Array<{
+          guestId: string;
+          tableNumber: string;
+          seatLabel: string | null;
+          zone: string | null;
+          notes: string | null;
+        }>;
+        setAssignments((current) => {
+          const next = { ...current };
+          for (const row of createdAssignments) {
+            next[row.guestId] = {
+              guestId: row.guestId,
+              tableNumber: row.tableNumber,
+              seatLabel: row.seatLabel ?? undefined,
+              zone: row.zone ?? undefined,
+              notes: row.notes ?? undefined,
             };
-            next[otherId] = row;
-            created.push(row);
-          });
+          }
+          return next;
+        });
+        setAssignOpen(false);
+        setSaveError(null);
+        dirtyRef.current = false;
+        await load(true, "RECEPTION");
+      } catch {
+        setSaveError("Could not assign party. Check your connection and try again.");
       }
-      return next;
-    });
-    setAssignOpen(false);
-    for (const row of created) void autoSaveAssignment(row);
+    };
+
+    await attempt(false);
   }
 
   function assignCeremonyParty(guestId: string) {
@@ -818,17 +1224,22 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     const occupied = new Set(
       assignmentList.map((row) => row.seatLabel).filter(Boolean) as string[]
     );
+    const preferSectionId =
+      selectedCeremonyRow?.sectionId || ceremonyGen.sectionId || undefined;
     const suggestions = suggestCeremonyForParty({
       rows: ceremonyRows,
       needed: party.partySize,
       occupiedLabels: occupied,
+      preferSectionId,
     });
     setSuggestions(
       suggestions.map((suggestion, index) => ({
         id: `ceremony-${index}`,
         invitationId: party.invitationId,
         guestIds: party.guestIds.slice(0, suggestion.seatLabels.length),
-        tableId: suggestion.rowLabel,
+        tableId:
+          ceremonyRows.find((row) => row.label === suggestion.rowLabel)?.id ??
+          suggestion.rowLabel,
         tableLabel: suggestion.rowLabel,
         seatLabels: suggestion.seatLabels,
         score: suggestion.score,
@@ -892,7 +1303,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
             </p>
             <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold text-slate-900">
               <Armchair className="h-6 w-6 text-[#0B8A83]" />
-              {planType === "CEREMONY" ? "Main Ceremony" : "Reception Seating"}
+              {seatingPlanDisplayName(planType)}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               {planType === "CEREMONY"
@@ -932,7 +1343,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
             className={planType === "RECEPTION" ? "bg-[#0B8A83]" : ""}
             onClick={() => void switchPlanType("RECEPTION")}
           >
-            Reception
+            {seatingPlanShortLabel("RECEPTION")}
           </Button>
         </div>
 
@@ -976,7 +1387,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
               ]
             : [
                 { label: "Expected people", value: peopleStats.expectedPeople },
-                { label: "Reception capacity", value: capacity.totalSeats },
+                { label: seatingCapacityLabel("RECEPTION"), value: capacity.totalSeats },
                 { label: "Assigned", value: peopleStats.assignedPeople },
                 { label: "Unassigned", value: peopleStats.unassignedPeople },
               ]
@@ -997,7 +1408,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
               <p className="text-sm font-semibold text-amber-950">
                 {peopleStats.unassignedPeople} guest
                 {peopleStats.unassignedPeople === 1 ? "" : "s"} still need{" "}
-                {planType === "CEREMONY" ? "a ceremony chair" : "a reception table"}
+                {planType === "CEREMONY" ? "a ceremony chair" : "an event table"}
               </p>
               <p className="mt-0.5 text-xs text-amber-900/80">
                 Assignments auto-save as you edit. Publish when this plan is ready for guests to see.
@@ -1041,6 +1452,14 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           <Button variant="outline" disabled={previewMode} onClick={focusAssignGuests}>
             <Users className="h-4 w-4" /> Assign Guests
           </Button>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" disabled={previewMode} onClick={runAutoAssign}>
+              <Sparkles className="h-4 w-4" /> Smart Assign
+            </Button>
+            <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+              AGI Engine powered
+            </span>
+          </div>
           <Button
             variant={previewMode ? "default" : "outline"}
             className={previewMode ? "bg-slate-800" : ""}
@@ -1067,7 +1486,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         </div>
 
         {planType === "CEREMONY" && (
-          <div className="grid max-w-md grid-cols-2 gap-2">
+          <div className="grid max-w-3xl gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <Label>Rows to generate</Label>
               <Input
@@ -1099,6 +1518,46 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                   }))
                 }
               />
+            </div>
+            <div className="space-y-1">
+              <Label>Aisle</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={ceremonyGen.aisle}
+                disabled={previewMode}
+                onChange={(event) =>
+                  setCeremonyGen((current) => ({
+                    ...current,
+                    aisle: event.target.value as CeremonyAisleLayout,
+                  }))
+                }
+              >
+                <option value="centre">Centre aisle</option>
+                <option value="left">Left aisle</option>
+                <option value="right">Right aisle</option>
+                <option value="two_side">Side aisles</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>Default section</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={ceremonyGen.sectionId}
+                disabled={previewMode}
+                onChange={(event) =>
+                  setCeremonyGen((current) => ({
+                    ...current,
+                    sectionId: event.target.value,
+                  }))
+                }
+              >
+                <option value="">Unassigned</option>
+                {(layout.ceremonySections ?? []).map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         )}
@@ -1149,12 +1608,32 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {(layout.ceremonySections ?? []).map((section) => (
-                      <Badge key={section.id} variant="outline" className="gap-1">
+                      <button
+                        key={section.id}
+                        type="button"
+                        disabled={previewMode}
+                        onClick={() =>
+                          setCeremonyGen((current) => ({
+                            ...current,
+                            sectionId: section.id,
+                          }))
+                        }
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                          ceremonyGen.sectionId === section.id
+                            ? "border-[#0B8A83] bg-[#0B8A83]/10 text-[#0B8A83]"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                        )}
+                      >
                         <span className="h-2 w-2 rounded-full" style={{ background: section.color }} />
                         {section.name}
-                      </Badge>
+                      </button>
                     ))}
                   </div>
+                  <p className="text-[11px] leading-relaxed text-slate-500">
+                    Tip: select a section, then Auto-Generate or Add Row to place chairs into that
+                    family block. Click a row to edit, drag to arrange, click a chair to assign.
+                  </p>
                 </div>
               )}
               <Button
@@ -1214,93 +1693,122 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
           </Card>
 
           {selectedTable && planType === "RECEPTION" && !previewMode && (
-            <Card className="border-[#0B8A83]/30">
+            <TableInspector
+              table={selectedTable}
+              guests={guests}
+              assignments={assignmentList}
+              companionHolds={companionHolds}
+              tableOnly={settings.receptionMode === "TABLE_ONLY"}
+              previewMode={previewMode}
+              variant="drawer"
+              className="hidden lg:flex"
+              onUpdateTable={(patch) => {
+                pushHistory();
+                setTables((current) =>
+                  current.map((table) =>
+                    table.id === selectedTable.id
+                      ? normalizeStudioTable({ ...table, ...patch })
+                      : table
+                  )
+                );
+              }}
+              onRenameTable={renameSelectedTable}
+              onDeleteRequest={deleteSelectedTable}
+              onAssignGuests={focusAssignGuests}
+              onUnassignGuest={unassignGuestFromSelectedTable}
+              onUnassignHold={(holdId) => void unassignHoldFromSelectedTable(holdId)}
+              onUnassignAll={unassignAllOnSelectedTable}
+            />
+          )}
+
+          {selectedCeremonyRow && planType === "CEREMONY" && !previewMode && (
+            <Card className="border-[#0B8A83]/30 bg-gradient-to-b from-[#0B8A83]/5 to-white">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">{tableDisplayName(selectedTable.label)}</CardTitle>
+                <CardTitle className="text-base">{selectedCeremonyRow.label}</CardTitle>
+                <p className="text-xs text-slate-500">
+                  {selectedCeremonyRow.chairs.length} chairs
+                  {selectedCeremonyRow.sectionId
+                    ? ` · ${(layout.ceremonySections ?? []).find((s) => s.id === selectedCeremonyRow.sectionId)?.name ?? "section"}`
+                    : ""}
+                </p>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-1">
-                  <Label>Table name</Label>
+                  <Label>Row name</Label>
                   <Input
-                    key={`${selectedTable.id}:${selectedTable.label}`}
-                    defaultValue={selectedTable.label}
-                    onBlur={(event) => {
-                      const label = normalizeTableName(event.target.value);
-                      if (!label) return;
-                      pushHistory();
-                      const previous = selectedTable.label;
-                      setTables((current) =>
-                        current.map((table) =>
-                          table.id === selectedTable.id ? normalizeStudioTable({ ...table, label }) : table
-                        )
-                      );
-                      setAssignments((current) =>
-                        Object.fromEntries(
-                          Object.entries(current).map(([guestId, assignment]) => [
-                            guestId,
-                            tablesMatch(assignment.tableNumber, previous)
-                              ? { ...assignment, tableNumber: label }
-                              : assignment,
-                          ])
-                        )
-                      );
-                    }}
+                    key={`${selectedCeremonyRow.id}:${selectedCeremonyRow.label}`}
+                    defaultValue={selectedCeremonyRow.label}
+                    onBlur={(event) => renameCeremonyRow(selectedCeremonyRow.id, event.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Seats</Label>
+                  <Label>Chairs in this row</Label>
                   <Input
                     type="number"
-                    min={2}
-                    max={20}
-                    value={selectedTable.seatCount ?? 8}
-                    onChange={(event) => {
-                      pushHistory();
-                      const seatCount = Number(event.target.value) || 8;
-                      setTables((current) =>
-                        current.map((table) =>
-                          table.id === selectedTable.id
-                            ? normalizeStudioTable({ ...table, seatCount, capacity: seatCount })
-                            : table
-                        )
-                      );
-                    }}
+                    min={1}
+                    max={40}
+                    value={selectedCeremonyRow.chairCount}
+                    onChange={(event) =>
+                      resizeCeremonyRow(selectedCeremonyRow.id, Number(event.target.value) || 1)
+                    }
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Zone</Label>
-                  <Input
-                    value={selectedTable.zone ?? ""}
+                  <Label>Section</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    value={selectedCeremonyRow.sectionId ?? ""}
                     onChange={(event) => {
-                      setTables((current) =>
-                        current.map((table) =>
-                          table.id === selectedTable.id
-                            ? { ...table, zone: event.target.value || undefined }
-                            : table
-                        )
-                      );
-                    }}
-                  />
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    pushHistory();
-                    setTables((current) => current.filter((table) => table.id !== selectedTable.id));
-                    setAssignments((current) => {
-                      const next = { ...current };
-                      for (const [guestId, assignment] of Object.entries(next)) {
-                        if (tablesMatch(assignment.tableNumber, selectedTable.label)) delete next[guestId];
+                      pushHistory();
+                      const sectionId = event.target.value || undefined;
+                      const sectionName = (layout.ceremonySections ?? []).find(
+                        (section) => section.id === sectionId
+                      )?.name;
+                      updateCeremonyRow(selectedCeremonyRow.id, { sectionId });
+                      if (sectionName) {
+                        setAssignments((current) => {
+                          const next = { ...current };
+                          for (const [guestId, assignment] of Object.entries(next)) {
+                            if (tablesMatch(assignment.tableNumber, selectedCeremonyRow.label)) {
+                              next[guestId] = { ...assignment, zone: sectionName };
+                            }
+                          }
+                          return next;
+                        });
                       }
-                      return next;
-                    });
-                    setSelectedTableId(null);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" /> Remove table
-                </Button>
+                    }}
+                  >
+                    <option value="">Unassigned</option>
+                    {(layout.ceremonySections ?? []).map((section) => (
+                      <option key={section.id} value={section.id}>
+                        {section.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => {
+                      pushHistory();
+                      updateCeremonyRow(selectedCeremonyRow.id, {
+                        locked: !selectedCeremonyRow.locked,
+                      });
+                    }}
+                  >
+                    {selectedCeremonyRow.locked ? "Unlock row" : "Lock row"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => removeCeremonyRow(selectedCeremonyRow.id)}
+                  >
+                    <Trash2 className="h-4 w-4" /> Remove
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -1344,7 +1852,8 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                 <div
                   className="relative h-[70vh] overflow-hidden rounded-xl bg-[radial-gradient(circle_at_top,#f8fafc,transparent_55%),linear-gradient(#e2e8f022_1px,transparent_1px),linear-gradient(90deg,#e2e8f022_1px,transparent_1px)] bg-[size:auto,24px_24px,24px_24px]"
                   onPointerDown={(event) => {
-                    if ((event.target as HTMLElement).closest("[data-table-node],[data-venue-node]")) return;
+                    if ((event.target as HTMLElement).closest("[data-table-node],[data-venue-node],[data-ceremony-row]"))
+                      return;
                     panning.current = {
                       startX: event.clientX,
                       startY: event.clientY,
@@ -1376,6 +1885,28 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                       }));
                       return;
                     }
+                    if (drag.tableId.startsWith("row:")) {
+                      const rowId = drag.tableId.slice("row:".length);
+                      dirtyRef.current = true;
+                      setCeremonyRows((current) =>
+                        current.map((row) => {
+                          if (row.id !== rowId) return row;
+                          const offsetX = nextX - (row.x ?? 0);
+                          const offsetY = nextY - (row.y ?? 0);
+                          return {
+                            ...row,
+                            x: nextX,
+                            y: nextY,
+                            chairs: row.chairs.map((chair) => ({
+                              ...chair,
+                              x: (chair.x ?? row.x ?? 0) + offsetX,
+                              y: (chair.y ?? row.y ?? 0) + offsetY,
+                            })),
+                          };
+                        })
+                      );
+                      return;
+                    }
                     setTables((current) =>
                       current.map((table) =>
                         table.id === drag.tableId
@@ -1389,7 +1920,6 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                     );
                   }}
                   onPointerUp={() => {
-                    if (dragRef.current) pushHistory();
                     dragRef.current = null;
                     panning.current = null;
                   }}
@@ -1412,6 +1942,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                         onPointerDown={(event) => {
                           if (previewMode) return;
                           event.stopPropagation();
+                          pushHistory();
                           dragRef.current = {
                             tableId: `element:${element.id}`,
                             startX: event.clientX,
@@ -1434,55 +1965,152 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                     ))}
                     {planType === "CEREMONY" ? (
                       ceremonyRows.length === 0 ? (
-                        <div className="flex h-[70vh] w-[720px] items-center justify-center text-sm text-slate-500">
-                          Generate ceremony rows to place chairs (no dining tables in this mode).
-                        </div>
-                      ) : (
-                        ceremonyRows.map((row) => (
-                          <div
-                            key={row.id}
-                            className="absolute z-10"
-                            style={{ left: row.x ?? 0, top: row.y ?? 0 }}
-                          >
-                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                              {row.label}
+                        <div className="flex h-[70vh] w-[720px] flex-col items-center justify-center gap-3 px-6 text-center">
+                          <div className="rounded-2xl border border-dashed border-[#0B8A83]/40 bg-[#0B8A83]/5 px-8 py-10">
+                            <p className="text-base font-semibold text-slate-800">
+                              Build your ceremony seating
                             </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {row.chairs.map((chair) => {
-                                const occupied = assignmentViews.find(
-                                  (assignment) => assignment.seatLabel === chair.label
-                                );
-                                return (
-                                  <button
-                                    key={chair.id}
-                                    type="button"
-                                    title={
-                                      occupied
-                                        ? `${chair.label} · ${occupied.guestName}`
-                                        : `${chair.label} available`
-                                    }
-                                    className={cn(
-                                      "flex h-9 min-w-9 flex-col items-center justify-center rounded-md border px-1 text-[9px] font-semibold shadow-sm",
-                                      occupied
-                                        ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-                                        : "border-slate-300 bg-white text-slate-700 hover:border-[#0B8A83]"
-                                    )}
-                                    onClick={() => {
-                                      if (previewMode) return;
-                                      // Ceremony assign uses row label + chair label directly.
-                                      setSelectedTableId(row.id);
-                                      setSelectedSeat(chair.index);
-                                      setAssignOpen(true);
-                                    }}
-                                  >
-                                    <Armchair className="h-3.5 w-3.5" aria-hidden />
-                                    <span>{chair.label}</span>
-                                  </button>
-                                );
-                              })}
+                            <p className="mt-2 max-w-sm text-sm text-slate-500">
+                              Auto-generate rows with a centre aisle, add family sections, then click
+                              chairs to assign guests — same workflow as event tables.
+                            </p>
+                            <div className="mt-4 flex flex-wrap justify-center gap-2">
+                              <Button
+                                size="sm"
+                                className="bg-[#0B8A83]"
+                                disabled={previewMode}
+                                onClick={generateCeremony}
+                              >
+                                <Wand2 className="h-4 w-4" /> Auto-Generate Rows
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={previewMode}
+                                onClick={addCeremonySection}
+                              >
+                                <Plus className="h-4 w-4" /> Add Section
+                              </Button>
                             </div>
                           </div>
-                        ))
+                        </div>
+                      ) : (
+                        <>
+                          <div
+                            className="absolute z-0 flex items-center justify-center rounded-lg border border-dashed border-slate-300/80 bg-white/50 px-6 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400"
+                            style={{ left: 120, top: 8, minWidth: 200 }}
+                          >
+                            Ceremony front / altar
+                          </div>
+                          {ceremonyRows.map((row) => {
+                            const section = (layout.ceremonySections ?? []).find(
+                              (item) => item.id === row.sectionId
+                            );
+                            const rowWidth = Math.max(
+                              120,
+                              ...row.chairs.map(
+                                (chair) => ((chair.x ?? row.x ?? 0) - (row.x ?? 0)) + 40
+                              )
+                            );
+                            const selected = selectedTableId === row.id;
+                            return (
+                              <div
+                                key={row.id}
+                                data-ceremony-row
+                                className={cn(
+                                  "absolute z-10 cursor-grab rounded-xl p-2 active:cursor-grabbing",
+                                  selected
+                                    ? "bg-[#0B8A83]/10 ring-2 ring-[#0B8A83]/50"
+                                    : "hover:bg-slate-50/80",
+                                  row.locked && "opacity-80"
+                                )}
+                                style={{ left: row.x ?? 0, top: row.y ?? 0 }}
+                                onPointerDown={(event) => {
+                                  if (previewMode || row.locked) return;
+                                  if ((event.target as HTMLElement).closest("button")) return;
+                                  event.stopPropagation();
+                                  pushHistory();
+                                  setSelectedTableId(row.id);
+                                  dragRef.current = {
+                                    tableId: `row:${row.id}`,
+                                    startX: event.clientX,
+                                    startY: event.clientY,
+                                    origX: row.x ?? 0,
+                                    origY: row.y ?? 0,
+                                  };
+                                }}
+                                onClick={() => {
+                                  if (previewMode) return;
+                                  setSelectedTableId(row.id);
+                                }}
+                              >
+                                <div className="mb-1.5 flex items-center gap-2">
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+                                    {row.label}
+                                  </p>
+                                  {section && (
+                                    <span
+                                      className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white"
+                                      style={{ background: section.color }}
+                                    >
+                                      {section.name}
+                                    </span>
+                                  )}
+                                  {row.locked && (
+                                    <span className="text-[9px] font-medium uppercase tracking-wide text-slate-400">
+                                      Locked
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="relative h-11" style={{ width: rowWidth }}>
+                                  {row.chairs.map((chair) => {
+                                    const occupied = assignmentViews.find(
+                                      (assignment) =>
+                                        assignment.seatLabel === chair.label ||
+                                        (tablesMatch(assignment.tableNumber, row.label) &&
+                                          assignment.seatLabel === chair.label)
+                                    );
+                                    const seatSelected =
+                                      selected && selectedSeat === chair.index;
+                                    return (
+                                      <button
+                                        key={chair.id}
+                                        type="button"
+                                        title={
+                                          occupied
+                                            ? `${chair.label} · ${occupied.guestName}`
+                                            : `${chair.label} available`
+                                        }
+                                        className={cn(
+                                          "absolute flex h-9 w-9 flex-col items-center justify-center rounded-md border text-[9px] font-semibold shadow-sm transition",
+                                          occupied
+                                            ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                                            : "border-slate-300 bg-white text-slate-700 hover:border-[#0B8A83]",
+                                          seatSelected && "ring-2 ring-[#0B8A83] ring-offset-1",
+                                          chair.accessible && "border-emerald-400"
+                                        )}
+                                        style={{
+                                          left: (chair.x ?? row.x ?? 0) - (row.x ?? 0),
+                                          top: 0,
+                                        }}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          if (previewMode || row.locked) return;
+                                          setSelectedTableId(row.id);
+                                          setSelectedSeat(chair.index);
+                                          setAssignOpen(true);
+                                        }}
+                                      >
+                                        <Armchair className="h-3.5 w-3.5" aria-hidden />
+                                        <span>{chair.label}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </>
                       )
                     ) : tables.length === 0 && !(layout.elements ?? []).length ? (
                       <div className="flex h-[70vh] w-[720px] items-center justify-center text-sm text-slate-500">
@@ -1498,6 +2126,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                           onPointerDown={(event) => {
                             if (previewMode) return;
                             event.stopPropagation();
+                            pushHistory();
                             setSelectedTableId(table.id);
                             dragRef.current = {
                               tableId: table.id,
@@ -1514,6 +2143,11 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                             selected={selectedTableId === table.id}
                             interactive={!previewMode}
                             selectedSeat={selectedTableId === table.id ? selectedSeat : null}
+                            companionHoldCount={
+                              companionHolds.filter(
+                                (hold) => hold.status === "ACTIVE" && tablesMatch(hold.tableNumber, table.label)
+                              ).length
+                            }
                             onSelect={() => {
                               if (previewMode) return;
                               setSelectedTableId(table.id);
@@ -1658,6 +2292,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                                 delete next[guest.id];
                                 return next;
                               });
+                              void autoRemoveAssignment(guest.id);
                             }}
                           >
                             Unassign
@@ -1692,7 +2327,8 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
                     <p className="text-sm font-medium">{suggestion.tableLabel}</p>
                     <p className="mt-1 text-xs text-slate-500">{suggestion.reason}</p>
                     <Button size="sm" className="mt-2" onClick={() => applySuggestion(suggestion)}>
-                      Assign seats {suggestion.seatLabels.join(", ")}
+                      Assign {planType === "CEREMONY" ? "chairs" : "seats"}{" "}
+                      {suggestion.seatLabels.join(", ")}
                     </Button>
                   </div>
                 ))
@@ -1730,6 +2366,35 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         </div>
       </div>
 
+      {selectedTable && planType === "RECEPTION" && !previewMode && (
+        <TableInspector
+          table={selectedTable}
+          guests={guests}
+          assignments={assignmentList}
+          companionHolds={companionHolds}
+          tableOnly={settings.receptionMode === "TABLE_ONLY"}
+          previewMode={previewMode}
+          variant="sheet"
+          className="fixed inset-x-0 bottom-0 z-40 max-h-[70vh] rounded-t-2xl border bg-white p-4 shadow-2xl lg:hidden"
+          onUpdateTable={(patch) => {
+            pushHistory();
+            setTables((current) =>
+              current.map((table) =>
+                table.id === selectedTable.id
+                  ? normalizeStudioTable({ ...table, ...patch })
+                  : table
+              )
+            );
+          }}
+          onRenameTable={renameSelectedTable}
+          onDeleteRequest={deleteSelectedTable}
+          onAssignGuests={focusAssignGuests}
+          onUnassignGuest={unassignGuestFromSelectedTable}
+          onUnassignHold={(holdId) => void unassignHoldFromSelectedTable(holdId)}
+          onUnassignAll={unassignAllOnSelectedTable}
+        />
+      )}
+
       {assignOpen && assignTargetLabel && selectedSeat != null && (
         <SeatAssignPanel
           tableLabel={assignTargetLabel}
@@ -1754,27 +2419,36 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
               );
             })?.guestId
           }
-          onAssign={assignGuestToSeat}
+          onAssign={(guestId) => void assignGuestToSeat(guestId)}
           onUnassign={() => {
             pushHistory();
+            const removedGuestIds: string[] = [];
+            for (const [guestId, assignment] of Object.entries(assignments)) {
+              if (planType === "CEREMONY") {
+                const chair = selectedCeremonyRow?.chairs.find(
+                  (item) => item.index === selectedSeat
+                );
+                if (assignment.seatLabel === chair?.label) removedGuestIds.push(guestId);
+                continue;
+              }
+              if (
+                selectedTable &&
+                tablesMatch(assignment.tableNumber, selectedTable.label) &&
+                assignment.seatLabel === String(selectedSeat)
+              ) {
+                removedGuestIds.push(guestId);
+              }
+            }
+            if (!removedGuestIds.length) {
+              setAssignOpen(false);
+              return;
+            }
             setAssignments((current) => {
               const next = { ...current };
-              for (const [guestId, assignment] of Object.entries(next)) {
-                if (planType === "CEREMONY") {
-                  const chair = selectedCeremonyRow?.chairs.find((item) => item.index === selectedSeat);
-                  if (assignment.seatLabel === chair?.label) delete next[guestId];
-                  continue;
-                }
-                if (
-                  selectedTable &&
-                  tablesMatch(assignment.tableNumber, selectedTable.label) &&
-                  assignment.seatLabel === String(selectedSeat)
-                ) {
-                  delete next[guestId];
-                }
-              }
+              for (const guestId of removedGuestIds) delete next[guestId];
               return next;
             });
+            for (const guestId of removedGuestIds) void autoRemoveAssignment(guestId);
             setAssignOpen(false);
           }}
           onClose={() => setAssignOpen(false)}

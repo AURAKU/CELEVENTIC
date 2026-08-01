@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { seatingPlanDefaultName } from "@/lib/seating/plan-display";
 import { seatingService } from "@/services/seating/seating.service";
 import { requireEventPermission } from "@/lib/event-access";
 import { EventPermissionKey } from "@/lib/workspace/permission-keys";
@@ -29,7 +30,7 @@ async function resolvePlan(eventId: string, planType: SeatingPlanType) {
   // Auto-create empty draft plan so assignment auto-save can proceed.
   return seatingService.upsertPlan(
     eventId,
-    planType === "CEREMONY" ? "Main ceremony" : "Main reception",
+    seatingPlanDefaultName(planType),
     { tables: [], status: "draft", planKind: planType },
     planType
   );

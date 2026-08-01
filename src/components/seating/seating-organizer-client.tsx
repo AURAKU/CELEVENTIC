@@ -97,7 +97,7 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
   const [guests, setGuests] = useState<GuestRow[]>([]);
   const [guestsTruncated, setGuestsTruncated] = useState(false);
   const [guestTotal, setGuestTotal] = useState(0);
-  const [planName, setPlanName] = useState("Main reception");
+  const [planName, setPlanName] = useState("Main Event Seating");
   const [tables, setTables] = useState<SeatingTableConfig[]>([]);
   const [assignments, setAssignments] = useState<Record<string, AssignmentRow>>({});
   const [expectedGuests, setExpectedGuests] = useState(0);

@@ -11,6 +11,7 @@ import {
   resolveSeatingTheme,
   seatingHoldMessage,
 } from "@/lib/seating/seating-theme";
+import { seatingStageEyebrow } from "@/lib/seating/plan-display";
 import {
   seatDisplayName,
   tableCaptionValue,
@@ -129,7 +130,7 @@ function StageSeal({
       aria-hidden
     >
       <span
-        className="max-w-[3.25rem] truncate text-center text-lg font-bold leading-none sm:text-xl"
+        className="max-w-[3.25rem] truncate text-center text-xl font-bold leading-none sm:text-2xl"
         style={{ color: theme.primary, fontFamily: theme.fontHeading }}
       >
         {value}
@@ -208,14 +209,19 @@ export function GuestSeatingCard({
         }}
         aria-live="polite"
       >
-        <Armchair className="mx-auto h-8 w-8 opacity-70" style={{ color: theme.secondary }} />
+        <Armchair className="mx-auto h-8 w-8 opacity-80" style={{ color: theme.primary }} />
         <h3
-          className="mt-3 text-sm font-semibold uppercase tracking-[0.22em]"
-          style={{ color: theme.secondary, fontFamily: theme.fontHeading }}
+          className="mt-3 text-xs font-bold uppercase tracking-[0.2em] sm:text-sm"
+          style={{
+            color: `color-mix(in srgb, ${theme.secondary} 42%, ${theme.foreground})`,
+            fontFamily: theme.fontHeading,
+          }}
         >
           My seating
         </h3>
-        <p className="mt-3 text-sm leading-relaxed opacity-80">{seatingHoldMessage(reveal.reason)}</p>
+        <p className="mt-3 text-base font-semibold leading-relaxed" style={{ color: theme.foreground }}>
+          {seatingHoldMessage(reveal.reason)}
+        </p>
       </section>
     );
   }
@@ -231,8 +237,8 @@ export function GuestSeatingCard({
           color: theme.foreground,
         }}
       >
-        <Armchair className="mx-auto h-8 w-8" style={{ color: theme.secondary }} />
-        <p className="mt-3 text-sm opacity-80">
+        <Armchair className="mx-auto h-8 w-8" style={{ color: theme.primary }} />
+        <p className="mt-3 text-base font-semibold" style={{ color: theme.foreground }}>
           Your seat assignment will appear here once the host finalizes seating.
         </p>
       </section>
@@ -240,6 +246,11 @@ export function GuestSeatingCard({
   }
 
   const bothStages = hasCeremony && hasReception;
+  // On gold themes, secondary ≈ background. Use primary ink + cream panels for contrast.
+  const inkColor = `color-mix(in srgb, ${theme.foreground} 78%, #0c0a09)`;
+  const labelColor = theme.primary;
+  const stagePanelBg = `color-mix(in srgb, #fffaf0 78%, ${theme.background})`;
+  const stagePanelBorder = `color-mix(in srgb, ${theme.primary} 28%, ${theme.border})`;
 
   return (
     <motion.section
@@ -247,7 +258,7 @@ export function GuestSeatingCard({
       style={{
         borderColor: theme.border,
         background: theme.background,
-        color: theme.foreground,
+        color: inkColor,
         borderRadius: theme.radius,
         boxShadow: placeCard ? "none" : `0 18px 40px -28px ${theme.primary}`,
       }}
@@ -258,19 +269,22 @@ export function GuestSeatingCard({
     >
       {!placeCard && (
         <div
-          className="border-b px-5 py-4"
+          className="border-b px-5 py-5"
           style={{
             borderColor: theme.border,
-            background: `linear-gradient(135deg, color-mix(in srgb, ${theme.secondary} 14%, transparent), transparent)`,
+            background: `linear-gradient(135deg, color-mix(in srgb, ${theme.secondary} 22%, ${theme.background}), color-mix(in srgb, ${theme.secondary} 8%, ${theme.background}))`,
           }}
         >
           <p
-            className="text-[10px] font-semibold uppercase tracking-[0.28em]"
-            style={{ color: theme.secondary, fontFamily: theme.fontHeading }}
+            className="text-sm font-bold uppercase tracking-[0.18em]"
+            style={{ color: labelColor, fontFamily: theme.fontHeading }}
           >
             Your seating
           </p>
-          <h3 className="mt-2 text-xl font-semibold" style={{ fontFamily: theme.fontHeading }}>
+          <h3
+            className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl"
+            style={{ color: inkColor, fontFamily: theme.fontHeading }}
+          >
             {partyLabel}
           </h3>
         </div>
@@ -284,30 +298,40 @@ export function GuestSeatingCard({
       >
         {hasCeremony && (
           <div
-            className="rounded-xl border px-3.5 py-3.5 text-left"
-            style={{ borderColor: theme.border }}
+            className="rounded-xl border-2 px-4 py-4 text-left"
+            style={{ borderColor: stagePanelBorder, background: stagePanelBg }}
             data-testid="seating-ceremony-stage"
           >
             <p
-              className="text-[10px] font-semibold uppercase tracking-[0.2em]"
-              style={{ color: theme.secondary }}
+              className="text-sm font-bold uppercase tracking-[0.14em]"
+              style={{ color: labelColor, fontFamily: theme.fontHeading }}
             >
               Main wedding ceremony
             </p>
             <div className="mt-3 flex items-center gap-3">
               <StageSeal value={ceremonySeal} theme={theme} />
               <div className="min-w-0">
-                <p className="text-lg font-semibold leading-tight" style={{ fontFamily: theme.fontHeading }}>
+                <p
+                  className="text-xl font-bold leading-tight sm:text-2xl"
+                  style={{ color: inkColor, fontFamily: theme.fontHeading }}
+                >
                   {ceremonyRowLabel ? tableDisplayName(ceremonyRowLabel) : "Reserved section"}
                 </p>
                 {ceremonySeatLabel ? (
-                  <p className="mt-1 text-sm opacity-80">{seatDisplayName(ceremonySeatLabel)}</p>
+                  <p className="mt-1.5 text-lg font-bold" style={{ color: inkColor }}>
+                    {seatDisplayName(ceremonySeatLabel)}
+                  </p>
                 ) : (
-                  <p className="mt-1 text-sm opacity-70">Chair reserved for you</p>
+                  <p className="mt-1.5 text-lg font-bold" style={{ color: inkColor }}>
+                    Chair reserved for you
+                  </p>
                 )}
                 {ceremonyZone && (
-                  <p className="mt-1 inline-flex items-center gap-1 text-xs opacity-70">
-                    <MapPin className="h-3.5 w-3.5" /> {ceremonyZone}
+                  <p
+                    className="mt-1.5 inline-flex items-center gap-1 text-sm font-bold"
+                    style={{ color: labelColor }}
+                  >
+                    <MapPin className="h-4 w-4" /> {ceremonyZone}
                   </p>
                 )}
               </div>
@@ -317,15 +341,15 @@ export function GuestSeatingCard({
 
         {hasReception && tableNumber && (
           <div
-            className="rounded-xl border px-3.5 py-3.5 text-left"
-            style={{ borderColor: theme.border }}
+            className="rounded-xl border-2 px-4 py-4 text-left"
+            style={{ borderColor: stagePanelBorder, background: stagePanelBg }}
             data-testid="seating-reception-stage"
           >
             <p
-              className="text-[10px] font-semibold uppercase tracking-[0.2em]"
-              style={{ color: theme.secondary }}
+              className="text-sm font-bold uppercase tracking-[0.14em]"
+              style={{ color: labelColor, fontFamily: theme.fontHeading }}
             >
-              Reception
+              {seatingStageEyebrow("RECEPTION")}
             </p>
             <div className="mt-3 flex items-center gap-3">
               <StageSeal
@@ -333,21 +357,29 @@ export function GuestSeatingCard({
                 theme={theme}
               />
               <div className="min-w-0">
-                <p className="text-lg font-semibold leading-tight" style={{ fontFamily: theme.fontHeading }}>
+                <p
+                  className="text-xl font-bold leading-tight sm:text-2xl"
+                  style={{ color: inkColor, fontFamily: theme.fontHeading }}
+                >
                   {receptionTableName}
                 </p>
                 {tableOnly ? (
-                  <p className="mt-1 text-sm opacity-80">
+                  <p className="mt-1.5 text-lg font-bold" style={{ color: inkColor }}>
                     {allowance && allowance > 1
                       ? `${allowance} reserved places at this table`
                       : "Reserved places at this table"}
                   </p>
                 ) : (
-                  <p className="mt-1 text-sm opacity-80">{seatDisplayName(seatLabel!)}</p>
+                  <p className="mt-1.5 text-lg font-bold" style={{ color: inkColor }}>
+                    {seatDisplayName(seatLabel!)}
+                  </p>
                 )}
                 {zone && (
-                  <p className="mt-1 inline-flex items-center gap-1 text-xs opacity-70">
-                    <MapPin className="h-3.5 w-3.5" /> {zone}
+                  <p
+                    className="mt-1.5 inline-flex items-center gap-1 text-sm font-bold"
+                    style={{ color: labelColor }}
+                  >
+                    <MapPin className="h-4 w-4" /> {zone}
                   </p>
                 )}
               </div>
@@ -359,13 +391,16 @@ export function GuestSeatingCard({
       {/* Gate / seat-lookup only — place card already shows party capacity above. */}
       {!placeCard && (allowance != null || members.length > 0) && (
         <div className="px-4 pb-4 sm:px-5">
-          <div className="rounded-xl border px-3 py-2 text-sm" style={{ borderColor: theme.border }}>
-            <p className="inline-flex items-center gap-1.5 font-medium">
-              <Users className="h-4 w-4" style={{ color: theme.secondary }} />
+          <div className="rounded-xl border px-3 py-2.5 text-base" style={{ borderColor: theme.border }}>
+            <p
+              className="inline-flex items-center gap-1.5 font-bold"
+              style={{ color: inkColor }}
+            >
+              <Users className="h-4 w-4" style={{ color: labelColor }} />
               {admittedCount} of {allowance ?? Math.max(members.length, 1)} guests have arrived
             </p>
             {remaining > 0 && (
-              <p className="mt-1 text-xs opacity-75">
+              <p className="mt-1 text-sm font-semibold" style={{ color: labelColor }}>
                 {remaining} place{remaining === 1 ? "" : "s"} remain reserved for your party.
               </p>
             )}
@@ -378,28 +413,43 @@ export function GuestSeatingCard({
           {members.map((member) => (
             <div
               key={member.id}
-              className="flex items-center justify-between rounded-xl border px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-xl border px-3 py-2.5 text-base"
               style={{ borderColor: theme.border }}
             >
               <div>
-                <p className="font-medium">{member.name}</p>
-                <p className="text-xs opacity-70">
+                <p className="font-bold" style={{ color: inkColor }}>
+                  {member.name}
+                </p>
+                <p className="text-sm font-semibold" style={{ color: labelColor }}>
                   {[
                     member.ceremonySeatLabel
                       ? `Ceremony ${seatDisplayName(member.ceremonySeatLabel)}`
                       : null,
-                    member.seatLabel ? `Reception ${seatDisplayName(member.seatLabel)}` : null,
+                    member.seatLabel ? `Event Seating ${seatDisplayName(member.seatLabel)}` : null,
                   ]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
               </div>
               {member.admitted ? (
-                <Badge className="gap-1 bg-emerald-500/15 text-emerald-700">
-                  <CheckCircle2 className="h-3 w-3" /> Admitted
+                <Badge
+                  className="shrink-0 gap-1.5 border border-emerald-700/20 bg-emerald-600 px-3 py-1 text-sm font-bold text-white shadow-sm"
+                >
+                  <CheckCircle2 className="h-4 w-4" aria-hidden />
+                  Admitted
                 </Badge>
               ) : (
-                <Badge variant="outline">Awaiting</Badge>
+                <Badge
+                  variant="outline"
+                  className="shrink-0 border-2 px-3 py-1 text-sm font-bold"
+                  style={{
+                    borderColor: labelColor,
+                    color: inkColor,
+                    background: `color-mix(in srgb, ${theme.background} 88%, white)`,
+                  }}
+                >
+                  Awaiting
+                </Badge>
               )}
             </div>
           ))}
@@ -427,7 +477,7 @@ export function GuestSeatingCard({
                   onClick={() => setMapOpen((value) => (value === "reception" ? null : "reception"))}
                 >
                   <SeatTableIcon />
-                  {mapOpen === "reception" ? "Hide directions" : "Find reception table"}
+                  {mapOpen === "reception" ? "Hide directions" : "Find event table"}
                 </Button>
               </>
             ) : (
@@ -448,7 +498,7 @@ export function GuestSeatingCard({
             )}
           </div>
           {mapOpen && (
-            <ol className="mt-3 space-y-2 text-left text-sm opacity-85">
+            <ol className="mt-3 space-y-2 text-left text-base font-semibold" style={{ color: inkColor }}>
               {(mapOpen === "ceremony" ? ceremonySteps : receptionSteps)?.map((step, index) => (
                 <li key={`${mapOpen}-${index}-${step}`} className="flex gap-2">
                   <span
@@ -463,7 +513,7 @@ export function GuestSeatingCard({
               <li className="flex gap-2">
                 <span
                   className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                  style={{ background: theme.secondary }}
+                  style={{ background: theme.primary }}
                 >
                   ★
                 </span>
@@ -472,7 +522,7 @@ export function GuestSeatingCard({
                     ? `Look for ${ceremonyRowLabel ? tableDisplayName(ceremonyRowLabel) : "your ceremony section"}${
                         ceremonySeatLabel ? `, ${seatDisplayName(ceremonySeatLabel)}` : ""
                       }.`
-                    : `Look for ${tableNumber ? tableDisplayName(tableNumber) : "your reception table"}${
+                    : `Look for ${tableNumber ? tableDisplayName(tableNumber) : "your event table"}${
                         zone ? ` in the ${zone} zone` : ""
                       }.`}
                 </span>

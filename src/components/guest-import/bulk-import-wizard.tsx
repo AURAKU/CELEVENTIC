@@ -145,7 +145,7 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
               plan.planType === "CEREMONY"
                 ? "Main Ceremony"
                 : plan.planType === "RECEPTION"
-                  ? "Reception"
+                  ? "Event Seating"
                   : plan.name || "Seating plan",
           }));
           setSeatingPlans(mapped);
@@ -462,7 +462,7 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
                     ))}
                   </select>
                   <p className="text-[11px] text-slate-500">
-                    Dual-stage events: pick Reception or Main Ceremony for imported seats.
+                    Dual-stage events: pick Event Seating or Main Ceremony for imported seats.
                   </p>
                 </div>
               )}

@@ -316,6 +316,8 @@ model Event {
   gates                EventGate[]
   staff                EventStaff[]
   seatingPlans         SeatingPlan[]
+  seatingCompanionHolds SeatingCompanionHold[]
+  seatingPartyPlans     SeatingPartyPlan[]
   expenses             EventExpense[]
   wallet               Wallet?
   fraudLogs            FraudDetectionLog[]
@@ -499,6 +501,8 @@ model Invitation {
   event            Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   template         EventTemplate?            @relation(fields: [templateId], references: [id])
   guests           Guest[]
+  seatingCompanionHolds SeatingCompanionHold[]
+  seatingPartyPlans     SeatingPartyPlan[]
   blocks           InvitationBlock[]
   guestWishes      InvitationGuestWish[]
   giftCampaigns    EventGiftCampaign[]
@@ -562,6 +566,8 @@ model Guest {
   qrScans           QrScan[]
   tickets           Ticket[]
   seatingAssignments SeatingAssignment[]
+  seatingCompanionHoldsOwned SeatingCompanionHold[] @relation("CompanionHoldOwner")
+  seatingCompanionHoldsConverted SeatingCompanionHold[] @relation("CompanionHoldConverted")
   memoryUploads     EventMemoryUpload[]
   guestWishes       InvitationGuestWish[]
   giftPayments      EventGiftPayment[]
@@ -2194,7 +2200,8 @@ model SeatingPlan {
   id        String          @id @default(cuid())
   eventId   String
   name      String
-  /// RECEPTION (tables) or CEREMONY (chairs/rows). One of each per event.
+  /// RECEPTION (event tables) or CEREMONY (chairs/rows). One of each per event.
+  /// Organiser UI labels RECEPTION as "Event Seating" — enum kept for compatibility.
   planType  SeatingPlanType @default(RECEPTION)
   layout    Json
   createdAt DateTime        @default(now())
@@ -2202,6 +2209,8 @@ model SeatingPlan {
 
   event       Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
   assignments SeatingAssignment[]
+  companionHolds SeatingCompanionHold[]
+  partyPlans     SeatingPartyPlan[]
 
   @@unique([eventId, planType])
   @@index([eventId])
@@ -2218,6 +2227,7 @@ model SeatingAssignment {
   seatLabel     String?
   zone          String?
   notes         String?
+  locked        Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -2227,7 +2237,72 @@ model SeatingAssignment {
   @@unique([guestId, seatingPlanId])
   @@index([seatingPlanId])
   @@index([guestId])
+  @@index([seatingPlanId, tableNumber])
   @@map("seating_assignments")
+}
+
+model SeatingCompanionHold {
+  id               String    @id @default(cuid())
+  eventId          String
+  seatingPlanId    String
+  invitationId     String
+  ownerGuestId     String?
+  companionIndex   Int
+  displayLabel     String
+  tableNumber      String
+  seatLabel        String?
+  zone             String?
+  notes            String?
+  locked           Boolean   @default(false)
+  /// ACTIVE | RELEASED | CONVERTED
+  status           String    @default("ACTIVE")
+  convertedGuestId String?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  releasedAt       DateTime?
+
+  event          Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  seatingPlan    SeatingPlan @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
+  invitation     Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  ownerGuest     Guest?      @relation("CompanionHoldOwner", fields: [ownerGuestId], references: [id], onDelete: SetNull)
+  convertedGuest Guest?      @relation("CompanionHoldConverted", fields: [convertedGuestId], references: [id], onDelete: SetNull)
+
+  @@unique([seatingPlanId, invitationId, companionIndex])
+  @@index([eventId, seatingPlanId])
+  @@index([seatingPlanId, tableNumber])
+  @@index([invitationId])
+  @@index([seatingPlanId, status])
+  @@index([convertedGuestId])
+  @@map("seating_companion_holds")
+}
+
+model SeatingPartyPlan {
+  id                 String    @id @default(cuid())
+  seatingPlanId      String
+  invitationId       String
+  requiredPlaces     Int
+  /// KEEP_TOGETHER | ADJACENT_IF_POSSIBLE | SAME_TABLE | SPLIT_ALLOWED | SPLIT_CONFIRMED | INDIVIDUAL_ASSIGNMENT
+  assignmentStrategy String    @default("KEEP_TOGETHER")
+  splitConfirmed     Boolean   @default(false)
+  splitReason        String?
+  locked             Boolean   @default(false)
+  lastCalculatedAt   DateTime?
+  createdById        String?
+  updatedById        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  seatingPlan SeatingPlan @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
+  invitation  Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  eventId     String
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([seatingPlanId, invitationId])
+  @@index([seatingPlanId])
+  @@index([invitationId])
+  @@index([eventId])
+  @@map("seating_party_plans")
 }
 
 enum SeatingPlanType {

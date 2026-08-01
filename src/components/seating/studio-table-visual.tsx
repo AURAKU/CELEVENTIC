@@ -10,7 +10,7 @@ import {
   tablesMatch,
   type GuestAssignmentView,
 } from "@/lib/seating/seating-types";
-import type { StudioTableConfig } from "@/lib/seating/studio-types";
+import { ZONE_PRESETS, type StudioTableConfig } from "@/lib/seating/studio-types";
 
 interface StudioTableVisualProps {
   table: StudioTableConfig;
@@ -19,9 +19,19 @@ interface StudioTableVisualProps {
   interactive?: boolean;
   selectedSeat?: number | null;
   admittedByGuestId?: Record<string, boolean>;
+  /** Active companion holds (unnamed plus-ones) currently seated at this table. */
+  companionHoldCount?: number;
   onSelect?: () => void;
   onSeatSelect?: (seatIndex: number) => void;
   className?: string;
+}
+
+function zonePresetColor(zone?: string | null): string | undefined {
+  if (!zone?.trim()) return undefined;
+  const match = ZONE_PRESETS.find(
+    (preset) => preset.name.toLowerCase() === zone.trim().toLowerCase()
+  );
+  return match?.color;
 }
 
 export function StudioTableVisual({
@@ -31,6 +41,7 @@ export function StudioTableVisual({
   interactive,
   selectedSeat,
   admittedByGuestId,
+  companionHoldCount,
   onSelect,
   onSeatSelect,
   className,
@@ -40,8 +51,9 @@ export function StudioTableVisual({
   const tableAssignments = assignments.filter((assignment) =>
     tablesMatch(assignment.tableNumber, table.label)
   );
-  const filled = tableAssignments.length;
+  const filled = tableAssignments.length + (companionHoldCount ?? 0);
   const capacity = table.seatCount ?? 8;
+  const zoneColor = rawTable.color ?? zonePresetColor(table.zone);
   const admitted = tableAssignments.filter(
     (assignment) => assignment.admitted || admittedByGuestId?.[assignment.guestId]
   ).length;
@@ -83,7 +95,14 @@ export function StudioTableVisual({
           {rawTable.locked && <Lock className="h-3.5 w-3.5 text-slate-400" />}
         </div>
         {(table.zone || rawTable.category) && (
-          <p className="text-[10px] uppercase tracking-wide text-slate-500">
+          <p className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-slate-500">
+            {zoneColor && (
+              <span
+                className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: zoneColor }}
+                aria-hidden
+              />
+            )}
             {table.zone || rawTable.category}
           </p>
         )}
@@ -98,11 +117,15 @@ export function StudioTableVisual({
           className={cn(
             "absolute z-0 flex items-center justify-center border-2 shadow-[inset_0_8px_18px_rgba(15,23,42,0.08),0_10px_24px_-16px_rgba(11,138,131,0.55)]",
             shapeClass,
-            rawTable.vip ? "border-amber-400/70 from-amber-50 to-white" : "border-[#D4A63A]/55 from-amber-50 to-white",
+            !zoneColor &&
+              (rawTable.vip
+                ? "border-amber-400/70 from-amber-50 to-white"
+                : "border-[#D4A63A]/55 from-amber-50 to-white"),
             "bg-gradient-to-br"
           )}
           style={{
-            boxShadow: `inset 0 0 0 3px rgba(255,255,255,0.65), 0 0 0 4px color-mix(in srgb, #0B8A83 ${Math.round(fillRatio * 55)}%, transparent)`,
+            borderColor: zoneColor && !rawTable.vip ? zoneColor : undefined,
+            boxShadow: `inset 0 0 0 3px rgba(255,255,255,0.65), 0 0 0 4px color-mix(in srgb, ${zoneColor ?? "#0B8A83"} ${Math.round(fillRatio * 55)}%, transparent)`,
           }}
         >
           <span className="px-1 text-center font-display text-lg font-bold leading-tight text-[#0B8A83]">

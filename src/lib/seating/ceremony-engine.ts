@@ -192,3 +192,140 @@ export const CEREMONY_SECTION_PRESETS: CeremonySection[] = [
   { id: "general", name: "General Guests", color: "#64748B", side: "centre", priority: 5 },
   { id: "accessibility", name: "Accessibility", color: "#10B981", side: "left", priority: 2 },
 ];
+
+export interface CeremonyConflict {
+  id: string;
+  severity: "CRITICAL" | "WARNING" | "SUGGESTION" | "RESOLVED";
+  code: string;
+  message: string;
+  guestIds?: string[];
+  tableLabel?: string;
+  actionHint?: string;
+}
+
+/** Ceremony-aware conflict detection (rows/chairs, not dining tables). */
+export function detectCeremonyConflicts(input: {
+  guests: Array<{ id: string; name: string; invitationId?: string | null; plusOnes?: number; admission?: { allowance: number } | null }>;
+  rows: CeremonyRow[];
+  assignments: Array<{ guestId: string; tableNumber: string; seatLabel?: string }>;
+}): CeremonyConflict[] {
+  const conflicts: CeremonyConflict[] = [];
+  const chairByLabel = new Map<string, { row: CeremonyRow; chair: CeremonyChair }>();
+  for (const row of input.rows) {
+    for (const chair of row.chairs) {
+      chairByLabel.set(chair.label.toLowerCase(), { row, chair });
+    }
+  }
+  const bySeat = new Map<string, string[]>();
+
+  for (const assignment of input.assignments) {
+    const seatKey = (assignment.seatLabel ?? "").trim().toLowerCase();
+    if (!seatKey) {
+      conflicts.push({
+        id: `ceremony-missing-seat:${assignment.guestId}`,
+        severity: "CRITICAL",
+        code: "MISSING_CHAIR",
+        message: `Ceremony assignment for a guest has no chair label.`,
+        guestIds: [assignment.guestId],
+        actionHint: "Reassign this guest to a specific ceremony chair.",
+      });
+      continue;
+    }
+
+    const match = chairByLabel.get(seatKey);
+    const rowMatch =
+      match?.row ??
+      input.rows.find((row) => row.label.toLowerCase() === assignment.tableNumber.toLowerCase());
+
+    if (!match && !rowMatch) {
+      conflicts.push({
+        id: `ceremony-missing-row:${assignment.guestId}`,
+        severity: "CRITICAL",
+        code: "MISSING_ROW",
+        message: `Guest assignment references missing ceremony seat "${assignment.seatLabel ?? assignment.tableNumber}".`,
+        guestIds: [assignment.guestId],
+        actionHint: "Reassign this guest to an existing ceremony chair.",
+      });
+      continue;
+    }
+
+    if (!match) {
+      conflicts.push({
+        id: `ceremony-missing-chair:${assignment.guestId}`,
+        severity: "CRITICAL",
+        code: "MISSING_CHAIR",
+        message: `Chair "${assignment.seatLabel}" is not on ${rowMatch?.label ?? "the ceremony plan"}.`,
+        tableLabel: rowMatch?.label,
+        guestIds: [assignment.guestId],
+        actionHint: "Pick a chair that exists on the row, or regenerate the row.",
+      });
+      continue;
+    }
+
+    const key = match.chair.label.toLowerCase();
+    const current = bySeat.get(key) ?? [];
+    current.push(assignment.guestId);
+    bySeat.set(key, current);
+  }
+
+  for (const [seatLabel, guestIds] of bySeat) {
+    if (guestIds.length < 2) continue;
+    conflicts.push({
+      id: `ceremony-dup:${seatLabel}`,
+      severity: "CRITICAL",
+      code: "DUPLICATE_SEAT",
+      message: `Ceremony chair ${seatLabel.toUpperCase()} is assigned to ${guestIds.length} guests.`,
+      guestIds,
+      actionHint: "Keep one guest and reassign the others.",
+    });
+  }
+
+  for (const row of input.rows) {
+    const seated = input.assignments.filter(
+      (rowAssignment) =>
+        rowAssignment.tableNumber.toLowerCase() === row.label.toLowerCase() ||
+        row.chairs.some(
+          (chair) =>
+            chair.label.toLowerCase() === (rowAssignment.seatLabel ?? "").toLowerCase()
+        )
+    );
+    if (seated.length > row.chairs.length) {
+      conflicts.push({
+        id: `ceremony-overfill:${row.id}`,
+        severity: "CRITICAL",
+        code: "ROW_OVER_CAPACITY",
+        message: `${row.label} has ${seated.length} assignments but only ${row.chairs.length} chairs.`,
+        tableLabel: row.label,
+        guestIds: seated.map((item) => item.guestId),
+        actionHint: "Add chairs to this row or move guests to another row.",
+      });
+    }
+  }
+
+  const byInvitation = new Map<string, typeof input.guests>();
+  for (const guest of input.guests) {
+    if (!guest.invitationId) continue;
+    const list = byInvitation.get(guest.invitationId) ?? [];
+    list.push(guest);
+    byInvitation.set(guest.invitationId, list);
+  }
+
+  for (const [invitationId, members] of byInvitation) {
+    const memberIds = new Set(members.map((guest) => guest.id));
+    const seated = input.assignments.filter((row) => memberIds.has(row.guestId));
+    if (seated.length === 0) continue;
+    const rowsUsed = new Set(seated.map((row) => row.tableNumber.toLowerCase()));
+    if (rowsUsed.size > 1) {
+      conflicts.push({
+        id: `ceremony-split:${invitationId}`,
+        severity: "WARNING",
+        code: "GROUP_SPLIT",
+        message: `${members[0]?.name ?? "A party"} is split across ${rowsUsed.size} ceremony rows.`,
+        guestIds: [...memberIds],
+        actionHint: "Seat the whole party on one row when possible.",
+      });
+    }
+  }
+
+  return conflicts;
+}

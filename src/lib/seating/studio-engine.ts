@@ -220,10 +220,23 @@ export function detectSeatingConflicts(input: {
   guests: StudioGuest[];
   tables: StudioTableConfig[];
   assignments: StudioAssignment[];
+  /** Active companion holds (unnamed plus-ones). */
+  companionHolds?: Array<{
+    id: string;
+    invitationId: string;
+    tableNumber: string;
+    seatLabel?: string | null;
+    status?: string;
+  }>;
+  /** Confirmed intentional splits — suppress unresolved GROUP_SPLIT. */
+  confirmedSplitInvitationIds?: Set<string>;
 }): SeatingConflict[] {
   const conflicts: SeatingConflict[] = [];
   const bySeat = new Map<string, string[]>();
   const tableByLabel = new Map(input.tables.map((table) => [table.label.toLowerCase(), table]));
+  const activeHolds = (input.companionHolds ?? []).filter(
+    (hold) => !hold.status || hold.status === "ACTIVE"
+  );
 
   for (const assignment of input.assignments) {
     const table =
@@ -263,6 +276,28 @@ export function detectSeatingConflicts(input: {
     }
   }
 
+  for (const hold of activeHolds) {
+    const table =
+      input.tables.find((row) => tablesMatch(row.label, hold.tableNumber)) ??
+      tableByLabel.get(hold.tableNumber.toLowerCase());
+    if (!table) {
+      conflicts.push({
+        id: `missing-table-hold:${hold.id}`,
+        severity: "CRITICAL",
+        code: "MISSING_TABLE",
+        message: `Companion place references missing table "${hold.tableNumber}".`,
+        actionHint: "Reassign or release this companion place.",
+      });
+      continue;
+    }
+    if (hold.seatLabel) {
+      const seatKey = `${table.label.toLowerCase()}::${hold.seatLabel}`;
+      const current = bySeat.get(seatKey) ?? [];
+      current.push(`hold:${hold.id}`);
+      bySeat.set(seatKey, current);
+    }
+  }
+
   for (const [seatKey, guestIds] of bySeat) {
     if (guestIds.length < 2) continue;
     const [tableLabel, seatLabel] = seatKey.split("::");
@@ -270,22 +305,24 @@ export function detectSeatingConflicts(input: {
       id: `dup:${seatKey}`,
       severity: "CRITICAL",
       code: "DUPLICATE_SEAT",
-      message: `Seat ${seatLabel === "unlabeled" ? "(unlabeled)" : seatLabel} at ${tableLabel} is assigned to ${guestIds.length} guests.`,
+      message: `Seat ${seatLabel === "unlabeled" ? "(unlabeled)" : seatLabel} at ${tableLabel} is assigned to ${guestIds.length} occupants.`,
       tableLabel,
-      guestIds,
-      actionHint: "Keep one guest and reassign the others.",
+      guestIds: guestIds.filter((id) => !id.startsWith("hold:")),
+      actionHint: "Keep one occupant and reassign the others.",
     });
   }
 
   for (const table of input.tables) {
     const seated = input.assignments.filter((row) => tablesMatch(row.tableNumber, table.label));
+    const holdsHere = activeHolds.filter((hold) => tablesMatch(hold.tableNumber, table.label));
+    const occupants = seated.length + holdsHere.length;
     const capacity = table.seatCount ?? table.capacity ?? 8;
-    if (seated.length > capacity) {
+    if (occupants > capacity) {
       conflicts.push({
         id: `overfill:${table.id}`,
         severity: "CRITICAL",
         code: "TABLE_OVER_CAPACITY",
-        message: `${table.label} has ${seated.length} assignments but only ${capacity} seats.`,
+        message: `${table.label} has ${occupants} occupants (including companion places) but only ${capacity} seats.`,
         tableLabel: table.label,
         guestIds: seated.map((row) => row.guestId),
         actionHint: "Increase capacity or move guests to another table.",
@@ -310,33 +347,34 @@ export function detectSeatingConflicts(input: {
       );
     const memberIds = new Set(members.map((row) => row.id));
     const seated = input.assignments.filter((row) => memberIds.has(row.guestId));
-    if (seated.length === 0) continue;
-    const tablesUsed = new Set(seated.map((row) => row.tableNumber.toLowerCase()));
-    if (tablesUsed.size > 1 && allowance > 1) {
+    const holds = activeHolds.filter((hold) => hold.invitationId === invitationId);
+    if (seated.length === 0 && holds.length === 0) continue;
+    const tablesUsed = new Set([
+      ...seated.map((row) => row.tableNumber.toLowerCase()),
+      ...holds.map((hold) => hold.tableNumber.toLowerCase()),
+    ]);
+    const confirmed = input.confirmedSplitInvitationIds?.has(invitationId);
+    if (tablesUsed.size > 1 && allowance > 1 && !confirmed) {
       conflicts.push({
         id: `split:${invitationId}`,
         severity: "WARNING",
-        code: "GROUP_SPLIT",
+        code: "PARTY_SPLIT_UNCONFIRMED",
         message: `${members[0]?.name ?? "A party"} is split across ${tablesUsed.size} tables.`,
         guestIds: [...memberIds],
         actionHint: "Move the whole party to one table, or confirm the split intentionally.",
       });
     }
-    if (seated.length < allowance) {
-      const tableLabel = seated[0]?.tableNumber;
-      const table = input.tables.find((row) => tableLabel && tablesMatch(row.label, tableLabel));
-      const free = table ? freeSeatLabels(table, input.assignments).length : 0;
-      if (table && free < allowance - seated.length) {
-        conflicts.push({
-          id: `party-fit:${invitationId}`,
-          severity: "WARNING",
-          code: "PARTY_INCOMPLETE",
-          message: `${members[0]?.name ?? "Party"} still needs ${allowance - seated.length} seat(s); ${table.label} only has ${free} free.`,
-          tableLabel: table.label,
-          guestIds: [...memberIds],
-          actionHint: "Find a table with enough adjacent seats for the full party.",
-        });
-      }
+    const placed = seated.length + holds.length;
+    if (placed < allowance) {
+      conflicts.push({
+        id: `party-fit:${invitationId}`,
+        severity: "WARNING",
+        code: "PARTY_INCOMPLETE",
+        message: `${members[0]?.name ?? "Party"} still needs ${allowance - placed} place(s) (${placed} of ${allowance} seated, including companion holds).`,
+        tableLabel: seated[0]?.tableNumber ?? holds[0]?.tableNumber,
+        guestIds: [...memberIds],
+        actionHint: "Assign the full party or release unused companion places.",
+      });
     }
   }
 

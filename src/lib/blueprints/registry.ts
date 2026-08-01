@@ -17,7 +17,7 @@ const WEDDING_TERMINOLOGY: Record<string, string> = {
   guests: "Guests",
   guest_list: "Guest List",
   invitations: "Wedding Invitations",
-  seating: "Reception Seating",
+  seating: "Event Seating",
   vendors: "Wedding Vendors",
   contributions: "Gifts & Contributions",
   registry: "Registry",

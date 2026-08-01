@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { seatingService } from "@/services/seating/seating.service";
+import { seatingPartyService } from "@/services/seating/seating-party.service";
 import type { SeatingLayout } from "@/services/seating/seating.service";
 import { requireEventPermission, verifyEventAccess } from "@/lib/event-access";
 import { EventPermissionKey } from "@/lib/workspace/permission-keys";
@@ -87,6 +88,25 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     await verifyEventAccess(eventId, session.user.id, session.user.role);
     const plans = await seatingService.getPlansForEvent(eventId);
     const plan = plans.find((row) => row.planType === "RECEPTION") ?? plans[0] ?? null;
+
+    const holdsByPlanId: Record<
+      string,
+      {
+        companionHolds: Awaited<ReturnType<typeof seatingPartyService.listActiveHolds>>;
+        partyPlans: Awaited<ReturnType<typeof seatingPartyService.listPartyPlans>>;
+      }
+    > = {};
+    await Promise.all(
+      plans.map(async (row) => {
+        const [companionHolds, partyPlans] = await Promise.all([
+          seatingPartyService.listActiveHolds(row.id),
+          seatingPartyService.listPartyPlans(row.id),
+        ]);
+        holdsByPlanId[row.id] = { companionHolds, partyPlans };
+      })
+    );
+    const primaryHolds = plan ? holdsByPlanId[plan.id] : { companionHolds: [], partyPlans: [] };
+
     const [guests, guestTotal] = await Promise.all([
       loadAllSeatingGuests(eventId),
       prisma.guest.count({ where: { eventId, archivedAt: null } }),
@@ -143,6 +163,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         }),
         guestTotal,
         guestsTruncated: guestTotal > guests.length,
+        companionHolds: primaryHolds.companionHolds,
+        partyPlans: primaryHolds.partyPlans,
+        holdsByPlanId,
       },
     });
   } catch {
@@ -154,6 +177,8 @@ const upsertSchema = z
   .object({
     name: z.string().trim().min(1).max(120),
     planType: z.enum(["RECEPTION", "CEREMONY"]).optional().default("RECEPTION"),
+    /** Client layout.revision when saving — reject if server is newer. */
+    expectedRevision: z.number().int().min(0).optional(),
     layout: z
       .object({
         tables: z
@@ -254,6 +279,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const body = upsertSchema.parse(await req.json());
+    const existing = await seatingService.getPlanByType(eventId, body.planType);
+    if (existing && body.expectedRevision != null) {
+      const serverRevision =
+        typeof (existing.layout as { revision?: number } | null)?.revision === "number"
+          ? (existing.layout as { revision: number }).revision
+          : 0;
+      if (body.expectedRevision < serverRevision) {
+        return NextResponse.json(
+          {
+            error:
+              "This seating plan was updated by another organiser. Review the latest version before saving.",
+            code: "STALE_REVISION",
+            details: { serverRevision, expectedRevision: body.expectedRevision },
+          },
+          { status: 409 }
+        );
+      }
+    }
     const plan = await seatingService.upsertPlan(
       eventId,
       body.name,
