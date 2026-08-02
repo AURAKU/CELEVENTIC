@@ -10,16 +10,22 @@
  * organizer welcome photos are not used on this beat.
  */
 
+import {
+  INTRO_POSTER_SRC,
+  INTRO_UNKNOWN_DURATION_FALLBACK_MS,
+  INTRO_VIDEO_SRC,
+} from "@/lib/experience-engine/soft-intro-playback";
+
 /** Canonical Celeventic invitation intro — every template, every guest. */
-export const CELEVENTIC_INVITATION_INTRO_VIDEO = "/brand/celeventic-invitation-intro.mp4?v=20260731a";
-export const CELEVENTIC_INVITATION_INTRO_POSTER = "/brand/celeventic-invitation-intro-poster.jpg?v=20260731a";
+export const CELEVENTIC_INVITATION_INTRO_VIDEO = INTRO_VIDEO_SRC;
+export const CELEVENTIC_INVITATION_INTRO_POSTER = INTRO_POSTER_SRC;
 
 /** Fallback hold when the video element cannot report duration (reduced motion / errors). */
 export const SOFT_INTRO_DURATION_MS = 12_500;
 export const SOFT_INTRO_REDUCED_MOTION_MS = 800;
 export const SOFT_INTRO_EXIT_MS = 720;
-/** Hard ceiling so a stalled video never blanks the guest forever (~2× clip length). */
-export const SOFT_INTRO_FALLBACK_MS = 28_000;
+/** Hard ceiling when duration is unknown — guests must never stay blank forever. */
+export const SOFT_INTRO_FALLBACK_MS = INTRO_UNKNOWN_DURATION_FALLBACK_MS;
 
 /**
  * Returning guest still watches the full brand clip; Skip appears sooner so

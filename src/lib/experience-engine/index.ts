@@ -125,6 +125,19 @@ export type {
   SoftIntroAtmosphereInput,
 } from "@/lib/experience-engine/soft-intro";
 
+export {
+  INTRO_VIDEO_SRC,
+  INTRO_POSTER_SRC,
+  INTRO_UNKNOWN_DURATION_FALLBACK_MS,
+  softIntroSessionKey,
+  softIntroTimeoutMs,
+  attemptVideoPlay,
+  hasSeenSoftIntroThisSession,
+  rememberSoftIntroThisSession,
+  forgetSoftIntroThisSession,
+  prepareIntroVideoElement,
+} from "@/lib/experience-engine/soft-intro-playback";
+
 export { EXPERIENCE_ENGINE_CONCEPT_MAP } from "@/lib/experience-engine/concept-map";
 export type { ExperienceEngineConceptId } from "@/lib/experience-engine/concept-map";
 

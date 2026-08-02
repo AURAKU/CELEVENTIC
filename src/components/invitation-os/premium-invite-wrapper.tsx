@@ -24,6 +24,7 @@ import {
   resolveSoftIntroAtmosphere,
   type InvitePipelinePhase,
 } from "@/lib/experience-engine/soft-intro";
+import { forgetSoftIntroThisSession } from "@/lib/experience-engine/soft-intro-playback";
 import { getLayoutMediaPack } from "@/lib/invitation/layout-media-identity";
 import { introAtmosphereUrlFromDesign } from "@/lib/invitation/studio-media-utils";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
@@ -359,6 +360,7 @@ export function PremiumInviteWrapper({
     // Full pipeline again: brand video → tap gate / reveal → portal.
     setIsReturningGuest(false);
     forgetOpeningSeen(ceremonyMemoryKey);
+    forgetSoftIntroThisSession(props.invitation.id);
     audioStarted.current = false;
     pauseAllInvitationAudio();
     try {
@@ -376,7 +378,7 @@ export function PremiumInviteWrapper({
     }
     setCeremonyGeneration((n) => n + 1);
     setPhase(resolveInitialInvitePhase(pipelineFlags));
-  }, [audioManager, ceremonyMemoryKey, musicSelection?.startSec, pipelineFlags]);
+  }, [audioManager, ceremonyMemoryKey, musicSelection?.startSec, pipelineFlags, props.invitation.id]);
 
   // "Replay Opening" inside a template restarts from the brand video intro.
   useEffect(() => onInvitationReplay(restartOpeningCeremony), [restartOpeningCeremony]);
@@ -460,6 +462,9 @@ export function PremiumInviteWrapper({
         <CeleventicSoftIntro
           key={`soft-intro-${ceremonyGeneration}`}
           onComplete={afterSoftIntro}
+          onUserGesture={() => void startAudio()}
+          invitationId={props.invitation.id}
+          forcePlay={ceremonyGeneration > 0}
           accentColor={softAccent}
           secondaryColor={softSecondary}
           quickHold={isReturningGuest}
