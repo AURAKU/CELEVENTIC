@@ -10,6 +10,13 @@ export function pauseAllInvitationAudio(): void {
 }
 
 export interface InvitationAudioManager {
+  /** Create the element and begin buffering (safe outside a gesture). */
+  prime: () => void;
+  /**
+   * Must run inside a click/tap handler. Starts play immediately so Safari
+   * keeps the user-activation chain — never await network first.
+   */
+  unlock: () => Promise<boolean>;
   play: () => Promise<boolean>;
   pause: () => void;
   toggle: () => Promise<boolean>;
@@ -147,8 +154,7 @@ export function createInvitationAudioManager(
     }, (fadeSec * 1000) / steps);
   }
 
-  const manager: InvitationAudioManager = {
-    play: async (): Promise<boolean> => {
+  async function playNow(keepPlaying: boolean): Promise<boolean> {
     const a = ensureAudio();
     const targetVol = musicSelection?.volume ?? savedVolume;
     const fadeIn = musicSelection?.fadeInSec ?? 1.5;
@@ -158,17 +164,68 @@ export function createInvitationAudioManager(
         activeInvitationAudioManager.pause();
       }
       activeInvitationAudioManager = manager;
-      if (loadPromise) await loadPromise;
-      if (musicSelection) {
-        a.currentTime = musicSelection.startSec;
+
+      // Seek best-effort without awaiting network — awaiting before play()
+      // drops the Safari/Chrome user-activation token and blocks autoplay.
+      if (musicSelection && a.readyState >= HTMLMediaElement.HAVE_METADATA) {
+        try {
+          a.currentTime = musicSelection.startSec;
+        } catch {
+          /* ignore seek before ready */
+        }
       }
+
       await a.play();
+
+      if (!keepPlaying) {
+        a.pause();
+        if (musicSelection) {
+          try {
+            a.currentTime = musicSelection.startSec;
+          } catch {
+            /* ignore */
+          }
+        }
+        return true;
+      }
+
       applyFadeIn(targetVol, fadeIn);
       return true;
     } catch {
-      return false;
+      // Retry once after the element can decode, for non-gesture recoveries.
+      try {
+        if (loadPromise) await loadPromise;
+        else await waitForAudioReady(a);
+        if (musicSelection) {
+          try {
+            a.currentTime = musicSelection.startSec;
+          } catch {
+            /* ignore */
+          }
+        }
+        await a.play();
+        if (!keepPlaying) {
+          a.pause();
+          return true;
+        }
+        applyFadeIn(targetVol, fadeIn);
+        return true;
+      } catch {
+        return false;
+      }
     }
-  },
+  }
+
+  // Declared before methods that close over it so comparisons stay valid.
+  // eslint-disable-next-line prefer-const
+  let manager: InvitationAudioManager;
+
+  manager = {
+    prime() {
+      ensureAudio();
+    },
+    unlock: async () => playNow(true),
+    play: async () => playNow(true),
     pause() {
       audio?.pause();
     },
@@ -191,10 +248,9 @@ export function createInvitationAudioManager(
     },
     async restart() {
       const a = ensureAudio();
-      if (loadPromise) await loadPromise;
-      if (musicSelection) {
+      if (musicSelection && a.readyState >= HTMLMediaElement.HAVE_METADATA) {
         a.currentTime = musicSelection.startSec;
-      } else {
+      } else if (!musicSelection) {
         a.currentTime = 0;
       }
       return manager.play();
@@ -224,7 +280,7 @@ export function createInvitationAudioManager(
       return savedVolume;
     },
     getAudio() {
-      return audio;
+      return audio ?? ensureAudio();
     },
   };
 

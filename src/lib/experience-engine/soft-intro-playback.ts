@@ -6,8 +6,8 @@
 import { safeSessionStorage } from "@/lib/browser/safe-storage";
 
 /** Canonical intro assets — cache-bust when playback policy / component changes. */
-export const INTRO_VIDEO_SRC = "/brand/celeventic-invitation-intro.mp4?v=20260802b";
-export const INTRO_POSTER_SRC = "/brand/celeventic-invitation-intro-poster.jpg?v=20260802b";
+export const INTRO_VIDEO_SRC = "/brand/celeventic-invitation-intro.mp4?v=20260802c";
+export const INTRO_POSTER_SRC = "/brand/celeventic-invitation-intro-poster.jpg?v=20260802c";
 
 /** Absolute ceiling — invite must reveal by this time if the clip never ends cleanly. */
 export const INTRO_UNKNOWN_DURATION_FALLBACK_MS = 14_000;

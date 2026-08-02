@@ -57,11 +57,11 @@ describe("soft-intro media URLs", () => {
   it("uses brand paths with the current cache-bust query", () => {
     assert.equal(
       CELEVENTIC_INVITATION_INTRO_VIDEO,
-      "/brand/celeventic-invitation-intro.mp4?v=20260802b"
+      "/brand/celeventic-invitation-intro.mp4?v=20260802c"
     );
     assert.equal(
       CELEVENTIC_INVITATION_INTRO_POSTER,
-      "/brand/celeventic-invitation-intro-poster.jpg?v=20260802b"
+      "/brand/celeventic-invitation-intro-poster.jpg?v=20260802c"
     );
     assert.equal(INTRO_VIDEO_SRC, CELEVENTIC_INVITATION_INTRO_VIDEO);
     assert.equal(INTRO_POSTER_SRC, CELEVENTIC_INVITATION_INTRO_POSTER);

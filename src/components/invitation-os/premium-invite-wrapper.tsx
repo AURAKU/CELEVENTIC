@@ -317,16 +317,28 @@ export function PremiumInviteWrapper({
 
   useEffect(() => {
     if (audioManager && hasMusic) {
-      audioManager.getAudio();
+      audioManager.prime();
     }
   }, [audioManager, hasMusic]);
 
   const startAudio = useCallback(async () => {
     if (!audioManager || audioStarted.current) return;
     if (!wantsAutoplay) return;
+    // Call play() immediately from the gesture stack — do not delay with
+    // unrelated awaits before the first media.play().
     const ok = await audioManager.play();
     if (ok) audioStarted.current = true;
   }, [audioManager, wantsAutoplay]);
+
+  const unlockInviteAudio = useCallback(() => {
+    if (!audioManager) return;
+    if (!wantsAutoplay) {
+      audioManager.prime();
+      return;
+    }
+    // Fire-and-forget inside the click handler so Safari keeps user activation.
+    void startAudio();
+  }, [audioManager, startAudio, wantsAutoplay]);
 
   function afterSoftIntro() {
     // Tap to Begin and the envelope/curtain reveal are never silently
@@ -462,7 +474,7 @@ export function PremiumInviteWrapper({
         <CeleventicSoftIntro
           key={`soft-intro-${ceremonyGeneration}`}
           onComplete={afterSoftIntro}
-          onUserGesture={() => void startAudio()}
+          onUserGesture={unlockInviteAudio}
           invitationId={props.invitation.uniqueLink || props.invitation.id}
           forcePlay={ceremonyGeneration > 0}
           accentColor={softAccent}
