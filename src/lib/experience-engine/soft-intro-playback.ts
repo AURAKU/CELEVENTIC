@@ -5,9 +5,9 @@
 
 import { safeSessionStorage } from "@/lib/browser/safe-storage";
 
-/** Exact production assets — no cache-busting query that can confuse CDN/range caches. */
-export const INTRO_VIDEO_SRC = "/brand/celeventic-invitation-intro.mp4";
-export const INTRO_POSTER_SRC = "/brand/celeventic-invitation-intro-poster.jpg";
+/** Canonical intro assets — cache-bust when playback policy / component changes. */
+export const INTRO_VIDEO_SRC = "/brand/celeventic-invitation-intro.mp4?v=20260802b";
+export const INTRO_POSTER_SRC = "/brand/celeventic-invitation-intro-poster.jpg?v=20260802b";
 
 /** Absolute ceiling — invite must reveal by this time if the clip never ends cleanly. */
 export const INTRO_UNKNOWN_DURATION_FALLBACK_MS = 14_000;
@@ -212,13 +212,22 @@ export function shouldEnableIntroDebug(): boolean {
   }
 }
 
-/** Dev / `?introDebug` logs — never include tokens or guest PII. */
+/** Dev / live diagnostics — never include tokens or guest PII. */
 export function logIntroDiagnostics(
   label: string,
   diagnostics: IntroVideoDiagnostics
 ): void {
-  if (!shouldEnableIntroDebug()) return;
-  console.info(`[celeventic-soft-intro] ${label}`, diagnostics);
+  console.info(`[celeventic-soft-intro] ${label}`, {
+    currentSrc: diagnostics.currentSrc,
+    readyState: diagnostics.readyState,
+    networkState: diagnostics.networkState,
+    paused: diagnostics.paused,
+    ended: diagnostics.ended,
+    muted: diagnostics.muted,
+    autoplay: diagnostics.autoplay,
+    errorCode: diagnostics.errorCode,
+    playRejection: diagnostics.playRejection,
+  });
 }
 
 /** Always emit onError diagnostics (no PII) so live failures are inspectable. */

@@ -54,9 +54,15 @@ function mockVideo(playImpl: () => Promise<void>) {
 }
 
 describe("soft-intro media URLs", () => {
-  it("uses exact brand paths without cache-busting queries", () => {
-    assert.equal(CELEVENTIC_INVITATION_INTRO_VIDEO, "/brand/celeventic-invitation-intro.mp4");
-    assert.equal(CELEVENTIC_INVITATION_INTRO_POSTER, "/brand/celeventic-invitation-intro-poster.jpg");
+  it("uses brand paths with the current cache-bust query", () => {
+    assert.equal(
+      CELEVENTIC_INVITATION_INTRO_VIDEO,
+      "/brand/celeventic-invitation-intro.mp4?v=20260802b"
+    );
+    assert.equal(
+      CELEVENTIC_INVITATION_INTRO_POSTER,
+      "/brand/celeventic-invitation-intro-poster.jpg?v=20260802b"
+    );
     assert.equal(INTRO_VIDEO_SRC, CELEVENTIC_INVITATION_INTRO_VIDEO);
     assert.equal(INTRO_POSTER_SRC, CELEVENTIC_INVITATION_INTRO_POSTER);
     assert.equal(SOFT_INTRO_FALLBACK_MS, 14_000);
@@ -160,10 +166,21 @@ describe("timeout completion", () => {
   });
 });
 
-describe("onEnded completion / no blank screen", () => {
+describe("onEnded completion / no blank screen / no immediate completion", () => {
   it("keeps soft-intro as the initial live phase so the screen is never blank", () => {
     assert.equal(shouldShowSoftIntro({}), true);
+    assert.equal(shouldShowSoftIntro({ skipSoftIntro: false, skipIntro: false }), true);
     assert.equal(resolveInitialInvitePhase({ needsTapGate: true, showReveal: true }), "soft-intro");
+    assert.equal(
+      resolveInitialInvitePhase({ skipSoftIntro: false, skipIntro: false, needsTapGate: true }),
+      "soft-intro"
+    );
+  });
+
+  it("does not treat a zero/unknown duration as an instant finish", () => {
+    assert.ok(softIntroTimeoutMs(0) >= INTRO_MIN_START_GRACE_MS);
+    assert.ok(softIntroTimeoutMs(null) >= INTRO_MIN_START_GRACE_MS);
+    assert.equal(softIntroTimeoutMs(null), 14_000);
   });
 });
 

@@ -97,6 +97,8 @@ export function CeleventicSoftIntro({
   const lastPlayRejection = useRef<string | undefined>(undefined);
   const playbackStartedRef = useRef(false);
   const needsTapRef = useRef(false);
+  const playbackAttemptedRef = useRef(false);
+  const loadCalledRef = useRef(false);
 
   const clearTimers = useCallback(() => {
     if (exitTimer.current) clearTimeout(exitTimer.current);
@@ -135,10 +137,19 @@ export function CeleventicSoftIntro({
       if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
       const ms = softIntroTimeoutMs(durationSeconds);
       fallbackTimer.current = setTimeout(() => {
-        if (!completed.current) beginExit();
+        if (completed.current) return;
+        // Never finish at t=0 before a play attempt; at the hard ceiling, reveal anyway.
+        if (!playbackAttemptedRef.current && !videoFailed) {
+          playbackAttemptedRef.current = true;
+          fallbackTimer.current = setTimeout(() => {
+            if (!completed.current) beginExit();
+          }, 1_500);
+          return;
+        }
+        beginExit();
       }, ms);
     },
-    [beginExit]
+    [beginExit, videoFailed]
   );
 
   const diagnose = useCallback((label: string) => {
@@ -162,6 +173,7 @@ export function CeleventicSoftIntro({
       const video = videoRef.current;
       if (!video || completed.current || exitingRef.current || videoFailed) return false;
 
+      playbackAttemptedRef.current = true;
       prepareIntroVideoElement(video, true);
       setHtmlMuted(true);
       const result = await playIntroWithMutedFallback(video, false);
@@ -231,13 +243,21 @@ export function CeleventicSoftIntro({
     return () => clearTimers();
   }, [armFallbackTimeout, clearTimers]);
 
-  // Mount: muted autoplay (Safari requires muted on first HTML paint).
+  // Mount: load() once, then muted autoplay (Safari requires muted on first HTML paint).
   useEffect(() => {
     if (videoFailed) return;
     const video = videoRef.current;
     if (!video) return;
 
     prepareIntroVideoElement(video, true);
+    if (!loadCalledRef.current) {
+      loadCalledRef.current = true;
+      try {
+        video.load();
+      } catch {
+        /* ignore */
+      }
+    }
     diagnose("mount");
 
     let cancelled = false;
@@ -254,15 +274,18 @@ export function CeleventicSoftIntro({
 
   const handleTapToOpen = useCallback(async () => {
     const video = videoRef.current;
+    // User gesture must call play() directly in this click handler.
     onUserGesture?.();
     if (!video) {
       beginExit();
       return;
     }
 
-    // Gesture unlock — try unmuted, fall back to full muted intro if needed.
+    playbackAttemptedRef.current = true;
     setHtmlMuted(false);
     prepareIntroVideoElement(video, false);
+    diagnose("tap-to-open");
+
     const result = await playIntroWithMutedFallback(video, true);
     if (result.unmutedRejected) {
       lastPlayRejection.current =
@@ -271,7 +294,6 @@ export function CeleventicSoftIntro({
 
     if (!result.playing) {
       diagnose("tap-to-open-failed");
-      // Still cannot play after a gesture → real failure path.
       handleRealLoadFailure();
       return;
     }

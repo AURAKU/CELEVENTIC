@@ -393,6 +393,8 @@ export default async function InvitePage({
       musicSelection={musicSelection}
       musicAutoplay
       fullScreen={design.studio?.fullScreen ?? true}
+      skipSoftIntro={false}
+      skipIntro={false}
       invitation={{
         id: invitation.id,
         name: invitation.name,
