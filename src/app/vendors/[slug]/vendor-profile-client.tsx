@@ -10,6 +10,9 @@ import { formatCurrency } from "@/lib/utils";
 import { AgiFooter } from "@/components/agi-engine/agi-badge";
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import { resolveMediaUrl } from "@/lib/uploads/media-url";
+import { PaginatedSection } from "@/components/ui/paginated-section";
+import { PaginationBar } from "@/components/ui/pagination";
+import { useClientPagination } from "@/hooks/use-client-pagination";
 
 interface VendorProfile {
   id: string;
@@ -42,6 +45,8 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
   const location = [vendor.city, vendor.region].filter(Boolean).join(", ");
   const about = vendor.bio ?? vendor.description;
   const coverUrl = resolveMediaUrl(vendor.coverImage);
+  const media = vendor.media ?? [];
+  const mediaPage = useClientPagination(media, 9);
 
   async function toggleSave() {
     const res = await fetch("/api/vendor-os/favorites", {
@@ -57,13 +62,13 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
+    <div className="min-h-screen bg-[#FAF8F4] overflow-x-hidden">
       <div
         className="h-48 sm:h-64 bg-gradient-to-br from-[#0B8A83]/30 to-[#0F172A]/20 relative"
         style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
       />
 
-      <div className="max-w-4xl mx-auto px-4 -mt-16 relative z-10 pb-16">
+      <div className="max-w-4xl mx-auto px-4 -mt-16 relative z-10 pb-16 min-w-0">
         <div className="bg-white rounded-2xl shadow-lg border p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             {vendor.profileImage ? (
@@ -81,12 +86,12 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
             )}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap gap-2 items-center">
-                <h1 className="font-display text-2xl font-bold text-[#0F172A]">{vendor.businessName}</h1>
+                <h1 className="font-display text-2xl font-bold text-[#0F172A] truncate">{vendor.businessName}</h1>
                 {vendor.isVerified && <VerifiedBadge size="md" />}
                 {vendor.isFeatured && <FeaturedBadge />}
               </div>
               <p className="text-slate-500 mt-1">{vendor.category}{vendor.yearsExperience ? ` · ${vendor.yearsExperience}+ years` : ""}</p>
-              {location && <p className="text-sm text-slate-400 mt-1 flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{location}</p>}
+              {location && <p className="text-sm text-slate-400 mt-1 flex items-center gap-1"><MapPin className="h-3.5 w-3.5 shrink-0" />{location}</p>}
               <div className="flex items-center gap-1 mt-2 text-sm">
                 <Star className="h-4 w-4 text-[#D4A63A] fill-[#D4A63A]" />
                 <span className="font-medium">{Number(vendor.rating).toFixed(1)}</span>
@@ -98,17 +103,17 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
           <div className="flex flex-wrap gap-2 mt-6">
             <RequestQuoteModal vendorId={vendor.id} vendorName={vendor.businessName} />
             {waUrl && (
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="touch-target" asChild>
                 <a href={waUrl} target="_blank" rel="noopener noreferrer"><MessageCircle className="h-4 w-4" /> WhatsApp</a>
               </Button>
             )}
             {vendor.phone && (
-              <Button variant="outline" asChild><a href={`tel:${vendor.phone}`}><Phone className="h-4 w-4" /> Call</a></Button>
+              <Button variant="outline" className="touch-target" asChild><a href={`tel:${vendor.phone}`}><Phone className="h-4 w-4" /> Call</a></Button>
             )}
             {vendor.email && (
-              <Button variant="outline" asChild><a href={`mailto:${vendor.email}`}><Mail className="h-4 w-4" /> Email</a></Button>
+              <Button variant="outline" className="touch-target" asChild><a href={`mailto:${vendor.email}`}><Mail className="h-4 w-4" /> Email</a></Button>
             )}
-            <Button variant="ghost" size="sm" onClick={toggleSave}>
+            <Button variant="ghost" size="sm" className="touch-target" onClick={toggleSave}>
               <Heart className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : ""}`} /> Save
             </Button>
           </div>
@@ -122,31 +127,34 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
         )}
 
         {vendor.rateCards && vendor.rateCards.length > 0 && (
-          <section className="mt-6 bg-white rounded-2xl border p-6">
+          <section className="mt-6 bg-white rounded-2xl border p-6 min-w-0">
             <h2 className="font-display text-lg font-bold mb-4">Rate Card</h2>
-            <div className="space-y-3">
-              {vendor.rateCards.map((r) => (
-                <div key={r.serviceName} className="flex justify-between items-center py-2 border-b last:border-0">
-                  <div>
-                    <p className="font-medium">{r.serviceName}</p>
-                    {r.description && <p className="text-xs text-slate-500">{r.description}</p>}
+            <PaginatedSection
+              items={vendor.rateCards}
+              limit={8}
+              keyFor={(r) => r.serviceName}
+              renderItem={(r) => (
+                <div className="stack-mobile py-2 border-b last:border-0">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{r.serviceName}</p>
+                    {r.description && <p className="text-xs text-slate-500 break-words">{r.description}</p>}
                   </div>
-                  <p className="font-semibold text-[#0B8A83]">
+                  <p className="font-semibold text-[#0B8A83] shrink-0">
                     {formatCurrency(Number(r.priceMin))}
                     {r.priceMax ? ` – ${formatCurrency(Number(r.priceMax))}` : "+"}
                   </p>
                 </div>
-              ))}
-            </div>
+              )}
+            />
           </section>
         )}
 
-        {vendor.media && vendor.media.length > 0 && (
-          <section className="mt-6 bg-white rounded-2xl border p-6">
+        {media.length > 0 && (
+          <section className="mt-6 bg-white rounded-2xl border p-6 min-w-0">
             <h2 className="font-display text-lg font-bold mb-4">Portfolio</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {vendor.media.map((m) => (
-                <div key={m.id} className="aspect-square rounded-xl overflow-hidden bg-slate-100">
+              {mediaPage.items.map((m) => (
+                <div key={m.id} className="aspect-square rounded-xl overflow-hidden bg-slate-100 min-w-0">
                   <UploadedMedia
                     src={m.url}
                     alt={m.caption ?? ""}
@@ -158,6 +166,13 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
                 </div>
               ))}
             </div>
+            <PaginationBar
+              page={mediaPage.page}
+              pages={mediaPage.pages}
+              total={mediaPage.total}
+              limit={mediaPage.limit}
+              onPageChange={mediaPage.setPage}
+            />
           </section>
         )}
 
@@ -166,7 +181,7 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
             <h2 className="font-display text-lg font-bold mb-3">Connect</h2>
             <div className="flex flex-wrap gap-2">
               {vendor.socialLinks.map((s) => (
-                <Button key={s.platform} variant="outline" size="sm" asChild>
+                <Button key={s.platform} variant="outline" size="sm" className="touch-target" asChild>
                   <a href={s.url} target="_blank" rel="noopener noreferrer">
                     <Globe className="h-3.5 w-3.5" /> {s.platform}
                     <ExternalLink className="h-3 w-3 ml-1" />
@@ -178,20 +193,23 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
         )}
 
         {vendor.reviews && vendor.reviews.length > 0 && (
-          <section className="mt-6 bg-white rounded-2xl border p-6">
+          <section className="mt-6 bg-white rounded-2xl border p-6 min-w-0">
             <h2 className="font-display text-lg font-bold mb-4">Reviews</h2>
-            <div className="space-y-4">
-              {vendor.reviews.map((r, i) => (
-                <div key={i} className="border-b pb-4 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <Star className="h-3.5 w-3.5 text-[#D4A63A] fill-[#D4A63A]" />
+            <PaginatedSection
+              items={vendor.reviews}
+              limit={5}
+              keyFor={(r, i) => `${r.user.name}-${i}`}
+              renderItem={(r) => (
+                <div className="border-b pb-4 last:border-0 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Star className="h-3.5 w-3.5 text-[#D4A63A] fill-[#D4A63A] shrink-0" />
                     <span className="text-sm font-medium">{r.rating}/5</span>
-                    <span className="text-xs text-slate-400">, {r.user.name}</span>
+                    <span className="text-xs text-slate-400 truncate">· {r.user.name}</span>
                   </div>
-                  {r.comment && <p className="text-sm text-slate-600 mt-1">{r.comment}</p>}
+                  {r.comment && <p className="text-sm text-slate-600 mt-1 break-words">{r.comment}</p>}
                 </div>
-              ))}
-            </div>
+              )}
+            />
           </section>
         )}
 

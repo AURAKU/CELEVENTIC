@@ -204,7 +204,7 @@ export function Header({ initialSession }: HeaderProps) {
       : "/dashboard";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/50 bg-white/85 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
+    <header className="sticky top-0 z-50 border-b border-slate-200/50 bg-white/85 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 safe-area-pt">
       <div className="mx-auto flex min-h-[4rem] sm:min-h-[4.25rem] max-w-7xl items-center gap-2 sm:gap-4 px-4 sm:px-6 lg:px-8 py-1.5">
         <div className="shrink-0 min-w-0">
           <Logo size="sm" className="hidden sm:flex" />

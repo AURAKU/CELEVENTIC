@@ -50,8 +50,8 @@ export function AdminShell({ children }: AdminShellProps) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 bg-dashboard grid-pattern overflow-x-hidden">
-          {children}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] min-w-0 bg-dashboard grid-pattern overflow-x-hidden page-scaffold-host">
+          <div className="page-scaffold mx-auto w-full max-w-7xl">{children}</div>
         </main>
       </div>
     </div>

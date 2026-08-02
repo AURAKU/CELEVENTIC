@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Star, Award } from "lucide-react";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 
 interface PackageRow {
   id: string;
@@ -219,11 +220,15 @@ export function AdminCommerceClient() {
 
         <TabsContent value="packages" className="space-y-4 mt-4">
           <p className="text-sm text-slate-500">All prices stored in GHS. Mark packages as Popular or Best Value for catalogue display.</p>
-          {packages.map((pkg) => (
-            <Card key={pkg.id}>
+          <PaginatedSection
+            items={packages}
+            limit={8}
+            keyFor={(pkg) => pkg.id}
+            renderItem={(pkg) => (
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-base">{pkg.name}</CardTitle>
+                <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                  <CardTitle className="text-base truncate">{pkg.name}</CardTitle>
                   {pkg.isPopular && <Badge className="bg-[#D4A63A] text-[#0F172A]"><Star className="h-3 w-3" /> Popular</Badge>}
                   {pkg.isBestValue && <Badge variant="success"><Award className="h-3 w-3" /> Best Value</Badge>}
                 </div>
@@ -239,19 +244,24 @@ export function AdminCommerceClient() {
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={pkg.isActive} onChange={(e) => setPackages((p) => p.map((x) => x.id === pkg.id ? { ...x, isActive: e.target.checked } : x))} /> Active</label>
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={pkg.isPopular} onChange={(e) => setPackages((p) => p.map((x) => x.id === pkg.id ? { ...x, isPopular: e.target.checked } : x))} /> Popular</label>
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={pkg.isBestValue} onChange={(e) => setPackages((p) => p.map((x) => x.id === pkg.id ? { ...x, isBestValue: e.target.checked } : x))} /> Best Value</label>
-                  <Button size="sm" onClick={() => savePackage(pkg)}>Save Package</Button>
+                  <Button size="sm" className="touch-target" onClick={() => savePackage(pkg)}>Save Package</Button>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )}
+          />
         </TabsContent>
 
         <TabsContent value="addons" className="space-y-4 mt-4">
           <AddonCreateForm onCreated={loadAll} />
-          {addons.map((addon) => (
-            <Card key={addon.id} className={!addon.isActive ? "opacity-60" : ""}>
-              <CardContent className="pt-6 flex flex-wrap justify-between gap-4">
-                <div>
+          <PaginatedSection
+            items={addons}
+            limit={10}
+            keyFor={(addon) => addon.id}
+            renderItem={(addon) => (
+            <Card className={!addon.isActive ? "opacity-60" : ""}>
+              <CardContent className="pt-6 flex flex-col sm:flex-row sm:flex-wrap justify-between gap-4">
+                <div className="min-w-0">
                   <p className="font-semibold">{addon.name}</p>
                   <p className="text-sm text-slate-500">{addon.description}</p>
                   <div className="flex gap-2 mt-1 flex-wrap">
@@ -264,15 +274,16 @@ export function AdminCommerceClient() {
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0">
                   <p className="font-bold text-[#0B8A83]">₵{Number(addon.priceGhs)}</p>
-                  <Button size="sm" variant="outline" onClick={() => toggleAddon(addon.id, !addon.isActive)}>
+                  <Button size="sm" variant="outline" className="touch-target" onClick={() => toggleAddon(addon.id, !addon.isActive)}>
                     {addon.isActive ? "Disable" : "Enable"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )}
+          />
         </TabsContent>
 
         <TabsContent value="currencies" className="space-y-4 mt-4">
@@ -313,36 +324,43 @@ export function AdminCommerceClient() {
 
         <TabsContent value="rates" className="space-y-4 mt-4">
           <p className="text-sm text-slate-500">Manual exchange rate override. Rates apply to display pricing only.</p>
-          {rates.map((rate) => (
-            <Card key={rate.id}>
-              <CardContent className="pt-6 flex flex-wrap items-end gap-4">
-                <div>
-                  <p className="font-semibold">GHS → {rate.targetCurrency}</p>
-                  <p className="text-xs text-slate-400">Source: {rate.source}</p>
-                </div>
-                <div className="flex gap-2 items-end">
-                  <div>
-                    <Label>Rate</Label>
-                    <Input
-                      type="number"
-                      step="0.0001"
-                      defaultValue={Number(rate.rate)}
-                      id={`rate-${rate.targetCurrency}`}
-                    />
+          <PaginatedSection
+            items={rates}
+            limit={12}
+            keyFor={(rate) => rate.id}
+            empty={<p className="text-sm text-slate-500">No exchange rates configured yet.</p>}
+            renderItem={(rate) => (
+              <Card>
+                <CardContent className="pt-6 stack-mobile sm:items-end">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">GHS → {rate.targetCurrency}</p>
+                    <p className="text-xs text-slate-400 truncate">Source: {rate.source}</p>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const input = document.getElementById(`rate-${rate.targetCurrency}`) as HTMLInputElement;
-                      updateRate(rate.targetCurrency, parseFloat(input.value));
-                    }}
-                  >
-                    Update
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end w-full sm:w-auto min-w-0">
+                    <div className="min-w-0 flex-1 sm:flex-initial">
+                      <Label>Rate</Label>
+                      <Input
+                        type="number"
+                        step="0.0001"
+                        defaultValue={Number(rate.rate)}
+                        id={`rate-${rate.targetCurrency}`}
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      className="touch-target shrink-0"
+                      onClick={() => {
+                        const input = document.getElementById(`rate-${rate.targetCurrency}`) as HTMLInputElement;
+                        updateRate(rate.targetCurrency, parseFloat(input.value));
+                      }}
+                    >
+                      Update
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          />
         </TabsContent>
       </Tabs>
     </div>

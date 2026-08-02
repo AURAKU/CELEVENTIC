@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Check, MessageSquare, CreditCard, ExternalLink, RefreshCw } from "lucide-react";
 import { WORKFLOW_STAGE_LABELS, CHANGE_CATEGORY_LABELS } from "@/lib/invitation-production/constants";
 import { formatCurrency } from "@/lib/utils";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 
 interface RevisionRow {
   id: string;
@@ -246,55 +247,59 @@ export function OrderProductionClient({ params }: { params: Promise<{ orderId: s
 
       <Card>
         <CardHeader><CardTitle className="text-base">Revision History</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          {data.order.revisions.length === 0 ? (
-            <p className="text-sm text-slate-500">No revisions yet.</p>
-          ) : data.order.revisions.map((r) => (
-            <div key={r.id} className="border rounded-xl p-4 space-y-2">
-              <div className="flex justify-between flex-wrap gap-2">
-                <div>
-                  <p className="font-semibold">Revision #{r.revisionNumber}</p>
-                  <p className="text-xs text-slate-500">{CHANGE_CATEGORY_LABELS[r.changeCategory]} · {r.revisionType}</p>
+        <CardContent>
+          <PaginatedSection
+            items={data.order.revisions}
+            limit={5}
+            keyFor={(r) => r.id}
+            empty={<p className="text-sm text-slate-500">No revisions yet.</p>}
+            renderItem={(r) => (
+              <div className="border rounded-xl p-4 space-y-2 min-w-0">
+                <div className="stack-mobile">
+                  <div className="min-w-0">
+                    <p className="font-semibold">Revision #{r.revisionNumber}</p>
+                    <p className="text-xs text-slate-500 truncate">{CHANGE_CATEGORY_LABELS[r.changeCategory]} · {r.revisionType}</p>
+                  </div>
+                  <Badge className="shrink-0">{r.status}</Badge>
                 </div>
-                <Badge>{r.status}</Badge>
-              </div>
-              {r.notes && <p className="text-sm text-slate-600">{r.notes}</p>}
-              {r.adminResponse && (
-                <p className="text-sm bg-slate-50 p-2 rounded-lg"><strong>Designer:</strong> {r.adminResponse}</p>
-              )}
-              {r.status === "AWAITING_PAYMENT" && r.amountGhs && (
-                <Button size="sm" onClick={() => payRevision(r.id)} disabled={loading}>
-                  <CreditCard className="h-4 w-4" /> Pay {formatCurrency(Number(r.amountGhs))}
-                </Button>
-              )}
-              {r.status === "AWAITING_APPROVAL" && !r.customerApproved && (
-                <Button size="sm" onClick={() => approveDesign(r.id)} disabled={loading}>
-                  <Check className="h-4 w-4" /> Approve Revision
-                </Button>
-              )}
-              {r.comments?.length > 0 && (
-                <div className="space-y-1 pt-2 border-t">
-                  {r.comments.map((c) => (
-                    <p key={c.id} className="text-xs text-slate-500">
-                      <strong>{c.isAdmin ? "Designer" : c.user?.name ?? "Customer"}:</strong> {c.content}
-                    </p>
-                  ))}
+                {r.notes && <p className="text-sm text-slate-600 break-words">{r.notes}</p>}
+                {r.adminResponse && (
+                  <p className="text-sm bg-slate-50 p-2 rounded-lg break-words"><strong>Designer:</strong> {r.adminResponse}</p>
+                )}
+                {r.status === "AWAITING_PAYMENT" && r.amountGhs && (
+                  <Button size="sm" className="touch-target" onClick={() => payRevision(r.id)} disabled={loading}>
+                    <CreditCard className="h-4 w-4" /> Pay {formatCurrency(Number(r.amountGhs))}
+                  </Button>
+                )}
+                {r.status === "AWAITING_APPROVAL" && !r.customerApproved && (
+                  <Button size="sm" className="touch-target" onClick={() => approveDesign(r.id)} disabled={loading}>
+                    <Check className="h-4 w-4" /> Approve Revision
+                  </Button>
+                )}
+                {r.comments?.length > 0 && (
+                  <div className="space-y-1 pt-2 border-t">
+                    {r.comments.map((c) => (
+                      <p key={c.id} className="text-xs text-slate-500 break-words">
+                        <strong>{c.isAdmin ? "Designer" : c.user?.name ?? "Customer"}:</strong> {c.content}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row gap-2 pt-2 min-w-0">
+                  <input
+                    className="flex-1 min-w-0 text-sm border rounded-lg px-3 py-2 min-h-[44px]"
+                    placeholder="Add a comment..."
+                    value={activeRevision === r.id ? comment : ""}
+                    onFocus={() => setActiveRevision(r.id)}
+                    onChange={(e) => { setActiveRevision(r.id); setComment(e.target.value); }}
+                  />
+                  <Button size="sm" variant="outline" className="touch-target shrink-0" onClick={() => postComment(r.id)}>
+                    <MessageSquare className="h-3 w-3" />
+                  </Button>
                 </div>
-              )}
-              <div className="flex gap-2 pt-2">
-                <input
-                  className="flex-1 text-sm border rounded-lg px-3 py-1.5"
-                  placeholder="Add a comment..."
-                  value={activeRevision === r.id ? comment : ""}
-                  onFocus={() => setActiveRevision(r.id)}
-                  onChange={(e) => { setActiveRevision(r.id); setComment(e.target.value); }}
-                />
-                <Button size="sm" variant="outline" onClick={() => postComment(r.id)}>
-                  <MessageSquare className="h-3 w-3" />
-                </Button>
               </div>
-            </div>
-          ))}
+            )}
+          />
         </CardContent>
       </Card>
     </div>

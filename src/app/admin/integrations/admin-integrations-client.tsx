@@ -19,6 +19,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { INTEGRATION_CATEGORIES, type IntegrationCatalogEntry } from "@/lib/integrations/integration-catalog";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 
 interface IntegrationRow {
   id: string;
@@ -617,22 +618,25 @@ export function AdminIntegrationsClient() {
               ) : filtered.length === 0 ? (
                 <p className="text-sm text-slate-500 py-8 text-center">No integrations match your filters.</p>
               ) : (
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {filtered.map((row) => (
+                <PaginatedSection
+                  items={filtered}
+                  limit={12}
+                  keyFor={(row) => row.id}
+                  listClassName="grid sm:grid-cols-2 gap-3"
+                  renderItem={(row) => (
                     <Card
-                      key={row.id}
-                      className={`cursor-pointer transition-all hover:border-brand-300 ${
+                      className={`cursor-pointer transition-all hover:border-brand-300 min-w-0 ${
                         selectedId === row.id ? "ring-2 ring-brand-500 border-brand-300" : ""
                       }`}
                       onClick={() => openEdit(row)}
                     >
                       <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 min-w-0">
                           <div className="min-w-0">
                             <CardTitle className="text-sm font-semibold truncate">{row.label}</CardTitle>
-                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{row.provider}</p>
+                            <p className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">{row.provider}</p>
                           </div>
-                          <Badge variant={row.isEnabled ? "success" : "outline"}>
+                          <Badge variant={row.isEnabled ? "success" : "outline"} className="shrink-0">
                             {row.isEnabled ? "On" : "Off"}
                           </Badge>
                         </div>
@@ -645,14 +649,14 @@ export function AdminIntegrationsClient() {
                           {row.hasEnvFallback && <Badge variant="warning" className="text-[10px]">Env fallback</Badge>}
                           {row.isCustom && <Badge variant="outline" className="text-[10px]">Custom</Badge>}
                         </div>
-                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={() => openEdit(row)}>
+                        <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button size="sm" variant="outline" className="flex-1 h-8 text-xs touch-target" onClick={() => openEdit(row)}>
                             <Pencil className="h-3 w-3" /> Edit
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs touch-target"
                             onClick={() => toggleEnabled(row)}
                           >
                             {row.isEnabled ? "Disable" : "Enable"}
@@ -661,7 +665,7 @@ export function AdminIntegrationsClient() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-8 text-xs text-red-600 hover:text-red-700"
+                              className="h-8 text-xs text-red-600 hover:text-red-700 touch-target"
                               onClick={() => removeIntegration(row)}
                             >
                               <Trash2 className="h-3 w-3" />
@@ -670,8 +674,8 @@ export function AdminIntegrationsClient() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
+                  )}
+                />
               )}
             </TabsContent>
           </Tabs>

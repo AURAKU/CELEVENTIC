@@ -59,7 +59,7 @@ export function LegalPageLayout({
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-mesh">
+      <main className="min-h-screen bg-mesh overflow-x-hidden min-w-0 safe-area-pb">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <Link
             href={showLegalNav ? "/legal" : "/"}

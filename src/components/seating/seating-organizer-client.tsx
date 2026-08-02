@@ -51,6 +51,7 @@ import {
   seatingPlanningLabel,
 } from "@/lib/seating/guest-planning-status";
 import { cn } from "@/lib/utils";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 
 interface GuestRow {
   id: string;
@@ -497,6 +498,11 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
     setAssignPanelOpen(false);
   }
 
+  const sortedGuests = useMemo(
+    () => guests.slice().sort(compareGuestsForSeatingAssign),
+    [guests]
+  );
+
   const currentSeatGuestId = useMemo(() => {
     const table = tables.find((t) => t.id === selectedTableId);
     if (!table || selectedSeat === null) return undefined;
@@ -871,16 +877,17 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                     {guestTotal > guests.length ? ` of ${guestTotal.toLocaleString()}` : ""})
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 max-h-[60vh] overflow-y-auto">
-                  {guests.length === 0 ? (
-                    <p className="text-center text-slate-500 py-8">
-                      Add guests from the Guests page first.
-                    </p>
-                  ) : (
-                    guests
-                      .slice()
-                      .sort(compareGuestsForSeatingAssign)
-                      .map((g) => {
+                <CardContent className="space-y-2 min-w-0">
+                  <PaginatedSection
+                    items={sortedGuests}
+                    limit={12}
+                    keyFor={(g) => g.id}
+                    empty={
+                      <p className="text-center text-slate-500 py-8">
+                        Add guests from the Guests page first.
+                      </p>
+                    }
+                    renderItem={(g) => {
                         const a = assignments[g.id];
                         const admitted =
                           (g.admission?.admittedCount ?? 0) > 0 || g.status === "CHECKED_IN";
@@ -896,18 +903,17 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                           : statusLabel;
                         return (
                           <div
-                            key={g.id}
-                            className="flex flex-wrap items-center gap-3 p-3 rounded-xl border bg-white"
+                            className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 p-3 rounded-xl border bg-white min-w-0"
                           >
-                            <div className="flex-1 min-w-[140px]">
-                              <p className="font-medium text-sm">{g.name}</p>
-                              <p className="text-xs text-slate-500">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{g.name}</p>
+                              <p className="text-xs text-slate-500 truncate">
                                 {g.email ?? g.phone ?? "No contact"}
                               </p>
                             </div>
                             <Badge
                               className={cn(
-                                "text-[10px]",
+                                "text-[10px] self-start sm:self-auto max-w-full truncate",
                                 admitted
                                   ? fullyAdmitted
                                     ? "bg-emerald-100 text-emerald-800"
@@ -921,47 +927,49 @@ export function SeatingOrganizerClient({ eventId }: SeatingOrganizerClientProps)
                             >
                               {admitted ? (
                                 <span className="inline-flex items-center gap-1">
-                                  <CheckCircle2 className="h-3 w-3" /> {admissionLabel}
+                                  <CheckCircle2 className="h-3 w-3 shrink-0" /> {admissionLabel}
                                 </span>
                               ) : (
                                 admissionLabel
                               )}
                             </Badge>
                             {a ? (
-                              <Badge variant="outline">
+                              <Badge variant="outline" className="self-start sm:self-auto truncate max-w-full">
                                 {tableDisplayName(a.tableNumber)} · Seat {a.seatLabel ?? "—"}
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-slate-400">
+                              <Badge variant="outline" className="text-slate-400 self-start sm:self-auto">
                                 Unassigned
                               </Badge>
                             )}
-                            {g.invitationId && (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="border-amber-200 text-amber-900 hover:bg-amber-50 gap-1"
-                                disabled={resetting}
-                                onClick={() =>
-                                  void resetInvitationAdmission(g.invitationId!, g.name)
-                                }
-                                title="Reset this invitation admission"
+                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto">
+                              {g.invitationId && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-amber-200 text-amber-900 hover:bg-amber-50 gap-1 touch-target"
+                                  disabled={resetting}
+                                  onClick={() =>
+                                    void resetInvitationAdmission(g.invitationId!, g.name)
+                                  }
+                                  title="Reset this invitation admission"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" /> Reset
+                                </Button>
+                              )}
+                              <Link
+                                href={`/seat/${g.qrToken}`}
+                                target="_blank"
+                                className="text-xs text-[#0B8A83] flex items-center gap-1 hover:underline touch-target py-2"
                               >
-                                <RotateCcw className="h-3.5 w-3.5" /> Reset
-                              </Button>
-                            )}
-                            <Link
-                              href={`/seat/${g.qrToken}`}
-                              target="_blank"
-                              className="text-xs text-[#0B8A83] flex items-center gap-1 hover:underline"
-                            >
-                              <QrCode className="h-3.5 w-3.5" /> Preview
-                            </Link>
+                                <QrCode className="h-3.5 w-3.5" /> Preview
+                              </Link>
+                            </div>
                           </div>
                         );
-                      })
-                  )}
+                      }}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

@@ -22,6 +22,7 @@ import {
   FUNERAL_AUDIO_CATEGORIES,
   MEMORIAL_LOCALES,
 } from "@/lib/funeral/funeral-constants";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 
 const SECTION_TO_TAB: Record<string, string> = {
   invitations: "obituary",
@@ -314,7 +315,19 @@ export function FuneralPortalClient() {
                   <Input placeholder="Time" value={programForm.startTime} onChange={(e) => setProgramForm({ ...programForm, startTime: e.target.value })} />
                   <Button type="submit" size="sm"><Plus className="h-4 w-4" /> Add</Button>
                 </form>
-                {program.map((p) => <div key={p.id} className="text-sm p-3 border rounded-lg flex justify-between"><span>{p.title}</span><span className="text-slate-500">{p.startTime}</span></div>)}
+                <PaginatedSection
+                  items={program}
+                  limit={10}
+                  keyFor={(p) => p.id}
+                  empty={null}
+                  showSummary={program.length > 10}
+                  renderItem={(p) => (
+                    <div className="text-sm p-3 border rounded-lg stack-mobile">
+                      <span className="min-w-0 truncate">{p.title}</span>
+                      <span className="text-slate-500 shrink-0">{p.startTime}</span>
+                    </div>
+                  )}
+                />
                 <div className="pt-3 border-t space-y-2">
                   <Label>Burial Venue</Label>
                   <Input value={form.burialVenue} onChange={(e) => setForm({ ...form, burialVenue: e.target.value })} />
@@ -337,12 +350,18 @@ export function FuneralPortalClient() {
                   <Input placeholder="Title" value={timelineForm.title} onChange={(e) => setTimelineForm({ ...timelineForm, title: e.target.value })} required className="sm:col-span-2" />
                   <Button type="submit" size="sm" className="sm:col-span-3"><Plus className="h-4 w-4" /> Add Milestone</Button>
                 </form>
-                {timeline.map((t) => (
-                  <div key={t.id} className="flex justify-between items-center p-3 border rounded-lg text-sm">
-                    <span><strong>{t.year}</strong> {t.title}</span>
-                    <Button size="sm" variant="ghost" onClick={async () => { await fetch(`/api/funeral/timeline?id=${t.id}`, { method: "DELETE" }); load(); }}>Remove</Button>
-                  </div>
-                ))}
+                <PaginatedSection
+                  items={timeline}
+                  limit={10}
+                  keyFor={(t) => t.id}
+                  renderItem={(t) => (
+                    <div className="stack-mobile p-3 border rounded-lg text-sm">
+                      <span className="min-w-0"><strong>{t.year}</strong> {t.title}</span>
+                      <Button size="sm" variant="ghost" className="touch-target shrink-0 self-start sm:self-auto" onClick={async () => { await fetch(`/api/funeral/timeline?id=${t.id}`, { method: "DELETE" }); load(); }}>Remove</Button>
+                    </div>
+                  )}
+                  empty={<p className="text-sm text-slate-500">No timeline milestones yet.</p>}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -351,21 +370,30 @@ export function FuneralPortalClient() {
             <Card>
               <CardHeader><CardTitle className="text-base">Tribute Wall Moderation</CardTitle></CardHeader>
               <CardContent className="space-y-2">
-                {tributes.length === 0 ? <p className="text-sm text-slate-500">No tributes yet.</p> : tributes.map((t) => (
-                  <div key={t.id} className="p-3 border rounded-lg text-sm">
-                    <div className="flex justify-between"><span className="font-medium">{t.userName}</span><Badge>{t.approvalStatus}</Badge></div>
-                    <p className="mt-1 text-slate-600">{t.message}</p>
-                    {t.approvalStatus === "PENDING" && (
-                      <div className="flex gap-2 mt-2">
-                        <Button size="sm" onClick={() => moderateTribute(t.id, "APPROVED")}>Approve</Button>
-                        <Button size="sm" variant="outline" onClick={() => moderateTribute(t.id, "REJECTED")}>Reject</Button>
+                <PaginatedSection
+                  items={tributes}
+                  limit={10}
+                  keyFor={(t) => t.id}
+                  renderItem={(t) => (
+                    <div className="p-3 border rounded-lg text-sm min-w-0">
+                      <div className="stack-mobile gap-2">
+                        <span className="font-medium truncate min-w-0">{t.userName}</span>
+                        <Badge className="shrink-0 self-start">{t.approvalStatus}</Badge>
                       </div>
-                    )}
-                    {t.approvalStatus === "APPROVED" && !t.isFeatured && (
-                      <Button size="sm" variant="outline" className="mt-2" onClick={() => moderateTribute(t.id, "APPROVED", true)}>Feature</Button>
-                    )}
-                  </div>
-                ))}
+                      <p className="mt-1 text-slate-600 break-words">{t.message}</p>
+                      {t.approvalStatus === "PENDING" && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Button size="sm" className="touch-target" onClick={() => moderateTribute(t.id, "APPROVED")}>Approve</Button>
+                          <Button size="sm" variant="outline" className="touch-target" onClick={() => moderateTribute(t.id, "REJECTED")}>Reject</Button>
+                        </div>
+                      )}
+                      {t.approvalStatus === "APPROVED" && !t.isFeatured && (
+                        <Button size="sm" variant="outline" className="touch-target mt-2" onClick={() => moderateTribute(t.id, "APPROVED", true)}>Feature</Button>
+                      )}
+                    </div>
+                  )}
+                  empty={<p className="text-sm text-slate-500">No tributes yet.</p>}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -374,18 +402,27 @@ export function FuneralPortalClient() {
             <Card>
               <CardHeader><CardTitle className="text-base">Guestbook Moderation</CardTitle></CardHeader>
               <CardContent className="space-y-2">
-                {guestbook.map((g) => (
-                  <div key={g.id} className="p-3 border rounded-lg text-sm">
-                    <div className="flex justify-between"><span>{g.userName}</span><Badge>{g.approvalStatus}</Badge></div>
-                    <p className="mt-1">{g.message}</p>
-                    {g.approvalStatus === "PENDING" && (
-                      <div className="flex gap-2 mt-2">
-                        <Button size="sm" onClick={() => moderateGuestbook(g.id, "APPROVED")}>Approve</Button>
-                        <Button size="sm" variant="outline" onClick={() => moderateGuestbook(g.id, "REJECTED")}>Reject</Button>
+                <PaginatedSection
+                  items={guestbook}
+                  limit={10}
+                  keyFor={(g) => g.id}
+                  renderItem={(g) => (
+                    <div className="p-3 border rounded-lg text-sm min-w-0">
+                      <div className="stack-mobile gap-2">
+                        <span className="truncate min-w-0">{g.userName}</span>
+                        <Badge className="shrink-0 self-start">{g.approvalStatus}</Badge>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <p className="mt-1 break-words">{g.message}</p>
+                      {g.approvalStatus === "PENDING" && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Button size="sm" className="touch-target" onClick={() => moderateGuestbook(g.id, "APPROVED")}>Approve</Button>
+                          <Button size="sm" variant="outline" className="touch-target" onClick={() => moderateGuestbook(g.id, "REJECTED")}>Reject</Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  empty={<p className="text-sm text-slate-500">No guestbook entries yet.</p>}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -405,9 +442,18 @@ export function FuneralPortalClient() {
                   </Select>
                   <Button type="submit" size="sm"><Plus className="h-4 w-4" /> Add Stream</Button>
                 </form>
-                {livestreams.map((s) => (
-                  <div key={s.id} className="p-3 border rounded-lg text-sm flex justify-between"><span>{s.title}</span><a href={s.streamUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 text-xs">Open</a></div>
-                ))}
+                <PaginatedSection
+                  items={livestreams}
+                  limit={8}
+                  keyFor={(s) => s.id}
+                  renderItem={(s) => (
+                    <div className="p-3 border rounded-lg text-sm stack-mobile min-w-0">
+                      <span className="truncate min-w-0">{s.title}</span>
+                      <a href={s.streamUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 text-xs touch-target shrink-0">Open</a>
+                    </div>
+                  )}
+                  empty={<p className="text-sm text-slate-500">No livestreams added yet.</p>}
+                />
               </CardContent>
             </Card>
           </TabsContent>

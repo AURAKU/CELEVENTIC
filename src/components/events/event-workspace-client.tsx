@@ -15,6 +15,7 @@ import {
   Search,
   Send,
 } from "lucide-react";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 
 const COLLABORATOR_ROLES = [
   "LEAD_ORGANIZER",
@@ -209,18 +210,23 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
           <Card>
             <CardHeader><CardTitle className="text-base">Collaborators</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              {collaborators.map((c) => {
-                const col = c as { id: string; role: string; user?: { name: string; email?: string } };
-                return (
-                  <div key={col.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{col.user?.name ?? "Member"}</p>
-                      <p className="text-xs text-slate-500">{col.user?.email}</p>
+              <PaginatedSection
+                items={collaborators}
+                limit={10}
+                keyFor={(c) => String((c as { id: string }).id)}
+                renderItem={(c) => {
+                  const col = c as { id: string; role: string; user?: { name: string; email?: string } };
+                  return (
+                    <div className="stack-mobile p-3 border rounded-lg">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{col.user?.name ?? "Member"}</p>
+                        <p className="text-xs text-slate-500 truncate">{col.user?.email}</p>
+                      </div>
+                      <Badge variant="outline" className="shrink-0">{col.role.replace(/_/g, " ")}</Badge>
                     </div>
-                    <Badge variant="outline">{col.role.replace(/_/g, " ")}</Badge>
-                  </div>
-                );
-              })}
+                  );
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -235,33 +241,43 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
             />
             <Button onClick={createTask}>Add</Button>
           </div>
-          {tasks.map((t) => {
-            const task = t as { id: string; title: string; status: string; priority: string };
-            return (
-              <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <span>{task.title}</span>
-                <div className="flex gap-2">
-                  <Badge variant="outline">{task.priority}</Badge>
-                  <Badge>{task.status}</Badge>
+          <PaginatedSection
+            items={tasks}
+            limit={10}
+            keyFor={(t) => String((t as { id: string }).id)}
+            renderItem={(t) => {
+              const task = t as { id: string; title: string; status: string; priority: string };
+              return (
+                <div className="stack-mobile p-3 border rounded-lg">
+                  <span className="min-w-0 break-words">{task.title}</span>
+                  <div className="flex gap-2 shrink-0">
+                    <Badge variant="outline">{task.priority}</Badge>
+                    <Badge>{task.status}</Badge>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="activity" className="mt-4 space-y-2">
-          {activity.map((a) => {
-            const item = a as { id: string; action: string; createdAt: string; user?: { name: string } };
-            return (
-              <div key={item.id} className="text-sm p-3 border rounded-lg">
-                <span className="font-medium">{item.user?.name ?? "System"}</span>{" "}
-                <span className="text-slate-600">{item.action.replace(/\./g, " ")}</span>
-                <span className="text-xs text-slate-400 block mt-1">
-                  {new Date(item.createdAt).toLocaleString()}
-                </span>
-              </div>
-            );
-          })}
+          <PaginatedSection
+            items={activity}
+            limit={12}
+            keyFor={(a) => String((a as { id: string }).id)}
+            renderItem={(a) => {
+              const item = a as { id: string; action: string; createdAt: string; user?: { name: string } };
+              return (
+                <div className="text-sm p-3 border rounded-lg">
+                  <span className="font-medium">{item.user?.name ?? "System"}</span>{" "}
+                  <span className="text-slate-600">{item.action.replace(/\./g, " ")}</span>
+                  <span className="text-xs text-slate-400 block mt-1">
+                    {new Date(item.createdAt).toLocaleString()}
+                  </span>
+                </div>
+              );
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="chat" className="mt-4 space-y-4">
@@ -277,18 +293,23 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
               </Button>
             ))}
           </div>
-          <div className="border rounded-lg p-4 min-h-[240px] max-h-[360px] overflow-auto space-y-2">
-            {messages.map((m) => {
-              const msg = m as { id: string; body?: string; sender?: { name: string }; createdAt: string };
-              return (
-                <div key={msg.id} className="text-sm">
-                  <span className="font-semibold">{msg.sender?.name}</span>: {msg.body}
-                  <span className="text-xs text-slate-400 ml-2">
-                    {new Date(msg.createdAt).toLocaleTimeString()}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="border rounded-lg p-4 min-h-[240px] max-h-[360px] overflow-auto">
+            <PaginatedSection
+              items={messages}
+              limit={20}
+              keyFor={(m) => String((m as { id: string }).id)}
+              renderItem={(m) => {
+                const msg = m as { id: string; body?: string; sender?: { name: string }; createdAt: string };
+                return (
+                  <div className="text-sm break-words">
+                    <span className="font-semibold">{msg.sender?.name}</span>: {msg.body}
+                    <span className="text-xs text-slate-400 ml-2">
+                      {new Date(msg.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                );
+              }}
+            />
           </div>
           <div className="flex gap-2">
             <Input

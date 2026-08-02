@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { BarChart3, Users, Eye, TrendingUp } from "lucide-react";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 
 interface AnalyticsData {
   summary: {
@@ -42,6 +43,9 @@ export function InvitationAnalyticsClient() {
   if (!data) return <p className="text-slate-500 py-12 text-center">Loading InvitationOS analytics...</p>;
 
   const { summary, guestCrm } = data;
+  const packageRows = Object.entries(data.packageBreakdown).map(([name, count]) => ({ name, count }));
+  const templateRows = Object.entries(data.templateBreakdown).map(([name, count]) => ({ name, count }));
+  const addonRows = Object.entries(data.addonBreakdown).map(([name, count]) => ({ name, count }));
 
   return (
     <div className="space-y-6">
@@ -115,30 +119,56 @@ export function InvitationAnalyticsClient() {
       <div className="grid lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader><CardTitle className="text-base">Packages</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {Object.entries(data.packageBreakdown).map(([k, v]) => (
-              <div key={k} className="flex justify-between capitalize">
-                <span>{k}</span><strong>{v}</strong>
-              </div>
-            ))}
+          <CardContent>
+            <PaginatedSection
+              items={packageRows}
+              limit={10}
+              keyFor={(row) => row.name}
+              listClassName="space-y-2 text-sm"
+              renderItem={(row) => (
+                <div className="stack-mobile capitalize min-w-0">
+                  <span className="truncate min-w-0">{row.name}</span>
+                  <strong className="shrink-0">{row.count}</strong>
+                </div>
+              )}
+              empty={<p className="text-sm text-slate-500">No package data yet.</p>}
+            />
           </CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle className="text-base">Templates</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {Object.entries(data.templateBreakdown).map(([k, v]) => (
-              <div key={k} className="flex justify-between"><span>{k}</span><strong>{v}</strong></div>
-            ))}
+          <CardContent>
+            <PaginatedSection
+              items={templateRows}
+              limit={10}
+              keyFor={(row) => row.name}
+              listClassName="space-y-2 text-sm"
+              renderItem={(row) => (
+                <div className="stack-mobile min-w-0">
+                  <span className="truncate min-w-0">{row.name}</span>
+                  <strong className="shrink-0">{row.count}</strong>
+                </div>
+              )}
+              empty={<p className="text-sm text-slate-500">No template data yet.</p>}
+            />
           </CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle className="text-base">Add-ons</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {Object.keys(data.addonBreakdown).length === 0 ? (
-              <p className="text-slate-500">No add-on selections yet</p>
-            ) : Object.entries(data.addonBreakdown).map(([k, v]) => (
-              <div key={k} className="flex justify-between"><span>{k}</span><strong>{v}</strong></div>
-            ))}
+          <CardContent>
+            <PaginatedSection
+              items={addonRows}
+              limit={10}
+              keyFor={(row) => row.name}
+              listClassName="space-y-2 text-sm"
+              renderItem={(row) => (
+                <div className="stack-mobile min-w-0">
+                  <span className="truncate min-w-0">{row.name}</span>
+                  <strong className="shrink-0">{row.count}</strong>
+                </div>
+              )}
+              empty={<p className="text-slate-500">No add-on selections yet</p>}
+            />
           </CardContent>
         </Card>
       </div>

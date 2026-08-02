@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CONTRIBUTION_PURPOSES } from "@/lib/funeral/funeral-constants";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 
 type Tab =
   | "obituary"
@@ -201,7 +202,7 @@ export function MemorialPageClient() {
   const p = data.profile;
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-[#FAF8F4]">
+    <div className="min-h-screen bg-[#0F172A] text-[#FAF8F4] overflow-x-hidden min-w-0">
       <header className="border-b border-white/10 py-10 px-6 text-center">
         {p.photoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -282,17 +283,20 @@ export function MemorialPageClient() {
           <div className="space-y-6">
             {data.program.length > 0 && (
               <Section title="Funeral Program">
-                <div className="space-y-2">
-                  {data.program.map((item, i) => (
-                    <div key={i} className="flex justify-between p-4 rounded-lg bg-white/5 border border-white/10">
-                      <div>
-                        <p className="font-medium">{item.title}</p>
-                        {item.description && <p className="text-xs text-slate-500 mt-1">{item.description}</p>}
+                <PaginatedSection
+                  items={data.program.map((item, index) => ({ ...item, id: `program-${index}` }))}
+                  limit={10}
+                  keyFor={(item) => item.id}
+                  renderItem={(item) => (
+                    <div className="stack-mobile p-4 rounded-lg bg-white/5 border border-white/10 min-w-0">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{item.title}</p>
+                        {item.description && <p className="text-xs text-slate-500 mt-1 break-words">{item.description}</p>}
                       </div>
-                      {item.startTime && <span className="text-slate-500 text-sm">{item.startTime}</span>}
+                      {item.startTime && <span className="text-slate-500 text-sm shrink-0">{item.startTime}</span>}
                     </div>
-                  ))}
-                </div>
+                  )}
+                />
               </Section>
             )}
             {(p.burialVenue || data.venueName) && (
@@ -324,35 +328,39 @@ export function MemorialPageClient() {
             {!data.timeline?.length ? (
               <p className="text-slate-500 text-sm">Life timeline will appear here.</p>
             ) : (
-              <div className="relative border-l border-[#D4A63A]/40 ml-3 space-y-6 pl-6">
-                {data.timeline.map((entry) => (
-                  <div key={entry.id} className="relative">
+              <PaginatedSection
+                items={data.timeline}
+                limit={10}
+                keyFor={(entry) => entry.id}
+                listClassName="relative border-l border-[#D4A63A]/40 ml-3 space-y-6 pl-6"
+                renderItem={(entry) => (
+                  <div className="relative min-w-0">
                     <span className="absolute -left-[1.85rem] top-1 h-3 w-3 rounded-full bg-[#D4A63A]" />
                     <p className="text-[#D4A63A] font-semibold">{entry.year}</p>
-                    <p className="font-medium">{entry.title}</p>
-                    {entry.description && <p className="text-sm text-slate-400 mt-1">{entry.description}</p>}
+                    <p className="font-medium truncate">{entry.title}</p>
+                    {entry.description && <p className="text-sm text-slate-400 mt-1 break-words">{entry.description}</p>}
                   </div>
-                ))}
-              </div>
+                )}
+              />
             )}
           </Section>
         )}
 
         {tab === "tributes" && (
           <div className="space-y-6">
-            {data.tributes?.items?.length ? (
-              <div className="space-y-3">
-                {data.tributes.items.map((t) => (
-                  <div key={t.id} className={`p-4 rounded-lg border ${t.isFeatured ? "border-[#D4A63A]/50 bg-[#D4A63A]/5" : "border-white/10 bg-white/5"}`}>
-                    {t.isFeatured && <Badge className="mb-2 bg-[#D4A63A] text-slate-900">Featured</Badge>}
-                    <p className="text-slate-300 italic">&ldquo;{t.message}&rdquo;</p>
-                    <p className="text-xs text-slate-500 mt-2">{t.userName}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-slate-500 text-sm">No tributes yet. Be the first to share a message.</p>
-            )}
+            <PaginatedSection
+              items={data.tributes?.items ?? []}
+              limit={10}
+              keyFor={(t) => t.id}
+              renderItem={(t) => (
+                <div className={`p-4 rounded-lg border min-w-0 ${t.isFeatured ? "border-[#D4A63A]/50 bg-[#D4A63A]/5" : "border-white/10 bg-white/5"}`}>
+                  {t.isFeatured && <Badge className="mb-2 bg-[#D4A63A] text-slate-900">Featured</Badge>}
+                  <p className="text-slate-300 italic break-words">&ldquo;{t.message}&rdquo;</p>
+                  <p className="text-xs text-slate-500 mt-2 truncate">{t.userName}</p>
+                </div>
+              )}
+              empty={<p className="text-slate-500 text-sm">No tributes yet. Be the first to share a message.</p>}
+            />
             <Section title="Leave a Tribute">
               <form onSubmit={submitTribute} className="space-y-3">
                 <Input value={tribute.userName} onChange={(e) => setTribute({ ...tribute, userName: e.target.value })} placeholder="Your name" required className="bg-white/5 border-white/20 text-white" />
@@ -375,15 +383,19 @@ export function MemorialPageClient() {
             </Section>
             {data.candles?.items?.length ? (
               <Section title={`${data.candles.total} Candles Lit`}>
-                <div className="grid sm:grid-cols-2 gap-2">
-                  {data.candles.items.map((c) => (
-                    <div key={c.id} className="p-3 rounded-lg bg-white/5 border border-white/10 text-sm">
-                      <p className="flex items-center gap-1 font-medium"><Flame className="h-3.5 w-3.5 text-amber-400" />{c.userName}</p>
-                      {c.message && <p className="text-slate-400 text-xs mt-1">{c.message}</p>}
-                      {c.country && <p className="text-slate-600 text-[10px] mt-1">{c.country}</p>}
+                <PaginatedSection
+                  items={data.candles.items}
+                  limit={12}
+                  keyFor={(c) => c.id}
+                  listClassName="grid sm:grid-cols-2 gap-2"
+                  renderItem={(c) => (
+                    <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-sm min-w-0">
+                      <p className="flex items-center gap-1 font-medium truncate"><Flame className="h-3.5 w-3.5 text-amber-400 shrink-0" />{c.userName}</p>
+                      {c.message && <p className="text-slate-400 text-xs mt-1 break-words">{c.message}</p>}
+                      {c.country && <p className="text-slate-600 text-[10px] mt-1 truncate">{c.country}</p>}
                     </div>
-                  ))}
-                </div>
+                  )}
+                />
               </Section>
             ) : null}
           </div>
@@ -391,20 +403,20 @@ export function MemorialPageClient() {
 
         {tab === "guestbook" && (
           <div className="space-y-6">
-            {data.guestbook?.items?.length ? (
-              <div className="space-y-3">
-                {data.guestbook.items.map((g) => (
-                  <div key={g.id} className="p-4 rounded-lg bg-white/5 border border-white/10">
-                    <Badge variant="outline" className="text-[10px] mb-2">{g.entryType}</Badge>
-                    <p className="text-slate-300">{g.message}</p>
-                    {g.scriptureRef && <p className="text-xs text-[#D4A63A] mt-1">{g.scriptureRef}</p>}
-                    <p className="text-xs text-slate-500 mt-2">{g.userName}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-slate-500 text-sm">No guestbook entries yet.</p>
-            )}
+            <PaginatedSection
+              items={data.guestbook?.items ?? []}
+              limit={10}
+              keyFor={(g) => g.id}
+              renderItem={(g) => (
+                <div className="p-4 rounded-lg bg-white/5 border border-white/10 min-w-0">
+                  <Badge variant="outline" className="text-[10px] mb-2">{g.entryType}</Badge>
+                  <p className="text-slate-300 break-words">{g.message}</p>
+                  {g.scriptureRef && <p className="text-xs text-[#D4A63A] mt-1">{g.scriptureRef}</p>}
+                  <p className="text-xs text-slate-500 mt-2 truncate">{g.userName}</p>
+                </div>
+              )}
+              empty={<p className="text-slate-500 text-sm">No guestbook entries yet.</p>}
+            />
             <Section title="Sign the Guestbook">
               <form onSubmit={submitGuestbook} className="space-y-3">
                 <Input value={guestbook.userName} onChange={(e) => setGuestbook({ ...guestbook, userName: e.target.value })} placeholder="Your name" required className="bg-white/5 border-white/20 text-white" />
@@ -430,9 +442,13 @@ export function MemorialPageClient() {
             {!data.gallery?.items?.length ? (
               <p className="text-slate-500 text-sm">Gallery photos and videos will appear here.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {data.gallery.items.map((m) => (
-                  <div key={m.id} className="rounded-lg overflow-hidden border border-white/10 bg-white/5 aspect-square relative">
+              <PaginatedSection
+                items={data.gallery.items}
+                limit={12}
+                keyFor={(m) => m.id}
+                listClassName="grid grid-cols-2 sm:grid-cols-3 gap-3"
+                renderItem={(m) => (
+                  <div className="rounded-lg overflow-hidden border border-white/10 bg-white/5 aspect-square relative min-w-0">
                     <UploadedMedia
                       src={m.url}
                       alt={m.caption ?? "Memorial"}
@@ -442,8 +458,8 @@ export function MemorialPageClient() {
                       autoPlay={false}
                     />
                   </div>
-                ))}
-              </div>
+                )}
+              />
             )}
           </Section>
         )}
@@ -499,14 +515,17 @@ export function MemorialPageClient() {
             </Section>
             {data.contributions?.items?.length ? (
               <Section title="Recent Contributions">
-                <div className="space-y-2">
-                  {data.contributions.items.map((c, i) => (
-                    <div key={i} className="flex justify-between text-sm p-3 rounded-lg bg-white/5">
-                      <span>{c.contributor}</span>
-                      <span className="text-[#D4A63A]">{formatCurrency(c.amount, c.currency)}</span>
+                <PaginatedSection
+                  items={data.contributions.items.map((c, index) => ({ ...c, id: `contrib-${index}` }))}
+                  limit={10}
+                  keyFor={(c) => c.id}
+                  renderItem={(c) => (
+                    <div className="stack-mobile text-sm p-3 rounded-lg bg-white/5 min-w-0">
+                      <span className="truncate min-w-0">{c.contributor}</span>
+                      <span className="text-[#D4A63A] shrink-0">{formatCurrency(c.amount, c.currency)}</span>
                     </div>
-                  ))}
-                </div>
+                  )}
+                />
               </Section>
             ) : null}
           </div>
@@ -515,30 +534,33 @@ export function MemorialPageClient() {
         {tab === "livestream" && (
           <Section title="Livestream">
             {data.livestreams?.length ? (
-              <div className="space-y-3">
-                {data.livestreams.map((s) => (
-                  <Card key={s.id} className="bg-white/5 border-white/10">
-                    <CardContent className="p-4 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-medium flex items-center gap-2">
-                          {s.isLive && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
+              <PaginatedSection
+                items={data.livestreams}
+                limit={8}
+                keyFor={(s) => s.id}
+                renderItem={(s) => (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardContent className="p-4 stack-mobile gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <p className="font-medium flex items-center gap-2 truncate">
+                          {s.isLive && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse shrink-0" />}
                           {s.title}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">{s.provider}</p>
                         {s.scheduledAt && (
                           <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                            <Clock className="h-3 w-3" />
+                            <Clock className="h-3 w-3 shrink-0" />
                             {new Date(s.scheduledAt).toLocaleString()}
                           </p>
                         )}
                       </div>
-                      <Button asChild size="sm" className="bg-[#0B8A83] shrink-0">
+                      <Button asChild size="sm" className="bg-[#0B8A83] shrink-0 touch-target w-full sm:w-auto">
                         <a href={s.streamUrl} target="_blank" rel="noopener noreferrer">Watch</a>
                       </Button>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                )}
+              />
             ) : p.livestreamUrl ? (
               <Button asChild className="w-full border-[#D4A63A] text-[#D4A63A]" variant="outline">
                 <a href={p.livestreamUrl} target="_blank" rel="noopener noreferrer">Watch Livestream</a>

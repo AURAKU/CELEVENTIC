@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { PaginatedSection } from "@/components/ui/paginated-section";
 import { formatDate } from "@/lib/utils";
 
 export interface RecentEventSummary {
@@ -168,14 +169,17 @@ export function RecentEventsList({
             secondaryHref={secondaryHref}
           />
         ) : (
-          <div className="space-y-3">
-            {events.map((event) => {
+          <PaginatedSection
+            items={events}
+            limit={8}
+            keyFor={(event) => event.id}
+            renderItem={(event) => {
               const open = manageId === event.id;
               const deleting = deletingId === event.id;
               const allowDelete = canDeleteEvent(event);
 
               return (
-                <div key={event.id} className="space-y-0">
+                <div className="space-y-0">
                   <div className="interactive-row">
                     <Link
                       href={`/dashboard/events/${event.id}`}
@@ -197,7 +201,7 @@ export function RecentEventsList({
                             type="button"
                             size="sm"
                             variant={open ? "default" : "outline"}
-                            className="h-8"
+                            className="h-10 min-h-[44px] sm:h-8 sm:min-h-8 touch-manipulation"
                             aria-expanded={open}
                             aria-controls={`event-manage-${event.id}`}
                             onClick={() => setManageId(open ? null : event.id)}
@@ -210,7 +214,7 @@ export function RecentEventsList({
                               type="button"
                               size="sm"
                               variant="ghost"
-                              className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-10 min-h-[44px] sm:h-8 sm:min-h-8 text-red-600 hover:text-red-700 hover:bg-red-50 touch-manipulation"
                               disabled={deleting}
                               onClick={() => void handleDelete(event)}
                             >
@@ -307,8 +311,8 @@ export function RecentEventsList({
                   )}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         )}
       </CardContent>
     </Card>
