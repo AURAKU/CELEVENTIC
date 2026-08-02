@@ -1,5 +1,6 @@
 import type { MusicSelection } from "@/lib/music/music-types";
 import { MUSIC_CLIP_MAX_SEC, MUSIC_CLIP_MIN_SEC } from "@/lib/music/music-constants";
+import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
 
 export function clipDurationSec(selection: Pick<MusicSelection, "startSec" | "endSec">) {
   return Math.max(0, selection.endSec - selection.startSec);
@@ -56,13 +57,22 @@ export function defaultTrimRange(durationSec: number): { startSec: number; endSe
   return { startSec, endSec: Math.max(MUSIC_CLIP_MIN_SEC, endSec) };
 }
 
+/**
+ * Browser-ready music URL.
+ * Always rewrite `/api/uploads/...` → `/uploads/...` so playback never follows
+ * a broken behind-nginx redirect to an internal localhost host.
+ */
 export function resolveMusicUrl(url: string, baseUrl?: string): string {
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("/")) {
-    const origin = baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "");
-    return origin ? `${origin}${url}` : url;
+  const normalized = resolvePublicMediaUrl(url);
+  if (!normalized) return url;
+  if (normalized.startsWith("http://") || normalized.startsWith("https://") || normalized.startsWith("blob:") || normalized.startsWith("data:")) {
+    return normalized;
   }
-  return url;
+  if (normalized.startsWith("/")) {
+    const origin = baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "");
+    return origin ? `${origin}${normalized}` : normalized;
+  }
+  return normalized;
 }
 
 export function parseMusicSelection(raw: unknown): MusicSelection | null {

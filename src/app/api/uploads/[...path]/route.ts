@@ -99,8 +99,19 @@ export async function GET(
   // Prefer static Nginx / Next public delivery whenever the file lives under public/uploads.
   // Redirect avoids buffering large videos through the Node app (and TransformStream bugs).
   if (uploadRootIsPublicFolder() && process.env.MEDIA_FORCE_API_PROXY !== "1") {
-    const target = new URL(`/uploads/${relative}`, req.url);
-    // Preserve Range by using 307 so clients re-issue against Nginx/static.
+    // Build a same-site absolute path using the public Host the browser sent —
+    // never trust req.url alone behind Nginx (it can be http://localhost:3001/...).
+    const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const host = forwardedHost || req.headers.get("host") || "";
+    const forwardedProto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    const proto =
+      forwardedProto ||
+      (host && !host.includes("localhost") && !host.startsWith("127.") ? "https" : "http");
+    const targetPath = `/uploads/${relative}`;
+    const target =
+      host && !/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host.split(":")[0] ?? "")
+        ? `${proto}://${host}${targetPath}`
+        : targetPath;
     return NextResponse.redirect(target, 307);
   }
 

@@ -192,8 +192,15 @@ export function ForeverAfarisWeddingOpening({
       setStage("gate");
       vibrate(10, haptics);
     });
-    after(CEREMONY_COMPLETE_MS, finish);
+    // Safety net only — guests normally enter by tapping the golden gate.
+    after(Math.max(CEREMONY_COMPLETE_MS, 22_000), finish);
   }, [after, finish, haptics, onBegin, prefersReduced, stage]);
+
+  const enterThroughGate = useCallback(() => {
+    if (stage !== "gate") return;
+    onBegin?.();
+    finish();
+  }, [finish, onBegin, stage]);
 
   const skip = useCallback(() => {
     onBegin?.();
@@ -205,10 +212,11 @@ export function ForeverAfarisWeddingOpening({
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        openEnvelope();
+        if (stage === "gate") enterThroughGate();
+        else openEnvelope();
       }
     },
-    [openEnvelope]
+    [enterThroughGate, openEnvelope, stage]
   );
 
   if (!visible && doneRef.current && stage === "done") return null;
@@ -309,6 +317,7 @@ export function ForeverAfarisWeddingOpening({
               coupleLine={coupleLine}
               style={gateStyle}
               parallax={parallax}
+              onEnter={enterThroughGate}
             />
           )}
         </motion.div>
@@ -862,12 +871,14 @@ function Gate({
   coupleLine,
   style,
   parallax,
+  onEnter,
 }: {
   palette: FaPalette;
   word: string;
   coupleLine: string;
   style: WeddingGateStyle;
   parallax: { x: MotionValue<number>; y: MotionValue<number> };
+  onEnter: () => void;
 }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: 1800 }}>
@@ -912,7 +923,7 @@ function Gate({
           x={parallax.x}
           y={parallax.y}
           depth={-6}
-          className="relative flex flex-col items-center"
+          className="relative z-10 flex flex-col items-center"
         >
           <motion.p
             className="font-[family-name:var(--font-great-vibes)] text-6xl sm:text-7xl"
@@ -932,6 +943,23 @@ function Gate({
           >
             {coupleLine}
           </motion.p>
+          <motion.button
+            type="button"
+            onClick={onEnter}
+            aria-label="Enter through the golden gate"
+            className="mt-8 rounded-full px-6 py-3 text-[11px] uppercase tracking-[0.28em] touch-manipulation"
+            style={{
+              color: C.cocoa,
+              background: `${C.linen}ee`,
+              border: `1px solid ${C.border}`,
+              boxShadow: `0 12px 36px ${C.blushDeep}55`,
+            }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, ease: EASE_SILK, delay: 3.6 }}
+          >
+            Enter
+          </motion.button>
         </ParallaxLayer>
 
         {Array.from({ length: PETAL_COUNT }).map((_, i) => (
