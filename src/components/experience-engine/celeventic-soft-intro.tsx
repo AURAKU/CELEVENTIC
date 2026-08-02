@@ -13,11 +13,11 @@ import {
 import {
   INTRO_ERROR_POSTER_HOLD_MS,
   INTRO_STALL_GRACE_MS,
-  attemptVideoPlay,
   collectIntroVideoDiagnostics,
   forgetSoftIntroThisSession,
-  hasSeenSoftIntroThisSession,
   logIntroDiagnostics,
+  logIntroErrorDiagnostics,
+  playIntroWithMutedFallback,
   prepareIntroVideoElement,
   rememberSoftIntroThisSession,
   softIntroTimeoutMs,
@@ -31,10 +31,13 @@ export interface CeleventicSoftIntroProps {
    * unlock invitation audio — never start music from a programmatic play().
    */
   onUserGesture?: () => void;
-  /** Scopes sessionStorage so intro state is never a stale global key. */
+  /**
+   * Invitation link or id — scopes sessionStorage only (never auto-skips the
+   * visible intro on first paint).
+   */
   invitationId?: string;
   /**
-   * When true (Replay Opening), ignore session "already seen" and play again.
+   * When true (Replay Opening), clear session memory for a fresh play.
    */
   forcePlay?: boolean;
   /**
@@ -50,7 +53,7 @@ export interface CeleventicSoftIntroProps {
   atmosphereUrl?: string | null;
   accentColor?: string;
   secondaryColor?: string;
-  /** Retained for compatibility with older callers and fallback timing. */
+  /** Retained for compatibility with older callers. */
   quickHold?: boolean;
   /**
    * When true (catalogue / studio phone frame), fill the parent shell instead
@@ -60,11 +63,11 @@ export interface CeleventicSoftIntroProps {
 }
 
 /**
- * Platform soft launch — canonical Celeventic intro video for every template.
+ * Canonical Celeventic intro video.
  *
- * Autoplay is always muted on first paint (Safari policy). If the browser
- * still blocks play(), a premium "Tap to Open Invitation" CTA unlocks
- * playback + invitation audio from that user gesture.
+ * Root-cause fix: the HTML `muted` attribute must be present on first paint.
+ * Live used to mount unmuted (`soundEnabled === true`), so Safari rejected
+ * autoplay and the intro never started visibly.
  */
 export function CeleventicSoftIntro({
   onComplete,
@@ -77,7 +80,8 @@ export function CeleventicSoftIntro({
 }: CeleventicSoftIntroProps) {
   const reduceMotion = useReducedMotion();
   const [exiting, setExiting] = useState(false);
-  const [showPosterFallback, setShowPosterFallback] = useState(false);
+  /** Only true for real load/decode failure — never for autoplay policy. */
+  const [videoFailed, setVideoFailed] = useState(false);
   const [needsTapToOpen, setNeedsTapToOpen] = useState(false);
   const [playbackStarted, setPlaybackStarted] = useState(false);
   /** Must stay true on first paint — Safari rejects autoplay if muted flips after mount. */
@@ -91,6 +95,8 @@ export function CeleventicSoftIntro({
   const errorHoldTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastPlayRejection = useRef<string | undefined>(undefined);
+  const playbackStartedRef = useRef(false);
+  const needsTapRef = useRef(false);
 
   const clearTimers = useCallback(() => {
     if (exitTimer.current) clearTimeout(exitTimer.current);
@@ -145,40 +151,57 @@ export function CeleventicSoftIntro({
   }, []);
 
   const markPlaybackStarted = useCallback(() => {
+    playbackStartedRef.current = true;
+    needsTapRef.current = false;
     setPlaybackStarted(true);
     setNeedsTapToOpen(false);
   }, []);
 
-  const tryMutedPlay = useCallback(
+  const tryMutedAutoplay = useCallback(
     async (label: string) => {
       const video = videoRef.current;
-      if (!video || completed.current || exitingRef.current) return false;
+      if (!video || completed.current || exitingRef.current || videoFailed) return false;
 
-      prepareIntroVideoElement(video);
-      const result = await attemptVideoPlay(video, { muted: true });
-      if (!result.ok) {
-        lastPlayRejection.current = result.reason ?? result.name;
+      prepareIntroVideoElement(video, true);
+      setHtmlMuted(true);
+      const result = await playIntroWithMutedFallback(video, false);
+      if (!result.playing) {
+        lastPlayRejection.current =
+          result.mutedResult?.reason ?? result.mutedResult?.name ?? "play-rejected";
         diagnose(`${label}:play-rejected`);
+        // Autoplay policy → tap CTA. Never mark videoFailed.
+        if (result.needsGesture) {
+          needsTapRef.current = true;
+          setNeedsTapToOpen(true);
+        }
         return false;
       }
       lastPlayRejection.current = undefined;
       markPlaybackStarted();
-      diagnose(`${label}:playing`);
+      diagnose(`${label}:playing-muted`);
       return true;
     },
-    [diagnose, markPlaybackStarted]
+    [diagnose, markPlaybackStarted, videoFailed]
   );
 
-  const handleMediaFailure = useCallback(() => {
+  const handleRealLoadFailure = useCallback(() => {
     if (completed.current || exitingRef.current) return;
-    diagnose("media-failure");
-    setShowPosterFallback(true);
+    const video = videoRef.current;
+    if (video) {
+      logIntroErrorDiagnostics(
+        collectIntroVideoDiagnostics(video, lastPlayRejection.current)
+      );
+    }
+    diagnose("media-load-failure");
+    setVideoFailed(true);
     setNeedsTapToOpen(false);
+    needsTapRef.current = false;
     try {
       videoRef.current?.pause();
     } catch {
       /* ignore */
     }
+    // Keep poster visible briefly, then reveal invitation — never blank forever.
     if (errorHoldTimer.current) clearTimeout(errorHoldTimer.current);
     errorHoldTimer.current = setTimeout(() => beginExit(), INTRO_ERROR_POSTER_HOLD_MS);
   }, [beginExit, diagnose]);
@@ -188,48 +211,46 @@ export function CeleventicSoftIntro({
     stallTimer.current = setTimeout(() => {
       const video = videoRef.current;
       if (!video || completed.current || exitingRef.current) return;
-      // Still no usable frames after grace — fall through to poster → invite.
-      if (video.readyState < 2 || (video.paused && !needsTapToOpen)) {
-        handleMediaFailure();
+      if (playbackStartedRef.current || needsTapRef.current) return;
+      // Still no usable frames and no gesture CTA — treat as load failure.
+      if (video.readyState < 2) {
+        handleRealLoadFailure();
       }
     }, INTRO_STALL_GRACE_MS);
-  }, [handleMediaFailure, needsTapToOpen]);
+  }, [handleRealLoadFailure]);
 
-  // Session skip: same invitation, same browser tab, already finished once.
-  // Replay Opening passes forcePlay / bumps ceremonyGeneration key.
+  // Replay Opening: clear invitation-scoped session mark only.
   useEffect(() => {
-    if (forcePlay || embedded || !invitationId) return;
-    if (!hasSeenSoftIntroThisSession(invitationId)) return;
-    finish();
-  }, [embedded, finish, forcePlay, invitationId]);
+    if (!forcePlay || !invitationId) return;
+    forgetSoftIntroThisSession(invitationId);
+  }, [forcePlay, invitationId]);
 
+  // Hard ceiling (14s when duration unknown). Re-armed with real duration on metadata.
   useEffect(() => {
     armFallbackTimeout(null);
     return () => clearTimers();
   }, [armFallbackTimeout, clearTimers]);
 
-  // Mount + keep trying muted autoplay (Safari-safe: muted attribute is always on).
+  // Mount: muted autoplay (Safari requires muted on first HTML paint).
   useEffect(() => {
+    if (videoFailed) return;
     const video = videoRef.current;
-    if (!video || showPosterFallback) return;
+    if (!video) return;
 
-    prepareIntroVideoElement(video);
+    prepareIntroVideoElement(video, true);
     diagnose("mount");
 
     let cancelled = false;
     void (async () => {
-      const ok = await tryMutedPlay("mount");
+      const ok = await tryMutedAutoplay("mount");
       if (cancelled || completed.current) return;
-      if (!ok) {
-        setNeedsTapToOpen(true);
-        diagnose("autoplay-blocked");
-      }
+      if (!ok) diagnose("autoplay-needs-gesture-or-retry");
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [diagnose, showPosterFallback, tryMutedPlay]);
+  }, [diagnose, tryMutedAutoplay, videoFailed]);
 
   const handleTapToOpen = useCallback(async () => {
     const video = videoRef.current;
@@ -239,53 +260,44 @@ export function CeleventicSoftIntro({
       return;
     }
 
-    prepareIntroVideoElement(video);
-    // Gesture unlocks audio — unmute only after this explicit tap.
+    // Gesture unlock — try unmuted, fall back to full muted intro if needed.
     setHtmlMuted(false);
-    video.defaultMuted = false;
-    video.muted = false;
-    video.volume = 1;
-
-    let result = await attemptVideoPlay(video, { muted: false });
-    if (!result.ok) {
-      lastPlayRejection.current = result.reason ?? result.name;
-      setHtmlMuted(true);
-      result = await attemptVideoPlay(video, { muted: true });
+    prepareIntroVideoElement(video, false);
+    const result = await playIntroWithMutedFallback(video, true);
+    if (result.unmutedRejected) {
+      lastPlayRejection.current =
+        result.unmutedRejected.reason ?? result.unmutedRejected.name;
     }
 
-    if (!result.ok) {
-      lastPlayRejection.current = result.reason ?? result.name;
+    if (!result.playing) {
       diagnose("tap-to-open-failed");
-      handleMediaFailure();
+      // Still cannot play after a gesture → real failure path.
+      handleRealLoadFailure();
       return;
     }
 
+    setHtmlMuted(result.muted);
+    prepareIntroVideoElement(video, result.muted);
     markPlaybackStarted();
-    diagnose("tap-to-open-playing");
-  }, [
-    beginExit,
-    diagnose,
-    handleMediaFailure,
-    markPlaybackStarted,
-    onUserGesture,
-  ]);
+    diagnose(result.muted ? "tap-to-open-playing-muted" : "tap-to-open-playing-unmuted");
+  }, [beginExit, diagnose, handleRealLoadFailure, markPlaybackStarted, onUserGesture]);
 
   const handleLoadedMetadata = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     try {
-      video.currentTime = 0;
+      if (video.currentTime > 0.05) video.currentTime = 0;
     } catch {
       /* ignore seek errors before ready */
     }
     armFallbackTimeout(video.duration);
-    void tryMutedPlay("loadedmetadata");
-  }, [armFallbackTimeout, tryMutedPlay]);
+    void tryMutedAutoplay("loadedmetadata");
+  }, [armFallbackTimeout, tryMutedAutoplay]);
 
   const handleCanPlay = useCallback(() => {
     if (stallTimer.current) clearTimeout(stallTimer.current);
-    void tryMutedPlay("canplay");
-  }, [tryMutedPlay]);
+    void tryMutedAutoplay("canplay");
+  }, [tryMutedAutoplay]);
 
   const handleVideoEnded = useCallback(() => {
     if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
@@ -301,7 +313,7 @@ export function CeleventicSoftIntro({
     beginExit();
   }, [beginExit]);
 
-  const showVideo = !showPosterFallback;
+  const showVideo = !videoFailed;
 
   const rootClass = [
     styles.root,
@@ -325,12 +337,13 @@ export function CeleventicSoftIntro({
       }
       data-celeventic-soft-intro="true"
       data-playback-started={playbackStarted ? "true" : "false"}
+      data-video-failed={videoFailed ? "true" : "false"}
     >
       <p className={styles.srStatus} aria-live="polite">
         Preparing your invitation. Powered by Celeventic.
       </p>
 
-      <div className={styles.atmosphere} aria-hidden={!needsTapToOpen}>
+      <div className={styles.atmosphere}>
         {showVideo ? (
           <video
             ref={videoRef}
@@ -347,14 +360,17 @@ export function CeleventicSoftIntro({
             controlsList="nodownload nofullscreen noremoteplayback"
             onLoadedMetadata={handleLoadedMetadata}
             onCanPlay={handleCanPlay}
-            onLoadedData={() => void tryMutedPlay("loadeddata")}
+            onLoadedData={() => void tryMutedAutoplay("loadeddata")}
             onPlaying={() => {
               markPlaybackStarted();
               if (stallTimer.current) clearTimeout(stallTimer.current);
             }}
             onEnded={handleVideoEnded}
-            onError={handleMediaFailure}
-            onAbort={handleMediaFailure}
+            onError={handleRealLoadFailure}
+            onAbort={() => {
+              // Safari often aborts mid-buffer — do NOT treat as load failure.
+              diagnose("abort");
+            }}
             onStalled={() => {
               diagnose("stalled");
               armStallWatch();
@@ -362,7 +378,9 @@ export function CeleventicSoftIntro({
             onSuspend={() => {
               diagnose("suspend");
               const video = videoRef.current;
-              if (video && video.readyState < 2) armStallWatch();
+              if (video && video.readyState < 2 && !playbackStartedRef.current) {
+                armStallWatch();
+              }
             }}
             onWaiting={() => {
               diagnose("waiting");
@@ -386,7 +404,7 @@ export function CeleventicSoftIntro({
         )}
       </div>
 
-      {needsTapToOpen && !exiting && !showPosterFallback && (
+      {needsTapToOpen && !exiting && !videoFailed && (
         <div className={styles.tapGate}>
           <button
             type="button"
@@ -404,10 +422,7 @@ export function CeleventicSoftIntro({
           <button
             type="button"
             className={styles.skipButton}
-            onClick={() => {
-              if (invitationId && forcePlay) forgetSoftIntroThisSession(invitationId);
-              beginExit();
-            }}
+            onClick={beginExit}
             aria-label="Skip invitation intro video"
           >
             Skip intro

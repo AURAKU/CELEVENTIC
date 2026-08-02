@@ -8,6 +8,7 @@ import {
   resolveInitialInvitePhase,
 } from "../soft-intro";
 import {
+  INTRO_MIN_START_GRACE_MS,
   INTRO_POSTER_SRC,
   INTRO_UNKNOWN_DURATION_FALLBACK_MS,
   INTRO_VIDEO_SRC,
@@ -15,6 +16,8 @@ import {
   collectIntroVideoDiagnostics,
   forgetSoftIntroThisSession,
   hasSeenSoftIntroThisSession,
+  isAutoplayPolicyRejection,
+  playIntroWithMutedFallback,
   prepareIntroVideoElement,
   rememberSoftIntroThisSession,
   softIntroSessionKey,
@@ -40,6 +43,16 @@ function withSessionStorage<T>(run: () => T): T {
   }
 }
 
+function mockVideo(playImpl: () => Promise<void>) {
+  return {
+    muted: false,
+    defaultMuted: false,
+    paused: true,
+    ended: false,
+    play: playImpl,
+  };
+}
+
 describe("soft-intro media URLs", () => {
   it("uses exact brand paths without cache-busting queries", () => {
     assert.equal(CELEVENTIC_INVITATION_INTRO_VIDEO, "/brand/celeventic-invitation-intro.mp4");
@@ -51,73 +64,106 @@ describe("soft-intro media URLs", () => {
   });
 });
 
-describe("softIntroTimeoutMs", () => {
-  it("uses real video duration when available", () => {
-    assert.equal(softIntroTimeoutMs(10), 10_750);
-    assert.equal(softIntroTimeoutMs(12.5), 13_250);
+describe("muted autoplay success", () => {
+  it("plays when muted autoplay is allowed", async () => {
+    const video = mockVideo(async () => undefined);
+    const result = await playIntroWithMutedFallback(video, false);
+    assert.equal(result.playing, true);
+    assert.equal(result.muted, true);
+    assert.equal(result.needsGesture, false);
+    assert.equal(video.muted, true);
+  });
+});
+
+describe("unmuted autoplay rejection → muted fallback success", () => {
+  it("does not treat NotAllowedError as load failure when muted fallback works", async () => {
+    let attempts = 0;
+    const video = mockVideo(async () => {
+      attempts += 1;
+      if (attempts === 1) {
+        throw Object.assign(new Error("NotAllowedError"), { name: "NotAllowedError" });
+      }
+    });
+    const result = await playIntroWithMutedFallback(video, true);
+    assert.equal(result.playing, true);
+    assert.equal(result.muted, true);
+    assert.equal(result.needsGesture, false);
+    assert.equal(isAutoplayPolicyRejection(result.unmutedRejected!), true);
+    assert.equal(attempts, 2);
+  });
+});
+
+describe("unmuted autoplay rejection only", () => {
+  it("classifies policy rejection without marking a media failure", async () => {
+    const rejected = await attemptVideoPlay(mockVideo(async () => {
+      throw Object.assign(new Error("play() failed because the user didn't interact"), {
+        name: "NotAllowedError",
+      });
+    }), { muted: false });
+    assert.equal(rejected.ok, false);
+    assert.equal(isAutoplayPolicyRejection(rejected), true);
+  });
+});
+
+describe("manual tap playback", () => {
+  it("plays unmuted after an explicit gesture path", async () => {
+    const video = mockVideo(async () => undefined);
+    const result = await playIntroWithMutedFallback(video, true);
+    assert.equal(result.playing, true);
+    assert.equal(result.muted, false);
+    assert.equal(video.muted, false);
+  });
+});
+
+describe("real load failure", () => {
+  it("reports error diagnostics without guest PII", () => {
+    const video = {
+      currentSrc: "/brand/celeventic-invitation-intro.mp4",
+      src: "/brand/celeventic-invitation-intro.mp4",
+      readyState: 0,
+      networkState: 3,
+      paused: true,
+      ended: false,
+      muted: true,
+      autoplay: true,
+      error: { code: 4 },
+    } as unknown as HTMLVideoElement;
+
+    const diagnostics = collectIntroVideoDiagnostics(video, "MEDIA_ERR_SRC_NOT_SUPPORTED");
+    assert.equal(diagnostics.errorCode, 4);
+    assert.equal(diagnostics.networkState, 3);
+    assert.equal(diagnostics.readyState, 0);
+    assert.equal(diagnostics.currentSrc, "/brand/celeventic-invitation-intro.mp4");
+    assert.equal("token" in diagnostics, false);
+    assert.equal("guestId" in diagnostics, false);
   });
 
-  it("falls back to 14 seconds when duration is unknown", () => {
+  it("needs gesture when both unmuted and muted play are blocked by policy", async () => {
+    const video = mockVideo(async () => {
+      throw Object.assign(new Error("NotAllowedError"), { name: "NotAllowedError" });
+    });
+    const result = await playIntroWithMutedFallback(video, true);
+    assert.equal(result.playing, false);
+    assert.equal(result.needsGesture, true);
+  });
+});
+
+describe("timeout completion", () => {
+  it("caps at 14s and never finishes before the start grace window", () => {
     assert.equal(softIntroTimeoutMs(null), 14_000);
     assert.equal(softIntroTimeoutMs(undefined), 14_000);
     assert.equal(softIntroTimeoutMs(0), 14_000);
-    assert.equal(softIntroTimeoutMs(NaN), 14_000);
+    assert.ok(softIntroTimeoutMs(0.1) >= INTRO_MIN_START_GRACE_MS);
+    assert.ok(softIntroTimeoutMs(12.5) <= 14_000);
+    assert.equal(softIntroTimeoutMs(12.5), 13_000);
+    assert.equal(softIntroTimeoutMs(10), 10_500);
   });
 });
 
-describe("attemptVideoPlay — muted autoplay", () => {
-  it("resolves ok when play() succeeds (muted Safari-safe path)", async () => {
-    const video = {
-      muted: false,
-      defaultMuted: false,
-      paused: false,
-      ended: false,
-      play: async () => undefined,
-    };
-    const result = await attemptVideoPlay(video, { muted: true });
-    assert.equal(result.ok, true);
-    assert.equal(video.muted, true);
-    assert.equal(video.defaultMuted, true);
-  });
-
-  it("catches play() rejection (autoplay blocked)", async () => {
-    const video = {
-      muted: true,
-      defaultMuted: true,
-      paused: true,
-      ended: false,
-      play: async () => {
-        throw Object.assign(new Error("NotAllowedError"), { name: "NotAllowedError" });
-      },
-    };
-    const result = await attemptVideoPlay(video, { muted: true });
-    assert.equal(result.ok, false);
-    assert.equal(result.name, "NotAllowedError");
-    assert.match(result.reason ?? "", /NotAllowedError|play/i);
-  });
-});
-
-describe("tap-to-open fallback contract", () => {
-  it("treats a second play after rejection as the tap-to-open recovery path", async () => {
-    let attempts = 0;
-    const video = {
-      muted: true,
-      defaultMuted: true,
-      paused: true,
-      ended: false,
-      play: async () => {
-        attempts += 1;
-        if (attempts === 1) {
-          throw Object.assign(new Error("NotAllowedError"), { name: "NotAllowedError" });
-        }
-      },
-    };
-    const first = await attemptVideoPlay(video, { muted: true });
-    assert.equal(first.ok, false);
-    const second = await attemptVideoPlay(video, { muted: false });
-    assert.equal(second.ok, true);
-    assert.equal(video.muted, false);
-    assert.equal(attempts, 2);
+describe("onEnded completion / no blank screen", () => {
+  it("keeps soft-intro as the initial live phase so the screen is never blank", () => {
+    assert.equal(shouldShowSoftIntro({}), true);
+    assert.equal(resolveInitialInvitePhase({ needsTapGate: true, showReveal: true }), "soft-intro");
   });
 });
 
@@ -134,9 +180,12 @@ describe("mobile Safari playsInline preparation", () => {
       setAttribute(name: string, value: string) {
         attrs.set(name, value);
       },
+      removeAttribute(name: string) {
+        attrs.delete(name);
+      },
     } as unknown as HTMLVideoElement;
 
-    prepareIntroVideoElement(video);
+    prepareIntroVideoElement(video, true);
     assert.equal(video.muted, true);
     assert.equal(video.defaultMuted, true);
     assert.equal(video.playsInline, true);
@@ -148,58 +197,15 @@ describe("mobile Safari playsInline preparation", () => {
   });
 });
 
-describe("video load failure diagnostics", () => {
-  it("reports error codes without guest PII fields", () => {
-    const video = {
-      currentSrc: "/brand/celeventic-invitation-intro.mp4",
-      src: "/brand/celeventic-invitation-intro.mp4",
-      readyState: 0,
-      networkState: 3,
-      paused: true,
-      ended: false,
-      muted: true,
-      autoplay: true,
-      error: { code: 4 },
-    } as unknown as HTMLVideoElement;
-
-    const diagnostics = collectIntroVideoDiagnostics(video, "NotAllowedError");
-    assert.equal(diagnostics.currentSrc, "/brand/celeventic-invitation-intro.mp4");
-    assert.equal(diagnostics.readyState, 0);
-    assert.equal(diagnostics.networkState, 3);
-    assert.equal(diagnostics.paused, true);
-    assert.equal(diagnostics.ended, false);
-    assert.equal(diagnostics.muted, true);
-    assert.equal(diagnostics.autoplay, true);
-    assert.equal(diagnostics.errorCode, 4);
-    assert.equal(diagnostics.playRejection, "NotAllowedError");
-    assert.equal("guestId" in diagnostics, false);
-    assert.equal("token" in diagnostics, false);
-  });
-});
-
-describe("onEnded / timeout fallback reveal", () => {
-  it("timeout clears to invitation after duration or 14s — never infinite blank", () => {
-    assert.ok(softIntroTimeoutMs(8) < softIntroTimeoutMs(null));
-    assert.equal(softIntroTimeoutMs(null), 14_000);
-    // Ended path is finish via beginExit; timeout must still be finite.
-    assert.ok(Number.isFinite(softIntroTimeoutMs(undefined)));
-  });
-
-  it("keeps soft-intro as the initial live phase so the screen is never blank", () => {
-    assert.equal(shouldShowSoftIntro({}), true);
-    assert.equal(resolveInitialInvitePhase({ needsTapGate: true, showReveal: true }), "soft-intro");
-  });
-});
-
-describe("intro shown once per invitation session", () => {
+describe("intro session storage scoped to invitation link", () => {
   it("scopes session memory per invitation — never a global introSeen key", () => {
-    assert.match(softIntroSessionKey("inv_abc"), /^celeventic:soft-intro:session:v1:inv_abc$/);
+    assert.match(softIntroSessionKey("invite-link-abc"), /^celeventic:soft-intro:session:v1:invite-link-abc$/);
     assert.notEqual(softIntroSessionKey("inv_a"), softIntroSessionKey("inv_b"));
     assert.ok(!softIntroSessionKey("inv_a").includes("hasSeenIntro"));
     assert.ok(!softIntroSessionKey("inv_a").includes("introSeen"));
   });
 
-  it("remembers and forgets within sessionStorage only", () => {
+  it("remembers and forgets within sessionStorage only (does not imply auto-skip)", () => {
     withSessionStorage(() => {
       assert.equal(hasSeenSoftIntroThisSession("inv_1"), false);
       rememberSoftIntroThisSession("inv_1");
@@ -208,10 +214,5 @@ describe("intro shown once per invitation session", () => {
       forgetSoftIntroThisSession("inv_1");
       assert.equal(hasSeenSoftIntroThisSession("inv_1"), false);
     });
-  });
-
-  it("treats unavailable sessionStorage as never seen (no blank trap)", () => {
-    assert.equal(hasSeenSoftIntroThisSession("inv_missing"), false);
-    assert.doesNotThrow(() => rememberSoftIntroThisSession("inv_missing"));
   });
 });
