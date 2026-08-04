@@ -579,21 +579,38 @@ async function findPassForAdmit(input: {
     event: { select: { id: true, title: true } },
   };
   if (input.token) {
-    if (!verifyVendorTeamTokenSignature(input.token)) return null;
+    if (!verifyVendorTeamTokenSignature(input.token)) return { pass: null, wrongEvent: false as const };
     const hash = hashVendorTeamToken(input.token);
-    return prisma.vendorTeamPass.findFirst({
+    const pass = await prisma.vendorTeamPass.findFirst({
       where: { eventId: input.eventId, tokenHash: hash, archivedAt: null },
       include,
     });
+    if (pass) return { pass, wrongEvent: false as const };
+    // Token is valid but owned by another event — never admit across events.
+    const elsewhere = await prisma.vendorTeamPass.findFirst({
+      where: { tokenHash: hash, archivedAt: null },
+      select: { id: true },
+    });
+    return { pass: null, wrongEvent: Boolean(elsewhere) };
   }
   if (input.code) {
     const code = normalizeAdmissionCode(input.code);
-    return prisma.vendorTeamPass.findFirst({
+    const pass = await prisma.vendorTeamPass.findFirst({
       where: { eventId: input.eventId, admissionCode: code, archivedAt: null },
       include,
     });
+    if (pass) return { pass, wrongEvent: false as const };
+    const elsewhere = await prisma.vendorTeamPass.findFirst({
+      where: { admissionCode: code, archivedAt: null },
+      select: { id: true, eventId: true },
+    });
+    // Codes are unique per event; same digits on another event must not open this gate.
+    return {
+      pass: null,
+      wrongEvent: Boolean(elsewhere && elsewhere.eventId !== input.eventId),
+    };
   }
-  return null;
+  return { pass: null, wrongEvent: false as const };
 }
 
 export async function admitVendorTeamPass(input: {
@@ -620,41 +637,72 @@ export async function admitVendorTeamPass(input: {
         where: { id: input.passId, eventId: input.eventId, archivedAt: null },
         include,
       })
-    : await findPassForAdmit(input);
+    : null;
 
-  if (!pass) {
+  if (input.passId && !pass) {
+    const elsewhere = await prisma.vendorTeamPass.findFirst({
+      where: { id: input.passId, archivedAt: null },
+      select: { id: true },
+    });
+    if (elsewhere) {
+      return {
+        found: true as const,
+        ok: false as const,
+        error: "This vendor pass belongs to a different event.",
+        pass: null,
+      };
+    }
     return { found: false as const };
   }
 
+  const lookup = pass ? { pass, wrongEvent: false as const } : await findPassForAdmit(input);
+  if (lookup.wrongEvent) {
+    return {
+      found: true as const,
+      ok: false as const,
+      error: "This vendor pass belongs to a different event.",
+      pass: null,
+    };
+  }
+  if (!lookup.pass) {
+    return { found: false as const };
+  }
+  const resolvedPass = lookup.pass;
+
   const now = new Date();
-  if (pass.validFrom && now < pass.validFrom) {
+  if (resolvedPass.validFrom && now < resolvedPass.validFrom) {
     return {
       found: true as const,
       ok: false as const,
       error: "This pass is not valid yet.",
-      pass: toView(pass),
+      pass: toView(resolvedPass),
     };
   }
-  if (pass.validUntil && now > pass.validUntil) {
+  if (resolvedPass.validUntil && now > resolvedPass.validUntil) {
     return {
       found: true as const,
       ok: false as const,
       error: "This pass has expired.",
-      pass: toView(pass),
+      pass: toView(resolvedPass),
     };
   }
 
   const decision = resolveAdmitQuantity(
     {
-      teamCapacity: pass.teamCapacity,
-      admittedCount: pass.admittedCount,
-      status: pass.status,
+      teamCapacity: resolvedPass.teamCapacity,
+      admittedCount: resolvedPass.admittedCount,
+      status: resolvedPass.status,
     },
     input.mode,
     input.quantity
   );
   if (!decision.ok) {
-    return { found: true as const, ok: false as const, error: decision.error, pass: toView(pass) };
+    return {
+      found: true as const,
+      ok: false as const,
+      error: decision.error,
+      pass: toView(resolvedPass),
+    };
   }
 
   if (input.dryRun) {
@@ -663,8 +711,8 @@ export async function admitVendorTeamPass(input: {
       ok: true as const,
       dryRun: true as const,
       quantity: decision.quantity,
-      pass: toView(pass),
-      remainingAfter: remainingCapacity(pass) - decision.quantity,
+      pass: toView(resolvedPass),
+      remainingAfter: remainingCapacity(resolvedPass) - decision.quantity,
     };
   }
 
@@ -673,7 +721,7 @@ export async function admitVendorTeamPass(input: {
       where: { clientRecordId: input.clientRecordId },
     });
     if (existing) {
-      const fresh = await getVendorTeamPass(pass.id);
+      const fresh = await getVendorTeamPass(resolvedPass.id);
       return {
         found: true as const,
         ok: true as const,
@@ -685,9 +733,12 @@ export async function admitVendorTeamPass(input: {
   }
 
   const result = await prisma.$transaction(async (tx) => {
-    const current = await tx.vendorTeamPass.findUnique({ where: { id: pass!.id } });
+    const current = await tx.vendorTeamPass.findUnique({ where: { id: resolvedPass.id } });
     if (!current) return null;
-    if (current.revision !== pass!.revision && current.admittedCount !== pass!.admittedCount) {
+    if (
+      current.revision !== resolvedPass.revision &&
+      current.admittedCount !== resolvedPass.admittedCount
+    ) {
       // Concurrent update — re-check remaining
     }
     const remaining = remainingCapacity(current);
@@ -729,7 +780,7 @@ export async function admitVendorTeamPass(input: {
   });
 
   if (!result || result.conflict) {
-    const fresh = await getVendorTeamPass(pass.id);
+    const fresh = await getVendorTeamPass(resolvedPass.id);
     return {
       found: true as const,
       ok: false as const,
@@ -738,12 +789,12 @@ export async function admitVendorTeamPass(input: {
     };
   }
 
-  const fresh = await getVendorTeamPass(pass.id);
+  const fresh = await getVendorTeamPass(resolvedPass.id);
   await createAuditLog({
     userId: input.scannerUserId ?? undefined,
     action: "QR_SCAN",
     entity: "vendor_team_pass",
-    entityId: pass.id,
+    entityId: resolvedPass.id,
     details: {
       kind: "vendor_team_pass_admitted",
       eventId: input.eventId,

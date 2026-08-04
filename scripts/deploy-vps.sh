@@ -44,10 +44,15 @@ pm2 save
 
 echo "==> Health check"
 sleep 2
-curl -fsS -o /dev/null -w "api/health %{http_code}\n" http://127.0.0.1:3000/api/health || true
-curl -fsS -o /dev/null -w "home %{http_code}\n" http://127.0.0.1:3000/ || true
-curl -fsS -o /dev/null -w "templates/fa %{http_code}\n" \
-  http://127.0.0.1:3000/invitations/templates/forever-afaris-wedding || true
+# PM2 celeventic listens on PORT from .env (production: 3001). Probe both.
+for port in 3001 3000; do
+  if curl -fsS -o /dev/null -w "api/health :$port %{http_code}\n" "http://127.0.0.1:${port}/api/health"; then
+    curl -fsS -o /dev/null -w "home :$port %{http_code}\n" "http://127.0.0.1:${port}/" || true
+    break
+  fi
+done
+curl -fsS -o /dev/null -w "live home %{http_code}\n" https://www.celeventic.com/ || true
+curl -fsS -o /dev/null -w "live health %{http_code}\n" https://www.celeventic.com/api/health || true
 
 echo "==> Live party-isolation dry-run (all invitations — no mutations)"
 npm run audit:party-isolation || true

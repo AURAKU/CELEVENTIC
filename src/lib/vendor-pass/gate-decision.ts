@@ -122,6 +122,7 @@ export function vendorGateDecision(input: {
 
 function mapVendorDenyReason(error?: string): AdmissionReasonCode {
   const msg = (error ?? "").toLowerCase();
+  if (msg.includes("different event")) return "WRONG_EVENT";
   if (msg.includes("capacity")) return "ALLOWANCE_EXCEEDED";
   if (msg.includes("expired")) return "EXPIRED";
   if (msg.includes("not valid yet")) return "NOT_YET_VALID";

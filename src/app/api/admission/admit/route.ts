@@ -102,6 +102,32 @@ export async function POST(req: Request) {
     });
 
     if (vendorResult.found) {
+      if (!vendorResult.pass) {
+        return NextResponse.json({
+          success: false,
+          data: {
+            kind: "vendor_team_pass",
+            decision: {
+              outcome: "DENY",
+              tone: "red",
+              reason: "WRONG_EVENT",
+              message: vendorResult.ok
+                ? "Vendor team pass not found for this event."
+                : vendorResult.error,
+              admitQuantity: 0,
+              resultingAdmittedCount: 0,
+              resultingStatus: "ACTIVE",
+              requiresConfirmation: false,
+              allowance: 0,
+              remaining: 0,
+              requiresQuantityConfirmation: false,
+            },
+            pass: null,
+            guestAdmissionIncremented: false,
+            companionUnlocked: false,
+          },
+        });
+      }
       const passView = vendorResult.pass;
       const decision = vendorGateDecision({
         pass: passView,

@@ -127,20 +127,20 @@ describe("vendor gate decision shaping", () => {
     assert.equal(decision.remaining, 5);
   });
 
-  it("select quantity mode prompts for count", () => {
+  it("maps wrong-event denials", () => {
     const decision = vendorGateDecision({
       pass: {
-        title: "CATERING TEAM",
-        vendorName: "Cater Co",
-        admissionCode: "111222",
-        teamCapacity: 12,
+        title: "BAND",
+        vendorName: "Band",
+        admissionCode: "123456",
+        teamCapacity: 8,
         admittedCount: 0,
         status: "ACTIVE",
-        entryMode: "SELECT_QUANTITY",
       },
-      ok: true,
-      dryRun: true,
+      ok: false,
+      error: "This vendor pass belongs to a different event.",
     });
-    assert.equal(decision.requiresQuantityConfirmation, true);
+    assert.equal(decision.reason, "WRONG_EVENT");
+    assert.equal(decision.tone, "red");
   });
 });
