@@ -34,8 +34,10 @@ type AuditResponse = {
     complete: number;
     revoked: number;
     duplicateCode: number;
+    partyMix?: number;
   };
   truncated?: boolean;
+  partyMixCount?: number;
 };
 
 type DuplicatePair = {
@@ -47,6 +49,7 @@ type DuplicatePair = {
 
 const ISSUE_FILTERS: { key: AuditIssueFilter; label: string }[] = [
   { key: "all_incomplete", label: "Incomplete" },
+  { key: "party_mix", label: "Party mix (all)" },
   { key: "missing_qr", label: "Missing QR" },
   { key: "missing_code", label: "Missing Code" },
   { key: "missing_link", label: "Missing Link" },
@@ -259,6 +262,34 @@ export function AdmissionIdentityAuditPanel({
     }
   }
 
+  async function completeEntireEvent() {
+    if (!eventId) return;
+    const ok = window.confirm(
+      "Complete missing QR & admission codes for EVERY incomplete invitation party on this event?\n\nThis does not merge parties. Duplicate codes are skipped for manual review."
+    );
+    if (!ok) return;
+    setBulkBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/guests/admission-identity/complete-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId, confirm: true }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? "Event-wide generation failed");
+        return;
+      }
+      await load(1);
+      onChanged?.();
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   async function copyLink(path: string) {
     const url = `${window.location.origin}${path}`;
     await navigator.clipboard.writeText(url);
@@ -327,6 +358,11 @@ export function AdmissionIdentityAuditPanel({
             ))}
           </div>
         )}
+
+        <p className="border-b border-slate-100 px-4 py-2 text-xs text-slate-600 sm:px-5">
+          Scans every invitation party on this event — not only one family or couple. Unnamed
+          plus-ones are never listed as separate missing-code rows.
+        </p>
 
         <div className="flex gap-2 border-b border-slate-100 px-4 py-2 sm:px-5">
           <Button
@@ -408,6 +444,15 @@ export function AdmissionIdentityAuditPanel({
                 onClick={() => void bulkComplete()}
               >
                 {bulkBusy ? "Working…" : `Complete selected (${selected.size})`}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={() => void completeEntireEvent()}
+              >
+                Complete all incomplete on event
               </Button>
               <Button type="button" size="sm" variant="ghost" onClick={() => void load(page)}>
                 <RefreshCw className="h-4 w-4" /> Refresh

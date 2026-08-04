@@ -169,6 +169,7 @@ export type AuditIssueFilter =
   | "duplicate_code"
   | "duplicate_link"
   | "suspected_duplicate"
+  | "party_mix"
   | "revoked"
   | "expired"
   | "generation_failed"
@@ -206,6 +207,9 @@ export function matchesIssueFilter(
         classified.issues.includes("duplicate_code") ||
         classified.issues.includes("duplicate_link")
       );
+    case "party_mix":
+      // Applied in the audit service via leakage invitation id set.
+      return true;
     case "revoked":
       return classified.issues.includes("revoked");
     case "expired":

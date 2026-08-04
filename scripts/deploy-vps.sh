@@ -26,8 +26,8 @@ git pull --ff-only origin main
 echo "==> HEAD: $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
 
 if [[ "$SKIP_INSTALL" -eq 0 ]]; then
-  echo "==> Installing dependencies"
-  npm ci --omit=dev || npm install --omit=dev
+  echo "==> Installing dependencies (include dev for Prisma / build)"
+  npm ci --include=dev || npm install
 fi
 
 echo "==> Prisma generate + migrate"
@@ -48,6 +48,9 @@ curl -fsS -o /dev/null -w "api/health %{http_code}\n" http://127.0.0.1:3000/api/
 curl -fsS -o /dev/null -w "home %{http_code}\n" http://127.0.0.1:3000/ || true
 curl -fsS -o /dev/null -w "templates/fa %{http_code}\n" \
   http://127.0.0.1:3000/invitations/templates/forever-afaris-wedding || true
+
+echo "==> Live party-isolation dry-run (all invitations — no mutations)"
+npm run audit:party-isolation || true
 
 echo "==> Deploy complete"
 pm2 status celeventic

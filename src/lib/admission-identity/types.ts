@@ -37,4 +37,5 @@ export interface AuditSummary {
   complete: number;
   revoked: number;
   duplicateCode: number;
+  partyMix?: number;
 }

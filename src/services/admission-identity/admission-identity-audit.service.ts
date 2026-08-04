@@ -28,8 +28,119 @@ import {
 import { ensureGuestGateCode, newUniqueLink } from "@/services/invitations/personalised-invitation";
 import { setInvitationLifecycle } from "@/services/guest-search/quick-invite.service";
 import { nameKey } from "@/lib/guest-import/name";
+import {
+  findMislinkedGuests,
+  findPassDisplayMismatches,
+  type IsolationFinding,
+} from "@/lib/invitation/party-leakage";
 
 export type { AdmissionIdentityAuditRow, AuditSummary } from "@/lib/admission-identity/types";
+
+/** Scan one event for cross-party roster / pass-label pollution (all invitations). */
+export async function scanEventPartyIsolation(eventId: string): Promise<{
+  findings: IsolationFinding[];
+  highConfidence: number;
+}> {
+  const invitations = await prisma.invitation.findMany({
+    where: { eventId, archivedAt: null },
+    select: {
+      id: true,
+      name: true,
+      uniqueLink: true,
+      eventId: true,
+      guestPasses: {
+        orderBy: { tokenVersion: "desc" },
+        select: { code: true, status: true, displayName: true },
+      },
+    },
+  });
+  const guests = await prisma.guest.findMany({
+    where: { eventId, archivedAt: null },
+    select: { id: true, name: true, invitationId: true, archivedAt: true },
+  });
+  const inviteRefs = invitations.map((i) => ({
+    id: i.id,
+    name: i.name,
+    uniqueLink: i.uniqueLink,
+    eventId: i.eventId,
+  }));
+  const findings = [
+    ...findMislinkedGuests({ eventId, invitations: inviteRefs, guests }),
+    ...findPassDisplayMismatches({
+      eventId,
+      invitations: inviteRefs,
+      passes: invitations.flatMap((inv) =>
+        inv.guestPasses.map((p) => ({
+          invitationId: inv.id,
+          displayName: p.displayName,
+          code: p.code,
+          status: p.status,
+        }))
+      ),
+    }),
+  ];
+  return {
+    findings,
+    highConfidence: findings.filter((f) => f.confidence === "high").length,
+  };
+}
+
+/**
+ * Complete missing admission identity for every incomplete invitation on an event.
+ * Skips duplicate-code / duplicate-link rows for manual review.
+ */
+export async function completeAllIncompleteIdentities(input: {
+  eventId: string;
+  actorUserId: string;
+}) {
+  const audit = await searchAdmissionIdentityAudit({
+    eventId: input.eventId,
+    issue: "all_incomplete",
+    page: 1,
+    limit: 50,
+  });
+  // Re-query ids without relying on a single page — scan up to 5000.
+  const invitations = await prisma.invitation.findMany({
+    where: { eventId: input.eventId, archivedAt: null },
+    select: {
+      id: true,
+      uniqueLink: true,
+      guestPasses: {
+        orderBy: { tokenVersion: "desc" },
+        select: { code: true, status: true },
+      },
+    },
+    take: 5000,
+  });
+  const LIVE = new Set([
+    "ACTIVE",
+    "PARTIALLY_ADMITTED",
+    "ADMITTED",
+    "PENDING_SYNC",
+    "CONFLICT",
+    "MANUAL_REVIEW",
+  ]);
+  const incompleteIds: string[] = [];
+  for (const inv of invitations) {
+    const live = inv.guestPasses.find((p) => LIVE.has(p.status));
+    if (!live || !live.code?.trim() || !inv.uniqueLink?.trim()) {
+      incompleteIds.push(inv.id);
+    }
+  }
+
+  const bulk = await bulkGenerateAdmissionIdentities({
+    invitationIds: incompleteIds,
+    actorUserId: input.actorUserId,
+    mode: "complete",
+  });
+
+  return {
+    scanned: invitations.length,
+    incomplete: incompleteIds.length,
+    summary: audit.summary,
+    ...bulk,
+  };
+}
 
 const LIVE_PASS_STATUSES: GuestPassStatus[] = [
   "ACTIVE",
@@ -255,9 +366,41 @@ export async function searchAdmissionIdentityAudit(input: AuditQueryInput) {
     };
   }
 
-  // Pull a bounded window then apply issue filter in memory for correctness
-  // (issue state depends on live pass + duplicate maps). Cap candidate scan.
-  const candidateTake = Math.min(500, Math.max(limit * 8, 80));
+  // When auditing one event, scan the full invitation set for that event so
+  // every party with the same class of defect is visible — not a sample.
+  const candidateTake = input.eventId
+    ? 5000
+    : Math.min(500, Math.max(limit * 8, 80));
+
+  let partyMixIds: Set<string> | null = null;
+  let partyMixHints = new Map<string, string>();
+  if (input.issue === "party_mix" && input.eventId) {
+    const leak = await scanEventPartyIsolation(input.eventId);
+    partyMixIds = new Set<string>();
+    for (const f of leak.findings) {
+      if (f.invitationId) {
+        partyMixIds.add(f.invitationId);
+        partyMixHints.set(f.invitationId, f.detail);
+      }
+      if (f.otherInvitationId) {
+        partyMixIds.add(f.otherInvitationId);
+        if (!partyMixHints.has(f.otherInvitationId)) {
+          partyMixHints.set(f.otherInvitationId, f.detail);
+        }
+      }
+    }
+    if (partyMixIds.size === 0) {
+      const summary = await summarizeAudit(input.eventId, [input.eventId]);
+      return {
+        ...paginatedResult([], 0, page, limit),
+        summary: { ...summary, partyMix: 0 },
+        truncated: false,
+        partyMixCount: 0,
+      };
+    }
+    where.id = { in: [...partyMixIds] };
+  }
+
   const invitations = await prisma.invitation.findMany({
     where,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
@@ -294,10 +437,22 @@ export async function searchAdmissionIdentityAudit(input: AuditQueryInput) {
 
   const eventIds = [...new Set(invitations.map((i) => i.eventId))];
   const duplicateCodes = await loadDuplicateCodeSet(eventIds);
-  let rows = invitations.map((inv) => mapRow(inv, duplicateCodes));
+  let rows = invitations.map((inv) => {
+    const row = mapRow(inv, duplicateCodes);
+    const hint = partyMixHints.get(inv.id);
+    if (hint) {
+      return {
+        ...row,
+        duplicateHint: row.duplicateHint ? `${row.duplicateHint} ${hint}` : hint,
+      };
+    }
+    return row;
+  });
 
   const issue = input.issue ?? "all_incomplete";
-  rows = rows.filter((row) => matchesIssueFilter(row.identity, issue));
+  if (issue !== "party_mix") {
+    rows = rows.filter((row) => matchesIssueFilter(row.identity, issue));
+  }
 
   const total = rows.length;
   const pageRows = rows.slice(skip, skip + limit);
@@ -306,8 +461,12 @@ export async function searchAdmissionIdentityAudit(input: AuditQueryInput) {
 
   return {
     ...paginatedResult(pageRows, total, page, limit),
-    summary,
+    summary: {
+      ...summary,
+      partyMix: partyMixIds?.size ?? summary.partyMix ?? 0,
+    },
     truncated: invitations.length >= candidateTake,
+    partyMixCount: partyMixIds?.size ?? 0,
   };
 }
 
@@ -326,6 +485,7 @@ async function summarizeAudit(
       complete: 0,
       revoked: 0,
       duplicateCode: 0,
+      partyMix: 0,
     };
   }
 
@@ -383,6 +543,7 @@ async function summarizeAudit(
     complete,
     revoked: revokedOnly,
     duplicateCode: duplicateCodes.size,
+    partyMix: 0,
   };
 }
 
