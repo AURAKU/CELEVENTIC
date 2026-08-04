@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  filterForeignPartyGuests,
   filterPartyOwnedRows,
   formatPartyAdmissionProgress,
   guestBelongsToInvitation,
+  looksLikeForeignPartyLabel,
+  resolvePublicPartyDisplayName,
   shouldDefaultToEventAccess,
 } from "../party-isolation";
 
@@ -105,6 +108,78 @@ describe("filterPartyOwnedRows", () => {
     assert.equal(
       filtered.some((r) => r.name === "Akua & Kelly"),
       false
+    );
+  });
+});
+
+describe("OBUAH vs Akua & Kelly public scrubbing", () => {
+  const siblings = [
+    { id: "inv-obuah", name: "The OBUAH Family" },
+    { id: "inv-akua", name: "Akua & Kelly" },
+  ];
+
+  it("1-2. Akua link never surfaces OBUAH guests; OBUAH never surfaces Akua", () => {
+    const pollutedOnAkua = [
+      { id: "g1", name: "Akua", invitationId: "inv-akua" },
+      { id: "g2", name: "Kelly", invitationId: "inv-akua" },
+      { id: "g3", name: "The OBUAH Family", invitationId: "inv-akua" },
+    ];
+    const akuaOnly = filterForeignPartyGuests(pollutedOnAkua, {
+      invitationId: "inv-akua",
+      invitationName: "Akua & Kelly",
+      otherInvitationNames: siblings,
+    });
+    assert.equal(
+      akuaOnly.some((g) => /OBUAH/i.test(g.name)),
+      false
+    );
+    assert.ok(akuaOnly.some((g) => g.name === "Akua"));
+
+    const pollutedOnObuah = [
+      { id: "g4", name: "The OBUAH Family", invitationId: "inv-obuah" },
+      { id: "g5", name: "Akua & Kelly", invitationId: "inv-obuah" },
+    ];
+    const obuahOnly = filterForeignPartyGuests(pollutedOnObuah, {
+      invitationId: "inv-obuah",
+      invitationName: "The OBUAH Family",
+      otherInvitationNames: siblings,
+    });
+    assert.equal(
+      obuahOnly.some((g) => /Akua/i.test(g.name)),
+      false
+    );
+  });
+
+  it("rejects foreign pass display labels", () => {
+    assert.equal(
+      looksLikeForeignPartyLabel("The OBUAH Family", "Akua & Kelly", [
+        "The OBUAH Family",
+        "Akua & Kelly",
+      ]),
+      true
+    );
+    assert.equal(
+      looksLikeForeignPartyLabel("Akua & Kelly", "Akua & Kelly", ["The OBUAH Family"]),
+      false
+    );
+  });
+
+  it("public display name stays on the invitation party", () => {
+    assert.equal(
+      resolvePublicPartyDisplayName({
+        invitationName: "Akua & Kelly",
+        passDisplayName: "The OBUAH Family",
+        otherInvitationNames: ["The OBUAH Family"],
+      }),
+      "Akua & Kelly"
+    );
+    assert.equal(
+      resolvePublicPartyDisplayName({
+        invitationName: "The OBUAH Family",
+        passDisplayName: "The OBUAH Family",
+        otherInvitationNames: ["Akua & Kelly"],
+      }),
+      "The OBUAH Family"
     );
   });
 });

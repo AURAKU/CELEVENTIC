@@ -368,7 +368,11 @@ export default async function InvitePage({
         entryPass = {
           token: passView.token,
           code: passView.pass.code,
-          displayName: personalizedGuest.name?.trim() || passView.pass.displayName,
+          // Invitation party label only — never a foreign GuestPass.displayName.
+          displayName:
+            invitation.name?.trim() ||
+            personalizedGuest.name?.trim() ||
+            passView.pass.displayName,
           status: passView.pass.status,
           instructions: passView.settings.passInstructions,
           allowDownload: passView.settings.allowPassDownload,

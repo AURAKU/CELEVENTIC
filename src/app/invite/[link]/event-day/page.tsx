@@ -28,6 +28,8 @@ import { requireEventPermission } from "@/lib/workspace/event-access";
 import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import { PortalStatusPoller } from "./portal-status-poller";
 import type { ResolvedFeature } from "@/lib/invitation-features/registry";
+import { filterForeignPartyGuests } from "@/lib/invitation/party-isolation";
+import { loadSiblingInvitationLabels } from "@/lib/invitation/sibling-invitations";
 
 // Admission is verified per request on the server, never cached, never trusted
 // from the client (spec §21, §27).
@@ -203,7 +205,11 @@ export default async function EventDayPortal({
   // Strict party isolation: only guests owned by THIS invitation.
   // Never OR-in a foreign guestId — that mixed seating across parties that
   // share an event (or even a table).
-  const partyGuests = await prisma.guest.findMany({
+  const siblings = await loadSiblingInvitationLabels(
+    invitation.event.id,
+    invitation.id
+  );
+  const rawPartyGuests = await prisma.guest.findMany({
     where: { invitationId: invitation.id, archivedAt: null },
     orderBy: { createdAt: "asc" },
     select: {
@@ -211,6 +217,7 @@ export default async function EventDayPortal({
       name: true,
       status: true,
       qrToken: true,
+      invitationId: true,
       seatingAssignments: {
         select: {
           tableNumber: true,
@@ -220,6 +227,11 @@ export default async function EventDayPortal({
         },
       },
     },
+  });
+  const partyGuests = filterForeignPartyGuests(rawPartyGuests, {
+    invitationId: invitation.id,
+    invitationName: invitation.name,
+    otherInvitationNames: siblings,
   });
 
   // Companion / continuity still surfaces reception seating as the primary seat
@@ -267,6 +279,7 @@ export default async function EventDayPortal({
 
   const guestName =
     guest?.name?.trim() ||
+    invitation.name?.trim() ||
     partyGuests.find((g) => g.status === "CHECKED_IN")?.name?.trim() ||
     partyGuests[0]?.name?.trim() ||
     (isOrganizerPreview ? "Preview guest" : null);

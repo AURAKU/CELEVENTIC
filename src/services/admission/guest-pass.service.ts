@@ -188,7 +188,8 @@ export async function ensureInvitationPass(
 
     if (existing) {
       const shouldRefresh = opts.refreshPartySize !== false && partySize !== existing.partySize;
-      if (!shouldRefresh) {
+      const needsDisplaySync = existing.displayName !== invitation.name;
+      if (!shouldRefresh && !needsDisplaySync) {
         return { pass: existing, token: passTokenFromNonce(existing.tokenNonce) };
       }
 
@@ -203,9 +204,14 @@ export async function ensureInvitationPass(
       const pass = await tx.guestPass.update({
         where: { id: existing.id },
         data: {
-          partySize,
-          admittedCount,
-          status: nextStatus,
+          ...(shouldRefresh
+            ? {
+                partySize,
+                admittedCount,
+                status: nextStatus,
+              }
+            : {}),
+          displayName: invitation.name,
         },
       });
       return { pass, token: passTokenFromNonce(pass.tokenNonce) };

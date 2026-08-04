@@ -6,6 +6,8 @@
  * Never infer a party from eventId, table number, surname, or shared session.
  */
 
+import { cleanName, nameKey } from "@/lib/guest-import/name";
+
 export type PartyAdmissionView = "invitation" | "event-access";
 
 export interface PartyMembership {
@@ -79,4 +81,87 @@ export function filterPartyOwnedRows<T extends { invitationId?: string | null }>
     if (row.invitationId == null) return true; // already invitation-scoped query
     return row.invitationId === invitationId;
   });
+}
+
+function namesMatch(a: string, b: string): boolean {
+  const ka = nameKey(a);
+  const kb = nameKey(b);
+  if (!ka || !kb) return false;
+  if (ka === kb) return true;
+  if (ka.length >= 8 && kb.length >= 8 && (ka.includes(kb) || kb.includes(ka))) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Drop guests that clearly belong to a *different* invitation on the same event.
+ *
+ * Used on public invite / seat / companion surfaces so polluted `invitationId`
+ * links cannot expose “The OBUAH Family” inside “Akua & Kelly” (and vice versa)
+ * even before the organiser runs the repair script.
+ *
+ * Never drops a guest that also matches the current invitation’s display name
+ * (legitimate primary invitee / family label).
+ */
+export function filterForeignPartyGuests<T extends { name: string; invitationId?: string | null }>(
+  guests: T[],
+  input: {
+    invitationId: string;
+    invitationName: string;
+    otherInvitationNames: Array<{ id: string; name: string }>;
+  }
+): T[] {
+  const ownName = cleanName(input.invitationName);
+  return guests.filter((guest) => {
+    if (
+      guest.invitationId != null &&
+      guest.invitationId.trim() &&
+      guest.invitationId !== input.invitationId
+    ) {
+      return false;
+    }
+
+    const guestName = cleanName(guest.name);
+    if (!guestName || guestName.length < 2) return true;
+    if (ownName && namesMatch(guestName, ownName)) return true;
+
+    const foreign = input.otherInvitationNames.some(
+      (other) => other.id !== input.invitationId && namesMatch(guestName, other.name)
+    );
+    return !foreign;
+  });
+}
+
+/**
+ * True when a display string uniquely matches another invitation’s party label
+ * and does not match the current invitation.
+ */
+export function looksLikeForeignPartyLabel(
+  candidate: string | null | undefined,
+  invitationName: string,
+  otherInvitationNames: string[]
+): boolean {
+  const value = cleanName(candidate ?? "");
+  if (!value) return false;
+  if (namesMatch(value, invitationName)) return false;
+  return otherInvitationNames.some((name) => namesMatch(value, name));
+}
+
+/** Canonical public party display name — never GuestGroup, never another invite. */
+export function resolvePublicPartyDisplayName(input: {
+  invitationName: string;
+  passDisplayName?: string | null;
+  tokenGuestName?: string | null;
+  otherInvitationNames?: string[];
+}): string {
+  const invitationName = cleanName(input.invitationName);
+  const others = input.otherInvitationNames ?? [];
+
+  const pass = cleanName(input.passDisplayName ?? "");
+  if (pass && !looksLikeForeignPartyLabel(pass, invitationName, others)) {
+    return pass;
+  }
+
+  return invitationName || pass || cleanName(input.tokenGuestName ?? "") || "Invited guest";
 }

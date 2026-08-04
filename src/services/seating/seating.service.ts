@@ -3,6 +3,8 @@ import type { Prisma, SeatingPlanType } from "@prisma/client";
 import { tablesMatch } from "@/lib/seating/seating-types";
 import { normalizeStudioLayout } from "@/lib/seating/studio-engine";
 import { splitSeatingAssignments } from "@/lib/seating/assignment-pick";
+import { filterForeignPartyGuests } from "@/lib/invitation/party-isolation";
+import { loadSiblingInvitationLabels } from "@/lib/invitation/sibling-invitations";
 
 export interface SeatingTable {
   id: string;
@@ -265,17 +267,33 @@ export class SeatingService {
       tablesMatch(t.label, reception?.tableNumber ?? "")
     );
 
-    const partyMembers =
-      guest.invitation?.guests.map((member) => {
-        const split = splitSeatingAssignments(member.seatingAssignments);
-        return {
-          id: member.id,
-          name: member.name,
-          seatLabel: split.reception?.seatLabel ?? null,
-          ceremonySeatLabel: split.ceremony?.seatLabel ?? null,
-          admitted: member.status === "CHECKED_IN",
-        };
-      }) ?? [];
+    const siblings = guest.invitation
+      ? await loadSiblingInvitationLabels(guest.eventId, guest.invitation.id)
+      : [];
+    const partyRoster = guest.invitation
+      ? filterForeignPartyGuests(
+          guest.invitation.guests.map((member) => ({
+            ...member,
+            invitationId: guest.invitation!.id,
+          })),
+          {
+            invitationId: guest.invitation.id,
+            invitationName: guest.invitation.name,
+            otherInvitationNames: siblings,
+          }
+        )
+      : [];
+
+    const partyMembers = partyRoster.map((member) => {
+      const split = splitSeatingAssignments(member.seatingAssignments);
+      return {
+        id: member.id,
+        name: member.name,
+        seatLabel: split.reception?.seatLabel ?? null,
+        ceremonySeatLabel: split.ceremony?.seatLabel ?? null,
+        admitted: member.status === "CHECKED_IN",
+      };
+    });
 
     const receptionPublished =
       !reception || receptionLayout?.status !== "draft";
@@ -292,6 +310,7 @@ export class SeatingService {
       },
       party: guest.invitation
         ? {
+            name: guest.invitation.name,
             allowance: Math.max(
               guest.invitation.admissionAllowance ?? 1,
               partyMembers.length || 1

@@ -17,6 +17,12 @@ import { resolveProductionInvitationOrder } from "@/services/invitations/product
 import { splitSeatingAssignments } from "@/lib/seating/assignment-pick";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import type { ReceptionAssignmentMode } from "@/lib/seating/studio-types";
+import {
+  filterForeignPartyGuests,
+  looksLikeForeignPartyLabel,
+  resolvePublicPartyDisplayName,
+} from "@/lib/invitation/party-isolation";
+import { loadSiblingInvitationLabels } from "@/lib/invitation/sibling-invitations";
 
 /**
  * Personalised Place Card — server resolution.
@@ -105,6 +111,17 @@ export async function resolvePlaceCard(
   });
   if (!invitation) return null;
 
+  const siblings = await loadSiblingInvitationLabels(invitation.eventId, invitationId);
+  const siblingNames = siblings.map((s) => s.name);
+  const partyGuests = filterForeignPartyGuests(
+    invitation.guests.map((g) => ({ ...g, invitationId })),
+    {
+      invitationId,
+      invitationName: invitation.name,
+      otherInvitationNames: siblings,
+    }
+  );
+
   const features = await resolveInvitationFeatures(invitationId);
   const feature = features.find((f) => f.key === "PLACE_CARD");
   const baseConfig = resolvePlaceCardConfig(feature?.config);
@@ -160,16 +177,36 @@ export async function resolvePlaceCard(
     select: { partySize: true, displayName: true },
   });
 
-  // "Assigned" means this exact invitation/pass identifies a real recipient.
-  // Never join every Guest row into a single guest-facing name.
-  const tokenGuest = guestName?.trim() || null;
-  const passRecipient = pass?.displayName?.trim() || null;
-  const resolvedGuestName = resolvePlaceCardGuestName({
-    tokenGuest,
+  // Never promote GuestGroup names or another invitation's pass label.
+  const passRecipientRaw = pass?.displayName?.trim() || null;
+  const passRecipient = looksLikeForeignPartyLabel(
+    passRecipientRaw,
+    invitation.name,
+    siblingNames
+  )
+    ? null
+    : passRecipientRaw;
+
+  const tokenGuestRaw = guestName?.trim() || null;
+  const tokenGuest = looksLikeForeignPartyLabel(tokenGuestRaw, invitation.name, siblingNames)
+    ? null
+    : tokenGuestRaw;
+
+  const partyDisplayName = resolvePublicPartyDisplayName({
+    invitationName: invitation.name,
     passDisplayName: passRecipient,
-    guestNames: invitation.guests.map((guest) => guest.name),
+    tokenGuestName: tokenGuest,
+    otherInvitationNames: siblingNames,
   });
-  const assigned = Boolean(resolvedGuestName);
+
+  const resolvedGuestName =
+    resolvePlaceCardGuestName({
+      tokenGuest,
+      passDisplayName: partyDisplayName,
+      guestNames: partyGuests.map((guest) => guest.name),
+    }) || partyDisplayName;
+
+  const assigned = Boolean(resolvedGuestName) && !looksLikeEventTitle(resolvedGuestName);
   // A specific guest gets their own initials. Generic/non-personalized cards
   // retain the event/couple seal (for Forever Afaris, "C | J").
   const guestMonogram = assigned
@@ -177,38 +214,41 @@ export async function resolvePlaceCard(
     : "";
   const config = {
     ...baseConfig,
+    // Organiser "group name" must never override the invitation party label
+    // with a GuestGroup that can span or leak across invitations.
+    groupName: "",
     monogram: guestMonogram || eventMonogram,
   };
   if (
     !shouldShowPlaceCard(
       config,
       feature?.enabled ?? false,
-      assigned || invitation.guests.length > 0
+      assigned || partyGuests.length > 0
     )
   ) {
     return null;
   }
 
   const allowance = resolveInvitationAllowance(
-    invitation.guests,
+    partyGuests,
     invitation.admissionAllowance,
     pass?.partySize
   );
   const personalizedGuest =
-    (guestId ? invitation.guests.find((guest) => guest.id === guestId) : null) ??
+    (guestId ? partyGuests.find((guest) => guest.id === guestId) : null) ??
     (tokenGuest
-      ? invitation.guests.find(
+      ? partyGuests.find(
           (guest) => guest.name.trim().toLocaleLowerCase() === tokenGuest.toLocaleLowerCase()
         )
       : null) ??
     (resolvedGuestName
-      ? invitation.guests.find(
+      ? partyGuests.find(
           (guest) =>
             guest.name.trim().toLocaleLowerCase() ===
             resolvedGuestName.toLocaleLowerCase()
         )
       : null) ??
-    (invitation.guests.length === 1 ? invitation.guests[0] : null);
+    (partyGuests.length === 1 ? partyGuests[0] : null);
   const { reception, ceremony } = splitSeatingAssignments(personalizedGuest?.seatingAssignments);
   const receptionLayout = (reception?.seatingPlan?.layout ?? null) as PlanLayout;
   const ceremonyLayout = (ceremony?.seatingPlan?.layout ?? null) as PlanLayout;
@@ -239,7 +279,8 @@ export async function resolvePlaceCard(
     recipient: {
       invitationName: invitation.name,
       guestName: resolvedGuestName,
-      groupName: invitation.guests.find((g) => g.group?.name)?.group?.name ?? null,
+      // Never GuestGroup — invitation.name is the only party identity.
+      groupName: null,
       partySize: allowance,
       assigned,
     },
