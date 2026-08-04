@@ -68,14 +68,32 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "eventId or invite link required" }, { status: 400 });
   }
 
-  const { page, limit } = parsePaginationFromUrl(req.url);
-  const data = await guestWishService.listForEvent(resolved.eventId, page, Math.min(limit, 100));
-
   const session = await getServerSession(authOptions);
   const canModerate = await isWishEventModerator(
     resolved.eventId,
     session?.user?.id,
     session?.user?.role as UserRole | undefined
+  );
+
+  // Public invite pages must resolve a single invitation party. Event-wide
+  // wish walls use /api/public/thank-you/messages or organizer thank-you APIs.
+  if (!resolved.invitationId && !canModerate) {
+    return NextResponse.json(
+      { error: "Invite link or invitationId required" },
+      { status: 400 }
+    );
+  }
+
+  const { page, limit } = parsePaginationFromUrl(req.url);
+  const data = await guestWishService.listForEvent(
+    resolved.eventId,
+    page,
+    Math.min(limit, 100),
+    {
+      invitationId: resolved.invitationId,
+      publicOnly: !canModerate,
+      includeHidden: canModerate,
+    }
   );
 
   // canEdit mirrors canModerate: only organizers / platform admins may edit.

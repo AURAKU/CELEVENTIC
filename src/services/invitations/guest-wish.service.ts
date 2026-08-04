@@ -137,6 +137,8 @@ export class GuestWishService {
       source?: GuestWishSource | "ALL";
       query?: string;
       publicOnly?: boolean;
+      /** When set, never return wishes belonging to another invitation party. */
+      invitationId?: string | null;
     }
   ) {
     const { page: p, limit: take, skip } = parsePaginationInput(
@@ -145,6 +147,9 @@ export class GuestWishService {
     );
 
     const where: Record<string, unknown> = { eventId };
+    if (options?.invitationId) {
+      where.invitationId = options.invitationId;
+    }
     if (options?.publicOnly) {
       where.isVisible = true;
       where.status = "APPROVED";
@@ -213,10 +218,20 @@ export class GuestWishService {
 
     if (input.guestId) {
       const guest = await prisma.guest.findFirst({
-        where: { id: input.guestId, eventId: input.eventId },
+        where: {
+          id: input.guestId,
+          eventId: input.eventId,
+          ...(input.invitationId ? { invitationId: input.invitationId } : {}),
+        },
         select: { id: true },
       });
-      if (!guest) throw new Error("Guest not found for this event");
+      if (!guest) {
+        throw new Error(
+          input.invitationId
+            ? "Guest not found for this invitation"
+            : "Guest not found for this event"
+        );
+      }
     }
 
     if (input.avatarUrl) {
