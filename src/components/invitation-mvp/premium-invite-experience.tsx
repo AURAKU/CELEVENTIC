@@ -80,6 +80,15 @@ export interface PremiumInviteExperienceProps {
    */
   entryPass?: GuestEntryPassData | null;
   /**
+   * Partial admission progress + Event Access CTA (above entry-pass QR).
+   */
+  partyAdmission?: {
+    admittedCount: number;
+    allowance: number;
+    state?: string | null;
+    companionHref: string;
+  } | null;
+  /**
    * Personalised place card. Resolved server-side; absent means the organiser
    * turned the feature off or nobody is assigned to this invitation.
    */

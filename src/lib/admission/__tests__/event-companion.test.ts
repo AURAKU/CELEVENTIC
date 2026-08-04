@@ -4,11 +4,13 @@ import {
   buildEventCompanionHref,
   buildInviteCeremonyHref,
   resolveCompanionPlace,
+  resolvePartyAdmissionSurface,
   shouldOpenEventCompanionOnly,
   wantsInviteCeremonyView,
 } from "@/lib/admission/event-companion";
 import type { PartySeat } from "@/lib/admission/seating-continuity";
 import { openingMemoryKey } from "@/lib/experience/opening-visit-memory";
+import { filterPartyOwnedRows } from "@/lib/invitation/party-isolation";
 
 describe("event companion routing", () => {
   it("builds companion href with optional guest token", () => {
@@ -141,5 +143,98 @@ describe("event companion routing", () => {
 
   it("returns the empty state only when no real seating assignment exists", () => {
     assert.equal(resolveCompanionPlace(null, [], null).place, null);
+  });
+});
+
+describe("resolvePartyAdmissionSurface", () => {
+  const href = "/invite/akua/event-day";
+
+  it("keeps View Event Access when ceremony is reopened via ?view=invite", () => {
+    const result = resolvePartyAdmissionSurface({
+      portalEnabled: true,
+      preferInviteCeremony: true,
+      eventAccessHref: href,
+      admittedCount: 2,
+      allowance: 5,
+      state: "PARTIALLY_ADMITTED",
+    });
+    assert.equal(result.companionHandoffHref, null);
+    assert.deepEqual(result.partyAdmission, {
+      admittedCount: 2,
+      allowance: 5,
+      state: "PARTIALLY_ADMITTED",
+      companionHref: href,
+    });
+  });
+
+  it("enables auto-handoff only when not in ceremony view", () => {
+    const result = resolvePartyAdmissionSurface({
+      portalEnabled: true,
+      preferInviteCeremony: false,
+      eventAccessHref: href,
+      admittedCount: 2,
+      allowance: 5,
+      state: "PARTIALLY_ADMITTED",
+    });
+    assert.equal(result.companionHandoffHref, href);
+    assert.ok(result.partyAdmission);
+  });
+
+  it("hides Event Access before any admission (Akua & Kelly 0 of 2)", () => {
+    const result = resolvePartyAdmissionSurface({
+      portalEnabled: true,
+      preferInviteCeremony: false,
+      eventAccessHref: href,
+      admittedCount: 0,
+      allowance: 2,
+      state: "NOT_ADMITTED",
+    });
+    assert.equal(result.partyAdmission, null);
+  });
+
+  it("never invents Event Access when portal is disabled", () => {
+    const result = resolvePartyAdmissionSurface({
+      portalEnabled: false,
+      preferInviteCeremony: true,
+      eventAccessHref: href,
+      admittedCount: 5,
+      allowance: 5,
+      state: "ADMITTED",
+    });
+    assert.equal(result.companionHandoffHref, null);
+    assert.equal(result.partyAdmission, null);
+  });
+});
+
+describe("shared-table seating remains party-specific", () => {
+  it("does not merge seat rows from another invitation at the same table", () => {
+    const table2 = [
+      {
+        invitationId: "inv-obuah",
+        guestName: "The OBUAH Family",
+        tableNumber: "2",
+        seatLabel: "A",
+      },
+      {
+        invitationId: "inv-akua",
+        guestName: "Akua & Kelly",
+        tableNumber: "2",
+        seatLabel: "B",
+      },
+      {
+        invitationId: "inv-akua",
+        guestName: "Kelly",
+        tableNumber: "2",
+        seatLabel: "C",
+      },
+    ];
+    const akuaOnly = filterPartyOwnedRows(table2, "inv-akua");
+    assert.equal(akuaOnly.length, 2);
+    assert.ok(akuaOnly.every((row) => row.invitationId === "inv-akua"));
+    assert.ok(!akuaOnly.some((row) => /OBUAH/i.test(row.guestName)));
+
+    const obuahOnly = filterPartyOwnedRows(table2, "inv-obuah");
+    assert.equal(obuahOnly.length, 1);
+    assert.equal(obuahOnly[0]?.guestName, "The OBUAH Family");
   });
 });

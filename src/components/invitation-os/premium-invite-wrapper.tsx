@@ -43,7 +43,6 @@ import {
 import { onInvitationReplay } from "@/lib/experience/replay-invitation";
 import {
   forgetOpeningSeen,
-  hasSeenOpening,
   openingMemoryKey,
   rememberOpeningSeen,
 } from "@/lib/experience/opening-visit-memory";
@@ -278,25 +277,19 @@ export function PremiumInviteWrapper({
     [props.invitation.id, props.guestId, props.openingEpoch]
   );
 
-  /**
-   * Returning guest, someone who has already completed the full ceremony
-   * (Tap to Begin + envelope/curtain reveal) on this device before.
-   *
-   * They still get every beat of the ceremony again on this visit, Tap to
-   * Begin and the envelope/gate are never silently skipped, first visit or
-   * not. The branded intro now always exposes an honest "Skip intro" control,
-   * so moving ahead remains the guest's choice rather than an automatic
-   * return-visit shortcut.
-   *
-   * This is a lazy `useState` initializer rather than an effect so it never
-   * changes what gets rendered for the very first paint (that's always
-   * `resolveInitialInvitePhase`, i.e. the soft intro), no server/client
-   * markup mismatch, it only tunes a duration/control for a phase the guest
-   * is already looking at.
-   */
-  const [isReturningGuest, setIsReturningGuest] = useState(
-    () => remembersVisits && hasSeenOpening(ceremonyMemoryKey)
-  );
+  // Every fresh document load plays brand → tap → envelope/gate. Visit memory
+  // only records completion for analytics — it never auto-skips the ceremony.
+  useEffect(() => {
+    if (embedded || skipSoftIntro === true) return;
+    forgetSoftIntroThisSession(props.invitation.uniqueLink || props.invitation.id);
+    forgetOpeningSeen(ceremonyMemoryKey);
+  }, [
+    ceremonyMemoryKey,
+    embedded,
+    props.invitation.id,
+    props.invitation.uniqueLink,
+    skipSoftIntro,
+  ]);
 
   useEffect(() => {
     if (!remembersVisits || phase !== "portal") return;
@@ -381,7 +374,6 @@ export function PremiumInviteWrapper({
 
   const restartOpeningCeremony = useCallback(() => {
     // Full pipeline again: brand video → tap gate / reveal → portal.
-    setIsReturningGuest(false);
     forgetOpeningSeen(ceremonyMemoryKey);
     forgetSoftIntroThisSession(props.invitation.uniqueLink || props.invitation.id);
     audioStarted.current = false;
@@ -480,6 +472,7 @@ export function PremiumInviteWrapper({
 
   const partyAdmissionBanner =
     !embedded &&
+    phase !== "portal" &&
     props.partyAdmission &&
     props.invitation.uniqueLink &&
     props.partyAdmission.admittedCount > 0 ? (
@@ -504,10 +497,10 @@ export function PremiumInviteWrapper({
           onComplete={afterSoftIntro}
           onUserGesture={unlockInviteAudio}
           invitationId={props.invitation.uniqueLink || props.invitation.id}
-          forcePlay={ceremonyGeneration > 0}
+          forcePlay
           accentColor={softAccent}
           secondaryColor={softSecondary}
-          quickHold={isReturningGuest}
+          quickHold={false}
           embedded={Boolean(embedded)}
         />
       </>
@@ -600,7 +593,7 @@ export function PremiumInviteWrapper({
           openingCopy={openingCopy}
           embedded={Boolean(embedded)}
           autoOpen={Boolean(autoOpenReveal)}
-          allowSkip={isReturningGuest}
+          allowSkip={false}
           onBegin={() => {
             void startAudio();
           }}

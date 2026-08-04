@@ -408,6 +408,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           entryPass={props.entryPass}
           placeCard={props.placeCard}
           partyAllowance={props.partyAllowance}
+          partyAdmission={props.partyAdmission}
           seatTable={props.seatTable}
           seatLabel={props.seatLabel}
           memoryUploadUrl={props.memoryUploadUrl}
