@@ -585,6 +585,7 @@ model Guest {
 
   @@unique([eventId, manualCode])
   @@index([eventId])
+  @@index([invitationId])
   @@index([status])
   @@index([importBatchId])
   @@map("guests")

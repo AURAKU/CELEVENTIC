@@ -136,29 +136,41 @@ export default async function InvitePage({
     notFound();
   }
 
-  // Ceremony always opens from the start for WhatsApp / social / browser links.
-  // Open + RSVP never unlock companion — only a successful QR scan or manual
-  // admission code at the gate does. Guests can still reopen the ceremony via
-  // ?view=invite after admit; after an organiser reset this redirect stops.
-  const admissionSummary = await getInvitationAdmission(invitation.id);
-  if (!preferInviteCeremony && shouldOpenEventCompanionOnly(admissionSummary)) {
-    redirect(buildEventCompanionHref(link, guestToken ?? null));
-  }
-
   const event = invitation.event;
 
   // Guest personalization, the order/design record, custom blocks, and the
   // memory-vault links are all independent reads keyed off `invitation.id` /
   // `event.id`, fetch them concurrently rather than as a serial waterfall.
-  const [tokenGuest, order, invitationBlocks, memoryLinks] = await Promise.all([
-    guestToken
-      ? invitationService.getGuestForInvitation(invitation.id, guestToken)
-      : Promise.resolve(null),
-    resolveProductionInvitationOrder(invitation.id, event.id),
-    invitationBlockService.getBlocksForInvitation(invitation.id),
-    // Always provision Album QR for published invites so guests can upload/view live.
-    ensureEventMemoryLinks(event.id),
-  ]);
+  const [admissionSummary, tokenGuest, order, invitationBlocks, memoryLinks] =
+    await Promise.all([
+      getInvitationAdmission(invitation.id),
+      guestToken
+        ? invitationService.getGuestForInvitation(invitation.id, guestToken)
+        : Promise.resolve(null),
+      resolveProductionInvitationOrder(invitation.id, event.id),
+      invitationBlockService.getBlocksForInvitation(invitation.id),
+      // Always provision Album QR for published invites so guests can upload/view live.
+      ensureEventMemoryLinks(event.id),
+    ]);
+
+  // Ceremony always opens from the start for WhatsApp / social / browser links.
+  // Shared party links stay on the invitation while anyone remains awaiting.
+  // Member-specific tokens jump only when that member is admitted.
+  // Guests can reopen ceremony via ?view=invite after admit.
+  const viewerAdmitted =
+    tokenGuest != null ? tokenGuest.status === "CHECKED_IN" : null;
+  if (
+    !preferInviteCeremony &&
+    shouldOpenEventCompanionOnly({
+      ...admissionSummary,
+      postAdmissionEnabled:
+        admissionSummary?.postAdmissionEnabled ?? invitation.postAdmissionEnabled,
+      canAccessPortal: admissionSummary?.canAccessPortal ?? false,
+      viewerAdmitted,
+    })
+  ) {
+    redirect(buildEventCompanionHref(link, guestToken ?? null));
+  }
 
   // Guest-specific invite links (one guest on this invitation) should lock the
   // RSVP name even when `?guest=` is missing from a copied/shared URL.
@@ -323,13 +335,26 @@ export default async function InvitePage({
   let entryPass: GuestEntryPassData | null = null;
   // Never expose a companion CTA before the gate admits this invite. Unlocked
   // guests are redirected above unless they explicitly reopen the ceremony
-  // (?view=invite). While viewing the ceremony, do not hand off back to companion.
+  // (?view=invite). While viewing the ceremony, do not hand off back to companion
+  // on partial admission — PartyAdmissionSwitch offers Event Access instead.
   const companionUrl: string | null = null;
   const companionHandoffHref =
     invitation.postAdmissionEnabled && !preferInviteCeremony
       ? buildEventCompanionHref(link, personalizedGuest?.qrToken ?? guestToken ?? null)
       : null;
   const watchAdmissionHandoff = Boolean(companionHandoffHref);
+  const partyAdmission =
+    invitation.postAdmissionEnabled &&
+    admissionSummary &&
+    admissionSummary.admittedCount > 0 &&
+    companionHandoffHref
+      ? {
+          admittedCount: admissionSummary.admittedCount,
+          allowance: admissionSummary.allowance,
+          state: admissionSummary.state,
+          companionHref: companionHandoffHref,
+        }
+      : null;
   if (personalizedGuest) {
     try {
       const passView = await getInvitationPassView(invitation.id);
@@ -430,6 +455,7 @@ export default async function InvitePage({
       companionUrl={companionUrl}
       companionHandoffHref={companionHandoffHref}
       watchAdmissionHandoff={watchAdmissionHandoff}
+      partyAdmission={partyAdmission}
       seatQrDataUrl={seatQrDataUrl || null}
       backgroundImageUrl={resolvedBackground.backgroundImageUrl ?? event.coverImageUrl}
       backgroundVideoUrl={resolvedBackground.backgroundVideoUrl}

@@ -23,6 +23,7 @@ import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
 import { LIVE_PRODUCTION_ORDER_STATUSES } from "@/lib/invitation/studio-access";
 import { EventCompanionExperience } from "@/components/admission/event-companion-experience";
+import { PartyAdmissionSwitch } from "@/components/admission/party-admission-switch";
 import { requireEventPermission } from "@/lib/workspace/event-access";
 import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import { PortalStatusPoller } from "./portal-status-poller";
@@ -199,13 +200,11 @@ export default async function EventDayPortal({
     ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
     : null;
 
+  // Strict party isolation: only guests owned by THIS invitation.
+  // Never OR-in a foreign guestId — that mixed seating across parties that
+  // share an event (or even a table).
   const partyGuests = await prisma.guest.findMany({
-    // Guest CRM records can be event-scoped without invitationId. Include the
-    // authenticated personalized guest so their real assignment reaches the
-    // same partySeats/continuity projection as invitation-linked guests.
-    where: guest
-      ? { OR: [{ invitationId: invitation.id }, { id: guest.id }] }
-      : { invitationId: invitation.id },
+    where: { invitationId: invitation.id, archivedAt: null },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
@@ -317,11 +316,26 @@ export default async function EventDayPortal({
   }
 
   const inviteHref = buildInviteCeremonyHref(link, guestToken ?? null);
+  const showPartySwitch =
+    Boolean(summary) &&
+    (summary?.admittedCount ?? 0) > 0 &&
+    (summary?.remainingCount ?? 0) > 0;
 
   return (
     <>
       {!isOrganizerPreview ? (
         <PortalStatusPoller link={invitation.uniqueLink} initialUnlocked />
+      ) : null}
+      {showPartySwitch ? (
+        <PartyAdmissionSwitch
+          link={invitation.uniqueLink}
+          companionHref={buildEventCompanionHref(link, guestToken ?? null)}
+          inviteHref={inviteHref}
+          initialAdmittedCount={summary!.admittedCount}
+          initialAllowance={summary!.allowance}
+          initialState={summary!.state}
+          mode="event-access"
+        />
       ) : null}
       <EventCompanionExperience
         theme={theme}

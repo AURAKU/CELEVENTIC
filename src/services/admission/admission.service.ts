@@ -653,7 +653,7 @@ export async function getInvitationAdmission(invitationId: string): Promise<
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
     include: {
-      guests: { select: { status: true, plusOnes: true } },
+      guests: { where: { archivedAt: null }, select: { status: true, plusOnes: true } },
       event: { select: { admissionSettings: { select: { portalUnlockPolicy: true } } } },
     },
   });

@@ -14,6 +14,7 @@ import type {
   PartySeat,
   SeatingContinuity,
 } from "@/lib/admission/seating-continuity";
+import { shouldDefaultToEventAccess } from "@/lib/invitation/party-isolation";
 
 export interface CompanionPlace {
   tableNumber: string;
@@ -99,15 +100,25 @@ export function wantsInviteCeremonyView(
  * True when the bare invite link should skip ceremony and open companion only.
  * Requires real gate admission (`admittedCount > 0` from CHECKED_IN / pass
  * admit) — OPENED / ACCEPTED alone never satisfy this.
+ *
+ * Partial admission on a shared party link keeps the invitation available;
+ * only fully admitted parties (or an admitted member-specific viewer) jump.
  */
 export function shouldOpenEventCompanionOnly(admission: {
   postAdmissionEnabled: boolean;
   canAccessPortal: boolean;
   admittedCount?: number;
+  remainingCount?: number;
+  state?: string | null;
+  viewerAdmitted?: boolean | null;
 } | null | undefined): boolean {
-  return Boolean(
-    admission?.postAdmissionEnabled &&
-      admission.canAccessPortal &&
-      (admission.admittedCount ?? 0) > 0
-  );
+  if (!admission) return false;
+  return shouldDefaultToEventAccess({
+    postAdmissionEnabled: admission.postAdmissionEnabled,
+    canAccessPortal: admission.canAccessPortal,
+    admittedCount: admission.admittedCount ?? 0,
+    remainingCount: admission.remainingCount,
+    state: admission.state,
+    viewerAdmitted: admission.viewerAdmitted,
+  });
 }

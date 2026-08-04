@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { RotateCcw, Upload } from "lucide-react";
+import { RotateCcw, Upload, QrCode } from "lucide-react";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { SmartGuestSearch } from "@/components/guest-search/smart-guest-search";
 import { QuickCreateCard } from "@/components/guest-search/quick-create-card";
+import { AdmissionIdentityAuditPanel } from "@/components/guest-search/admission-identity-audit-panel";
 import type { SearchResultCard } from "@/lib/guest-search/types";
 
 const CRM_STATUSES = ["INVITED", "OPENED", "ACCEPTED", "DECLINED", "MAYBE", "CHECKED_IN"] as const;
@@ -27,6 +28,7 @@ export default function GuestsPage() {
   const [recentlyCreated, setRecentlyCreated] = useState<SearchResultCard[]>([]);
   const [resettingAll, setResettingAll] = useState(false);
   const [resetError, setResetError] = useState("");
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const loadStats = useCallback(async () => {
     if (!eventId) {
@@ -112,6 +114,17 @@ export default function GuestsPage() {
             <Button
               type="button"
               variant="outline"
+              className="w-full justify-center sm:w-auto"
+              onClick={() => setAuditOpen(true)}
+            >
+              <QrCode className="h-4 w-4 shrink-0" />
+              Missing QR &amp; Codes
+            </Button>
+          )}
+          {eventId && (
+            <Button
+              type="button"
+              variant="outline"
               className="w-full justify-center border-amber-200 text-amber-900 hover:bg-amber-50 sm:w-auto"
               disabled={resettingAll}
               onClick={() => void resetAllAdmissions()}
@@ -127,6 +140,15 @@ export default function GuestsPage() {
           </Button>
         </div>
       </div>
+
+      {eventId ? (
+        <AdmissionIdentityAuditPanel
+          eventId={eventId}
+          open={auditOpen}
+          onClose={() => setAuditOpen(false)}
+          onChanged={bumpList}
+        />
+      ) : null}
 
       {resetError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

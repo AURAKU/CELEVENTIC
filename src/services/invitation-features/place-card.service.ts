@@ -78,6 +78,7 @@ export async function resolvePlaceCard(
       admissionAllowance: true,
       designConfig: true,
       guests: {
+        where: { archivedAt: null },
         select: {
           id: true,
           name: true,

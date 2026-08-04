@@ -57,12 +57,35 @@ describe("event companion routing", () => {
     );
   });
 
-  it("opens companion only after gate admit when portal is unlocked", () => {
+  it("opens companion only after full admit on a shared party link", () => {
     assert.equal(
       shouldOpenEventCompanionOnly({
         postAdmissionEnabled: true,
         canAccessPortal: true,
         admittedCount: 1,
+        remainingCount: 4,
+        state: "PARTIALLY_ADMITTED",
+      }),
+      false
+    );
+    assert.equal(
+      shouldOpenEventCompanionOnly({
+        postAdmissionEnabled: true,
+        canAccessPortal: true,
+        admittedCount: 5,
+        remainingCount: 0,
+        state: "ADMITTED",
+      }),
+      true
+    );
+    assert.equal(
+      shouldOpenEventCompanionOnly({
+        postAdmissionEnabled: true,
+        canAccessPortal: true,
+        admittedCount: 1,
+        remainingCount: 4,
+        state: "PARTIALLY_ADMITTED",
+        viewerAdmitted: true,
       }),
       true
     );

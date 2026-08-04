@@ -656,6 +656,7 @@ async function loadPassContext(
       id: true,
       event: { select: { title: true } },
       guests: {
+        where: { archivedAt: null },
         select: {
           id: true,
           name: true,

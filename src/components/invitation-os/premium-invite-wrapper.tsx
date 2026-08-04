@@ -8,6 +8,7 @@ import { InvitationAudioControls } from "@/components/invitations/invitation-aud
 import { isDarkColor } from "@/lib/invitation-theme/color-utils";
 import { CeleventicSoftIntro } from "@/components/experience-engine/celeventic-soft-intro";
 import { AdmissionCompanionHandoff } from "@/components/admission/admission-companion-handoff";
+import { PartyAdmissionSwitch } from "@/components/admission/party-admission-switch";
 import { InteractiveReveal } from "@/components/experience-engine/interactive-reveal";
 import { SceneErrorBoundary } from "@/components/experience-engine/scene-error-boundary";
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
@@ -81,8 +82,18 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
    * post-admission is enabled, never shown as a guest CTA until unlocked.
    */
   companionHandoffHref?: string | null;
-  /** Poll admission and jump to companion the moment the gate admits this invite. */
+  /** Poll admission and jump to companion only when fully admitted. */
   watchAdmissionHandoff?: boolean;
+  /**
+   * Partial-admission progress + Event Access switch (party-scoped).
+   * Shown on the invitation while admittedCount > 0 and remaining > 0.
+   */
+  partyAdmission?: {
+    admittedCount: number;
+    allowance: number;
+    state?: string | null;
+    companionHref: string;
+  } | null;
   seatQrDataUrl?: string | null;
   fullScreen?: boolean;
   embedded?: boolean;
@@ -463,6 +474,22 @@ export function PremiumInviteWrapper({
         link={props.invitation.uniqueLink}
         companionHref={props.companionHandoffHref || props.companionUrl!}
         enabled
+        onlyWhenFullyAdmitted
+      />
+    ) : null;
+
+  const partyAdmissionBanner =
+    !embedded &&
+    props.partyAdmission &&
+    props.invitation.uniqueLink &&
+    props.partyAdmission.admittedCount > 0 ? (
+      <PartyAdmissionSwitch
+        link={props.invitation.uniqueLink}
+        companionHref={props.partyAdmission.companionHref}
+        initialAdmittedCount={props.partyAdmission.admittedCount}
+        initialAllowance={props.partyAdmission.allowance}
+        initialState={props.partyAdmission.state}
+        mode="invitation"
       />
     ) : null;
 
@@ -471,6 +498,7 @@ export function PremiumInviteWrapper({
     return (
       <>
         {admissionHandoff}
+        {partyAdmissionBanner}
         <CeleventicSoftIntro
           key={`soft-intro-${ceremonyGeneration}`}
           onComplete={afterSoftIntro}
@@ -494,6 +522,7 @@ export function PremiumInviteWrapper({
     return (
       <>
         {admissionHandoff}
+        {partyAdmissionBanner}
         <TapToBeginExperience
           key={`tap-begin-${ceremonyGeneration}`}
           onBegin={handleTapBegin}
@@ -557,6 +586,7 @@ export function PremiumInviteWrapper({
     return (
       <>
         {admissionHandoff}
+        {partyAdmissionBanner}
         <InteractiveReveal
           key={`reveal-${ceremonyGeneration}`}
           openingExperience={openingExperience}
@@ -588,6 +618,7 @@ export function PremiumInviteWrapper({
   return (
     <>
       {admissionHandoff}
+      {partyAdmissionBanner}
       {portal}
       {showAudioControls && audioManager && (
         <InvitationAudioControls manager={audioManager} embedded={embedded} />

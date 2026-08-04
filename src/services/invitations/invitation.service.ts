@@ -116,37 +116,32 @@ export class InvitationService {
           },
         },
         template: true,
-        guests: { include: { rsvps: { orderBy: { createdAt: "desc" }, take: 1 } } },
+        guests: {
+          where: { archivedAt: null },
+          include: { rsvps: { orderBy: { createdAt: "desc" }, take: 1 } },
+        },
       },
     });
   }
 
   /**
    * Resolve the guest for a personalized invite link (`/invite/{link}?guest={qrToken}`).
-   * Prefer an exact invitation match; fall back to event-scoped token lookup because
-   * Guest CRM often creates guests without invitationId.
+   *
+   * Strict invitation-party isolation: the guest must belong to THIS invitation.
+   * Never fall back to event-scoped token lookup — that mixed unrelated parties
+   * (e.g. “The OBUAH Family” into “Akua & Kelly”) on the same public page.
    */
   async getGuestForInvitation(invitationId: string, guestToken: string) {
     const token = guestToken?.trim();
     if (!token) return null;
 
-    const include = { rsvps: { orderBy: { createdAt: "desc" as const }, take: 1 } };
-
-    const byInvitation = await prisma.guest.findFirst({
-      where: { invitationId, qrToken: token },
-      include,
-    });
-    if (byInvitation) return byInvitation;
-
-    const invitation = await prisma.invitation.findUnique({
-      where: { id: invitationId },
-      select: { eventId: true },
-    });
-    if (!invitation) return null;
-
     return prisma.guest.findFirst({
-      where: { eventId: invitation.eventId, qrToken: token },
-      include,
+      where: {
+        invitationId,
+        qrToken: token,
+        archivedAt: null,
+      },
+      include: { rsvps: { orderBy: { createdAt: "desc" as const }, take: 1 } },
     });
   }
 
@@ -202,14 +197,18 @@ export class InvitationService {
     const { allocateManualAdmissionCode } = await import("@/lib/qr/manual-code");
     const manualCode = await allocateManualAdmissionCode(input.eventId);
 
-    let invitationId = input.invitationId;
-    if (!invitationId) {
-      const primary = await prisma.invitation.findFirst({
-        where: { eventId: input.eventId, status: { not: "EXPIRED" } },
-        orderBy: { createdAt: "desc" },
+    // Never auto-attach to the newest event invitation — that polluted unrelated
+    // party rosters. Guests without an explicit invitationId stay unlinked until
+    // the organiser assigns them (or quick-invite / import mints a party).
+    const invitationId = input.invitationId?.trim() || null;
+    if (invitationId) {
+      const owned = await prisma.invitation.findFirst({
+        where: { id: invitationId, eventId: input.eventId },
         select: { id: true },
       });
-      invitationId = primary?.id;
+      if (!owned) {
+        throw new Error("Invitation not found for this event.");
+      }
     }
 
     const guest = await prisma.guest.create({
