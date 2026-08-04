@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { eventService } from "@/services/events/event.service";
-import { adminService } from "@/services/admin/admin.service";
 import { isPlatformAdmin } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import type { UserRole } from "@prisma/client";
@@ -38,7 +37,7 @@ export default async function DashboardPage() {
 
   const [stats, events] = await Promise.all([
     eventService.getDashboardStats(userId),
-    loadRecentEvents(userId, admin),
+    loadRecentEvents(userId),
   ]);
 
   const dashProps = {
@@ -61,19 +60,8 @@ export default async function DashboardPage() {
   }
 }
 
-async function loadRecentEvents(userId: string, admin: boolean): Promise<RecentEventSummary[]> {
-  if (admin) {
-    const result = await adminService.getEvents(1, 5);
-    return result.events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      startDate: e.startDate,
-      status: e.status,
-      organizerId: e.organizerId,
-      _count: e._count,
-    }));
-  }
-
+/** Home Recent Events: owner + collaborators. Full catalog is /admin/events only. */
+async function loadRecentEvents(userId: string): Promise<RecentEventSummary[]> {
   const result = await eventService.getOrganizerEvents(userId, 1, 5);
   return result.items.map((e) => ({
     id: e.id,

@@ -135,6 +135,10 @@ export async function requireEventPermission(
   return ctx;
 }
 
+/**
+ * Single-event access: owner, active collaborator, staff, or active org member.
+ * Used by resolveEventAccess / getEventById — not for dashboard “my events” lists.
+ */
 export function eventAccessWhere(userId: string) {
   return {
     OR: [
@@ -146,6 +150,21 @@ export function eventAccessWhere(userId: string) {
           members: { some: { userId, isActive: true } },
         },
       },
+    ],
+  };
+}
+
+/**
+ * List / picker scoping for organizers & collaborators.
+ * Owner or active EventCollaborator only — not staff, not org-wide membership.
+ * Staff still reach events via resolveEventAccess / deep links; full catalog is
+ * admin-only via /admin/events.
+ */
+export function eventListWhere(userId: string) {
+  return {
+    OR: [
+      { organizerId: userId },
+      { collaborators: { some: { userId, isActive: true } } },
     ],
   };
 }

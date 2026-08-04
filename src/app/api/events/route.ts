@@ -8,7 +8,7 @@ import { createAuditLog } from "@/lib/audit";
 import { parsePaginationFromUrl, PICKER_LIMIT, PUBLIC_GRID_LIMIT } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { eventService } from "@/services/events/event.service";
-import { isAdminRole } from "@/lib/roles";
+import { eventListWhere } from "@/lib/workspace/event-access";
 import type { UserRole } from "@prisma/client";
 
 const createEventSchema = z.object({
@@ -42,8 +42,9 @@ export async function GET(req: Request) {
 
   const params = new URL(req.url).searchParams;
   if (params.get("all") === "true") {
-    const admin = isAdminRole(session.user.role as UserRole);
-    const where = admin ? undefined : { organizerId: session.user.id };
+    // Picker / event switcher: owned or active collaborator events only.
+    // Platform-wide catalog is admin-only (`/admin/events`).
+    const where = eventListWhere(session.user.id);
     const take = PICKER_LIMIT;
     const [events, total] = await Promise.all([
       prisma.event.findMany({

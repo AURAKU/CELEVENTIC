@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { slugify, generateToken } from "@/lib/utils";
 import { paginatedResult } from "@/lib/pagination";
-import { eventAccessWhere } from "@/lib/workspace/event-access";
+import { eventAccessWhere, eventListWhere } from "@/lib/workspace/event-access";
 import { getTemplateCategoriesForEventType } from "@/lib/blueprints";
 import type { EventType, EventStatus, PricingType } from "@prisma/client";
 
@@ -221,7 +221,7 @@ export class EventService {
 
   async getOrganizerEvents(userId: string, page = 1, limit = 12) {
     const skip = (page - 1) * limit;
-    const where = eventAccessWhere(userId);
+    const where = eventListWhere(userId);
 
     const [events, total] = await Promise.all([
       prisma.event.findMany({

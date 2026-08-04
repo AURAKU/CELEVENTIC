@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { parsePaginationInput } from "@/lib/pagination";
-import { eventAccessWhere } from "@/lib/workspace/event-access";
+import { eventListWhere } from "@/lib/workspace/event-access";
 
 export async function globalSearch(
   userId: string,
@@ -75,7 +75,7 @@ export async function globalSearch(
   if (searchTypes.includes("events")) {
     results.events = await prisma.event.findMany({
       where: {
-        AND: [eventAccessWhere(userId), { title: { contains: q } }],
+        AND: [eventListWhere(userId), { title: { contains: q } }],
       },
       select: { id: true, title: true, eventType: true, startDate: true, coverImageUrl: true, status: true },
       take: limit,
