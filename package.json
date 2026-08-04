@@ -69,7 +69,7 @@
         "test:invitation-sharing": "tsx --test src/services/invitation-os/__tests__/*.test.ts",
         "test:gifts": "tsx --test src/lib/gifts/__tests__/*.test.ts src/services/gifts/__tests__/*.test.ts",
         "test:qr-hub": "tsx --test src/lib/qr-hub/__tests__/*.test.ts",
-        "test:admission": "tsx --test src/lib/admission/__tests__/*.test.ts src/lib/admission-identity/__tests__/*.test.ts src/lib/vendor-pass/__tests__/*.test.ts",
+        "test:admission": "tsx --test src/lib/admission/__tests__/*.test.ts src/lib/admission-identity/__tests__/*.test.ts src/lib/vendor-pass/__tests__/*.test.ts src/lib/invitation/__tests__/*.test.ts",
         "test:admission-passes": "tsx --test --test-concurrency=1 src/services/admission/__tests__/*.test.ts",
         "admission:identity:audit": "tsx scripts/audit-admission-identity.ts --dry-run",
         "audit:party-isolation": "tsx scripts/audit-party-isolation-live.ts --dry-run",
