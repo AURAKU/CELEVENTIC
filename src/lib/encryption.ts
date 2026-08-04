@@ -14,7 +14,7 @@ function resolveKeyMaterial(): string {
   }
 
   console.warn(
-    "[celeventic:encryption] Using development fallback key — set ENCRYPTION_KEY before production."
+    "[celeventic/encryption] Using development fallback key — set ENCRYPTION_KEY before production."
   );
   return FALLBACK_DEV_KEY;
 }

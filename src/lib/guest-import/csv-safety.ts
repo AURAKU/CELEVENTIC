@@ -40,7 +40,12 @@ export function sanitizeImportedCell(value: string): { value: string; stripped: 
   }
 
   // Embedded control characters break CSV round-trips and terminal output.
-  const cleaned = result.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
+  let cleaned = "";
+  for (let i = 0; i < result.length; i++) {
+    const code = result.charCodeAt(i);
+    if (code <= 0x08 || code === 0x0b || code === 0x0c || (code >= 0x0e && code <= 0x1f) || code === 0x7f) continue;
+    cleaned += result[i];
+  }
   if (cleaned !== result) stripped = true;
 
   return { value: cleaned, stripped };

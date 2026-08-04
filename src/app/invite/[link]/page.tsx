@@ -39,6 +39,7 @@ import {
   resolveGuestFacingVenue,
 } from "@/lib/invitation/guest-event-details";
 import { isOpenHostInvitation } from "@/services/guest-search/rsvp-self-registration.service";
+import { resolvePostAdmissionEnabled } from "@/lib/admission/canonical-companion";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -141,7 +142,7 @@ export default async function InvitePage({
   // Guest personalization, the order/design record, custom blocks, and the
   // memory-vault links are all independent reads keyed off `invitation.id` /
   // `event.id`, fetch them concurrently rather than as a serial waterfall.
-  const [admissionSummary, tokenGuest, order, invitationBlocks, memoryLinks] =
+  const [admissionSummary, tokenGuest, order, invitationBlocks, memoryLinks, portalEnabled] =
     await Promise.all([
       getInvitationAdmission(invitation.id),
       guestToken
@@ -151,6 +152,11 @@ export default async function InvitePage({
       invitationBlockService.getBlocksForInvitation(invitation.id),
       // Always provision Album QR for published invites so guests can upload/view live.
       ensureEventMemoryLinks(event.id),
+      resolvePostAdmissionEnabled({
+        eventId: event.id,
+        invitationId: invitation.id,
+        invitationEnabled: invitation.postAdmissionEnabled,
+      }),
     ]);
 
   // Ceremony always opens from the start for WhatsApp / social / browser links.
@@ -163,8 +169,7 @@ export default async function InvitePage({
     !preferInviteCeremony &&
     shouldOpenEventCompanionOnly({
       ...admissionSummary,
-      postAdmissionEnabled:
-        admissionSummary?.postAdmissionEnabled ?? invitation.postAdmissionEnabled,
+      postAdmissionEnabled: portalEnabled,
       canAccessPortal: admissionSummary?.canAccessPortal ?? false,
       viewerAdmitted,
     })
@@ -339,12 +344,12 @@ export default async function InvitePage({
   // on partial admission — PartyAdmissionSwitch offers Event Access instead.
   const companionUrl: string | null = null;
   const companionHandoffHref =
-    invitation.postAdmissionEnabled && !preferInviteCeremony
+    portalEnabled && !preferInviteCeremony
       ? buildEventCompanionHref(link, personalizedGuest?.qrToken ?? guestToken ?? null)
       : null;
   const watchAdmissionHandoff = Boolean(companionHandoffHref);
   const partyAdmission =
-    invitation.postAdmissionEnabled &&
+    portalEnabled &&
     admissionSummary &&
     admissionSummary.admittedCount > 0 &&
     companionHandoffHref

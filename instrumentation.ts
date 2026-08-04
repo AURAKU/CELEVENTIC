@@ -54,5 +54,5 @@ export async function onRequestError(
     renderSource: context.renderSource,
   });
 
-  console.error("[celeventic:transformstream-race]", diagnostics);
+  console.error("[celeventic/transformstream-race]", diagnostics);
 }

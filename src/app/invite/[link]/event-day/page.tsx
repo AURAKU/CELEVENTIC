@@ -21,7 +21,6 @@ import {
 } from "@/lib/admission/companion-studio";
 import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
-import { LIVE_PRODUCTION_ORDER_STATUSES } from "@/lib/invitation/studio-access";
 import { EventCompanionExperience } from "@/components/admission/event-companion-experience";
 import { PartyAdmissionSwitch } from "@/components/admission/party-admission-switch";
 import { requireEventPermission } from "@/lib/workspace/event-access";
@@ -30,6 +29,7 @@ import { PortalStatusPoller } from "./portal-status-poller";
 import type { ResolvedFeature } from "@/lib/invitation-features/registry";
 import { filterForeignPartyGuests } from "@/lib/invitation/party-isolation";
 import { loadSiblingInvitationLabels } from "@/lib/invitation/sibling-invitations";
+import { resolveCanonicalCompanionConfig } from "@/lib/admission/canonical-companion";
 
 // Admission is verified per request on the server, never cached, never trusted
 // from the client (spec §21, §27).
@@ -55,43 +55,6 @@ async function canPreviewCompanion(eventId: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-async function resolveCanonicalCompanionConfig(eventId: string, invitationId: string) {
-  const liveOrder = await prisma.invitationOrder.findFirst({
-    where: {
-      eventId,
-      archivedAt: null,
-      status: { in: [...LIVE_PRODUCTION_ORDER_STATUSES] },
-      invitationId: { not: null },
-    },
-    orderBy: { updatedAt: "desc" },
-    select: { invitationId: true },
-  });
-
-  const preferredId =
-    liveOrder?.invitationId && liveOrder.invitationId !== invitationId
-      ? liveOrder.invitationId
-      : null;
-
-  if (preferredId) {
-    return prisma.invitation.findUnique({
-      where: { id: preferredId },
-      select: { id: true, featureConfig: true, postAdmissionEnabled: true },
-    });
-  }
-
-  // Events without a live Studio order still inherit companion settings from
-  // whichever sibling invite already has the portal / studio content enabled.
-  return prisma.invitation.findFirst({
-    where: {
-      eventId,
-      id: { not: invitationId },
-      postAdmissionEnabled: true,
-    },
-    orderBy: { updatedAt: "desc" },
-    select: { id: true, featureConfig: true, postAdmissionEnabled: true },
-  });
 }
 
 function mergeCompanionFeatures(
@@ -131,6 +94,7 @@ export default async function EventDayPortal({
     select: {
       id: true,
       uniqueLink: true,
+      name: true,
       status: true,
       postAdmissionEnabled: true,
       designConfig: true,

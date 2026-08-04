@@ -13,7 +13,7 @@ export async function runStartupChecks(): Promise<void> {
   const missing = getMissingCriticalEnv();
   if (missing.length > 0) {
     console.error(
-      `[celeventic:startup] CRITICAL — missing environment variables: ${missing.join(", ")}`
+      `[celeventic/startup] CRITICAL — missing environment variables: ${missing.join(", ")}`
     );
   }
 
@@ -21,15 +21,15 @@ export async function runStartupChecks(): Promise<void> {
   const warnings = envChecks.filter((c) => c.severity === "warning" && !c.present);
   if (warnings.length > 0 && process.env.NODE_ENV === "development") {
     console.warn(
-      `[celeventic:startup] Optional env not set: ${warnings.map((w) => w.key).join(", ")}`
+      `[celeventic/startup] Optional env not set: ${warnings.map((w) => w.key).join(", ")}`
     );
   }
 
   const db = await checkDatabaseHealth();
   if (db.status === "critical") {
-    console.error(`[celeventic:startup] DATABASE: ${db.message}`, db.error ?? "");
+    console.error(`[celeventic/startup] DATABASE: ${db.message}`, db.error ?? "");
   } else if (db.status === "warning") {
-    console.warn(`[celeventic:startup] DATABASE: ${db.message}`);
+    console.warn(`[celeventic/startup] DATABASE: ${db.message}`);
   } else {
     authLog("startup_check", { phase: "database_ok", adminCount: db.adminCount });
   }

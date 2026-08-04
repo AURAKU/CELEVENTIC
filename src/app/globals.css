@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/*
+ * Never scan agent worktrees / vendored binaries. Tailwind’s class detector
+ * picked up `abi:\0` inside Electron binaries under `.claude/worktrees`, which
+ * emitted a NUL into layout.css — browsers abort stylesheet parsing and the
+ * whole app renders as unstyled HTML.
+ */
+@source not "../../.claude";
+@source not "../../.cursor";
+@source not "../../var";
+
 @theme {
   /* Midnight slate */
   --color-slate-950: #020617;

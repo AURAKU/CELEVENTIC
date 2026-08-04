@@ -38,7 +38,11 @@ describe("sanitizeDisplayFilename", () => {
 
   it("strips control characters", () => {
     const withControl = "video\u0000\u001f.mp4";
-    assert.equal(/[\x00-\x1f]/.test(sanitizeDisplayFilename(withControl)), false);
+    const cleaned = sanitizeDisplayFilename(withControl);
+    for (let i = 0; i < cleaned.length; i++) {
+      const code = cleaned.charCodeAt(i);
+      assert.equal(code <= 0x1f, false);
+    }
   });
 
   it("falls back to a safe default for an empty result", () => {

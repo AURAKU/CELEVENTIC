@@ -15,6 +15,14 @@ export interface ValidationResult {
 
 const EXT_SET = new Set<string>(ALLOWED_VIDEO_EXTENSIONS);
 
+function hasAsciiControlChars(value: string): boolean {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code <= 0x1f || code === 0x7f) return true;
+  }
+  return false;
+}
+
 export function extractExtension(filename: string): string | null {
   const clean = filename.trim().toLowerCase();
   const idx = clean.lastIndexOf(".");
@@ -35,7 +43,8 @@ export function validateVideoDescriptor(
   if (!file.filename || file.filename.length > 255) {
     return { valid: false, reason: "Invalid filename." };
   }
-  if (/[\x00-\x1f\x7f]/.test(file.filename)) {
+  // Avoid a literal `/[\x00…]/` pattern — Tailwind’s scanner can emit a NUL into CSS.
+  if (hasAsciiControlChars(file.filename)) {
     return { valid: false, reason: "Filename contains invalid characters." };
   }
   if (/(^|[\\/])\.\.([\\/]|$)/.test(file.filename) || file.filename.includes("\\") || file.filename.includes("/")) {

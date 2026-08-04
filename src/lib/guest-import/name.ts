@@ -56,8 +56,9 @@ export interface NameAnalysis {
 }
 
 /** Collapse whitespace and trim stray list punctuation. */
-export function cleanName(input: string): string {
-  return input
+export function cleanName(input: string | null | undefined): string {
+  if (input == null) return "";
+  return String(input)
     .replace(/[\u00A0\u2007\u202F]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/^[\s,;|\-–—.]+/, "")

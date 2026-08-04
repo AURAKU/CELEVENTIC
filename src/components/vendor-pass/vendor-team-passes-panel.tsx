@@ -26,6 +26,7 @@ type VendorPassRow = {
   status: string;
   accessZones: string[];
   passUrl: string;
+  publicToken: string;
   contactName: string | null;
   lastAdmittedAt: string | null;
 };
@@ -383,13 +384,25 @@ export function VendorTeamPassesPanel({
                       View Pass
                     </Link>
                   </Button>
+                  <Button type="button" size="sm" variant="outline" asChild>
+                    <a
+                      href={`/api/vendor-pass/qr-image?${new URLSearchParams({
+                        publicToken: row.publicToken,
+                        kind: "card",
+                        download: "1",
+                      }).toString()}`}
+                      download
+                    >
+                      Download card
+                    </a>
+                  </Button>
                   <Button
                     type="button"
                     size="sm"
                     variant="ghost"
                     onClick={() => {
                       window.open(row.passUrl, "_blank");
-                      window.setTimeout(() => window.print(), 600);
+                      window.setTimeout(() => window.print(), 900);
                     }}
                   >
                     Print

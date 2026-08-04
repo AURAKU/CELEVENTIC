@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getVendorTeamPassByPublicToken } from "@/services/vendor-pass/vendor-team-pass.service";
-import { formatAdmissionCode } from "@/lib/admission/pass-code";
 import { VendorPassCard } from "@/components/vendor-pass/vendor-pass-card";
 import { VendorPassPublicActions } from "@/components/vendor-pass/vendor-pass-public-actions";
 
@@ -45,12 +44,13 @@ export default async function VendorPassPublicPage({
   }
 
   return (
-    <main className="mx-auto max-w-lg px-4 py-8 sm:py-12 print:max-w-none print:px-0 print:py-0">
+    <main className="mx-auto max-w-lg bg-ivory px-4 py-8 sm:py-12 print:max-w-none print:bg-white print:px-0 print:py-0">
       <VendorPassPublicActions
         title={result.pass.title}
         vendorName={result.pass.vendorName}
         eventTitle={result.pass.eventTitle}
         admissionCode={result.pass.admissionCode}
+        publicToken={result.pass.publicToken}
       />
       <VendorPassCard
         title={result.pass.title}
@@ -60,11 +60,11 @@ export default async function VendorPassPublicPage({
         passType={result.pass.passType}
         teamCapacity={result.pass.teamCapacity}
         admittedCount={result.pass.admittedCount}
-        admissionCode={formatAdmissionCode(result.pass.admissionCode)}
+        admissionCode={result.pass.admissionCode}
         accessZones={result.pass.accessZones}
         validUntil={result.pass.validUntil}
         contactName={result.pass.contactName}
-        token={result.pass.token}
+        publicToken={result.pass.publicToken}
         status={result.pass.status}
       />
     </main>

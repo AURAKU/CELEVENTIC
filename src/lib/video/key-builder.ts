@@ -28,6 +28,11 @@ function sanitizeSegment(input: string): string {
 export function sanitizeDisplayFilename(filename: string): string {
   const base = filename.split(/[/\\]/).pop() ?? "video";
   const trimmed = base.trim().slice(0, 180);
-  // eslint-disable-next-line no-control-regex
-  return trimmed.replace(/[\x00-\x1f\x7f]/g, "") || "video";
+  let cleaned = "";
+  for (let i = 0; i < trimmed.length; i++) {
+    const code = trimmed.charCodeAt(i);
+    if (code <= 0x1f || code === 0x7f) continue;
+    cleaned += trimmed[i];
+  }
+  return cleaned || "video";
 }

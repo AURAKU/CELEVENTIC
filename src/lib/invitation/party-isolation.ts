@@ -108,7 +108,7 @@ export function filterForeignPartyGuests<T extends { name: string; invitationId?
   guests: T[],
   input: {
     invitationId: string;
-    invitationName: string;
+    invitationName: string | null | undefined;
     otherInvitationNames: Array<{ id: string; name: string }>;
   }
 ): T[] {

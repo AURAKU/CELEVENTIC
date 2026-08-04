@@ -16,8 +16,9 @@ import { formatDate } from "@/lib/utils";
 import { hashPassToken, verifyPassTokenSignature } from "@/lib/admission/pass-token";
 import { getEventAdmissionSettings } from "@/services/admission/guest-pass.service";
 import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
-import { buildEventCompanionHref } from "@/lib/admission/event-companion";
+import { buildEventCompanionHref, shouldOpenEventCompanionOnly } from "@/lib/admission/event-companion";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
+import { resolvePostAdmissionEnabled } from "@/lib/admission/canonical-companion";
 import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
 import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
@@ -128,14 +129,27 @@ export default async function AdmissionPage({ params }: { params: Promise<{ toke
     );
     const guestFacingVenue = resolveGuestFacingVenue(pass.event.venueName, admissionDesign);
     const guestToken = pass.invitation.guests[0]?.qrToken;
-    const companionHref = pass.invitation.postAdmissionEnabled
+    const portalEnabled = await resolvePostAdmissionEnabled({
+      eventId: pass.eventId,
+      invitationId: pass.invitation.id,
+      invitationEnabled: pass.invitation.postAdmissionEnabled,
+    });
+    const companionHref = portalEnabled
       ? buildEventCompanionHref(pass.invitation.uniqueLink, guestToken)
       : null;
 
-    // Already admitted → Event Companion is the home surface (until reset).
+    // Fully admitted parties auto-open Event Companion. Partial admits keep
+    // this pass page and offer a button instead (same rule as invite links).
     if (companionHref && pass.admittedCount > 0) {
       const summary = await getInvitationAdmission(pass.invitation.id);
-      if (summary?.canAccessPortal && summary.admittedCount > 0) {
+      if (
+        summary &&
+        shouldOpenEventCompanionOnly({
+          ...summary,
+          postAdmissionEnabled: portalEnabled,
+          canAccessPortal: summary.canAccessPortal,
+        })
+      ) {
         redirect(companionHref);
       }
     }

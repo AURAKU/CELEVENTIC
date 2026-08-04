@@ -196,7 +196,7 @@ export async function probeTransformStreamCancelWriteRace(iterations = 40): Prom
 export function formatTransformStreamRaceStartupWarning(version: string = process.version): string | null {
   if (nodeHasTransformStreamRaceFix(version)) return null;
   return (
-    `[celeventic:transformstream] Node ${version} is vulnerable to ` +
+    `[celeventic/transformstream] Node ${version} is vulnerable to ` +
     `"${TRANSFORMSTREAM_RACE_MESSAGE}" (nodejs/node#62036). ` +
     `Next.js RSC streaming can surface this as digest logs when clients abort mid-response. ` +
     `Permanent fix: upgrade to Node >= ${TRANSFORMSTREAM_RACE_FIXED_NODE} (verified 0/200 race hits). ` +

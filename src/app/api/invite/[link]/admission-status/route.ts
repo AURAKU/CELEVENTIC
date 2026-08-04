@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
+import { resolvePostAdmissionEnabled } from "@/lib/admission/canonical-companion";
 
 // Admission status must never be cached, a scan or reset has to reflect on the
 // guest's next poll immediately (spec §27).
@@ -27,10 +28,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ link: st
   const { link } = await params;
   const invitation = await prisma.invitation.findUnique({
     where: { uniqueLink: link },
-    select: { id: true, postAdmissionEnabled: true },
+    select: { id: true, eventId: true, postAdmissionEnabled: true },
   });
 
-  if (!invitation || !invitation.postAdmissionEnabled) {
+  if (!invitation) {
+    return NextResponse.json(
+      { enabled: false, unlocked: false },
+      { headers: noStore }
+    );
+  }
+
+  const portalEnabled = await resolvePostAdmissionEnabled({
+    eventId: invitation.eventId,
+    invitationId: invitation.id,
+    invitationEnabled: invitation.postAdmissionEnabled,
+  });
+
+  if (!portalEnabled) {
     // Do not reveal whether a locked/absent invitation exists.
     return NextResponse.json(
       { enabled: false, unlocked: false },
