@@ -6,6 +6,7 @@ import { applyPassAdmission } from "@/services/admission/admission.service";
 import { decideAdmission } from "@/lib/admission/pass-decision";
 import type { ResolvedAdmissionSettings } from "@/lib/admission/admission-settings";
 import { pickSeatingAssignment } from "@/lib/seating/assignment-pick";
+import { admitVendorTeamPass } from "@/services/vendor-pass/vendor-team-pass.service";
 
 /**
  * Offline admission: the downloadable gate package and its reconciliation.
@@ -102,6 +103,27 @@ export interface OfflinePackage {
     validUntil: string | null;
     allowedGates: unknown;
   } | null;
+  /** Capacity-tracked vendor/team passes (separate from guest invitations). */
+  vendorTeamPasses?: Array<{
+    id: string;
+    eventId: string;
+    tokenHash: string;
+    admissionCode: string;
+    passType: string;
+    title: string;
+    vendorName: string;
+    teamCapacity: number;
+    admittedCount: number;
+    remainingCount: number;
+    revision: number;
+    accessZones: string[];
+    status: string;
+    validFrom: Date | string | null;
+    validUntil: Date | string | null;
+    entryMode: string;
+    updatedAt: Date | string;
+    kind: "vendor_team_pass";
+  }>;
   checksum: string;
 }
 
@@ -220,6 +242,10 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
     "@/services/qr-hub/shared-vendor-access.service"
   );
   const vendorAccess = await sharedVendorAccessService.offlineSlice(eventId);
+  const { offlineVendorTeamSlice } = await import(
+    "@/services/vendor-pass/vendor-team-pass.service"
+  );
+  const vendorTeamPasses = await offlineVendorTeamSlice(eventId);
 
   const body = {
     version: OFFLINE_PACKAGE_VERSION,
@@ -247,6 +273,7 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
     },
     passes: records,
     vendorAccess,
+    vendorTeamPasses,
   };
 
   return {
@@ -333,6 +360,74 @@ export async function reconcileOfflineAdmissions(
         : null;
 
     if (!pass || pass.eventId !== eventId) {
+      // Capacity-tracked vendor/team pass (never a guest invitation).
+      const vendorResult = await admitVendorTeamPass({
+        eventId,
+        token: null,
+        code: record.code ?? null,
+        passId: null,
+        mode: record.quantity > 1 ? "quantity" : "one",
+        quantity: record.quantity,
+        scannerUserId: device.userId,
+        offline: true,
+        clientRecordId: record.clientRecordId,
+        deviceInfo: `offline-device:${deviceId}`,
+      });
+
+      // Prefer token-hash match when the offline gate hashed a cvt1 token.
+      const vendorByHash =
+        !vendorResult.found && record.tokenHash
+          ? await (async () => {
+              const row = await prisma.vendorTeamPass.findFirst({
+                where: { eventId, tokenHash: record.tokenHash!, archivedAt: null },
+                select: { id: true },
+              });
+              if (!row) return null;
+              return admitVendorTeamPass({
+                eventId,
+                passId: row.id,
+                mode: record.quantity > 1 ? "quantity" : "one",
+                quantity: record.quantity,
+                scannerUserId: device.userId,
+                offline: true,
+                clientRecordId: record.clientRecordId,
+                deviceInfo: `offline-device:${deviceId}`,
+              });
+            })()
+          : null;
+
+      const vendor = vendorResult.found ? vendorResult : vendorByHash;
+
+      if (vendor?.found) {
+        if (!vendor.ok) {
+          conflicts++;
+          await recordOffline(
+            deviceId,
+            record,
+            null,
+            "ALREADY_USED",
+            true,
+            vendor.error
+          );
+          outcomes.push({
+            clientRecordId: record.clientRecordId,
+            state: "conflict",
+            reason: vendor.error,
+            passCode: vendor.pass.admissionCode,
+          });
+          continue;
+        }
+        applied++;
+        await recordOffline(deviceId, record, null, "VALID", false, null);
+        outcomes.push({
+          clientRecordId: record.clientRecordId,
+          state: "applied",
+          reason: `Vendor team: admitted ${vendor.quantity}`,
+          passCode: vendor.pass.admissionCode,
+        });
+        continue;
+      }
+
       rejected++;
       await recordOffline(deviceId, record, null, "INVALID", true, "No matching pass");
       outcomes.push({

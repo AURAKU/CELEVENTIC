@@ -62,6 +62,9 @@ interface GateResult {
   seating: { tableNumber: string; seatLabel: string | null } | null;
   seatingContinuity?: SeatingContinuity | null;
   offline: boolean;
+  kind?: "guest_pass" | "vendor_team_pass";
+  accessZones?: string[];
+  entryMode?: string;
 }
 
 interface EntryPassGateProps {
@@ -293,28 +296,151 @@ export function EntryPassGate({
       const pass = hash ? localState.get(hash) : null;
 
       if (!pass || !hash) {
-        playScanFeedback(false);
+        // Capacity-tracked vendor/team pass in the offline package.
+        const vendorRows = pkg.vendorTeamPasses ?? [];
+        const vendor =
+          (tokenHash ? vendorRows.find((row) => row.tokenHash === tokenHash) : null) ??
+          (code ? vendorRows.find((row) => row.admissionCode === code) : null);
+
+        if (!vendor) {
+          playScanFeedback(false);
+          return show({
+            decision: {
+              outcome: "DENY",
+              tone: "red",
+              reason: "NOT_FOUND",
+              message: "No pass in the offline list matches this. Try again online.",
+              admitQuantity: 0,
+              resultingAdmittedCount: 0,
+              resultingStatus: "ACTIVE",
+              requiresConfirmation: false,
+              allowance: 0,
+              remaining: 0,
+              requiresQuantityConfirmation: false,
+            },
+            passCode: null,
+            displayName: null,
+            partySize: 0,
+            admittedCount: 0,
+            party: [],
+            seating: null,
+            offline: true,
+            kind: "guest_pass",
+          });
+        }
+
+        const queuedQty = queue
+          .filter((q) => q.tokenHash === vendor.tokenHash || q.code === vendor.admissionCode)
+          .reduce((sum, q) => sum + Math.max(1, q.quantity), 0);
+        const admitted = vendor.admittedCount + queuedQty;
+        const capacity = vendor.teamCapacity;
+        const remainingVendor = Math.max(0, capacity - admitted);
+
+        if (remainingVendor <= 0) {
+          playScanFeedback(false);
+          return show({
+            decision: {
+              outcome: "ALREADY_ADMITTED",
+              tone: "amber",
+              reason: "ALREADY_ADMITTED",
+              message: "Team capacity reached.",
+              admitQuantity: 0,
+              resultingAdmittedCount: admitted,
+              resultingStatus: "ADMITTED",
+              requiresConfirmation: false,
+              allowance: capacity,
+              remaining: 0,
+              requiresQuantityConfirmation: false,
+            },
+            passCode: vendor.admissionCode,
+            displayName: `${vendor.title} · ${vendor.vendorName}`,
+            partySize: capacity,
+            admittedCount: admitted,
+            party: [],
+            seating: null,
+            offline: true,
+            kind: "vendor_team_pass",
+            accessZones: vendor.accessZones,
+            entryMode: vendor.entryMode,
+          });
+        }
+
+        if (input.preview && remainingVendor > 1 && input.quantity == null) {
+          const needsQty = vendor.entryMode === "SELECT_QUANTITY";
+          return show({
+            decision: {
+              outcome: "REVIEW",
+              tone: "amber",
+              reason: "NEEDS_REVIEW",
+              message: needsQty
+                ? `${vendor.title}: ${admitted} of ${capacity} admitted. Select quantity.`
+                : `Ready to admit for ${vendor.title}. ${remainingVendor} remaining.`,
+              admitQuantity: needsQty ? 0 : 1,
+              resultingAdmittedCount: admitted,
+              resultingStatus: admitted > 0 ? "PARTIALLY_ADMITTED" : "ACTIVE",
+              requiresConfirmation: !needsQty,
+              allowance: capacity,
+              remaining: remainingVendor,
+              requiresQuantityConfirmation: needsQty,
+            },
+            passCode: vendor.admissionCode,
+            displayName: `${vendor.title} · ${vendor.vendorName}`,
+            partySize: capacity,
+            admittedCount: admitted,
+            party: [],
+            seating: null,
+            offline: true,
+            kind: "vendor_team_pass",
+            accessZones: vendor.accessZones,
+            entryMode: vendor.entryMode,
+          });
+        }
+
+        const qty = Math.min(
+          remainingVendor,
+          Math.max(1, input.quantity ?? (vendor.entryMode === "ADMIT_FULL_TEAM" ? remainingVendor : 1))
+        );
+        const record: QueuedAdmission = {
+          clientRecordId:
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          eventId,
+          tokenHash: vendor.tokenHash,
+          code: vendor.admissionCode,
+          quantity: qty,
+          capturedAt: new Date().toISOString(),
+          usedManualCode: Boolean(code && !input.token),
+          displayName: vendor.title,
+        };
+        await enqueue(record);
+        await refreshQueue();
+        const resulting = admitted + qty;
+        playScanFeedback(true);
         return show({
           decision: {
-            outcome: "DENY",
-            tone: "red",
-            reason: "NOT_FOUND",
-            message: "No pass in the offline list matches this. Try again online.",
-            admitQuantity: 0,
-            resultingAdmittedCount: 0,
-            resultingStatus: "ACTIVE",
+            outcome: resulting >= capacity ? "ADMIT" : "PARTIAL_ADMIT",
+            tone: "green",
+            reason: resulting >= capacity ? "OK" : "OK_PARTIAL",
+            message: `Admitted ${qty}. ${resulting} of ${capacity} in. Queued for sync.`,
+            admitQuantity: qty,
+            resultingAdmittedCount: resulting,
+            resultingStatus: resulting >= capacity ? "ADMITTED" : "PARTIALLY_ADMITTED",
             requiresConfirmation: false,
-            allowance: 0,
-            remaining: 0,
+            allowance: capacity,
+            remaining: Math.max(0, capacity - resulting),
             requiresQuantityConfirmation: false,
           },
-          passCode: null,
-          displayName: null,
-          partySize: 0,
-          admittedCount: 0,
+          passCode: vendor.admissionCode,
+          displayName: `${vendor.title} · ${vendor.vendorName}`,
+          partySize: capacity,
+          admittedCount: resulting,
           party: [],
           seating: null,
           offline: true,
+          kind: "vendor_team_pass",
+          accessZones: vendor.accessZones,
+          entryMode: vendor.entryMode,
         });
       }
 
@@ -452,7 +578,7 @@ export function EntryPassGate({
         offline: true,
       });
     },
-    [eventId, localState, pkg, refreshQueue]
+    [eventId, localState, pkg, queue, refreshQueue]
   );
 
   const admitOnline = useCallback(
@@ -464,6 +590,7 @@ export function EntryPassGate({
       guestIds?: string[];
       dryRun?: boolean;
       quantityConfirmed?: boolean;
+      vendorAdmitMode?: "one" | "quantity" | "full_team";
     }): Promise<GateResult | null> => {
       setBusy(true);
       setError("");
@@ -486,16 +613,20 @@ export function EntryPassGate({
         if (!data.decision.requiresQuantityConfirmation) {
           playScanFeedback(data.decision.tone === "green");
         }
+        const isVendor = data.kind === "vendor_team_pass";
         const next: GateResult = {
           decision: data.decision,
-          passCode: data.pass?.code ?? null,
-          displayName: data.pass?.displayName ?? null,
-          partySize: data.pass?.partySize ?? 0,
+          passCode: data.pass?.code ?? data.pass?.admissionCode ?? null,
+          displayName: data.pass?.displayName ?? data.pass?.title ?? null,
+          partySize: data.pass?.partySize ?? data.pass?.teamCapacity ?? 0,
           admittedCount: data.pass?.admittedCount ?? 0,
           party: data.party ?? [],
           seating: data.seating ?? null,
           seatingContinuity: data.seatingContinuity ?? null,
           offline: false,
+          kind: isVendor ? "vendor_team_pass" : "guest_pass",
+          accessZones: data.pass?.accessZones,
+          entryMode: data.pass?.entryMode,
         };
         setResult(next);
         setPromptOpen(true);
@@ -593,7 +724,7 @@ export function EntryPassGate({
       lastScanRef.current = { text, at: now };
 
       const classified = classifyGateInput(text);
-      if (classified.kind === "pass_token") {
+      if (classified.kind === "pass_token" || classified.kind === "vendor_team_token") {
         setSelectedMembers([]);
         setError("");
         await beginAdmission({ token: classified.token });
@@ -669,16 +800,37 @@ export function EntryPassGate({
     async (quantity?: number) => {
       if (!pendingScan) return;
       const guestIds = selectedMembers.length ? selectedMembers : undefined;
+      const remainingHeads = result
+        ? Math.max(0, result.partySize - result.admittedCount)
+        : 0;
+      const isVendor = result?.kind === "vendor_team_pass";
+      let vendorAdmitMode: "one" | "quantity" | "full_team" | undefined;
+      if (isVendor) {
+        if (quantity != null && quantity >= remainingHeads && remainingHeads > 1) {
+          vendorAdmitMode = "full_team";
+        } else if (quantity != null && quantity > 1) {
+          vendorAdmitMode = "quantity";
+        } else {
+          vendorAdmitMode = "one";
+        }
+      }
+
       if (usingOffline) {
         await admitOffline({ ...pendingScan, quantity, guestIds });
       } else {
-        await admitOnline({ ...pendingScan, quantity, guestIds, quantityConfirmed: true });
+        await admitOnline({
+          ...pendingScan,
+          quantity,
+          guestIds,
+          quantityConfirmed: true,
+          vendorAdmitMode,
+        });
       }
       setPendingScan(null);
       setSelectedMembers([]);
       setArrivingNow(1);
     },
-    [admitOffline, admitOnline, pendingScan, selectedMembers, usingOffline]
+    [admitOffline, admitOnline, pendingScan, selectedMembers, usingOffline, result]
   );
 
   const remaining = result ? Math.max(0, result.partySize - result.admittedCount) : 0;
@@ -738,6 +890,8 @@ export function EntryPassGate({
           onConfirmAdmit={() =>
             void confirmAdmission(selectedMembers.length ? undefined : remaining || undefined)
           }
+          passKind={result.kind}
+          accessZones={result.accessZones}
         />
       )}
       <CardHeader className="pb-3">

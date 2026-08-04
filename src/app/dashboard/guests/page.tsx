@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { RotateCcw, Upload, QrCode } from "lucide-react";
+import { RotateCcw, Upload, QrCode, Shield } from "lucide-react";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
 import { SmartGuestSearch } from "@/components/guest-search/smart-guest-search";
 import { QuickCreateCard } from "@/components/guest-search/quick-create-card";
 import { AdmissionIdentityAuditPanel } from "@/components/guest-search/admission-identity-audit-panel";
+import { VendorTeamPassesPanel } from "@/components/vendor-pass/vendor-team-passes-panel";
 import type { SearchResultCard } from "@/lib/guest-search/types";
 
 const CRM_STATUSES = ["INVITED", "OPENED", "ACCEPTED", "DECLINED", "MAYBE", "CHECKED_IN"] as const;
@@ -29,6 +30,8 @@ export default function GuestsPage() {
   const [resettingAll, setResettingAll] = useState(false);
   const [resetError, setResetError] = useState("");
   const [auditOpen, setAuditOpen] = useState(false);
+  const [crmTab, setCrmTab] = useState<"guests" | "vendors">("guests");
+  const [vendorCreateOpen, setVendorCreateOpen] = useState(false);
 
   const loadStats = useCallback(async () => {
     if (!eventId) {
@@ -113,6 +116,19 @@ export default function GuestsPage() {
           {eventId && (
             <Button
               type="button"
+              className="w-full justify-center sm:w-auto"
+              onClick={() => {
+                setCrmTab("vendors");
+                setVendorCreateOpen(true);
+              }}
+            >
+              <Shield className="h-4 w-4 shrink-0" />
+              Generate Vendor Pass
+            </Button>
+          )}
+          {eventId && (
+            <Button
+              type="button"
               variant="outline"
               className="w-full justify-center sm:w-auto"
               onClick={() => setAuditOpen(true)}
@@ -142,6 +158,27 @@ export default function GuestsPage() {
       </div>
 
       {eventId ? (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={crmTab === "guests" ? "default" : "outline"}
+            onClick={() => setCrmTab("guests")}
+          >
+            Guest invitations
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={crmTab === "vendors" ? "default" : "outline"}
+            onClick={() => setCrmTab("vendors")}
+          >
+            Vendor &amp; Team Passes
+          </Button>
+        </div>
+      ) : null}
+
+      {eventId ? (
         <AdmissionIdentityAuditPanel
           eventId={eventId}
           open={auditOpen}
@@ -162,67 +199,73 @@ export default function GuestsPage() {
         </CardContent>
       </Card>
 
-      <div className="min-w-0">
-        <QuickCreateCard
-          eventId={eventId}
-          onCreated={(card) => {
-            upsertRecent(card);
-            bumpList();
-          }}
-          onChanged={handleCardChanged}
-        />
-      </div>
-
-      <div className="min-w-0 space-y-4">
-        {eventId && stats.total > 0 && (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
-            {[
-              { key: "all", label: "All", count: stats.total },
-              ...CRM_STATUSES.map((s) => ({
-                key: s,
-                label: s.replace("_", " "),
-                count: stats.counts[s] ?? 0,
-              })),
-              { key: "NO_RESPONSE", label: "No Response", count: stats.noResponse },
-            ].map((s) => (
-              <button
-                key={s.key}
-                type="button"
-                onClick={() => setFilter(s.key)}
-                title={
-                  s.key === "all"
-                    ? "Expected people including plus-ones / admission allowance"
-                    : s.key === "CHECKED_IN"
-                      ? "People admitted at the gate (including partial party arrivals)"
-                      : undefined
-                }
-                className={`min-w-0 rounded-xl border p-2.5 text-center text-xs transition-colors sm:p-3 ${
-                  filter === s.key
-                    ? "border-[#0B8A83] bg-[#0B8A83]/10"
-                    : "border-slate-200 hover:border-slate-300"
-                }`}
-              >
-                <p className="text-base font-bold tabular-nums sm:text-lg">{s.count}</p>
-                <p className="mt-0.5 leading-tight capitalize text-slate-500">
-                  {s.key === "all"
-                    ? "All people"
-                    : s.key === "CHECKED_IN"
-                      ? "Checked in"
-                      : s.label}
-                </p>
-              </button>
-            ))}
+      {crmTab === "vendors" && eventId ? (
+        <VendorTeamPassesPanel eventId={eventId} openCreateDefault={vendorCreateOpen} />
+      ) : (
+        <>
+          <div className="min-w-0">
+            <QuickCreateCard
+              eventId={eventId}
+              onCreated={(card) => {
+                upsertRecent(card);
+                bumpList();
+              }}
+              onChanged={handleCardChanged}
+            />
           </div>
-        )}
 
-        <SmartGuestSearch
-          eventId={eventId}
-          recentlyCreated={recentlyCreated}
-          statusFilter={filter}
-          refreshToken={refreshToken}
-          onCardChanged={handleCardChanged}
-        />
-      </div>
+          <div className="min-w-0 space-y-4">
+            {eventId && stats.total > 0 && (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-8">
+                {[
+                  { key: "all", label: "All", count: stats.total },
+                  ...CRM_STATUSES.map((s) => ({
+                    key: s,
+                    label: s.replace("_", " "),
+                    count: stats.counts[s] ?? 0,
+                  })),
+                  { key: "NO_RESPONSE", label: "No Response", count: stats.noResponse },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setFilter(s.key)}
+                    title={
+                      s.key === "all"
+                        ? "Expected people including plus-ones / admission allowance"
+                        : s.key === "CHECKED_IN"
+                          ? "People admitted at the gate (including partial party arrivals)"
+                          : undefined
+                    }
+                    className={`min-w-0 rounded-xl border p-2.5 text-center text-xs transition-colors sm:p-3 ${
+                      filter === s.key
+                        ? "border-[#0B8A83] bg-[#0B8A83]/10"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <p className="text-base font-bold tabular-nums sm:text-lg">{s.count}</p>
+                    <p className="mt-0.5 leading-tight capitalize text-slate-500">
+                      {s.key === "all"
+                        ? "All people"
+                        : s.key === "CHECKED_IN"
+                          ? "Checked in"
+                          : s.label}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <SmartGuestSearch
+              eventId={eventId}
+              recentlyCreated={recentlyCreated}
+              statusFilter={filter}
+              refreshToken={refreshToken}
+              onCardChanged={handleCardChanged}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

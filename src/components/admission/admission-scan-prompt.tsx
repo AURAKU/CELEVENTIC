@@ -46,22 +46,36 @@ export interface AdmissionScanPromptProps {
   /** Optional confirm for single-guest paths that still need an explicit tap. */
   awaitingConfirm?: boolean;
   onConfirmAdmit?: () => void;
+  /** Vendor/team passes use the same prompt with clearer labels. */
+  passKind?: "guest_pass" | "vendor_team_pass";
+  accessZones?: string[];
 }
 
-function headlineFor(decision: AdmissionDecision, awaitingQuantity: boolean): string {
-  if (awaitingQuantity) return "Choose how many to admit";
+function headlineFor(
+  decision: AdmissionDecision,
+  awaitingQuantity: boolean,
+  isVendor: boolean
+): string {
+  if (awaitingQuantity) {
+    return isVendor ? "How many team members are arriving?" : "Choose how many to admit";
+  }
   switch (decision.outcome) {
     case "ADMIT":
     case "PARTIAL_ADMIT":
+      if (isVendor) {
+        return decision.admitQuantity > 1
+          ? `${decision.admitQuantity} team members admitted`
+          : "Team member admitted";
+      }
       return decision.admitQuantity > 1
         ? `${decision.admitQuantity} guests admitted`
         : "Guest admitted";
     case "RE_ENTRY":
       return "Welcome back";
     case "ALREADY_ADMITTED":
-      return "Already admitted";
+      return isVendor ? "Team capacity reached" : "Already admitted";
     case "REVIEW":
-      return "Needs review";
+      return isVendor ? "Vendor / team pass" : "Needs review";
     case "DENY":
     default:
       return decision.tone === "amber" ? "Attention required" : "Admission denied";
@@ -71,12 +85,17 @@ function headlineFor(decision: AdmissionDecision, awaitingQuantity: boolean): st
 function subcopyFor(
   decision: AdmissionDecision,
   awaitingQuantity: boolean,
-  remaining: number
+  remaining: number,
+  isVendor: boolean
 ): string {
   if (awaitingQuantity) {
     return remaining === 1
-      ? "1 place is still open on this invitation."
-      : `${remaining} places are still open on this invitation. Select how many guests are arriving now.`;
+      ? isVendor
+        ? "1 team entry remains on this pass."
+        : "1 place is still open on this invitation."
+      : isVendor
+        ? `${remaining} team entries remain. Select how many members are arriving now.`
+        : `${remaining} places are still open on this invitation. Select how many guests are arriving now.`;
   }
   return decision.message;
 }
@@ -106,8 +125,11 @@ export function AdmissionScanPrompt({
   onDismiss,
   awaitingConfirm,
   onConfirmAdmit,
+  passKind = "guest_pass",
+  accessZones,
 }: AdmissionScanPromptProps) {
   const titleId = useId();
+  const isVendor = passKind === "vendor_team_pass";
   const remaining = Math.max(0, partySize - admittedCount);
   const selectedHeads = party
     .filter((m) => selectedMembers.includes(m.id))
@@ -178,13 +200,18 @@ export function AdmissionScanPrompt({
                 id={titleId}
                 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-tight"
               >
-                {headlineFor(decision, awaitingQuantity)}
+                {headlineFor(decision, awaitingQuantity, isVendor)}
               </p>
               <p className="mt-1 text-sm sm:text-base text-slate-700 leading-relaxed">
-                {subcopyFor(decision, awaitingQuantity, remaining)}
+                {subcopyFor(decision, awaitingQuantity, remaining, isVendor)}
               </p>
               {(displayName || passCode || partySize > 0) && (
                 <div className="mt-3 flex flex-wrap gap-2">
+                  {isVendor && (
+                    <Badge className="bg-teal-700 text-white hover:bg-teal-700">
+                      Vendor / Team Pass
+                    </Badge>
+                  )}
                   {displayName && (
                     <Badge variant="outline" className="text-sm font-semibold">
                       {displayName}
@@ -200,6 +227,9 @@ export function AdmissionScanPrompt({
                       {admittedCount} of {partySize} admitted
                       {remaining > 0 && !awaitingQuantity ? ` · ${remaining} left` : ""}
                     </Badge>
+                  )}
+                  {accessZones && accessZones.length > 0 && (
+                    <Badge variant="outline">Access: {accessZones.join(" · ")}</Badge>
                   )}
                   {seatingLabel && <Badge variant="outline">{seatingLabel}</Badge>}
                   {offline && <Badge variant="secondary">Queued offline</Badge>}

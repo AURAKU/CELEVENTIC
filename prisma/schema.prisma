@@ -177,6 +177,7 @@ model User {
   giftWithdrawalsRequested   EventWalletWithdrawalRequest[] @relation("GiftWithdrawalRequester")
   giftWithdrawalsReviewed    EventWalletWithdrawalRequest[] @relation("GiftWithdrawalReviewer")
   sharedAccessPassesCreated  SharedEventAccessPass[]        @relation("SharedAccessPassCreator")
+  vendorTeamPassesCreated    VendorTeamPass[]               @relation("VendorTeamPassCreator")
   eventQrLinksCreated        EventQrLink[]                  @relation("EventQrLinkCreator")
   guestImportBatches         GuestImportBatch[]       @relation("GuestImportBatchCreator")
   generalPassBatches         GeneralPassBatch[]       @relation("GeneralPassBatchCreator")
@@ -360,6 +361,7 @@ model Event {
   eventQrLinks         EventQrLink[]
   admissionSettings    EventAdmissionSettings?
   guestPasses          GuestPass[]
+  vendorTeamPasses     VendorTeamPass[]
   guestImportBatches   GuestImportBatch[]
   generalPassBatches   GeneralPassBatch[]
   /// Organizer-only relationship labels for seating/planning (never guest-facing).
@@ -5642,4 +5644,157 @@ model SharedAccessPassScan {
   @@index([passId, createdAt])
   @@unique([clientRecordId])
   @@map("shared_access_pass_scans")
+}
+
+// ─── Vendor & Team Access Passes (capacity-tracked, not guest invitations) ───
+//
+// Separate from GuestPass / Invitation and from SharedEventAccessPass (the
+// event-wide reusable QR Hub credential). Each VendorTeamPass is one named
+// vendor or crew with its own QR, digit code, capacity and access zones.
+
+enum VendorTeamPassType {
+  VENDOR
+  PERFORMER
+  MUSICAL_BAND
+  DJ
+  MC
+  PHOTOGRAPHER
+  VIDEOGRAPHER
+  CATERER
+  DECORATOR
+  VENUE_STAFF
+  SECURITY
+  MEDIA
+  DRIVER
+  TECHNICAL_CREW
+  PRODUCTION
+  VOLUNTEER
+  SPONSOR
+  EXHIBITOR
+  CUSTOM
+}
+
+enum VendorTeamPassMode {
+  INDIVIDUAL
+  TEAM
+}
+
+enum VendorTeamEntryMode {
+  INDIVIDUAL_ENTRY
+  ADMIT_FULL_TEAM
+  SELECT_QUANTITY
+}
+
+enum VendorTeamPassStatus {
+  ACTIVE
+  PARTIALLY_ADMITTED
+  ADMITTED
+  REVOKED
+  EXPIRED
+  ARCHIVED
+  PAUSED
+}
+
+enum VendorReentryPolicy {
+  NONE
+  ONE
+  UNLIMITED
+  CUSTOM
+}
+
+model VendorTeamPass {
+  id              String               @id @default(cuid())
+  eventId         String
+  createdById     String?
+  passType        VendorTeamPassType   @default(VENDOR)
+  passMode        VendorTeamPassMode   @default(TEAM)
+  entryMode       VendorTeamEntryMode  @default(INDIVIDUAL_ENTRY)
+  title           String
+  vendorName      String
+  contactName     String?
+  phone           String?
+  email           String?
+  companyName     String?
+  categoryLabel   String?
+  teamCapacity    Int                  @default(1)
+  admittedCount   Int                  @default(0)
+  revision        Int                  @default(0)
+  reentryPolicy   VendorReentryPolicy  @default(NONE)
+  reentryLimit    Int?
+  reentryUsed     Int                  @default(0)
+  /// JSON string array of access zone labels.
+  accessZones     Json?
+  setupAccess     Boolean              @default(false)
+  breakdownAccess Boolean              @default(false)
+  equipmentAccess Boolean              @default(false)
+  vehicleRegistration String?
+  notes           String?
+  logoUrl         String?
+  photoUrl        String?
+  tokenHash       String               @unique
+  tokenNonce      String               @unique
+  tokenPrefix     String               @default("cvt1")
+  tokenVersion    Int                  @default(1)
+  admissionCode   String
+  codeLength      Int                  @default(6)
+  publicToken     String               @unique
+  status          VendorTeamPassStatus @default(ACTIVE)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  firstAdmittedAt DateTime?
+  lastAdmittedAt  DateTime?
+  revokedAt       DateTime?
+  revokedReason   String?
+  archivedAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  event     Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User?                     @relation("VendorTeamPassCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  members   VendorTeamPassMember[]
+  admissions VendorTeamPassAdmission[]
+
+  @@unique([eventId, admissionCode])
+  @@index([eventId, status])
+  @@index([eventId, passType])
+  @@index([publicToken])
+  @@index([tokenPrefix])
+  @@map("vendor_team_passes")
+}
+
+model VendorTeamPassMember {
+  id        String   @id @default(cuid())
+  passId    String
+  name      String
+  role      String?
+  admitted  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  pass VendorTeamPass @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@index([passId])
+  @@map("vendor_team_pass_members")
+}
+
+model VendorTeamPassAdmission {
+  id             String   @id @default(cuid())
+  passId         String
+  eventId        String
+  quantity       Int      @default(1)
+  mode           String
+  scannedById    String?
+  gate           String?
+  deviceInfo     String?
+  offline        Boolean  @default(false)
+  clientRecordId String?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  pass VendorTeamPass @relation(fields: [passId], references: [id], onDelete: Cascade)
+
+  @@unique([clientRecordId])
+  @@index([passId, createdAt])
+  @@index([eventId, createdAt])
+  @@map("vendor_team_pass_admissions")
 }
