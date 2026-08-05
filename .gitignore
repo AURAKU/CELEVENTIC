@@ -69,5 +69,8 @@ public/uploads/**
 # celeventic-video-worker liveness heartbeat (src/lib/video/worker-heartbeat.ts) — runtime state, regenerated every tick.
 /var/video-worker/
 
-# Alternate Next build output dirs
+# Alternate Next build output dirs (NEXT_DIST_DIR — see next.config.ts).
+# Used to verify a production build without clobbering the .next that a running
+# dev server or `next start` is serving from.
 .next-ship-check/
+.next-verify/

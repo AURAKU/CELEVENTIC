@@ -46,7 +46,10 @@ function resolveBuildId(): string | null {
   if (cachedBuildId !== undefined) return cachedBuildId;
   cachedBuildId = null;
   try {
-    const raw = readFileSync(join(process.cwd(), ".next", "BUILD_ID"), "utf8").trim();
+    // Mirrors `distDir` in next.config.ts, which honours NEXT_DIST_DIR so a
+    // verification build can run without clobbering a live `.next`.
+    const distDir = process.env.NEXT_DIST_DIR || ".next";
+    const raw = readFileSync(join(process.cwd(), distDir, "BUILD_ID"), "utf8").trim();
     // Guard against a truncated or unexpected file becoming response payload.
     if (/^[\w-]{1,64}$/.test(raw)) cachedBuildId = raw;
   } catch {
