@@ -121,7 +121,7 @@ const SECTION_ID_SET = new Set<string>(WEDDING_SECTION_ORDER);
 
 export interface WeddingBoardContent {
   // — Opening ceremony —
-  /** Hint shown under the wax seal ("Tap to open") */
+  /** Hint shown under the envelope ("Tap anywhere to open") */
   openingInstruction?: string;
   /** Two-letter monogram / short word on the wax seal (e.g. "J | C") */
   sealMonogram?: string;
@@ -254,7 +254,7 @@ export const DEFAULT_WEDDING_BOARD: Required<
   sectionOrder: WeddingSectionId[];
   features: Required<WeddingBoardFeatureFlags>;
 } = {
-  openingInstruction: "Lift the seal to open",
+  openingInstruction: "Tap anywhere to open",
   sealMonogram: FOREVER_AFARIS_DEFAULT_SEAL,
   gateWord: "#THE FOREVER AFARIS",
   envelopeAddressLine: "You are cordially invited",
@@ -401,6 +401,34 @@ export function resolveGateTitle(gateWord?: string | null): string {
   const trimmed = gateWord?.trim() ?? "";
   if (!trimmed || LEGACY_GATE_WORDS.has(trimmed.toLowerCase())) {
     return DEFAULT_WEDDING_BOARD.gateWord;
+  }
+  return trimmed;
+}
+
+/**
+ * Stored hints that only described the wax seal as the target. The envelope now
+ * opens from a tap anywhere on the ceremony, so this copy would tell guests to
+ * do something narrower than what actually works.
+ */
+const SEAL_ONLY_INSTRUCTIONS = new Set([
+  "lift the seal to open",
+  "tap the seal to open",
+  "tap the seal",
+  "tap the wax seal to open",
+  "touch the seal to open",
+  "press the seal to open",
+]);
+
+/**
+ * Opening hint for the envelope beat. Host-authored copy is respected, except
+ * for the legacy seal-only phrasings above, which are repaired at read time so
+ * the instruction matches the interaction guests actually have.
+ */
+export function resolveOpeningInstruction(instruction?: string | null): string {
+  const trimmed = instruction?.trim() ?? "";
+  if (!trimmed) return DEFAULT_WEDDING_BOARD.openingInstruction;
+  if (SEAL_ONLY_INSTRUCTIONS.has(trimmed.toLowerCase())) {
+    return DEFAULT_WEDDING_BOARD.openingInstruction;
   }
   return trimmed;
 }

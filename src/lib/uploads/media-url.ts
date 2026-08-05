@@ -14,6 +14,31 @@ const LOCAL_HOSTS = new Set([
   "::1",
 ]);
 
+/**
+ * Hosts that only exist inside the network that authored the media.
+ *
+ * Studio uploads and CSV/JSON imports have been observed persisting whichever
+ * origin the author's browser happened to be on — a laptop on `192.168.1.x`, a
+ * staging box on `10.x`, a `*.local` mDNS name. Those absolute URLs are
+ * indistinguishable from a real CDN to the old check, so they were written
+ * straight into guest payloads and rendered as broken images on every device
+ * outside that network. Reduce them to their path so the guest's own origin
+ * serves the file.
+ */
+const PRIVATE_IPV4 =
+  /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3})$/;
+
+function hostIsNonPublic(host: string): boolean {
+  const hostname = host.toLowerCase();
+  if (LOCAL_HOSTS.has(hostname)) return true;
+  if (PRIVATE_IPV4.test(hostname)) return true;
+  // mDNS / Bonjour names and internal-only suffixes never resolve for a guest.
+  if (hostname.endsWith(".local") || hostname.endsWith(".internal")) return true;
+  // Bare hostname with no dot (e.g. "macbook-pro") is a LAN name, not a domain.
+  if (!hostname.includes(".") && !hostname.includes(":")) return true;
+  return false;
+}
+
 function hostnameLooksLikeMediaCdn(host: string): boolean {
   if (host.endsWith(".amazonaws.com")) return true;
   if (host.endsWith(".cloudfront.net")) return true;
@@ -81,7 +106,7 @@ export function resolvePublicMediaUrl(url: string | null | undefined): string {
   if (/^https?:\/\//i.test(trimmed)) {
     try {
       const parsed = new URL(trimmed);
-      if (LOCAL_HOSTS.has(parsed.hostname)) {
+      if (hostIsNonPublic(parsed.hostname)) {
         return resolvePublicMediaUrl(`${parsed.pathname}${parsed.search}${parsed.hash}`);
       }
       // Same-origin celeventic absolute upload paths → relative for cache + nginx.

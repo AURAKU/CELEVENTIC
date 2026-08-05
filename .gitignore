@@ -62,6 +62,10 @@ public/uploads/**
 /var/media-audit/
 /var/media-url-fix/
 
+# invitation link repair backups (scripts/audit-invitation-links.ts --repair).
+# These hold real uniqueLink bearer tokens so they must never be committed.
+.backups/
+
 # celeventic-video-worker liveness heartbeat (src/lib/video/worker-heartbeat.ts) — runtime state, regenerated every tick.
 /var/video-worker/
 

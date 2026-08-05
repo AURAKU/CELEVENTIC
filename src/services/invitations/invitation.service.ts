@@ -9,6 +9,7 @@ import { cleanName } from "@/lib/guest-import/name";
 import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact";
 import { assertNoActiveGuestDuplicate } from "@/lib/guest-search/duplicate-guests";
 import { computeGuestCrmPeopleStats } from "@/lib/seating/people-stats";
+import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
 
 export interface CreateInvitationInput {
   eventId: string;
@@ -95,7 +96,25 @@ export class InvitationService {
     return paginatedResult(items, total, page, limit);
   }
 
-  async getInvitationByLink(uniqueLink: string) {
+  /**
+   * Public guest lookup for `/invite/{link}`.
+   *
+   * The exact token is tried first so a clean link still costs one query.
+   * Only when that misses do we attempt repair (percent-encoding, wrapping
+   * `<…>`, trailing slash/punctuation, whitespace, case) — links arrive via
+   * WhatsApp, SMS and email clients that mangle them routinely.
+   */
+  async getInvitationByLink(rawLink: string) {
+    const direct = await this.findInvitationByExactLink(rawLink);
+    if (direct) return direct;
+
+    const canonical = await repairInviteLink(rawLink);
+    if (!canonical || canonical === rawLink) return null;
+    return this.findInvitationByExactLink(canonical);
+  }
+
+  private async findInvitationByExactLink(uniqueLink: string) {
+    if (!uniqueLink) return null;
     return prisma.invitation.findUnique({
       where: { uniqueLink },
       include: {

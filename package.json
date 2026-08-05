@@ -58,6 +58,8 @@
         "smoke-test": "node scripts/smoke-test-local.mjs",
         "smoke-test:pages": "node scripts/smoke-test-local.mjs && node scripts/smoke-test-authed-pages.mjs",
         "smoke:live": "node scripts/smoke-live-pages.mjs",
+        "smoke:live-invitations": "node scripts/smoke-live-invitations.mjs",
+        "audit:invitation-links": "tsx scripts/audit-invitation-links.ts",
         "test:auth": "tsx --test src/lib/auth/__tests__/*.test.ts",
         "test:video": "tsx --test src/lib/video/__tests__/*.test.ts",
         "test:video-pipeline": "tsx --test --test-concurrency=1 src/lib/video/__tests__/integration/*.test.ts",

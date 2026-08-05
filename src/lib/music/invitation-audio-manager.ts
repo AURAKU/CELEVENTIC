@@ -17,6 +17,13 @@ export interface InvitationAudioManager {
    * keeps the user-activation chain — never await network first.
    */
   unlock: () => Promise<boolean>;
+  /**
+   * Spend a user gesture to authorise this element for later programmatic
+   * playback **without emitting any sound**: play muted at volume 0, then
+   * pause. Used when the invitation intro video owns the audio stage and
+   * template music must not start yet.
+   */
+  armSilently: () => Promise<boolean>;
   play: () => Promise<boolean>;
   pause: () => void;
   toggle: () => Promise<boolean>;
@@ -263,6 +270,35 @@ export function createInvitationAudioManager(
     }
   }
 
+  /**
+   * Silent gesture spend. The element is played muted at volume 0 and paused
+   * on the next tick, which is enough for Safari/Chrome to mark it
+   * user-activated, then rewound to the trim start. No sound reaches the
+   * guest, so the invitation intro video keeps the audio stage to itself.
+   */
+  async function armSilently(): Promise<boolean> {
+    const a = ensureAudio();
+    clearFade();
+    try {
+      a.muted = true;
+      a.volume = 0;
+      await a.play();
+      a.pause();
+      try {
+        a.currentTime = musicSelection?.startSec ?? 0;
+      } catch {
+        /* metadata not ready — play() will seek later */
+      }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      // Restore the caller's intent; `playNow` re-applies volume via fade-in.
+      a.muted = muted;
+      a.volume = 0;
+    }
+  }
+
   // Declared before methods that close over it so comparisons stay valid.
   // eslint-disable-next-line prefer-const
   let manager: InvitationAudioManager;
@@ -272,6 +308,7 @@ export function createInvitationAudioManager(
       ensureAudio();
     },
     unlock: async () => playNow(true),
+    armSilently,
     play: async () => playNow(true),
     pause() {
       clearFade();

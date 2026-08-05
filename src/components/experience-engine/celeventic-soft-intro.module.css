@@ -120,7 +120,14 @@
   object-position: center center;
 }
 
-/* Premium opening gate — required before live intro playback + audio. */
+/*
+ * Premium opening gate — required before live intro playback + audio.
+ *
+ * Brand-first, not generic dark glass: the card carries the Celeventic
+ * identity from `public/brand/logo-full.png` — a deep teal-to-midnight body,
+ * a gold hairline, and the teal/gold/coral burst that radiates from the
+ * logo's "C". Guests should recognise Celeventic before they read a word.
+ */
 .openGate {
   position: absolute;
   inset: 0;
@@ -133,63 +140,243 @@
     max(1.5rem, env(safe-area-inset-right, 0px))
     max(1.5rem, env(safe-area-inset-bottom, 0px))
     max(1.5rem, env(safe-area-inset-left, 0px));
-  background: linear-gradient(
-    180deg,
-    rgba(4, 10, 16, 0.42) 0%,
-    rgba(4, 10, 16, 0.62) 48%,
-    rgba(4, 10, 16, 0.78) 100%
-  );
+  background:
+    radial-gradient(
+      ellipse 70% 48% at 50% 46%,
+      rgba(15, 176, 166, 0.3) 0%,
+      rgba(6, 72, 66, 0.55) 34%,
+      rgba(3, 22, 28, 0.8) 68%,
+      rgba(2, 10, 14, 0.92) 100%
+    ),
+    /* Gold breath at the top and bottom edges, echoing the logo's warm rays. */
+    linear-gradient(
+      180deg,
+      rgba(212, 166, 58, 0.12) 0%,
+      transparent 22%,
+      transparent 78%,
+      rgba(212, 166, 58, 0.1) 100%
+    ),
+    linear-gradient(180deg, rgba(2, 10, 14, 0.5) 0%, rgba(2, 10, 14, 0.82) 100%);
   pointer-events: auto;
 }
 
+/* Radiating brand burst behind the card — the logo's rays, abstracted. */
+.openGateAura {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(34rem, 130vw);
+  height: min(34rem, 130vw);
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, rgba(11, 138, 131, 0.42) 0%, transparent 58%),
+    conic-gradient(
+      from 0deg,
+      rgba(212, 166, 58, 0.2) 0deg,
+      transparent 26deg,
+      rgba(11, 138, 131, 0.22) 60deg,
+      transparent 92deg,
+      rgba(255, 107, 87, 0.16) 128deg,
+      transparent 160deg,
+      rgba(212, 166, 58, 0.2) 200deg,
+      transparent 232deg,
+      rgba(11, 138, 131, 0.22) 274deg,
+      transparent 306deg,
+      rgba(255, 107, 87, 0.16) 338deg,
+      transparent 360deg
+    );
+  filter: blur(26px);
+  opacity: 0.85;
+  animation: cele-aura-breathe 6.5s ease-in-out infinite;
+}
+
+/*
+ * The card is a deepening of the same brand field, not a separate slab: no hard
+ * edge, a gold hairline that fades at the corners, and a gradient that
+ * continues the teal→midnight fall of `.openGate` behind it.
+ */
 .openGateCard {
-  width: min(22rem, 100%);
+  position: relative;
+  z-index: 1;
+  width: min(24rem, 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 0.65rem;
-  padding: 1.75rem 1.5rem 1.5rem;
-  border-radius: 1.35rem;
-  border: 1px solid rgba(250, 248, 244, 0.28);
+  gap: 0.35rem;
+  padding: 2.1rem 1.7rem 1.75rem;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(212, 166, 58, 0.3);
   background:
+    radial-gradient(
+      120% 80% at 50% 0%,
+      rgba(15, 176, 166, 0.22) 0%,
+      transparent 62%
+    ),
     linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(15, 23, 42, 0.55) 55%,
-      rgba(4, 10, 16, 0.72) 100%
+      170deg,
+      rgba(11, 138, 131, 0.3) 0%,
+      rgba(6, 72, 66, 0.5) 34%,
+      rgba(4, 30, 38, 0.72) 74%,
+      rgba(2, 14, 20, 0.8) 100%
     );
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 34px 90px rgba(2, 10, 14, 0.5),
+    0 0 60px rgba(11, 138, 131, 0.16),
+    0 1px 0 rgba(232, 197, 106, 0.24) inset;
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
 }
 
-.openGateEyebrow {
+/*
+ * Hero brand signal. Jost (already loaded on invite routes) keeps CELEVENTIC
+ * unmistakably legible at any age or screen size — the wordmark is a name to
+ * read, never a flourish to decode. Wide tracking + brand gold carry the
+ * premium register that the script headline supplies below it.
+ */
+.openGateBrand {
   margin: 0;
-  font-family: var(--font-cinzel), "Cinzel", serif;
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: rgba(250, 248, 244, 0.62);
-}
-
-.openGateTitle {
-  margin: 0;
-  font-family: var(--font-cormorant), "Cormorant Garamond", serif;
-  font-size: clamp(1.55rem, 5vw, 2rem);
+  font-family: var(--font-jost), "Jost", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.15rem, 5.4vw, 1.45rem);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  color: rgba(250, 248, 244, 0.96);
+  letter-spacing: 0.42em;
+  /* Optical centering — the trailing letter-space would push the word left. */
+  text-indent: 0.42em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: #e8c56a;
+  filter: drop-shadow(0 2px 10px rgba(212, 166, 58, 0.3));
 }
 
+/*
+ * Brushed-gold wordmark. Gated behind @supports so an engine without
+ * background-clip:text keeps the solid gold above instead of rendering
+ * transparent (invisible) brand text.
+ */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .openGateBrand {
+    background: linear-gradient(
+      100deg,
+      #e8c56a 0%,
+      #faf8f4 34%,
+      #d4a63a 62%,
+      #e8c56a 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/* Logo lockup echo: CELEBRATE · EVENT · TICKET in teal / gold / coral. */
+.openGateLockup {
+  margin: 0.1rem 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  font-family: var(--font-jost), "Jost", ui-sans-serif, system-ui, sans-serif;
+  /* Decorative, but still large enough for an older guest to actually read. */
+  font-size: clamp(0.6rem, 2.4vw, 0.68rem);
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+.lockupCelebrate {
+  color: #6ee7d7;
+}
+
+.lockupEvent {
+  color: #e8c56a;
+}
+
+/*
+ * A tint of brand coral rather than #ff8a7a: at this size the pure brand hue
+ * only reaches 3.5:1 against the gate when a bright video frame shows through
+ * the translucent card. This tint clears 4.5:1 in that worst case.
+ */
+.lockupTicket {
+  color: #ffb3a5;
+}
+
+.lockupDot {
+  width: 0.22rem;
+  height: 0.22rem;
+  border-radius: 9999px;
+  background: rgba(250, 248, 244, 0.5);
+}
+
+/* Gold hairline with a teal core — the divider under the wordmark. */
+.openGateRule {
+  width: min(11rem, 70%);
+  height: 1px;
+  margin: 0.9rem 0 0.15rem;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(212, 166, 58, 0.65) 28%,
+    rgba(110, 231, 215, 0.9) 50%,
+    rgba(212, 166, 58, 0.65) 72%,
+    transparent 100%
+  );
+}
+
+/*
+ * Calligraphy headline. Great Vibes is already bundled for invite routes, so
+ * this costs no extra font download.
+ *
+ * Legibility rules for a script face used at hero size:
+ *   - generous size (never below ~2.4rem) so the strokes are thick enough
+ *   - pure ivory on a deep field, plus a dark shadow to stop the thin joins
+ *     dissolving into the video behind the gate
+ *   - a plain, readable line ("Tap to begin") always sits directly beneath, so
+ *     nobody has to decode the script to know what to do
+ */
+.openGateTitle {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-great-vibes), "Great Vibes", var(--font-cormorant), cursive;
+  font-size: clamp(2.6rem, 12vw, 3.5rem);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  /* Script ascenders/descenders need room or they clip against the rule above. */
+  line-height: 1.18;
+  padding: 0 0.15em;
+  color: #fffdf9;
+  text-shadow:
+    0 2px 16px rgba(2, 10, 14, 0.7),
+    0 0 26px rgba(232, 197, 106, 0.28);
+}
+
+/*
+ * The always-readable instruction. Cormorant at a real body size with open
+ * tracking — this is the line a guest of any age relies on.
+ */
 .openGateSupport {
-  margin: 0 0 0.35rem;
+  margin: 0.5rem 0 0.15rem;
   font-family: var(--font-cormorant), "Cormorant Garamond", serif;
-  font-size: 0.95rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: rgba(250, 248, 244, 0.7);
+  font-size: clamp(1rem, 3.6vw, 1.12rem);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 253, 249, 0.9);
+}
+
+/*
+ * Forced-colors / high-contrast mode strips the shadow and gradient that make
+ * the script readable, so fall back to the serif there.
+ */
+@media (forced-colors: active) {
+  .openGateTitle {
+    font-family: var(--font-cormorant), "Cormorant Garamond", serif;
+    font-size: clamp(1.7rem, 6vw, 2.1rem);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-shadow: none;
+  }
 }
 
 .openGateError {
@@ -197,45 +384,97 @@
   max-width: 18rem;
   font-family: var(--font-cormorant), "Cormorant Garamond", serif;
   font-size: 0.9rem;
-  color: #fecaca;
+  font-weight: 600;
+  /* Brand coral, lightened for AA contrast on the deep teal card. */
+  color: #ffb3a5;
 }
 
 .openGateButton {
-  margin-top: 0.55rem;
-  min-height: 3.25rem;
-  min-width: min(16rem, 100%);
-  border: 1px solid rgba(250, 248, 244, 0.55);
+  margin-top: 0.65rem;
+  min-height: 3.35rem;
+  min-width: min(16.5rem, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 9999px;
-  padding: 0.95rem 1.65rem;
-  background: rgba(255, 255, 255, 0.94);
-  color: var(--soft-navy);
-  font-family: var(--font-cormorant), "Cormorant Garamond", serif;
-  font-size: clamp(0.85rem, 2.8vw, 1.05rem);
+  padding: 0.98rem 1.7rem;
+  background: linear-gradient(135deg, #f0d489 0%, #d4a63a 52%, #b8892a 100%);
+  color: #0f172a;
+  /*
+   * Never script on the action itself — the label a guest must trust is set in
+   * Jost, the clearest sans already loaded on invite routes.
+   */
+  font-family: var(--font-jost), "Jost", ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(0.84rem, 2.8vw, 1rem);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
   text-transform: uppercase;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 14px 40px rgba(184, 137, 42, 0.42),
+    0 2px 0 rgba(255, 255, 255, 0.4) inset;
   cursor: pointer;
   transition:
     transform 180ms ease,
-    background-color 180ms ease,
-    border-color 180ms ease,
+    filter 180ms ease,
+    box-shadow 180ms ease,
     opacity 180ms ease;
 }
 
 .openGateButton:hover,
 .openGateButton:focus-visible {
-  background: #fff;
-  border-color: var(--soft-gold);
+  filter: brightness(1.07);
   transform: translateY(-1px);
-  outline: 2px solid color-mix(in srgb, var(--soft-gold) 80%, white);
+  box-shadow:
+    0 18px 48px rgba(184, 137, 42, 0.52),
+    0 2px 0 rgba(255, 255, 255, 0.5) inset;
+  outline: 2px solid #faf8f4;
   outline-offset: 3px;
 }
 
+.openGateButton:active {
+  transform: translateY(0);
+  filter: brightness(0.97);
+}
+
 .openGateButton:disabled {
-  opacity: 0.72;
+  opacity: 0.78;
   cursor: wait;
   transform: none;
+  filter: saturate(0.85);
+}
+
+/* Reassurance line — teal dot + hosted-by signature. */
+.openGateFootnote {
+  margin: 0.95rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-jost), "Jost", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(250, 248, 244, 0.58);
+}
+
+.openGateFootnoteDot {
+  width: 0.34rem;
+  height: 0.34rem;
+  border-radius: 9999px;
+  background: #6ee7d7;
+  box-shadow: 0 0 10px rgba(110, 231, 215, 0.7);
+  animation: soft-cta-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes cele-aura-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
 }
 
 /* Legacy class kept for older stylesheets / tests that target tapGate. */
@@ -599,6 +838,8 @@
 .static .warmBloom,
 .static .particle,
 .static .horizon,
+.static .openGateAura,
+.static .openGateFootnoteDot,
 .static .brandMark,
 .static .motto,
 .static .powered,
@@ -795,6 +1036,8 @@
   .warmBloom,
   .particle,
   .horizon,
+  .openGateAura,
+  .openGateFootnoteDot,
   .brandMark,
   .motto,
   .powered,

@@ -2,8 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { invitationService } from "@/services/invitations/invitation.service";
+import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import { resolveInvitationFeatures } from "@/services/invitation-features/feature-resolver";
 import {
@@ -89,31 +91,48 @@ export default async function EventDayPortal({
   const { guest: guestToken, preview } = await searchParams;
   const wantsPreview = preview === "1" || preview === "true";
 
-  const invitation = await prisma.invitation.findUnique({
-    where: { uniqueLink: link },
-    select: {
-      id: true,
-      uniqueLink: true,
-      name: true,
-      status: true,
-      postAdmissionEnabled: true,
-      designConfig: true,
-      featureConfig: true,
-      template: { select: { slug: true, config: true } },
-      event: {
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          startDate: true,
-          contactPhone: true,
-          coverImageUrl: true,
-        },
+  // Same forgiving lookup as the ceremony page: a companion link forwarded
+  // through WhatsApp must resolve, not 404. Exact match first, repair second.
+  const inviteSelect = {
+    id: true,
+    uniqueLink: true,
+    name: true,
+    status: true,
+    postAdmissionEnabled: true,
+    designConfig: true,
+    featureConfig: true,
+    template: { select: { slug: true, config: true } },
+    event: {
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        startDate: true,
+        contactPhone: true,
+        coverImageUrl: true,
       },
     },
+  } satisfies Prisma.InvitationSelect;
+
+  let invitation = await prisma.invitation.findUnique({
+    where: { uniqueLink: link },
+    select: inviteSelect,
   });
 
+  if (!invitation) {
+    const repaired = await repairInviteLink(link);
+    if (repaired) {
+      invitation = await prisma.invitation.findUnique({
+        where: { uniqueLink: repaired },
+        select: inviteSelect,
+      });
+    }
+  }
+
   if (!invitation) notFound();
+  // Every href below must carry the canonical token, never the mangled one
+  // the guest arrived with.
+  const canonicalLink = invitation.uniqueLink;
   if (invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") notFound();
 
   const isOrganizerPreview =
@@ -138,8 +157,8 @@ export default async function EventDayPortal({
   // Companion is admit-only for guests; organizers may preview with ?preview=1.
   if (!unlocked && !isOrganizerPreview) {
     const inviteHref = guestToken
-      ? `/invite/${encodeURIComponent(link)}?guest=${encodeURIComponent(guestToken)}`
-      : `/invite/${encodeURIComponent(link)}`;
+      ? `/invite/${encodeURIComponent(canonicalLink)}?guest=${encodeURIComponent(guestToken)}`
+      : `/invite/${encodeURIComponent(canonicalLink)}`;
     redirect(inviteHref);
   }
 
@@ -278,7 +297,7 @@ export default async function EventDayPortal({
     ? await giftCampaignService
         .resolveCompanionPlacement(invitation.event.id, {
           guestQrToken: guestToken ?? null,
-          companionReturnUrl: buildEventCompanionHref(link, guestToken ?? null),
+          companionReturnUrl: buildEventCompanionHref(canonicalLink, guestToken ?? null),
         })
         .catch(() => null)
     : null;
@@ -292,7 +311,7 @@ export default async function EventDayPortal({
     );
   }
 
-  const inviteHref = buildInviteCeremonyHref(link, guestToken ?? null);
+  const inviteHref = buildInviteCeremonyHref(canonicalLink, guestToken ?? null);
   const showPartySwitch =
     Boolean(summary) &&
     (summary?.admittedCount ?? 0) > 0 &&
@@ -306,7 +325,7 @@ export default async function EventDayPortal({
       {showPartySwitch ? (
         <PartyAdmissionSwitch
           link={invitation.uniqueLink}
-          companionHref={buildEventCompanionHref(link, guestToken ?? null)}
+          companionHref={buildEventCompanionHref(canonicalLink, guestToken ?? null)}
           inviteHref={inviteHref}
           initialAdmittedCount={summary!.admittedCount}
           initialAllowance={summary!.allowance}

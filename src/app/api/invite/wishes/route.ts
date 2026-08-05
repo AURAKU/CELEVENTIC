@@ -9,6 +9,7 @@ import {
 } from "@/services/invitations/guest-wish.service";
 import { prisma } from "@/lib/prisma";
 import { parsePaginationFromUrl } from "@/lib/pagination";
+import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,10 +34,23 @@ async function resolveInviteAccess(params: {
   invitationStatus?: string;
 } | null> {
   if (params.link) {
-    const invitation = await prisma.invitation.findUnique({
+    const select = { id: true, eventId: true, status: true };
+    let invitation = await prisma.invitation.findUnique({
       where: { uniqueLink: params.link },
-      select: { id: true, eventId: true, status: true },
+      select,
     });
+    // Wishes are posted from the invitation page, which may itself have been
+    // reached through a repaired link; accept the same forms here so the
+    // guestbook does not 400 on a page that rendered fine.
+    if (!invitation) {
+      const repaired = await repairInviteLink(params.link);
+      if (repaired) {
+        invitation = await prisma.invitation.findUnique({
+          where: { uniqueLink: repaired },
+          select,
+        });
+      }
+    }
     if (!invitation) return null;
     return {
       eventId: invitation.eventId,

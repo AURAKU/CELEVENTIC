@@ -12,6 +12,7 @@ import {
 } from "@/lib/experience-engine/soft-intro";
 import {
   INTRO_ERROR_POSTER_HOLD_MS,
+  INTRO_FAILED_GATE_HOLD_MS,
   INTRO_STALL_GRACE_MS,
   collectIntroVideoDiagnostics,
   forgetSoftIntroThisSession,
@@ -33,6 +34,11 @@ export interface CeleventicSoftIntroProps {
    * Use this to unlock invitation template music in the same user-activation chain.
    */
   onUserGesture?: () => void;
+  /**
+   * Fired the moment the brand film actually starts playing. The intro owns the
+   * audio stage, so the host uses this to silence any other invitation audio.
+   */
+  onPlaybackStart?: () => void;
   /**
    * Invitation link or id — scopes sessionStorage only (never auto-skips the
    * visible intro on first paint).
@@ -68,6 +74,7 @@ export interface CeleventicSoftIntroProps {
 export function CeleventicSoftIntro({
   onComplete,
   onUserGesture,
+  onPlaybackStart,
   invitationId,
   forcePlay = false,
   accentColor = CELEVENTIC_PALETTE.teal,
@@ -98,6 +105,8 @@ export function CeleventicSoftIntro({
   const playCallCountRef = useRef(0);
   const onUserGestureRef = useRef(onUserGesture);
   onUserGestureRef.current = onUserGesture;
+  const onPlaybackStartRef = useRef(onPlaybackStart);
+  onPlaybackStartRef.current = onPlaybackStart;
 
   useEffect(() => {
     awaitingOpenRef.current = awaitingOpen;
@@ -161,14 +170,22 @@ export function CeleventicSoftIntro({
   }, []);
 
   const markPlaybackStarted = useCallback(() => {
+    const firstStart = !playbackStartedRef.current;
     playbackStartedRef.current = true;
     setPlaybackStarted(true);
     setAwaitingOpen(false);
     setPlayError(null);
     setOpeningBusy(false);
     openingInFlightRef.current = false;
+    // The film is on: nothing else may be audible underneath it.
+    if (firstStart) onPlaybackStartRef.current?.();
   }, []);
 
+  /**
+   * A media load/decode failure must never leave a blank stage. The poster
+   * still fills the black frame, and the pipeline always continues — either
+   * from the guest's tap or from a long-stop timer.
+   */
   const handleRealLoadFailure = useCallback(() => {
     if (completed.current || exitingRef.current) return;
     const video = videoRef.current;
@@ -179,15 +196,27 @@ export function CeleventicSoftIntro({
     }
     diagnose("media-load-failure");
     setVideoFailed(true);
-    setAwaitingOpen(false);
     try {
       videoRef.current?.pause();
     } catch {
       /* ignore */
     }
     if (errorHoldTimer.current) clearTimeout(errorHoldTimer.current);
+
+    // Guest has not tapped yet: hold the branded gate over the poster so
+    // opening stays a real gesture (that gesture is what unlocks invitation
+    // music on iOS Safari). The long-stop below guarantees they still get in.
+    if (!embedded && awaitingOpenRef.current && !playbackStartedRef.current) {
+      openingInFlightRef.current = false;
+      setOpeningBusy(false);
+      setPlayError("The opening film didn’t load. Tap to continue to your invitation.");
+      errorHoldTimer.current = setTimeout(() => beginExit(), INTRO_FAILED_GATE_HOLD_MS);
+      return;
+    }
+
+    setAwaitingOpen(false);
     errorHoldTimer.current = setTimeout(() => beginExit(), INTRO_ERROR_POSTER_HOLD_MS);
-  }, [beginExit, diagnose]);
+  }, [beginExit, diagnose, embedded]);
 
   // Replay Opening: clear invitation-scoped session mark only.
   useEffect(() => {
@@ -363,7 +392,9 @@ export function CeleventicSoftIntro({
   }, [handleRealLoadFailure]);
 
   const showVideo = !videoFailed;
-  const showOpenGate = !embedded && awaitingOpen && !exiting && !videoFailed;
+  // The gate survives a media failure so the guest keeps a retry/continue
+  // affordance instead of staring at a stalled poster.
+  const showOpenGate = !embedded && awaitingOpen && !exiting;
 
   const rootClass = [
     styles.root,
@@ -468,8 +499,17 @@ export function CeleventicSoftIntro({
 
       {showOpenGate && (
         <div className={styles.openGate} role="dialog" aria-modal="true" aria-labelledby="cele-open-invite-title">
+          <div className={styles.openGateAura} aria-hidden />
           <div className={styles.openGateCard}>
-            <p className={styles.openGateEyebrow}>Celeventic</p>
+            <p className={styles.openGateBrand}>Celeventic</p>
+            <p className={styles.openGateLockup} aria-hidden>
+              <span className={styles.lockupCelebrate}>Celebrate</span>
+              <span className={styles.lockupDot} />
+              <span className={styles.lockupEvent}>Event</span>
+              <span className={styles.lockupDot} />
+              <span className={styles.lockupTicket}>Ticket</span>
+            </p>
+            <span className={styles.openGateRule} aria-hidden />
             <h2 id="cele-open-invite-title" className={styles.openGateTitle}>
               Open Invitation
             </h2>
@@ -486,14 +526,26 @@ export function CeleventicSoftIntro({
               onKeyDown={handleOpenKeyDown}
               disabled={openingBusy}
               aria-label={
-                playError
-                  ? "Retry opening invitation with sound"
-                  : "Open Invitation"
+                videoFailed
+                  ? "Continue to your invitation"
+                  : playError
+                    ? "Retry opening invitation with sound"
+                    : "Open Invitation"
               }
               autoFocus
             >
-              {openingBusy ? "Opening…" : playError ? "Try again" : "Open Invitation"}
+              {openingBusy
+                ? "Opening…"
+                : videoFailed
+                  ? "Enter Invitation"
+                  : playError
+                    ? "Try again"
+                    : "Open Invitation"}
             </button>
+            <p className={styles.openGateFootnote}>
+              <span className={styles.openGateFootnoteDot} aria-hidden />
+              Best with sound on
+            </p>
           </div>
         </div>
       )}

@@ -15,6 +15,7 @@ import { invitationBlockService } from "@/services/invitations/invitation-block.
 import type { AppLocale } from "@/lib/i18n/constants";
 import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import { resolveBackgroundMedia } from "@/lib/invitation/studio-media-utils";
+import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
@@ -133,6 +134,19 @@ export default async function InvitePage({
 
   if (!invitation) notFound();
 
+  // The link was repaired (percent-encoded, wrapped, trailing slash, case).
+  // Settle the browser on the canonical URL so `event-day`, share cards,
+  // reloads and the admission poller all agree on one token.
+  if (invitation.uniqueLink !== link) {
+    const params = new URLSearchParams();
+    if (guestToken) params.set("guest", guestToken);
+    if (query.view) params.set("view", query.view);
+    const search = params.toString();
+    redirect(
+      `/invite/${encodeURIComponent(invitation.uniqueLink)}${search ? `?${search}` : ""}`
+    );
+  }
+
   // Soft-deleted / cancelled events must not keep serving as live guest pages.
   if (invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") {
     notFound();
@@ -225,7 +239,15 @@ export default async function InvitePage({
     _revisions?: unknown;
   };
 
-  const galleryUrls = event.media?.map((m) => m.url) ?? [];
+  // Every media reference handed to the guest bundle goes through the public
+  // resolver first. Studio and imports can persist absolute `http://localhost`
+  // or on-disk `/var/www/.../public/uploads` paths; those render as broken
+  // images on someone's phone, so they must never reach the browser payload.
+  const galleryUrls =
+    event.media
+      ?.map((m) => resolvePublicMediaUrl(m.url))
+      .filter((url): url is string => Boolean(url)) ?? [];
+  const coverImageUrl = resolvePublicMediaUrl(event.coverImageUrl) || null;
 
   // Once the organizer/admin publishes Studio work for this event, every guest
   // link for the selected event must render that live production design —
@@ -409,7 +431,11 @@ export default async function InvitePage({
 
   const catalogTemplate = productionOrder?.template;
   const revealMode = design.studio?.revealMode;
-  const resolvedBackground = resolveBackgroundMedia(design, catalogTemplate);
+  const rawBackground = resolveBackgroundMedia(design, catalogTemplate);
+  const resolvedBackground = {
+    backgroundImageUrl: resolvePublicMediaUrl(rawBackground.backgroundImageUrl) || null,
+    backgroundVideoUrl: resolvePublicMediaUrl(rawBackground.backgroundVideoUrl) || null,
+  };
 
   // Gift Wallet placement, null unless the event has a live campaign with
   // invitation placement on, so invites without gifting are untouched.
@@ -444,7 +470,7 @@ export default async function InvitePage({
         mapsLink: event.mapsLink,
         contactPhone: event.contactPhone,
         dressCode: event.dressCode,
-        coverImageUrl: event.coverImageUrl,
+        coverImageUrl,
       }}
       design={design}
       guestId={personalizedGuest?.id}
@@ -464,7 +490,7 @@ export default async function InvitePage({
       watchAdmissionHandoff={watchAdmissionHandoff}
       partyAdmission={partyAdmission}
       seatQrDataUrl={seatQrDataUrl || null}
-      backgroundImageUrl={resolvedBackground.backgroundImageUrl ?? event.coverImageUrl}
+      backgroundImageUrl={resolvedBackground.backgroundImageUrl ?? coverImageUrl}
       backgroundVideoUrl={resolvedBackground.backgroundVideoUrl}
       rsvpRequired={productionOrder?.rsvpRequired ?? true}
       galleryUrls={galleryUrls}
@@ -474,10 +500,10 @@ export default async function InvitePage({
       memoryVaultEnabled={memoryVault}
       memoryUploadUrl={memoryLinks?.uploadUrl ?? null}
       memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
-      memoryUploadQrImageUrl={memoryLinks?.uploadQrImageUrl ?? null}
+      memoryUploadQrImageUrl={resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl) || null}
       memoryAlbumTitle={memoryLinks?.eventTitle ?? null}
       giftUrl={giftPlacement?.giftUrl ?? null}
-      giftQrImageUrl={giftPlacement?.qrImageUrl ?? null}
+      giftQrImageUrl={resolvePublicMediaUrl(giftPlacement?.qrImageUrl) || null}
       giftTitle={giftPlacement?.title ?? null}
       giftSubtitle={giftPlacement?.subtitle ?? null}
       giftCtaLabel={giftPlacement?.ctaLabel ?? null}

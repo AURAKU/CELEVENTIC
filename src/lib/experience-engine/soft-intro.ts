@@ -95,6 +95,39 @@ export function phaseAfterSoftIntro(input: SoftIntroGateInput): InvitePipelinePh
 }
 
 /**
+ * What the "Open Invitation" gesture is allowed to do with the invitation's
+ * own music track.
+ *
+ * Never `"play"`. The brand film owns the audio stage for its whole runtime, so
+ * template music must not be audible until a later beat:
+ *   - `"prime"`         — buffer only. Used whenever a real gesture still lies
+ *                         ahead (Tap to Begin, or the envelope/curtain tap when
+ *                         that beat owns the opening) and can start the track.
+ *   - `"arm-silently"`  — spend this gesture on a muted play/pause so a later
+ *                         programmatic `play()` is not blocked by autoplay
+ *                         policy. Only for pipelines that jump straight from the
+ *                         film to the portal with no further gesture.
+ */
+export type IntroGestureAudioAction = "prime" | "arm-silently";
+
+export interface IntroGestureAudioInput {
+  /** A "Tap to Begin" beat follows the film. */
+  needsTapGate?: boolean;
+  /** An envelope / curtain reveal follows the film and owns its own tap. */
+  showReveal?: boolean;
+  /** Whether the invitation's track is meant to autostart at all. */
+  wantsAutoplay?: boolean;
+}
+
+export function introGestureAudioAction(
+  input: IntroGestureAudioInput
+): IntroGestureAudioAction {
+  if (!input.wantsAutoplay) return "prime";
+  const hasLaterGesture = Boolean(input.needsTapGate || input.showReveal);
+  return hasLaterGesture ? "prime" : "arm-silently";
+}
+
+/**
  * Hold duration before auto-advance when video cannot drive timing
  * (reduced motion / missing media). Returning guests still get the full
  * brand beat length — only the Skip control appears sooner in the UI.

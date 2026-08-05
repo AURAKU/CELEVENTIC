@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import { resolvePostAdmissionEnabled } from "@/lib/admission/canonical-companion";
+import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
 
 // Admission status must never be cached, a scan or reset has to reflect on the
 // guest's next poll immediately (spec §27).
@@ -26,10 +27,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ link: st
   }
 
   const { link } = await params;
-  const invitation = await prisma.invitation.findUnique({
+  const select = { id: true, eventId: true, postAdmissionEnabled: true };
+  let invitation = await prisma.invitation.findUnique({
     where: { uniqueLink: link },
-    select: { id: true, eventId: true, postAdmissionEnabled: true },
+    select,
   });
+
+  // The poller inherits whatever token the page was opened with, so it has to
+  // tolerate the same mangled links the page does — otherwise a repaired
+  // invitation renders but its admission status silently reports "disabled".
+  if (!invitation) {
+    const repaired = await repairInviteLink(link);
+    if (repaired) {
+      invitation = await prisma.invitation.findUnique({ where: { uniqueLink: repaired }, select });
+    }
+  }
 
   if (!invitation) {
     return NextResponse.json(
