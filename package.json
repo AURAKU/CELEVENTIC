@@ -49,6 +49,7 @@
         "media:urls:fix": "tsx scripts/media-urls-fix.ts",
         "test:media-url": "tsx --test src/lib/uploads/__tests__/media-url.test.ts",
         "test:media-audit": "tsx --test src/lib/video/__tests__/media-audit-utils.test.ts",
+        "test:media-health": "tsx --test src/lib/media/__tests__/*.test.ts src/lib/video/__tests__/background-job-queue-contract.test.ts",
         "test:transformstream-race": "tsx --test src/lib/runtime/__tests__/transformstream-race.test.ts",
         "test:uploads-stream-safe": "tsx --test src/app/api/uploads/__tests__/uploads-route.stream-safe.test.ts src/app/api/uploads/__tests__/range.test.ts",
         "probe:transformstream-race": "node scripts/probe-transformstream-race.cjs",

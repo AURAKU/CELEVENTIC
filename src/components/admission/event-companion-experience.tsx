@@ -4,6 +4,10 @@ import {
   type CompanionTheme,
 } from "@/lib/admission/event-companion-theme";
 import {
+  displayContactPhone,
+  normalizeCallablePhone,
+} from "@/lib/admission/contact-phone";
+import {
   type PartySeat,
   type SeatingContinuity,
 } from "@/lib/admission/seating-continuity";
@@ -111,7 +115,9 @@ export function EventCompanionExperience({
   const fonts = companionFontStyles(theme.fonts);
   const enabled = (key: ResolvedFeature["key"]) =>
     features.some((f) => f.key === key && f.enabled);
-  const showHelp = enabled("GUEST_HELP") && Boolean(event.contactPhone);
+  const contactPhoneDisplay = displayContactPhone(event.contactPhone);
+  const callablePhone = normalizeCallablePhone(event.contactPhone);
+  const showHelp = enabled("GUEST_HELP") && Boolean(callablePhone);
   const showProgramme =
     (enabled("LIVE_PROGRAMME") || theme.programmeItems.length > 0) &&
     theme.programmeItems.length > 0;
@@ -489,9 +495,9 @@ export function EventCompanionExperience({
                   </span>
                 </Link>
               ) : null}
-              {showHelp && event.contactPhone ? (
+              {showHelp && callablePhone ? (
                 <a
-                  href={`tel:${event.contactPhone.replace(/\s/g, "")}`}
+                  href={`tel:${callablePhone}`}
                   className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5"
                   style={{
                     background: `${colors.primary}08`,
@@ -513,7 +519,7 @@ export function EventCompanionExperience({
                       className="mt-1 block text-base sm:text-lg"
                       style={{ color: colors.primary, fontWeight: 500 }}
                     >
-                      Call host · {event.contactPhone}
+                      Call host · {contactPhoneDisplay}
                     </span>
                   </span>
                   <span style={{ color: colors.secondary }} aria-hidden>
