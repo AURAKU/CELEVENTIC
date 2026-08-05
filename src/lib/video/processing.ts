@@ -22,6 +22,7 @@ import {
   isVideoProcessingEnabled,
 } from "@/lib/video/mediaconvert";
 import { processVideoFile } from "@/lib/video/video-processor";
+import { VIDEO_PROCESS_QUEUE } from "@/lib/video/queues";
 import { vendorMediaService } from "@/services/vendor-os/vendor-media.service";
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
 import type { VideoCategory } from "@/lib/video/constants";
@@ -136,7 +137,7 @@ export async function finalizeVideoUpload(assetId: string): Promise<VideoAsset> 
     return failAsset(updated.id, sideEffect.reason);
   }
 
-  await dispatchJob("video-process", { assetId: updated.id });
+  await dispatchJob(VIDEO_PROCESS_QUEUE, { assetId: updated.id });
   return updated;
 }
 
@@ -215,7 +216,7 @@ export async function queueLocalVideoUpload(assetId: string, buffer: Buffer): Pr
     return failAsset(queued.id, sideEffect.reason);
   }
 
-  await dispatchJob("video-process", { assetId: queued.id });
+  await dispatchJob(VIDEO_PROCESS_QUEUE, { assetId: queued.id });
   return queued;
 }
 

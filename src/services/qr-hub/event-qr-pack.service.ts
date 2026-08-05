@@ -1,10 +1,9 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PassThrough } from "node:stream";
-import archiver from "archiver";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { generateBrandedQrPng, generateBrandedQrSvg } from "@/lib/qr/branded-qr-generator";
+import { createZipBufferFromFiles } from "@/lib/qr/zip-pack";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { eventQrHubService } from "@/services/qr-hub/event-qr-hub.service";
 import type { QrHubAssetKind } from "@/lib/qr-hub/types";
@@ -55,7 +54,7 @@ export class EventQrPackService {
         }
       }
 
-      const zipBuffer = await this.zipFiles(files, dir);
+      const zipBuffer = await createZipBufferFromFiles(files);
       await createAuditLog({
         userId: input.actorId,
         action: "CREATE",
@@ -156,23 +155,6 @@ export class EventQrPackService {
     });
 
     return { buffer: Buffer.from(bytes), filename: `${slug}-ground-qr-pack.pdf` };
-  }
-
-  private zipFiles(files: string[], cwd: string): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const archive = archiver("zip", { zlib: { level: 9 } });
-      const stream = new PassThrough();
-      const chunks: Buffer[] = [];
-      stream.on("data", (c) => chunks.push(Buffer.from(c)));
-      stream.on("end", () => resolve(Buffer.concat(chunks)));
-      stream.on("error", reject);
-      archive.on("error", reject);
-      archive.pipe(stream);
-      for (const file of files) {
-        archive.file(file, { name: file.slice(cwd.length + 1) });
-      }
-      void archive.finalize();
-    });
   }
 }
 

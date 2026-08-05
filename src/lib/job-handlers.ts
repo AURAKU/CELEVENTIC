@@ -2,6 +2,7 @@ import { registerJobHandler } from "@/lib/queue";
 import { inspirationService } from "@/services/inspiration/inspiration.service";
 import { communicationService } from "@/services/communications/communication.service";
 import { processQueuedVideoAsset } from "@/lib/video/processing";
+import { VIDEO_PROCESS_QUEUE } from "@/lib/video/queues";
 import {
   GENERAL_PASS_QUEUE,
   GUEST_IMPORT_DELIVERY_QUEUE,
@@ -21,7 +22,7 @@ export function registerAllJobHandlers() {
 
   // Kicks off (or resumes) MediaConvert processing for a video that just finished uploading.
   // This handler only *creates* the MediaConvert job — it never transcodes on the VPS itself.
-  registerJobHandler("video-process", async (payload) => {
+  registerJobHandler(VIDEO_PROCESS_QUEUE, async (payload) => {
     const assetId = payload.assetId as string;
     await processQueuedVideoAsset(assetId);
   });

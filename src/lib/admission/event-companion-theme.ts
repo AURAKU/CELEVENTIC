@@ -34,8 +34,16 @@ const FALLBACK_FONTS: NonNullable<InvitationDesignConfig["fonts"]> = {
 };
 
 function withAlpha(hex: string, alpha: number): string {
-  const raw = hex.replace("#", "").trim();
-  if (raw.length !== 6 && raw.length !== 3) return hex;
+  if (typeof hex !== "string") {
+    return `rgba(58, 42, 46, ${alpha})`;
+  }
+  const trimmed = hex.trim();
+  // Gradients / rgb() / named colors are valid design tokens — leave them intact.
+  if (!trimmed.startsWith("#")) {
+    return trimmed || `rgba(58, 42, 46, ${alpha})`;
+  }
+  const raw = trimmed.replace("#", "").trim();
+  if (raw.length !== 6 && raw.length !== 3) return trimmed;
   const full =
     raw.length === 3
       ? raw
@@ -46,8 +54,31 @@ function withAlpha(hex: string, alpha: number): string {
   const r = parseInt(full.slice(0, 2), 16);
   const g = parseInt(full.slice(2, 4), 16);
   const b = parseInt(full.slice(4, 6), 16);
-  if ([r, g, b].some((n) => Number.isNaN(n))) return hex;
+  if ([r, g, b].some((n) => Number.isNaN(n))) return trimmed;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
+ * Coalesce invitation color tokens. Object spread of incomplete theme→legacy
+ * colors can overwrite FALLBACK_COLORS with explicit `undefined`, which then
+ * crashes `withAlpha` via `.replace` on undefined.
+ */
+function resolveColor(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+}
+
+function resolveColors(
+  partial: Partial<InvitationDesignConfig["colors"]> | null | undefined
+): InvitationDesignConfig["colors"] {
+  return {
+    primary: resolveColor(partial?.primary, FALLBACK_COLORS.primary),
+    secondary: resolveColor(partial?.secondary, FALLBACK_COLORS.secondary),
+    accent: resolveColor(partial?.accent, FALLBACK_COLORS.accent),
+    background: resolveColor(partial?.background, FALLBACK_COLORS.background),
+    text: resolveColor(partial?.text, FALLBACK_COLORS.text),
+  };
 }
 
 function fontStack(name: string | undefined, fallback: string): string {
@@ -90,11 +121,42 @@ export function resolveCompanionTheme(invitation: {
     };
   }
 
-  const colors = { ...FALLBACK_COLORS, ...design.colors };
-  const fonts = { ...FALLBACK_FONTS, ...design.fonts };
+  const colors = resolveColors(design.colors);
+  if (process.env.NODE_ENV === "development") {
+    const raw = design.colors ?? {};
+    const missing = (["primary", "secondary", "accent", "background", "text"] as const).filter(
+      (key) => typeof raw[key] !== "string" || !String(raw[key]).trim()
+    );
+    if (missing.length > 0) {
+      console.info("[event-companion-theme] coalesced optional color tokens", {
+        layout: design.layout,
+        missing,
+      });
+    }
+  }
+  const fontsRaw = { ...FALLBACK_FONTS, ...design.fonts };
+  const fonts = {
+    heading:
+      typeof fontsRaw.heading === "string" && fontsRaw.heading.trim()
+        ? fontsRaw.heading.trim()
+        : FALLBACK_FONTS.heading,
+    script:
+      typeof fontsRaw.script === "string" && fontsRaw.script.trim()
+        ? fontsRaw.script.trim()
+        : FALLBACK_FONTS.script,
+    body:
+      typeof fontsRaw.body === "string" && fontsRaw.body.trim()
+        ? fontsRaw.body.trim()
+        : FALLBACK_FONTS.body,
+    eyebrow:
+      typeof fontsRaw.eyebrow === "string" && fontsRaw.eyebrow.trim()
+        ? fontsRaw.eyebrow.trim()
+        : FALLBACK_FONTS.eyebrow,
+  };
   const bg = pageBackgroundFromDesign(design);
-  const backgroundImageUrl =
-    bg.backgroundImageUrl ?? invitation.eventCoverImageUrl?.trim() ?? null;
+  const fromDesign = bg.backgroundImageUrl?.trim() || null;
+  const fromEvent = invitation.eventCoverImageUrl?.trim() || null;
+  const backgroundImageUrl = fromDesign || fromEvent || null;
 
   const studio = design.studio as
     | { weddingBoard?: unknown; visionBoard?: { programmeItems?: WeddingBoardProgrammeItem[] } }

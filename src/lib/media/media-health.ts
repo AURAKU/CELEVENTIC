@@ -7,6 +7,7 @@ import path from "path";
 import { getUploadRoot } from "@/lib/uploads/file-storage";
 import { getFfmpegFullCapabilities } from "@/lib/video/ffmpeg-capabilities";
 import { prisma } from "@/lib/prisma";
+import { VIDEO_PROCESS_QUEUE } from "@/lib/video/queues";
 
 export interface MediaPipelineHealth {
   status: "healthy" | "warning" | "critical";
@@ -100,7 +101,10 @@ export async function getMediaPipelineHealth(): Promise<MediaPipelineHealth> {
   try {
     failedProcessing = await prisma.videoAsset.count({ where: { status: "FAILED" } });
     pendingJobs = await prisma.backgroundJob.count({
-      where: { type: "video-process", status: { in: ["PENDING", "RUNNING"] } },
+      where: {
+        queue: VIDEO_PROCESS_QUEUE,
+        status: { in: ["PENDING", "PROCESSING"] },
+      },
     });
     details.push(`Failed videos: ${failedProcessing}; pending video jobs: ${pendingJobs}`);
   } catch {

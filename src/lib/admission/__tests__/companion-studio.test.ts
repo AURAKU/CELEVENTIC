@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import {
   mergeCompanionFeatureConfig,
   parseProgrammeOutline,
@@ -9,13 +10,14 @@ import {
 
 describe("readCompanionMenuConfig", () => {
   it("reads menu body and url", () => {
-    expect(
-      readCompanionMenuConfig({ menuBody: "Starter", menuUrl: "https://menu.example" })
-    ).toEqual({ menuBody: "Starter", menuUrl: "https://menu.example" });
+    assert.deepEqual(
+      readCompanionMenuConfig({ menuBody: "Starter", menuUrl: "https://menu.example" }),
+      { menuBody: "Starter", menuUrl: "https://menu.example" }
+    );
   });
 
   it("falls back to empty strings", () => {
-    expect(readCompanionMenuConfig(null)).toEqual({ menuBody: "", menuUrl: "" });
+    assert.deepEqual(readCompanionMenuConfig(null), { menuBody: "", menuUrl: "" });
   });
 });
 
@@ -25,8 +27,8 @@ describe("mergeCompanionFeatureConfig", () => {
       { PLACE_CARD: { enabled: true }, EVENT_MENU: { enabled: false } },
       { EVENT_MENU: { enabled: true, config: { menuBody: "Cake", menuUrl: "" } } }
     );
-    expect(merged.PLACE_CARD).toEqual({ enabled: true });
-    expect(merged.EVENT_MENU).toEqual({
+    assert.deepEqual(merged.PLACE_CARD, { enabled: true });
+    assert.deepEqual(merged.EVENT_MENU, {
       enabled: true,
       config: { menuBody: "Cake", menuUrl: "" },
     });
@@ -35,7 +37,7 @@ describe("mergeCompanionFeatureConfig", () => {
 
 describe("resolveCompanionMenu", () => {
   it("falls back to canonical when local is empty", () => {
-    expect(resolveCompanionMenu({}, { menuBody: "Soup", menuUrl: "" })).toEqual({
+    assert.deepEqual(resolveCompanionMenu({}, { menuBody: "Soup", menuUrl: "" }), {
       menuBody: "Soup",
       menuUrl: "",
     });
@@ -47,29 +49,30 @@ describe("parseProgrammeOutline", () => {
     const items = parseProgrammeOutline(
       "2:00 PM — Ceremony — Exchange of vows\n4:30 PM — Reception"
     );
-    expect(items).toHaveLength(2);
-    expect(items[0]).toMatchObject({
-      time: "2:00 PM",
-      title: "Ceremony",
-      description: "Exchange of vows",
-    });
-    expect(items[1]).toMatchObject({ time: "4:30 PM", title: "Reception" });
+    assert.equal(items.length, 2);
+    assert.equal(items[0]!.time, "2:00 PM");
+    assert.equal(items[0]!.title, "Ceremony");
+    assert.equal(items[0]!.description, "Exchange of vows");
+    assert.equal(items[1]!.time, "4:30 PM");
+    assert.equal(items[1]!.title, "Reception");
   });
 
   it("parses title at time lines", () => {
     const items = parseProgrammeOutline("Ceremony at 2:00 PM");
-    expect(items[0]).toMatchObject({ time: "2:00 PM", title: "Ceremony" });
+    assert.equal(items[0]!.time, "2:00 PM");
+    assert.equal(items[0]!.title, "Ceremony");
   });
 
   it("keeps plain titles without inventing a time", () => {
     const items = parseProgrammeOutline("Guest welcome");
-    expect(items[0]).toMatchObject({ time: "", title: "Guest welcome" });
+    assert.equal(items[0]!.time, "");
+    assert.equal(items[0]!.title, "Guest welcome");
   });
 
   it("round-trips through programmeItemsToOutline", () => {
     const outline = "1:30 PM — Arrival\n2:00 PM — Ceremony — Vows";
     const again = programmeItemsToOutline(parseProgrammeOutline(outline));
-    expect(again).toContain("1:30 PM — Arrival");
-    expect(again).toContain("2:00 PM — Ceremony — Vows");
+    assert.match(again, /1:30 PM — Arrival/);
+    assert.match(again, /2:00 PM — Ceremony — Vows/);
   });
 });

@@ -3,6 +3,7 @@ import { abortMultipartUpload, deleteVideoObject, deleteVideoObjectsByPrefix } f
 import { deleteUploadFile } from "@/lib/uploads/file-storage";
 import { dispatchJob } from "@/lib/queue";
 import { DEFAULT_ABANDONED_UPLOAD_HOURS } from "@/lib/video/constants";
+import { VIDEO_PROCESS_QUEUE } from "@/lib/video/queues";
 import type { VideoAsset } from "@prisma/client";
 
 function abandonedThresholdHours(): number {
@@ -57,7 +58,7 @@ export async function recoverStalledVideoProcessing(batchSize = 25): Promise<{ r
         where: { id: asset.id },
         data: { status: "QUEUED", processingStartedAt: null },
       });
-      await dispatchJob("video-process", { assetId: asset.id });
+      await dispatchJob(VIDEO_PROCESS_QUEUE, { assetId: asset.id });
       requeued++;
     } else {
       await prisma.videoAsset.update({

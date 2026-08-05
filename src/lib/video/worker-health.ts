@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { VIDEO_PROCESS_QUEUE } from "@/lib/video/queues";
 import { getWorkerLiveness } from "@/lib/video/worker-heartbeat";
 
 /**
@@ -32,14 +33,14 @@ export async function getVideoWorkerHealth(): Promise<VideoWorkerHealth> {
   const [liveness, oldestPending, pendingJobs, stuckProcessingAssets, lastCompleted] = await Promise.all([
     getWorkerLiveness(),
     prisma.backgroundJob.findFirst({
-      where: { queue: "video-process", status: "PENDING" },
+      where: { queue: VIDEO_PROCESS_QUEUE, status: "PENDING" },
       orderBy: { createdAt: "asc" },
       select: { createdAt: true },
     }),
-    prisma.backgroundJob.count({ where: { queue: "video-process", status: "PENDING" } }),
+    prisma.backgroundJob.count({ where: { queue: VIDEO_PROCESS_QUEUE, status: "PENDING" } }),
     prisma.videoAsset.count({ where: { status: "PROCESSING" } }),
     prisma.backgroundJob.findFirst({
-      where: { queue: "video-process", status: "COMPLETED" },
+      where: { queue: VIDEO_PROCESS_QUEUE, status: "COMPLETED" },
       orderBy: { processedAt: "desc" },
       select: { processedAt: true },
     }),
