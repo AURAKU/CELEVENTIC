@@ -27,7 +27,7 @@ import styles from "./celeventic-soft-intro.module.css";
 export interface CeleventicSoftIntroProps {
   onComplete: () => void;
   /**
-   * Fired after an explicit guest gesture (Tap for sound / Tap to Open / Skip).
+   * Fired after an explicit guest gesture (Tap to Open / Skip / first touch unlock).
    * Use this to unlock invitation template or uploaded music in the same
    * user-activation chain — never start music from a programmatic timer alone.
    */
@@ -66,9 +66,9 @@ export interface CeleventicSoftIntroProps {
 /**
  * Canonical Celeventic intro video.
  *
- * Root-cause fix: the HTML `muted` attribute must be present on first paint.
- * Live used to mount unmuted (`soundEnabled === true`), so Safari rejected
- * autoplay and the intro never started visibly.
+ * Starts muted on first paint (Safari autoplay requirement), then auto-unmutes
+ * as soon as the browser allows — no “Tap for sound” CTA. If policy still
+ * blocks sound, the next real guest gesture silently unlocks audio.
  */
 export function CeleventicSoftIntro({
   onComplete,
@@ -100,6 +100,9 @@ export function CeleventicSoftIntro({
   const needsTapRef = useRef(false);
   const playbackAttemptedRef = useRef(false);
   const loadCalledRef = useRef(false);
+  const soundUnlockedRef = useRef(false);
+  const onUserGestureRef = useRef(onUserGesture);
+  onUserGestureRef.current = onUserGesture;
 
   const clearTimers = useCallback(() => {
     if (exitTimer.current) clearTimeout(exitTimer.current);
@@ -169,6 +172,47 @@ export function CeleventicSoftIntro({
     setNeedsTapToOpen(false);
   }, []);
 
+  /** Turn sound on without a visible CTA whenever the browser allows it. */
+  const unlockIntroSound = useCallback(
+    async (label: string, fromGesture: boolean) => {
+      const video = videoRef.current;
+      if (!video || completed.current || exitingRef.current || soundUnlockedRef.current) {
+        return soundUnlockedRef.current;
+      }
+
+      if (fromGesture) {
+        onUserGestureRef.current?.();
+      }
+
+      prepareIntroVideoElement(video, false);
+      setHtmlMuted(false);
+      const result = await playIntroWithMutedFallback(video, true);
+
+      if (result.playing && !result.muted) {
+        soundUnlockedRef.current = true;
+        setHtmlMuted(false);
+        prepareIntroVideoElement(video, false);
+        markPlaybackStarted();
+        diagnose(`${label}:unmuted`);
+        return true;
+      }
+
+      // Stay playing muted if unmute was blocked — keep attribute in sync.
+      if (result.playing) {
+        setHtmlMuted(true);
+        prepareIntroVideoElement(video, true);
+        markPlaybackStarted();
+        diagnose(`${label}:still-muted`);
+      } else {
+        setHtmlMuted(true);
+        prepareIntroVideoElement(video, true);
+        diagnose(`${label}:unmute-failed`);
+      }
+      return false;
+    },
+    [diagnose, markPlaybackStarted]
+  );
+
   const tryMutedAutoplay = useCallback(
     async (label: string) => {
       const video = videoRef.current;
@@ -192,9 +236,11 @@ export function CeleventicSoftIntro({
       lastPlayRejection.current = undefined;
       markPlaybackStarted();
       diagnose(`${label}:playing-muted`);
+      // Immediately try to enable sound — succeeds on many desktop browsers.
+      void unlockIntroSound(`${label}:auto-unmute`, false);
       return true;
     },
-    [diagnose, markPlaybackStarted, videoFailed]
+    [diagnose, markPlaybackStarted, unlockIntroSound, videoFailed]
   );
 
   const handleRealLoadFailure = useCallback(() => {
@@ -273,38 +319,26 @@ export function CeleventicSoftIntro({
     };
   }, [diagnose, tryMutedAutoplay, videoFailed]);
 
-  const handleEnableSound = useCallback(async () => {
-    const video = videoRef.current;
-    // Keep this in the click stack so Safari unlocks video + invitation audio.
-    onUserGesture?.();
-    if (!video) return;
+  // Silent sound unlock: any real guest gesture enables intro audio (no CTA).
+  useEffect(() => {
+    if (videoFailed || exiting || needsTapToOpen) return;
+    if (soundUnlockedRef.current) return;
 
-    playbackAttemptedRef.current = true;
-    setHtmlMuted(false);
-    prepareIntroVideoElement(video, false);
-    diagnose("enable-sound");
+    const onGesture = () => {
+      if (soundUnlockedRef.current || completed.current || exitingRef.current) return;
+      void unlockIntroSound("gesture-unmute", true);
+    };
 
-    const result = await playIntroWithMutedFallback(video, true);
-    if (result.unmutedRejected) {
-      lastPlayRejection.current =
-        result.unmutedRejected.reason ?? result.unmutedRejected.name;
-    }
+    window.addEventListener("pointerdown", onGesture, { capture: true, passive: true });
+    window.addEventListener("keydown", onGesture, { capture: true });
+    window.addEventListener("touchstart", onGesture, { capture: true, passive: true });
 
-    if (!result.playing) {
-      diagnose("enable-sound-failed");
-      // Keep muted playback if already running; otherwise surface tap gate.
-      if (!playbackStartedRef.current) {
-        needsTapRef.current = true;
-        setNeedsTapToOpen(true);
-      }
-      return;
-    }
-
-    setHtmlMuted(result.muted);
-    prepareIntroVideoElement(video, result.muted);
-    markPlaybackStarted();
-    diagnose(result.muted ? "enable-sound-muted-fallback" : "enable-sound-unmuted");
-  }, [diagnose, markPlaybackStarted, onUserGesture]);
+    return () => {
+      window.removeEventListener("pointerdown", onGesture, true);
+      window.removeEventListener("keydown", onGesture, true);
+      window.removeEventListener("touchstart", onGesture, true);
+    };
+  }, [exiting, needsTapToOpen, unlockIntroSound, videoFailed]);
 
   const handleTapToOpen = useCallback(async () => {
     const video = videoRef.current;
@@ -315,27 +349,30 @@ export function CeleventicSoftIntro({
     }
 
     playbackAttemptedRef.current = true;
-    setHtmlMuted(false);
-    prepareIntroVideoElement(video, false);
     diagnose("tap-to-open");
 
-    const result = await playIntroWithMutedFallback(video, true);
-    if (result.unmutedRejected) {
-      lastPlayRejection.current =
-        result.unmutedRejected.reason ?? result.unmutedRejected.name;
-    }
+    const unmuted = await unlockIntroSound("tap-to-open", false);
+    if (unmuted || playbackStartedRef.current) return;
 
+    // Last resort: muted play so the invite still opens.
+    prepareIntroVideoElement(video, true);
+    setHtmlMuted(true);
+    const result = await playIntroWithMutedFallback(video, false);
     if (!result.playing) {
       diagnose("tap-to-open-failed");
       handleRealLoadFailure();
       return;
     }
-
-    setHtmlMuted(result.muted);
-    prepareIntroVideoElement(video, result.muted);
     markPlaybackStarted();
-    diagnose(result.muted ? "tap-to-open-playing-muted" : "tap-to-open-playing-unmuted");
-  }, [beginExit, diagnose, handleRealLoadFailure, markPlaybackStarted, onUserGesture]);
+    diagnose("tap-to-open-playing-muted");
+  }, [
+    beginExit,
+    diagnose,
+    handleRealLoadFailure,
+    markPlaybackStarted,
+    onUserGesture,
+    unlockIntroSound,
+  ]);
 
   const handleSkip = useCallback(() => {
     // Skip is an explicit gesture — unlock invitation music for the next beat.
@@ -474,19 +511,6 @@ export function CeleventicSoftIntro({
             aria-label="Tap to Open Invitation"
           >
             Tap to Open Invitation
-          </button>
-        </div>
-      )}
-
-      {!needsTapToOpen && playbackStarted && htmlMuted && !exiting && !videoFailed && (
-        <div className={styles.soundGate}>
-          <button
-            type="button"
-            className={styles.tapToOpen}
-            onClick={() => void handleEnableSound()}
-            aria-label="Tap for sound"
-          >
-            Tap for sound
           </button>
         </div>
       )}
