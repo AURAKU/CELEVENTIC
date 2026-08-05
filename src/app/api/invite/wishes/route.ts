@@ -10,6 +10,9 @@ import {
 import { prisma } from "@/lib/prisma";
 import { parsePaginationFromUrl } from "@/lib/pagination";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const createSchema = z.object({
   eventId: z.string().min(1),
   invitationId: z.string().optional(),
@@ -20,28 +23,40 @@ const createSchema = z.object({
   link: z.string().optional(),
 });
 
-async function resolveEventId(params: {
+async function resolveInviteAccess(params: {
   eventId?: string | null;
   link?: string | null;
   invitationId?: string | null;
-}): Promise<{ eventId: string; invitationId?: string } | null> {
+}): Promise<{
+  eventId: string;
+  invitationId?: string;
+  invitationStatus?: string;
+} | null> {
   if (params.link) {
     const invitation = await prisma.invitation.findUnique({
       where: { uniqueLink: params.link },
-      select: { id: true, eventId: true },
+      select: { id: true, eventId: true, status: true },
     });
     if (!invitation) return null;
-    return { eventId: invitation.eventId, invitationId: invitation.id };
+    return {
+      eventId: invitation.eventId,
+      invitationId: invitation.id,
+      invitationStatus: invitation.status,
+    };
   }
 
   if (params.invitationId) {
     const invitation = await prisma.invitation.findUnique({
       where: { id: params.invitationId },
-      select: { id: true, eventId: true },
+      select: { id: true, eventId: true, status: true },
     });
     if (!invitation) return null;
     if (params.eventId && params.eventId !== invitation.eventId) return null;
-    return { eventId: invitation.eventId, invitationId: invitation.id };
+    return {
+      eventId: invitation.eventId,
+      invitationId: invitation.id,
+      invitationStatus: invitation.status,
+    };
   }
 
   if (params.eventId) {
@@ -58,7 +73,7 @@ async function resolveEventId(params: {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const resolved = await resolveEventId({
+  const resolved = await resolveInviteAccess({
     eventId: url.searchParams.get("eventId"),
     link: url.searchParams.get("link"),
     invitationId: url.searchParams.get("invitationId"),
@@ -75,8 +90,8 @@ export async function GET(req: Request) {
     session?.user?.role as UserRole | undefined
   );
 
-  // Public invite pages must resolve a single invitation party. Event-wide
-  // wish walls use /api/public/thank-you/messages or organizer thank-you APIs.
+  // Guests must prove invitation access via link / invitationId.
+  // Organizers may list event-wide without an invitation.
   if (!resolved.invitationId && !canModerate) {
     return NextResponse.json(
       { error: "Invite link or invitationId required" },
@@ -84,29 +99,58 @@ export async function GET(req: Request) {
     );
   }
 
+  if (
+    resolved.invitationId &&
+    !canModerate &&
+    resolved.invitationStatus === "EXPIRED"
+  ) {
+    return NextResponse.json({ error: "Invitation is no longer active" }, { status: 403 });
+  }
+
   const { page, limit } = parsePaginationFromUrl(req.url);
   const data = await guestWishService.listForEvent(
     resolved.eventId,
     page,
-    Math.min(limit, 100),
+    Math.min(limit, 25),
     {
-      invitationId: resolved.invitationId,
+      // Authorized via invitation link above — feed itself is event-wide approved wishes.
       publicOnly: !canModerate,
       includeHidden: canModerate,
     }
   );
 
-  // canEdit mirrors canModerate: only organizers / platform admins may edit.
-  return NextResponse.json({
-    success: true,
-    data: { ...data, canModerate, canEdit: canModerate },
-  });
+  return NextResponse.json(
+    {
+      success: true,
+      data: {
+        ...data,
+        items: data.items.map((item) => ({
+          ...item,
+          createdAt:
+            item.createdAt instanceof Date
+              ? item.createdAt.toISOString()
+              : item.createdAt,
+          editedAt:
+            item.editedAt instanceof Date
+              ? item.editedAt.toISOString()
+              : item.editedAt ?? null,
+        })),
+        canModerate,
+        canEdit: canModerate,
+      },
+    },
+    {
+      headers: {
+        "Cache-Control": "private, no-store, max-age=0",
+      },
+    }
+  );
 }
 
 export async function POST(req: Request) {
   try {
     const body = createSchema.parse(await req.json());
-    const resolved = await resolveEventId({
+    const resolved = await resolveInviteAccess({
       eventId: body.eventId,
       link: body.link,
       invitationId: body.invitationId,
@@ -115,6 +159,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid event or invitation" }, { status: 400 });
     }
 
+    if (resolved.invitationStatus === "EXPIRED") {
+      return NextResponse.json({ error: "Invitation is no longer active" }, { status: 403 });
+    }
+
+    // Attribute ownership to the submitting invitation; public reads stay event-wide.
     const wish = await guestWishService.create({
       eventId: resolved.eventId,
       invitationId: body.invitationId ?? resolved.invitationId,
@@ -123,7 +172,13 @@ export async function POST(req: Request) {
       message: body.message,
     });
 
-    return NextResponse.json({ success: true, data: wish }, { status: 201 });
+    return NextResponse.json(
+      { success: true, data: wish },
+      {
+        status: 201,
+        headers: { "Cache-Control": "private, no-store, max-age=0" },
+      }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });

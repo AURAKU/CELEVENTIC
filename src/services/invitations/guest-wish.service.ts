@@ -61,7 +61,6 @@ export type GuestWishPublic = {
   isAnonymous: boolean;
   editedAt: Date | null;
   createdAt: Date;
-  guestId: string | null;
 };
 
 const publicSelect = {
@@ -77,7 +76,14 @@ const publicSelect = {
   isAnonymous: true,
   editedAt: true,
   createdAt: true,
+} as const;
+
+/** Moderator/admin select may include ownership for audit — never sent to public guests. */
+const moderatorSelect = {
+  ...publicSelect,
   guestId: true,
+  invitationId: true,
+  isVisible: true,
 } as const;
 
 /** True when the signed-in user may moderate (edit/delete-any) wishes for this event. */
@@ -137,7 +143,13 @@ export class GuestWishService {
       source?: GuestWishSource | "ALL";
       query?: string;
       publicOnly?: boolean;
-      /** When set, never return wishes belonging to another invitation party. */
+      /**
+       * DEPRECATED for public guest feeds.
+       * Approved public wishes are event-wide. Do not pass invitationId when
+       * `publicOnly` is true — ownership is for write/moderation only.
+       * When `publicOnly` is false (organizer moderation), invitationId may
+       * optionally narrow the admin list; prefer omitting it for full event view.
+       */
       invitationId?: string | null;
     }
   ) {
@@ -147,9 +159,13 @@ export class GuestWishService {
     );
 
     const where: Record<string, unknown> = { eventId };
-    if (options?.invitationId) {
+
+    // Public guest wish walls are event-scoped. Filtering by invitationId was the
+    // production defect that hid Party A's approved wishes from Party B.
+    if (options?.invitationId && !options.publicOnly) {
       where.invitationId = options.invitationId;
     }
+
     if (options?.publicOnly) {
       where.isVisible = true;
       where.status = "APPROVED";
@@ -175,18 +191,22 @@ export class GuestWishService {
       ];
     }
 
+    const select = options?.publicOnly ? publicSelect : moderatorSelect;
+
     const [items, total] = await Promise.all([
       prisma.invitationGuestWish.findMany({
         where,
         orderBy: [{ isPinned: "desc" }, { isFeatured: "desc" }, { createdAt: "desc" }],
         skip,
         take,
-        select: publicSelect,
+        select,
       }),
       prisma.invitationGuestWish.count({ where }),
     ]);
 
-    const mapped = options?.publicOnly ? items.map((item) => toPublic(item as GuestWishPublic)) : items;
+    const mapped = options?.publicOnly
+      ? items.map((item) => toPublic(item as GuestWishPublic))
+      : items;
     return paginatedResult(mapped, total, p, take);
   }
 
@@ -358,6 +378,7 @@ export class GuestWishService {
       select: {
         id: true,
         eventId: true,
+        invitationId: true,
         authorName: true,
         message: true,
         title: true,

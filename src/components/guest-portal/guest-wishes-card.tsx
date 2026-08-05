@@ -100,17 +100,32 @@ export function GuestWishesCard({
         if (invitationId) params.set("invitationId", invitationId);
         const res = await fetch(`/api/invite/wishes?${params.toString()}`, {
           credentials: "same-origin",
+          cache: "no-store",
         });
         const data = await res.json();
         if (res.ok && data.success) {
           const items = (data.data.items ?? []) as GuestWishItem[];
-          setWishes((prev) => (append ? [...prev, ...items] : items));
+          setWishes((prev) => {
+            if (!append) return items;
+            const seen = new Set(prev.map((w) => w.id));
+            const merged = [...prev];
+            for (const item of items) {
+              if (!seen.has(item.id)) {
+                seen.add(item.id);
+                merged.push(item);
+              }
+            }
+            return merged;
+          });
           setTotal(data.data.total ?? 0);
           setHasMore(Boolean(data.data.hasMore ?? pageNum < (data.data.pages ?? 1)));
           setPage(pageNum);
           setCanModerate(Boolean(data.data.canModerate));
         } else if (!append) {
           setCanModerate(false);
+          setWishes([]);
+          setTotal(0);
+          setHasMore(false);
         }
       } catch {
         if (!append) setCanModerate(false);
@@ -317,7 +332,7 @@ export function GuestWishesCard({
         Leave a blessing for the hosts.
         {canModerate
           ? " As organizer or admin, you can edit or remove any wish."
-          : " Shared wishes stay on this invitation for everyone to read."}
+          : " Approved wishes are shared with every guest invited to this celebration."}
       </p>
 
       <form onSubmit={(e) => void submit(e)} className="space-y-3 mb-6">
