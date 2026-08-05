@@ -84,6 +84,58 @@ export async function isProviderEnabled(provider: string): Promise<boolean> {
   return !!(creds.secret || envConfigured(provider));
 }
 
+/**
+ * Distinguish integration readiness without exposing secrets.
+ * - healthy: enabled and credentials present
+ * - disabled: explicitly off (or no DB/env activation)
+ * - missing_credentials: marked enabled but no API key
+ * - failing: reserved for probe failures (caller may override after a live test)
+ */
+export type ProviderHealthState =
+  | "healthy"
+  | "disabled"
+  | "missing_credentials"
+  | "failing";
+
+export function classifyProviderHealth(
+  creds: Pick<ProviderCredentials, "enabled" | "secret" | "publicKey" | "config" | "webhookUrl">,
+  provider: string
+): { state: ProviderHealthState; message: string } {
+  if (!creds.enabled) {
+    return {
+      state: "disabled",
+      message: `${provider} is disabled. Email notifications unavailable until configured in Admin → Integrations.`,
+    };
+  }
+
+  const hasCreds = provider.startsWith("CUSTOM_")
+    ? !!(creds.secret || creds.publicKey || creds.config.endpoint || creds.webhookUrl)
+    : !!creds.secret;
+
+  if (!hasCreds) {
+    return {
+      state: "missing_credentials",
+      message: `${provider} is enabled but missing credentials. Add an API key in Admin → Integrations.`,
+    };
+  }
+
+  return {
+    state: "healthy",
+    message: `${provider} is configured and ready.`,
+  };
+}
+
+export async function getProviderHealth(
+  provider: string
+): Promise<{ state: ProviderHealthState; message: string; enabled: boolean }> {
+  const creds = await getProviderCredentials(provider);
+  const classified = classifyProviderHealth(creds, provider);
+  return {
+    ...classified,
+    enabled: classified.state === "healthy",
+  };
+}
+
 export async function getProviderSecret(provider: string): Promise<string | null> {
   const creds = await getProviderCredentials(provider);
   if (!creds.enabled) return null;

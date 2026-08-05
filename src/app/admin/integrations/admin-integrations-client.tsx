@@ -464,6 +464,10 @@ export function AdminIntegrationsClient() {
               <p className="text-xs text-slate-500">
                 {defaultsStatus[field.key]?.enabled ? (
                   <span className="text-emerald-700">Connected & enabled</span>
+                ) : field.key === "email" ? (
+                  <span className="text-amber-700">
+                    Email notifications unavailable until Resend is configured.
+                  </span>
                 ) : (
                   <span className="text-amber-700">Not enabled, configure below</span>
                 )}

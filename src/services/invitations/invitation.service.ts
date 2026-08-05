@@ -298,7 +298,8 @@ export class InvitationService {
       response,
       message,
     }).catch((error) => {
-      console.error("[rsvp] organizer notify failed", { guestId, response, error });
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn("[rsvp] organizer notify incomplete", { guestId, response, message });
     });
 
     return rsvp;
@@ -363,26 +364,63 @@ export class InvitationService {
       )
     );
 
-    await Promise.all(
-      emailRecipients.map((to) =>
-        emailTemplateService.sendLocalized("rsvp_organizer", to, locale, {
-          guest: input.guestName,
-          response: decision,
-          event: input.eventTitle,
-          guestsUrl: `${getAppUrlFromEnv()}${guestsLink}`,
-          seatingUrl: `${getAppUrlFromEnv()}${seatingLink}`,
-        })
-      )
+    const { isProviderEnabled } = await import("@/lib/integrations/integration-runtime");
+    const { getPlatformDefaultProviders } = await import(
+      "@/lib/integrations/platform-provider-settings"
     );
+    const { CommunicationProviderError } = await import(
+      "@/services/communications/communication.service"
+    );
+    const defaults = await getPlatformDefaultProviders();
+    const emailProvider = defaults.email || "RESEND";
+    const emailEnabled = await isProviderEnabled(emailProvider);
 
-    if (input.guestEmail?.trim()) {
+    if (!emailEnabled) {
+      console.warn(
+        `[rsvp] RSVP saved; organizer email skipped because ${emailProvider} is disabled.`
+      );
+    } else if (emailRecipients.length > 0) {
+      await Promise.all(
+        emailRecipients.map((to) =>
+          emailTemplateService
+            .sendLocalized("rsvp_organizer", to, locale, {
+              guest: input.guestName,
+              response: decision,
+              event: input.eventTitle,
+              guestsUrl: `${getAppUrlFromEnv()}${guestsLink}`,
+              seatingUrl: `${getAppUrlFromEnv()}${seatingLink}`,
+            })
+            .catch((err) => {
+              if (err instanceof CommunicationProviderError) {
+                console.warn("[rsvp] organizer email skipped:", err.message);
+                return;
+              }
+              console.warn(
+                "[rsvp] organizer email failed:",
+                err instanceof Error ? err.message : err
+              );
+            })
+        )
+      );
+    }
+
+    if (emailEnabled && input.guestEmail?.trim()) {
       await emailTemplateService
         .sendLocalized("rsvp_confirmation", input.guestEmail.trim(), locale, {
           name: input.guestName,
           response: decision,
           event: input.eventTitle,
         })
-        .catch(() => undefined);
+        .catch((err) => {
+          if (err instanceof CommunicationProviderError) {
+            console.warn("[rsvp] guest confirmation email skipped:", err.message);
+            return;
+          }
+          console.warn(
+            "[rsvp] guest confirmation email failed:",
+            err instanceof Error ? err.message : err
+          );
+        });
     }
 
     await createAuditLog({
@@ -396,6 +434,8 @@ export class InvitationService {
         response: input.response,
         guestName: input.guestName,
         notifiedUserIds: recipientIds,
+        emailProvider,
+        emailSkipped: !emailEnabled,
       },
     });
   }
