@@ -376,9 +376,11 @@ export class InvitationService {
     const emailEnabled = await isProviderEnabled(emailProvider);
 
     if (!emailEnabled) {
-      console.warn(
-        `[rsvp] RSVP saved; organizer email skipped because ${emailProvider} is disabled.`
-      );
+      console.warn("[rsvp] organizer notification skipped", {
+        reason: "RESEND_DISABLED",
+        guestId: input.guestId,
+        response: input.response,
+      });
     } else if (emailRecipients.length > 0) {
       await Promise.all(
         emailRecipients.map((to) =>
@@ -392,13 +394,19 @@ export class InvitationService {
             })
             .catch((err) => {
               if (err instanceof CommunicationProviderError) {
-                console.warn("[rsvp] organizer email skipped:", err.message);
+                console.warn("[rsvp] organizer notification skipped", {
+                  reason: "PROVIDER_ERROR",
+                  guestId: input.guestId,
+                  response: input.response,
+                  message: err.message,
+                });
                 return;
               }
-              console.warn(
-                "[rsvp] organizer email failed:",
-                err instanceof Error ? err.message : err
-              );
+              console.error("[rsvp] organizer email failed", {
+                guestId: input.guestId,
+                response: input.response,
+                message: err instanceof Error ? err.message : String(err),
+              });
             })
         )
       );

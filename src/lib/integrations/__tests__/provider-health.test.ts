@@ -58,11 +58,24 @@ describe("RSVP organizer email graceful degradation contract", () => {
     const rsvpPersisted = true;
     const notification = emailEnabled
       ? { status: "sent" as const }
-      : { status: "skipped" as const, reason: "RESEND_DISABLED" };
+      : {
+          status: "skipped" as const,
+          reason: "RESEND_DISABLED" as const,
+          guestId: "guest_1",
+          response: "ACCEPTED" as const,
+        };
 
     assert.equal(rsvpPersisted, true);
     assert.equal(notification.status, "skipped");
     assert.equal(notification.reason, "RESEND_DISABLED");
+    assert.deepEqual(
+      {
+        reason: notification.reason,
+        guestId: notification.guestId,
+        response: notification.response,
+      },
+      { reason: "RESEND_DISABLED", guestId: "guest_1", response: "ACCEPTED" }
+    );
   });
 
   it("enabled provider still attempts send path", () => {
