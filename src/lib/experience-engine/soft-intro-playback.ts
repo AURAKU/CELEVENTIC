@@ -6,8 +6,8 @@
 import { safeSessionStorage } from "@/lib/browser/safe-storage";
 
 /** Canonical intro assets — cache-bust when playback policy / component changes. */
-export const INTRO_VIDEO_SRC = "/brand/celeventic-invitation-intro.mp4?v=20260802c";
-export const INTRO_POSTER_SRC = "/brand/celeventic-invitation-intro-poster.jpg?v=20260802c";
+export const INTRO_VIDEO_SRC = "/brand/celeventic-invitation-intro.mp4?v=20260805a";
+export const INTRO_POSTER_SRC = "/brand/celeventic-invitation-intro-poster.jpg?v=20260805a";
 
 /** Absolute ceiling — invite must reveal by this time if the clip never ends cleanly. */
 export const INTRO_UNKNOWN_DURATION_FALLBACK_MS = 14_000;
@@ -240,7 +240,7 @@ export function logIntroErrorDiagnostics(diagnostics: IntroVideoDiagnostics): vo
   });
 }
 
-/** Ensure iOS Safari treats the element as inline + muted for autoplay policy. */
+/** Ensure iOS Safari treats the element as inline; mute only when explicitly requested. */
 export function prepareIntroVideoElement(video: HTMLVideoElement, muted = true): void {
   video.defaultMuted = muted;
   video.muted = muted;
@@ -256,4 +256,120 @@ export function prepareIntroVideoElement(video: HTMLVideoElement, muted = true):
   } catch {
     /* older WebKit */
   }
+}
+
+/**
+ * Live invitation path: prepare unmuted playback from frame zero inside a
+ * synchronous user-gesture handler. Does NOT call play() — caller must.
+ */
+export function prepareIntroVideoForGesturePlayback(
+  video: Pick<
+    HTMLVideoElement,
+    | "pause"
+    | "currentTime"
+    | "defaultMuted"
+    | "muted"
+    | "volume"
+    | "playsInline"
+    | "setAttribute"
+    | "removeAttribute"
+    | "preload"
+    | "controls"
+  > &
+    Partial<Pick<HTMLVideoElement, "disablePictureInPicture">>
+): {
+  currentTime: number;
+  muted: boolean;
+  defaultMuted: boolean;
+  volume: number;
+} {
+  try {
+    video.pause();
+  } catch {
+    /* ignore */
+  }
+  try {
+    video.currentTime = 0;
+  } catch {
+    /* seek may fail until metadata — still attempt play from start */
+  }
+  video.defaultMuted = false;
+  video.muted = false;
+  video.volume = 1;
+  video.playsInline = true;
+  video.setAttribute("playsinline", "");
+  video.setAttribute("webkit-playsinline", "");
+  video.removeAttribute("muted");
+  video.preload = "auto";
+  video.controls = false;
+  try {
+    if ("disablePictureInPicture" in video) {
+      video.disablePictureInPicture = true;
+    }
+  } catch {
+    /* older WebKit */
+  }
+  return {
+    currentTime: video.currentTime,
+    muted: video.muted,
+    defaultMuted: video.defaultMuted,
+    volume: video.volume,
+  };
+}
+
+/**
+ * Live invitation: one gesture authorizes playback + AAC audio.
+ * Never falls back to muted autoplay — rejected play keeps the opening gate.
+ */
+export async function playIntroFromUserGesture(
+  video: HTMLVideoElement
+): Promise<{
+  playing: boolean;
+  muted: boolean;
+  volume: number;
+  currentTime: number;
+  reason?: string;
+  name?: string;
+}> {
+  const prepared = prepareIntroVideoForGesturePlayback(video);
+  if (prepared.muted || prepared.defaultMuted || prepared.volume !== 1) {
+    // Force again — some browsers flip muted on attribute sync.
+    video.defaultMuted = false;
+    video.muted = false;
+    video.volume = 1;
+  }
+
+  const result = await attemptVideoPlay(video, { muted: false });
+  if (!result.ok) {
+    try {
+      video.pause();
+    } catch {
+      /* ignore */
+    }
+    // Keep unmuted intent — do not silently switch to muted playback.
+    video.defaultMuted = false;
+    video.muted = false;
+    return {
+      playing: false,
+      muted: video.muted,
+      volume: video.volume,
+      currentTime: video.currentTime,
+      reason: result.reason,
+      name: result.name,
+    };
+  }
+
+  // Guard against browsers that force mute after play resolves.
+  if (video.muted || video.defaultMuted) {
+    video.defaultMuted = false;
+    video.muted = false;
+    video.volume = 1;
+  }
+
+  return {
+    playing: true,
+    muted: video.muted,
+    volume: video.volume,
+    currentTime: video.currentTime,
+  };
 }

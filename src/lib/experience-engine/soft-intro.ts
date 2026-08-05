@@ -34,8 +34,8 @@ export const SOFT_INTRO_FALLBACK_MS = INTRO_UNKNOWN_DURATION_FALLBACK_MS;
 export const SOFT_INTRO_RETURN_HOLD_MS = 12_500;
 export const SOFT_INTRO_RETURN_REDUCED_MOTION_MS = 400;
 
-/** Optional shared begin label — tap gate owns the visible CTA. Soft intro is silent skip. */
-export const SOFT_INTRO_CTA = "Begin";
+/** Optional shared begin label — live soft intro uses “Open Invitation”. */
+export const SOFT_INTRO_CTA = "Open Invitation";
 
 export type InvitePipelinePhase =
   | "soft-intro"
