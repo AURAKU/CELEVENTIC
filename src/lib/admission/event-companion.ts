@@ -122,3 +122,48 @@ export function shouldOpenEventCompanionOnly(admission: {
     viewerAdmitted: admission.viewerAdmitted,
   });
 }
+
+export type PartyAdmissionSurface = {
+  admittedCount: number;
+  allowance: number;
+  state?: string | null;
+  companionHref: string;
+};
+
+/**
+ * Build the partial-admission Event Access surface for the invitation page.
+ *
+ * Auto-handoff (silent jump to companion) stays off when the guest explicitly
+ * reopened the ceremony (`preferInviteCeremony` / `?view=invite`).
+ * The manual “View Event Access” CTA must still work in that mode whenever
+ * at least one party member has been admitted.
+ */
+export function resolvePartyAdmissionSurface(input: {
+  portalEnabled: boolean;
+  preferInviteCeremony: boolean;
+  eventAccessHref: string | null;
+  admittedCount: number;
+  allowance: number;
+  state?: string | null;
+}): {
+  companionHandoffHref: string | null;
+  partyAdmission: PartyAdmissionSurface | null;
+} {
+  const eventAccessHref = input.eventAccessHref?.trim() || null;
+  const companionHandoffHref =
+    input.portalEnabled && eventAccessHref && !input.preferInviteCeremony
+      ? eventAccessHref
+      : null;
+  const partyAdmission =
+    input.portalEnabled &&
+    eventAccessHref &&
+    input.admittedCount > 0
+      ? {
+          admittedCount: input.admittedCount,
+          allowance: input.allowance,
+          state: input.state ?? null,
+          companionHref: eventAccessHref,
+        }
+      : null;
+  return { companionHandoffHref, partyAdmission };
+}

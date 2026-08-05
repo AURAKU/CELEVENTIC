@@ -33,10 +33,13 @@ export async function POST(req: Request) {
       invitationId: true,
       invitation: {
         select: {
+          name: true,
           guests: {
+            where: { archivedAt: null },
             select: {
               id: true,
               name: true,
+              invitationId: true,
               seatingAssignments: {
                 select: {
                   tableNumber: true,
@@ -56,7 +59,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "We could not match that pass code for this event" }, { status: 404 });
   }
 
-  const primaryGuest = pass.invitation.guests[0];
+  // Prefer the invitation party label — never a foreign GuestPass.displayName
+  // that may have been polluted by a cross-party mislink.
+  const partyGuests = pass.invitation.guests.filter(
+    (g) => !g.invitationId || g.invitationId === pass.invitationId
+  );
+  const primaryGuest = partyGuests[0];
   const assignments = primaryGuest?.seatingAssignments ?? [];
   const reception = pickSeatingAssignment(assignments, "RECEPTION");
   const ceremony = pickSeatingAssignment(assignments, "CEREMONY");
@@ -64,7 +72,11 @@ export async function POST(req: Request) {
   return NextResponse.json({
     success: true,
     data: {
-      guestName: pass.displayName || primaryGuest?.name || "Guest",
+      guestName:
+        pass.invitation.name?.trim() ||
+        primaryGuest?.name?.trim() ||
+        pass.displayName?.trim() ||
+        "Guest",
       eventTitle: link.event.title,
       tableNumber: reception?.tableNumber ?? null,
       seatLabel: reception?.seatLabel ?? null,

@@ -26,6 +26,7 @@ import { getInvitationPassView } from "@/services/admission/guest-pass.service";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import {
   buildEventCompanionHref,
+  resolvePartyAdmissionSurface,
   shouldOpenEventCompanionOnly,
   wantsInviteCeremonyView,
 } from "@/lib/admission/event-companion";
@@ -340,26 +341,23 @@ export default async function InvitePage({
   let entryPass: GuestEntryPassData | null = null;
   // Never expose a companion CTA before the gate admits this invite. Unlocked
   // guests are redirected above unless they explicitly reopen the ceremony
-  // (?view=invite). While viewing the ceremony, do not hand off back to companion
-  // on partial admission — PartyAdmissionSwitch offers Event Access instead.
+  // (?view=invite). Auto-handoff stays off in ceremony view; Event Access CTA
+  // remains available whenever anyone on this invitation has been admitted.
   const companionUrl: string | null = null;
-  const companionHandoffHref =
-    portalEnabled && !preferInviteCeremony
-      ? buildEventCompanionHref(link, personalizedGuest?.qrToken ?? guestToken ?? null)
-      : null;
+  const eventAccessHref = portalEnabled
+    ? buildEventCompanionHref(link, personalizedGuest?.qrToken ?? guestToken ?? null)
+    : null;
+  const { companionHandoffHref, partyAdmission: partyAdmissionSurface } =
+    resolvePartyAdmissionSurface({
+      portalEnabled,
+      preferInviteCeremony,
+      eventAccessHref,
+      admittedCount: admissionSummary?.admittedCount ?? 0,
+      allowance: admissionSummary?.allowance ?? 1,
+      state: admissionSummary?.state ?? null,
+    });
   const watchAdmissionHandoff = Boolean(companionHandoffHref);
-  const partyAdmission =
-    portalEnabled &&
-    admissionSummary &&
-    admissionSummary.admittedCount > 0 &&
-    companionHandoffHref
-      ? {
-          admittedCount: admissionSummary.admittedCount,
-          allowance: admissionSummary.allowance,
-          state: admissionSummary.state,
-          companionHref: companionHandoffHref,
-        }
-      : null;
+  const partyAdmission = partyAdmissionSurface;
   if (personalizedGuest) {
     try {
       const passView = await getInvitationPassView(invitation.id);

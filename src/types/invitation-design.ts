@@ -169,4 +169,13 @@ export interface InvitationRenderProps {
    * controls even when the place-card feature is off.
    */
   partyAllowance?: number;
+  /**
+   * Partial admission → Event Access CTA above the entry-pass QR.
+   */
+  partyAdmission?: {
+    admittedCount: number;
+    allowance: number;
+    state?: string | null;
+    companionHref: string;
+  } | null;
 }

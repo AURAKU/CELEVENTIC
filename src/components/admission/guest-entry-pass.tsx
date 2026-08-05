@@ -206,12 +206,24 @@ export function GuestEntryPass({
         </div>
 
         {instructions && (
-          <>
-            <div className={cn("mx-6 mt-5 h-px", theme.divider)} />
-            <p className={cn("px-6 py-4 text-center text-xs leading-relaxed", theme.body)}>
+          <div className={cn("mt-5 px-2", theme.instructionsPlate)}>
+            <p
+              className={cn(
+                "px-4 pt-3 text-center text-[10px] font-bold uppercase tracking-[0.22em]",
+                theme.instructionsEyebrow
+              )}
+            >
+              Gate note
+            </p>
+            <p
+              className={cn(
+                "px-4 pb-3.5 pt-1.5 text-center text-sm leading-relaxed",
+                theme.instructionsText
+              )}
+            >
               {instructions}
             </p>
-          </>
+          </div>
         )}
 
         {isUsable && (

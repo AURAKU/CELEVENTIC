@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatAdmissionCode } from "@/lib/admission/pass-code";
 import { QR_PASS_DISPLAY_MIN_PX, QR_PASS_DISPLAY_SOURCE_PX } from "@/lib/qr/qr-constants";
 import { BRAND_LOGO_MARK } from "@/lib/brand/constants";
@@ -38,11 +38,16 @@ export function VendorPassCard({
   status?: string;
 }) {
   const code = useMemo(() => formatAdmissionCode(admissionCode), [admissionCode]);
+  const [codeRevealed, setCodeRevealed] = useState(false);
   const remaining = Math.max(0, teamCapacity - (admittedCount ?? 0));
   const zones = accessZones.length ? accessZones.join(" · ") : "General Event Area";
   const passKind =
     passMode === "INDIVIDUAL" ? "Individual Pass" : `Team Pass · ${teamCapacity}`;
   const typeLabel = passType.replace(/_/g, " ");
+  const capacityLine =
+    passMode === "INDIVIDUAL"
+      ? "1 person authorized"
+      : `${admittedCount ?? 0} admitted · ${remaining} remaining of ${teamCapacity}`;
 
   const qrSrc = useMemo(() => {
     const params = new URLSearchParams({
@@ -76,7 +81,7 @@ export function VendorPassCard({
               className="h-10 w-10 shrink-0 rounded-xl bg-white/95 object-contain p-1 shadow-sm"
             />
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/80">
+              <p className="text-[15px] font-bold uppercase tracking-[0.22em] text-white/80">
                 Celeventic
               </p>
               <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-gold-300">
@@ -134,21 +139,50 @@ export function VendorPassCard({
           <p className="mt-1 text-sm font-semibold text-brand-700 sm:text-base">
             ({vendorName})
           </p>
+          <p className="mt-2 text-xs text-slate-500">{capacityLine}</p>
         </div>
+      </div>
 
-        <div className="mt-5 w-full max-w-sm rounded-2xl border border-brand-200/70 bg-white px-4 py-3.5 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-brand-600">
-            Admission code
-          </p>
-          <p className="mt-1 font-mono text-3xl font-bold tabular-nums tracking-[0.28em] text-slate-900 sm:text-4xl">
-            {code}
-          </p>
-          <p className="mt-1.5 text-xs text-slate-500">
-            {passMode === "INDIVIDUAL"
-              ? "1 person authorized"
-              : `${admittedCount ?? 0} admitted · ${remaining} remaining of ${teamCapacity}`}
-          </p>
-        </div>
+      {/* Security wristband — code lives here (not the main face) so it isn’t shoulder-readable */}
+      <div
+        data-vendor-security-band
+        className="relative overflow-hidden border-y border-brand-900/40 bg-gradient-to-r from-brand-900 via-brand-700 to-brand-900 px-4 py-3 print:py-2.5"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-25"
+          aria-hidden
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(-55deg, transparent, transparent 10px, rgba(212,175,55,0.35) 10px, rgba(212,175,55,0.35) 12px)",
+          }}
+        />
+        <button
+          type="button"
+          className="relative flex w-full items-center justify-between gap-3 text-left print:pointer-events-none"
+          onClick={() => setCodeRevealed((v) => !v)}
+          aria-pressed={codeRevealed}
+          aria-label={
+            codeRevealed
+              ? `Admission code ${code}. Tap to hide.`
+              : "Hold privately — tap to reveal admission code"
+          }
+        >
+          <span className="min-w-0">
+            <span className="block text-[9px] font-semibold uppercase tracking-[0.28em] text-gold-300/90">
+              Security band · admission
+            </span>
+            <span
+              className={`mt-0.5 block font-mono text-sm font-bold tabular-nums tracking-[0.22em] text-white transition-[filter] print:blur-none print:text-white ${
+                codeRevealed ? "blur-none" : "select-none blur-[5px]"
+              }`}
+            >
+              {code}
+            </span>
+          </span>
+          <span className="shrink-0 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-white/80 print:hidden">
+            {codeRevealed ? "Hide" : "Reveal"}
+          </span>
+        </button>
       </div>
 
       <footer className="space-y-1.5 border-t border-brand-100 bg-white/80 px-5 py-4 text-sm text-slate-600">

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { generateBrandedQrPng, generateBrandedQrSvg } from "@/lib/qr/branded-qr-generator";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import {
+  CELEVENTIC_OFFICIAL_LOGO,
   QR_DEFAULT_SIZE,
   QR_EXPORT_SIZES,
   type QrDisplayMode,
@@ -121,10 +122,9 @@ export async function GET(req: Request) {
   }
 
   try {
-    const [centerImage, logoSize] = await Promise.all([
-      qrBrandingService.resolveCenterImageUrl(pass.eventId),
-      qrBrandingService.resolveLogoSize(pass.eventId),
-    ]);
+    // Vendor/team passes always use the Celeventic logo — never event QR center art.
+    const centerImage = CELEVENTIC_OFFICIAL_LOGO;
+    const logoSize = await qrBrandingService.resolveLogoSize(pass.eventId);
     const safeVendor = pass.vendorName.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "vendor";
     const filenameBase = `celeventic-vendor-pass-${safeVendor}-${pass.admissionCode}`;
 
@@ -143,7 +143,6 @@ export async function GET(req: Request) {
         validUntil: pass.validUntil?.toISOString() ?? null,
         contactName: pass.contactName,
         status: pass.status,
-        centerImageUrl: centerImage,
         logoSize,
       });
       return new NextResponse(new Uint8Array(png), {

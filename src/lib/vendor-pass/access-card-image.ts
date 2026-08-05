@@ -29,8 +29,6 @@ export type VendorAccessCardImageInput = {
   validUntil?: string | null;
   contactName?: string | null;
   status?: string | null;
-  /** Event/admin center logo URL or /brand path. */
-  centerImageUrl?: string | null;
   logoSize?: "subtle" | "balanced" | "bold";
 };
 
@@ -73,7 +71,7 @@ export async function generateVendorAccessCardPng(
   const [qrPng, brandMark] = await Promise.all([
     generateBrandedQrPng(
       input.token,
-      input.centerImageUrl ?? CELEVENTIC_OFFICIAL_LOGO,
+      CELEVENTIC_OFFICIAL_LOGO,
       1024,
       "brand",
       input.logoSize ?? "balanced"
@@ -134,13 +132,20 @@ export async function generateVendorAccessCardPng(
   <text x="540" y="1360" text-anchor="middle" fill="${teal}" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="20" font-weight="700" letter-spacing="4">ACCESS</text>
   <text x="540" y="1405" text-anchor="middle" fill="${navy}" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="28" font-weight="600">${escapeXml(accessLine)}</text>
   <text x="540" y="1450" text-anchor="middle" fill="${teal}" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="26" font-weight="600">${escapeXml(vendorBracket)}</text>
+  <text x="540" y="1490" text-anchor="middle" fill="#64748b" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="18">${escapeXml(
+    input.passMode === "INDIVIDUAL"
+      ? "1 person authorized"
+      : `${input.admittedCount ?? 0} admitted · ${Math.max(0, input.teamCapacity - (input.admittedCount ?? 0))} remaining of ${input.teamCapacity}`
+  )}</text>
 
-  <rect x="180" y="1485" width="720" height="100" rx="24" fill="#ffffff" stroke="${teal}" stroke-width="2" stroke-opacity="0.35"/>
-  <text x="540" y="1520" text-anchor="middle" fill="${teal}" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="16" font-weight="600" letter-spacing="3">ADMISSION CODE</text>
-  <text x="540" y="1565" text-anchor="middle" fill="${navy}" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="40" font-weight="700" letter-spacing="8">${escapeXml(code)}</text>
+  <!-- Security wristband: admission code kept off the main face -->
+  <rect x="0" y="1525" width="${CARD_W}" height="88" fill="#064842"/>
+  <rect x="0" y="1525" width="${CARD_W}" height="88" fill="url(#hdr)" opacity="0.85"/>
+  <text x="72" y="1560" fill="${gold}" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="14" font-weight="600" letter-spacing="3">SECURITY BAND · ADMISSION</text>
+  <text x="72" y="1595" fill="#ffffff" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="28" font-weight="700" letter-spacing="6">${escapeXml(code)}</text>
 
-  ${validLine ? `<text x="540" y="1625" text-anchor="middle" fill="#64748b" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="18">${escapeXml(validLine)}</text>` : ""}
-  ${contactLine ? `<text x="540" y="${validLine ? 1658 : 1625}" text-anchor="middle" fill="#64748b" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="18">${escapeXml(contactLine)}</text>` : ""}
+  ${validLine ? `<text x="540" y="1655" text-anchor="middle" fill="#64748b" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="18">${escapeXml(validLine)}</text>` : ""}
+  ${contactLine ? `<text x="540" y="${validLine ? 1688 : 1655}" text-anchor="middle" fill="#64748b" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="18">${escapeXml(contactLine)}</text>` : ""}
   ${statusLine ? `<text x="980" y="80" text-anchor="end" fill="${gold}" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="2">${escapeXml(statusLine)}</text>` : ""}
 
   <text x="540" y="1698" text-anchor="middle" fill="#94a3b8" font-family="Poppins,Helvetica,Arial,sans-serif" font-size="14" letter-spacing="1">celeventic.com · Celebrate · Event · Ticket</text>

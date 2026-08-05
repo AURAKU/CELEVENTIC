@@ -181,7 +181,9 @@ export function ForeverAfarisWeddingOpening({
     // Soft release pulse, not a crack.
     vibrate([8, 28, 14], haptics);
     if (prefersReduced) {
-      finish();
+      // Reduced motion still reaches the golden gate — never skip straight
+      // into the invitation body on open/refresh.
+      setStage("gate");
       return;
     }
     setStage("unsealing");

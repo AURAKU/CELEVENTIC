@@ -25,6 +25,7 @@ export function PartyAdmissionSwitch({
   initialAllowance,
   initialState,
   mode,
+  placement = "fixed",
   pollMs = 12_000,
 }: {
   link: string;
@@ -35,6 +36,11 @@ export function PartyAdmissionSwitch({
   initialState?: string | null;
   /** Where this banner is rendered. */
   mode: "invitation" | "event-access";
+  /**
+   * `fixed` — bottom safe-area banner (ceremony / mid-scroll).
+   * `inline` — above the entry-pass QR, just below Replay Opening.
+   */
+  placement?: "fixed" | "inline";
   pollMs?: number;
 }) {
   const [admittedCount, setAdmittedCount] = useState(initialAdmittedCount);
@@ -101,41 +107,60 @@ export function PartyAdmissionSwitch({
 
   const progress = formatPartyAdmissionProgress(admittedCount, allowance);
   const showSwitch = admittedCount > 0 && Boolean(companionHref);
+  const isInline = placement === "inline";
+
+  const card = (
+    <div
+      className={
+        isInline
+          ? "mx-auto flex w-full max-w-lg flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white/95 px-4 py-3 shadow-[0_8px_28px_-18px_rgba(28,25,23,0.35)]"
+          : "mx-auto flex max-w-lg flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white/95 px-4 py-3 shadow-[0_12px_40px_-20px_rgba(28,25,23,0.45)] backdrop-blur-md"
+      }
+    >
+      <p className="text-sm font-semibold tracking-tight text-stone-800 transition-opacity duration-300">
+        {progress.headline}
+      </p>
+      {progress.detail ? (
+        <p className="text-xs font-medium text-stone-600">{progress.detail}</p>
+      ) : null}
+      {showSwitch ? (
+        <div className="flex flex-wrap gap-2 pt-0.5">
+          {mode === "invitation" ? (
+            <Link
+              href={companionHref}
+              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-stone-900 px-4 text-sm font-semibold text-white touch-manipulation"
+              aria-label="View event access for admitted guests"
+            >
+              View Event Access
+            </Link>
+          ) : inviteHref ? (
+            <Link
+              href={inviteHref}
+              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-900 touch-manipulation"
+              aria-label="Back to invitation"
+            >
+              Back to Invitation
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+
+  if (isInline) {
+    return (
+      <aside aria-live="polite" className="px-4 pb-2 pt-1">
+        {card}
+      </aside>
+    );
+  }
 
   return (
     <aside
       aria-live="polite"
       className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2"
     >
-      <div className="mx-auto flex max-w-lg flex-col gap-2 rounded-2xl border border-stone-200/80 bg-white/95 px-4 py-3 shadow-[0_12px_40px_-20px_rgba(28,25,23,0.45)] backdrop-blur-md">
-        <p className="text-sm font-semibold tracking-tight text-stone-800 transition-opacity duration-300">
-          {progress.headline}
-        </p>
-        {progress.detail ? (
-          <p className="text-xs font-medium text-stone-600">{progress.detail}</p>
-        ) : null}
-        {showSwitch ? (
-          <div className="flex flex-wrap gap-2 pt-0.5">
-            {mode === "invitation" ? (
-              <Link
-                href={companionHref}
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-stone-900 px-4 text-sm font-semibold text-white touch-manipulation"
-                aria-label="View event access for admitted guests"
-              >
-                View Event Access
-              </Link>
-            ) : inviteHref ? (
-              <Link
-                href={inviteHref}
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-900 touch-manipulation"
-                aria-label="Back to invitation"
-              >
-                Back to Invitation
-              </Link>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      {card}
     </aside>
   );
 }

@@ -11,6 +11,7 @@ import {
   VENDOR_PASS_TYPE_OPTIONS,
 } from "@/lib/vendor-pass/capacity";
 import { Copy, Loader2, Plus, RefreshCw, Shield } from "lucide-react";
+import { buildVendorTeamPassUrl } from "@/lib/vendor-pass/token-format";
 
 type VendorPassRow = {
   id: string;
@@ -30,6 +31,32 @@ type VendorPassRow = {
   contactName: string | null;
   lastAdmittedAt: string | null;
 };
+
+/** Always resolve against the current origin so local passes don’t open on live (and vice versa). */
+function resolvePassHref(row: Pick<VendorPassRow, "publicToken" | "passUrl">): string {
+  if (typeof window === "undefined") {
+    return row.passUrl || buildVendorTeamPassUrl(row.publicToken);
+  }
+  return buildVendorTeamPassUrl(row.publicToken, window.location.origin);
+}
+
+/** Prefer a short operator message over raw Prisma / SQLite stack text. */
+function vendorPassErrorMessage(raw: unknown, fallback: string): string {
+  const text =
+    typeof raw === "string"
+      ? raw
+      : raw && typeof raw === "object" && "message" in raw
+        ? String((raw as { message?: unknown }).message ?? "")
+        : "";
+  if (/vendor_team_passes|does not exist in the current database/i.test(text)) {
+    return "Vendor pass tables are missing from this database. Run Prisma migrations (vendor_team_passes), then refresh.";
+  }
+  const trimmed = text.trim();
+  if (!trimmed) return fallback;
+  // Keep UI readable — drop multi-line Prisma invocation dumps.
+  const firstLine = trimmed.split("\n").map((l) => l.trim()).find(Boolean) ?? trimmed;
+  return firstLine.length > 220 ? `${firstLine.slice(0, 217)}…` : firstLine;
+}
 
 export function VendorTeamPassesPanel({
   eventId,
@@ -82,7 +109,7 @@ export function VendorTeamPassesPanel({
         });
         const json = await res.json();
         if (!res.ok) {
-          setError(json.error ?? "Could not load vendor passes");
+          setError(vendorPassErrorMessage(json.error, "Could not load vendor passes"));
           return;
         }
         setRows(json.data.items ?? []);
@@ -130,7 +157,7 @@ export function VendorTeamPassesPanel({
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Could not create pass");
+        setError(vendorPassErrorMessage(json.error, "Could not create pass"));
         return;
       }
       setCreating(false);
@@ -148,8 +175,10 @@ export function VendorTeamPassesPanel({
         memberNames: "",
       });
       await load(1);
-      if (json.data?.passUrl) {
-        window.open(json.data.passUrl, "_blank");
+      if (json.data?.publicToken) {
+        window.open(buildVendorTeamPassUrl(json.data.publicToken, window.location.origin), "_blank");
+      } else if (json.data?.passUrl) {
+        window.open(resolvePassHref(json.data), "_blank");
       }
     } catch {
       setError("Could not reach the server.");
@@ -380,7 +409,7 @@ export function VendorTeamPassesPanel({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" size="sm" variant="outline" asChild>
-                    <Link href={row.passUrl} target="_blank">
+                    <Link href={buildVendorTeamPassUrl(row.publicToken)} target="_blank">
                       View Pass
                     </Link>
                   </Button>
@@ -401,7 +430,7 @@ export function VendorTeamPassesPanel({
                     size="sm"
                     variant="ghost"
                     onClick={() => {
-                      window.open(row.passUrl, "_blank");
+                      window.open(resolvePassHref(row), "_blank");
                       window.setTimeout(() => window.print(), 900);
                     }}
                   >
@@ -411,14 +440,14 @@ export function VendorTeamPassesPanel({
                     type="button"
                     size="sm"
                     variant="ghost"
-                    onClick={() => void navigator.clipboard.writeText(row.passUrl)}
+                    onClick={() => void navigator.clipboard.writeText(resolvePassHref(row))}
                   >
                     <Copy className="h-4 w-4" /> Copy link
                   </Button>
                   <Button type="button" size="sm" variant="ghost" asChild>
                     <a
                       href={`https://wa.me/?text=${encodeURIComponent(
-                        `${row.title} — ${row.vendorName}\nAccess code ${row.admissionCode}\n${typeof window !== "undefined" ? window.location.origin : ""}${row.passUrl}`
+                        `${row.title} — ${row.vendorName}\nAccess code ${row.admissionCode}\n${resolvePassHref(row)}`
                       )}`}
                       target="_blank"
                       rel="noreferrer"

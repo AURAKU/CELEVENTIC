@@ -70,6 +70,26 @@ export function createInvitationAudioManager(
   let savedVolume = musicSelection?.volume ?? 0.55;
   let trimHandler: (() => void) | null = null;
   let loadPromise: Promise<void> | null = null;
+  let fadeInterval: ReturnType<typeof setInterval> | null = null;
+
+  function clearFade() {
+    if (fadeInterval) {
+      clearInterval(fadeInterval);
+      fadeInterval = null;
+    }
+  }
+
+  function applyMuteToElement(a: HTMLAudioElement) {
+    // Prefer the native muted flag (iOS/Safari respects this more reliably than
+    // volume alone) and zero volume so fade/trim loops cannot leak sound.
+    a.muted = true;
+    a.volume = 0;
+  }
+
+  function applyUnmuteToElement(a: HTMLAudioElement) {
+    a.muted = false;
+    a.volume = savedVolume;
+  }
 
   function wireTrimLoop(a: HTMLAudioElement) {
     if (!musicSelection) return;
@@ -129,6 +149,7 @@ export function createInvitationAudioManager(
     }
 
     audio.volume = 0;
+    audio.muted = muted;
     loadPromise = waitForAudioReady(audio).catch(() => undefined);
     return audio;
   }
@@ -136,21 +157,34 @@ export function createInvitationAudioManager(
   function applyFadeIn(targetVol: number, fadeSec: number) {
     const a = audio;
     if (!a) return;
-    if (fadeSec <= 0) {
-      a.volume = muted ? 0 : targetVol;
+    clearFade();
+    if (muted) {
+      applyMuteToElement(a);
       return;
     }
+    if (fadeSec <= 0) {
+      a.muted = false;
+      a.volume = targetVol;
+      return;
+    }
+    a.muted = false;
     a.volume = 0;
     const steps = 24;
     let step = 0;
-    const iv = setInterval(() => {
+    fadeInterval = setInterval(() => {
       step++;
       if (!audio) {
-        clearInterval(iv);
+        clearFade();
         return;
       }
-      audio.volume = muted ? 0 : Math.min(targetVol, (step / steps) * targetVol);
-      if (step >= steps) clearInterval(iv);
+      if (muted) {
+        applyMuteToElement(audio);
+        clearFade();
+        return;
+      }
+      audio.muted = false;
+      audio.volume = Math.min(targetVol, (step / steps) * targetVol);
+      if (step >= steps) clearFade();
     }, (fadeSec * 1000) / steps);
   }
 
@@ -175,6 +209,10 @@ export function createInvitationAudioManager(
         }
       }
 
+      // Start muted when the guest already muted — still unlocks the element
+      // so a later unmute is instant on iOS/Safari.
+      if (muted) applyMuteToElement(a);
+
       await a.play();
 
       if (!keepPlaying) {
@@ -189,7 +227,11 @@ export function createInvitationAudioManager(
         return true;
       }
 
-      applyFadeIn(targetVol, fadeIn);
+      if (muted) {
+        applyMuteToElement(a);
+      } else {
+        applyFadeIn(targetVol, fadeIn);
+      }
       return true;
     } catch {
       // Retry once after the element can decode, for non-gesture recoveries.
@@ -203,12 +245,17 @@ export function createInvitationAudioManager(
             /* ignore */
           }
         }
+        if (muted) applyMuteToElement(a);
         await a.play();
         if (!keepPlaying) {
           a.pause();
           return true;
         }
-        applyFadeIn(targetVol, fadeIn);
+        if (muted) {
+          applyMuteToElement(a);
+        } else {
+          applyFadeIn(targetVol, fadeIn);
+        }
         return true;
       } catch {
         return false;
@@ -227,6 +274,7 @@ export function createInvitationAudioManager(
     unlock: async () => playNow(true),
     play: async () => playNow(true),
     pause() {
+      clearFade();
       audio?.pause();
     },
     async toggle() {
@@ -236,15 +284,20 @@ export function createInvitationAudioManager(
     },
     mute() {
       muted = true;
-      if (audio) audio.volume = 0;
+      clearFade();
+      if (audio) applyMuteToElement(audio);
     },
     unmute() {
       muted = false;
-      if (audio) audio.volume = savedVolume;
+      clearFade();
+      if (audio) applyUnmuteToElement(audio);
     },
     setVolume(v: number) {
       savedVolume = Math.max(0, Math.min(1, v));
-      if (audio && !muted) audio.volume = savedVolume;
+      if (audio && !muted) {
+        audio.muted = false;
+        audio.volume = savedVolume;
+      }
     },
     async restart() {
       const a = ensureAudio();
@@ -256,6 +309,7 @@ export function createInvitationAudioManager(
       return manager.play();
     },
     destroy() {
+      clearFade();
       if (audio && trimHandler) {
         audio.removeEventListener("timeupdate", trimHandler);
       }

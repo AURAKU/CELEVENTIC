@@ -16,6 +16,7 @@ import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-temp
 import { InvitationMediaProvider } from "./invitation-media-context";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
 import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
+import { PartyAdmissionSwitch } from "@/components/admission/party-admission-switch";
 import { PlaceCard } from "@/components/invitation/place-card";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
@@ -90,6 +91,23 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
           />
         </ClientErrorBoundary>
       )}
+      {/* Event Access sits below Replay Opening (template closing) and above
+          the entry-pass QR whenever this party has any admitted members. */}
+      {props.partyAdmission &&
+        props.partyAdmission.admittedCount > 0 &&
+        props.invitation.uniqueLink && (
+          <ClientErrorBoundary fallback={null}>
+            <PartyAdmissionSwitch
+              link={props.invitation.uniqueLink}
+              companionHref={props.partyAdmission.companionHref}
+              initialAdmittedCount={props.partyAdmission.admittedCount}
+              initialAllowance={props.partyAdmission.allowance}
+              initialState={props.partyAdmission.state}
+              mode="invitation"
+              placement="inline"
+            />
+          </ClientErrorBoundary>
+        )}
       {/* Closing section of every invitation. The entry pass supersedes the
           standalone gate code, showing both would give a guest two different
           numbers to read out at the door. */}
