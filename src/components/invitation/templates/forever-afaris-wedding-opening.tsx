@@ -18,6 +18,7 @@ import {
 } from "./forever-afaris-wedding-palette";
 import {
   resolveGateTitle,
+  resolveOpeningInstruction,
   type WeddingEnvelopeStyle,
   type WeddingGateStyle,
   type WeddingSealColor,
@@ -150,6 +151,13 @@ export function ForeverAfarisWeddingOpening({
   const [visible, setVisible] = useState(true);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const doneRef = useRef(false);
+  /**
+   * The whole ceremony is now one tap target, so the same gesture can reach
+   * `openEnvelope` from the seal button and from the stage behind it in the
+   * same tick — before `stage` has re-rendered. A ref is the only guard that
+   * closes that window.
+   */
+  const openedRef = useRef(false);
 
   const clearTimers = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -178,7 +186,8 @@ export function ForeverAfarisWeddingOpening({
   }, [after, clearTimers, onComplete, prefersReduced]);
 
   const openEnvelope = useCallback(() => {
-    if (stage !== "sealed") return;
+    if (openedRef.current || stage !== "sealed") return;
+    openedRef.current = true;
     onBegin?.();
     // Soft release pulse, not a crack.
     vibrate([8, 28, 14], haptics);
@@ -246,11 +255,16 @@ export function ForeverAfarisWeddingOpening({
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: prefersReduced ? 0.15 : 0.65, ease: "easeInOut" }}
-          style={{
-            background: `radial-gradient(120% 90% at 50% 18%, ${C.linen} 0%, ${C.blush} 55%, ${C.blushDeep} 100%)`,
-          }}
           role="dialog"
           aria-label="Wedding invitation opening ceremony"
+          // The entire ceremony is the tap target while the envelope is sealed:
+          // guests aim at the envelope, not at an 82px wax seal. The seal button
+          // stays for keyboard/screen-reader users and its click is idempotent.
+          onClick={sealed ? openEnvelope : undefined}
+          style={{
+            background: `radial-gradient(120% 90% at 50% 18%, ${C.linen} 0%, ${C.blush} 55%, ${C.blushDeep} 100%)`,
+            cursor: sealed ? "pointer" : undefined,
+          }}
         >
           {/* Depth wash, drifts opposite the envelope for a sense of room */}
           <ParallaxLayer x={parallax.x} y={parallax.y} depth={-8} className="pointer-events-none absolute inset-0">
@@ -270,7 +284,11 @@ export function ForeverAfarisWeddingOpening({
           {allowSkip && stage !== "gate" && (
             <button
               type="button"
-              onClick={skip}
+              onClick={(e) => {
+                // Never let Skip also trigger the stage-wide open.
+                e.stopPropagation();
+                skip();
+              }}
               aria-label="Skip the wedding opening ceremony"
               className="absolute left-4 top-4 z-[70] rounded-full px-4 py-1.5 text-[11px] uppercase tracking-[0.22em] backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               style={{
@@ -316,7 +334,7 @@ export function ForeverAfarisWeddingOpening({
                     exit={{ opacity: 0 }}
                     transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    {instruction}
+                    {resolveOpeningInstruction(instruction)}
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -614,13 +632,17 @@ function Envelope({
         }}
       />
 
-      {/* Wax seal, lifts slowly off the paper, never breaks */}
+      {/*
+        Wax seal. Rises whole and upright with the flap — never breaks, never
+        skews away. Tapping it is one of several ways in; the stage behind it
+        accepts the same gesture.
+      */}
       <motion.button
         type="button"
         onClick={onOpen}
         onKeyDown={onKeyActivate}
         data-blush-gate-seal="true"
-        aria-label="Lift the wax seal to open the invitation"
+        aria-label="Open the invitation"
         className="absolute left-1/2 top-[46%] z-20 flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
         style={{
           width: 82,
@@ -634,21 +656,23 @@ function Envelope({
         animate={
           opening
             ? {
-                scale: 0.78,
+                // Travels straight up at full size, still upright, and only
+                // fades once it has cleared the paper.
+                scale: 1,
                 opacity: 0,
-                y: "-320%",
-                rotateX: -48,
-                rotateZ: -8,
-                filter: "drop-shadow(0 28px 24px rgba(74, 48, 28, 0.18))",
+                y: "-380%",
+                rotateX: 0,
+                rotateZ: 0,
+                filter: "drop-shadow(0 30px 26px rgba(74, 48, 28, 0.16))",
               }
             : unsealing
               ? {
-                  scale: 1.06,
+                  scale: 1.04,
                   opacity: 1,
-                  y: "-165%",
-                  rotateX: -28,
-                  rotateZ: -3,
-                  filter: "drop-shadow(0 22px 18px rgba(74, 48, 28, 0.28))",
+                  y: "-175%",
+                  rotateX: 0,
+                  rotateZ: 0,
+                  filter: "drop-shadow(0 24px 20px rgba(74, 48, 28, 0.28))",
                 }
               : {
                   scale: [1, 1.05, 1],
@@ -662,8 +686,12 @@ function Envelope({
         transition={
           lifting
             ? {
-                duration: opening ? 1.15 : 1.85,
+                duration: opening ? 1.25 : 1.85,
                 ease: EASE_SILK,
+                // Hold the seal fully visible for most of its climb.
+                opacity: opening
+                  ? { duration: 0.4, delay: 0.78, ease: "easeOut" }
+                  : { duration: 0.3 },
               }
             : { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
         }

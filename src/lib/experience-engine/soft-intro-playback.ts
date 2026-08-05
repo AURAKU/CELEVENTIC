@@ -18,6 +18,13 @@ export const INTRO_MIN_START_GRACE_MS = 4_000;
 /** Brief poster hold after a hard media failure before revealing the invite. */
 export const INTRO_ERROR_POSTER_HOLD_MS = 1_600;
 
+/**
+ * The clip failed before the guest ever tapped. Keep the branded gate on the
+ * poster so opening stays a deliberate gesture (which is what unlocks
+ * invitation music), but never strand anyone: auto-continue after this.
+ */
+export const INTRO_FAILED_GATE_HOLD_MS = 15_000;
+
 /** Stall / waiting grace before treating the stream as failed. */
 export const INTRO_STALL_GRACE_MS = 8_000;
 

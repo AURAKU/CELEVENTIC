@@ -18,6 +18,7 @@ import {
   resolveAfarisCoupleNames,
   resolveGateTitle,
   resolveIntroCoupleLine,
+  resolveOpeningInstruction,
   withoutPhraseDashes,
   type WeddingSectionId,
 } from "../wedding-board";
@@ -224,5 +225,40 @@ describe("palette", () => {
     }
     assert.equal(resolveSealWax("nope").label, resolveSealWax("champagne").label);
     assert.equal(resolveSealWax(null).label, resolveSealWax("champagne").label);
+  });
+});
+
+/**
+ * The sealed envelope now opens from a tap anywhere on the ceremony, not just
+ * the 82px wax seal. Stored copy that names the seal as the only target would
+ * describe something narrower than what actually works, so it is repaired at
+ * read time — while genuinely host-authored copy is left untouched.
+ */
+describe("resolveOpeningInstruction", () => {
+  it("defaults to tap-anywhere phrasing", () => {
+    assert.equal(resolveOpeningInstruction(undefined), "Tap anywhere to open");
+    assert.equal(resolveOpeningInstruction(null), "Tap anywhere to open");
+    assert.equal(resolveOpeningInstruction("   "), "Tap anywhere to open");
+  });
+
+  it("repairs legacy seal-only instructions", () => {
+    for (const legacy of [
+      "Lift the seal to open",
+      "TAP THE SEAL TO OPEN",
+      "  Tap the seal  ",
+      "Touch the seal to open",
+      "Press the seal to open",
+    ]) {
+      assert.equal(
+        resolveOpeningInstruction(legacy),
+        "Tap anywhere to open",
+        `${legacy} should be repaired`
+      );
+    }
+  });
+
+  it("keeps host-authored copy", () => {
+    assert.equal(resolveOpeningInstruction("Touch to unveil"), "Touch to unveil");
+    assert.equal(resolveOpeningInstruction("  Begin here  "), "Begin here");
   });
 });

@@ -11,6 +11,8 @@ import { AdmissionCompanionHandoff } from "@/components/admission/admission-comp
 import { PartyAdmissionSwitch } from "@/components/admission/party-admission-switch";
 import { InteractiveReveal } from "@/components/experience-engine/interactive-reveal";
 import { SceneErrorBoundary } from "@/components/experience-engine/scene-error-boundary";
+import { CeremonyErrorBoundary } from "@/components/invitation-os/ceremony-error-boundary";
+import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
@@ -21,6 +23,7 @@ import { mapLegacyRevealMode } from "@/lib/experience/opening-experiences";
 import { createInvitationAudioManager, pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
 import {
   phaseAfterSoftIntro,
+  introGestureAudioAction,
   resolveInitialInvitePhase,
   resolveSoftIntroAtmosphere,
   type InvitePipelinePhase,
@@ -335,15 +338,44 @@ export function PremiumInviteWrapper({
     if (ok) audioStarted.current = true;
   }, [audioManager, wantsAutoplay]);
 
+  /**
+   * The Celeventic intro film owns the audio stage. Its own soundtrack is the
+   * only thing a guest may hear between "Open Invitation" and the end of the
+   * clip, so the tap that starts the video must not start template music.
+   *
+   * Every live pipeline has a second gesture after the film — "Tap to Begin",
+   * or the envelope/curtain tap when that beat owns the opening — and that
+   * gesture is what starts the invitation's own track. Only when no such
+   * gesture exists (thumbnail / auto-open previews that jump straight to the
+   * portal) do we spend this tap on a silent authorisation, so the later
+   * programmatic `play()` is not blocked by autoplay policy.
+   */
+  const introAudioAction = introGestureAudioAction({
+    needsTapGate,
+    showReveal,
+    wantsAutoplay,
+  });
+
   const unlockInviteAudio = useCallback(() => {
     if (!audioManager) return;
-    if (!wantsAutoplay) {
+    if (introAudioAction === "prime") {
       audioManager.prime();
       return;
     }
     // Fire-and-forget inside the click handler so Safari keeps user activation.
-    void startAudio();
-  }, [audioManager, startAudio, wantsAutoplay]);
+    void audioManager.armSilently();
+  }, [audioManager, introAudioAction]);
+
+  /**
+   * The film has started. Nothing else may be audible underneath it — not a
+   * previously primed track, not a manager left running by another invitation
+   * preview in the same document.
+   */
+  const silenceForIntroVideo = useCallback(() => {
+    pauseAllInvitationAudio();
+    audioManager?.pause();
+    audioStarted.current = false;
+  }, [audioManager]);
 
   function afterSoftIntro() {
     // Tap to Begin and the envelope/curtain reveal are never silently
@@ -458,17 +490,23 @@ export function PremiumInviteWrapper({
     setPhase("portal");
   }, [phase, needsTapGate, showReveal, startAudio]);
 
+  // Both banners are admission conveniences layered over the ceremony. They poll
+  // the network, so they are the likeliest thing here to throw on a flaky
+  // connection — and losing an invitation to a broken banner is never an
+  // acceptable trade. They degrade to nothing.
   const admissionHandoff =
     watchAdmissionHandoff &&
     !embedded &&
     (props.companionHandoffHref || props.companionUrl) &&
     props.invitation.uniqueLink ? (
-      <AdmissionCompanionHandoff
-        link={props.invitation.uniqueLink}
-        companionHref={props.companionHandoffHref || props.companionUrl!}
-        enabled
-        onlyWhenFullyAdmitted
-      />
+      <ClientErrorBoundary fallback={null}>
+        <AdmissionCompanionHandoff
+          link={props.invitation.uniqueLink}
+          companionHref={props.companionHandoffHref || props.companionUrl!}
+          enabled
+          onlyWhenFullyAdmitted
+        />
+      </ClientErrorBoundary>
     ) : null;
 
   const partyAdmissionBanner =
@@ -477,14 +515,16 @@ export function PremiumInviteWrapper({
     props.partyAdmission &&
     props.invitation.uniqueLink &&
     props.partyAdmission.admittedCount > 0 ? (
-      <PartyAdmissionSwitch
-        link={props.invitation.uniqueLink}
-        companionHref={props.partyAdmission.companionHref}
-        initialAdmittedCount={props.partyAdmission.admittedCount}
-        initialAllowance={props.partyAdmission.allowance}
-        initialState={props.partyAdmission.state}
-        mode="invitation"
-      />
+      <ClientErrorBoundary fallback={null}>
+        <PartyAdmissionSwitch
+          link={props.invitation.uniqueLink}
+          companionHref={props.partyAdmission.companionHref}
+          initialAdmittedCount={props.partyAdmission.admittedCount}
+          initialAllowance={props.partyAdmission.allowance}
+          initialState={props.partyAdmission.state}
+          mode="invitation"
+        />
+      </ClientErrorBoundary>
     ) : null;
 
   // 1) Canonical Celeventic brand video intro → 2) tap gate / reveal…
@@ -493,17 +533,20 @@ export function PremiumInviteWrapper({
       <>
         {admissionHandoff}
         {partyAdmissionBanner}
-        <CeleventicSoftIntro
-          key={`soft-intro-${ceremonyGeneration}`}
-          onComplete={afterSoftIntro}
-          onUserGesture={unlockInviteAudio}
-          invitationId={props.invitation.uniqueLink || props.invitation.id}
-          forcePlay
-          accentColor={softAccent}
-          secondaryColor={softSecondary}
-          quickHold={false}
-          embedded={Boolean(embedded)}
-        />
+        <CeremonyErrorBoundary beat="soft-intro" onFallthrough={afterSoftIntro}>
+          <CeleventicSoftIntro
+            key={`soft-intro-${ceremonyGeneration}`}
+            onComplete={afterSoftIntro}
+            onUserGesture={unlockInviteAudio}
+            onPlaybackStart={silenceForIntroVideo}
+            invitationId={props.invitation.uniqueLink || props.invitation.id}
+            forcePlay
+            accentColor={softAccent}
+            secondaryColor={softSecondary}
+            quickHold={false}
+            embedded={Boolean(embedded)}
+          />
+        </CeremonyErrorBoundary>
       </>
     );
   }
@@ -517,28 +560,32 @@ export function PremiumInviteWrapper({
       <>
         {admissionHandoff}
         {partyAdmissionBanner}
-        <TapToBeginExperience
-          key={`tap-begin-${ceremonyGeneration}`}
-          onBegin={handleTapBegin}
-          eventTitle={props.event.title}
-          hostName={props.event.hostName}
-          accentColor={themeColors?.accent ?? softAccent}
-          primaryColor={themeColors?.primary ?? themeColors?.secondary}
-          backgroundColor={themeColors?.background}
-          atmosphereUrl={softAtmosphereUrl}
-          ceremonyLabel={tapCeremonyLabel}
-          name1={hasTapCoupleNames ? tapCoupleName1 : null}
-          name2={hasTapCoupleNames ? tapCoupleName2 : null}
-          layoutSlug={enrichedDesign.layout}
-          category={experience?.collectionId}
-          fontFamily={
-            experience?.welcomeFontFamily ? resolveThankYouFontStack(experience.welcomeFontFamily) : undefined
-          }
-          fontScale={experience?.welcomeFontScale}
-          textColorOverride={experience?.welcomeTextColor}
-          accentColorOverride={experience?.welcomeAccentColor}
-          scrim={experience?.welcomeScrim}
-        />
+        <CeremonyErrorBoundary beat="tap-to-begin" onFallthrough={handleTapBegin}>
+          <TapToBeginExperience
+            key={`tap-begin-${ceremonyGeneration}`}
+            onBegin={handleTapBegin}
+            eventTitle={props.event.title}
+            hostName={props.event.hostName}
+            accentColor={themeColors?.accent ?? softAccent}
+            primaryColor={themeColors?.primary ?? themeColors?.secondary}
+            backgroundColor={themeColors?.background}
+            atmosphereUrl={softAtmosphereUrl}
+            ceremonyLabel={tapCeremonyLabel}
+            name1={hasTapCoupleNames ? tapCoupleName1 : null}
+            name2={hasTapCoupleNames ? tapCoupleName2 : null}
+            layoutSlug={enrichedDesign.layout}
+            category={experience?.collectionId}
+            fontFamily={
+              experience?.welcomeFontFamily
+                ? resolveThankYouFontStack(experience.welcomeFontFamily)
+                : undefined
+            }
+            fontScale={experience?.welcomeFontScale}
+            textColorOverride={experience?.welcomeTextColor}
+            accentColorOverride={experience?.welcomeAccentColor}
+            scrim={experience?.welcomeScrim}
+          />
+        </CeremonyErrorBoundary>
       </>
     );
   }
@@ -581,27 +628,34 @@ export function PremiumInviteWrapper({
       <>
         {admissionHandoff}
         {partyAdmissionBanner}
-        <InteractiveReveal
-          key={`reveal-${ceremonyGeneration}`}
-          openingExperience={openingExperience}
-          guestName={props.guestName}
-          eventTitle={props.event.title}
-          hostName={props.event.hostName}
-          musicEnabled={Boolean(hasMusic)}
-          enableSounds={experience?.enableRevealSounds}
-          sealInitials={sealInitials}
-          sealStyle={sealStyle}
-          openingCopy={openingCopy}
-          embedded={Boolean(embedded)}
-          autoOpen={Boolean(autoOpenReveal)}
-          allowSkip={false}
-          onBegin={() => {
-            void startAudio();
-          }}
-          onComplete={afterReveal}
-        >
-          {portal}
-        </InteractiveReveal>
+        {/*
+          The reveal owns the portal as its child, so a throw inside the
+          ceremony would take the invitation with it. Falling through lands the
+          guest on that same portal, rendered directly.
+        */}
+        <CeremonyErrorBoundary beat="reveal" onFallthrough={afterReveal}>
+          <InteractiveReveal
+            key={`reveal-${ceremonyGeneration}`}
+            openingExperience={openingExperience}
+            guestName={props.guestName}
+            eventTitle={props.event.title}
+            hostName={props.event.hostName}
+            musicEnabled={Boolean(hasMusic)}
+            enableSounds={experience?.enableRevealSounds}
+            sealInitials={sealInitials}
+            sealStyle={sealStyle}
+            openingCopy={openingCopy}
+            embedded={Boolean(embedded)}
+            autoOpen={Boolean(autoOpenReveal)}
+            allowSkip={false}
+            onBegin={() => {
+              void startAudio();
+            }}
+            onComplete={afterReveal}
+          >
+            {portal}
+          </InteractiveReveal>
+        </CeremonyErrorBoundary>
         {showAudioControls && audioManager && (
           <InvitationAudioControls manager={audioManager} embedded={embedded} {...audioControlProps} />
         )}
