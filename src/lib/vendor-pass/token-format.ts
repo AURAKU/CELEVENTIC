@@ -11,7 +11,11 @@ export function looksLikeVendorTeamToken(value: string): boolean {
 }
 
 export function buildVendorTeamPassUrl(publicToken: string, baseUrl?: string): string {
-  const path = `/vendor-pass/${encodeURIComponent(publicToken)}`;
+  const token = publicToken.trim();
+  if (!token) {
+    return baseUrl ? `${baseUrl.replace(/\/$/, "")}/vendor-pass` : "/vendor-pass";
+  }
+  const path = `/vendor-pass/${encodeURIComponent(token)}`;
   return baseUrl ? `${baseUrl.replace(/\/$/, "")}${path}` : path;
 }
 

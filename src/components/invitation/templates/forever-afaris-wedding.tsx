@@ -31,6 +31,8 @@ import {
 import { TraditionalMarriageRespond } from "./traditional-marriage-respond";
 import { PlaceCard } from "@/components/invitation/place-card";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
+import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
+import { detectCalendarPlatform, setSmartCalendarReminder } from "@/lib/invitation/smart-calendar";
 
 export type ForeverAfarisWeddingProps = InvitationRenderProps & {
   contactEmail?: string | null;
@@ -96,6 +98,116 @@ function Divider({ palette: C }: { palette: FaPalette }) {
         style={{ background: C.gold, boxShadow: `0 0 8px ${C.goldSoft}` }}
       />
       <span className="h-px w-16" style={{ background: `linear-gradient(90deg, ${C.gold}, transparent)` }} />
+    </div>
+  );
+}
+
+/**
+ * Date triad — tap to smart-save reminder (Apple .ics / Google / Outlook).
+ * Keeps the Forever Afaris champagne layout; affordance is whisper-quiet.
+ */
+function WeddingDateSaveRow({
+  weekday,
+  displayDate,
+  timeLabel,
+  palette: C,
+  calendarEvent,
+  staticPreview,
+}: {
+  weekday: string;
+  displayDate: string;
+  timeLabel: string;
+  palette: FaPalette;
+  calendarEvent: CalendarEventInput;
+  staticPreview: boolean;
+}) {
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const [platformHint, setPlatformHint] = useState("Tap to save the date");
+
+  useEffect(() => {
+    const p = detectCalendarPlatform();
+    if (p === "apple") setPlatformHint("Tap to add to Apple Calendar");
+    else if (p === "google") setPlatformHint("Tap to add to Google Calendar");
+    else setPlatformHint("Tap to add to Outlook Calendar");
+  }, []);
+
+  async function saveDate() {
+    if (staticPreview || state === "loading") return;
+    setState("loading");
+    setMessage("");
+    const result = await setSmartCalendarReminder(calendarEvent);
+    setState(result.success ? "done" : "error");
+    setMessage(result.message);
+    if (result.success) {
+      window.setTimeout(() => {
+        setState("idle");
+        setMessage("");
+      }, 3600);
+    }
+  }
+
+  const statusLabel =
+    state === "loading"
+      ? "Saving reminder…"
+      : state === "done"
+        ? "Saved to your calendar"
+        : state === "error"
+          ? "Couldn’t save — tap to try again"
+          : platformHint;
+
+  return (
+    <div className="mx-auto w-full max-w-[22rem]">
+      <button
+        type="button"
+        disabled={staticPreview || state === "loading"}
+        onClick={() => void saveDate()}
+        aria-label={`${weekday} ${displayDate} ${timeLabel}. ${statusLabel}`}
+        title={staticPreview ? "Preview" : statusLabel}
+        className="group relative mx-auto flex w-full max-w-[22rem] items-stretch justify-center gap-4 py-4 text-center transition-all duration-300 touch-manipulation select-none hover:brightness-[1.02] active:scale-[0.985] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 disabled:opacity-70"
+        style={{
+          borderTop: `1px solid ${C.border}`,
+          borderBottom: `1px solid ${C.border}`,
+          outlineColor: C.gold,
+          background:
+            state === "done"
+              ? `color-mix(in srgb, ${C.goldSoft} 22%, transparent)`
+              : "transparent",
+        }}
+      >
+        <div
+          className="flex flex-col justify-center text-right text-[10px] uppercase tracking-[0.2em]"
+          style={{ color: C.cocoa }}
+        >
+          <span>{weekday}</span>
+        </div>
+        <div
+          className="px-3 font-[family-name:var(--font-cinzel)] text-lg font-semibold"
+          style={{
+            color: C.ink,
+            borderLeft: `1px solid ${C.border}`,
+            borderRight: `1px solid ${C.border}`,
+          }}
+        >
+          <div className="py-1">{displayDate}</div>
+        </div>
+        <div
+          className="flex min-w-[5.25rem] flex-col justify-center whitespace-nowrap text-left text-base font-semibold uppercase tracking-[0.12em] sm:text-lg"
+          style={{ color: C.cocoa }}
+        >
+          <span>{timeLabel}</span>
+        </div>
+      </button>
+      <p
+        className="mt-2.5 font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.14em] transition-opacity duration-300"
+        style={{
+          color: state === "error" ? C.rose : state === "done" ? C.goldDeep : C.cocoa,
+          opacity: staticPreview ? 0.45 : state === "idle" ? 0.72 : 1,
+        }}
+        aria-live="polite"
+      >
+        {staticPreview ? "Save the date" : message || statusLabel}
+      </p>
     </div>
   );
 }
@@ -385,6 +497,33 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   const countdownTarget =
     board.countdownTarget?.trim() || event.startDateRaw || event.startDate;
 
+  const calendarEvent = useMemo<CalendarEventInput>(
+    () => ({
+      title:
+        couple1 && couple2
+          ? `${couple1} & ${couple2}`
+          : event.title?.trim() || "Wedding celebration",
+      startDateRaw: event.startDateRaw || event.startDate || "",
+      venue: [venueName, board.venueAddress].filter(Boolean).join(" · ") || undefined,
+      description: [board.invitationCopy, board.receptionText, board.accessNote]
+        .filter(Boolean)
+        .join("\n")
+        .slice(0, 500),
+    }),
+    [
+      board.accessNote,
+      board.invitationCopy,
+      board.receptionText,
+      board.venueAddress,
+      couple1,
+      couple2,
+      event.startDate,
+      event.startDateRaw,
+      event.title,
+      venueName,
+    ]
+  );
+
   const greetedName = invitedGuestName || board.greetingFallbackName;
 
   /* ------------------------------ scenes ------------------------------ */
@@ -486,29 +625,44 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     details: (
       <Reveal as="section" className="text-center">
-        <div
-          className="mx-auto flex max-w-[22rem] items-stretch justify-center gap-4 py-4"
-          style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}
-        >
+        {calendarEvent.startDateRaw ? (
+          <WeddingDateSaveRow
+            weekday={weekday}
+            displayDate={displayDate}
+            timeLabel={timeLabel}
+            palette={C}
+            calendarEvent={calendarEvent}
+            staticPreview={staticPreview}
+          />
+        ) : (
           <div
-            className="flex flex-col justify-center text-right text-[10px] uppercase tracking-[0.2em]"
-            style={{ color: C.cocoa }}
+            className="mx-auto flex max-w-[22rem] items-stretch justify-center gap-4 py-4"
+            style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}
           >
-            <span>{weekday}</span>
+            <div
+              className="flex flex-col justify-center text-right text-[10px] uppercase tracking-[0.2em]"
+              style={{ color: C.cocoa }}
+            >
+              <span>{weekday}</span>
+            </div>
+            <div
+              className="px-3 font-[family-name:var(--font-cinzel)] text-lg font-semibold"
+              style={{
+                color: C.ink,
+                borderLeft: `1px solid ${C.border}`,
+                borderRight: `1px solid ${C.border}`,
+              }}
+            >
+              <div className="py-1">{displayDate}</div>
+            </div>
+            <div
+              className="flex min-w-[5.25rem] flex-col justify-center whitespace-nowrap text-left text-base font-semibold uppercase tracking-[0.12em] sm:text-lg"
+              style={{ color: C.cocoa }}
+            >
+              <span>{timeLabel}</span>
+            </div>
           </div>
-          <div
-            className="px-3 font-[family-name:var(--font-cinzel)] text-lg font-semibold"
-            style={{ color: C.ink, borderLeft: `1px solid ${C.border}`, borderRight: `1px solid ${C.border}` }}
-          >
-            <div className="py-1">{displayDate}</div>
-          </div>
-          <div
-            className="flex min-w-[5.25rem] flex-col justify-center whitespace-nowrap text-left text-base font-semibold uppercase tracking-[0.12em] sm:text-lg"
-            style={{ color: C.cocoa }}
-          >
-            <span>{timeLabel}</span>
-          </div>
-        </div>
+        )}
 
         {!features.location && venueName ? (
           <p className="mt-5 font-[family-name:var(--font-cinzel)] text-sm tracking-[0.14em]" style={{ color: C.ink }}>

@@ -12,11 +12,13 @@ export type QrDisplayMode = "brand" | "pass";
  * White frame is ~1.24× this (see FRAME_PAD_RATIO in branded-qr-generator).
  * Error-correction H supports ~30% damage — keep the framed inset ≤ ~27%
  * width (bold) so the full logo stays visible with padding and remains scannable.
+ * Pass mode uses a separate, slightly smaller scale in branded-qr-generator
+ * (still larger than the old speck-sized insets for couple photos).
  */
 export const QR_LOGO_SIZE_PRESETS = {
-  subtle: 0.15,
-  balanced: 0.19,
-  bold: 0.21,
+  subtle: 0.16,
+  balanced: 0.2,
+  bold: 0.22,
 } as const;
 
 export type QrLogoSizePreset = keyof typeof QR_LOGO_SIZE_PRESETS;
@@ -33,9 +35,9 @@ export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
  * cache key doesn't include the encoded URL — see `qr-cache.ts` — only the
  * token/size/center/logoSize, so a stale PNG baked from an old resolved app
  * URL would otherwise keep being served forever). Bumped for crisp module
- * rendering + tighter pass-mode center logos for gate screen scans.
+ * rendering + larger (still ECC-H safe) pass-mode center photos.
  */
-export const QR_COMPOSITE_CACHE_VERSION = "v5-crisp-pass-modules";
+export const QR_COMPOSITE_CACHE_VERSION = "v6-larger-center-mark";
 
 /** Default Celeventic QR center mark (public asset; contain-fitted in generator) */
 export const CELEVENTIC_OFFICIAL_LOGO = "/brand/logo-full.png";

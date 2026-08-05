@@ -28,6 +28,10 @@ export interface EntryPassTheme {
   /** Action buttons. */
   action: string;
   accent: string;
+  /** Always-on highlight plate for gate / entrance instructions. */
+  instructionsPlate: string;
+  instructionsText: string;
+  instructionsEyebrow: string;
 }
 
 const THEMES: Record<EntryPassPreset, EntryPassTheme> = {
@@ -42,6 +46,10 @@ const THEMES: Record<EntryPassPreset, EntryPassTheme> = {
     divider: "bg-[#D4A63A]/25",
     action: "border-[#D4A63A]/40 text-[#7A6118] hover:bg-[#D4A63A]/10",
     accent: "#D4A63A",
+    instructionsPlate:
+      "mx-4 mb-1 rounded-2xl border border-[#D4A63A]/55 bg-gradient-to-br from-[#F5E6B8]/90 via-[#FBF3D8] to-[#F0D78A]/70 shadow-[0_8px_24px_-16px_rgba(154,123,34,0.55)]",
+    instructionsText: "text-[#1A1408] font-semibold",
+    instructionsEyebrow: "text-[#9A7B22]",
   },
   traditional: {
     surface: "bg-[#FDF6EC]",
@@ -54,6 +62,10 @@ const THEMES: Record<EntryPassPreset, EntryPassTheme> = {
     divider: "bg-[#9C3B12]/20",
     action: "border-[#9C3B12]/30 text-[#8A3410] hover:bg-[#9C3B12]/10",
     accent: "#9C3B12",
+    instructionsPlate:
+      "mx-4 mb-1 rounded-2xl border border-[#9C3B12]/45 bg-gradient-to-br from-[#F8E4D4] via-[#FDF0E4] to-[#F2D2B8] shadow-[0_8px_24px_-16px_rgba(156,59,18,0.4)]",
+    instructionsText: "text-[#2B1508] font-semibold",
+    instructionsEyebrow: "text-[#9C3B12]",
   },
   corporate: {
     surface: "bg-slate-50",
@@ -66,6 +78,10 @@ const THEMES: Record<EntryPassPreset, EntryPassTheme> = {
     divider: "bg-slate-200",
     action: "border-slate-300 text-slate-700 hover:bg-slate-100",
     accent: "#334155",
+    instructionsPlate:
+      "mx-4 mb-1 rounded-2xl border border-slate-400/60 bg-gradient-to-br from-amber-50 via-white to-slate-100 shadow-sm",
+    instructionsText: "text-slate-900 font-semibold",
+    instructionsEyebrow: "text-slate-600",
   },
   minimal: {
     surface: "bg-white",
@@ -78,6 +94,10 @@ const THEMES: Record<EntryPassPreset, EntryPassTheme> = {
     divider: "bg-black/10",
     action: "border-black/15 text-slate-700 hover:bg-slate-50",
     accent: "#0F172A",
+    instructionsPlate:
+      "mx-4 mb-1 rounded-2xl border border-amber-400/50 bg-gradient-to-br from-amber-50 via-white to-amber-100/80 shadow-sm",
+    instructionsText: "text-slate-900 font-semibold",
+    instructionsEyebrow: "text-amber-800",
   },
 };
 

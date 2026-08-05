@@ -37,25 +37,32 @@ export function InvitationAudioControls({
   const [playing, setPlaying] = useState(manager.isPlaying());
   const [volume, setVolume] = useState(manager.getVolume());
   const [expanded, setExpanded] = useState(false);
+  const [busy, setBusy] = useState(false);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Keep UI in sync with the underlying media element.
-  useEffect(() => {
-    const audio = manager.getAudio();
+  function syncFromManager() {
     setMuted(manager.isMuted());
     setPlaying(manager.isPlaying());
     setVolume(manager.getVolume());
+  }
+
+  // Keep UI in sync with the underlying media element (live Safari/Chrome too).
+  useEffect(() => {
+    const audio = manager.getAudio();
+    syncFromManager();
     if (!audio) return;
-    const sync = () => {
-      setPlaying(!audio.paused);
-      setMuted(manager.isMuted());
-    };
+    const sync = () => syncFromManager();
     audio.addEventListener("play", sync);
     audio.addEventListener("pause", sync);
+    audio.addEventListener("volumechange", sync);
+    audio.addEventListener("ended", sync);
     return () => {
       audio.removeEventListener("play", sync);
       audio.removeEventListener("pause", sync);
+      audio.removeEventListener("volumechange", sync);
+      audio.removeEventListener("ended", sync);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manager, expanded]);
 
   // Auto-collapse the expanded panel so it never lingers over content.
@@ -72,33 +79,52 @@ export function InvitationAudioControls({
   }, [expanded]);
 
   async function toggleMute() {
-    if (muted) {
-      manager.unmute();
-      setMuted(false);
-      if (!manager.isPlaying()) {
-        await manager.play();
-        setPlaying(true);
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (manager.isMuted()) {
+        // Unmute inside the tap gesture, then ensure playback is running so
+        // iOS/Safari keep the user-activation chain on live domains.
+        manager.unmute();
+        setMuted(false);
+        if (!manager.isPlaying()) {
+          const ok = await manager.play();
+          setPlaying(ok);
+        } else {
+          setPlaying(true);
+        }
+      } else {
+        manager.mute();
+        setMuted(true);
+        setPlaying(manager.isPlaying());
       }
-    } else {
-      manager.mute();
-      setMuted(true);
+      syncFromManager();
+    } finally {
+      setBusy(false);
+      scheduleCollapse();
     }
-    scheduleCollapse();
   }
 
   async function togglePlay() {
-    if (manager.isPlaying()) {
-      manager.pause();
-      setPlaying(false);
-    } else {
-      await manager.play();
-      setPlaying(true);
-      if (manager.isMuted()) {
-        manager.unmute();
-        setMuted(false);
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (manager.isPlaying()) {
+        manager.pause();
+        setPlaying(false);
+      } else {
+        const ok = await manager.play();
+        setPlaying(ok);
+        if (ok && manager.isMuted()) {
+          manager.unmute();
+          setMuted(false);
+        }
       }
+      syncFromManager();
+    } finally {
+      setBusy(false);
+      scheduleCollapse();
     }
-    scheduleCollapse();
   }
 
   function onVolume(next: number) {
@@ -107,6 +133,10 @@ export function InvitationAudioControls({
     if (next > 0 && manager.isMuted()) {
       manager.unmute();
       setMuted(false);
+    }
+    if (next === 0 && !manager.isMuted()) {
+      manager.mute();
+      setMuted(true);
     }
     scheduleCollapse();
   }
@@ -122,7 +152,12 @@ export function InvitationAudioControls({
 
   return (
     <div
-      className={cn("z-[80] flex items-center gap-1 rounded-full border shadow-lg backdrop-blur-md", positionClass, chrome, className)}
+      className={cn(
+        "z-[80] flex items-center gap-1 rounded-full border shadow-lg backdrop-blur-md",
+        positionClass,
+        chrome,
+        className
+      )}
       onMouseEnter={() => {
         if (collapseTimer.current) clearTimeout(collapseTimer.current);
       }}
@@ -131,12 +166,18 @@ export function InvitationAudioControls({
       <button
         type="button"
         onClick={() => void toggleMute()}
+        onPointerDown={(e) => {
+          // Keep the gesture “fresh” for Safari media unlock on unmute.
+          if (e.pointerType === "touch") e.currentTarget.focus({ preventScroll: true });
+        }}
         onFocus={() => setExpanded(true)}
-        className="flex h-10 w-10 items-center justify-center rounded-full transition-transform active:scale-95 touch-manipulation"
+        disabled={busy}
+        className="flex h-10 w-10 items-center justify-center rounded-full transition-transform active:scale-95 touch-manipulation disabled:opacity-60"
         aria-label={muted ? "Unmute music" : "Mute music"}
+        aria-pressed={muted}
         style={!muted ? accentStyle : undefined}
       >
-        {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        {muted ? <VolumeX className="h-4 w-4" aria-hidden /> : <Volume2 className="h-4 w-4" aria-hidden />}
       </button>
 
       {/* Expandable panel: play/pause + volume + track title */}
@@ -149,11 +190,12 @@ export function InvitationAudioControls({
         <button
           type="button"
           onClick={() => void togglePlay()}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95"
+          disabled={busy}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95 disabled:opacity-60"
           aria-label={playing ? "Pause music" : "Play music"}
           style={accentStyle}
         >
-          {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          {playing ? <Pause className="h-3.5 w-3.5" aria-hidden /> : <Play className="h-3.5 w-3.5" aria-hidden />}
         </button>
         <input
           type="range"
@@ -178,7 +220,10 @@ export function InvitationAudioControls({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className={cn("flex h-10 w-6 items-center justify-center rounded-full text-xs opacity-70 transition-opacity hover:opacity-100", expanded && "hidden")}
+        className={cn(
+          "flex h-10 w-6 items-center justify-center rounded-full text-xs opacity-70 transition-opacity hover:opacity-100",
+          expanded && "hidden"
+        )}
         aria-label="Show music controls"
         aria-expanded={expanded}
       >

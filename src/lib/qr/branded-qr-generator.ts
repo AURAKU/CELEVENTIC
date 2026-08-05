@@ -42,13 +42,15 @@ const PASS_LIGHT = "#FFFFFF";
 /** ISO quiet zone is 4; pass uses 6 so phone bezels / screenshots keep a clean border. */
 const PASS_MARGIN = 6;
 /**
- * Keep the framed center mark small on passes. Large couple photos over modules
- * are the #1 cause of slow or failed gate scans from phone screens.
+ * Keep the framed center mark readable on entry passes without eating
+ * too many modules. Error-correction H tolerates ~30% damage; framed inset
+ * = logoRatio × ~1.24 stays ≤ ~24% width even at bold — still phone-scannable.
+ * (Previous 0.10–0.12 made couple photos look like a speck.)
  */
 const PASS_LOGO_RATIOS: Record<QrLogoSizePreset, number> = {
-  subtle: 0.1,
-  balanced: 0.11,
-  bold: 0.12,
+  subtle: 0.14,
+  balanced: 0.17,
+  bold: 0.19,
 };
 
 function resolveLogoRatio(mode: QrDisplayMode, logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE): number {
