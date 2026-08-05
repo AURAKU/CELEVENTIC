@@ -38,6 +38,7 @@ import { resolveSealStyle } from "@/lib/invitation/seal-design";
 import {
   mergeWeddingBoard,
   resolveAfarisCoupleNames,
+  resolveIntroCoupleLine,
   type WeddingBoardContent,
 } from "@/lib/invitation/wedding-board";
 import { onInvitationReplay } from "@/lib/experience/replay-invitation";
@@ -570,10 +571,10 @@ export function PremiumInviteWrapper({
             inkColor: weddingBoard.inkColor,
             canvasColor: weddingBoard.canvasColor,
           },
-          coupleLine: [weddingBoard.coupleName1, weddingBoard.coupleName2]
-            .filter(Boolean)
-            .map((n) => n.split(" ")[0])
-            .join(" & "),
+          coupleLine: resolveIntroCoupleLine(
+            weddingBoard.coupleName1,
+            weddingBoard.coupleName2
+          ),
         }
       : undefined;
     return (

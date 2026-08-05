@@ -125,7 +125,7 @@ export interface WeddingBoardContent {
   openingInstruction?: string;
   /** Two-letter monogram / short word on the wax seal (e.g. "J | C") */
   sealMonogram?: string;
-  /** Word revealed as the gate opens (e.g. "Forever") */
+  /** Title revealed on the intro gate (e.g. "#THE FOREVER AFARIS") */
   gateWord?: string;
   /** Line addressed on the envelope face, above the seal */
   envelopeAddressLine?: string;
@@ -256,7 +256,7 @@ export const DEFAULT_WEDDING_BOARD: Required<
 } = {
   openingInstruction: "Lift the seal to open",
   sealMonogram: FOREVER_AFARIS_DEFAULT_SEAL,
-  gateWord: "Forever",
+  gateWord: "#THE FOREVER AFARIS",
   envelopeAddressLine: "You are cordially invited",
   envelopeStyle: "blush-floral",
   gateStyle: "golden-baroque",
@@ -388,6 +388,45 @@ export function resolveAfarisCoupleNames(
       ? DEFAULT_WEDDING_BOARD.coupleName2
       : bride,
   };
+}
+
+/** Legacy studio value before the full hashtag title shipped. */
+const LEGACY_GATE_WORDS = new Set(["forever"]);
+
+/**
+ * Guest-facing intro title. Upgrades the short legacy gate word to the full
+ * Forever Afaris line so mobile never shows a cropped single word.
+ */
+export function resolveGateTitle(gateWord?: string | null): string {
+  const trimmed = gateWord?.trim() ?? "";
+  if (!trimmed || LEGACY_GATE_WORDS.has(trimmed.toLowerCase())) {
+    return DEFAULT_WEDDING_BOARD.gateWord;
+  }
+  return trimmed;
+}
+
+/**
+ * Short intro couple line for the golden-gate / invitation intro beat.
+ * Prefers CHELSY when present in the bride's legal name and leads with her
+ * preferred name: "CHELSY & JEFFERY".
+ */
+export function resolveIntroCoupleLine(
+  coupleName1?: string | null,
+  coupleName2?: string | null
+): string {
+  const { coupleName1: groomFull, coupleName2: brideFull } = resolveAfarisCoupleNames(
+    coupleName1,
+    coupleName2
+  );
+  const groomFirst = groomFull.split(/\s+/)[0]?.toUpperCase() ?? "";
+  const brideTokens = brideFull.split(/\s+/).filter(Boolean);
+  const chelsy = brideTokens.find((t) => /^chelsy$/i.test(t));
+  const brideFirst = (chelsy ?? brideTokens[0] ?? "").toUpperCase();
+
+  if (brideFirst && groomFirst) return `${brideFirst} & ${groomFirst}`;
+  if (brideFirst) return brideFirst;
+  if (groomFirst) return groomFirst;
+  return "CHELSY & JEFFERY";
 }
 
 /**

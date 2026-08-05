@@ -16,25 +16,25 @@ import {
   type FaPalette,
   type WeddingPaletteOverrides,
 } from "./forever-afaris-wedding-palette";
-import type {
-  WeddingEnvelopeStyle,
-  WeddingGateStyle,
-  WeddingSealColor,
-  WeddingSealMotif,
+import {
+  resolveGateTitle,
+  type WeddingEnvelopeStyle,
+  type WeddingGateStyle,
+  type WeddingSealColor,
+  type WeddingSealMotif,
 } from "@/lib/invitation/wedding-board";
+import introStyles from "./forever-afaris-invitation-intro.module.css";
 
 /**
  * Forever Afaris, cinematic opening state machine.
  *
- * preload → sealed envelope (tap or swipe the champagne wax seal) → the seal
- * lifts slowly from the paper → the flaps unfold in depth → the inner card
- * rises → an ornate golden gate is rebuilt layer by layer → the gate parts
- * from the centre through light rays, petals and drifting motes → the invitation.
+ * sealed envelope (tap the champagne wax seal) → seal lifts → flaps unfold →
+ * magical auto intro (#THE FOREVER AFARIS / CHELSY & JEFFERY) dissolves into
+ * the invitation underneath. No ENTER tap — the intro completes itself.
  *
- * Everything is CSS/SVG, so the ceremony is complete with zero uploads and the
- * host's palette, envelope paper, gate architecture and wax colour all flow in
- * from Studio. Reduced motion collapses the journey to a single dignified open
- * gesture, which still supplies the interaction browsers require to start audio.
+ * Everything is CSS/SVG/Framer Motion. Reduced motion collapses the journey to
+ * a short dignified open that still supplies the interaction browsers require
+ * to start audio.
  */
 type Stage =
   | "sealed"
@@ -63,18 +63,20 @@ export interface WeddingOpeningProps {
    * miss the envelope, and the ceremony is never skipped silently.
    */
   allowSkip?: boolean;
+  /** Framed catalogue/studio preview — absolute shell instead of viewport-fixed. */
+  embedded?: boolean;
   onComplete: () => void;
   /** Fires on the first open gesture, the audio-unlock hook for the pipeline. */
   onBegin?: () => void;
 }
 
-const PETAL_COUNT = 16;
 const MOTE_COUNT = 18;
-/** Deliberate luxury pacing: seal lift → envelope unfold → final gate tableau. */
+/** Deliberate luxury pacing: seal lift → envelope unfold → intro tableau. */
 const UNSEAL_HOLD_MS = 2400;
 const GATE_REVEAL_AT_MS = 4600;
-/** Hold the completed word-and-couple tableau before entering the invitation. */
-const CEREMONY_COMPLETE_MS = 12000;
+/** Magical auto intro duration after the gate stage begins (matches Framer timeline). */
+const INTRO_DURATION_MS = 7000;
+const INTRO_REDUCED_MS = 600;
 
 /** Cinematic easing shared across the ceremony. */
 const EASE_SILK = [0.22, 1, 0.36, 1] as const;
@@ -130,12 +132,12 @@ export function ForeverAfarisWeddingOpening({
   coupleLine,
   addressLine,
   envelopeStyle = "blush-floral",
-  gateStyle = "golden-baroque",
   sealColor = "champagne",
   sealMotif = "monogram",
   palette,
   haptics = true,
   allowSkip = false,
+  embedded = false,
   onComplete,
   onBegin,
 }: WeddingOpeningProps) {
@@ -171,8 +173,8 @@ export function ForeverAfarisWeddingOpening({
     doneRef.current = true;
     clearTimers();
     setVisible(false);
-    // let the exit animation play before unmounting for the parent
-    after(prefersReduced ? 60 : 700, onComplete);
+    // Intro already dissolved; hand off without a second blank beat.
+    after(prefersReduced ? 40 : 280, onComplete);
   }, [after, clearTimers, onComplete, prefersReduced]);
 
   const openEnvelope = useCallback(() => {
@@ -187,22 +189,28 @@ export function ForeverAfarisWeddingOpening({
       return;
     }
     setStage("unsealing");
-    // Let each tactile beat breathe; the final couple-name tableau is now the
-    // only identity reveal and remains visible long enough to be read.
     after(UNSEAL_HOLD_MS, () => setStage("envelopeOpening"));
     after(GATE_REVEAL_AT_MS, () => {
       setStage("gate");
       vibrate(10, haptics);
     });
-    // Safety net only — guests normally enter by tapping the golden gate.
-    after(Math.max(CEREMONY_COMPLETE_MS, 22_000), finish);
-  }, [after, finish, haptics, onBegin, prefersReduced, stage]);
+  }, [after, haptics, onBegin, prefersReduced, stage]);
 
   const enterThroughGate = useCallback(() => {
     if (stage !== "gate") return;
     onBegin?.();
     finish();
   }, [finish, onBegin, stage]);
+
+  // Magical auto-intro: no ENTER tap required once the gate tableau is live.
+  useEffect(() => {
+    if (stage !== "gate") return;
+    const ms = prefersReduced ? INTRO_REDUCED_MS : INTRO_DURATION_MS;
+    const id = window.setTimeout(() => {
+      enterThroughGate();
+    }, ms);
+    return () => window.clearTimeout(id);
+  }, [enterThroughGate, prefersReduced, stage]);
 
   const skip = useCallback(() => {
     onBegin?.();
@@ -230,7 +238,11 @@ export function ForeverAfarisWeddingOpening({
     <AnimatePresence onExitComplete={() => setStage("done")}>
       {visible && (
         <motion.div
-          className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden"
+          className={
+            embedded
+              ? "absolute inset-0 z-10 flex items-center justify-center overflow-hidden"
+              : "fixed inset-0 z-[60] flex items-center justify-center overflow-hidden"
+          }
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: prefersReduced ? 0.15 : 0.65, ease: "easeInOut" }}
@@ -311,15 +323,13 @@ export function ForeverAfarisWeddingOpening({
             </ParallaxLayer>
           )}
 
-          {/* 7–9, GOLDEN GATE */}
+          {/* Magical auto intro — dissolves into the invitation underneath */}
           {stage === "gate" && (
-            <Gate
-              palette={C}
-              word={gateWord}
-              coupleLine={coupleLine}
-              style={gateStyle}
-              parallax={parallax}
-              onEnter={enterThroughGate}
+            <InvitationIntro
+              title={resolveGateTitle(gateWord)}
+              names={coupleLine}
+              reducedMotion={Boolean(prefersReduced)}
+              embedded={embedded}
             />
           )}
         </motion.div>
@@ -864,292 +874,134 @@ function PaperEmboss({ theme, palette: C }: { theme: PaperTheme; palette: FaPale
 }
 
 /* ------------------------------------------------------------------ */
-/* Gate                                                                */
+/* Invitation intro (auto magical entrance)                            */
 /* ------------------------------------------------------------------ */
 
-function Gate({
-  palette: C,
-  word,
-  coupleLine,
-  style,
-  parallax,
-  onEnter,
+function InvitationIntro({
+  title,
+  names,
+  reducedMotion,
+  embedded = false,
 }: {
-  palette: FaPalette;
-  word: string;
-  coupleLine: string;
-  style: WeddingGateStyle;
-  parallax: { x: MotionValue<number>; y: MotionValue<number> };
-  onEnter: () => void;
+  title: string;
+  names: string;
+  reducedMotion: boolean;
+  embedded?: boolean;
 }) {
+  const duration = reducedMotion ? 0.6 : 7;
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+
+  // Guarantee the full title stays inside the viewport on every device width.
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+
+    const fit = () => {
+      el.style.fontSize = "";
+      const parent = el.parentElement;
+      if (!parent) return;
+      // Stay clear of safe-area / content padding so letters never kiss the edge.
+      const available = Math.max(0, parent.clientWidth - 8);
+      if (available <= 0) return;
+      if (el.scrollWidth > available) {
+        const computed = Number.parseFloat(window.getComputedStyle(el).fontSize);
+        if (!Number.isFinite(computed) || computed <= 0) return;
+        el.style.fontSize = `${(computed * available) / el.scrollWidth}px`;
+      }
+    };
+
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el.parentElement ?? el);
+    window.addEventListener("resize", fit);
+    document.fonts?.ready?.then(fit).catch(() => undefined);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+    };
+  }, [title]);
+
   return (
-    <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: 1800 }}>
-      {/* The garden beyond the gate */}
+    <motion.section
+      className={`${introStyles.invitationIntro}${embedded ? ` ${introStyles.embedded}` : ""}`}
+      aria-label="Invitation introduction"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: [1, 1, 0] }}
+      transition={{
+        duration,
+        times: [0, 0.78, 1],
+        ease: "easeInOut",
+      }}
+    >
+      {!reducedMotion && <div className={introStyles.shimmer} aria-hidden />}
+
       <motion.div
-        className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden"
-        initial={{ scale: 1.2, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 2.8, ease: "easeOut", delay: 0.7 }}
-        style={{
-          background: `radial-gradient(72% 62% at 50% 44%, ${C.linen} 0%, ${C.blush} 58%, ${C.blushDeep} 100%)`,
+        className={introStyles.introGlow}
+        aria-hidden
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={
+          reducedMotion
+            ? { opacity: 0.4, scale: 1 }
+            : {
+                opacity: [0, 0.65, 0.45, 0],
+                scale: [0.7, 1, 1.15, 1.35],
+              }
+        }
+        transition={{
+          duration,
+          ease: "easeInOut",
+        }}
+      />
+
+      <motion.div
+        className={introStyles.introContent}
+        initial={{
+          opacity: 0,
+          y: 30,
+          scale: 0.97,
+          filter: "blur(8px)",
+        }}
+        animate={
+          reducedMotion
+            ? { opacity: [0, 1, 0], y: 0, scale: 1, filter: "blur(0px)" }
+            : {
+                opacity: [0, 1, 1, 0],
+                y: [30, 0, 0, -20],
+                scale: [0.97, 1, 1, 1.06],
+                filter: ["blur(8px)", "blur(0px)", "blur(0px)", "blur(10px)"],
+              }
+        }
+        transition={{
+          duration,
+          times: reducedMotion ? [0, 0.45, 1] : [0, 0.25, 0.76, 1],
+          ease: [0.22, 1, 0.36, 1],
         }}
       >
-        <ParallaxLayer x={parallax.x} y={parallax.y} depth={-16} className="absolute inset-0">
-          <motion.div
-            aria-hidden
-            className="absolute left-1/2 top-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2"
-            initial={{ opacity: 0, rotate: -4 }}
-            animate={{ opacity: 0.55, rotate: 6 }}
-            transition={{ duration: 2.6, ease: "easeOut", delay: 0.7 }}
-            style={{
-              background: `conic-gradient(from 0deg at 50% 40%, transparent 0deg, ${C.linen}77 10deg, transparent 22deg, ${C.goldSoft}55 34deg, transparent 46deg, ${C.linen}66 60deg, transparent 74deg)`,
-              maskImage: "radial-gradient(circle at 50% 40%, #000 0%, transparent 62%)",
-              WebkitMaskImage: "radial-gradient(circle at 50% 40%, #000 0%, transparent 62%)",
-            }}
-          />
-        </ParallaxLayer>
+        <h1 ref={titleRef}>{title}</h1>
 
-        {/* Bloom of light exactly where the gate parts */}
-        <motion.div
-          aria-hidden
-          className="absolute left-1/2 top-1/2 h-[52vh] w-[52vh] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            background: `radial-gradient(circle, ${C.linen} 0%, ${C.goldSoft}55 40%, transparent 70%)`,
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={
+            reducedMotion
+              ? { opacity: [0, 1, 0], y: 0 }
+              : { opacity: [0, 0, 1, 1, 0], y: [10, 10, 0, 0, -8] }
+          }
+          transition={{
+            duration,
+            times: reducedMotion ? [0, 0.5, 1] : [0, 0.2, 0.38, 0.78, 1],
+            ease: "easeInOut",
           }}
-          initial={{ opacity: 0, scale: 0.3 }}
-          animate={{ opacity: [0, 0.95, 0.35], scale: [0.3, 1.25, 1] }}
-          transition={{ duration: 2.4, ease: "easeOut", delay: 0.4 }}
-        />
-
-        <ParallaxLayer
-          x={parallax.x}
-          y={parallax.y}
-          depth={-6}
-          className="relative z-10 flex flex-col items-center"
         >
-          <motion.p
-            className="font-[family-name:var(--font-great-vibes)] text-6xl sm:text-7xl"
-            style={{ color: C.goldDeep, textShadow: `0 2px 18px ${C.linen}` }}
-            initial={{ opacity: 0, y: 18, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 2.2, ease: EASE_SILK, delay: 2 }}
-          >
-            {word}
-          </motion.p>
-          <motion.p
-            className="mt-2 text-[11px] uppercase tracking-[0.34em]"
-            style={{ color: C.cocoa }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.8, ease: EASE_SILK, delay: 3.2 }}
-          >
-            {coupleLine}
-          </motion.p>
-          <motion.button
-            type="button"
-            onClick={onEnter}
-            aria-label="Enter through the golden gate"
-            className="mt-8 rounded-full px-6 py-3 text-[11px] uppercase tracking-[0.28em] touch-manipulation"
-            style={{
-              color: C.cocoa,
-              background: `${C.linen}ee`,
-              border: `1px solid ${C.border}`,
-              boxShadow: `0 12px 36px ${C.blushDeep}55`,
-            }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, ease: EASE_SILK, delay: 3.6 }}
-          >
-            Enter
-          </motion.button>
-        </ParallaxLayer>
-
-        {Array.from({ length: PETAL_COUNT }).map((_, i) => (
-          <Petal key={i} index={i} palette={C} />
-        ))}
+          {names}
+        </motion.p>
       </motion.div>
-
-      <GatePanel side="left" palette={C} style={style} />
-      <GatePanel side="right" palette={C} style={style} />
-    </div>
-  );
-}
-
-function GatePanel({
-  side,
-  palette: C,
-  style,
-}: {
-  side: "left" | "right";
-  palette: FaPalette;
-  style: WeddingGateStyle;
-}) {
-  const isLeft = side === "left";
-  return (
-    <motion.div
-      className="absolute top-0 h-full overflow-hidden"
-      style={{
-        width: "50.5%",
-        [isLeft ? "left" : "right"]: 0,
-        transformOrigin: isLeft ? "left center" : "right center",
-        transformStyle: "preserve-3d",
-        background: `linear-gradient(${isLeft ? "90deg" : "270deg"}, ${C.cream} 0%, ${C.ivory} 55%, ${C.linen} 100%)`,
-        borderRight: isLeft ? `2px solid ${C.gold}` : undefined,
-        borderLeft: !isLeft ? `2px solid ${C.gold}` : undefined,
-        boxShadow: `inset ${isLeft ? "-" : ""}22px 0 50px -22px ${C.goldDeep}`,
-      }}
-      initial={{ rotateY: 0 }}
-      animate={{ rotateY: isLeft ? -112 : 112 }}
-      transition={{ duration: 3.7, ease: EASE_GATE, delay: 0.75 }}
-    >
-      <GateOrnament flip={!isLeft} palette={C} style={style} />
-    </motion.div>
-  );
-}
-
-/**
- * Ornamental ironwork drawn in layers, pier, bars, scrollwork, arch crest and
- * finials each fade in on their own beat so the gate is built in front of the
- * guest rather than dropped in as one flat picture.
- */
-function GateOrnament({
-  flip,
-  palette: C,
-  style,
-}: {
-  flip: boolean;
-  palette: FaPalette;
-  style: WeddingGateStyle;
-}) {
-  const isTrellis = style === "botanical-trellis";
-  const isIvory = style === "ivory-arch";
-  const metal = isIvory ? C.linen : C.gold;
-  const metalDeep = isIvory ? C.goldSoft : C.goldDeep;
-  const bars = isTrellis ? [16, 34, 52, 70, 88] : [18, 40, 62, 84];
-
-  const layer = (delay: number) => ({
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    transition: { duration: 0.5, delay, ease: "easeOut" as const },
-  });
-
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 100 400"
-      preserveAspectRatio="none"
-      className="h-full w-full"
-      style={{ transform: flip ? "scaleX(-1)" : undefined }}
-    >
-      <defs>
-        <linearGradient id={`fa-gate-${flip ? "r" : "l"}`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor={metalDeep} />
-          <stop offset="0.45" stopColor={metal} />
-          <stop offset="1" stopColor={metalDeep} />
-        </linearGradient>
-      </defs>
-
-      {/* 1, masonry pier */}
-      <motion.g {...layer(0)}>
-        <rect x="0" y="14" width="9" height="372" fill={C.cream} opacity="0.9" />
-        <rect x="0" y="14" width="9" height="372" fill="none" stroke={metalDeep} strokeWidth="0.8" opacity="0.5" />
-      </motion.g>
-
-      {/* 2, vertical bars */}
-      <motion.g
-        {...layer(0.1)}
-        stroke={`url(#fa-gate-${flip ? "r" : "l"})`}
-        strokeWidth="2.4"
-        fill="none"
-      >
-        {bars.map((x) => (
-          <line key={x} x1={x} y1="26" x2={x} y2="380" />
-        ))}
-        <line x1="4" y1="380" x2="98" y2="380" strokeWidth="3.4" />
-        <line x1="4" y1="196" x2="98" y2="196" strokeWidth="2" opacity="0.8" />
-      </motion.g>
-
-      {/* 3, arched crest */}
-      <motion.g {...layer(0.24)} stroke={metal} strokeWidth="2.6" fill="none">
-        <path d="M4 66 Q50 4 98 66" />
-        <path d="M4 84 Q50 26 98 84" opacity="0.75" />
-        {bars.map((x) => (
-          <line key={`c-${x}`} x1={x} y1="26" x2={x} y2="14" opacity="0.6" />
-        ))}
-      </motion.g>
-
-      {/* 4, scrollwork */}
-      <motion.g {...layer(0.36)} stroke={metal} strokeWidth="1.9" fill="none" opacity="0.85">
-        {(isTrellis ? [116, 168, 220, 272, 324] : [124, 214, 304]).map((y) => (
-          <g key={y}>
-            <path d={`M14 ${y} Q50 ${y - 28} 90 ${y} Q50 ${y + 28} 14 ${y}`} />
-            {isTrellis && <path d={`M30 ${y - 12} Q50 ${y} 30 ${y + 12}`} opacity="0.6" />}
-          </g>
-        ))}
-      </motion.g>
-
-      {/* 5, botanical growth on the trellis */}
-      {isTrellis && (
-        <motion.g {...layer(0.48)} stroke={C.sage} strokeWidth="1.6" fill="none" opacity="0.75">
-          <path d="M12 380 Q30 300 20 220 Q12 150 34 80" />
-          {[340, 280, 220, 160, 110].map((y) => (
-            <path key={y} d={`M20 ${y} q14 -10 24 -2 q-12 10 -24 2`} fill={C.sage} fillOpacity="0.25" />
-          ))}
-        </motion.g>
-      )}
-
-      {/* 6, finials + medallion */}
-      <motion.g {...layer(0.52)}>
-        {bars.map((x) => (
-          <circle key={`f-${x}`} cx={x} cy="12" r="3.2" fill={metal} opacity="0.9" />
-        ))}
-        <circle cx="50" cy="124" r="9" fill="none" stroke={metal} strokeWidth="2" />
-        <circle cx="50" cy="124" r="4" fill={metal} opacity="0.7" />
-      </motion.g>
-
-      {/* 7, specular sheen sweeping the metal as the gate parts */}
-      <motion.rect
-        x="0"
-        y="0"
-        width="100"
-        height="400"
-        fill={`${C.linen}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 0.35, 0] }}
-        transition={{ duration: 1.4, delay: 0.6, ease: "easeInOut" }}
-        style={{ mixBlendMode: "soft-light" }}
-      />
-    </svg>
+    </motion.section>
   );
 }
 
 /* ------------------------------------------------------------------ */
 /* Atmosphere                                                          */
 /* ------------------------------------------------------------------ */
-
-function Petal({ index, palette: C }: { index: number; palette: FaPalette }) {
-  const left = (index * 37) % 100;
-  const delay = 0.7 + (index % 7) * 0.24;
-  const size = 8 + (index % 4) * 3;
-  const drift = index % 2 === 0 ? 26 : -26;
-  return (
-    <motion.span
-      aria-hidden
-      className="absolute rounded-[50%_50%_50%_0]"
-      style={{
-        left: `${left}%`,
-        top: "-8%",
-        width: size,
-        height: size,
-        background: `linear-gradient(135deg, ${C.blush}, ${C.rose})`,
-        boxShadow: `0 2px 6px -2px ${C.rose}`,
-      }}
-      initial={{ y: "-10%", x: 0, rotate: 0, opacity: 0 }}
-      animate={{ y: "125%", x: [0, drift, 0], rotate: 260, opacity: [0, 0.9, 0] }}
-      transition={{ duration: 4.5 + (index % 3), ease: "easeIn", delay, repeat: Infinity }}
-    />
-  );
-}
 
 /** Slow champagne motes that give the room air before the envelope appears. */
 function Motes({ palette: C }: { palette: FaPalette }) {

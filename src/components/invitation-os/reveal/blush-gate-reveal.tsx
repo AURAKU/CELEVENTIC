@@ -7,6 +7,8 @@ import {
 } from "@/components/invitation/templates/forever-afaris-wedding-opening";
 import {
   DEFAULT_WEDDING_BOARD,
+  resolveGateTitle,
+  resolveIntroCoupleLine,
   type WeddingEnvelopeStyle,
   type WeddingGateStyle,
   type WeddingSealColor,
@@ -38,6 +40,8 @@ interface BlushGateRevealProps {
   autoOpen?: boolean;
   /** Returning guest, surface an honest, opt-in way to move along faster. */
   allowSkip?: boolean;
+  /** Framed catalogue/studio preview — absolute shell instead of viewport-fixed. */
+  embedded?: boolean;
   onBegin?: () => void;
   onComplete: () => void;
 }
@@ -58,6 +62,7 @@ export function BlushGateReveal({
   copy,
   autoOpen = false,
   allowSkip = false,
+  embedded = false,
   onBegin,
   onComplete,
 }: BlushGateRevealProps) {
@@ -77,14 +82,15 @@ export function BlushGateReveal({
 
   const coupleLine =
     copy?.coupleLine?.trim() ||
+    resolveIntroCoupleLine() ||
     hostName?.trim() ||
     eventTitle.trim() ||
-    DEFAULT_WEDDING_BOARD.closingSignature;
+    "CHELSY & JEFFERY";
 
   const openingProps: WeddingOpeningProps = {
     monogram: copy?.monogram?.trim() || DEFAULT_WEDDING_BOARD.sealMonogram,
     instruction: copy?.instruction?.trim() || DEFAULT_WEDDING_BOARD.openingInstruction,
-    gateWord: copy?.gateWord?.trim() || DEFAULT_WEDDING_BOARD.gateWord,
+    gateWord: resolveGateTitle(copy?.gateWord),
     addressLine: copy?.addressLine?.trim() || undefined,
     envelopeStyle: copy?.envelopeStyle ?? DEFAULT_WEDDING_BOARD.envelopeStyle,
     gateStyle: copy?.gateStyle ?? DEFAULT_WEDDING_BOARD.gateStyle,
@@ -94,12 +100,17 @@ export function BlushGateReveal({
     haptics: copy?.haptics ?? DEFAULT_WEDDING_BOARD.haptics,
     coupleLine,
     allowSkip,
+    embedded,
     onBegin,
     onComplete,
   };
 
   return (
-    <div ref={stageRef} aria-label={guestName ? `Invitation for ${guestName}` : undefined}>
+    <div
+      ref={stageRef}
+      className={embedded ? "absolute inset-0 h-full w-full" : undefined}
+      aria-label={guestName ? `Invitation for ${guestName}` : undefined}
+    >
       <ForeverAfarisWeddingOpening {...openingProps} />
     </div>
   );
