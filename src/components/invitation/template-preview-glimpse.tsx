@@ -14,6 +14,12 @@ import {
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import { EnvelopeCollectionReveal } from "@/components/experience/envelope-collection-reveal";
 import { CurtainReveal } from "@/components/invitation-os/reveal/curtain-reveal";
+import { BlushGateReveal } from "@/components/invitation-os/reveal/blush-gate-reveal";
+import {
+  mergeWeddingBoard,
+  resolveGateTitle,
+  resolveIntroCoupleLine,
+} from "@/lib/invitation/wedding-board";
 import {
   mergeVisionBoard,
   resolveSealInitials,
@@ -92,6 +98,49 @@ export function TemplatePreviewGlimpse({
   const visibleHeight = compact ? 108 : 200;
 
   const noop = () => undefined;
+
+  // Forever Afaris blush-gate: sealed champagne envelope (embedded absolute shell).
+  if (openingId === "blush-gate") {
+    const board = mergeWeddingBoard(
+      (preview.design.studio as { weddingBoard?: Parameters<typeof mergeWeddingBoard>[0] } | undefined)
+        ?.weddingBoard
+    );
+    return (
+      <div
+        className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}
+        style={{ background: visual.background }}
+        aria-hidden
+      >
+        <div className="relative h-full w-full">
+          <BlushGateReveal
+            embedded
+            eventTitle={preview.event.title}
+            hostName={preview.event.hostName}
+            guestName={preview.guestName}
+            copy={{
+              monogram: board.sealMonogram,
+              instruction: board.openingInstruction,
+              gateWord: resolveGateTitle(board.gateWord),
+              coupleLine: resolveIntroCoupleLine(board.coupleName1, board.coupleName2),
+              addressLine: board.envelopeAddressLine,
+              envelopeStyle: board.envelopeStyle,
+              gateStyle: board.gateStyle,
+              sealColor: board.sealColor,
+              sealMotif: board.sealMotif,
+              haptics: false,
+              palette: {
+                accentColor: board.accentColor,
+                blushColor: board.blushColor,
+                inkColor: board.inkColor,
+                canvasColor: board.canvasColor,
+              },
+            }}
+            onComplete={noop}
+          />
+        </div>
+      </div>
+    );
+  }
 
   // True opening DNA: sealed envelope / closed curtain fills the tile.
   if (isEnvelopeExperience(openingId) && envelopeTheme) {

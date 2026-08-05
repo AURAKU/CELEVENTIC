@@ -152,17 +152,35 @@ export function OpeningExperienceRouter({
     // Blush Gate owns its own seal keyboard path — do NOT mount RevealKeyboardFallback
     // here. That "Open invitation" control called onComplete and skipped the entire
     // envelope → golden gate ceremony on live Forever Afaris invites.
+    // Mount the invitation underneath so the intro can dissolve into it continuously.
+    const underlayPosition = embedded ? "absolute" : "fixed";
     return (
-      <BlushGateReveal
-        guestName={guestName}
-        eventTitle={eventTitle}
-        hostName={hostName}
-        copy={{ ...openingCopy, monogram: openingCopy?.monogram ?? sealInitials }}
-        autoOpen={autoOpen}
-        allowSkip={allowSkip}
-        onBegin={onBegin}
-        onComplete={complete}
-      />
+      <>
+        <div
+          className={revealed ? "inv-portal-enter" : undefined}
+          aria-hidden={!revealed}
+          style={
+            revealed
+              ? undefined
+              : { position: underlayPosition, inset: 0, zIndex: 0 }
+          }
+        >
+          {children}
+        </div>
+        {!revealed && (
+          <BlushGateReveal
+            guestName={guestName}
+            eventTitle={eventTitle}
+            hostName={hostName}
+            copy={{ ...openingCopy, monogram: openingCopy?.monogram ?? sealInitials }}
+            autoOpen={autoOpen}
+            allowSkip={allowSkip}
+            embedded={embedded}
+            onBegin={onBegin}
+            onComplete={complete}
+          />
+        )}
+      </>
     );
   }
 

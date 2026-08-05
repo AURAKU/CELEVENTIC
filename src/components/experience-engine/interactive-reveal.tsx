@@ -61,9 +61,10 @@ export function InteractiveReveal({
   const contract = getRevealContractForOpening(openingExperience);
 
   useEffect(() => {
+    if (embedded) return;
     const unlock = lockRevealScroll();
     return unlock;
-  }, []);
+  }, [embedded]);
 
   return (
     <div

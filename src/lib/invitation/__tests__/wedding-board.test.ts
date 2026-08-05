@@ -16,6 +16,8 @@ import {
   mergeWeddingBoard,
   normaliseSectionOrder,
   resolveAfarisCoupleNames,
+  resolveGateTitle,
+  resolveIntroCoupleLine,
   withoutPhraseDashes,
   type WeddingSectionId,
 } from "../wedding-board";
@@ -61,6 +63,26 @@ describe("Afaris couple names", () => {
       coupleName1: "ADWOA MENSAH",
       coupleName2: "KWAME ASARE",
     });
+  });
+});
+
+describe("intro gate title and couple line", () => {
+  it("upgrades legacy Forever gate word to the full hashtag title", () => {
+    assert.equal(resolveGateTitle("Forever"), "#THE FOREVER AFARIS");
+    assert.equal(resolveGateTitle(""), "#THE FOREVER AFARIS");
+    assert.equal(resolveGateTitle("#THE FOREVER AFARIS"), "#THE FOREVER AFARIS");
+    assert.equal(resolveGateTitle("Always"), "Always");
+    assert.equal(resolveGateTitle("Our Forever"), "Our Forever");
+  });
+
+  it("leads with CHELSY for the Forever Afaris intro couple line", () => {
+    assert.equal(
+      resolveIntroCoupleLine(
+        DEFAULT_WEDDING_BOARD.coupleName1,
+        DEFAULT_WEDDING_BOARD.coupleName2
+      ),
+      "CHELSY & JEFFERY"
+    );
   });
 });
 
