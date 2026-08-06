@@ -52,7 +52,7 @@ export function GuideProgramme({
                 {item.time ? (
                   <p
                     className="text-[0.7rem] font-semibold uppercase tracking-[0.18em]"
-                    style={{ fontFamily: fonts.eyebrow, color: "var(--guide-secondary)" }}
+                    style={{ fontFamily: fonts.eyebrow, color: "var(--guide-label, var(--guide-secondary))" }}
                   >
                     {item.time}
                   </p>

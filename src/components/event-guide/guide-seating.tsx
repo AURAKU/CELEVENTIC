@@ -74,7 +74,7 @@ export function GuideSeating({
       >
         <p
           className="text-[0.72rem] font-semibold uppercase tracking-[0.2em]"
-          style={{ fontFamily: fonts.eyebrow, color: "var(--guide-secondary)" }}
+          style={{ fontFamily: fonts.eyebrow, color: "var(--guide-label, var(--guide-secondary))" }}
         >
           Needs a connection
         </p>
@@ -98,7 +98,7 @@ export function GuideSeating({
         >
           <p
             className="text-[0.7rem] font-semibold uppercase tracking-[0.22em]"
-            style={{ fontFamily: fonts.eyebrow, color: "var(--guide-secondary)" }}
+            style={{ fontFamily: fonts.eyebrow, color: "var(--guide-label, var(--guide-secondary))" }}
           >
             Reserved for
           </p>
@@ -174,7 +174,7 @@ export function GuideSeating({
       <label
         htmlFor="guide-seat-query"
         className="block text-[0.7rem] font-semibold uppercase tracking-[0.2em]"
-        style={{ fontFamily: fonts.eyebrow, color: "var(--guide-secondary)" }}
+        style={{ fontFamily: fonts.eyebrow, color: "var(--guide-label, var(--guide-secondary))" }}
       >
         {byCode ? "Your admission code" : "Your name"}
       </label>

@@ -7,6 +7,7 @@ import { sharedVendorAccessService } from "@/services/qr-hub/shared-vendor-acces
 import type { QrHubAssetCard } from "@/lib/qr-hub/types";
 import { isCampaignPlaceable } from "@/lib/gifts/gift-placement";
 import { companionGiftHeadline, companionGiftOptionalNote, companionGiftTeaser } from "@/lib/gifts/gift-copy";
+import { LIVE_INVITATION_WHERE } from "@/lib/invitation/live-invitation";
 
 function qrUrl(target: string, eventId: string, size = 512, mode?: "pass" | "brand") {
   const modeQs = mode ? `&mode=${mode}` : "";
@@ -26,7 +27,7 @@ export class EventQrHubService {
         title: true,
         slug: true,
         invitations: {
-          where: { status: { in: ["PUBLISHED", "APPROVED"] } },
+          where: LIVE_INVITATION_WHERE,
           orderBy: { updatedAt: "desc" },
           take: 1,
           select: { uniqueLink: true },

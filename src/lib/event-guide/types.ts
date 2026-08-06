@@ -69,6 +69,15 @@ export interface GuideThemeTokens {
   backgroundImageUrl: string | null;
   accentWash: string;
   paperWash: string;
+  /**
+   * Colour for the small tracked labels (section headings, programme times).
+   *
+   * Derived from `colors.secondary`, darkened or lightened only as far as it
+   * takes to clear 4.5:1 against the background. A decorative gold reads
+   * beautifully as a rule but is unreadable as 11px type on cream, and the
+   * decorative token stays untouched for flourishes.
+   */
+  labelColor: string;
 }
 
 export interface GuideHeader {

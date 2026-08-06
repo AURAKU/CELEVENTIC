@@ -83,6 +83,7 @@ const NEUTRAL_THEME: GuideThemeTokens = {
   backgroundImageUrl: null,
   accentWash: "rgba(199, 163, 90, 0.14)",
   paperWash: "rgba(251, 248, 243, 0.82)",
+  labelColor: "#6b5320",
 };
 
 type ThemeInvitationInput = Parameters<typeof resolveCompanionTheme>[0];
@@ -92,18 +93,23 @@ export function resolveGuideTheme(input: {
   overrides: unknown;
   invitation: ThemeInvitationInput | null;
 }): GuideThemeTokens {
-  const base: GuideThemeTokens =
+  // `labelColor` is derived from the final colours, so the base layer omits it.
+  const base: Omit<GuideThemeTokens, "labelColor"> =
     input.useInvitationTheme && input.invitation
       ? (() => {
           try {
             const theme = resolveCompanionTheme(input.invitation);
+            // Invitation fonts are all optional; the guide's contract is not,
+            // so each slot falls back rather than emitting `undefined` into a
+            // CSS font stack.
+            const heading = theme.fonts.heading ?? NEUTRAL_THEME.fonts.heading;
             return {
-              colors: theme.colors,
+              colors: { ...NEUTRAL_THEME.colors, ...theme.colors },
               fonts: {
-                heading: theme.fonts.heading,
+                heading,
                 script: theme.fonts.script ?? NEUTRAL_THEME.fonts.script,
-                body: theme.fonts.body,
-                eyebrow: theme.fonts.eyebrow ?? theme.fonts.heading,
+                body: theme.fonts.body ?? NEUTRAL_THEME.fonts.body,
+                eyebrow: theme.fonts.eyebrow ?? heading,
               },
               layout: theme.layout,
               backgroundImageUrl: theme.backgroundImageUrl,
@@ -121,6 +127,7 @@ export function resolveGuideTheme(input: {
 
   return {
     colors,
+    labelColor: ensureReadable(colors.secondary, colors.background).color,
     fonts: { ...base.fonts, ...overrides.fonts },
     layout: base.layout,
     backgroundImageUrl:
@@ -177,6 +184,48 @@ export function relativeLuminance(color: string): number | null {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+function toHex(rgb: [number, number, number]): string {
+  return `#${rgb.map((c) => Math.round(Math.min(255, Math.max(0, c))).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function mix(color: [number, number, number], target: [number, number, number], amount: number): [number, number, number] {
+  return [
+    color[0] + (target[0] - color[0]) * amount,
+    color[1] + (target[1] - color[1]) * amount,
+    color[2] + (target[2] - color[2]) * amount,
+  ];
+}
+
+/**
+ * Nudge `color` toward black or white — whichever direction the background
+ * allows — until it clears `required` against it.
+ *
+ * Used for small label type. Stepping in small increments keeps as much of the
+ * organizer's hue as the ratio permits, so a champagne gold becomes a deeper
+ * antique gold rather than collapsing to grey.
+ */
+export function ensureReadable(
+  color: string,
+  background: string,
+  required = 4.5
+): { color: string; adjusted: boolean } {
+  const start = parseHex(color);
+  const bgLuminance = relativeLuminance(background);
+  if (!start || bgLuminance === null) return { color, adjusted: false };
+
+  const current = contrastRatio(color, background);
+  if (current !== null && current >= required) return { color, adjusted: false };
+
+  const target: [number, number, number] = bgLuminance > 0.5 ? [0, 0, 0] : [255, 255, 255];
+  for (let step = 1; step <= 20; step += 1) {
+    const candidate = toHex(mix(start, target, step / 20));
+    const ratio = contrastRatio(candidate, background);
+    if (ratio !== null && ratio >= required) return { color: candidate, adjusted: true };
+  }
+
+  return { color: toHex(target), adjusted: true };
+}
+
 /** WCAG 2.1 contrast ratio, 1–21. Null when either token is not a plain hex. */
 export function contrastRatio(a: string, b: string): number | null {
   const la = relativeLuminance(a);
@@ -199,18 +248,28 @@ export interface ContrastAssessment {
   findings: ContrastFinding[];
   /** Pairs we could not measure because the token is a gradient or named colour. */
   unmeasured: string[];
+  /** Tokens we darkened or lightened for readability, phrased for the organizer. */
+  adjustments: string[];
 }
 
 /**
- * Publish gate. Body text needs 4.5:1; large display text and the primary
- * action need 3:1. Unmeasurable tokens (gradients) are reported, not failed —
- * failing them would block legitimate designs we cannot evaluate numerically.
+ * Publish gate. Text needs 4.5:1; large display text and the primary action
+ * need 3:1. Unmeasurable tokens (gradients) are reported, not failed — failing
+ * them would block legitimate designs we cannot evaluate numerically.
+ *
+ * Small labels are checked against the derived `labelColor`, not the raw
+ * decorative token, because that is what actually renders. A gold that is
+ * lovely as a rule but unreadable as 11px type is adjusted rather than
+ * rejected — the organizer keeps their palette and the guest can still read it.
  */
 export function assessGuideContrast(theme: GuideThemeTokens): ContrastAssessment {
+  const labelColor =
+    theme.labelColor ?? ensureReadable(theme.colors.secondary, theme.colors.background).color;
+
   const checks: Array<{ pair: string; fg: string; bg: string; required: number }> = [
     { pair: "Body text on background", fg: theme.colors.text, bg: theme.colors.background, required: 4.5 },
     { pair: "Heading on background", fg: theme.colors.primary, bg: theme.colors.background, required: 3 },
-    { pair: "Accent detail on background", fg: theme.colors.secondary, bg: theme.colors.background, required: 3 },
+    { pair: "Section labels on background", fg: labelColor, bg: theme.colors.background, required: 4.5 },
     { pair: "Primary action label", fg: theme.colors.background, bg: theme.colors.accent, required: 3 },
   ];
 
@@ -231,9 +290,17 @@ export function assessGuideContrast(theme: GuideThemeTokens): ContrastAssessment
     });
   }
 
+  const adjustments: string[] = [];
+  if (labelColor.toLowerCase() !== theme.colors.secondary.toLowerCase()) {
+    adjustments.push(
+      `Small labels use a deeper shade of your accent (${labelColor}) so they stay readable on ${theme.colors.background}. Your accent is unchanged everywhere else.`
+    );
+  }
+
   return {
     passes: findings.every((f) => f.passes),
     findings,
     unmeasured,
+    adjustments,
   };
 }

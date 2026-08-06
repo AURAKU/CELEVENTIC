@@ -35,7 +35,7 @@ export function GuideMenuPanel({
             >
               <h2
                 className="text-[0.72rem] font-semibold uppercase tracking-[0.22em]"
-                style={{ fontFamily: fonts.eyebrow, color: "var(--guide-secondary)" }}
+                style={{ fontFamily: fonts.eyebrow, color: "var(--guide-label, var(--guide-secondary))" }}
               >
                 {section.heading}
               </h2>

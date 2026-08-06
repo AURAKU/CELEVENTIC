@@ -15,7 +15,7 @@
  */
 
 import { normalizeAdmissionCode } from "@/lib/admission/pass-code";
-import { pickSeatingAssignment } from "@/lib/seating/assignment-pick";
+import { pickSeatingAssignment, splitSeatingAssignments } from "@/lib/seating/assignment-pick";
 import type { GuideSeatingMatch, GuideSeatingOutcome } from "./types";
 
 export const SEATING_RATE_LIMIT = { attempts: 12, windowSeconds: 60 } as const;
@@ -134,8 +134,16 @@ export function buildSeatingMatch(party: CandidateParty): GuideSeatingMatch {
   const primary = partyGuests[0];
   const assignments =
     partyGuests.find((g) => g.seatingAssignments.length > 0)?.seatingAssignments ?? [];
-  const reception = pickSeatingAssignment(assignments, "RECEPTION");
-  const ceremony = pickSeatingAssignment(assignments, "CEREMONY");
+
+  // `pickSeatingAssignment` falls back to the reception row when no ceremony
+  // plan exists, which would print a guest's dinner table as their ceremony
+  // row. A missing stage must read as missing, so ceremony is matched strictly.
+  const { ceremony } = splitSeatingAssignments(assignments);
+  const reception =
+    pickSeatingAssignment(
+      assignments.filter((row) => row.seatingPlan?.planType !== "CEREMONY"),
+      "RECEPTION"
+    ) ?? null;
 
   return {
     partyName: party.partyName.trim() || primary?.name?.trim() || "Guest",

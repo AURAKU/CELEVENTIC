@@ -2,12 +2,14 @@ import type { EventGuide, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getServerAppUrl } from "@/lib/app-url";
 import { createAuditLog } from "@/lib/audit";
-import { eventQrLinkService } from "@/services/qr-hub/event-qr-link.service";
 import { generatePublicLinkToken } from "@/lib/qr-hub/vendor-token";
 import { validateCustomQrDestination } from "@/lib/qr-hub/types";
-import { resolveCompanionTheme } from "@/lib/admission/event-companion-theme";
 import { mergeWeddingBoard } from "@/lib/invitation/wedding-board";
 import type { WeddingBoardProgrammeItem } from "@/lib/invitation/wedding-board";
+import {
+  latestUsableInvitationWhere,
+  liveInvitationWhere,
+} from "@/lib/invitation/live-invitation";
 import {
   EVENT_GUIDE_PAYLOAD_FORMAT,
   type EventGuidePayload,
@@ -152,10 +154,23 @@ export class EventGuideService {
     return prisma.event.findUnique({ where: { id: eventId }, select: EVENT_SELECT });
   }
 
-  /** The live invitation whose theme and content the guide composes. */
+  /**
+   * The live invitation whose theme and content the guide composes.
+   *
+   * Falls back to the most recent non-expired invitation so an organizer who
+   * has not activated their invite yet still sees a themed guide in the builder
+   * rather than the neutral fallback.
+   */
   async getSourceInvitation(eventId: string): Promise<GuideInvitation | null> {
+    const live = await prisma.invitation.findFirst({
+      where: liveInvitationWhere(eventId),
+      orderBy: { updatedAt: "desc" },
+      select: INVITATION_SELECT,
+    });
+    if (live) return live;
+
     return prisma.invitation.findFirst({
-      where: { eventId, status: { in: ["PUBLISHED", "APPROVED"] }, archivedAt: null },
+      where: latestUsableInvitationWhere(eventId),
       orderBy: { updatedAt: "desc" },
       select: INVITATION_SELECT,
     });

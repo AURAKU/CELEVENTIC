@@ -174,6 +174,10 @@ export function EventGuideExperience({
           "--guide-on-accent": onAccent,
           "--guide-primary": theme.colors.primary,
           "--guide-secondary": theme.colors.secondary,
+          // Small tracked labels use the derived readable shade; the raw
+          // accent stays for rules and flourishes. Payloads published before
+          // this token existed fall back to the accent itself.
+          "--guide-label": theme.labelColor ?? theme.colors.secondary,
           "--guide-text": theme.colors.text,
           "--guide-paper": theme.paperWash,
           "--guide-hairline": theme.accentWash,
@@ -188,7 +192,7 @@ export function EventGuideExperience({
       <header className="mx-auto w-full max-w-xl text-center">
         <p
           className="text-[0.68rem] font-semibold uppercase tracking-[0.3em]"
-          style={{ fontFamily: fonts.eyebrow, color: theme.colors.secondary }}
+          style={{ fontFamily: fonts.eyebrow, color: theme.labelColor ?? theme.colors.secondary }}
         >
           Event Guide
         </p>

@@ -167,10 +167,20 @@ the current state so the UI can reconcile instead of clobbering a co-editor.
 
 ### Accessibility
 
-`assessGuideContrast()` computes WCAG 2.1 relative-luminance contrast for body text, heading text and the
-primary action against the resolved background. Publish is blocked below 4.5:1 for body text and 3:1 for
-large text, with the failing pairs named. This runs on the server at publish time, so it cannot be bypassed
-from the client.
+`assessGuideContrast()` computes WCAG 2.1 relative-luminance contrast for body text, heading text, section
+labels and the primary action against the resolved background. Publish is blocked below 4.5:1 for text and
+3:1 for large display text and the primary action, with the failing pairs named. This runs on the server at
+publish time, so it cannot be bypassed from the client.
+
+**Derived label colour.** The small tracked labels (section headings, programme times, printed QR labels and
+the Wi-Fi warning) originally rendered in `colors.secondary`. On the house palette — and on essentially every
+wedding palette — that is a decorative gold on cream, which measures around 2:1 and is unreadable as 11px
+type. Rather than weaken the gate to accommodate it, `ensureReadable()` derives a `labelColor`: the accent
+nudged toward black (or toward white on a dark background) in 5% steps, stopping at the first shade that
+clears 4.5:1. A champagne gold becomes a deeper antique gold rather than collapsing to grey, and the raw
+accent is still used untouched for rules, flourishes and the programme timeline rail. The organizer is told
+what happened in the Appearance tab rather than being blocked. Published payloads written before this token
+existed fall back to the accent via `var(--guide-label, var(--guide-secondary))`.
 
 ---
 
@@ -320,24 +330,53 @@ Validated with `npm run migrations:validate:sqlite` and `prisma migrate status`.
 
 ---
 
+## 6a. Pre-existing bugs found and fixed on the way
+
+Three defects surfaced while wiring the guide into the existing surfaces. All three are in code the guide
+composes from, so leaving them would have meant building a correct feature on top of broken foundations.
+
+1. **The live-invitation lookup matched nothing.** `src/app/event-menu/[publicToken]`,
+   `src/app/event-programme/[publicToken]` and `eventQrHubService.overview` filtered invitations on
+   `status: { in: ["PUBLISHED", "APPROVED"] }`. `InvitationStatus` is `DRAFT | ACTIVE | EXPIRED` — neither
+   value exists, so those queries returned nothing and the public menu and programme pages silently rendered
+   empty for every event. Fixed by introducing `src/lib/invitation/live-invitation.ts` as the single
+   definition (`status: "ACTIVE"`, `archivedAt: null`) and pointing all four call sites, including the guide,
+   at it. The guide additionally falls back to the most recent non-expired invitation so the builder shows a
+   themed preview before the invite goes live.
+
+2. **The legacy programme page could not compile.** It included a non-existent `design` relation and read
+   `item.detail` from `WeddingBoardProgrammeItem`, whose field is `description`. It now selects only what
+   `resolveCompanionTheme` needs and reads the correct field.
+
+3. **Ceremony rows echoed the dinner table.** `pickSeatingAssignment(assignments, "CEREMONY")` falls back to
+   the reception row when no ceremony plan exists, so a guest at a reception-only event would have been told
+   their ceremony row was "12" — their dinner table. The guide now matches the ceremony stage strictly via
+   `splitSeatingAssignments`, and a missing stage reads as missing. Covered by two tests.
+
+Total repository type errors went from 52 to 42 as a result; the remainder are pre-existing and outside this
+feature. One of them, a stale `SharedAccessPassScanResult` import in `shared-vendor-access.service.ts`,
+belongs to the concurrent `feat/vendor-pass-multi-entry` work and was deliberately left alone to avoid a
+conflict.
+
+---
+
 ## 7. Tests
 
 | Area | File | Asserts |
 | --- | --- | --- |
-| Token isolation | `src/lib/event-guide/__tests__/guide-access.test.ts` | wrong type, revoked, disabled, expired, and unpublished tokens all resolve to `unavailable` with a reason — never to content. |
-| Draft is never public | same | a `DRAFT` guide yields no programme/menu in the public payload. |
-| Public payload safety | `src/lib/event-guide/__tests__/public-payload.test.ts` | serialised payload contains no `id`, email, phone, or admission-token shaped values. |
-| Seating privacy | `src/lib/event-guide/__tests__/seating-finder.test.ts` | min query length, max matches, ambiguous-match refusal, cross-party leakage, plus-ones nested under party. |
-| Theme | `src/lib/event-guide/__tests__/theme.test.ts` | invitation theme is inherited; overrides apply; contrast gate blocks unreadable combinations. |
-| Import parse | `src/lib/event-guide/__tests__/programme-import.test.ts` | paste formats parse, import stages to draft and never auto-publishes. |
-| Offline cache isolation | `src/lib/event-guide/__tests__/offline-cache.test.ts` | cache keys differ per token and per version; stale-version and foreign-token caches are pruned. |
-| Offline pack privacy | `src/lib/event-guide/__tests__/offline-pack.test.ts` | pack contains no emails/phones/admission tokens; `CODE_ONLY`/`HASHED_NAME` contain no readable names; signature verifies and detects tampering; expiry enforced. |
-| Sync conflicts | `src/lib/event-guide/__tests__/offline-sync.test.ts` | newer server version is never overwritten; counters merge additively; a revoked pack's queue is rejected; replaying the same queue twice does not double-count. |
-| QR labelling | `src/lib/event-guide/__tests__/qr-signage.test.ts` | online and venue-offline links are distinct rows/tokens; the offline sign always carries the Wi-Fi-only warning. |
+| Token isolation | `src/lib/event-guide/__tests__/guide-access.test.ts` | wrong type, revoked, disabled, expired and unpublished tokens all resolve to `unavailable` with a reason — never to content. A token paired with another event's guide is `NOT_FOUND`, indistinguishable from a guessed string; an offline pack token never resolves on the public domain. |
+| Draft is never public | same | `DRAFT`, "published with no version", and unpublished-after-live all yield `NOT_PUBLISHED`. |
+| Public payload safety | `src/lib/event-guide/__tests__/public-payload.test.ts` | `safePublicUrl` rejects `javascript:`, `data:`, `file:` and scheme-relative URLs; field/collection caps hold; guide edits override the invitation per field, independently. |
+| Seating privacy | `src/lib/event-guide/__tests__/seating-finder.test.ts` | min query length, scoring refuses single-letter matches, ties return a count with no names, a mislinked guest row cannot cross parties, and a match carries exactly eight non-identifying keys. |
+| Theme | `src/lib/event-guide/__tests__/theme.test.ts` | invitation theme is inherited; overrides are validated (non-hex dropped, CSS-breaking font names rejected); contrast gate blocks unreadable body text and actions; gold-on-cream is adjusted rather than blocked. |
+| Import parse | `src/lib/event-guide/__tests__/programme-import.test.ts` | em-dash, pipe, prose-time and plain-title formats; CRLF; 60-item cap; distinct ids for repeated titles; idempotent. |
+| Offline cache isolation | `src/lib/event-guide/__tests__/offline-cache.test.ts` | cache keys differ per token and per version; stale-version, previous-schema and foreign-token caches are pruned while non-guide caches are untouched; a revoked token purges only its own. |
+| Offline pack privacy | `src/lib/event-guide/__tests__/offline-pack.test.ts` | `CODE_ONLY`/`HASHED_NAME` contain no readable names and no raw codes; per-pack salt means two packs share no lookup keys; the manifest signature detects swapped, added and re-dated files; the payload scan refuses emails, phones, tokens and database ids. |
+| Sync conflicts | `src/lib/event-guide/__tests__/offline-sync.test.ts` | a newer server guide version is reported as a conflict and never overwritten; counters still merge additively; revoked/expired/version-mismatched packs are rejected wholesale; replaying the same queue twice does not double-count. |
+| QR labelling | `src/lib/event-guide/__tests__/qr-signage.test.ts` | dual signs label the two codes distinctly and always carry the Wi-Fi-only warning, naming the network when given; single signs carry neither; every size/layout keeps both codes on the page with a scannable gap and quiet zone. |
 
 Run with `npm run test:event-guide` (node's built-in runner via `tsx --test`, matching every other suite in
-this repo — the repo has no vitest and no Playwright dependency, so device coverage is expressed as
-fixture-driven viewport tests rather than a new browser runner; see §8).
+this repo). 192 assertions across 44 suites, all passing; also wired into `npm run test:all`.
 
 ---
 
@@ -351,10 +390,11 @@ fixture-driven viewport tests rather than a new browser runner; see §8).
    is correct — the pack is the offline mechanism there, not the browser cache.
 3. **`NAME_INDEX` privacy mode ships readable names inside the pack.** It is opt-in, labelled, and never the
    default. Organizers who choose it are shown exactly what it means before saving.
-4. **No Playwright in this repo.** Device-profile coverage is implemented as viewport/layout unit tests plus
-   documented manual device checks, rather than adding a browser runner and its binaries to a repo that has
-   never had one. If Playwright is later adopted, the fixtures in `src/lib/event-guide/__tests__/fixtures.ts`
-   are already env-driven and carry no real tokens.
+4. **No Playwright in this repo.** The suite covers the pure decision layer — availability, seating, theme,
+   caching, pack format and sign geometry — exhaustively, and sign layout is asserted numerically for every
+   size and QR layout. What it cannot cover without a browser runner is real service-worker behaviour in a
+   real offline browser and real print output; both are on the manual readiness checklist. Adding a browser
+   runner and its binaries to a repo that has never had one was out of scope for this branch.
 5. **Aggregate-only analytics** means no funnel analysis. Deliberate: per-visitor rows on a public guest
    surface are a privacy liability we chose not to create.
 6. **Programme/menu still originate in the invitation** for organizers who never open the guide editor. If an
