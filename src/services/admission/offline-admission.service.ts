@@ -121,9 +121,26 @@ export interface OfflinePackage {
     validFrom: Date | string | null;
     validUntil: Date | string | null;
     entryMode: string;
+    /** Access-card re-entry state so an offline gate applies the same rules. */
+    reentryPolicy: string;
+    reentryLimit: number | null;
+    reentryUsed: number;
+    entryCycle: number;
+    totalEntries: number;
+    multiEntry: boolean;
     updatedAt: Date | string;
     kind: "vendor_team_pass";
   }>;
+  /**
+   * Why the pack holds what it holds. An empty pack is almost always "passes
+   * were never issued", not a download failure — say so instead of showing a
+   * gate operator a silent zero.
+   */
+  coverage?: {
+    invitations: number;
+    invitationsWithPass: number;
+    invitationsWithoutPass: number;
+  };
   checksum: string;
 }
 
@@ -247,6 +264,9 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
   );
   const vendorTeamPasses = await offlineVendorTeamSlice(eventId);
 
+  const invitationTotal = await prisma.invitation.count({ where: { eventId } });
+  const invitationsWithPass = new Set(passes.map((p) => p.invitationId)).size;
+
   const body = {
     version: OFFLINE_PACKAGE_VERSION,
     eventId,
@@ -274,6 +294,11 @@ export async function buildOfflinePackage(eventId: string): Promise<OfflinePacka
     passes: records,
     vendorAccess,
     vendorTeamPasses,
+    coverage: {
+      invitations: invitationTotal,
+      invitationsWithPass,
+      invitationsWithoutPass: Math.max(0, invitationTotal - invitationsWithPass),
+    },
   };
 
   return {
@@ -372,6 +397,7 @@ export async function reconcileOfflineAdmissions(
         offline: true,
         clientRecordId: record.clientRecordId,
         deviceInfo: `offline-device:${deviceId}`,
+        channel: "offline",
       });
 
       // Prefer token-hash match when the offline gate hashed a cvt1 token.
@@ -392,6 +418,7 @@ export async function reconcileOfflineAdmissions(
                 offline: true,
                 clientRecordId: record.clientRecordId,
                 deviceInfo: `offline-device:${deviceId}`,
+                channel: "offline",
               });
             })()
           : null;
@@ -413,7 +440,7 @@ export async function reconcileOfflineAdmissions(
             clientRecordId: record.clientRecordId,
             state: "conflict",
             reason: vendor.error,
-            passCode: vendor.pass.admissionCode,
+            passCode: vendor.pass?.admissionCode,
           });
           continue;
         }

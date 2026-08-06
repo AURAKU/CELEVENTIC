@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Camera, Upload, Keyboard, QrCode, CheckCircle2, XCircle, AlertTriangle,
-  Clock, Download, Shield, Wifi, WifiOff, ImagePlus, CloudDownload, RotateCcw,
+  Clock, Download, Shield, Wifi, WifiOff, ImagePlus, RotateCcw,
   Search, Armchair,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell"
 import { QrCameraScanner, QrFileReaderHost, scanQrFromFile, playScanFeedback, QrImageScanError } from "@/components/qr/qr-camera-scanner";
 import { AdmissionScanFeedback, type AdmissionFeedbackStatus } from "@/components/qr/admission-scan-feedback";
 import { EntryPassGate } from "@/components/admission/entry-pass-gate";
+import { OfflineGatePack } from "@/components/admission/offline-gate-pack";
+import { downloadGatePack } from "@/lib/admission/offline-gate";
 import { AdmissionSettingsPanel } from "@/components/admission/admission-settings-panel";
 import { PaginationBar } from "@/components/ui/pagination";
 import { useEventContext } from "@/hooks/use-event-context";
@@ -28,6 +30,7 @@ import type { UserRole } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { prefersEntryPassAdmit } from "@/lib/admission/gate-scan";
 import { parseQrToken } from "@/lib/qr/parse-qr-payload";
+import type { ScanLogRow } from "@/services/admission/scan-log.service";
 import {
   Select,
   SelectContent,
@@ -41,8 +44,6 @@ import {
   validateOfflineToken,
   recordOfflineScan,
   resetOfflineAdmissionLocal,
-  getPendingOfflineScans,
-  type OfflinePackage,
 } from "@/lib/offline-qr-client";
 
 type ScanStatus = AdmissionFeedbackStatus;
@@ -59,19 +60,32 @@ interface ScanResult {
   feedback?: string | null;
 }
 
-interface RecentScan {
-  id: string;
-  status: string;
-  result: string;
-  guestId?: string | null;
-  guestName?: string;
-  invitationName?: string;
-  ticketName?: string;
-  displayName?: string;
-  seatNumber?: string | null;
-  scannerName?: string;
-  gate?: string;
-  createdAt: string;
+type RecentScan = ScanLogRow;
+
+const SCAN_CHANNEL_LABELS: Record<string, string> = {
+  qr: "QR scan",
+  manual_code: "Typed code",
+  dashboard: "Guest CRM",
+  offline: "Offline gate",
+};
+
+function scanBadgeVariant(status: ScanLogRow["status"]) {
+  if (status === "ADMITTED") return "success" as const;
+  if (status === "RE_ENTRY") return "outline" as const;
+  if (status === "DUPLICATE") return "warning" as const;
+  if (status === "INFO") return "outline" as const;
+  return "destructive" as const;
+}
+
+/** Full date and clock time — a gate log is worthless without the "when". */
+function formatScanStamp(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 interface AdmissionStats {
@@ -111,8 +125,6 @@ export function QrAdmissionClient() {
   // Default off for printed passes; toggle on for phone-screen guest passes.
   /** Default ON, entrance queues are almost always phone-screen passes. */
   const [screenScanMode, setScreenScanMode] = useState(true);
-  const [offlinePkg, setOfflinePkg] = useState<OfflinePackage | null>(null);
-  const [offlineMsg, setOfflineMsg] = useState("");
   const [resetting, setResetting] = useState(false);
   const [scanningImage, setScanningImage] = useState(false);
   const [lastImageName, setLastImageName] = useState("");
@@ -156,7 +168,9 @@ export function QrAdmissionClient() {
         ? `&q=${encodeURIComponent(scanSearchDebounced)}`
         : "";
       const [scansRes, statsRes] = await Promise.all([
-        fetch(`/api/qr/history?eventId=${eventId}&page=${page}&limit=20${q}`),
+        fetch(`/api/admission/scan-log?eventId=${eventId}&page=${page}&limit=20${q}`, {
+          cache: "no-store",
+        }),
         fetch(`/api/qr/stats?eventId=${eventId}`),
       ]);
       const scansData = await scansRes.json();
@@ -183,14 +197,6 @@ export function QrAdmissionClient() {
   }, [loadEventData, historyPage]);
 
   useEffect(() => {
-    if (!eventId) {
-      setOfflinePkg(null);
-      return;
-    }
-    setOfflinePkg(getOfflinePackage(eventId));
-  }, [eventId]);
-
-  useEffect(() => {
     if (!eventId || !isOnline) return;
     const interval = setInterval(() => {
       void fetch(`/api/qr/stats?eventId=${eventId}`)
@@ -206,35 +212,26 @@ export function QrAdmissionClient() {
     return () => clearInterval(interval);
   }, [eventId, isOnline]);
 
-  const downloadOfflinePackage = useCallback(async () => {
-    if (!eventId || !isOnline) return;
-    setOfflineMsg("");
-    try {
-      const res = await fetch(`/api/qr/offline?eventId=${eventId}`);
-      const d = await res.json();
-      if (!res.ok) {
-        setOfflineMsg(d.error ?? "Could not download offline package");
-        return;
-      }
-      saveOfflinePackage(eventId, d.data);
-      setOfflinePkg(d.data);
-      setOfflineMsg(
-        `Offline ready, ${d.data.guests.length} guests, ${d.data.tickets.length} tickets (incl. 4-digit codes)`
-      );
-    } catch {
-      setOfflineMsg("Could not download offline package");
-    }
-  }, [eventId, isOnline]);
-
-  // Prefetch offline package when event is selected online (gate can keep working if net drops)
+  /**
+   * Legacy QR fallback cache. The gate pack card owns the entry-pass package;
+   * this one only keeps pre-Entry-Pass guest QR tokens scannable offline.
+   */
   useEffect(() => {
-    if (!eventId || !isOnline) return;
-    if (getOfflinePackage(eventId)) {
-      setOfflinePkg(getOfflinePackage(eventId));
-      return;
-    }
-    void downloadOfflinePackage();
-  }, [eventId, isOnline, downloadOfflinePackage]);
+    if (!eventId || !isOnline || getOfflinePackage(eventId)) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/qr/offline?eventId=${eventId}`);
+        const d = await res.json();
+        if (!cancelled && res.ok && d.data) saveOfflinePackage(eventId, d.data);
+      } catch {
+        /* the entry-pass gate pack is the primary offline path */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, isOnline]);
 
   const performOfflineCheckIn = useCallback(
     (raw: string) => {
@@ -288,7 +285,6 @@ export function QrAdmissionClient() {
         offline: true,
         feedback,
       });
-      setOfflinePkg(getOfflinePackage(eventId));
       playScanFeedback(status === "valid" || status === "already_checked_in");
       if (status === "valid") {
         setLiveScanCount((c) => c + 1);
@@ -434,9 +430,13 @@ export function QrAdmissionClient() {
         }
       }
       resetOfflineAdmissionLocal(eventId, scope === "guest" ? { guestId } : { all: true });
-      setOfflinePkg(getOfflinePackage(eventId));
       setResult(null);
-      if (isOnline) await loadEventData(historyPage);
+      if (isOnline) {
+        // A cached pack still believes everyone is admitted; pull the reset state
+        // down so the next offline scan is not judged against stale counts.
+        await downloadGatePack(eventId).catch(() => undefined);
+        await loadEventData(historyPage);
+      }
     } catch {
       setError("Reset failed");
     } finally {
@@ -538,6 +538,28 @@ export function QrAdmissionClient() {
     >
       <QrFileReaderHost />
 
+      {/* Gate analytics lead the page — the numbers an organiser checks first. */}
+      {stats && eventId && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { label: t("qr_admission.stats_total"), value: stats.totalPasses, icon: QrCode },
+            { label: t("qr_admission.stats_checked_in"), value: stats.checkedIn, icon: CheckCircle2 },
+            { label: "Live scans", value: liveScanCount, icon: CheckCircle2 },
+            { label: t("qr_admission.stats_pending"), value: stats.pending, icon: Clock },
+            { label: t("qr_admission.stats_invalid"), value: stats.invalidAttempts, icon: XCircle },
+            { label: t("qr_admission.stats_rate"), value: `${stats.checkInRate}%`, icon: AlertTriangle },
+          ].map((item) => (
+            <Card key={item.label} className="card-premium">
+              <CardContent className="p-4">
+                <item.icon className="h-4 w-4 text-brand-600 mb-2" />
+                <p className="text-2xl font-bold text-slate-900">{item.value}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{item.label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         {isOnline ? (
           <Badge variant="success" className="gap-1">
@@ -546,17 +568,6 @@ export function QrAdmissionClient() {
         ) : (
           <Badge variant="warning" className="gap-1">
             <WifiOff className="h-3 w-3" /> Offline admit active
-          </Badge>
-        )}
-        {eventId && offlinePkg && (
-          <Badge variant="outline" className="gap-1 text-xs">
-            Offline pack · {offlinePkg.guests.length} guests · synced{" "}
-            {new Date(offlinePkg.syncedAt).toLocaleString()}
-          </Badge>
-        )}
-        {eventId && !offlinePkg && !isOnline && (
-          <Badge variant="destructive" className="text-xs">
-            No offline pack, connect once to download
           </Badge>
         )}
         <Link href="/dashboard/qr" className="text-xs text-slate-500 hover:text-brand-600 ml-auto">
@@ -599,47 +610,12 @@ export function QrAdmissionClient() {
           )}
 
           {eventId && (
-            <div className="flex flex-col sm:flex-row gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-800 flex items-center gap-2">
-                  <CloudDownload className="h-4 w-4 text-brand-600 shrink-0" />
-                  Offline gate pack
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Download guest QR tokens + 4-digit codes so scanning still works without internet.
-                </p>
-                {offlineMsg && <p className="text-xs text-brand-700 mt-1">{offlineMsg}</p>}
-                {!isOnline && getPendingOfflineScans(eventId).length > 0 && (
-                  <p className="text-xs text-amber-700 mt-1">
-                    {getPendingOfflineScans(eventId).length} offline admits waiting to sync when back online.
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!isOnline || processing}
-                  onClick={() => void downloadOfflinePackage()}
-                  className="gap-1.5"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  {offlinePkg ? "Refresh pack" : "Download pack"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!eventId || resetting}
-                  onClick={() => void resetAdmission("event")}
-                  className="gap-1.5 text-amber-800 border-amber-200 hover:bg-amber-50"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Reset all admissions
-                </Button>
-              </div>
-            </div>
+            <OfflineGatePack
+              eventId={eventId}
+              isOnline={isOnline}
+              resetting={resetting}
+              onResetAll={() => void resetAdmission("event")}
+            />
           )}
         </CardContent>
       </Card>
@@ -752,30 +728,12 @@ export function QrAdmissionClient() {
           eventTitle={selectedEventTitle ?? undefined}
           gate={gate || undefined}
           hideCamera
+          showManualEntry={false}
+          showPackControls={false}
           scanHandlerRef={entryPassScanRef}
           onUnresolvedCode={(code) => void performCheckIn(code)}
+          onAdmitted={() => void loadEventData(historyPage)}
         />
-      )}
-
-      {stats && eventId && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[
-            { label: t("qr_admission.stats_total"), value: stats.totalPasses, icon: QrCode },
-            { label: t("qr_admission.stats_checked_in"), value: stats.checkedIn, icon: CheckCircle2 },
-            { label: "Live scans", value: liveScanCount, icon: CheckCircle2 },
-            { label: t("qr_admission.stats_pending"), value: stats.pending, icon: Clock },
-            { label: t("qr_admission.stats_invalid"), value: stats.invalidAttempts, icon: XCircle },
-            { label: t("qr_admission.stats_rate"), value: `${stats.checkInRate}%`, icon: AlertTriangle },
-          ].map((item) => (
-            <Card key={item.label} className="card-premium">
-              <CardContent className="p-4">
-                <item.icon className="h-4 w-4 text-brand-600 mb-2" />
-                <p className="text-2xl font-bold text-slate-900">{item.value}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{item.label}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       )}
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -853,21 +811,18 @@ export function QrAdmissionClient() {
             ) : (
               <ul className="space-y-2 max-h-[480px] overflow-y-auto">
                 {recentScans.map((scan) => {
-                  const name =
-                    scan.displayName ||
-                    scan.guestName ||
-                    scan.invitationName ||
-                    scan.ticketName ||
-                    "Unknown guest";
-                  const subtitle = [
-                    scan.guestName && scan.invitationName && scan.guestName !== scan.invitationName
-                      ? scan.invitationName
-                      : null,
-                    scan.gate || null,
-                    new Date(scan.createdAt).toLocaleString(),
-                  ]
-                    .filter(Boolean)
-                    .join(" · ");
+                  const meta = [
+                    scan.passType,
+                    scan.code ? `Code ${scan.code}` : null,
+                    scan.gate,
+                    scan.entryCycle && scan.entryCycle > 1 ? `Entry #${scan.entryCycle}` : null,
+                    scan.quantity > 1 ? `${scan.quantity} people` : null,
+                  ].filter(Boolean) as string[];
+                  const trail = [
+                    scan.scannerName ? `by ${scan.scannerName}` : null,
+                    SCAN_CHANNEL_LABELS[scan.channel ?? ""] ?? scan.channel,
+                    scan.offline ? "captured offline" : null,
+                  ].filter(Boolean) as string[];
 
                   return (
                     <li
@@ -875,46 +830,49 @@ export function QrAdmissionClient() {
                       className="flex items-start justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 text-sm"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-slate-900 truncate">{name}</p>
-                        {scan.seatNumber && (
-                          <p className="text-xs font-medium text-brand-700 flex items-center gap-1 mt-0.5">
+                        <p className="truncate font-medium text-slate-900">{scan.displayName}</p>
+                        {(scan.seat || scan.table) && (
+                          <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-brand-700">
                             <Armchair className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{scan.seatNumber}</span>
+                            <span className="truncate">
+                              {[scan.table, scan.seat].filter(Boolean).join(" · ")}
+                            </span>
                           </p>
                         )}
-                        <p className="text-xs text-slate-500 mt-0.5 truncate">{subtitle}</p>
+                        <p className="mt-0.5 text-xs font-medium tabular-nums text-slate-700">
+                          {formatScanStamp(scan.createdAt)}
+                        </p>
+                        {meta.length > 0 && (
+                          <p className="mt-0.5 truncate text-xs text-slate-500">
+                            {meta.join(" · ")}
+                          </p>
+                        )}
+                        {trail.length > 0 && (
+                          <p className="mt-0.5 truncate text-xs text-slate-400">
+                            {trail.join(" · ")}
+                          </p>
+                        )}
+                        {scan.detail && (
+                          <p className="mt-0.5 text-xs text-rose-600">{scan.detail}</p>
+                        )}
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1.5">
-                        <Badge
-                          variant={
-                            scan.result === "VALID" || scan.status === "checked_in" || scan.status === "valid"
-                              ? "success"
-                              : scan.result === "ALREADY_USED" || scan.status === "duplicate_scan"
-                                ? "warning"
-                                : "destructive"
-                          }
-                          className="text-[10px]"
-                        >
-                          {(scan.result ?? scan.status ?? "unknown").replace(/_/g, " ")}
+                        <Badge variant={scanBadgeVariant(scan.status)} className="text-[10px]">
+                          {scan.outcome}
                         </Badge>
-                        {scan.guestId &&
-                          (scan.result === "VALID" ||
-                            scan.result === "ALREADY_USED" ||
-                            scan.status === "checked_in" ||
-                            scan.status === "valid" ||
-                            scan.status === "duplicate_scan") && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs text-amber-800 hover:bg-amber-50"
-                              disabled={resetting}
-                              onClick={() => void resetAdmission("guest", scan.guestId!)}
-                            >
-                              <RotateCcw className="h-3 w-3" />
-                              Reset admission
-                            </Button>
-                          )}
+                        {scan.guestId && scan.status !== "DENIED" && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs text-amber-800 hover:bg-amber-50"
+                            disabled={resetting}
+                            onClick={() => void resetAdmission("guest", scan.guestId!)}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Reset admission
+                          </Button>
+                        )}
                       </div>
                     </li>
                   );

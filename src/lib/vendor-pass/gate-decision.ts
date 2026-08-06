@@ -5,7 +5,12 @@
  */
 
 import type { AdmissionDecision, AdmissionOutcome, AdmissionReasonCode } from "@/lib/admission/pass-decision";
-import { remainingCapacity, type VendorCapacityState } from "@/lib/vendor-pass/capacity";
+import {
+  isMultiEntryPass,
+  reentryAllowance,
+  remainingCapacity,
+  type VendorCapacityState,
+} from "@/lib/vendor-pass/capacity";
 
 export type VendorGatePassView = VendorCapacityState & {
   title: string;
@@ -27,9 +32,20 @@ export function vendorGateDecision(input: {
   quantity?: number;
   error?: string;
   quantityConfirmed?: boolean;
+  /** The scan re-opened a filled access card. */
+  startsNewCycle?: boolean;
+  entryCycle?: number;
 }): AdmissionDecision {
   const remaining = remainingCapacity(input.pass);
   const entryMode = input.pass.entryMode ?? "INDIVIDUAL_ENTRY";
+  const multiEntry = isMultiEntryPass(input.pass);
+  const allowance = reentryAllowance(input.pass);
+  const reentryNote =
+    allowance.policy === "UNLIMITED"
+      ? "Access card · unlimited entries"
+      : allowance.remaining === null
+        ? ""
+        : `${allowance.remaining} re-entr${allowance.remaining === 1 ? "y" : "ies"} left`;
 
   if (!input.ok) {
     const reason = mapVendorDenyReason(input.error);
@@ -49,6 +65,23 @@ export function vendorGateDecision(input: {
   }
 
   const quantity = Math.max(1, input.quantity ?? 1);
+
+  // A filled access card is not "done" — the next scan simply re-opens it.
+  if (input.dryRun && remaining <= 0 && multiEntry) {
+    return {
+      outcome: "REVIEW",
+      tone: "amber",
+      reason: "NEEDS_REVIEW",
+      message: `${input.pass.title} is a re-entry. Admit again? ${reentryNote}`,
+      admitQuantity: entryMode === "ADMIT_FULL_TEAM" ? input.pass.teamCapacity : 1,
+      resultingAdmittedCount: input.pass.admittedCount,
+      resultingStatus: input.pass.status as AdmissionDecision["resultingStatus"],
+      requiresConfirmation: true,
+      allowance: input.pass.teamCapacity,
+      remaining: input.pass.teamCapacity,
+      requiresQuantityConfirmation: entryMode === "SELECT_QUANTITY",
+    };
+  }
 
   // Dry-run previews: ask for quantity / full-team confirm when the pass mode requires it.
   if (input.dryRun) {
@@ -101,15 +134,22 @@ export function vendorGateDecision(input: {
   const nextCount = input.pass.admittedCount;
   const outcome: AdmissionOutcome =
     nextCount >= input.pass.teamCapacity ? "ADMIT" : "PARTIAL_ADMIT";
+  const cycleNote = input.startsNewCycle
+    ? ` Re-entry #${Math.max(1, (input.entryCycle ?? 2) - 1)} recorded.`
+    : "";
+  const fullNote = multiEntry
+    ? `Admitted ${quantity}. Whole team in — card stays valid for re-entry.`
+    : `Admitted ${quantity}. Team capacity reached.`;
 
   return {
     outcome,
     tone: "green",
     reason: outcome === "ADMIT" ? "OK" : "OK_PARTIAL",
     message:
-      nextCount >= input.pass.teamCapacity
-        ? `Admitted ${quantity}. Team capacity reached.`
-        : `Admitted ${quantity}. ${nextCount} of ${input.pass.teamCapacity} in · ${remaining} remaining.`,
+      (nextCount >= input.pass.teamCapacity
+        ? fullNote
+        : `Admitted ${quantity}. ${nextCount} of ${input.pass.teamCapacity} in · ${remaining} remaining.`) +
+      cycleNote,
     admitQuantity: quantity,
     resultingAdmittedCount: nextCount,
     resultingStatus: input.pass.status as AdmissionDecision["resultingStatus"],

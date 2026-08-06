@@ -5695,6 +5695,8 @@ enum VendorTeamPassStatus {
   PAUSED
 }
 
+/// How often a vendor pass may re-open after its capacity is used up.
+/// UNLIMITED is the access-card default: the same QR/code works all event long.
 enum VendorReentryPolicy {
   NONE
   ONE
@@ -5717,11 +5719,18 @@ model VendorTeamPass {
   companyName     String?
   categoryLabel   String?
   teamCapacity    Int                  @default(1)
+  /// People admitted inside the current entry cycle (resets when the card re-opens).
   admittedCount   Int                  @default(0)
   revision        Int                  @default(0)
-  reentryPolicy   VendorReentryPolicy  @default(NONE)
+  reentryPolicy   VendorReentryPolicy  @default(UNLIMITED)
   reentryLimit    Int?
   reentryUsed     Int                  @default(0)
+  /// 1-based entry cycle; incremented every time the card re-opens after capacity.
+  entryCycle      Int                  @default(1)
+  /// Lifetime successful scans across every cycle.
+  totalEntries    Int                  @default(0)
+  /// Lifetime people admitted across every cycle.
+  totalAdmitted   Int                  @default(0)
   /// JSON string array of access zone labels.
   accessZones     Json?
   setupAccess     Boolean              @default(false)
@@ -5777,12 +5786,21 @@ model VendorTeamPassMember {
   @@map("vendor_team_pass_members")
 }
 
+/// One row per scan/admit attempt — the vendor access card's entry log.
 model VendorTeamPassAdmission {
   id             String   @id @default(cuid())
   passId         String
   eventId        String
   quantity       Int      @default(1)
   mode           String
+  /// ADMITTED | DENIED — denied attempts stay in the log for the host.
+  outcome        String   @default("ADMITTED")
+  /// Why a DENIED attempt was refused (capacity, revoked, expired…).
+  denialReason   String?
+  /// Entry cycle this scan belongs to (1 = first visit).
+  entryCycle     Int      @default(1)
+  /// qr | manual_code | dashboard | offline
+  channel        String?
   scannedById    String?
   gate           String?
   deviceInfo     String?
@@ -5795,6 +5813,7 @@ model VendorTeamPassAdmission {
 
   @@unique([clientRecordId])
   @@index([passId, createdAt])
+  @@index([passId, outcome, createdAt])
   @@index([eventId, createdAt])
   @@map("vendor_team_pass_admissions")
 }

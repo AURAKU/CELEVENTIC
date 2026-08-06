@@ -23,6 +23,9 @@ const createSchema = z.object({
   companyName: z.string().max(120).optional().nullable(),
   categoryLabel: z.string().max(80).optional().nullable(),
   teamCapacity: z.number().int().min(1).max(500).optional(),
+  /** Access-card behaviour; omitted means UNLIMITED re-entry. */
+  reentryPolicy: z.enum(["NONE", "ONE", "UNLIMITED", "CUSTOM"]).optional(),
+  reentryLimit: z.number().int().min(1).max(999).optional().nullable(),
   accessZones: z.array(z.string().min(1).max(60)).max(20).optional(),
   setupAccess: z.boolean().optional(),
   breakdownAccess: z.boolean().optional(),

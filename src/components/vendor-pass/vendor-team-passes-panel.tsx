@@ -8,10 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { PaginationBar } from "@/components/ui/pagination";
 import {
   DEFAULT_ACCESS_ZONES,
+  VENDOR_ACCESS_MODE_OPTIONS,
   VENDOR_PASS_TYPE_OPTIONS,
 } from "@/lib/vendor-pass/capacity";
-import { Copy, Loader2, Plus, RefreshCw, Shield } from "lucide-react";
+import { Copy, Loader2, LogIn, Plus, RefreshCw, ScrollText, Shield } from "lucide-react";
 import { buildVendorTeamPassUrl } from "@/lib/vendor-pass/token-format";
+import { VendorEntryLog } from "@/components/vendor-pass/vendor-entry-log";
 
 type VendorPassRow = {
   id: string;
@@ -30,6 +32,14 @@ type VendorPassRow = {
   publicToken: string;
   contactName: string | null;
   lastAdmittedAt: string | null;
+  reentryPolicy: string;
+  reentryLimit: number | null;
+  reentryRemaining: number | null;
+  multiEntry: boolean;
+  accessLabel: string;
+  entryCycle: number;
+  totalEntries: number;
+  totalAdmitted: number;
 };
 
 /** Always resolve against the current origin so local passes don’t open on live (and vice versa). */
@@ -74,6 +84,11 @@ export function VendorTeamPassesPanel({
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(openCreateDefault);
   const [busy, setBusy] = useState(false);
+  /** Pass ids whose entry log is expanded, and a per-pass refetch counter. */
+  const [openLogs, setOpenLogs] = useState<Record<string, boolean>>({});
+  const [logReload, setLogReload] = useState<Record<string, number>>({});
+  const [admittingId, setAdmittingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     if (openCreateDefault) setCreating(true);
@@ -89,6 +104,8 @@ export function VendorTeamPassesPanel({
     passMode: "TEAM" as "INDIVIDUAL" | "TEAM",
     entryMode: "INDIVIDUAL_ENTRY",
     teamCapacity: 8,
+    reentryPolicy: "UNLIMITED",
+    reentryLimit: 2,
     notes: "",
     memberNames: "",
   });
@@ -147,6 +164,8 @@ export function VendorTeamPassesPanel({
           passMode: form.passMode,
           entryMode: form.entryMode,
           teamCapacity: form.passMode === "INDIVIDUAL" ? 1 : form.teamCapacity,
+          reentryPolicy: form.reentryPolicy,
+          reentryLimit: form.reentryPolicy === "CUSTOM" ? form.reentryLimit : null,
           accessZones: [...DEFAULT_ACCESS_ZONES],
           notes: form.notes || null,
           memberNames: form.memberNames
@@ -171,6 +190,8 @@ export function VendorTeamPassesPanel({
         passMode: "TEAM",
         entryMode: "INDIVIDUAL_ENTRY",
         teamCapacity: 8,
+        reentryPolicy: "UNLIMITED",
+        reentryLimit: 2,
         notes: "",
         memberNames: "",
       });
@@ -184,6 +205,35 @@ export function VendorTeamPassesPanel({
       setError("Could not reach the server.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  /**
+   * Host-side admission for a vendor who walked up without a scanner. Uses the
+   * same service as the gate, so the entry log reads identically either way.
+   */
+  async function admitOne(row: VendorPassRow) {
+    setAdmittingId(row.id);
+    setError("");
+    setNotice("");
+    try {
+      const res = await fetch(`/api/vendor-passes/${row.id}/admit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "one", quantity: 1 }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.success === false) {
+        setError(vendorPassErrorMessage(json?.error, "Could not log this entry"));
+        return;
+      }
+      setNotice(`Entry logged for ${row.title}.`);
+      setLogReload((prev) => ({ ...prev, [row.id]: (prev[row.id] ?? 0) + 1 }));
+      await load(page);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setAdmittingId(null);
     }
   }
 
@@ -219,6 +269,12 @@ export function VendorTeamPassesPanel({
       {error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
+        </div>
+      )}
+
+      {notice && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {notice}
         </div>
       )}
 
@@ -330,6 +386,37 @@ export function VendorTeamPassesPanel({
                 <option value="ADMIT_FULL_TEAM">Admit full team (confirm)</option>
               </select>
             </label>
+            <label className="text-sm">
+              <span className="mb-1 block font-medium">Access mode</span>
+              <select
+                className="h-10 w-full rounded-md border border-slate-200 px-3"
+                value={form.reentryPolicy}
+                onChange={(e) => setForm((f) => ({ ...f, reentryPolicy: e.target.value }))}
+              >
+                {VENDOR_ACCESS_MODE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-slate-500">
+                {VENDOR_ACCESS_MODE_OPTIONS.find((o) => o.value === form.reentryPolicy)?.hint ?? ""}
+              </span>
+            </label>
+            {form.reentryPolicy === "CUSTOM" && (
+              <label className="text-sm">
+                <span className="mb-1 block font-medium">Re-entries allowed</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={form.reentryLimit}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, reentryLimit: Number(e.target.value) || 1 }))
+                  }
+                />
+              </label>
+            )}
             <label className="text-sm sm:col-span-2">
               <span className="mb-1 block font-medium">Optional named members (one per line)</span>
               <textarea
@@ -396,18 +483,53 @@ export function VendorTeamPassesPanel({
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <Badge variant="outline">{row.passMode}</Badge>
                     <Badge variant="outline">{row.status}</Badge>
-                    <Badge variant="outline">
-                      {row.admittedCount}/{row.teamCapacity} admitted
+                    <Badge variant={row.multiEntry ? "success" : "outline"}>
+                      {row.accessLabel}
                     </Badge>
+                    <Badge variant="outline">
+                      {row.admittedCount}/{row.teamCapacity} in this entry
+                    </Badge>
+                    {row.totalEntries > 0 && (
+                      <Badge variant="outline">
+                        {row.totalEntries} scans · {row.totalAdmitted} admitted all-time
+                      </Badge>
+                    )}
+                    {row.entryCycle > 1 && <Badge variant="outline">Entry #{row.entryCycle}</Badge>}
                     <Badge variant="outline" className="font-mono">
                       {row.admissionCode}
                     </Badge>
                   </div>
                   <p className="mt-2 text-xs text-slate-500">
                     Access: {row.accessZones.join(" · ")}
+                    {row.lastAdmittedAt
+                      ? ` · last entry ${new Date(row.lastAdmittedAt).toLocaleString()}`
+                      : ""}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={admittingId === row.id || row.status === "REVOKED"}
+                    onClick={() => void admitOne(row)}
+                  >
+                    {admittingId === row.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogIn className="h-4 w-4" />
+                    )}
+                    Log entry
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setOpenLogs((prev) => ({ ...prev, [row.id]: !prev[row.id] }))}
+                  >
+                    <ScrollText className="h-4 w-4" />
+                    {openLogs[row.id] ? "Hide entry log" : "Entry log"}
+                  </Button>
                   <Button type="button" size="sm" variant="outline" asChild>
                     <Link href={buildVendorTeamPassUrl(row.publicToken)} target="_blank">
                       View Pass
@@ -532,6 +654,14 @@ export function VendorTeamPassesPanel({
                   )}
                 </div>
               </div>
+
+              {openLogs[row.id] && (
+                <VendorEntryLog
+                  passId={row.id}
+                  className="mt-4"
+                  reloadToken={logReload[row.id] ?? 0}
+                />
+              )}
             </article>
           ))
         )}
