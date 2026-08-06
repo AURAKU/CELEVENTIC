@@ -4,10 +4,27 @@ import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { eventQrLinkService } from "@/services/qr-hub/event-qr-link.service";
 import { sharedVendorAccessService } from "@/services/qr-hub/shared-vendor-access.service";
-import type { QrHubAssetCard } from "@/lib/qr-hub/types";
+import type { QrHubAssetCard, QrHubAssetKind } from "@/lib/qr-hub/types";
+import type { EventQrLinkType } from "@prisma/client";
 import { isCampaignPlaceable } from "@/lib/gifts/gift-placement";
 import { companionGiftHeadline, companionGiftOptionalNote, companionGiftTeaser } from "@/lib/gifts/gift-copy";
 import { LIVE_INVITATION_WHERE } from "@/lib/invitation/live-invitation";
+
+/**
+ * How each public link type is presented in the hub. Kept as a total map so a
+ * new `EventQrLinkType` is a compile error here rather than silently falling
+ * through to "Companion" and mislabelling a card.
+ */
+const QR_HUB_KIND_BY_LINK_TYPE: Record<Exclude<EventQrLinkType, "CUSTOM">, QrHubAssetKind> = {
+  MENU: "MENU",
+  SEATING_LOOKUP: "SEATING",
+  PROGRAMME: "PROGRAMME",
+  VENUE: "VENUE",
+  HELP: "HELP",
+  COMPANION_LANDING: "COMPANION",
+  EVENT_GUIDE: "EVENT_GUIDE",
+  EVENT_GUIDE_OFFLINE: "EVENT_GUIDE_OFFLINE",
+};
 
 function qrUrl(target: string, eventId: string, size = 512, mode?: "pass" | "brand") {
   const modeQs = mode ? `&mode=${mode}` : "";
@@ -85,24 +102,19 @@ export class EventQrHubService {
       if (link.type === "CUSTOM") continue;
       const url = await eventQrLinkService.publicUrl(link);
       assets.push({
-        kind:
-          link.type === "MENU"
-            ? "MENU"
-            : link.type === "SEATING_LOOKUP"
-              ? "SEATING"
-              : link.type === "PROGRAMME"
-                ? "PROGRAMME"
-                : link.type === "VENUE"
-                  ? "VENUE"
-                  : link.type === "HELP"
-                    ? "HELP"
-                    : "COMPANION",
+        kind: QR_HUB_KIND_BY_LINK_TYPE[link.type],
         title: link.title,
         purpose: link.subtitle || link.heading || link.title,
         enabled: link.status === "ACTIVE",
         statusLabel: link.status,
         url,
         qrPreviewUrl: qrUrl(url, eventId),
+        // Both guide links are managed from the guide builder, not from here —
+        // rotating or printing them needs the publication state beside them.
+        openStudioHref:
+          link.type === "EVENT_GUIDE" || link.type === "EVENT_GUIDE_OFFLINE"
+            ? `/dashboard/events/${eventId}/event-guide`
+            : null,
         printHeading: link.heading,
         printSupporting: link.subtitle,
         printFooter: link.footerText,

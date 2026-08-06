@@ -127,6 +127,26 @@ publication version", and "never silently overwrite newer server data" are all u
 Invalid / revoked / disabled / unpublished → **200 with a themed "not available yet" page**, never a 404 shell
 or a 500. The payload API returns `410 Gone` with `{ revoked: true }` so the service worker can purge.
 
+### How an organizer reaches it
+
+The builder is surfaced through the existing blueprint navigation rather than a bespoke menu. Each of the
+seven event blueprints gains one nav item, `event-guide`, placed immediately after `post-admission` (the
+Event Companion) because they are the same family of guest-facing surfaces.
+
+It reuses `FeatureKey.QR_ADMISSION` rather than introducing an `EVENT_GUIDE` feature key. That is deliberate:
+`QR_ADMISSION` is a `defaultModule` and a `starterFeature` in every blueprint, so the guide is available on
+every plan without touching entitlement tiers, `defaultModules`, or the seven blueprints' module lists — and
+the guide genuinely is the guest-facing half of the QR the organizer already has. A new key would have meant
+new plan plumbing for no behavioural gain, and would have silently hidden the guide from existing events
+until their `eventEnabledFeature` rows were back-filled.
+
+The QR Hub also lists both guide links. Its link-type mapping is now a total `Record`, so the next
+`EventQrLinkType` added to the schema is a compile error there instead of silently rendering as "Companion" —
+which is exactly what `EVENT_GUIDE` would have done before this change. Guide cards deep-link to the builder,
+since rotating or printing those codes needs the publication state beside them. `EVENT_GUIDE_OFFLINE` is
+deliberately excluded from the hub's generic print pack: a venue-local code is meaningless without the
+"works only on the event Wi-Fi" warning, and only the guide's own Signs tab lays that out.
+
 ### Organizer (session + event permission)
 
 | Route | Purpose |

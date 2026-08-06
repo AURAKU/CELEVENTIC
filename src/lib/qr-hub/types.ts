@@ -70,6 +70,9 @@ export type QrHubAssetKind =
   | "PROGRAMME"
   | "VENUE"
   | "HELP"
+  | "EVENT_GUIDE"
+  /** Venue-local Event Guide — points at the event Wi-Fi, not at us. */
+  | "EVENT_GUIDE_OFFLINE"
   | "CUSTOM";
 
 export interface QrHubAssetCard {
