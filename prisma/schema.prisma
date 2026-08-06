@@ -178,6 +178,7 @@ model User {
   giftWithdrawalsReviewed    EventWalletWithdrawalRequest[] @relation("GiftWithdrawalReviewer")
   sharedAccessPassesCreated  SharedEventAccessPass[]        @relation("SharedAccessPassCreator")
   vendorTeamPassesCreated    VendorTeamPass[]               @relation("VendorTeamPassCreator")
+  vendorPassTypesCreated     EventVendorPassType[]          @relation("EventVendorPassTypeCreator")
   eventQrLinksCreated        EventQrLink[]                  @relation("EventQrLinkCreator")
   guestImportBatches         GuestImportBatch[]       @relation("GuestImportBatchCreator")
   generalPassBatches         GeneralPassBatch[]       @relation("GeneralPassBatchCreator")
@@ -362,6 +363,7 @@ model Event {
   admissionSettings    EventAdmissionSettings?
   guestPasses          GuestPass[]
   vendorTeamPasses     VendorTeamPass[]
+  vendorPassTypes      EventVendorPassType[]
   guestImportBatches   GuestImportBatch[]
   generalPassBatches   GeneralPassBatch[]
   /// Organizer-only relationship labels for seating/planning (never guest-facing).
@@ -5769,6 +5771,38 @@ model VendorTeamPass {
   @@index([publicToken])
   @@index([tokenPrefix])
   @@map("vendor_team_passes")
+}
+
+/// Organiser-managed vendor pass types for one event.
+///
+/// Two kinds of row live here, both scoped to a single event:
+///  - `source = "CUSTOM"` — a pass type the organiser invented (Catering, DJ
+///    Crew…). Passes issued against it are stored as `passType = CUSTOM` with
+///    `categoryLabel` holding this row's label, so deleting the type never
+///    rewrites history on already-printed cards.
+///  - `source = "SYSTEM"` — an override for one of the built-in enum types.
+///    Built-ins belong to the platform and are never destroyed; hiding one just
+///    writes `isActive = false` here so it drops out of this event's picker.
+model EventVendorPassType {
+  id          String   @id @default(cuid())
+  eventId     String
+  /// Uppercase slug, unique per event. Matches the enum name for SYSTEM rows.
+  key         String
+  label       String
+  /// SYSTEM = built-in override, CUSTOM = organiser-created.
+  source      String   @default("CUSTOM")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("EventVendorPassTypeCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, key])
+  @@index([eventId, isActive])
+  @@map("event_vendor_pass_types")
 }
 
 model VendorTeamPassMember {

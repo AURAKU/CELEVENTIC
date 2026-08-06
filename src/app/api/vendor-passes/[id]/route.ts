@@ -9,6 +9,10 @@ import {
   getVendorTeamPass,
   updateVendorTeamPass,
 } from "@/services/vendor-pass/vendor-team-pass.service";
+import {
+  resolveVendorPassTypeSelection,
+  VendorPassTypeError,
+} from "@/services/vendor-pass/vendor-pass-type.service";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +66,22 @@ export async function PATCH(
 
   const body = await req.json().catch(() => ({}));
   try {
-    const pass = await updateVendorTeamPass(id, auth.ctx!.userId, body);
+    const patch = { ...body };
+    if (typeof patch.passType === "string" && patch.passType) {
+      const selection = await resolveVendorPassTypeSelection({
+        eventId: auth.eventId!,
+        value: patch.passType,
+        categoryLabel: patch.categoryLabel,
+      });
+      patch.passType = selection.passType;
+      patch.categoryLabel = selection.categoryLabel;
+    }
+    const pass = await updateVendorTeamPass(id, auth.ctx!.userId, patch);
     return NextResponse.json({ success: true, data: pass });
   } catch (error) {
+    if (error instanceof VendorPassTypeError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Update failed" },
       { status: 400 }

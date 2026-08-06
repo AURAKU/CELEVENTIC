@@ -109,6 +109,7 @@ export default async function VendorPassPublicPage({
         eventTitle={result.pass.eventTitle}
         passMode={result.pass.passMode}
         passType={result.pass.passType}
+        categoryLabel={result.pass.categoryLabel}
         teamCapacity={result.pass.teamCapacity}
         admittedCount={result.pass.admittedCount}
         admissionCode={result.pass.admissionCode}
