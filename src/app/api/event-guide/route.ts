@@ -8,8 +8,9 @@ import { eventGuideService, GuideError } from "@/services/event-guide/event-guid
 import { guideSeatingService } from "@/services/event-guide/guide-seating.service";
 import { eventGuideOfflinePackService } from "@/services/event-guide/offline-pack.service";
 import { eventQrLinkService } from "@/services/qr-hub/event-qr-link.service";
-import { parseProgrammePaste, toProgrammeItems } from "@/lib/event-guide/programme-paste";
+import { parseProgrammeScript } from "@/lib/event-guide/programme-script";
 import {
+  MAX_PROGRAMME_SCRIPT_CHARS,
   normalizeAttachments,
   normalizeMenu,
   normalizeProgrammeItems,
@@ -37,6 +38,24 @@ function str(value: unknown, max = 400): string | null {
 
 function bool(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+/**
+ * What the content tab sends for the programme.
+ *
+ * A script means the organizer used the editor, and the entries are derived
+ * from it here. An older client (or an import that only carried items) still
+ * saves its array, which is stored with an empty script the editor rebuilds.
+ */
+function readProgrammeSubmission(body: Record<string, unknown> | null): {
+  script: string;
+  items: ReturnType<typeof normalizeProgrammeItems>;
+} {
+  if (typeof body?.programmeScript === "string") {
+    const script = body.programmeScript.slice(0, MAX_PROGRAMME_SCRIPT_CHARS);
+    return { script, items: parseProgrammeScript(script).items };
+  }
+  return { script: "", items: normalizeProgrammeItems(body?.programme) };
 }
 
 function fail(error: unknown) {
@@ -130,6 +149,7 @@ export async function GET(req: Request) {
       },
       content: {
         programme: content.programme,
+        programmeScript: content.programmeScript,
         programmeSource: content.programmeSource,
         menu: content.menu,
         menuSource: content.menuSource,
@@ -214,7 +234,10 @@ export async function POST(req: Request) {
       }
 
       case "save_content": {
-        const programme = normalizeProgrammeItems(body?.programme);
+        // The script is the organizer's copy; the items are what we derive
+        // from it. Deriving here rather than trusting the browser keeps the
+        // stored running order and the previewed one the same thing.
+        const draft = readProgrammeSubmission(body);
         const menu = normalizeMenu(body?.menu);
         const attachments = normalizeAttachments(body?.attachments);
         const guide = await eventGuideService.applyUpdate(
@@ -222,24 +245,29 @@ export async function POST(req: Request) {
           guard.userId,
           expectedVersion,
           {
-            // An empty array means "go back to inheriting from the invitation",
-            // which is different from "the programme is empty".
-            programmeDraft: programme.length > 0 ? (programme as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+            // An empty programme means "go back to inheriting from the
+            // invitation", which is different from "the programme is empty".
+            programmeDraft:
+              draft.items.length > 0 ? (draft as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
             menuDraft: menu as unknown as Prisma.InputJsonValue,
             attachments: attachments as unknown as Prisma.InputJsonValue,
           },
           "content_saved"
         );
-        return NextResponse.json({ success: true, data: { version: guide.version } });
+        return NextResponse.json({
+          success: true,
+          data: { version: guide.version, programme: draft.items },
+        });
       }
 
       case "import_programme": {
         // Parses into the draft only. Publishing stays a separate, deliberate act.
         // Same pipeline the builder previews with, so what the organizer saw
         // before pressing the button is what lands in the draft.
-        const text = typeof body?.text === "string" ? body.text.slice(0, 20000) : "";
-        const parsed = toProgrammeItems(parseProgrammePaste(text).entries);
-        if (parsed.length === 0) {
+        const script =
+          typeof body?.text === "string" ? body.text.slice(0, MAX_PROGRAMME_SCRIPT_CHARS) : "";
+        const parsed = parseProgrammeScript(script);
+        if (parsed.items.length === 0) {
           return NextResponse.json(
             { error: "We could not read a programme from that text. Try one item per line." },
             { status: 422 }
@@ -249,12 +277,17 @@ export async function POST(req: Request) {
           guard.eventId,
           guard.userId,
           expectedVersion,
-          { programmeDraft: parsed as unknown as Prisma.InputJsonValue },
+          {
+            programmeDraft: {
+              script,
+              items: parsed.items,
+            } as unknown as Prisma.InputJsonValue,
+          },
           "programme_imported"
         );
         return NextResponse.json({
           success: true,
-          data: { version: guide.version, programme: parsed, requiresReview: true },
+          data: { version: guide.version, programme: parsed.items, requiresReview: true },
         });
       }
 

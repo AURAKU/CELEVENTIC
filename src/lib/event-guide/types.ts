@@ -30,6 +30,14 @@ export interface GuideProgrammeItem {
   time: string;
   title: string;
   description?: string;
+  /**
+   * A heading inside the running order (`CEREMONY`, `Reception`) rather than a
+   * thing that happens at a time.
+   *
+   * Optional and absent on ordinary items, so every payload published before
+   * headings existed still reads exactly as it did.
+   */
+  kind?: "section";
 }
 
 export interface GuideMenuSection {

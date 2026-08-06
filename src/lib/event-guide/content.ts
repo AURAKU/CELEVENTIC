@@ -19,11 +19,23 @@ import type {
   GuideProgrammeItem,
 } from "./types";
 
-const MAX_PROGRAMME_ITEMS = 60;
+/**
+ * Caps sized for a programme an organizer actually pastes.
+ *
+ * The old ceilings (60 items, 400 characters of detail) were written for a
+ * hand-typed list. The programme script is a document — an order of service
+ * with readings, soloists and a note under half of them — and the promise made
+ * in the editor is that nothing is left out, so the ceilings are the size of a
+ * long real programme rather than of a form.
+ */
+const MAX_PROGRAMME_ITEMS = 150;
 const MAX_MENU_SECTIONS = 20;
 const MAX_ATTACHMENTS = 6;
 const MAX_TEXT = 400;
+const MAX_TITLE = 200;
+const MAX_DETAIL = 2000;
 const MAX_MENU_BODY = 8000;
+export const MAX_PROGRAMME_SCRIPT_CHARS = 20_000;
 
 function text(value: unknown, max = MAX_TEXT): string {
   if (typeof value !== "string") return "";
@@ -55,22 +67,48 @@ export function safePublicUrl(value: unknown): string | null {
 }
 
 export function normalizeProgrammeItems(raw: unknown): GuideProgrammeItem[] {
-  if (!Array.isArray(raw)) return [];
+  const source = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === "object" && Array.isArray((raw as Record<string, unknown>).items)
+      ? ((raw as Record<string, unknown>).items as unknown[])
+      : null;
+  if (!source) return [];
+
   const items: GuideProgrammeItem[] = [];
-  for (const entry of raw.slice(0, MAX_PROGRAMME_ITEMS)) {
+  for (const entry of source.slice(0, MAX_PROGRAMME_ITEMS)) {
     if (!entry || typeof entry !== "object") continue;
     const row = entry as Record<string, unknown>;
-    const title = text(row.title, 160);
+    const title = text(row.title, MAX_TITLE);
     if (!title) continue;
-    const description = text(row.description ?? row.detail, MAX_TEXT);
+    const description = text(row.description ?? row.detail, MAX_DETAIL);
     items.push({
       id: text(row.id, 64) || `prog-${items.length + 1}-${slugFragment(title)}`,
       time: text(row.time, 40),
       title,
       ...(description ? { description } : {}),
+      ...(row.kind === "section" ? { kind: "section" as const } : {}),
     });
   }
   return items;
+}
+
+/**
+ * Read a stored programme draft in either shape it can have on disk.
+ *
+ * The column began life as a bare array of items. Since the editor became a
+ * script — one document the organizer types or pastes — the draft is stored as
+ * `{ script, items }`: the script is what the organizer wrote, the items are
+ * what we derived from it for guests and for the offline pack. Older rows are
+ * still arrays and still read correctly, with an empty script that the editor
+ * rebuilds from the items.
+ */
+export function readProgrammeDraft(raw: unknown): { script: string; items: GuideProgrammeItem[] } {
+  const items = normalizeProgrammeItems(raw);
+  const script =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? text((raw as Record<string, unknown>).script, MAX_PROGRAMME_SCRIPT_CHARS)
+      : "";
+  return { script, items };
 }
 
 export function programmeItemsFromWeddingBoard(
@@ -141,12 +179,15 @@ export function resolveGuideContent(input: {
   invitationFeatureConfig: unknown;
 }): {
   programme: GuideProgrammeItem[];
+  /** What the organizer typed, when the guide owns the programme. */
+  programmeScript: string;
   menu: GuideMenu;
   attachments: GuideAttachment[];
   programmeSource: "guide" | "invitation" | "empty";
   menuSource: "guide" | "invitation" | "empty";
 } {
-  const guideProgramme = normalizeProgrammeItems(input.programmeDraft);
+  const draft = readProgrammeDraft(input.programmeDraft);
+  const guideProgramme = draft.items;
   const invitationProgramme = programmeItemsFromWeddingBoard(input.invitationProgrammeItems);
   const programme = guideProgramme.length > 0 ? guideProgramme : invitationProgramme;
 
@@ -156,6 +197,7 @@ export function resolveGuideContent(input: {
 
   return {
     programme,
+    programmeScript: guideProgramme.length > 0 ? draft.script : "",
     menu,
     attachments: normalizeAttachments(input.attachments),
     programmeSource:
@@ -168,6 +210,32 @@ export function resolveGuideContent(input: {
   };
 }
 
+const GUIDE_DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/**
+ * `Thursday, 6 August 2026`, on every runtime.
+ *
+ * Assembled from the formatted parts rather than taken from the locale's own
+ * pattern, which puts the comma in or leaves it out depending on which ICU the
+ * server happens to be built against. The date on a printed sign and the date
+ * in the published payload have to be the same string.
+ */
+function guideDateLabel(date: Date): string {
+  const parts = GUIDE_DATE_FORMAT.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((entry) => entry.type === type)?.value ?? "";
+
+  const weekday = part("weekday");
+  const rest = [part("day"), part("month"), part("year")].filter(Boolean).join(" ");
+  return weekday ? `${weekday}, ${rest}` : rest;
+}
+
 /** Long-form event date for the guide header and printed signs. */
 export function formatGuideDate(
   start: Date | string | null | undefined,
@@ -177,14 +245,7 @@ export function formatGuideDate(
   const startDate = start instanceof Date ? start : new Date(start);
   if (Number.isNaN(startDate.getTime())) return null;
 
-  const fmt = new Intl.DateTimeFormat("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  const startLabel = fmt.format(startDate);
+  const startLabel = guideDateLabel(startDate);
 
   if (!end) return startLabel;
   const endDate = end instanceof Date ? end : new Date(end);
@@ -192,5 +253,5 @@ export function formatGuideDate(
   if (endDate.toISOString().slice(0, 10) === startDate.toISOString().slice(0, 10)) {
     return startLabel;
   }
-  return `${startLabel} – ${fmt.format(endDate)}`;
+  return `${startLabel} – ${guideDateLabel(endDate)}`;
 }

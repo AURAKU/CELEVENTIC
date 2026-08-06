@@ -45,6 +45,8 @@ export interface GuideBuilderState {
   };
   content: {
     programme: GuideProgrammeItem[];
+    /** The organizer's programme script; empty while inheriting. */
+    programmeScript: string;
     programmeSource: "guide" | "invitation" | "empty";
     menu: GuideMenu;
     menuSource: "guide" | "invitation" | "empty";

@@ -66,12 +66,30 @@ describe("programme normalisation", () => {
   });
 
   it("caps the list and the length of each field", () => {
-    const many = Array.from({ length: 200 }, (_, i) => ({ title: `Item ${i}` }));
-    assert.equal(normalizeProgrammeItems(many).length, 60);
+    const many = Array.from({ length: 400 }, (_, i) => ({ title: `Item ${i}` }));
+    assert.equal(normalizeProgrammeItems(many).length, 150);
 
-    const long = normalizeProgrammeItems([{ title: "T".repeat(500), description: "D".repeat(2000) }]);
-    assert.equal(long[0]!.title.length, 160);
-    assert.equal(long[0]!.description!.length, 400);
+    const long = normalizeProgrammeItems([{ title: "T".repeat(500), description: "D".repeat(4000) }]);
+    assert.equal(long[0]!.title.length, 200);
+    assert.equal(long[0]!.description!.length, 2000);
+  });
+
+  it("reads a draft saved as a script with its derived items", () => {
+    const items = normalizeProgrammeItems({
+      script: "2:00 PM — Ceremony",
+      items: [{ title: "Ceremony", time: "2:00 PM" }],
+    });
+    assert.equal(items.length, 1);
+    assert.equal(items[0]!.title, "Ceremony");
+  });
+
+  it("keeps a heading's kind and leaves ordinary items without one", () => {
+    const items = normalizeProgrammeItems([
+      { title: "CEREMONY", kind: "section" },
+      { title: "Vows", kind: "nonsense" },
+    ]);
+    assert.equal(items[0]!.kind, "section");
+    assert.equal(items[1]!.kind, undefined);
   });
 
   it("gives every item a distinct id when the organizer supplies none", () => {
