@@ -377,27 +377,27 @@ export function PremiumInviteWrapper({
     audioStarted.current = false;
   }, [audioManager]);
 
-  function afterSoftIntro() {
+  // Each beat receives these as its completion callback, and a beat may hang
+  // its own timers off that identity. Keeping them stable means a re-render
+  // from anywhere above (i18n bootstrap, session refresh, consent banner)
+  // cannot disturb a ceremony that is already mid-flight.
+  const afterSoftIntro = useCallback(() => {
     // Tap to Begin and the envelope/curtain reveal are never silently
     // skipped, not on first visit, not on a return visit. A returning
     // guest can use the visible "Skip intro" control on that beat; the
     // ceremony itself always continues normally from here.
     setPhase(phaseAfterSoftIntro(pipelineFlags));
-  }
+  }, [pipelineFlags]);
 
-  function afterReveal() {
+  const afterReveal = useCallback(() => {
     void startAudio();
     setPhase("portal");
-  }
+  }, [startAudio]);
 
-  function handleTapBegin() {
+  const handleTapBegin = useCallback(() => {
     void startAudio();
-    if (showReveal) {
-      setPhase("reveal");
-      return;
-    }
-    setPhase("portal");
-  }
+    setPhase(showReveal ? "reveal" : "portal");
+  }, [showReveal, startAudio]);
 
   useEffect(() => {
     if (phase === "portal" && hasMusic && wantsAutoplay && !audioStarted.current) {

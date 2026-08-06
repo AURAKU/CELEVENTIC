@@ -92,7 +92,6 @@ export function CeleventicSoftIntro({
 
   const completed = useRef(false);
   const exitingRef = useRef(false);
-  const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorHoldTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -107,17 +106,20 @@ export function CeleventicSoftIntro({
   onUserGestureRef.current = onUserGesture;
   const onPlaybackStartRef = useRef(onPlaybackStart);
   onPlaybackStartRef.current = onPlaybackStart;
+  // Held in a ref so a parent re-render (i18n bootstrap, session refresh, a
+  // consent banner) cannot change the identity of `finish` — and through it
+  // every timer that depends on `finish` — while the film is on screen.
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     awaitingOpenRef.current = awaitingOpen;
   }, [awaitingOpen]);
 
   const clearTimers = useCallback(() => {
-    if (exitTimer.current) clearTimeout(exitTimer.current);
     if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
     if (stallTimer.current) clearTimeout(stallTimer.current);
     if (errorHoldTimer.current) clearTimeout(errorHoldTimer.current);
-    exitTimer.current = null;
     fallbackTimer.current = null;
     stallTimer.current = null;
     errorHoldTimer.current = null;
@@ -128,9 +130,14 @@ export function CeleventicSoftIntro({
     completed.current = true;
     clearTimers();
     if (invitationId) rememberSoftIntroThisSession(invitationId);
-    onComplete();
-  }, [clearTimers, invitationId, onComplete]);
+    onCompleteRef.current();
+  }, [clearTimers, invitationId]);
 
+  /**
+   * Flips into the outro. Deliberately owns no timer: the hand-off to
+   * `onComplete` is driven by an effect keyed on `exiting`, so the guest
+   * reaches their invitation even if this component re-renders mid-outro.
+   */
   const beginExit = useCallback(() => {
     if (completed.current || exitingRef.current) return;
     exitingRef.current = true;
@@ -141,16 +148,20 @@ export function CeleventicSoftIntro({
     } catch {
       /* ignore */
     }
-    const delay = reduceMotion ? 0 : SOFT_INTRO_EXIT_MS;
-    exitTimer.current = setTimeout(finish, delay);
-  }, [finish, reduceMotion]);
+  }, []);
 
   const armFallbackTimeout = useCallback(
     (durationSeconds?: number | null) => {
       if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
       // Live gate: do not auto-advance while waiting for Open Invitation.
       if (!embedded && awaitingOpen && !playbackStartedRef.current) return;
-      const ms = softIntroTimeoutMs(durationSeconds);
+      // Re-arming from an effect passes no duration; prefer what the element
+      // already knows so a re-render cannot stretch the long-stop back to the
+      // unknown-duration ceiling.
+      const known = videoRef.current?.duration;
+      const ms = softIntroTimeoutMs(
+        durationSeconds ?? (Number.isFinite(known) ? known : null)
+      );
       fallbackTimer.current = setTimeout(() => {
         if (completed.current) return;
         if (!playbackStartedRef.current && !videoFailed && !embedded) return;
@@ -226,8 +237,24 @@ export function CeleventicSoftIntro({
 
   useEffect(() => {
     armFallbackTimeout(null);
-    return () => clearTimers();
-  }, [armFallbackTimeout, clearTimers]);
+  }, [armFallbackTimeout]);
+
+  // Unmount only. This must never run on a re-render: the error-hold and stall
+  // timers are the recovery path out of a failed film, and cancelling them
+  // leaves the guest on a black full-screen stage with nothing to advance it.
+  useEffect(() => clearTimers, [clearTimers]);
+
+  /**
+   * The outro always reaches `onComplete`. Tying the hand-off to `exiting`
+   * rather than to a timer created inside a callback means a re-render can at
+   * worst restart the 720ms fade — never cancel it and strand the guest on the
+   * faded-out black overlay with the invitation still unmounted beneath it.
+   */
+  useEffect(() => {
+    if (!exiting || completed.current) return;
+    const timer = setTimeout(finish, reduceMotion ? 0 : SOFT_INTRO_EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [exiting, finish, reduceMotion]);
 
   // Mount: preload media. Live path never autoplays. Embedded may muted-autoplay.
   useEffect(() => {
