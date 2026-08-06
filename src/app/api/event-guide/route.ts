@@ -8,7 +8,7 @@ import { eventGuideService, GuideError } from "@/services/event-guide/event-guid
 import { guideSeatingService } from "@/services/event-guide/guide-seating.service";
 import { eventGuideOfflinePackService } from "@/services/event-guide/offline-pack.service";
 import { eventQrLinkService } from "@/services/qr-hub/event-qr-link.service";
-import { parseProgrammeOutline } from "@/lib/admission/companion-studio";
+import { parseProgrammePaste, toProgrammeItems } from "@/lib/event-guide/programme-paste";
 import {
   normalizeAttachments,
   normalizeMenu,
@@ -235,8 +235,10 @@ export async function POST(req: Request) {
 
       case "import_programme": {
         // Parses into the draft only. Publishing stays a separate, deliberate act.
+        // Same pipeline the builder previews with, so what the organizer saw
+        // before pressing the button is what lands in the draft.
         const text = typeof body?.text === "string" ? body.text.slice(0, 20000) : "";
-        const parsed = normalizeProgrammeItems(parseProgrammeOutline(text));
+        const parsed = toProgrammeItems(parseProgrammePaste(text).entries);
         if (parsed.length === 0) {
           return NextResponse.json(
             { error: "We could not read a programme from that text. Try one item per line." },

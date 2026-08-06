@@ -69,6 +69,31 @@ describe("parseProgrammeOutline", () => {
     assert.equal(items[0]!.title, "Guest welcome");
   });
 
+  it("parses a spaced hyphen as a separator", () => {
+    const items = parseProgrammeOutline("1:00 PM - Guest arrival");
+    assert.equal(items[0]!.time, "1:00 PM");
+    assert.equal(items[0]!.title, "Guest arrival");
+  });
+
+  it("leaves a hyphen inside a title alone", () => {
+    const items = parseProgrammeOutline("6:00 PM — Father-daughter dance");
+    assert.equal(items[0]!.title, "Father-daughter dance");
+    assert.equal(items[0]!.description, undefined);
+  });
+
+  it("keeps a time range together instead of reading it as the title", () => {
+    const items = parseProgrammeOutline("1:00 PM – 2:00 PM Guest arrival");
+    assert.equal(items[0]!.time, "1:00 PM – 2:00 PM");
+    assert.equal(items[0]!.title, "Guest arrival");
+  });
+
+  it("normalises compact and dotted times", () => {
+    const items = parseProgrammeOutline("3.30pm Kente parade\n7pm - Dinner\n14:00 Ceremony");
+    assert.equal(items[0]!.time, "3:30 PM");
+    assert.equal(items[1]!.time, "7 PM");
+    assert.equal(items[2]!.time, "14:00");
+  });
+
   it("round-trips through programmeItemsToOutline", () => {
     const outline = "1:30 PM — Arrival\n2:00 PM — Ceremony — Vows";
     const again = programmeItemsToOutline(parseProgrammeOutline(outline));

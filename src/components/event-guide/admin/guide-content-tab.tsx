@@ -1,12 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CircleAlert,
+  ClipboardPaste,
+  ListPlus,
+  Plus,
+  Trash2,
+  Undo2,
+  WandSparkles,
+} from "lucide-react";
+import {
+  mergeProgrammeEntries,
+  parseProgrammePaste,
+  toProgrammeItems,
+} from "@/lib/event-guide/programme-paste";
 import type { GuideProgrammeItem } from "@/lib/event-guide/types";
 import type { GuideAction } from "./event-guide-builder";
 import type { GuideBuilderState } from "./guide-builder-types";
@@ -16,6 +31,14 @@ const SOURCE_COPY = {
   invitation: "Inherited from your invitation",
   empty: "Nothing yet",
 } as const;
+
+const PASTE_PLACEHOLDER = [
+  "1:00 PM - Guest Arrival",
+  "1:30 PM - Opening Prayer",
+  "CEREMONY",
+  "2:00 PM - Exchange of Vows",
+  "  Officiated by Rev. Mensah",
+].join("\n");
 
 /**
  * Programme and menu editors.
@@ -37,8 +60,20 @@ export function GuideContentTab({
   const [programme, setProgramme] = useState<GuideProgrammeItem[]>(state.content.programme);
   const [menuBody, setMenuBody] = useState(state.content.menu.body);
   const [menuUrl, setMenuUrl] = useState(state.content.menu.url ?? "");
-  const [importText, setImportText] = useState("");
-  const [importOpen, setImportOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [undoSnapshot, setUndoSnapshot] = useState<GuideProgrammeItem[] | null>(null);
+  const [applied, setApplied] = useState<number | null>(null);
+
+  // Parsed on every keystroke so the organizer sees what we read before they
+  // commit to it. Nothing leaves the browser until they save.
+  const paste = useMemo(() => parseProgrammePaste(pasteText), [pasteText]);
+  const pasteHasText = pasteText.trim().length > 0;
+  const pasteUnreadable = pasteHasText && paste.entries.length === 0;
+
+  const unsaved = useMemo(
+    () => JSON.stringify(programme) !== JSON.stringify(state.content.programme),
+    [programme, state.content.programme]
+  );
 
   function update(index: number, patch: Partial<GuideProgrammeItem>) {
     setProgramme((items) => items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -54,6 +89,22 @@ export function GuideContentTab({
     });
   }
 
+  function applyPaste(mode: "replace" | "append") {
+    const incoming = toProgrammeItems(paste.entries);
+    if (incoming.length === 0) return;
+    setUndoSnapshot(programme);
+    setProgramme((current) => mergeProgrammeEntries(current, incoming, mode));
+    setApplied(incoming.length);
+    setPasteText("");
+  }
+
+  function undoPaste() {
+    if (!undoSnapshot) return;
+    setProgramme(undoSnapshot);
+    setUndoSnapshot(null);
+    setApplied(null);
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -64,9 +115,142 @@ export function GuideContentTab({
           </Badge>
         </CardHeader>
         <CardContent className="space-y-3">
+          {canEdit ? (
+            <section
+              data-testid="programme-paste"
+              className="rounded-xl border border-teal-200 bg-teal-50/60 p-4"
+            >
+              <div className="flex items-start gap-2">
+                <ClipboardPaste className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" />
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-teal-900">
+                    Paste your programme and we&rsquo;ll fill it in
+                  </h3>
+                  <p className="mt-0.5 text-xs text-teal-800/80">
+                    Drop in the running order you already have — one item per line. We read
+                    &ldquo;1:00 PM - Guest Arrival&rdquo;, &ldquo;14:00 Ceremony&rdquo;,
+                    &ldquo;Ceremony at 2:00 PM&rdquo;, headings like &ldquo;CEREMONY&rdquo;, and
+                    indented lines as extra detail. This only fills the draft below — guests see
+                    nothing until you publish.
+                  </p>
+                </div>
+              </div>
+
+              <label className="sr-only" htmlFor="programme-paste-input">
+                Paste your programme
+              </label>
+              <Textarea
+                id="programme-paste-input"
+                className="mt-3 bg-white font-mono text-[0.8rem]"
+                rows={6}
+                spellCheck={false}
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                placeholder={PASTE_PLACEHOLDER}
+              />
+
+              {pasteUnreadable ? (
+                <p
+                  role="alert"
+                  className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+                >
+                  <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    We could not read a programme from that. Put one item on each line, like
+                    &ldquo;2:00 PM - Ceremony begins&rdquo;.
+                  </span>
+                </p>
+              ) : null}
+
+              {paste.entries.length > 0 ? (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-teal-900">
+                    We read {paste.entries.length}{" "}
+                    {paste.entries.length === 1 ? "entry" : "entries"}
+                    {paste.sectionCount > 0
+                      ? ` (${paste.sectionCount} read as a heading)`
+                      : ""}
+                    . Check it, then fill the form.
+                  </p>
+                  <ul className="mt-2 max-h-56 space-y-1 overflow-y-auto rounded-lg border border-teal-200 bg-white p-2">
+                    {paste.entries.map((entry) => (
+                      <li
+                        key={entry.id}
+                        className={
+                          entry.isSection
+                            ? "rounded px-2 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500"
+                            : "flex gap-2 rounded px-2 py-1 text-xs"
+                        }
+                      >
+                        {entry.isSection ? (
+                          entry.title
+                        ) : (
+                          <>
+                            <span className="w-24 shrink-0 tabular-nums text-slate-500">
+                              {entry.time || "—"}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="font-medium text-slate-900">{entry.title}</span>
+                              {entry.description ? (
+                                <span className="block text-slate-500">{entry.description}</span>
+                              ) : null}
+                            </span>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {paste.truncated ? (
+                    <p className="mt-1 text-xs text-amber-800">
+                      That paste was longer than a guide can carry. We kept the first 60 entries.
+                    </p>
+                  ) : null}
+                  {paste.strippedMarkup ? (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Formatting from the copied document was removed. The wording is unchanged.
+                    </p>
+                  ) : null}
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button size="sm" onClick={() => applyPaste("replace")}>
+                      <WandSparkles className="mr-1 h-4 w-4" />
+                      {programme.length > 0 ? "Replace programme" : "Fill the programme"}
+                    </Button>
+                    {programme.length > 0 ? (
+                      <Button size="sm" variant="outline" onClick={() => applyPaste("append")}>
+                        <ListPlus className="mr-1 h-4 w-4" /> Add to the end
+                      </Button>
+                    ) : null}
+                    <Button size="sm" variant="ghost" onClick={() => setPasteText("")}>
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
+              {applied !== null ? (
+                <p
+                  role="status"
+                  className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900"
+                >
+                  <span>
+                    Filled {applied} {applied === 1 ? "entry" : "entries"} into the draft below.
+                    Review it, then save.
+                  </span>
+                  {undoSnapshot ? (
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={undoPaste}>
+                      <Undo2 className="mr-1 h-3.5 w-3.5" /> Undo
+                    </Button>
+                  ) : null}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
           {programme.length === 0 ? (
             <p className="text-sm text-slate-500">
-              No running order yet. Add items below, or paste one you already have.
+              No running order yet. Paste one above, or add items by hand.
             </p>
           ) : null}
 
@@ -128,41 +312,6 @@ export function GuideContentTab({
               >
                 <Plus className="mr-1 h-4 w-4" /> Add item
               </Button>
-              <Button variant="outline" onClick={() => setImportOpen((open) => !open)}>
-                Paste a programme
-              </Button>
-            </div>
-          ) : null}
-
-          {importOpen && canEdit ? (
-            <div className="rounded-lg border bg-slate-50 p-3">
-              <p className="text-sm font-medium">Paste your running order</p>
-              <p className="mt-1 text-xs text-slate-500">
-                One item per line. We understand &ldquo;2:00 PM — Ceremony — in the garden&rdquo;,
-                &ldquo;Ceremony at 2:00 PM&rdquo; and &ldquo;14:00 Ceremony&rdquo;. Nothing goes live
-                until you publish.
-              </p>
-              <Textarea
-                className="mt-2"
-                rows={6}
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-                placeholder={"2:00 PM — Guests seated\n2:30 PM — Ceremony begins\n4:00 PM — Cocktails"}
-              />
-              <Button
-                className="mt-2"
-                disabled={busy || !importText.trim()}
-                onClick={async () => {
-                  const data = await run("import_programme", { text: importText });
-                  if (data?.programme) {
-                    setProgramme(data.programme as GuideProgrammeItem[]);
-                    setImportText("");
-                    setImportOpen(false);
-                  }
-                }}
-              >
-                Import for review
-              </Button>
             </div>
           ) : null}
         </CardContent>
@@ -203,18 +352,33 @@ export function GuideContentTab({
       </Card>
 
       {canEdit ? (
-        <Button
-          disabled={busy}
-          onClick={() =>
-            void run("save_content", {
-              programme: programme.filter((item) => item.title.trim()),
-              menu: { body: menuBody, url: menuUrl || null, sections: state.content.menu.sections },
-              attachments: state.content.attachments,
-            })
-          }
-        >
-          Save content
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            disabled={busy}
+            onClick={async () => {
+              const saved = await run("save_content", {
+                programme: programme.filter((item) => item.title.trim()),
+                menu: {
+                  body: menuBody,
+                  url: menuUrl || null,
+                  sections: state.content.menu.sections,
+                },
+                attachments: state.content.attachments,
+              });
+              if (saved) {
+                setApplied(null);
+                setUndoSnapshot(null);
+              }
+            }}
+          >
+            Save content
+          </Button>
+          {unsaved ? (
+            <span className="text-sm text-amber-800">
+              You have programme changes that are not saved yet.
+            </span>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
