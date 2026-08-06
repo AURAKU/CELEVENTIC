@@ -197,6 +197,35 @@ export const MAX_IMPORT_ROWS = 5000;
 /** Upload ceiling — comfortably above a 5,000-row guest list. */
 export const MAX_IMPORT_FILE_BYTES = 8 * 1024 * 1024;
 
+/**
+ * Options that change how a source cell becomes a reviewable row.
+ *
+ * Changing one of these means every row has to be derived again, which throws
+ * away the organiser's review. Everything else — the message, the tags, the
+ * publish flag — is applied at generation time and can be saved without
+ * touching a single row.
+ */
+const ROW_DERIVING_OPTIONS = [
+  "defaultPartySize",
+  "maxPartySize",
+  "normalizeGhanaPhones",
+  "validateEmails",
+  "applySeating",
+  "duplicatePolicy",
+] as const satisfies readonly (keyof ImportOptions)[];
+
+/** True when applying `patch` would need every row re-derived from source. */
+export function optionsAffectRowDerivation(
+  current: Partial<ImportOptions> | null | undefined,
+  patch: Partial<ImportOptions> | null | undefined
+): boolean {
+  if (!patch) return false;
+  const merged = mergeImportOptions(current);
+  return ROW_DERIVING_OPTIONS.some(
+    (key) => patch[key] !== undefined && patch[key] !== merged[key]
+  );
+}
+
 export function mergeImportOptions(partial?: Partial<ImportOptions> | null): ImportOptions {
   const merged = { ...DEFAULT_IMPORT_OPTIONS, ...(partial ?? {}) };
   merged.defaultTagIds = Array.isArray(partial?.defaultTagIds)

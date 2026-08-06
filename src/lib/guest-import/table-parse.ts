@@ -226,17 +226,77 @@ export function parseTable(text: string, delimiter?: string): ParsedTable {
   return { headers, rows, columnCount, delimiter: sep };
 }
 
+/** Fragment separators inside a single pasted line, WhatsApp dumps included. */
+const LINE_FRAGMENT_SEPARATOR = /\s*(?:[,;|\t]|:|\s[-–—]\s)\s*/;
+
+/** An addr-spec, not a name that happens to contain an "at". */
+const LINE_EMAIL = /^[^\s@,;<>()[\]\\]+@[^\s@,;<>()[\]\\]+\.[A-Za-z]{2,}$/;
+
 /**
- * One-name-per-line paste. Blank lines are skipped; a line that still contains
- * a delimiter is left intact so "Kofi Mensah, +2 guests" stays one invitation
- * rather than becoming two.
+ * A dialable number and nothing else. The digit floor keeps "+1" and "(8)" —
+ * which mean "plus one guest" and "a party of eight" — out of the phone column.
+ */
+function looksLikePhoneFragment(value: string): boolean {
+  if (!/^[+\s()\-.\d]+$/.test(value)) return false;
+  const digits = value.replace(/\D+/g, "");
+  return digits.length >= 7 && digits.length <= 15;
+}
+
+/**
+ * Pull an email and a phone out of one pasted line, if it carries them.
+ *
+ * Returns `null` when the line is only a name, so the overwhelmingly common
+ * paste — bare names — keeps its single-column shape. Fragments that are
+ * neither an email nor a phone are rejoined as the name, which is what keeps
+ * "Mensah, Kofi" one guest called "Mensah, Kofi" rather than a surname and an
+ * orphaned first name.
+ */
+function splitLineContacts(
+  line: string
+): { name: string; email: string; phone: string } | null {
+  const parts = line.split(LINE_FRAGMENT_SEPARATOR).map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+
+  const nameParts: string[] = [];
+  let email = "";
+  let phone = "";
+
+  for (const part of parts) {
+    if (!email && LINE_EMAIL.test(part)) email = part.toLowerCase();
+    else if (!phone && looksLikePhoneFragment(part)) phone = part;
+    else nameParts.push(part);
+  }
+
+  if (!email && !phone) return null;
+  return { name: nameParts.join(", "), email, phone };
+}
+
+/**
+ * One-guest-per-line paste.
+ *
+ * Blank lines are skipped. A line is kept whole unless it carries an email or
+ * a phone number, because a delimiter inside a name is far more common than a
+ * delimited table pasted without one: "Kofi Mensah, +2 guests" must stay one
+ * invitation, while "Kwabena Osei, kwabena@example.com, 0244123456" is plainly
+ * a guest and their contact details.
  */
 export function parseLines(text: string): ParsedTable {
-  const rows = stripBom(text)
+  const lines = stripBom(text)
     .split(/\r\n|\r|\n/)
     .map((l) => l.trim())
-    .filter((l) => l.length > 0)
-    .map((l) => [l]);
+    .filter((l) => l.length > 0);
 
-  return { headers: null, rows, columnCount: 1 };
+  const split = lines.map((line) => splitLineContacts(line));
+  if (split.every((s) => s == null)) {
+    return { headers: null, rows: lines.map((l) => [l]), columnCount: 1 };
+  }
+
+  const rows = lines.map((line, index) => {
+    const contact = split[index];
+    return contact ? [contact.name, contact.email, contact.phone] : [line, "", ""];
+  });
+
+  // Headers stay null: the paste had none, and inventing them would send the
+  // organiser to the column-matching step for a list they simply typed out.
+  return { headers: null, rows, columnCount: 3 };
 }

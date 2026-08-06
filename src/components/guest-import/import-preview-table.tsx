@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, Copy, Info, Undo2, X } from "lucide-react";
+import { AlertTriangle, Check, Copy, Info, Loader2, Undo2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PaginationBar } from "@/components/ui/pagination";
+import { requestJson } from "./request";
 import { PARTY_TYPE_LABELS, STATUS_LABELS, type ImportRowView } from "./types";
 
 /**
@@ -19,6 +20,13 @@ import { PARTY_TYPE_LABELS, STATUS_LABELS, type ImportRowView } from "./types";
  */
 
 const PAGE_SIZE = 50;
+const SEARCH_DEBOUNCE_MS = 300;
+
+interface PaginatedRows {
+  items: ImportRowView[];
+  pages: number;
+  total: number;
+}
 
 const STATUS_STYLES: Record<string, string> = {
   READY: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -46,55 +54,78 @@ interface Props {
   onChanged?: () => void;
   /** Bump to force a reload (e.g. while generation progress updates). */
   refreshKey?: number | string;
+  /**
+   * Duplicates awaiting a decision across the whole batch, not just this page.
+   * Confirmation is blocked by all of them, so the bulk controls have to be
+   * reachable from page one of a fifty-page import.
+   */
+  duplicatesInBatch?: number;
 }
 
-export function ImportPreviewTable({ batchId, editable, onChanged, refreshKey }: Props) {
+export function ImportPreviewTable({
+  batchId,
+  editable,
+  onChanged,
+  refreshKey,
+  duplicatesInBatch,
+}: Props) {
   const [rows, setRows] = useState<ImportRowView[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // One request when the organiser stops typing, not one per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset before the fetch, so changing a filter cannot request page 9 of a
+  // list that now has two pages and render "no rows match".
+  useEffect(() => {
+    setPage(1);
+  }, [filter, debouncedSearch]);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
     if (filter !== "all") params.set("status", filter);
-    if (search.trim()) params.set("search", search.trim());
+    if (debouncedSearch) params.set("search", debouncedSearch);
 
-    const res = await fetch(`/api/guest-import/batches/${batchId}/rows?${params}`);
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Could not load the preview.");
+    const result = await requestJson<PaginatedRows>(
+      `/api/guest-import/batches/${batchId}/rows?${params}`
+    );
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
     setError("");
-    setRows(data.data.items ?? []);
-    setPages(data.data.pages ?? 1);
-    setTotal(data.data.total ?? 0);
-  }, [batchId, page, filter, search]);
+    setRows(result.data.items ?? []);
+    setPages(result.data.pages ?? 1);
+    setTotal(result.data.total ?? 0);
+  }, [batchId, page, filter, debouncedSearch]);
 
   useEffect(() => {
     void load();
   }, [load, refreshKey]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [filter, search]);
-
   const patchRow = useCallback(
     async (rowId: string, patch: Partial<ImportRowView>) => {
       setBusy(true);
-      const res = await fetch(`/api/guest-import/batches/${batchId}/rows`, {
+      const result = await requestJson(`/api/guest-import/batches/${batchId}/rows`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ updates: [{ rowId, ...patch }] }),
       });
-      const data = await res.json();
       setBusy(false);
-      if (!res.ok) {
-        setError(data.error ?? "Could not save that change.");
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       await load();
@@ -106,15 +137,14 @@ export function ImportPreviewTable({ batchId, editable, onChanged, refreshKey }:
   const bulk = useCallback(
     async (decision: "CREATE" | "SKIP", status?: string) => {
       setBusy(true);
-      const res = await fetch(`/api/guest-import/batches/${batchId}/rows`, {
+      const result = await requestJson(`/api/guest-import/batches/${batchId}/rows`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decision, status }),
       });
-      const data = await res.json();
       setBusy(false);
-      if (!res.ok) {
-        setError(data.error ?? "Could not apply that to every row.");
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       await load();
@@ -123,9 +153,9 @@ export function ImportPreviewTable({ batchId, editable, onChanged, refreshKey }:
     [batchId, load, onChanged]
   );
 
-  const duplicatesOnPage = useMemo(
-    () => rows.filter((r) => r.status === "DUPLICATE").length,
-    [rows]
+  const duplicatesPending = useMemo(
+    () => duplicatesInBatch ?? rows.filter((r) => r.status === "DUPLICATE").length,
+    [duplicatesInBatch, rows]
   );
 
   return (
@@ -155,13 +185,17 @@ export function ImportPreviewTable({ batchId, editable, onChanged, refreshKey }:
         </div>
       </div>
 
-      {editable && duplicatesOnPage > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>
-            Possible duplicates need a decision. Nothing is merged automatically.
+      {editable && duplicatesPending > 0 && (
+        <div className="flex flex-col gap-2 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800 sm:flex-row sm:flex-wrap sm:items-center">
+          <span className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {duplicatesPending} possible duplicate{duplicatesPending === 1 ? "" : "s"} need
+              {duplicatesPending === 1 ? "s" : ""} a decision before you can create invitations.
+              Nothing is merged automatically.
+            </span>
           </span>
-          <div className="ml-auto flex gap-2">
+          <div className="flex gap-2 sm:ml-auto">
             <Button size="sm" variant="outline" disabled={busy} onClick={() => bulk("SKIP", "DUPLICATE")}>
               Skip all duplicates
             </Button>
@@ -192,7 +226,15 @@ export function ImportPreviewTable({ batchId, editable, onChanged, refreshKey }:
             {rows.length === 0 && (
               <tr>
                 <td colSpan={editable ? 8 : 7} className="px-3 py-8 text-center text-slate-500">
-                  No rows match this filter.
+                  {loading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading the preview…
+                    </span>
+                  ) : filter === "all" && !debouncedSearch ? (
+                    "This import has no rows."
+                  ) : (
+                    "No rows match this filter."
+                  )}
                 </td>
               </tr>
             )}
@@ -238,7 +280,9 @@ export function ImportPreviewTable({ batchId, editable, onChanged, refreshKey }:
                   )}
                 </td>
                 <td className="px-3 py-2 text-xs text-slate-500">
-                  {row.tableNumber ? `${row.tableNumber}${row.seatLabel ? ` · ${row.seatLabel}` : ""}` : ", "}
+                  {row.tableNumber
+                    ? `${row.tableNumber}${row.seatLabel ? ` · ${row.seatLabel}` : ""}`
+                    : "—"}
                 </td>
                 <td className="px-3 py-2">
                   <span

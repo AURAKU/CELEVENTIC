@@ -3,7 +3,8 @@ import { z } from "zod";
 import { authorizeBatch, errorResponse } from "@/lib/guest-import/api-auth";
 import { maybeKickGuestImportBatch } from "@/lib/guest-import/inline-kick";
 import { guestImportService } from "@/services/guest-import/guest-import.service";
-import { ImportField, type ColumnMapping } from "@/lib/guest-import/types";
+import { importOptionsSchema } from "@/lib/guest-import/options-schema";
+import { ImportField, type ColumnMapping, type ImportOptions } from "@/lib/guest-import/types";
 
 /** Read, re-map or discard a staged import. */
 
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const patchSchema = z.object({
   mapping: z.record(z.string(), z.enum(Object.values(ImportField) as [string, ...string[]])).optional(),
-  options: z.record(z.unknown()).optional(),
+  options: importOptionsSchema.optional(),
 });
 
 export async function GET(_req: Request, { params }: { params: Promise<{ batchId: string }> }) {
@@ -44,9 +45,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ batchI
         ) as ColumnMapping)
       : undefined;
 
-    const preview = await guestImportService.remapBatch(batchId, auth.ctx.userId, {
+    // Rows are only re-derived when the change actually changes how they parse,
+    // so saving a message or a tag never discards the organiser's review.
+    const preview = await guestImportService.applyBatchPatch(batchId, auth.ctx.userId, {
       mapping,
-      options: body.options as never,
+      options: body.options as Partial<ImportOptions>,
     });
     return NextResponse.json({ success: true, data: preview });
   } catch (error) {

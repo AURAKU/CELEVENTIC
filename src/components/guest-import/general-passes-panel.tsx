@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PaginationBar } from "@/components/ui/pagination";
+import { requestJson } from "./request";
+
+/** How often to re-check a fixed run while it is still being minted. */
+const MINTING_POLL_MS = 2000;
 
 /**
  * General admission passes.
@@ -51,6 +55,7 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,21 +67,30 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
   const [welcome, setWelcome] = useState("");
 
   const loadBatches = useCallback(async () => {
-    const res = await fetch(`/api/general-passes?eventId=${eventId}`);
-    const data = await res.json();
-    if (res.ok) setBatches(data.data.items ?? []);
-    else setError(data.error ?? "Could not load general passes.");
+    const result = await requestJson<{ items: GeneralBatch[] }>(
+      `/api/general-passes?eventId=${encodeURIComponent(eventId)}`
+    );
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setError("");
+    setBatches(result.data.items ?? []);
   }, [eventId]);
 
   const loadPasses = useCallback(async () => {
     if (!selected) return;
-    const res = await fetch(`/api/general-passes/${selected}?page=${page}&limit=50`);
-    const data = await res.json();
-    if (res.ok) {
-      setPasses(data.data.items ?? []);
-      setPages(data.data.pages ?? 1);
-      setTotal(data.data.total ?? 0);
+    const result = await requestJson<{ items: IssuedPass[]; pages: number; total: number }>(
+      `/api/general-passes/${selected}?page=${page}&limit=50`
+    );
+    if (!result.ok) {
+      setError(result.error);
+      return;
     }
+    setPasses(result.data.items ?? []);
+    setPages(result.data.pages ?? 1);
+    setTotal(result.data.total ?? 0);
   }, [selected, page]);
 
   useEffect(() => {
@@ -87,10 +101,25 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
     void loadPasses();
   }, [loadPasses]);
 
+  // A fixed run is minted in the background. Requesting the batch is also what
+  // drives minting when no jobs worker is up, so polling here is what makes
+  // "0 of 500 minted" actually climb instead of sitting there until a reload.
+  const minting = batches.some(
+    (batch) => batch.method === "FIXED_QUANTITY" && batch.status === "GENERATING"
+  );
+  useEffect(() => {
+    if (!minting) return;
+    const timer = setInterval(() => {
+      void loadBatches();
+      void loadPasses();
+    }, MINTING_POLL_MS);
+    return () => clearInterval(timer);
+  }, [minting, loadBatches, loadPasses]);
+
   async function create() {
     setBusy(true);
     setError("");
-    const res = await fetch("/api/general-passes", {
+    const result = await requestJson<{ id: string }>("/api/general-passes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -99,35 +128,40 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
         method,
         quantity: method === "FIXED_QUANTITY" ? quantity : undefined,
         partySize,
-        maxRegistrations: method === "OPEN_REGISTRATION" && maxRegistrations !== "" ? Number(maxRegistrations) : null,
+        maxRegistrations:
+          method === "OPEN_REGISTRATION" && maxRegistrations !== ""
+            ? Number(maxRegistrations)
+            : null,
         welcomeMessage: welcome.trim() || null,
       }),
     });
-    const data = await res.json();
     setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Could not create those passes.");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
+    setPage(1);
+    setSelected(result.data.id);
     await loadBatches();
-    setSelected(data.data.id);
   }
 
   async function act(batchId: string, action: "close" | "revoke" | "retry") {
     setBusy(true);
-    const res = await fetch(`/api/general-passes/${batchId}`, {
+    setError("");
+    const result = await requestJson(`/api/general-passes/${batchId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, reason: action === "revoke" ? "Revoked from the organiser panel" : undefined }),
+      body: JSON.stringify({
+        action,
+        reason: action === "revoke" ? "Revoked from the organiser panel" : undefined,
+      }),
     });
     setBusy(false);
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "That action failed.");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
-    await loadBatches();
-    await loadPasses();
+    await Promise.all([loadBatches(), loadPasses()]);
   }
 
   return (
@@ -221,7 +255,19 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
         </CardContent>
       </Card>
 
-      {batches.length > 0 && (
+      {loading ? (
+        <Card>
+          <CardContent className="flex items-center justify-center gap-2 p-8 text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading pass batches…
+          </CardContent>
+        </Card>
+      ) : batches.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-slate-500">
+            No general passes yet. Create a fixed run to print, or a registration link to share.
+          </CardContent>
+        </Card>
+      ) : (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Pass batches</CardTitle>
@@ -244,16 +290,22 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
                     }}
                   >
                     <p className="font-medium">{batch.label}</p>
-                    <p className="text-xs text-slate-500">
-                      {batch.method === "FIXED_QUANTITY"
-                        ? `${batch.issuedCount} of ${batch.quantity} minted`
-                        : `${batch.issuedCount} claimed${batch.maxRegistrations ? ` of ${batch.maxRegistrations}` : ""}`}
-                      {" · "}
-                      each admits {batch.partySize} · {batch.status.toLowerCase()}
+                    <p className="flex flex-wrap items-center gap-1 text-xs text-slate-500">
+                      {batch.method === "FIXED_QUANTITY" &&
+                        batch.status === "GENERATING" && (
+                          <Loader2 className="h-3 w-3 animate-spin text-brand-600" />
+                        )}
+                      <span>
+                        {batch.method === "FIXED_QUANTITY"
+                          ? `${batch.issuedCount} of ${batch.quantity} minted`
+                          : `${batch.issuedCount} claimed${batch.maxRegistrations ? ` of ${batch.maxRegistrations}` : ""}`}
+                        {" · "}
+                        each admits {batch.partySize} · {batch.status.toLowerCase()}
+                      </span>
                     </p>
                   </button>
 
-                  <div className="ml-auto flex flex-wrap gap-2">
+                  <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
                     {batch.registrationUrl && (
                       <Button
                         size="sm"
@@ -298,7 +350,7 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
         </Card>
       )}
 
-      {selected && passes.length > 0 && (
+      {selected && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Issued passes ({total})</CardTitle>
@@ -316,10 +368,19 @@ export function GeneralPassesPanel({ eventId }: { eventId: string }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
+                  {passes.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
+                        {minting
+                          ? "Minting passes… they appear here as they are created."
+                          : "No passes issued from this batch yet."}
+                      </td>
+                    </tr>
+                  )}
                   {passes.map((pass) => (
                     <tr key={pass.id} className={pass.archived ? "text-slate-400" : undefined}>
                       <td className="px-3 py-2 font-medium">{pass.name}</td>
-                      <td className="px-3 py-2 font-mono">{pass.code ?? ", "}</td>
+                      <td className="px-3 py-2 font-mono">{pass.code ?? "—"}</td>
                       <td className="px-3 py-2">{pass.partySize}</td>
                       <td className="px-3 py-2">{pass.admittedCount}</td>
                       <td className="px-3 py-2">

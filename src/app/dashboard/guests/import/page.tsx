@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,8 +19,19 @@ import { ImportHistoryPanel } from "@/components/guest-import/import-history-pan
  * wrong.
  */
 export default function GuestImportPage() {
-  const { events, eventId, setEventId, loading } = useEventContext();
+  const { events, eventId, setEventId, loading, error } = useEventContext();
   const [tab, setTab] = useState("import");
+
+  // Keep ?eventId in the address bar. An import writes to whichever event is
+  // selected, so the URL has to say which one — for a reload, a shared link,
+  // or a second tab open on a different event.
+  useEffect(() => {
+    if (!eventId) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("eventId") === eventId) return;
+    url.searchParams.set("eventId", eventId);
+    window.history.replaceState(null, "", url.toString());
+  }, [eventId]);
 
   const eventTitle = events.find((e) => e.id === eventId)?.title;
 
@@ -49,12 +60,18 @@ export default function GuestImportPage() {
       {!eventId ? (
         <Card>
           <CardContent className="p-8 text-center text-slate-500">
-            Select an event to import guests.
+            {loading
+              ? "Loading your events…"
+              : error
+                ? error
+                : events.length === 0
+                  ? "Create an event first — guests are always imported into one specific event."
+                  : "Select an event to import guests."}
           </CardContent>
         </Card>
       ) : (
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
+          <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
             <TabsTrigger value="import">Import guests</TabsTrigger>
             <TabsTrigger value="general">General passes</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>

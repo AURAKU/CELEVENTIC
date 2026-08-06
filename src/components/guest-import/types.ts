@@ -54,6 +54,12 @@ export interface BatchProgress {
   batch: ImportBatchView;
   rows: Record<string, number>;
   deliveries: Record<string, number>;
+  /** Rows that confirming right now would create — skips already excluded. */
+  pendingRows: number;
+  /** Total heads those rows would admit at the gate. */
+  pendingHeads: number;
+  /** Duplicates still waiting on a create-or-skip decision. */
+  unreviewedDuplicates: number;
   percent: number;
   remaining: number;
   finished: boolean;

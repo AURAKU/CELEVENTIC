@@ -8,6 +8,7 @@ import {
   parsePastedText,
   parseUploadedFile,
 } from "@/lib/guest-import/parse-source";
+import { importOptionsSchema } from "@/lib/guest-import/options-schema";
 import { MAX_IMPORT_FILE_BYTES, type ImportOptions } from "@/lib/guest-import/types";
 import { parsePaginationFromUrl } from "@/lib/pagination";
 
@@ -24,24 +25,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const optionsSchema = z
-  .object({
-    templateId: z.string().nullable().optional(),
-    message: z.string().max(2000).nullable().optional(),
-    defaultPartySize: z.number().int().min(1).max(50).optional(),
-    maxPartySize: z.number().int().min(1).max(200).optional(),
-    issueEntryPass: z.boolean().optional(),
-    enablePlaceCard: z.boolean().optional(),
-    applySeating: z.boolean().optional(),
-    seatingPlanId: z.string().nullable().optional(),
-    normalizeGhanaPhones: z.boolean().optional(),
-    validateEmails: z.boolean().optional(),
-    publishImmediately: z.boolean().optional(),
-    deliveryChannels: z.array(z.enum(["EMAIL", "SMS", "WHATSAPP"])).optional(),
-    duplicatePolicy: z.enum(["REVIEW", "SKIP", "CREATE_ANYWAY"]).optional(),
-    defaultTagIds: z.array(z.string().min(1)).max(20).optional(),
-  })
-  .partial();
+const optionsSchema = importOptionsSchema;
 
 const jsonBodySchema = z.object({
   eventId: z.string().min(1),
@@ -88,6 +72,9 @@ export async function POST(req: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: "That request body could not be read." }, { status: 400 });
+    }
     return errorResponse(error, 500);
   }
 }
@@ -118,9 +105,16 @@ async function handleUpload(req: Request) {
   const parsed = parseUploadedFile(buffer, file.name);
 
   const rawOptions = form.get("options");
-  const options = rawOptions
-    ? (optionsSchema.parse(JSON.parse(String(rawOptions))) as Partial<ImportOptions>)
-    : undefined;
+  let options: Partial<ImportOptions> | undefined;
+  if (rawOptions) {
+    let decoded: unknown;
+    try {
+      decoded = JSON.parse(String(rawOptions));
+    } catch {
+      return NextResponse.json({ error: "Import settings were malformed." }, { status: 400 });
+    }
+    options = optionsSchema.parse(decoded) as Partial<ImportOptions>;
+  }
 
   const preview = await guestImportService.createBatch({
     eventId,
