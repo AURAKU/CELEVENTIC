@@ -208,7 +208,7 @@ export function GuideContentTab({
 
               <div
                 data-testid="programme-live-preview"
-                className="mt-2 max-h-[26rem] overflow-y-auto rounded-2xl border border-slate-200 p-4 shadow-inner"
+                className="mt-2 max-h-[32rem] overflow-y-auto rounded-2xl border border-slate-200 p-4 shadow-inner sm:p-5"
                 style={
                   {
                     "--guide-primary": theme.colors.primary,
