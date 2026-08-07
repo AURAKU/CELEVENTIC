@@ -25,19 +25,36 @@ export function resolveTabFromQuery(
   return isEventGuideTab(value) ? value : fallback;
 }
 
+/**
+ * What a line of the programme is doing, when it is not an item of its own.
+ *
+ * The organizer decides this in their script — `# CEREMONY` is a heading,
+ * `> …` is a subscript — and the reader falls back to the same two roles when
+ * they did not say.
+ *
+ *  - `section` — a heading between blocks (`CEREMONY`, `RECEPTION`).
+ *  - `note` — a subscript with no item above it to sit under.
+ *
+ * An ordinary item carries no kind at all, so every payload published before
+ * any of this existed still reads exactly as it did.
+ */
+export const GUIDE_PROGRAMME_ITEM_KINDS = ["section", "note"] as const;
+export type GuideProgrammeItemKind = (typeof GUIDE_PROGRAMME_ITEM_KINDS)[number];
+
+export function isGuideProgrammeItemKind(value: unknown): value is GuideProgrammeItemKind {
+  return (
+    typeof value === "string" &&
+    (GUIDE_PROGRAMME_ITEM_KINDS as readonly string[]).includes(value)
+  );
+}
+
 export interface GuideProgrammeItem {
   id: string;
   time: string;
   title: string;
   description?: string;
-  /**
-   * A heading inside the running order (`CEREMONY`, `Reception`) rather than a
-   * thing that happens at a time.
-   *
-   * Optional and absent on ordinary items, so every payload published before
-   * headings existed still reads exactly as it did.
-   */
-  kind?: "section";
+  /** Absent on an ordinary item. See `GuideProgrammeItemKind`. */
+  kind?: GuideProgrammeItemKind;
 }
 
 export interface GuideMenuSection {
@@ -86,6 +103,16 @@ export interface GuideThemeTokens {
    * decorative token stays untouched for flourishes.
    */
   labelColor: string;
+  /**
+   * The ink on a button filled with `colors.accent`.
+   *
+   * The guest's page has never painted `colors.background` on the accent — it
+   * has always chosen dark or light ink by the accent's luminance. Recording
+   * that choice here is what lets the publish gate measure the pair that
+   * actually renders instead of a combination nobody draws, which is what was
+   * failing readable invitation palettes at the publish button.
+   */
+  onActionColor: string;
 }
 
 export interface GuideHeader {

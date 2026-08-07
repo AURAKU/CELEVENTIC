@@ -24,6 +24,28 @@ function toParagraphs(value: string): string[] {
 }
 
 /**
+ * Everything written under an item: a note, a reading, a stanza of the hymn.
+ *
+ * `whitespace-pre-line` is the whole point — a hymn's lines break where the
+ * organizer broke them, rather than being reflowed into a paragraph, and a
+ * blank line between two stanzas stays a blank line.
+ */
+function Detail({ text }: { text: string }) {
+  return (
+    <>
+      {toParagraphs(text).map((paragraph, index) => (
+        <p
+          key={index}
+          className="mt-1.5 whitespace-pre-line text-[0.88rem] leading-[1.7] opacity-75"
+        >
+          {paragraph}
+        </p>
+      ))}
+    </>
+  );
+}
+
+/**
  * The running order, set as a programme rather than as a list.
  *
  * One component serves the builder's live preview and the guest's page, so
@@ -365,7 +387,7 @@ function ProgrammeSchedule({
         return (
           <li
             key={entry.id}
-            data-testid="event-guide-programme-item"
+            data-testid={entry.note ? "event-guide-programme-note" : "event-guide-programme-item"}
             className={
               timed
                 ? "grid grid-cols-[3.9rem_1fr] gap-x-2.5 sm:grid-cols-[5.5rem_1fr] sm:gap-x-5"
@@ -389,30 +411,29 @@ function ProgrammeSchedule({
               style={{ borderColor: last ? "transparent" : "var(--guide-hairline)" }}
               dir="auto"
             >
-              <span
-                aria-hidden
-                className="absolute left-0 top-[0.42rem] h-[0.4rem] w-[0.4rem] -translate-x-1/2 rounded-full"
-                style={{
-                  background: "var(--guide-secondary)",
-                  boxShadow: "0 0 0 3px var(--guide-paper)",
-                }}
-              />
-              <p
-                className="text-[1.02rem] leading-snug sm:text-[1.08rem]"
-                style={{ fontFamily: fonts.heading, color: "var(--guide-primary)" }}
-              >
-                {entry.title}
-              </p>
-              {entry.description
-                ? toParagraphs(entry.description).map((paragraph, i) => (
-                    <p
-                      key={i}
-                      className="mt-1.5 whitespace-pre-line text-[0.88rem] leading-[1.7] opacity-75"
-                    >
-                      {paragraph}
-                    </p>
-                  ))
-                : null}
+              {/* A subscript sits under the running order, so it takes neither
+                  the mark on the rule nor the weight of an item. */}
+              {entry.note ? null : (
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-[0.42rem] h-[0.4rem] w-[0.4rem] -translate-x-1/2 rounded-full"
+                  style={{
+                    background: "var(--guide-secondary)",
+                    boxShadow: "0 0 0 3px var(--guide-paper)",
+                  }}
+                />
+              )}
+              {entry.note ? (
+                <Detail text={entry.title} />
+              ) : (
+                <p
+                  className="text-[1.02rem] leading-snug sm:text-[1.08rem]"
+                  style={{ fontFamily: fonts.heading, color: "var(--guide-primary)" }}
+                >
+                  {entry.title}
+                </p>
+              )}
+              {entry.description ? <Detail text={entry.description} /> : null}
             </div>
           </li>
         );

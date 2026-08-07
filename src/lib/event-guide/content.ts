@@ -12,11 +12,12 @@
 
 import { readCompanionMenuConfig } from "@/lib/admission/companion-studio";
 import type { WeddingBoardProgrammeItem } from "@/lib/invitation/wedding-board";
-import type {
-  GuideAttachment,
-  GuideMenu,
-  GuideMenuSection,
-  GuideProgrammeItem,
+import {
+  isGuideProgrammeItemKind,
+  type GuideAttachment,
+  type GuideMenu,
+  type GuideMenuSection,
+  type GuideProgrammeItem,
 } from "./types";
 
 /**
@@ -86,7 +87,7 @@ export function normalizeProgrammeItems(raw: unknown): GuideProgrammeItem[] {
       time: text(row.time, 40),
       title,
       ...(description ? { description } : {}),
-      ...(row.kind === "section" ? { kind: "section" as const } : {}),
+      ...(isGuideProgrammeItemKind(row.kind) ? { kind: row.kind } : {}),
     });
   }
   return items;

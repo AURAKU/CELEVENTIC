@@ -42,6 +42,9 @@ export function GuidePublishTab({
   const [welcome, setWelcome] = useState(g.welcomeMessage ?? "");
 
   const blocked = !state.contrast.passes;
+  // Every save bumps the draft version, so a draft ahead of the published one
+  // is exactly "there are edits guests have not been sent yet".
+  const unsaved = g.publishedVersion !== null && g.version !== g.publishedVersion;
   const empty =
     state.preview.programme.length === 0 &&
     !state.preview.menu.body.trim() &&
@@ -156,16 +159,26 @@ export function GuidePublishTab({
         <CardContent className="space-y-3">
           <p className="text-sm text-slate-600">
             Publishing freezes what you have now and sends it to every guest who scans the code.
-            Until then, your edits stay private.
+            Until then, your edits stay private. Your QR code and link never change — publishing
+            changes what they open, so you only ever print the code once.
           </p>
 
           {g.publishedAt ? (
             <p className="text-sm">
               Last published {new Date(g.publishedAt).toLocaleString()} (version{" "}
               {g.publishedVersion}).
+              {unsaved
+                ? " You have saved changes since then — publish again to send them to guests."
+                : " Guests scanning your code are seeing this version."}
             </p>
           ) : (
-            <p className="text-sm text-slate-500">Never published.</p>
+            <p
+              data-testid="guide-publish-never"
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+            >
+              Never published. Your QR code already works, but anyone scanning it right now sees a
+              &ldquo;not open yet&rdquo; page. Publish once and the same code opens your guide.
+            </p>
           )}
 
           {blocked ? (

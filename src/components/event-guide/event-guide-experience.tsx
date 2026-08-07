@@ -22,11 +22,19 @@ const TAB_LABELS: Record<EventGuideTabKey, string> = {
   menu: "Menu",
 };
 
-/** Readable label colour for a filled button, chosen by background luminance. */
-function onAccentColor(accent: string): string {
-  const luminance = relativeLuminance(accent);
-  if (luminance === null) return "#ffffff";
-  return luminance > 0.55 ? "#1f1a12" : "#ffffff";
+/**
+ * The ink on a filled button, from the payload when it carries one.
+ *
+ * `resolveGuideTheme` decides this now and the publish gate measures the
+ * decision, so the page paints what was measured rather than deciding again —
+ * a guide that passed the gate and then rendered a different pair would lose
+ * the whole point of the gate. Payloads published before the token existed
+ * fall back to the rule the page used at the time.
+ */
+function actionInk(theme: EventGuidePayload["theme"]): string {
+  if (theme.onActionColor) return theme.onActionColor;
+  const luminance = relativeLuminance(theme.colors.accent);
+  return luminance !== null && luminance > 0.55 ? "#1f1a12" : "#ffffff";
 }
 
 export function EventGuideExperience({
@@ -47,7 +55,7 @@ export function EventGuideExperience({
 
   const theme = payload.theme;
   const fonts = useMemo(() => guideFontStyles(theme.fonts), [theme.fonts]);
-  const onAccent = useMemo(() => onAccentColor(theme.colors.accent), [theme.colors.accent]);
+  const onAccent = useMemo(() => actionInk(theme), [theme]);
 
   const tabs = useMemo(
     () => EVENT_GUIDE_TABS.filter((key) => key !== "seating" || payload.seating.enabled),

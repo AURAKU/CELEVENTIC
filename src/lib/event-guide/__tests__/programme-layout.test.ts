@@ -136,6 +136,17 @@ describe("nothing is regrouped away", () => {
     "Guest welcome\nCutting of the cake\nFirst dance",
     "PROGRAMME OF EVENTS\n12:30 PM Guests seated\nCEREMONY\n2:00 PM Exchange of vows\nToasts and speeches",
     "OFFICIATING MINISTER\nREV. K. ANNAN\nORGANIST\nMR. BOATENG\n10:00 AM - Processional",
+    [
+      "OFFICIATING MINISTERS",
+      "Rev. Mensah Adjetey",
+      "OPENING HYMN",
+      "CAPTAIN OF ISRAEL'S HOST",
+      "Captain of Israel's host, and Guide",
+      "Of all who seek the land above,",
+      "Our end, the glory of the Lord.",
+      "10:00 AM - Processional",
+    ].join("\n"),
+    "> A note before anything happens\n# THE QUIET HOUR\n2:00 PM - Vows",
   ];
 
   it("puts every stored item somewhere on the page", () => {
@@ -368,6 +379,181 @@ describe("rosters found without a heading", () => {
     const schedule = blocks[0]!;
     assert.ok(schedule.kind === "schedule");
     assert.equal(schedule.entries[0]!.time, "10:00");
+  });
+});
+
+/**
+ * The bug that started this: an order of service that opens with its
+ * ministers and then sings a hymn. Every line of it is time-less and most of
+ * them are in capitals, so the roster reader claimed the whole page — and the
+ * hymn's six lines came out as footnotes under a person called `Captain of
+ * Israel's host, and Guide`.
+ */
+describe("a hymn is not a list of people", () => {
+  const script = [
+    "OFFICIATING MINISTERS",
+    "Rev. Mensah Adjetey",
+    "COUNSELORS",
+    "Mr & Mrs Boateng",
+    "OPENING HYMN",
+    "CAPTAIN OF ISRAEL'S HOST",
+    "Captain of Israel's host, and Guide",
+    "Of all who seek the land above,",
+    "Beneath Thy shadow we abide,",
+    "The cloud of Thy protecting love;",
+    "Our strength, Thy grace, our rule, Thy Word;",
+    "Our end, the glory of the Lord.",
+    "10:00 AM - Processional",
+  ].join("\n");
+
+  const blocks = layoutOf(script);
+
+  it("reads as a roster, a signpost and then the hymn on the page", () => {
+    assert.deepEqual(kinds(blocks), ["roster", "signpost", "schedule"]);
+  });
+
+  it("keeps the roles as the headings of the people under them", () => {
+    const roster = blocks[0]!;
+    assert.ok(roster.kind === "roster");
+    assert.deepEqual(
+      roster.groups.map((group) => [group.title, group.people.map((person) => person.name)]),
+      [
+        ["OFFICIATING MINISTERS", ["Rev. Mensah Adjetey"]],
+        ["COUNSELORS", ["Mr & Mrs Boateng"]],
+      ]
+    );
+  });
+
+  it("never lets a line of the hymn become a person", () => {
+    const roster = blocks[0]!;
+    assert.ok(roster.kind === "roster");
+    const named = roster.groups.flatMap((group) =>
+      group.people.flatMap((person) => [person.name, ...person.notes])
+    );
+    assert.ok(
+      !named.some((line) => line.includes("Israel")),
+      `a verse was set as a person: ${named.join(" | ")}`
+    );
+  });
+
+  it("sets the hymn as one entry with its stanza under it", () => {
+    const schedule = blocks[2]!;
+    assert.ok(schedule.kind === "schedule");
+    const hymn = schedule.entries[0]!;
+    assert.equal(hymn.title, "CAPTAIN OF ISRAEL'S HOST");
+    assert.equal(hymn.description!.split("\n").length, 6);
+    assert.ok(hymn.description!.endsWith("Our end, the glory of the Lord."));
+  });
+
+  it("leaves the processional on the clock behind the hymn", () => {
+    const schedule = blocks[2]!;
+    assert.ok(schedule.kind === "schedule");
+    const last = schedule.entries[schedule.entries.length - 1]!;
+    assert.deepEqual([last.time, last.title], ["10:00 AM", "Processional"]);
+  });
+
+  it("sets exactly one signpost, and it is the one the organizer wrote", () => {
+    const signposts = blocks.filter((block) => block.kind === "signpost");
+    assert.deepEqual(
+      signposts.map((block) => (block.kind === "signpost" ? block.title : "")),
+      ["OPENING HYMN"]
+    );
+  });
+});
+
+/**
+ * An order of service that never mentions a clock — the commonest shape a
+ * Ghanaian church programme arrives in. Every line is time-less, so the
+ * "one signpost per run" rule swallowed all of them: forty-seven bullets in a
+ * single column under one heading.
+ */
+describe("a programme with no clock in it still reads as a document", () => {
+  const script = [
+    "FUNCTIONARIES",
+    "OFFICIATING MINISTERS",
+    "Rev. Selina Klu-Abini, Area Supervising Minister",
+    "GUEST MINISTERS",
+    "Apostle Elias Hagan",
+    "Rev. Jesse Hagan",
+    "COUNSELORS",
+    "Deacon Dr. & Mrs. Omaboe",
+    "ORDER OF SERVICE",
+    "Musical Interlude / Arrival of Guests",
+    "Opening Prayer",
+    "ORDER OF PHOTOGRAPHY",
+    "Wedding Party",
+    "Both Families",
+  ].join("\n");
+
+  const blocks = layoutOf(script);
+
+  it("sets every heading the organizer wrote, not just the first", () => {
+    const signposts = blocks
+      .filter((block) => block.kind === "signpost")
+      .map((block) => (block.kind === "signpost" ? block.title : ""));
+    assert.deepEqual(signposts, ["FUNCTIONARIES", "ORDER OF SERVICE", "ORDER OF PHOTOGRAPHY"]);
+  });
+
+  it("groups the people under the role that announces them", () => {
+    const roster = blocks.find((block) => block.kind === "roster");
+    assert.ok(roster?.kind === "roster");
+    assert.deepEqual(
+      roster.groups.map((group) => group.title),
+      ["OFFICIATING MINISTERS", "GUEST MINISTERS", "COUNSELORS"]
+    );
+  });
+
+  it("keeps a minister whose title ran long as a person, not as a footnote", () => {
+    const roster = blocks.find((block) => block.kind === "roster");
+    assert.ok(roster?.kind === "roster");
+    const first = roster.groups[0]!;
+    assert.equal(first.title, "OFFICIATING MINISTERS");
+    assert.deepEqual(
+      first.people.map((person) => person.name),
+      ["Rev. Selina Klu-Abini, Area Supervising Minister"]
+    );
+  });
+
+  it("keeps each section's own lines under it", () => {
+    const schedules = blocks.filter((block) => block.kind === "schedule");
+    assert.deepEqual(
+      schedules.map((block) =>
+        block.kind === "schedule" ? block.entries.map((entry) => entry.title) : []
+      ),
+      [
+        ["Musical Interlude / Arrival of Guests", "Opening Prayer"],
+        ["Wedding Party", "Both Families"],
+      ]
+    );
+  });
+});
+
+describe("the organizer's marks reach the page", () => {
+  it("sets a marked heading as a signpost even in ordinary case", () => {
+    const blocks = layoutOf("# the quiet hour\n2:00 PM - Vows");
+    assert.deepEqual(kinds(blocks), ["signpost", "schedule"]);
+    const signpost = blocks[0]!;
+    assert.ok(signpost.kind === "signpost");
+    assert.equal(signpost.title, "the quiet hour");
+  });
+
+  it("sets a marked subscript as detail rather than as a signpost", () => {
+    const blocks = layoutOf("> PLEASE SILENCE YOUR PHONES\n2:00 PM - Vows");
+    assert.deepEqual(kinds(blocks), ["schedule"]);
+    const schedule = blocks[0]!;
+    assert.ok(schedule.kind === "schedule");
+    assert.equal(schedule.entries[0]!.note, true);
+    assert.equal(schedule.entries[0]!.title, "PLEASE SILENCE YOUR PHONES");
+  });
+
+  it("keeps a marked subscript out of a roster it would otherwise join", () => {
+    const blocks = layoutOf(
+      "> MINISTERS ARE STILL BEING CONFIRMED\nOFFICIATING MINISTER: REV. ANNAN\nORGANIST: MR. BOATENG\n2:00 PM - Vows"
+    );
+    const roster = blocks.find((block) => block.kind === "roster");
+    assert.ok(roster?.kind === "roster");
+    const named = roster.groups.flatMap((group) => group.people.map((person) => person.name));
+    assert.deepEqual(named, ["REV. ANNAN", "MR. BOATENG"]);
   });
 });
 

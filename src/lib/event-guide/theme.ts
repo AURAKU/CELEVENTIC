@@ -84,7 +84,39 @@ const NEUTRAL_THEME: GuideThemeTokens = {
   accentWash: "rgba(199, 163, 90, 0.14)",
   paperWash: "rgba(251, 248, 243, 0.82)",
   labelColor: "#6b5320",
+  onActionColor: "#ffffff",
 };
+
+/**
+ * The two inks a filled button is ever set in.
+ *
+ * Not pure black and pure white: a warm off-black sits better under a gold or
+ * a terracotta than #000 does, and it is what the guest's page has always
+ * drawn.
+ */
+const ACTION_INK_LIGHT = "#ffffff";
+const ACTION_INK_DARK = "#1f1a12";
+
+/**
+ * The ink to set on a filled button, given the accent behind it.
+ *
+ * Whichever of the two reads better, which is what the guest's page has
+ * always done and what the publish gate now measures. Between them they cover
+ * every accent there is: the worst case is the crossover shade around
+ * luminance 0.2, and even there the better ink still clears 4:1 — so a filled
+ * action can always be made readable without touching the organizer's colour.
+ * That is why publishing never has to argue with an organizer about their
+ * accent; it only ever argues about the background they chose for body text.
+ *
+ * Returns the light ink for an accent we cannot measure — a gradient or a
+ * named colour — and leaves the gate to report it as unmeasured.
+ */
+export function onActionInk(accent: string): string {
+  const onLight = contrastRatio(ACTION_INK_LIGHT, accent);
+  const onDark = contrastRatio(ACTION_INK_DARK, accent);
+  if (onLight === null || onDark === null) return ACTION_INK_LIGHT;
+  return onDark >= onLight ? ACTION_INK_DARK : ACTION_INK_LIGHT;
+}
 
 type ThemeInvitationInput = Parameters<typeof resolveCompanionTheme>[0];
 
@@ -93,8 +125,9 @@ export function resolveGuideTheme(input: {
   overrides: unknown;
   invitation: ThemeInvitationInput | null;
 }): GuideThemeTokens {
-  // `labelColor` is derived from the final colours, so the base layer omits it.
-  const base: Omit<GuideThemeTokens, "labelColor"> =
+  // `labelColor` and the action ink are derived from the final colours, so the
+  // base layer omits them.
+  const base: Omit<GuideThemeTokens, "labelColor" | "onActionColor"> =
     input.useInvitationTheme && input.invitation
       ? (() => {
           try {
@@ -128,6 +161,7 @@ export function resolveGuideTheme(input: {
   return {
     colors,
     labelColor: ensureReadable(colors.secondary, colors.background).color,
+    onActionColor: onActionInk(colors.accent),
     fonts: { ...base.fonts, ...overrides.fonts },
     layout: base.layout,
     backgroundImageUrl:
@@ -257,20 +291,31 @@ export interface ContrastAssessment {
  * need 3:1. Unmeasurable tokens (gradients) are reported, not failed — failing
  * them would block legitimate designs we cannot evaluate numerically.
  *
- * Small labels are checked against the derived `labelColor`, not the raw
- * decorative token, because that is what actually renders. A gold that is
- * lovely as a rule but unreadable as 11px type is adjusted rather than
- * rejected — the organizer keeps their palette and the guest can still read it.
+ * Every pair is the pair that actually renders, never the raw decorative
+ * token. Small labels are measured against the derived `labelColor`, and a
+ * filled button against the ink the page really sets on it — measuring
+ * `colors.background` on `colors.accent` was a combination the guest's page
+ * has never drawn, and it failed perfectly readable invitation palettes at
+ * the publish button with nothing the organizer could do about it.
+ *
+ * A decorative colour that is lovely as a rule but unreadable as type is
+ * adjusted rather than rejected: the organizer keeps their palette and the
+ * guest can still read it. What is left failing is a genuine conflict — body
+ * text the same value as its background — which no derivation can rescue.
  */
 export function assessGuideContrast(theme: GuideThemeTokens): ContrastAssessment {
   const labelColor =
     theme.labelColor ?? ensureReadable(theme.colors.secondary, theme.colors.background).color;
 
+  // A payload published before the token existed carries no ink, so it is
+  // derived here exactly as `resolveGuideTheme` would have.
+  const onActionColor = theme.onActionColor ?? onActionInk(theme.colors.accent);
+
   const checks: Array<{ pair: string; fg: string; bg: string; required: number }> = [
     { pair: "Body text on background", fg: theme.colors.text, bg: theme.colors.background, required: 4.5 },
     { pair: "Heading on background", fg: theme.colors.primary, bg: theme.colors.background, required: 3 },
     { pair: "Section labels on background", fg: labelColor, bg: theme.colors.background, required: 4.5 },
-    { pair: "Primary action label", fg: theme.colors.background, bg: theme.colors.accent, required: 3 },
+    { pair: "Primary action label", fg: onActionColor, bg: theme.colors.accent, required: 3 },
   ];
 
   const findings: ContrastFinding[] = [];
@@ -294,6 +339,11 @@ export function assessGuideContrast(theme: GuideThemeTokens): ContrastAssessment
   if (labelColor.toLowerCase() !== theme.colors.secondary.toLowerCase()) {
     adjustments.push(
       `Small labels use a deeper shade of your accent (${labelColor}) so they stay readable on ${theme.colors.background}. Your accent is unchanged everywhere else.`
+    );
+  }
+  if (onActionColor === ACTION_INK_DARK) {
+    adjustments.push(
+      `Buttons filled with your accent are labelled in dark ink rather than white, so the label stays readable on ${theme.colors.accent}.`
     );
   }
 

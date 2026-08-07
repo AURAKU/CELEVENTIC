@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   assessGuideContrast,
   contrastRatio,
+  onActionInk,
   parseThemeOverrides,
   relativeLuminance,
   resolveGuideTheme,
@@ -168,10 +169,10 @@ describe("the publish contrast gate", () => {
     assert.ok(body.ratio < 4.5);
   });
 
-  it("blocks a primary action nobody can read", () => {
-    const result = assessGuideContrast(themeWith({ accent: "#fdfdfd", background: "#ffffff" }));
+  it("blocks a heading nobody can read", () => {
+    const result = assessGuideContrast(themeWith({ primary: "#f4eee9", background: "#fbf8f3" }));
     assert.equal(result.passes, false);
-    assert.ok(result.findings.some((f) => f.pair === "Primary action label" && !f.passes));
+    assert.ok(result.findings.some((f) => f.pair === "Heading on background" && !f.passes));
   });
 
   it("holds text to 4.5:1 and display/action text to 3:1", () => {
@@ -194,7 +195,9 @@ describe("the publish contrast gate", () => {
   });
 
   it("says nothing about adjustments when the accent is already readable", () => {
-    const result = assessGuideContrast(themeWith({ secondary: "#3d2f0a", background: "#fbf8f3" }));
+    const result = assessGuideContrast(
+      themeWith({ secondary: "#3d2f0a", accent: "#6d2461", background: "#fbf8f3" })
+    );
     assert.deepEqual(result.adjustments, []);
   });
 
@@ -209,6 +212,46 @@ describe("the publish contrast gate", () => {
     assert.equal(assessGuideContrast(theme).passes, true);
     const [r, g, b] = [1, 3, 5].map((i) => parseInt(theme.labelColor.slice(i, i + 2), 16));
     assert.ok(r! + g! + b! > 0x4a + 0x3c + 0x10, "the label must move toward white, not black");
+  });
+
+  /**
+   * The gate used to measure `background` on `accent` — a pair the guest's
+   * page has never painted. A soft tan invitation scored 2.11:1 against a
+   * cream background and the organizer was told their colours were
+   * unreadable, with no colour they could change to fix it.
+   */
+  it("publishes a soft invitation accent by inking its buttons, not by recolouring", () => {
+    const theme = themeWith({ accent: "#c4a484", background: "#fdf1ec" });
+    const result = assessGuideContrast(theme);
+
+    assert.equal(result.passes, true, "a soft tan wedding palette must be publishable");
+    assert.equal(theme.colors.accent, "#c4a484", "the organizer's accent is untouched");
+    assert.equal(theme.onActionColor, "#1f1a12", "its buttons take dark ink, not white");
+
+    const action = result.findings.find((f) => f.pair === "Primary action label");
+    assert.ok(action);
+    assert.ok(action.ratio >= 3, `the pair that renders reads at ${action.ratio}:1`);
+    assert.ok(result.adjustments.some((note) => /dark ink/i.test(note)));
+  });
+
+  it("puts white ink on a deep accent and says nothing about it", () => {
+    const theme = themeWith({ accent: "#4a1942" });
+    assert.equal(theme.onActionColor, "#ffffff");
+    assert.equal(assessGuideContrast(theme).passes, true);
+  });
+
+  it("can always make a filled action readable, whatever the accent", () => {
+    // Every hex there is, coarsely. If any accent could fail this pair, an
+    // organizer would hit a publish button they can never unblock.
+    for (let r = 0; r <= 255; r += 51) {
+      for (let g = 0; g <= 255; g += 51) {
+        for (let b = 0; b <= 255; b += 51) {
+          const accent = `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+          const ratio = contrastRatio(onActionInk(accent), accent);
+          assert.ok(ratio !== null && ratio >= 3, `${accent} could not carry a readable label`);
+        }
+      }
+    }
   });
 
   it("reports an unmeasurable token instead of failing a legitimate design", () => {

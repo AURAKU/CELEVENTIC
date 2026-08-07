@@ -141,6 +141,180 @@ describe("headings inside a programme script", () => {
     assert.equal(result.items[0]!.title, "The Ceremony");
     assert.equal(result.items[1]!.kind, undefined);
   });
+
+  it("reads every depth of hash as the same heading", () => {
+    for (const mark of ["#", "##", "###", "######"]) {
+      const [heading] = read(`${mark} The Ceremony\n2:00 PM - Vows`);
+      assert.equal(heading!.kind, "section", `${mark} should head a section`);
+      assert.equal(heading!.title, "The Ceremony");
+    }
+  });
+});
+
+/**
+ * A hymn is the case that sent this module back to the drawing board: six
+ * lines of `CAPTAIN OF ISRAEL'S HOST` were arriving as six headings, one
+ * tracked gold rule each, with the running order lost between them.
+ */
+describe("a hymn and its verses", () => {
+  const hymn = [
+    "OPENING HYMN",
+    "CAPTAIN OF ISRAEL'S HOST",
+    "Captain of Israel's host, and Guide",
+    "Of all who seek the land above,",
+    "Beneath Thy shadow we abide,",
+    "The cloud of Thy protecting love;",
+    "Our strength, Thy grace, our rule, Thy Word;",
+    "Our end, the glory of the Lord.",
+    "10:00 AM - Processional",
+  ].join("\n");
+
+  it("keeps the hymn's title as one item with the stanza under it", () => {
+    const items = read(hymn);
+    const title = items.find((item) => item.title === "CAPTAIN OF ISRAEL'S HOST");
+    assert.ok(title, "the hymn's title survived as an item of its own");
+    assert.equal(title.kind, undefined, "a hymn with verses under it is not a heading");
+    assert.equal(
+      title.description,
+      [
+        "Captain of Israel's host, and Guide",
+        "Of all who seek the land above,",
+        "Beneath Thy shadow we abide,",
+        "The cloud of Thy protecting love;",
+        "Our strength, Thy grace, our rule, Thy Word;",
+        "Our end, the glory of the Lord.",
+      ].join("\n")
+    );
+  });
+
+  it("sets no verse as a heading of its own", () => {
+    const headings = read(hymn).filter((item) => item.kind === "section");
+    assert.deepEqual(headings.map((item) => item.title), ["OPENING HYMN"]);
+  });
+
+  it("leaves the timed item that follows the hymn on the clock", () => {
+    const items = read(hymn);
+    const last = items[items.length - 1]!;
+    assert.equal(last.time, "10:00 AM");
+    assert.equal(last.title, "Processional");
+  });
+
+  it("reads a stanza the organizer punctuated with nothing at all", () => {
+    // Nothing here ends on a comma or a semicolon. The line that announced a
+    // hymn two lines above is the only reason these are verse.
+    const items = read(
+      [
+        "CLOSING HYMN",
+        "Amazing Grace",
+        "Amazing grace how sweet the sound",
+        "That saved a wretch like me",
+        "I once was lost but now am found",
+        "3:00 PM - Recessional",
+      ].join("\n")
+    );
+    const title = items.find((item) => item.title === "Amazing Grace");
+    assert.ok(title);
+    assert.equal(
+      title.description,
+      "Amazing grace how sweet the sound\nThat saved a wretch like me\nI once was lost but now am found"
+    );
+    assert.equal(items[items.length - 1]!.time, "3:00 PM");
+  });
+
+  it("keeps a verse line that happens to use a roster's words", () => {
+    // `host` is how a roster names a role and how a hymn names an army. The
+    // line breaks mid-clause, so it is verse.
+    const items = read(
+      "OPENING HYMN\nCAPTAIN OF ISRAEL'S HOST\nCaptain of Israel's host, and Guide\nOf all who seek the land above,"
+    );
+    assert.equal(items.length, 2);
+    assert.ok(items[1]!.description!.startsWith("Captain of Israel's host, and Guide"));
+  });
+
+  it("leaves not one word of the hymn out", () => {
+    const page = read(hymn)
+      .map((item) => `${item.time} ${item.title} ${item.description ?? ""}`)
+      .join("\n");
+
+    for (const line of hymn.split("\n")) {
+      // The reader eats the dash between a time and its title, and nothing else.
+      for (const word of line.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w))) {
+        assert.ok(page.includes(word), `"${word}" was dropped`);
+      }
+    }
+  });
+});
+
+/**
+ * The organizer's marks. Guessing is a fallback; these are not.
+ */
+describe("the marks that overrule the reader", () => {
+  it("makes a heading of a line that would never have been one", () => {
+    const items = read("# the quiet hour\n2:00 PM - Vows");
+    assert.equal(items[0]!.kind, "section");
+    assert.equal(items[0]!.title, "the quiet hour");
+  });
+
+  it("keeps a marked heading a heading even when detail follows it", () => {
+    const items = read("# CEREMONY\n  Please silence your phones.\n2:00 PM - Vows");
+    assert.equal(items[0]!.kind, "section");
+    assert.equal(items[0]!.description, "Please silence your phones.");
+  });
+
+  it("tucks a marked line under the item above it, heading or not", () => {
+    const items = read("2:00 PM - Vows\n> EXCHANGE OF RINGS\n4:00 PM - Photos");
+    assert.equal(items.length, 2);
+    assert.equal(items[0]!.description, "EXCHANGE OF RINGS");
+    assert.equal(items[1]!.title, "Photos");
+  });
+
+  it("stops a shouted line from becoming a heading when it was marked", () => {
+    const result = parseProgrammeScript("2:00 PM - Vows\n> CAPTAIN OF ISRAEL'S HOST");
+    assert.equal(result.sectionCount, 0);
+    assert.equal(result.items[0]!.description, "CAPTAIN OF ISRAEL'S HOST");
+  });
+
+  it("keeps a marked subscript with nothing above it rather than dropping it", () => {
+    const items = read("> A note before anything happens\n2:00 PM - Vows");
+    assert.equal(items.length, 2);
+    assert.equal(items[0]!.kind, "note");
+    assert.equal(items[0]!.title, "A note before anything happens");
+  });
+
+  it("does not let a mark break a line that just starts with one", () => {
+    // No space after the mark, so it belongs to the title.
+    const items = read("#1 Dance floor opens\n>>> Straight to the cake");
+    assert.equal(items[0]!.title, "#1 Dance floor opens");
+    assert.equal(items[0]!.kind, undefined);
+  });
+});
+
+/**
+ * A short line in capitals naming a part people play is a heading, and stays
+ * one. The verse rules must not take these with them.
+ */
+describe("roles written in capitals stay headings", () => {
+  const roster = [
+    "OFFICIATING MINISTERS",
+    "Rev. Mensah Adjetey",
+    "COUNSELORS",
+    "Mr & Mrs Boateng",
+    "10:00 AM - Processional",
+  ].join("\n");
+
+  it("keeps each role as a heading of its own", () => {
+    const result = parseProgrammeScript(roster);
+    assert.deepEqual(
+      result.items.filter((item) => item.kind === "section").map((item) => item.title),
+      ["OFFICIATING MINISTERS", "COUNSELORS"]
+    );
+  });
+
+  it("does not fold the people into the role above them", () => {
+    const items = read(roster);
+    assert.equal(items.length, 5);
+    assert.ok(items.every((item) => item.description === undefined));
+  });
 });
 
 describe("detail under an item", () => {

@@ -44,6 +44,12 @@ const SCRIPT_PLACEHOLDER = [
   "  Officiated by Rev. Mensah.",
   "",
   "  Guests are asked to stay seated until the recessional.",
+  "",
+  "OPENING HYMN",
+  "Captain of Israel's host",
+  "  Captain of Israel's host, and Guide",
+  "  Of all who seek the land above,",
+  "",
   "4:30 PM - Reception & dinner",
 ].join("\n");
 
@@ -135,7 +141,7 @@ export function GuideContentTab({
                 Type it or paste it — from WhatsApp, Word, anywhere, in any language. One item per
                 line. Indent a line, or write a sentence, and it becomes detail under the item
                 above it. A line like <span className="font-medium text-slate-600">CEREMONY</span>{" "}
-                becomes a heading. Nothing you paste is left out.
+                becomes a heading, and a hymn keeps its verses. Nothing you paste is left out.
               </p>
 
               <Textarea
@@ -148,7 +154,25 @@ export function GuideContentTab({
                 disabled={!canEdit}
                 onChange={(e) => setScript(e.target.value)}
                 placeholder={SCRIPT_PLACEHOLDER}
+                aria-describedby="programme-script-markup"
               />
+
+              {/*
+                The override, in one line, directly under the box it applies to.
+                An organizer who disagrees with what the preview did needs to
+                find the fix without leaving the field they are typing in.
+              */}
+              <p
+                id="programme-script-markup"
+                data-testid="programme-script-markup-hint"
+                className="mt-1.5 text-[0.7rem] leading-relaxed text-slate-500"
+              >
+                Not what you meant? Start a line with{" "}
+                <code className="rounded bg-slate-100 px-1 font-mono text-slate-700">#</code> to
+                force a heading, or{" "}
+                <code className="rounded bg-slate-100 px-1 font-mono text-slate-700">&gt;</code>{" "}
+                (or an indent) to tuck it under the line above.
+              </p>
 
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.7rem] text-slate-500">
                 <span aria-live="polite">

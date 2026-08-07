@@ -144,7 +144,7 @@ export function GuideAppearanceTab({
           >
             <p
               className="text-[0.65rem] font-semibold uppercase tracking-[0.28em]"
-              style={{ color: colors.secondary }}
+              style={{ color: state.preview.theme.labelColor ?? colors.secondary }}
             >
               Event Guide
             </p>
@@ -156,9 +156,14 @@ export function GuideAppearanceTab({
                 .filter(Boolean)
                 .join("  ·  ")}
             </p>
+            {/* The pair the guest's page paints and the publish gate measures,
+                not the raw accent on the raw background. */}
             <span
               className="mt-4 inline-block rounded-full px-5 py-2 text-xs font-bold uppercase tracking-widest"
-              style={{ background: colors.accent, color: colors.background }}
+              style={{
+                background: colors.accent,
+                color: state.preview.theme.onActionColor ?? colors.background,
+              }}
             >
               Find my table
             </span>

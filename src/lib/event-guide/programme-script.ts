@@ -24,9 +24,26 @@
  *  - **Continuations.** An indented line, a bullet under a timed item, or a
  *    sentence of prose belongs to the item above it. A blank line between two
  *    such lines becomes a paragraph break rather than disappearing.
+ *  - **Verse.** A hymn is a title with stanzas under it, and a stanza is not
+ *    an item of the running order. A run of ordinary-case lines that break on
+ *    a comma or a semicolon is read as detail under the line above it, so
+ *    `CAPTAIN OF ISRAEL'S HOST` keeps its six lines instead of scattering
+ *    them down the page as six bulleted headings.
  *  - **Every script an organizer actually writes in.** Ghanaian orthography,
  *    Arabic, Chinese, emoji and Word's curly punctuation all pass through as
  *    written. Only markup and invisible control characters are removed.
+ *
+ * **And the organizer always has the last word.** Guessing is only ever the
+ * fallback; two marks at the head of a line settle it outright, and they
+ * survive save, publish and the round trip back into the editor:
+ *
+ *     # CEREMONY                 → a heading, whatever it looks like
+ *     > Captain of Israel's host → detail under the line above, never a heading
+ *
+ * They are Markdown's own marks, because that is what an organizer who has
+ * ever written a README already expects, and `##`–`######` are read as `#`
+ * rather than as a mistake. An indent does what `>` does, for organizers who
+ * never read the hint.
  *
  * Pure module: no `next/*`, no Prisma, so the client component, the route and
  * the tests all run the same code.
@@ -34,7 +51,8 @@
 
 import { parseProgrammeOutline } from "@/lib/admission/companion-studio";
 import { MAX_PROGRAMME_SCRIPT_CHARS, normalizeProgrammeItems } from "./content";
-import type { GuideProgrammeItem } from "./types";
+import { HYMN_CUE, isPersonLine, isShouted, VERSE_BREAK, words } from "./programme-lines";
+import type { GuideProgrammeItem, GuideProgrammeItemKind } from "./types";
 
 /** Matches the cap in `normalizeProgrammeItems`. */
 const MAX_ENTRIES = 150;
@@ -42,6 +60,10 @@ const MAX_PASTE_CHARS = MAX_PROGRAMME_SCRIPT_CHARS;
 const MAX_HEADING_CHARS = 60;
 /** Past this, a title is a sentence; the tail becomes detail rather than being cut. */
 const LONG_TITLE_CHARS = 200;
+/** Past this, a line is a paragraph someone typed, whatever it ends with. */
+const PROSE_LINE_CHARS = 96;
+/** Below this, a line is too short to be a line of verse. */
+const MIN_VERSE_WORDS = 4;
 
 export interface ProgrammeScriptResult {
   /** The arranged programme, ready to store and to render. */
@@ -213,8 +235,31 @@ export function sanitizeProgrammeScript(raw: string): { text: string; stripped: 
  * real words far more often than it wraps them.
  */
 const EMPHASIS = /(\*\*|\*|__|~~|~)(?=\S)([\s\S]*?\S)\1/g;
-const MARKDOWN_HEADING = /^#{1,6}\s+/;
 const BULLET = /^[-–—•*·‣▪◦]+\s*/;
+
+/**
+ * The two marks an organizer can put at the head of a line to overrule the
+ * reader: `#` makes it a heading, `>` makes it detail under the line above.
+ *
+ * Markdown's own marks, so an organizer who has written a README already
+ * knows them, and `##`–`######` mean the same as `#` rather than being a
+ * mistake. Two marks and no more: a hint that fits on one line is a hint
+ * organizers read.
+ */
+export type ProgrammeLineMark = "header" | "subscript" | null;
+
+const HASH_MARK = /^#{1,6}[ \t]+/;
+const QUOTE_MARK = /^>+[ \t]*/;
+
+function readMark(body: string): { mark: ProgrammeLineMark; rest: string } {
+  const hashes = HASH_MARK.exec(body);
+  if (hashes) return { mark: "header", rest: body.slice(hashes[0].length) };
+
+  const quote = QUOTE_MARK.exec(body);
+  if (quote) return { mark: "subscript", rest: body.slice(quote[0].length) };
+
+  return { mark: null, rest: body };
+}
 
 /**
  * Decoration that runs ahead of the text: emoji bullets, dingbats, the arrow a
@@ -235,16 +280,27 @@ function cleanLine(body: string): string {
 interface ScriptBlock {
   head: string;
   continuation: string[];
-  forcedSection: boolean;
+  /** The organizer wrote `#` on the head line. */
+  forced: boolean;
+  /** A `>` line with nothing above it: a subscript that stands alone. */
+  standalone: boolean;
 }
 
-/** Sentence-ending punctuation in the scripts this is written in. */
-const SENTENCE_END = /[.!?…。！？؟۔][")'”’]?$/;
+/**
+ * Sentence-ending punctuation in the scripts this is written in.
+ *
+ * Trailing sparkles and quotation marks are allowed after the stop, because
+ * an organizer signing off writes `THANK YOU FOR YOUR PRAYERS. ✨` and means
+ * a sentence, not a heading.
+ */
+const TRAILING_DECORATION = "[\\s\\p{Extended_Pictographic}\\p{So}\\uFE0E\\uFE0F\")'”’]*";
+const SENTENCE_END = new RegExp(`[.!?…。！？؟۔]${TRAILING_DECORATION}$`, "u");
 const BULLET_LINE = /^[-–—•*·‣▪◦]\s+\S/;
 
 /**
  * A line that reads as a sentence about the item above it rather than as an
- * item of its own: it opens in lower case, or it closes with a full stop.
+ * item of its own: it opens in lower case, it closes with a full stop, or it
+ * simply runs on past the length of any title.
  *
  * `Cutting of the cake` is an item. `Guests are asked to stay seated.` is a
  * note about the item above it. Getting this right is what lets an organizer
@@ -263,68 +319,197 @@ function looksLikeProse(value: string): boolean {
   ) {
     return true;
   }
+  if (value.length > PROSE_LINE_CHARS && !isShouted(value)) return true;
   return SENTENCE_END.test(value);
+}
+
+interface ScriptLine {
+  body: string;
+  cleaned: string;
+  mark: ProgrammeLineMark;
+  indented: boolean;
+  blankBefore: boolean;
+}
+
+/**
+ * Could this line be a line of verse — and nothing more important?
+ *
+ * Deliberately narrow. Anything the rest of the reader has a claim on is out:
+ * a heading in capitals, a person, a time, a label ending in a colon, a line
+ * the organizer already marked, a line too short to be poetry. What is left
+ * is an ordinary-case phrase of four words or more, which is what a stanza
+ * looks like and what almost nothing else on a programme does.
+ */
+function couldBeVerse(line: ScriptLine): boolean {
+  if (line.mark || line.indented) return false;
+  const value = line.cleaned;
+  if (!value || value.endsWith(":")) return false;
+  if (STARTS_WITH_TIME.test(value)) return false;
+  if (isShouted(value) || isPersonLine(value)) return false;
+  return words(value).length >= MIN_VERSE_WORDS;
+}
+
+/**
+ * Is this run of candidate lines announced as something to be sung?
+ *
+ * A hymn is written as three lines, not one: `OPENING HYMN`, then the hymn's
+ * own title, then the stanza. So the two lines above the run are both asked,
+ * which is what makes the stanza under `OPENING HYMN / CAPTAIN OF ISRAEL'S
+ * HOST` verse even when the organizer punctuated none of it.
+ */
+function announcedAsVerse(lines: ScriptLine[], start: number): boolean {
+  for (let at = start - 1; at >= 0 && at >= start - 2; at -= 1) {
+    if (HYMN_CUE.test(lines[at]!.cleaned)) return true;
+  }
+  return false;
+}
+
+/**
+ * Which lines belong to a stanza rather than to the running order.
+ *
+ * A run of candidate lines is verse when one of them breaks on a comma or a
+ * semicolon — one line of a hymn vouches for its neighbours, which is what
+ * catches the opening line `Captain of Israel's host, and Guide` that ends on
+ * no punctuation at all — or when the run is two lines or more under a line
+ * that announced a hymn. Blank lines between stanzas do not break the run,
+ * because they are kept as the paragraph breaks they are.
+ */
+function findVerse(lines: ScriptLine[]): boolean[] {
+  const candidate = lines.map(couldBeVerse);
+  const verse = lines.map(() => false);
+
+  for (let start = 0; start < lines.length; ) {
+    if (!candidate[start]) {
+      start += 1;
+      continue;
+    }
+    let end = start;
+    while (end < lines.length && candidate[end]) end += 1;
+
+    const run = lines.slice(start, end);
+    const sung =
+      run.some((line) => VERSE_BREAK.test(line.cleaned)) ||
+      (run.length >= 2 && announcedAsVerse(lines, start));
+
+    if (sung) for (let at = start; at < end; at += 1) verse[at] = true;
+    start = end;
+  }
+
+  return verse;
+}
+
+/** Split the script into the lines that carry something, marks read off. */
+function toLines(text: string): ScriptLine[] {
+  const lines: ScriptLine[] = [];
+  let blankBefore = false;
+
+  for (const rawLine of text.split("\n")) {
+    const body = rawLine.trim();
+    if (!body) {
+      blankBefore = true;
+      continue;
+    }
+
+    const { mark, rest } = readMark(body);
+    const cleaned = cleanLine(rest);
+    // A rule of dashes or a row of stars is decoration, not a line of the
+    // programme; it is the only thing the reader ever drops.
+    if (!cleaned) continue;
+
+    lines.push({
+      body,
+      cleaned,
+      mark,
+      indented: /^(?:\t| {2,})\S/.test(rawLine),
+      blankBefore,
+    });
+    blankBefore = false;
+  }
+
+  return lines;
 }
 
 /**
  * Group the script's lines into a head line plus the lines that continue it.
  *
- * A line continues the one above it when it is indented, when it is a bullet
- * under a timed item, or when it reads as prose. Everything else starts a new
- * entry — and nothing is discarded, so the whole script is accounted for. A
- * blank line inside a run of continuations is kept as a paragraph break.
+ * A line continues the one above it when the organizer marked it `>`, when it
+ * is indented, when it is a bullet under a timed item, when it reads as
+ * prose, or when it is a line of a stanza. Everything else starts a new entry
+ * — and nothing is discarded, so the whole script is accounted for. A blank
+ * line inside a run of continuations is kept as a paragraph break.
  */
 function toBlocks(text: string): ScriptBlock[] {
+  const lines = toLines(text);
+  const verse = findVerse(lines);
   const blocks: ScriptBlock[] = [];
-  let sawBlankLine = false;
 
-  for (const rawLine of text.split("\n")) {
-    const body = rawLine.trim();
-    if (!body) {
-      sawBlankLine = true;
-      continue;
-    }
-
-    const heading = MARKDOWN_HEADING.test(body);
-    const cleaned = cleanLine(heading ? body.replace(MARKDOWN_HEADING, "") : body);
-    // A rule of dashes or a row of stars is decoration, not a line of the
-    // programme; it is the only thing the reader ever drops.
-    if (!cleaned) continue;
-
-    const indented = /^(?:\t| {2,})\S/.test(rawLine);
+  lines.forEach((line, index) => {
     const previous = blocks[blocks.length - 1];
     const continues =
       previous !== undefined &&
-      !heading &&
-      (indented ||
-        (BULLET_LINE.test(body) && STARTS_WITH_TIME.test(previous.head)) ||
-        looksLikeProse(cleaned));
+      line.mark !== "header" &&
+      (line.mark === "subscript" ||
+        line.indented ||
+        verse[index] ||
+        (BULLET_LINE.test(line.body) && STARTS_WITH_TIME.test(previous.head)) ||
+        looksLikeProse(line.cleaned));
 
     if (continues && previous) {
-      if (sawBlankLine && previous.continuation.length > 0) previous.continuation.push("");
-      previous.continuation.push(cleaned);
-      sawBlankLine = false;
-      continue;
+      if (line.blankBefore && previous.continuation.length > 0) previous.continuation.push("");
+      previous.continuation.push(line.cleaned);
+      return;
     }
 
-    sawBlankLine = false;
-    blocks.push({ head: cleaned, continuation: [], forcedSection: heading });
-  }
+    blocks.push({
+      head: line.cleaned,
+      continuation: [],
+      forced: line.mark === "header",
+      standalone: line.mark === "subscript",
+    });
+  });
 
   return blocks;
 }
 
-/** A time-less, punctuation-free line that reads as a heading rather than an item. */
+/**
+ * A time-less, punctuation-free line that reads as a heading rather than an
+ * item.
+ *
+ * Carrying detail disqualifies a line outright, and that single condition is
+ * what keeps a hymn where it belongs: `CAPTAIN OF ISRAEL'S HOST` is in
+ * capitals and has no clock, but it has six lines of verse under it, so it is
+ * the item those lines belong to rather than a signpost between two of them.
+ */
 function looksLikeSection(title: string, time: string, description: string | undefined): boolean {
   if (time || description) return false;
   const value = title.trim();
   if (!value || value.length > MAX_HEADING_CHARS) return false;
-  if (/[.!?,]$/.test(value)) return false;
+  if (new RegExp(`[.!?,]${TRAILING_DECORATION}$`, "u").test(value)) return false;
   if (value.endsWith(":")) return true;
 
   const letters = value.replace(/[^\p{L}]/gu, "");
   if (letters.length < 2) return false;
   return letters === letters.toLocaleUpperCase() && letters !== letters.toLocaleLowerCase();
+}
+
+/**
+ * What this block is, with the organizer's mark taking precedence over the
+ * reader's guess.
+ *
+ * A heading the organizer marked with `#` keeps its heading even though it
+ * carries detail; a heading the reader merely recognised never does, which is
+ * what keeps a hymn title with six stanzas under it an item rather than a
+ * signpost.
+ */
+function itemKind(
+  block: ScriptBlock,
+  title: string,
+  time: string,
+  description: string | undefined
+): GuideProgrammeItemKind | undefined {
+  if (block.forced) return "section";
+  if (block.standalone) return "note";
+  return looksLikeSection(title, time, description) ? "section" : undefined;
 }
 
 function slugFragment(value: string): string {
@@ -360,14 +545,14 @@ export function parseProgrammeScript(raw: string): ProgrammeScriptResult {
     const time = parsed.time?.trim() ?? "";
     const { title, overflow } = splitOverlongTitle(parsed.title.trim());
     const description = joinDetail([parsed.description, overflow], block.continuation);
-    const section = block.forcedSection || looksLikeSection(title, time, description);
+    const kind = itemKind(block, title, time, description);
 
     drafts.push({
       id: uniqueId(`prog-${drafts.length + 1}-${slugFragment(title)}`, usedIds),
       time,
-      title: section ? title.replace(/:$/, "").trim() : title,
+      title: kind === "section" ? title.replace(/:$/, "").trim() : title,
       ...(description ? { description } : {}),
-      ...(section ? { kind: "section" as const } : {}),
+      ...(kind ? { kind } : {}),
     });
   }
 
@@ -406,10 +591,14 @@ export function programmeItemsToScript(items: GuideProgrammeItem[]): string {
     if (!title) continue;
     const detail = item.description?.trim();
 
-    if (item.kind === "section") {
+    if (item.kind === "note") {
+      // A subscript with no item above it can only survive the round trip as
+      // the mark that says so.
+      lines.push(`> ${title}`);
+    } else if (item.kind === "section") {
       // A heading that carries detail cannot be recognised by its shape alone,
       // so it is written in the form that always reads as a heading.
-      lines.push(detail ? `## ${title}` : headingLine(title));
+      lines.push(detail ? `# ${title}` : headingLine(title));
     } else {
       const time = item.time?.trim();
       lines.push(time ? `${time} — ${title}` : title);
