@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { CircleAlert, Eye, PenLine, RotateCcw } from "lucide-react";
 import { GuideProgramme } from "@/components/event-guide/guide-programme";
+import { GuideMenuPanel } from "@/components/event-guide/guide-menu";
 import {
   parseProgrammeScript,
   programmeItemsToScript,
@@ -267,14 +268,69 @@ export function GuideContentTab({
           </Badge>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Textarea
-            rows={8}
-            dir="auto"
-            value={menuBody}
-            disabled={!canEdit}
-            onChange={(e) => setMenuBody(e.target.value)}
-            placeholder={"Starters\nGroundnut soup\nKelewele\n\nMains\nJollof rice with grilled chicken"}
-          />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <section className="min-w-0">
+              <label
+                htmlFor="guide-menu-body"
+                className="flex items-center gap-2 text-sm font-semibold text-slate-800"
+              >
+                <PenLine aria-hidden className="h-4 w-4 text-brand-600" />
+                What is being served
+              </label>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                Type it or paste it, exactly as the caterer sent it. A line like{" "}
+                <span className="font-medium text-slate-600">STARTERS</span>,{" "}
+                <span className="font-medium text-slate-600">*Starters*</span> or{" "}
+                <span className="font-medium text-slate-600">Starters:</span> becomes a course, and
+                the dishes under it become its list. Nothing you paste is left off the menu.
+              </p>
+              <Textarea
+                id="guide-menu-body"
+                data-testid="guide-menu-input"
+                className="mt-2 min-h-[16rem] resize-y bg-white font-mono text-[0.82rem] leading-[1.8] text-slate-800"
+                dir="auto"
+                spellCheck={false}
+                value={menuBody}
+                disabled={!canEdit}
+                onChange={(e) => setMenuBody(e.target.value)}
+                placeholder={"STARTERS\nGroundnut soup\nKelewele\n\nMAIN DISHES\nJollof rice with grilled chicken"}
+              />
+            </section>
+
+            <section className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                <Eye aria-hidden className="h-4 w-4 text-brand-600" />
+                What guests will see
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                The same menu card your guests get, in your guide&rsquo;s own colours and type.
+              </p>
+              <div
+                data-testid="menu-live-preview"
+                className="mt-2 max-h-[26rem] overflow-y-auto rounded-2xl border border-slate-200 p-4 shadow-inner sm:p-5"
+                style={
+                  {
+                    "--guide-accent": theme.colors.accent,
+                    "--guide-primary": theme.colors.primary,
+                    "--guide-secondary": theme.colors.secondary,
+                    "--guide-label": theme.labelColor ?? theme.colors.secondary,
+                    "--guide-paper": theme.paperWash,
+                    "--guide-hairline": theme.accentWash,
+                    background: theme.colors.background,
+                    color: theme.colors.text,
+                    fontFamily: fonts.body,
+                  } as CSSProperties
+                }
+              >
+                <GuideMenuPanel
+                  menu={{ body: menuBody, sections: state.content.menu.sections, url: null }}
+                  attachments={[]}
+                  fonts={fonts}
+                />
+              </div>
+            </section>
+          </div>
+
           <div>
             <label className="text-sm font-medium" htmlFor="guide-menu-url">
               Link to a full menu (optional)
