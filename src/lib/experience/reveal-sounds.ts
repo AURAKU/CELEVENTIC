@@ -48,6 +48,38 @@ export function playPaperUnfoldSound() {
   }
 }
 
+/** Soft silk whisper for ribbon / satin ceremonies — noise swell, no crack. */
+export function playSilkSlipSound() {
+  try {
+    const ctx = createAudioContext();
+    if (!ctx) return;
+    const duration = 0.7;
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      const t = i / ctx.sampleRate;
+      // Swell in, then fall away — a ribbon sliding, not a snap.
+      const envelope = Math.sin((Math.PI * t) / duration) ** 2;
+      data[i] = (Math.random() * 2 - 1) * envelope * 0.16;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 2600;
+    filter.Q.value = 0.7;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.6;
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+    setTimeout(() => void ctx.close(), 900);
+  } catch {
+    // ignore
+  }
+}
+
 export function playRevealSounds(enabled?: boolean) {
   if (!enabled) return;
   playWaxCrackSound();

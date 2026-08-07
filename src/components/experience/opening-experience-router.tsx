@@ -193,7 +193,7 @@ export function OpeningExperienceRouter({
           hostName={hostName}
           onComplete={complete}
         />
-        <RevealKeyboardFallback onComplete={complete} />
+        <RevealKeyboardFallback onComplete={complete} embedded={embedded} />
       </>
     );
   }
@@ -221,7 +221,7 @@ export function OpeningExperienceRouter({
           <ScratchReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete}>
             {children}
           </ScratchReveal>
-          <RevealKeyboardFallback onComplete={complete} />
+          <RevealKeyboardFallback onComplete={complete} embedded={embedded} />
         </>
       );
     case "passport":
@@ -230,7 +230,7 @@ export function OpeningExperienceRouter({
       return (
         <>
           <GlassReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />
-          <RevealKeyboardFallback onComplete={complete} />
+          <RevealKeyboardFallback onComplete={complete} embedded={embedded} />
         </>
       );
     case "scroll-unroll":
@@ -241,7 +241,7 @@ export function OpeningExperienceRouter({
       return (
         <>
           <SwipeReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />
-          <RevealKeyboardFallback onComplete={complete} />
+          <RevealKeyboardFallback onComplete={complete} embedded={embedded} />
         </>
       );
     case "pop-reveal":
@@ -285,22 +285,31 @@ export function OpeningExperienceRouter({
     case "satin-bow":
       return (
         <>
-          <SatinBowReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />
-          <RevealKeyboardFallback onComplete={complete} />
+          <SatinBowReveal
+            guestName={guestName}
+            eventTitle={eventTitle}
+            hostName={hostName}
+            enableSounds={enableSounds}
+            embedded={embedded}
+            autoOpen={autoOpen}
+            onBegin={onBegin}
+            onComplete={complete}
+          />
+          <RevealKeyboardFallback onComplete={complete} embedded={embedded} label="Untie and open" />
         </>
       );
     case "ring-box":
       return (
         <>
           <RingBoxReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />
-          <RevealKeyboardFallback onComplete={complete} />
+          <RevealKeyboardFallback onComplete={complete} embedded={embedded} />
         </>
       );
     case "petal-fall":
       return (
         <>
           <PetalFallReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />
-          <RevealKeyboardFallback onComplete={complete} />
+          <RevealKeyboardFallback onComplete={complete} embedded={embedded} />
         </>
       );
     default:

@@ -47,6 +47,8 @@ export function ReducedMotionGate({ eventTitle, guestName, onComplete }: Reduced
 interface RevealKeyboardFallbackProps {
   onComplete: () => void;
   label?: string;
+  /** Framed preview: stay inside the tile instead of pinning to the viewport. */
+  embedded?: boolean;
 }
 
 /**
@@ -55,9 +57,20 @@ interface RevealKeyboardFallbackProps {
  * performing the pointer gesture. Fades in after a short delay so it never
  * competes with the ceremony for sighted pointer users.
  */
-export function RevealKeyboardFallback({ onComplete, label = "Open invitation" }: RevealKeyboardFallbackProps) {
+export function RevealKeyboardFallback({
+  onComplete,
+  label = "Open invitation",
+  embedded = false,
+}: RevealKeyboardFallbackProps) {
   return (
-    <div className="fixed inset-x-0 z-[130] flex justify-center pointer-events-none" style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom, 0px))" }}>
+    <div
+      className={
+        embedded
+          ? "absolute inset-x-0 bottom-3 z-[130] flex justify-center pointer-events-none"
+          : "fixed inset-x-0 z-[130] flex justify-center pointer-events-none"
+      }
+      style={embedded ? undefined : { bottom: "max(1.25rem, env(safe-area-inset-bottom, 0px))" }}
+    >
       <button
         type="button"
         onClick={onComplete}

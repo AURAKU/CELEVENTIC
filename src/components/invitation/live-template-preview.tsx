@@ -11,6 +11,7 @@ import { InvitationStaticPreviewProvider } from "@/components/invitation/invitat
 import { PreviewTapAffordance } from "@/components/invitation/preview-tap-affordance";
 import {
   previewTapLabelForOpening,
+  previewTapStepsForOpening,
 } from "@/lib/experience/opening-experiences";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import { Play, Smartphone, Monitor, Music2, X } from "lucide-react";
@@ -251,7 +252,16 @@ export function LiveTemplatePreview({
   const tapCopy = previewTapLabelForOpening(openingId);
 
   const hasMusic = Boolean(preview.musicSelection) && (musicEnabled ?? true);
+  const tapSteps = previewTapStepsForOpening(openingId, hasMusic);
   const portalLive = showLive;
+  /**
+   * Catalogue tiles are too small to read a full-bleed brand film — it lands as
+   * a black rectangle and delays the one thing the tile exists to show. Compact
+   * tiles therefore spend the tap on the template's own opening cover; the
+   * ceremony itself is still performed by the viewer, never auto-rushed.
+   * Hero / detail stages keep the complete guest pipeline.
+   */
+  const compactStage = variant === "picker" || variant === "card";
   /**
    * Live preview must run the same opening guests get, never skip into a
    * static portal when the template has a theatrical reveal.
@@ -377,8 +387,9 @@ export function LiveTemplatePreview({
             hasMusic={hasMusic}
             label={tapCopy.label}
             subtitle={tapCopy.subtitle}
+            steps={tapSteps}
             onOpen={openPreview}
-            aria-label="Tap to open live template preview"
+            aria-label="Tap to play this template's opening"
           />
         </>
       ) : (
@@ -474,10 +485,12 @@ export function LiveTemplatePreview({
                  * Guest-faithful choreography after catalogue tap:
                  * Celeventic brand MP4 → Tap to Begin → sealed envelope/curtain
                  * → guest opens the ceremony slowly. Never auto-rush the seal.
+                 * Compact tiles land straight on that sealed cover instead —
+                 * the brand film needs a full screen to read as anything but black.
                  */
                 skipIntro
-                skipSoftIntro={false}
-                skipTapGate={false}
+                skipSoftIntro={compactStage}
+                skipTapGate={compactStage}
                 autoOpenReveal={false}
                 musicEnabled={hasMusic && inView}
                 musicAutoplay={hasMusic && inView}
