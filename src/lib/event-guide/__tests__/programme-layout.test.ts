@@ -121,6 +121,14 @@ describe("nothing is regrouped away", () => {
           );
         }
       }
+      if (block.kind === "hymn") {
+        parts.push(`${block.time} ${block.cue ?? ""} ${block.title}`);
+        parts.push(...block.stanzas.flatMap((stanza) => stanza.lines));
+      }
+      if (block.kind === "appreciation") {
+        if (block.title) parts.push(block.title);
+        parts.push(...block.lines);
+      }
       if (block.kind === "schedule") {
         parts.push(
           ...block.entries.map((entry) => `${entry.time} ${entry.title} ${entry.description ?? ""}`)
@@ -408,8 +416,11 @@ describe("a hymn is not a list of people", () => {
 
   const blocks = layoutOf(script);
 
-  it("reads as a roster, a signpost and then the hymn on the page", () => {
-    assert.deepEqual(kinds(blocks), ["roster", "signpost", "schedule"]);
+  it("reads as a roster, a signpost, the hymn, and then the clock", () => {
+    // The hymn is its own block. Set on the running order it was one bullet on
+    // the same rail as `Order of photography`, with six lines of verse
+    // squeezed into the footnote slot under it.
+    assert.deepEqual(kinds(blocks), ["roster", "signpost", "hymn", "schedule"]);
   });
 
   it("keeps the roles as the headings of the people under them", () => {
@@ -436,17 +447,18 @@ describe("a hymn is not a list of people", () => {
     );
   });
 
-  it("sets the hymn as one entry with its stanza under it", () => {
-    const schedule = blocks[2]!;
-    assert.ok(schedule.kind === "schedule");
-    const hymn = schedule.entries[0]!;
+  it("sets the hymn as a hymn, with every line of its verse", () => {
+    const hymn = blocks[2]!;
+    assert.ok(hymn.kind === "hymn");
     assert.equal(hymn.title, "CAPTAIN OF ISRAEL'S HOST");
-    assert.equal(hymn.description!.split("\n").length, 6);
-    assert.ok(hymn.description!.endsWith("Our end, the glory of the Lord."));
+    assert.equal(hymn.stanzas.length, 1);
+    assert.equal(hymn.stanzas[0]!.lines.length, 6);
+    assert.equal(hymn.stanzas[0]!.lines[0], "Captain of Israel's host, and Guide");
+    assert.equal(hymn.stanzas[0]!.lines[5], "Our end, the glory of the Lord.");
   });
 
   it("leaves the processional on the clock behind the hymn", () => {
-    const schedule = blocks[2]!;
+    const schedule = blocks[3]!;
     assert.ok(schedule.kind === "schedule");
     const last = schedule.entries[schedule.entries.length - 1]!;
     assert.deepEqual([last.time, last.title], ["10:00 AM", "Processional"]);
@@ -554,6 +566,168 @@ describe("the organizer's marks reach the page", () => {
     assert.ok(roster?.kind === "roster");
     const named = roster.groups.flatMap((group) => group.people.map((person) => person.name));
     assert.deepEqual(named, ["REV. ANNAN", "MR. BOATENG"]);
+  });
+});
+
+/**
+ * The page a real church programme produces, end to end.
+ *
+ * Three different kinds of thing were arriving on one rail: a hymn's verses, a
+ * photographer's shot list, and the hosts' closing thank-you — each set as a
+ * bullet with a border down its left, indistinguishable from the next. They
+ * are read differently and they are now laid out differently.
+ */
+describe("a hymn, a shot list and a thank-you are three different things", () => {
+  const script = [
+    "ORDER OF SERVICE",
+    "OPENING HYMN",
+    "CAPTAIN OF ISRAEL'S HOST",
+    "Captain of Israel's host, and Guide",
+    "Of all who seek the land above,",
+    "Beneath Thy shadow we abide,",
+    "The cloud of Thy protecting love;",
+    "ORDER OF PHOTOGRAPHY",
+    "Couple with parents",
+    "Couple with bridal party",
+    "Couple with the congregation",
+    "APPRECIATION",
+    "WE ARE HONOURED TO CELEBRATE THIS SPECIAL DAY WITH YOU.",
+    "THANK YOU FOR YOUR PRESENCE, PRAYERS, AND LOVE.",
+  ].join("\n");
+
+  const blocks = layoutOf(script);
+
+  it("lifts the hymn off the running order and closes with the thank-you", () => {
+    assert.deepEqual(kinds(blocks), [
+      "signpost",
+      "hymn",
+      "signpost",
+      "schedule",
+      "appreciation",
+    ]);
+  });
+
+  it("gives the hymn the cue the organizer announced it with", () => {
+    const hymn = blocks.find((block) => block.kind === "hymn");
+    assert.ok(hymn?.kind === "hymn");
+    assert.equal(hymn.cue, "OPENING HYMN");
+    assert.equal(hymn.title, "CAPTAIN OF ISRAEL'S HOST");
+    assert.equal(hymn.stanzas[0]!.lines.length, 4);
+  });
+
+  it("keeps the photography list as a plain list, not as verse", () => {
+    const schedule = blocks.find((block) => block.kind === "schedule");
+    assert.ok(schedule?.kind === "schedule");
+    assert.deepEqual(schedule.entries.map((entry) => entry.title), [
+      "Couple with parents",
+      "Couple with bridal party",
+      "Couple with the congregation",
+    ]);
+  });
+
+  it("gathers the closing words into one card under its own heading", () => {
+    const closing = blocks[blocks.length - 1]!;
+    assert.ok(closing.kind === "appreciation");
+    assert.equal(closing.title, "APPRECIATION");
+    assert.deepEqual(closing.lines, [
+      "WE ARE HONOURED TO CELEBRATE THIS SPECIAL DAY WITH YOU.",
+      "THANK YOU FOR YOUR PRESENCE, PRAYERS, AND LOVE.",
+    ]);
+  });
+
+  it("leaves not one word of any of the three out", () => {
+    const page = [
+      ...blocks.flatMap((block) => {
+        if (block.kind === "hymn") {
+          return [block.cue ?? "", block.title, ...block.stanzas.flatMap((s) => s.lines)];
+        }
+        if (block.kind === "appreciation") return [block.title, ...block.lines];
+        if (block.kind === "schedule") return block.entries.map((e) => e.title);
+        if (block.kind === "signpost") return [block.title];
+        return [];
+      }),
+    ].join("\n");
+    for (const line of script.split("\n")) {
+      assert.ok(page.includes(line), `"${line}" was lost`);
+    }
+  });
+});
+
+describe("telling a hymn from a thing that happens", () => {
+  it("keeps a verse split across stanzas as separate stanzas", () => {
+    const blocks = layoutOf(
+      [
+        "HOW GREAT THOU ART",
+        "  O Lord my God, when I in awesome wonder,",
+        "  Consider all the worlds Thy hands have made;",
+        "",
+        "  Then sings my soul, my Saviour God, to Thee;",
+        "  How great Thou art, how great Thou art!",
+      ].join("\n")
+    );
+    const hymn = blocks.find((block) => block.kind === "hymn");
+    assert.ok(hymn?.kind === "hymn");
+    assert.equal(hymn.stanzas.length, 2);
+    assert.deepEqual(hymn.stanzas.map((stanza) => stanza.lines.length), [2, 2]);
+  });
+
+  it("leaves an item with a plain note under it on the clock", () => {
+    const blocks = layoutOf("2:00 PM - Vows\n  Rings are exchanged.");
+    assert.deepEqual(kinds(blocks), ["schedule"]);
+  });
+
+  it("does not read a photographer's shot list as a hymn", () => {
+    const blocks = layoutOf(
+      "ORDER OF PHOTOGRAPHY\nCouple with parents\nCouple with bridal party"
+    );
+    assert.ok(!blocks.some((block) => block.kind === "hymn"));
+  });
+});
+
+describe("the hosts' closing words", () => {
+  it("stands alone even when the organizer wrote no APPRECIATION heading", () => {
+    // Built as items rather than as a script: a bare closing sentence is
+    // folded into the line above it while the document is being read, so this
+    // is the layout's own contract for the case where it arrives on its own.
+    const blocks = layoutProgramme([
+      { id: "a", time: "2:00 PM", title: "Exchange of vows" },
+      { id: "b", time: "", title: "THANK YOU FOR YOUR PRESENCE, PRAYERS, AND LOVE." },
+    ]);
+    const closing = blocks[blocks.length - 1]!;
+    assert.ok(closing.kind === "appreciation");
+    // Already a sentence, so it is the message rather than the card's heading —
+    // set as a heading it would come out in tracked capitals.
+    assert.equal(closing.title, "");
+    assert.deepEqual(closing.lines, ["THANK YOU FOR YOUR PRESENCE, PRAYERS, AND LOVE."]);
+  });
+
+  it("never claims a thank-you that happens at a time", () => {
+    // `4:15 PM - Vote of thanks` is somebody standing up to speak, and it
+    // belongs on the clock with everything else.
+    const blocks = layoutOf("2:00 PM - Vows\n4:15 PM - Vote of thanks\n5:00 PM - Dinner");
+    assert.deepEqual(kinds(blocks), ["schedule"]);
+  });
+
+  it("never swallows the programme above it", () => {
+    const script = [
+      "CEREMONY",
+      "Processional",
+      "Exchange of vows",
+      "Signing of the register",
+      "Recessional",
+      "APPRECIATION",
+      "Thank you for standing with us.",
+    ].join("\n");
+    const closing = layoutOf(script)[layoutOf(script).length - 1]!;
+    assert.ok(closing.kind === "appreciation");
+    assert.deepEqual(closing.lines, ["Thank you for standing with us."]);
+  });
+
+  it("leaves a roster of the people to thank as a roster", () => {
+    const blocks = layoutOf(
+      "OFFICIATING MINISTERS\nRev. Mensah Adjetey\nRev. Dr. K. Annan"
+    );
+    assert.ok(!blocks.some((block) => block.kind === "appreciation"));
   });
 });
 

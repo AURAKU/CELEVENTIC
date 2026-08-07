@@ -3,11 +3,14 @@
 import type { GuideAttachment, GuideProgrammeItem } from "@/lib/event-guide/types";
 import {
   layoutProgramme,
+  type ProgrammeBlock,
   type ProgrammeCoverLine,
   type ProgrammeRosterGroup,
   type ProgrammeScheduleEntry,
 } from "@/lib/event-guide/programme-layout";
+import { isShouted } from "@/lib/event-guide/programme-lines";
 import { GuideAttachments } from "./guide-attachments";
+import { CeremonyArch, MusicMark, PAPER_WASH, SprigDivider } from "./guide-motifs";
 
 type Fonts = { heading: string; body: string; eyebrow: string; script: string };
 
@@ -95,6 +98,19 @@ export function GuideProgramme({
         if (block.kind === "roster") {
           return <ProgrammeRoster key={block.id} groups={block.groups} fonts={fonts} />;
         }
+        if (block.kind === "hymn") {
+          return <ProgrammeHymn key={block.id} hymn={block} fonts={fonts} />;
+        }
+        if (block.kind === "appreciation") {
+          return (
+            <ProgrammeAppreciation
+              key={block.id}
+              title={block.title}
+              lines={block.lines}
+              fonts={fonts}
+            />
+          );
+        }
         return <ProgrammeSchedule key={block.id} entries={block.entries} fonts={fonts} />;
       })}
       <GuideAttachments attachments={attachments} fonts={fonts} />
@@ -102,17 +118,19 @@ export function GuideProgramme({
   );
 }
 
-/** A hairline with a lozenge at its centre — the one flourish this page uses. */
+/**
+ * The rule between the parts of a title page.
+ *
+ * A sprig rather than a lozenge: the same job, in the language a wedding
+ * programme is set in. Drawn in the decorative accent, never the label ink —
+ * it carries no information, so it is not held to the contrast type is.
+ */
 function Flourish({ className = "" }: { className?: string }) {
   return (
-    <div aria-hidden className={`flex items-center justify-center gap-2 ${className}`}>
-      <span className="h-px w-10 sm:w-14" style={{ background: "var(--guide-hairline)" }} />
-      <span
-        className="h-1 w-1 rotate-45"
-        style={{ background: "var(--guide-secondary)", opacity: 0.75 }}
-      />
-      <span className="h-px w-10 sm:w-14" style={{ background: "var(--guide-hairline)" }} />
-    </div>
+    <SprigDivider
+      className={`mx-auto h-4 w-40 max-w-[70%] ${className}`}
+      style={{ color: "var(--guide-secondary)", opacity: 0.75 }}
+    />
   );
 }
 
@@ -139,30 +157,58 @@ function ProgrammeCover({ lines, fonts }: { lines: ProgrammeCoverLine[]; fonts: 
       dir="auto"
     >
       <div
-        className="rounded-[1.25rem] border px-4 py-7 text-center sm:px-8 sm:py-9"
-        style={{ borderColor: "var(--guide-hairline)" }}
+        className="relative overflow-hidden rounded-[1.25rem] border px-4 py-7 text-center sm:px-8 sm:py-9"
+        style={{ borderColor: "var(--guide-hairline)", backgroundImage: PAPER_WASH }}
       >
-        {title ? <CoverLine line={title} fonts={fonts} /> : null}
+        {/*
+          The arch stands behind the whole title page rather than beside it, at
+          the opacity of a watermark. Nothing is read off it, so it cannot cost
+          the couple's names any contrast — and it is what turns a bordered box
+          into the front of an order of service.
+        */}
+        <CeremonyArch
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-full w-full opacity-[0.09]"
+          style={{ color: "var(--guide-primary)" }}
+        />
 
-        {names.length > 0 ? (
-          <>
-            <Flourish className="my-4" />
-            {names.map((line) => (
-              <CoverLine key={line.id} line={line} fonts={fonts} />
-            ))}
-          </>
-        ) : null}
+        <div className="relative">
+          {title ? <CoverLine line={title} fonts={fonts} /> : null}
 
-        {meta.length > 0 ? (
-          <>
-            <Flourish className="my-4" />
-            <div className="space-y-1.5">
-              {meta.map((line) => (
+          {names.length > 0 ? (
+            <>
+              <Flourish className="my-4" />
+              {names.map((line) => (
                 <CoverLine key={line.id} line={line} fonts={fonts} />
               ))}
-            </div>
-          </>
-        ) : null}
+            </>
+          ) : null}
+
+          {meta.length > 0 ? (
+            <>
+              <Flourish className="my-4" />
+              {/*
+                The date and the hour belong on one line — they are one fact —
+                and a venue that follows them wraps onto the next by itself.
+                Stacked, each on its own row, they read as three separate
+                announcements.
+              */}
+              <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1.5">
+                {meta.map((line, index) => (
+                  <div key={line.id} className="flex items-baseline gap-3">
+                    {index > 0 ? (
+                      <span
+                        aria-hidden
+                        className="h-[3px] w-[3px] rotate-45"
+                        style={{ background: "var(--guide-secondary)", opacity: 0.7 }}
+                      />
+                    ) : null}
+                    <CoverLine line={line} fonts={fonts} />
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -247,6 +293,25 @@ function CoverLine({ line, fonts }: { line: ProgrammeCoverLine; fonts: Fonts }) 
  * `RECEPTION`. It is a signpost between blocks, so it is set as one: centred
  * between two short rules, once per section rather than once per line.
  */
+/** A single leaf, turned to face the heading it sits beside. */
+function LeafMark({ flipped = false }: { flipped?: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 12 12"
+      className={`h-2.5 w-2.5 shrink-0 ${flipped ? "-scale-x-100" : ""}`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.1}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ color: "var(--guide-secondary)" }}
+    >
+      <path d="M10.5 1.5C10.5 6.2 7.6 9 3.4 9 1.9 9 1.1 8.2 1.4 6.8 2 4 5.3 1.5 10.5 1.5Z" />
+    </svg>
+  );
+}
+
 function ProgrammeSignpost({ title, fonts }: { title: string; fonts: Fonts }) {
   return (
     <div
@@ -255,12 +320,14 @@ function ProgrammeSignpost({ title, fonts }: { title: string; fonts: Fonts }) {
       dir="auto"
     >
       <span aria-hidden className="h-px flex-1" style={{ background: "var(--guide-hairline)" }} />
+      <LeafMark />
       <h3
         className="text-center text-[0.68rem] font-semibold uppercase leading-tight tracking-[0.26em]"
         style={{ fontFamily: fonts.eyebrow, color: "var(--guide-label, var(--guide-secondary))" }}
       >
         {title}
       </h3>
+      <LeafMark flipped />
       <span aria-hidden className="h-px flex-1" style={{ background: "var(--guide-hairline)" }} />
     </div>
   );
@@ -286,7 +353,11 @@ function ProgrammeRoster({ groups, fonts }: { groups: ProgrammeRosterGroup[]; fo
     <div
       data-testid="event-guide-programme-roster"
       className="mt-1 rounded-2xl border px-4 py-3 sm:px-6 sm:py-4"
-      style={{ borderColor: "var(--guide-hairline)", background: "var(--guide-paper)" }}
+      style={{
+        borderColor: "var(--guide-hairline)",
+        background: "var(--guide-paper)",
+        backgroundImage: PAPER_WASH,
+      }}
       dir="auto"
     >
       {groups.map((group) => (
@@ -363,6 +434,154 @@ function ProgrammeRoster({ groups, fonts }: { groups: ProgrammeRosterGroup[]; fo
 }
 
 /**
+ * A hymn, set as a hymnal card rather than as a line of the running order.
+ *
+ * On the timeline it was one bullet on the same rail as `Order of
+ * photography`, with six lines of verse folded into the small grey slot meant
+ * for "rings are exchanged". Nobody sings from that.
+ *
+ * So it breaks out: its own panel, the cue and the title centred above a
+ * rule, and the verse centred and airy underneath at reading size, keeping
+ * every line break the poet wrote. Stanzas are separated by space rather than
+ * by a rule, which is how a hymnal does it.
+ */
+function ProgrammeHymn({
+  hymn,
+  fonts,
+}: {
+  hymn: Extract<ProgrammeBlock, { kind: "hymn" }>;
+  fonts: Fonts;
+}) {
+  return (
+    <section
+      data-testid="event-guide-programme-hymn"
+      className="mt-3 rounded-2xl border px-5 py-6 text-center sm:px-8 sm:py-7"
+      style={{
+        borderColor: "var(--guide-hairline)",
+        background: "var(--guide-paper)",
+        backgroundImage: PAPER_WASH,
+      }}
+      dir="auto"
+    >
+      <MusicMark
+        className="mx-auto h-5 w-5"
+        style={{ color: "var(--guide-secondary)" }}
+      />
+
+      {hymn.cue || hymn.time ? (
+        <p
+          className="mt-2.5 text-[0.64rem] font-semibold uppercase leading-tight tracking-[0.24em]"
+          style={{ fontFamily: fonts.eyebrow, color: "var(--guide-label, var(--guide-secondary))" }}
+        >
+          {[hymn.time, hymn.cue].filter(Boolean).join("  ·  ")}
+        </p>
+      ) : null}
+
+      <h3
+        className="mt-1.5 text-balance text-[1.15rem] leading-snug sm:text-[1.3rem]"
+        style={{
+          fontFamily: fonts.heading,
+          color: "var(--guide-primary)",
+          letterSpacing: isShouted(hymn.title) ? "0.06em" : undefined,
+        }}
+      >
+        {hymn.title}
+      </h3>
+
+      {hymn.stanzas.length > 0 ? (
+        <>
+          <Flourish className="my-4" />
+          <div className="space-y-5">
+            {hymn.stanzas.map((stanza) => (
+              <p
+                key={stanza.id}
+                data-testid="event-guide-programme-hymn-stanza"
+                className="text-balance text-[0.95rem] leading-[1.95]"
+                style={{ fontFamily: fonts.body }}
+              >
+                {stanza.lines.map((line, index) => (
+                  <span key={index} className="block">
+                    {line}
+                  </span>
+                ))}
+              </p>
+            ))}
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * The hosts turning from the running order to speak to the room.
+ *
+ * `APPRECIATION`, and the two sentences under it, are not things that happen
+ * at a time — set on the timeline they took a bullet each and read as two
+ * more items to get through. Here they close the programme: centred, on the
+ * accent's own wash, in the script face the invitation is signed in.
+ */
+function ProgrammeAppreciation({
+  title,
+  lines,
+  fonts,
+}: {
+  title: string;
+  lines: string[];
+  fonts: Fonts;
+}) {
+  return (
+    <section
+      data-testid="event-guide-programme-appreciation"
+      className="mt-6 rounded-2xl border px-5 py-7 text-center sm:px-8"
+      style={{
+        borderColor: "var(--guide-hairline)",
+        background: "var(--guide-paper)",
+        backgroundImage: PAPER_WASH,
+      }}
+      dir="auto"
+    >
+      {title ? (
+        <h3
+          className="text-[0.68rem] font-semibold uppercase leading-tight tracking-[0.28em]"
+          style={{ fontFamily: fonts.eyebrow, color: "var(--guide-label, var(--guide-secondary))" }}
+        >
+          {title}
+        </h3>
+      ) : null}
+
+      <Flourish className={title ? "my-4" : "mb-4"} />
+
+      <div className="space-y-3">
+        {lines.map((line, index) => (
+          <p
+            key={index}
+            data-testid="event-guide-programme-appreciation-line"
+            /*
+             * The first line is the sentiment and gets the script face; the
+             * rest are set as body text. A whole card in a script face is
+             * unreadable, and capitals in one are worse.
+             */
+            className={
+              index === 0
+                ? "text-balance text-[1.12rem] leading-relaxed sm:text-[1.22rem]"
+                : "text-balance text-[0.95rem] leading-relaxed opacity-85"
+            }
+            style={
+              index === 0
+                ? { fontFamily: isShouted(line) ? fonts.heading : fonts.script }
+                : { fontFamily: fonts.body }
+            }
+          >
+            {line}
+          </p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
  * The clock.
  *
  * Times run down their own column against a single continuous rule, so a
@@ -381,7 +600,15 @@ function ProgrammeSchedule({
   const timed = entries.some((entry) => entry.time);
 
   return (
-    <ol data-testid="event-guide-programme-schedule" className="mt-2">
+    <ol
+      data-testid="event-guide-programme-schedule"
+      className="mt-2 rounded-2xl border px-4 py-5 sm:px-6"
+      style={{
+        borderColor: "var(--guide-hairline)",
+        background: "var(--guide-paper)",
+        backgroundImage: PAPER_WASH,
+      }}
+    >
       {entries.map((entry, index) => {
         const last = index === entries.length - 1;
         return (

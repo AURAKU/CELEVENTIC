@@ -41,6 +41,7 @@
 
 import {
   HONORIFIC,
+  HYMN_CUE,
   MAX_LABEL_WORDS,
   MAX_ROLE_CHARS,
   ROLE_WORD,
@@ -101,10 +102,26 @@ export interface ProgrammeRosterGroup {
   people: ProgrammeRosterPerson[];
 }
 
+/** A verse of a hymn, exactly as the organizer broke its lines. */
+export interface ProgrammeHymnStanza {
+  id: string;
+  lines: string[];
+}
+
 export type ProgrammeBlock =
   | { kind: "cover"; id: string; lines: ProgrammeCoverLine[] }
   | { kind: "signpost"; id: string; title: string }
   | { kind: "roster"; id: string; groups: ProgrammeRosterGroup[] }
+  | {
+      kind: "hymn";
+      id: string;
+      /** `OPENING HYMN` — what the organizer called it, when they said. */
+      cue?: string;
+      title: string;
+      time: string;
+      stanzas: ProgrammeHymnStanza[];
+    }
+  | { kind: "appreciation"; id: string; title: string; lines: string[] }
   | { kind: "schedule"; id: string; entries: ProgrammeScheduleEntry[] };
 
 /**
@@ -514,6 +531,138 @@ function toRoster(run: GuideProgrammeItem[]): ProgrammeRosterGroup[] {
   return groups;
 }
 
+/**
+ * Something to be sung, rather than something that happens.
+ *
+ * A hymn arrives as a title with its verses underneath — and set on the
+ * running order it becomes one bullet on the same rail as `Order of
+ * photography`, six lines of poetry squeezed into the footnote slot. It is a
+ * different kind of thing and it is read differently, so it is lifted out.
+ *
+ * The verse itself is the signal: a stanza breaks mid-clause on a comma or a
+ * semicolon, and nobody ends `Cutting of the cake` that way. A cue the
+ * organizer wrote above it — `OPENING HYMN`, `CHORUS` — vouches for a shorter
+ * one that would not have qualified on its own.
+ */
+function isHymnItem(item: GuideProgrammeItem, cue: string | null): boolean {
+  if (item.kind === "note" || item.kind === "section") return false;
+  if (!item.title.trim()) return false;
+  if (carriesVerse(item)) return true;
+  if (!cue || !HYMN_CUE.test(cue)) return false;
+  return detailLines(item).length >= 2;
+}
+
+/**
+ * `OPENING HYMN` written on the line above the hymn's own title.
+ *
+ * Left in the running order it is a bullet with nothing under it, sitting
+ * directly above the card it is announcing. It belongs to the hymn, so the
+ * hymn takes it.
+ */
+function isHymnCueLine(item: GuideProgrammeItem): boolean {
+  const text = item.title.trim();
+  return (
+    isQuiet(item) &&
+    isShouted(text) &&
+    HYMN_CUE.test(text) &&
+    words(text).length <= MAX_SIGNPOST_WORDS &&
+    text.length <= MAX_SIGNPOST_CHARS
+  );
+}
+
+function toHymn(item: GuideProgrammeItem): Extract<ProgrammeBlock, { kind: "hymn" }> {
+  // A blank line between two runs of verse is a stanza break, and it is the
+  // only structure a hymn has. Single breaks stay the poet's line breaks.
+  const stanzas = (item.description ?? "")
+    .split(/\n{2,}/)
+    .map((block) =>
+      block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+    )
+    .filter((lines) => lines.length > 0)
+    .map((lines, index) => ({ id: `${item.id}-verse-${index + 1}`, lines }));
+
+  return {
+    kind: "hymn",
+    id: item.id,
+    title: item.title.trim(),
+    time: item.time.trim(),
+    stanzas,
+  };
+}
+
+/**
+ * The line that opens the closing block of a programme.
+ *
+ * `APPRECIATION`, `ACKNOWLEDGEMENTS`, `THANK YOU` — the hosts turning from
+ * the running order to speak to the room.
+ */
+const APPRECIATION_CUE =
+  /^\W*(?:appreciation|acknowledge?ments?|acknowledgments?|thank[\s-]?you|our thanks|with (?:thanks|gratitude|love)|gratitude|in appreciation)\b/i;
+
+/** A sentence that thanks the guests rather than telling them what is next. */
+const THANKS_LINE = /\b(?:thank(?:s| you)|grateful|gratitude|honou?red to|blessed to)\b/i;
+
+/** Long enough for a closing message, short enough never to eat a programme. */
+const MAX_APPRECIATION_ITEMS = 8;
+
+/**
+ * Take the hosts' closing words off the end, if the programme has any.
+ *
+ * Only ever read from the tail, and only across time-less lines: a closing
+ * block is by definition what is left after the last thing that happens at a
+ * time. That is what stops `THANK YOU` said at 4:15pm — a real item of the
+ * running order — from swallowing everything under it.
+ */
+function takeAppreciation(items: GuideProgrammeItem[], from: number): number | null {
+  let start: number | null = null;
+
+  for (let index = items.length - 1; index >= from; index -= 1) {
+    const item = items[index]!;
+    if (!isTimeless(item)) break;
+    if (items.length - index > MAX_APPRECIATION_ITEMS) break;
+    const title = item.title.trim();
+    if (APPRECIATION_CUE.test(title) || THANKS_LINE.test(title)) start = index;
+  }
+
+  if (start === null) return null;
+
+  // A list of people who helped is a roster, whatever it is headed with.
+  const run = items.slice(start);
+  if (isRosterRun(run, run[0]!.title)) return null;
+
+  return start;
+}
+
+function toAppreciation(
+  run: GuideProgrammeItem[]
+): Extract<ProgrammeBlock, { kind: "appreciation" }> {
+  const head = run[0]!;
+  const headText = head.title.trim();
+  // `APPRECIATION` on its own line is the heading of the card. A line that is
+  // already a sentence of thanks is the message itself, and keeping it as a
+  // heading would set the hosts' words in tracked capitals.
+  const titled =
+    APPRECIATION_CUE.test(headText) &&
+    words(headText).length <= 3 &&
+    !/[.!?]$/.test(headText);
+
+  const lines: string[] = [];
+  for (const item of run) {
+    if (item !== head || !titled) lines.push(item.title.trim());
+    lines.push(...detailLines(item));
+  }
+
+  return {
+    kind: "appreciation",
+    id: head.id,
+    title: titled ? headText : "",
+    lines: lines.filter(Boolean),
+  };
+}
+
 function toScheduleEntry(item: GuideProgrammeItem): ProgrammeScheduleEntry {
   return {
     id: item.id,
@@ -542,17 +691,24 @@ export function layoutProgramme(items: GuideProgrammeItem[]): ProgrammeBlock[] {
     index = cover.next;
   }
 
-  while (index < items.length) {
+  // The hosts' closing words are taken off the end before the running order is
+  // read, so nothing in the loop below can claim them as items.
+  const closing = takeAppreciation(items, index);
+  const end = closing ?? items.length;
+
+  while (index < end) {
     /*
      * Lines that follow a signpost belong to the section it opened. They are
      * taken as entries even when they are in capitals, so a run of shouted
      * lines can never become a run of headings.
      */
     let claimed = 0;
+    let cue: string | null = null;
     const head = items[index]!;
 
     if (isSignpost(head)) {
       blocks.push({ kind: "signpost", id: head.id, title: head.title });
+      cue = head.title;
       index += 1;
 
       const roster = rosterRunAt(items, index, head.title);
@@ -571,22 +727,73 @@ export function layoutProgramme(items: GuideProgrammeItem[]): ProgrammeBlock[] {
       }
     }
 
+    /*
+     * A hymn interrupts the running order rather than joining it: the entries
+     * gathered so far are closed off, the hymn is set as its own block, and
+     * whatever follows starts a fresh schedule. That is what keeps six lines
+     * of verse off the same rail as `Order of photography`.
+     */
     const entries: ProgrammeScheduleEntry[] = [];
+    const flush = () => {
+      if (entries.length === 0) return;
+      blocks.push({ kind: "schedule", id: entries[0]!.id, entries: entries.slice() });
+      entries.length = 0;
+    };
+
     let taken = 0;
-    while (index < items.length) {
+    let pendingCue: string | null = null;
+
+    while (index < end) {
       const item = items[index]!;
       if (taken >= claimed) {
         if (isSignpost(item)) break;
         if (entries.length > 0 && rosterRunAt(items, index, null)) break;
       }
+
+      const next = items[index + 1];
+      if (
+        pendingCue === null &&
+        isHymnCueLine(item) &&
+        next !== undefined &&
+        index + 1 < end &&
+        isHymnItem(next, item.title)
+      ) {
+        pendingCue = item.title.trim();
+        index += 1;
+        taken += 1;
+        continue;
+      }
+
+      if (isHymnItem(item, pendingCue ?? cue)) {
+        flush();
+        blocks.push({ ...toHymn(item), ...(pendingCue ? { cue: pendingCue } : {}) });
+        pendingCue = null;
+        index += 1;
+        taken += 1;
+        continue;
+      }
+
+      // A cue we picked up but that turned out to announce nothing sung goes
+      // back on the running order — it is still a line the organizer wrote.
+      if (pendingCue !== null) {
+        entries.push({ id: `${item.id}-cue`, time: "", title: pendingCue });
+        pendingCue = null;
+      }
+
       entries.push(toScheduleEntry(item));
       index += 1;
       taken += 1;
     }
 
-    if (entries.length > 0) {
-      blocks.push({ kind: "schedule", id: entries[0]!.id, entries });
+    if (pendingCue !== null) {
+      entries.push({ id: `${items[index - 1]!.id}-cue`, time: "", title: pendingCue });
     }
+
+    flush();
+  }
+
+  if (closing !== null) {
+    blocks.push(toAppreciation(items.slice(closing)));
   }
 
   return blocks;
