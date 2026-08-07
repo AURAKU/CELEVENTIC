@@ -2,11 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import {
+  SEATING_MIN_QUERY,
   SEATING_RATE_LIMIT,
+  SEATING_SUGGESTION_RATE_LIMIT,
+  SUGGESTION_SCAN_LIMIT,
   buildSeatingMatch,
   effectiveMaxMatches,
   normalizeQuery,
   selectSeatingOutcome,
+  suggestPartyLabels,
   validateQueryLength,
   type CandidateParty,
   type SeatingMode,
@@ -22,6 +26,16 @@ import type { GuideSeatingOutcome } from "@/lib/event-guide/types";
  * regardless of how many were loaded.
  */
 const NAME_SEARCH_SCAN_LIMIT = 400;
+
+/**
+ * Ceiling on the parties written into a Venue Offline Pack.
+ *
+ * Ten thousand invitations is an order of magnitude past the largest wedding
+ * anyone builds a pack for, so this never truncates a real event — it exists
+ * so a corrupt or runaway guest list fails as a large pack rather than as an
+ * out-of-memory build.
+ */
+const OFFLINE_PACK_PARTY_CAP = 10_000;
 
 const GUEST_SELECT = {
   id: true,
@@ -168,10 +182,85 @@ export class GuideSeatingService {
     return selectSeatingOutcome(parties, query, maxMatches);
   }
 
+  /**
+   * Names to offer while a guest is still typing.
+   *
+   * Deliberately not a search: it returns labels and nothing else, it is dead
+   * in code mode, and it reads a bounded slice of the list. See
+   * `suggestPartyLabels` for why each of those matters.
+   */
+  async suggest(input: {
+    eventId: string;
+    publicToken: string;
+    clientKey: string;
+    mode: SeatingMode;
+    rawQuery: string;
+    minQueryLength: number;
+    enabled: boolean;
+  }): Promise<string[]> {
+    // Someone typing an admission code is never offered guests' names.
+    if (!input.enabled || input.mode !== "GUEST_NAME") return [];
+
+    const query = normalizeQuery("GUEST_NAME", input.rawQuery);
+    if (!validateQueryLength("GUEST_NAME", query, input.minQueryLength).ok) return [];
+
+    const tokens = query.split(" ").filter(Boolean);
+    const anchor = tokens.reduce((longest, t) => (t.length > longest.length ? t : longest), "");
+    if (anchor.length < SEATING_MIN_QUERY.GUEST_NAME) return [];
+
+    const limit = await rateLimit(
+      `event-guide:seating-suggest:${input.publicToken}:${input.clientKey}`,
+      SEATING_SUGGESTION_RATE_LIMIT.attempts,
+      SEATING_SUGGESTION_RATE_LIMIT.windowSeconds
+    );
+    if (!limit.success) return [];
+
+    const invitations = await prisma.invitation.findMany({
+      where: {
+        eventId: input.eventId,
+        archivedAt: null,
+        isGeneralPass: false,
+        OR: [
+          { name: { contains: anchor } },
+          { guests: { some: { archivedAt: null, name: { contains: anchor } } } },
+        ],
+      },
+      take: SUGGESTION_SCAN_LIMIT,
+      // Only what a label is built from — no seats, no passes, no contacts.
+      select: {
+        id: true,
+        name: true,
+        guests: {
+          where: { archivedAt: null },
+          select: { id: true, name: true, invitationId: true },
+        },
+      },
+    });
+
+    const parties: CandidateParty[] = invitations.map((invitation) => ({
+      invitationId: invitation.id,
+      partyName: invitation.name,
+      guests: invitation.guests.map((guest) => ({
+        id: guest.id,
+        name: guest.name,
+        invitationId: guest.invitationId,
+        plusOnes: 0,
+        seatingAssignments: [],
+      })),
+    }));
+
+    return suggestPartyLabels(parties, query);
+  }
+
   /** Party rows for a Venue Offline Pack's seating index. */
   async offlineSeatingSources(eventId: string) {
     const invitations = await prisma.invitation.findMany({
       where: { eventId, archivedAt: null, isGeneralPass: false },
+      // The whole party list by design — this builds the pack a venue team
+      // works from with no signal. The cap only stops a runaway list from
+      // taking the pack build down with it, and is far above any real event.
+      take: OFFLINE_PACK_PARTY_CAP,
+      orderBy: { createdAt: "asc" },
       select: {
         id: true,
         name: true,

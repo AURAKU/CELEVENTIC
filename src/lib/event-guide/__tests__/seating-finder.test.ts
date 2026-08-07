@@ -7,8 +7,11 @@ import {
   effectiveMaxMatches,
   effectiveMinQuery,
   normalizeNameKey,
+  partyLabel,
   scorePartyNameMatch,
   selectSeatingOutcome,
+  suggestPartyLabels,
+  SEATING_SUGGESTION_LIMIT,
   validateQueryLength,
   type CandidateGuest,
   type CandidateParty,
@@ -303,6 +306,111 @@ describe("guest-facing copy", () => {
       const copy = SEATING_OUTCOME_COPY[status];
       assert.ok(copy.length > 0, status);
       assert.doesNotMatch(copy, /error|invalid|null|undefined|4\d\d/i, status);
+    }
+  });
+});
+
+describe("suggesting names while a guest types", () => {
+  const LIST = [
+    party({
+      invitationId: "inv_1",
+      partyName: "Kofi Mensah-Boateng",
+      guests: [guest({ name: "Kofi Mensah-Boateng" }), guest({ name: "Adjoa Mensah-Boateng" })],
+    }),
+    party({
+      invitationId: "inv_2",
+      partyName: "Kofi Asante",
+      guests: [guest({ name: "Kofi Asante" })],
+    }),
+    party({
+      invitationId: "inv_3",
+      partyName: "Ama Darko",
+      guests: [guest({ name: "Ama Darko" })],
+    }),
+    party({
+      invitationId: "inv_4",
+      partyName: "",
+      guests: [guest({ name: "Kofi Owusu" })],
+    }),
+  ];
+
+  it("offers the names a guest was reaching for", () => {
+    // The complaint that started this: "kofi" returned nothing at all.
+    assert.deepEqual(suggestPartyLabels(LIST, "kofi"), [
+      "Kofi Asante",
+      "Kofi Mensah-Boateng",
+      "Kofi Owusu",
+    ]);
+  });
+
+  it("falls back to the guest's own name when the invitation has no label", () => {
+    assert.ok(suggestPartyLabels(LIST, "owusu").includes("Kofi Owusu"));
+  });
+
+  it("narrows as more is typed", () => {
+    assert.deepEqual(suggestPartyLabels(LIST, "kofi asa"), ["Kofi Asante"]);
+  });
+
+  it("matches a guest inside the party, not only the party's label", () => {
+    assert.deepEqual(suggestPartyLabels(LIST, "adjoa"), ["Kofi Mensah-Boateng"]);
+  });
+
+  it("folds case, accents and punctuation the same way a lookup does", () => {
+    assert.deepEqual(suggestPartyLabels(LIST, normalizeNameKey("  MENSAH  ")), [
+      "Kofi Mensah-Boateng",
+    ]);
+  });
+
+  it("never lists the same party twice", () => {
+    const twice = [LIST[0]!, party({ invitationId: "inv_dup", partyName: "kofi mensah-boateng" })];
+    assert.equal(suggestPartyLabels(twice, "kofi").length, 1);
+  });
+
+  it("gives back at most five, however many match", () => {
+    const crowd = Array.from({ length: 40 }, (_, i) =>
+      party({ invitationId: `inv_${i}`, partyName: `Kwame Number ${i}` })
+    );
+    assert.equal(suggestPartyLabels(crowd, "kwame").length, SEATING_SUGGESTION_LIMIT);
+  });
+
+  it("is prefix-anchored, never fuzzy", () => {
+    // Substring and near-miss matching on a public endpoint is an enumeration
+    // oracle: it answers "is there anyone whose name contains…".
+    assert.deepEqual(suggestPartyLabels(LIST, "ofi"), []);
+    assert.deepEqual(suggestPartyLabels(LIST, "kofy"), []);
+  });
+
+  it("says nothing at all for an empty query", () => {
+    assert.deepEqual(suggestPartyLabels(LIST, ""), []);
+    assert.deepEqual(suggestPartyLabels(LIST, "   "), []);
+  });
+
+  it("returns labels and nothing else — no seat, no member, no identifier", () => {
+    const seated = party({
+      invitationId: "inv_secret",
+      partyName: "Kofi Mensah-Boateng",
+      guests: [
+        guest({
+          name: "Kofi Mensah-Boateng",
+          invitationId: "inv_secret",
+          plusOnes: 2,
+          seatingAssignments: [RECEPTION, CEREMONY],
+        }),
+      ],
+    });
+    const json = JSON.stringify(suggestPartyLabels([seated], "kofi"));
+    assert.equal(json, JSON.stringify(["Kofi Mensah-Boateng"]));
+    assert.doesNotMatch(json, /inv_secret|Garden marquee|Row C/);
+    assert.doesNotMatch(json, /@/);
+  });
+
+  it("reveals no name a successful lookup would have withheld", () => {
+    // The rule that makes the feature safe: a suggestion is the same label
+    // the finder already prints on a match.
+    for (const candidate of LIST) {
+      const labels = suggestPartyLabels([candidate], normalizeNameKey(partyLabel(candidate)));
+      if (labels.length === 0) continue;
+      assert.equal(labels[0], buildSeatingMatch(candidate).partyName);
     }
   });
 });

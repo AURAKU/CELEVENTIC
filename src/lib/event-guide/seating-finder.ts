@@ -185,6 +185,93 @@ export function selectSeatingOutcome(
   return { status: "ok", match: buildSeatingMatch(top.party) };
 }
 
+/**
+ * Typeahead, without turning the finder into a guest list.
+ *
+ * A guest types `kofi`, is told "we could not find that", and gives up — when
+ * the list has them as `Kofi Mensah-Boateng`. Suggestions fix that, and they
+ * are the one feature on this endpoint that could plausibly leak a guest list,
+ * so the rules are narrow and all of them are enforced on the server:
+ *
+ *  - **Name mode only.** Someone typing an admission code is never offered
+ *    names. There is no query in code mode that returns a suggestion.
+ *  - **Nothing new is revealed.** A suggestion is the party label a successful
+ *    lookup would already have shown, and nothing else — no seat, no table, no
+ *    member list, no code, no contact detail. The shape returned is a string.
+ *  - **Prefix-anchored, never fuzzy.** Every token typed must begin a token of
+ *    the name. Fuzzy matching on a public endpoint is an enumeration oracle.
+ *  - **Bounded.** Minimum query length before any read, at most five back,
+ *    de-duplicated, and rate limited per token and client.
+ */
+export const SEATING_SUGGESTION_LIMIT = 5;
+
+/** Looser than a lookup — a typeahead fires per word, not per attempt. */
+export const SEATING_SUGGESTION_RATE_LIMIT = { attempts: 40, windowSeconds: 60 } as const;
+
+/** Bounded scan: a keystroke must never cost a full guest-list read. */
+export const SUGGESTION_SCAN_LIMIT = 60;
+
+/** The label a lookup would show for this party, and nothing beyond it. */
+export function partyLabel(party: CandidateParty): string {
+  return party.partyName.trim() || party.guests[0]?.name?.trim() || "";
+}
+
+/** Every token typed begins a token of this name. */
+function prefixScore(party: CandidateParty, tokens: string[]): number {
+  const haystacks = [
+    normalizeNameKey(party.partyName),
+    ...party.guests.map((guest) => normalizeNameKey(guest.name)),
+  ];
+
+  let best = 0;
+  for (const hay of haystacks) {
+    if (!hay) continue;
+    const hayTokens = hay.split(" ").filter(Boolean);
+    if (!tokens.every((token) => hayTokens.some((word) => word.startsWith(token)))) continue;
+    // A name that starts with what was typed is what the guest is reaching
+    // for; a middle-name hit is still offered, just lower.
+    best = Math.max(best, hay.startsWith(tokens[0]!) ? 2 : 1);
+  }
+  return best;
+}
+
+/**
+ * The names to offer under the input.
+ *
+ * Returns party labels only, sorted by how directly they answer what was
+ * typed and then alphabetically so the list is stable while a guest keeps
+ * typing.
+ */
+export function suggestPartyLabels(
+  parties: CandidateParty[],
+  query: string,
+  limit: number = SEATING_SUGGESTION_LIMIT
+): string[] {
+  const tokens = query.split(" ").filter(Boolean);
+  if (tokens.length === 0) return [];
+
+  const scored: Array<{ label: string; score: number }> = [];
+  for (const party of parties) {
+    const label = partyLabel(party);
+    if (!label) continue;
+    const score = prefixScore(party, tokens);
+    if (score > 0) scored.push({ label, score });
+  }
+
+  scored.sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
+
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const row of scored) {
+    const key = normalizeNameKey(row.label);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(row.label);
+    if (out.length >= Math.max(1, limit)) break;
+  }
+  return out;
+}
+
 export const SEATING_OUTCOME_COPY: Record<GuideSeatingOutcome["status"], string> = {
   ok: "",
   query_too_short: "Please enter a little more so we can find you.",
