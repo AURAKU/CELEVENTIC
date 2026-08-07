@@ -77,16 +77,15 @@ function Reveal({
 }) {
   const { variants, reduced } = useReveal();
   const staticPreview = useInvitationStaticPreview();
-  // Tall blocks (e.g. full Order of the Day) can be several thousand px high.
-  // Requiring 35% of the element in view keeps them stuck at opacity:0 forever
-  // on phones — content stays in the DOM but looks blank. Trigger on any
-  // intersection (top of the block entering the viewport).
+  // Live invites scroll inside `.invite-viewport-root` (fixed + overflow-y),
+  // not the window. Framer's whileInView defaults to the browser viewport, so
+  // sections that are on-screen in the invite scroller can stay opacity:0
+  // forever — including the full Order of the Day. Animate in on mount instead.
   const common = {
     className,
     variants,
     initial: staticPreview || reduced ? ("show" as const) : ("hidden" as const),
-    whileInView: "show" as const,
-    viewport: { once: true, amount: "some" as const, margin: "0px 0px -12% 0px" },
+    animate: "show" as const,
     transition: { delay },
   };
   if (as === "section") return <motion.section {...common}>{children}</motion.section>;
@@ -769,53 +768,52 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     programme:
       features.programme && board.programmeItems.length > 0 ? (
-        // Do not wrap the entire programme in one opacity-gated Reveal — a full
-        // Order of the Day is taller than the viewport and would never "enter"
-        // enough to animate visible. Reveal the heading, then each item.
-        <section>
+        <section className="w-full min-w-0">
           <Reveal>
             <h2
-              className="text-center font-[family-name:var(--font-great-vibes)] text-3xl"
+              className="text-center font-[family-name:var(--font-great-vibes)] text-[clamp(1.75rem,6vw,2.25rem)] leading-tight"
               style={{ color: C.goldDeep }}
             >
               {board.programmeHeading}
             </h2>
           </Reveal>
-          <ol className="relative mt-6 space-y-6 pl-8">
+          {/* Always-visible list — never gate programme copy behind scroll IO. */}
+          <ol className="relative mt-6 space-y-5 pl-7 sm:space-y-6 sm:pl-8">
             <span
               aria-hidden
-              className="absolute bottom-2 left-[9px] top-2 w-px"
+              className="absolute bottom-2 left-[8px] top-2 w-px sm:left-[9px]"
               style={{ background: `linear-gradient(180deg, ${C.gold}, ${C.blushDeep})` }}
             />
-            {board.programmeItems.map((item, i) => (
-              <Reveal key={item.id} delay={reduced ? 0 : Math.min(i, 8) * 0.05}>
-                <li className="relative">
-                  <span
-                    aria-hidden
-                    className="absolute -left-8 top-1 h-[13px] w-[13px] rounded-full"
-                    style={{ background: C.gold, boxShadow: `0 0 0 3px ${C.ivory}, 0 0 10px ${C.goldSoft}` }}
-                  />
-                  {item.time ? (
-                    <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: C.gold }}>
-                      {item.time}
-                    </p>
-                  ) : null}
+            {board.programmeItems.map((item) => (
+              <li key={item.id} className="relative min-w-0">
+                <span
+                  aria-hidden
+                  className="absolute -left-7 top-1 h-[13px] w-[13px] rounded-full sm:-left-8"
+                  style={{ background: C.gold, boxShadow: `0 0 0 3px ${C.ivory}, 0 0 10px ${C.goldSoft}` }}
+                />
+                {item.time ? (
                   <p
-                    className="font-[family-name:var(--font-cinzel)] text-base font-semibold"
-                    style={{ color: C.ink }}
+                    className="text-[10px] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]"
+                    style={{ color: C.gold }}
                   >
-                    {item.title}
+                    {item.time}
                   </p>
-                  {item.description && (
-                    <p
-                      className="mt-1 whitespace-pre-line font-[family-name:var(--font-cormorant)] text-[13px] leading-relaxed"
-                      style={{ color: C.cocoa }}
-                    >
-                      {item.description}
-                    </p>
-                  )}
-                </li>
-              </Reveal>
+                ) : null}
+                <p
+                  className="break-words font-[family-name:var(--font-cinzel)] text-[0.95rem] font-semibold leading-snug sm:text-base"
+                  style={{ color: C.ink }}
+                >
+                  {item.title}
+                </p>
+                {item.description && (
+                  <p
+                    className="mt-1 whitespace-pre-line break-words font-[family-name:var(--font-cormorant)] text-[12.5px] leading-relaxed sm:text-[13px]"
+                    style={{ color: C.cocoa }}
+                  >
+                    {item.description}
+                  </p>
+                )}
+              </li>
             ))}
           </ol>
         </section>
@@ -1040,9 +1038,9 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       }}
     >
       <PageFlora palette={C} />
-      <div className="relative mx-auto w-full max-w-[480px] px-5 pb-16 pt-10 sm:px-7">
+      <div className="relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[560px] sm:px-7 sm:pt-10 md:max-w-[640px] lg:max-w-[720px]">
         {visible.map((entry, i) => (
-          <div key={entry.id}>
+          <div key={entry.id} className="min-w-0">
             {i > 0 && <Divider palette={C} />}
             {entry.node}
             {entry.id === "hero" && props.placeCard && (
