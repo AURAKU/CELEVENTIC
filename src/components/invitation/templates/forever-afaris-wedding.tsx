@@ -75,13 +75,18 @@ function Reveal({
   delay?: number;
   as?: "div" | "section";
 }) {
-  const { variants } = useReveal();
+  const { variants, reduced } = useReveal();
+  const staticPreview = useInvitationStaticPreview();
+  // Tall blocks (e.g. full Order of the Day) can be several thousand px high.
+  // Requiring 35% of the element in view keeps them stuck at opacity:0 forever
+  // on phones — content stays in the DOM but looks blank. Trigger on any
+  // intersection (top of the block entering the viewport).
   const common = {
     className,
     variants,
-    initial: "hidden" as const,
+    initial: staticPreview || reduced ? ("show" as const) : ("hidden" as const),
     whileInView: "show" as const,
-    viewport: { once: true, amount: 0.35 },
+    viewport: { once: true, amount: "some" as const, margin: "0px 0px -12% 0px" },
     transition: { delay },
   };
   if (as === "section") return <motion.section {...common}>{children}</motion.section>;
@@ -764,13 +769,18 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     programme:
       features.programme && board.programmeItems.length > 0 ? (
-        <Reveal as="section">
-          <h2
-            className="text-center font-[family-name:var(--font-great-vibes)] text-3xl"
-            style={{ color: C.goldDeep }}
-          >
-            {board.programmeHeading}
-          </h2>
+        // Do not wrap the entire programme in one opacity-gated Reveal — a full
+        // Order of the Day is taller than the viewport and would never "enter"
+        // enough to animate visible. Reveal the heading, then each item.
+        <section>
+          <Reveal>
+            <h2
+              className="text-center font-[family-name:var(--font-great-vibes)] text-3xl"
+              style={{ color: C.goldDeep }}
+            >
+              {board.programmeHeading}
+            </h2>
+          </Reveal>
           <ol className="relative mt-6 space-y-6 pl-8">
             <span
               aria-hidden
@@ -778,16 +788,18 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
               style={{ background: `linear-gradient(180deg, ${C.gold}, ${C.blushDeep})` }}
             />
             {board.programmeItems.map((item, i) => (
-              <Reveal key={item.id} delay={reduced ? 0 : i * 0.06}>
+              <Reveal key={item.id} delay={reduced ? 0 : Math.min(i, 8) * 0.05}>
                 <li className="relative">
                   <span
                     aria-hidden
                     className="absolute -left-8 top-1 h-[13px] w-[13px] rounded-full"
                     style={{ background: C.gold, boxShadow: `0 0 0 3px ${C.ivory}, 0 0 10px ${C.goldSoft}` }}
                   />
-                  <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: C.gold }}>
-                    {item.time}
-                  </p>
+                  {item.time ? (
+                    <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: C.gold }}>
+                      {item.time}
+                    </p>
+                  ) : null}
                   <p
                     className="font-[family-name:var(--font-cinzel)] text-base font-semibold"
                     style={{ color: C.ink }}
@@ -796,7 +808,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                   </p>
                   {item.description && (
                     <p
-                      className="font-[family-name:var(--font-cormorant)] text-[13px]"
+                      className="mt-1 whitespace-pre-line font-[family-name:var(--font-cormorant)] text-[13px] leading-relaxed"
                       style={{ color: C.cocoa }}
                     >
                       {item.description}
@@ -806,7 +818,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
               </Reveal>
             ))}
           </ol>
-        </Reveal>
+        </section>
       ) : null,
 
     // Venue renders inside details so it always follows date/time and precedes
