@@ -27,7 +27,7 @@ function resolveCommit(): string | null {
   // Ordered by specificity: our own deploy script first, then common CI vars.
   return (
     sanitizeCommit(process.env.CELEVENTIC_COMMIT_SHA) ??
-    sanitizeCommit(process.env.GIT_COMMIT_SHA) ??
+    sanitizeCommit(process.env.CELEVENTIC_GIT_COMMIT || process.env.GIT_COMMIT_SHA) ??
     sanitizeCommit(process.env.SOURCE_COMMIT) ??
     sanitizeCommit(process.env.VERCEL_GIT_COMMIT_SHA) ??
     null
