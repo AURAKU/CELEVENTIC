@@ -24,6 +24,14 @@ import {
   type SeatingMode,
 } from "@/lib/event-guide/seating-finder";
 
+/**
+ * Ceiling on the stat rows one dashboard load will read.
+ *
+ * A 30-day window over three tabs and two channels is 180 rows, so this is
+ * roughly a year of headroom and still nothing a browser notices.
+ */
+const ANALYTICS_ROW_CAP = 2000;
+
 const GUIDE_LINK_TITLE = "Event Guide";
 const OFFLINE_LINK_TITLE = "Event Guide (venue offline)";
 
@@ -512,6 +520,10 @@ export class EventGuideService {
     const rows = await prisma.eventGuideViewStat.findMany({
       where: { guideId, day: { gte: since } },
       orderBy: [{ day: "desc" }],
+      // One row per day, tab and channel, so the window's own shape bounds
+      // this. The cap is the belt to that braces: a widened window, a new tab
+      // or a stray channel must not turn a dashboard load into a table scan.
+      take: ANALYTICS_ROW_CAP,
       select: { day: true, tab: true, channel: true, views: true, searches: true, matches: true },
     });
 
