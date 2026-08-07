@@ -108,11 +108,19 @@ export async function GET(
       forwardedProto ||
       (host && !host.includes("localhost") && !host.startsWith("127.") ? "https" : "http");
     const targetPath = `/uploads/${relative}`;
-    const target =
-      host && !/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host.split(":")[0] ?? "")
-        ? `${proto}://${host}${targetPath}`
-        : targetPath;
-    return NextResponse.redirect(target, 307);
+    const hostname = host.split(":")[0] ?? "";
+    const isLoopback = /^(?:localhost|127\.0\.0\.1|\[?::1\]?)$/i.test(hostname);
+
+    if (host && !isLoopback) {
+      return NextResponse.redirect(`${proto}://${host}${targetPath}`, 307);
+    }
+
+    // Same-origin relative Location. Legal per RFC 7231 §7.1.2 and the only
+    // honest answer when the only host we were given is a loopback name the
+    // browser may not resolve the same way. `NextResponse.redirect` parses its
+    // argument as an absolute URL and throws on a path, which turned every
+    // local image request into a 500, so the header is set directly.
+    return new NextResponse(null, { status: 307, headers: { Location: targetPath } });
   }
 
   let filePath: string;
