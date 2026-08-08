@@ -23,6 +23,9 @@ const ROUTES = [
   "/marketplace",
   "/discover",
   "/api/health",
+  // Public thank-you shells must never render the branded error card.
+  "/events/demo/thank-you",
+  "/thank-you/demo-token",
 ];
 
 async function check(path) {

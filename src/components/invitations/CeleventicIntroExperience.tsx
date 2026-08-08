@@ -12,6 +12,19 @@ import {
 import { BRAND_MOTTO } from "@/lib/constants";
 import { getIntroVariant } from "@/lib/experience/intro-variants";
 import type { IntroVariantId } from "@/lib/experience/experience-types";
+import {
+  resolvePublicMediaUrl,
+  shouldUnoptimizeNextImage,
+} from "@/lib/uploads/media-url";
+
+/**
+ * next/image throws on empty src and on hosts outside remotePatterns.
+ * Event logos often arrive as "" or third-party URLs — never let that nuke the page.
+ */
+function safeIntroLogoSrc(logoUrl?: string | null): string {
+  const resolved = resolvePublicMediaUrl(logoUrl);
+  return resolved || CELEVENTIC_LOGO_FULL;
+}
 
 interface ThemeTransitionColors {
   accent?: string;
@@ -331,7 +344,7 @@ function logoMotion(variant: IntroVariantId) {
 export function CeleventicIntroExperience({
   durationSec = 3,
   onComplete,
-  logoUrl = CELEVENTIC_LOGO_FULL,
+  logoUrl,
   themeColors,
   variant = "engine-grid",
 }: CeleventicIntroExperienceProps) {
@@ -340,8 +353,10 @@ export function CeleventicIntroExperience({
   const [exiting, setExiting] = useState(false);
 
   const meta = getIntroVariant(variant);
-  const accent = themeColors?.accent ?? CELEVENTIC_PALETTE.teal;
-  const bgTarget = themeColors?.background ?? CELEVENTIC_PALETTE.navy;
+  const accent = themeColors?.accent?.trim() || CELEVENTIC_PALETTE.teal;
+  const bgTarget = themeColors?.background?.trim() || CELEVENTIC_PALETTE.navy;
+  const logoSrc = safeIntroLogoSrc(logoUrl);
+  const logoUnoptimized = shouldUnoptimizeNextImage(logoSrc);
 
   useEffect(() => {
     // Reduced motion: hold a static branded frame briefly (no animation,
@@ -373,7 +388,15 @@ export function CeleventicIntroExperience({
         style={{ background: variantBackground(variant, accent) }}
         aria-label="Celeventic"
       >
-        <Image src={logoUrl} alt="Celeventic" width={220} height={90} className="w-[200px] h-auto object-contain" priority />
+        <Image
+          src={logoSrc}
+          alt="Celeventic"
+          width={220}
+          height={90}
+          className="w-[200px] h-auto object-contain"
+          priority
+          unoptimized={logoUnoptimized}
+        />
         <p className="text-xs uppercase tracking-[0.35em] text-white/60">{BRAND_MOTTO}</p>
       </div>
     );
@@ -408,12 +431,13 @@ export function CeleventicIntroExperience({
 
         <motion.div {...logoMotion(variant)} className="mb-6">
           <Image
-            src={logoUrl}
+            src={logoSrc}
             alt="Celeventic"
             width={260}
             height={110}
             className="w-[210px] sm:w-[240px] h-auto object-contain drop-shadow-[0_2px_18px_rgba(0,0,0,0.4)]"
             priority
+            unoptimized={logoUnoptimized}
           />
         </motion.div>
 

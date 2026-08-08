@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { PageLoader } from "@/components/ui/page-loader";
 import { CeleventicIntroExperience } from "@/components/invitations/CeleventicIntroExperience";
 import { ThankYouPublicView } from "@/components/thank-you/thank-you-public-view";
-import type { ThankYouTemplate } from "@/lib/thank-you/templates";
+import { getThankYouTemplate, type ThankYouTemplate } from "@/lib/thank-you/templates";
 import type {
   ResolvedThankYouDesign,
   ThankYouGuestbookConfig,
@@ -32,7 +32,7 @@ type PublicThankYouPayload = {
     signatureImageUrl?: string | null;
     audioUrl: string | null;
     shareToken?: string | null;
-    template: ThankYouTemplate;
+    template?: ThankYouTemplate | null;
     design?: ResolvedThankYouDesign;
     sectionConfig?: ThankYouSectionConfig;
     guestbookConfig?: ThankYouGuestbookConfig;
@@ -64,12 +64,20 @@ export default function EventThankYouBySlugPage() {
   const [data, setData] = useState<PublicThankYouPayload | null>(null);
 
   useEffect(() => {
-    fetch(`/api/public/events/${slug}/thank-you`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setData(d.data);
+    let cancelled = false;
+    fetch(`/api/public/events/${encodeURIComponent(slug)}/thank-you`)
+      .then(async (r) => {
+        const body = await r.json().catch(() => null);
+        if (cancelled) return;
+        if (body?.success) setData(body.data);
         setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   if (loading) return <PageLoader />;
@@ -81,18 +89,25 @@ export default function EventThankYouBySlugPage() {
     );
   }
 
+  const template = data.page.template?.id
+    ? data.page.template
+    : getThankYouTemplate("eternal-ivory");
+  const accent =
+    data.page.design?.accentColor?.trim() ||
+    template.accentColor ||
+    "#0B8A83";
+
   const qrImageUrl = data.uploadUrl
-    ? `/api/qr/image?data=${encodeURIComponent(data.uploadUrl)}&eventId=${encodeURIComponent(slug)}&size=256`
+    ? `/api/qr/image?data=${encodeURIComponent(data.uploadUrl)}&eventId=${encodeURIComponent(slug)}&size=256&mode=guide`
     : undefined;
 
   if (phase === "intro") {
+    // Brand intro only — event logos often arrive empty or off-allowlist and
+    // previously crashed next/image into the route error card.
     return (
       <CeleventicIntroExperience
-        logoUrl={data.event.logoUrl ?? undefined}
         onComplete={() => setPhase("content")}
-        themeColors={{
-          accent: data.page.design?.accentColor ?? data.page.template.accentColor,
-        }}
+        themeColors={{ accent }}
       />
     );
   }
@@ -117,7 +132,7 @@ export default function EventThankYouBySlugPage() {
       heroImageUrl={data.page.heroImageUrl}
       signatureImageUrl={data.page.signatureImageUrl}
       audioUrl={data.page.audioUrl}
-      template={data.page.template}
+      template={template}
       design={data.page.design}
       sectionConfig={data.page.sectionConfig}
       guestbookConfig={data.page.guestbookConfig}
