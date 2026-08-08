@@ -1,7 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import sharp from "sharp";
 import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
-import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { createAuditLog } from "@/lib/audit";
 import { ensureReadable, relativeLuminance } from "@/lib/event-guide/theme";
 import {
@@ -177,15 +176,14 @@ export class GuideSignService {
       color: secondary,
     });
 
-    const centre = await qrBrandingService.resolveCenterImageUrl(input.eventId).catch(() => null);
-    const logoSize = await qrBrandingService.resolveLogoSize(input.eventId).catch(() => undefined);
-
     const drawQr = async (
       url: string,
       box: { x: number; y: number; size: number },
       label: string | null
     ) => {
-      const png = await generateBrandedQrPng(url, centre, QR_SOURCE_PX, "brand", logoSize);
+      // Guide mode: black modules, wide quiet zone, no center logo — optimised
+      // for iPhone / Android / tablet cameras on printed welcome boards.
+      const png = await generateBrandedQrPng(url, null, QR_SOURCE_PX, "guide", "subtle");
       const image = await pdf.embedPng(png);
 
       // Printed quiet zone: a white plate wider than the code on every side.
@@ -276,15 +274,13 @@ export class GuideSignService {
     const scale = 150 / 72;
     const width = Math.round(layout.size.width * scale);
     const height = Math.round(layout.size.height * scale);
-    const centre = await qrBrandingService.resolveCenterImageUrl(input.eventId).catch(() => null);
-    const logoSize = await qrBrandingService.resolveLogoSize(input.eventId).catch(() => undefined);
 
     const composites: sharp.OverlayOptions[] = [];
     const place = async (url: string, box: { x: number; y: number; size: number }) => {
-      const png = await generateBrandedQrPng(url, centre, QR_SOURCE_PX, "brand", logoSize);
+      const png = await generateBrandedQrPng(url, null, QR_SOURCE_PX, "guide", "subtle");
       const target = Math.round(box.size * scale);
       composites.push({
-        input: await sharp(png).resize(target, target).png().toBuffer(),
+        input: await sharp(png).resize(target, target, { kernel: sharp.kernel.nearest }).png().toBuffer(),
         left: Math.round(box.x * scale),
         // pdf-lib measures from the bottom; sharp from the top.
         top: Math.round((layout.size.height - box.y - box.size) * scale),

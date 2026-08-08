@@ -592,10 +592,10 @@ function AdmissionPassMark({ code, fonts }: { code: string; fonts: Fonts }) {
     void import("qrcode")
       .then((QRCode) =>
         QRCode.toDataURL(digits, {
-          errorCorrectionLevel: "M",
-          margin: 1,
-          width: 168,
-          color: { dark: "#0f172a", light: "#ffffff" },
+          errorCorrectionLevel: "H",
+          margin: 4,
+          width: 200,
+          color: { dark: "#000000", light: "#ffffff" },
         })
       )
       .then((url) => {
@@ -629,12 +629,12 @@ function AdmissionPassMark({ code, fonts }: { code: string; fonts: Fonts }) {
           <img
             src={src}
             alt={`Admission QR for code ${display}`}
-            width={168}
-            height={168}
-            className="h-40 w-40"
+            width={200}
+            height={200}
+            className="h-44 w-44"
           />
         ) : (
-          <div className="flex h-40 w-40 items-center justify-center text-[0.75rem] opacity-50">
+          <div className="flex h-44 w-44 items-center justify-center text-[0.75rem] opacity-50">
             Preparing pass…
           </div>
         )}

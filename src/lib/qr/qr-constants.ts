@@ -5,7 +5,7 @@ export type QrExportSize = (typeof QR_EXPORT_SIZES)[number];
 export const QR_DEFAULT_SIZE: QrExportSize = 1024;
 
 /** Display mode — pass = high-contrast for phone-screen scanning at gates */
-export type QrDisplayMode = "brand" | "pass";
+export type QrDisplayMode = "brand" | "pass" | "guide";
 
 /**
  * Center logo/inset size presets (ratio of QR width for the logo mark).
@@ -14,6 +14,7 @@ export type QrDisplayMode = "brand" | "pass";
  * width (bold) so the full logo stays visible with padding and remains scannable.
  * Pass mode uses a separate, slightly smaller scale in branded-qr-generator
  * (still larger than the old speck-sized insets for couple photos).
+ * Guide mode omits the center mark entirely for maximum camera decode reliability.
  */
 export const QR_LOGO_SIZE_PRESETS = {
   subtle: 0.16,
@@ -34,10 +35,17 @@ export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
  * *encoded* verify URL logic changes, so disk-cached PNGs regenerate (the
  * cache key doesn't include the encoded URL — see `qr-cache.ts` — only the
  * token/size/center/logoSize, so a stale PNG baked from an old resolved app
- * URL would otherwise keep being served forever). Bumped for crisp module
- * rendering + larger (still ECC-H safe) pass-mode center photos.
+ * URL would otherwise keep being served forever). Bumped for Event Guide
+ * `guide` mode — pure black modules, wide quiet zone, no center logo — so
+ * iPhone / Android / tablet cameras decode printed and on-screen codes reliably.
  */
-export const QR_COMPOSITE_CACHE_VERSION = "v6-larger-center-mark";
+export const QR_COMPOSITE_CACHE_VERSION = "v7-guide-scan";
+
+/** Preferred preview size for Event Guide QRs in the admin Signs tab. */
+export const QR_GUIDE_PREVIEW_SIZE: QrExportSize = 1024;
+
+/** Minimum on-screen Event Guide QR display (px) for guest phone cameras. */
+export const QR_GUIDE_DISPLAY_MIN_PX = 240;
 
 /** Default Celeventic QR center mark (public asset; contain-fitted in generator) */
 export const CELEVENTIC_OFFICIAL_LOGO = "/brand/logo-full.png";
@@ -53,6 +61,12 @@ export const QR_LOGO_SIZE_LABELS: Record<QrLogoSizePreset, string> = {
 export function parseQrLogoSize(raw: unknown): QrLogoSizePreset {
   if (raw === "subtle" || raw === "balanced" || raw === "bold") return raw;
   return QR_DEFAULT_LOGO_SIZE;
+}
+
+/** Parse `mode` query for QR image APIs. Unknown values fall back to brand. */
+export function parseQrDisplayMode(raw: unknown): QrDisplayMode {
+  if (raw === "pass" || raw === "guide" || raw === "brand") return raw;
+  return "brand";
 }
 
 /** Minimum on-screen pass QR size (px) for reliable phone-to-phone scanning */

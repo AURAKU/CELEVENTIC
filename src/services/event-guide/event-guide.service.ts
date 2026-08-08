@@ -1,6 +1,6 @@
 import type { EventGuide, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getServerAppUrl } from "@/lib/app-url";
+import { getAppUrlFromEnv, getServerAppUrl, sanitizePublicUrl } from "@/lib/app-url";
 import { createAuditLog } from "@/lib/audit";
 import { generatePublicLinkToken } from "@/lib/qr-hub/vendor-token";
 import { validateCustomQrDestination } from "@/lib/qr-hub/types";
@@ -484,7 +484,10 @@ export class EventGuideService {
 
   async guideUrl(publicToken: string): Promise<string> {
     const base = await getServerAppUrl();
-    return `${base}/event-guide/${publicToken}`;
+    // Always encode a live HTTPS URL — never localhost — so printed/on-screen
+    // QRs open the production Event Guide on any guest phone camera.
+    const path = `/event-guide/${encodeURIComponent(publicToken)}`;
+    return sanitizePublicUrl(`${base}${path}`, getAppUrlFromEnv());
   }
 
   /** Aggregate counters only — never a per-visitor row. */

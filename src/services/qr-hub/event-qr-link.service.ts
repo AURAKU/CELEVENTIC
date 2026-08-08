@@ -152,8 +152,19 @@ export class EventQrLinkService {
     return `${base}${defaults.path}/${link.publicToken}`;
   }
 
-  qrPreview(url: string, eventId: string, size = 512) {
-    return `/api/qr/image?data=${encodeURIComponent(url)}&eventId=${encodeURIComponent(eventId)}&size=${size}`;
+  qrPreview(
+    url: string,
+    eventId: string,
+    size = 512,
+    mode: "brand" | "pass" | "guide" = "brand"
+  ) {
+    const params = new URLSearchParams({
+      data: url,
+      eventId,
+      size: String(size),
+    });
+    if (mode !== "brand") params.set("mode", mode);
+    return `/api/qr/image?${params.toString()}`;
   }
 
   async createCustom(
