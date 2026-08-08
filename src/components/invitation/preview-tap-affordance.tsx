@@ -10,6 +10,11 @@ interface PreviewTapAffordanceProps {
   label?: string;
   /** Optional secondary line under the CTA */
   subtitle?: string;
+  /**
+   * Beats this tap will play, in order (e.g. Bow unties → Music begins →
+   * Invite opens). Rendered as a chain so the promise is the experience.
+   */
+  steps?: string[];
   onOpen: (e: React.MouseEvent) => void;
   className?: string;
   "aria-label"?: string;
@@ -24,10 +29,14 @@ export function PreviewTapAffordance({
   hasMusic,
   label = "Tap to view invitation",
   subtitle,
+  steps,
   onOpen,
   className,
   "aria-label": ariaLabel = "Tap to open live template preview",
 }: PreviewTapAffordanceProps) {
+  const beats = steps?.filter(Boolean) ?? [];
+  const describedBy = beats.length ? `${ariaLabel} — ${beats.join(", then ")}` : ariaLabel;
+
   return (
     <button
       type="button"
@@ -47,7 +56,7 @@ export function PreviewTapAffordance({
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-white/80",
         className
       )}
-      aria-label={ariaLabel}
+      aria-label={describedBy}
     >
       <span
         className={cn(
@@ -74,13 +83,33 @@ export function PreviewTapAffordance({
             {label}
           </span>
         </span>
-        {hasMusic && (
-          <span className="text-[10px] text-white/85 flex items-center gap-1">
+
+        {beats.length > 0 && (
+          <span
+            className="flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 text-[10px] text-white/85"
+            aria-hidden
+          >
+            {beats.map((beat, i) => (
+              <span key={beat} className="flex items-center gap-1">
+                {i > 0 && <span className="text-white/40">·</span>}
+                {beat === "Music begins" && <Music2 className="h-2.5 w-2.5" />}
+                {beat}
+              </span>
+            ))}
+          </span>
+        )}
+
+        {beats.length === 0 && hasMusic && (
+          <span className="text-[10px] text-white/85 flex items-center gap-1" aria-hidden>
             <Music2 className="h-3 w-3" /> Includes music, tap to begin
           </span>
         )}
-        {subtitle ? (
-          <span className="text-[10px] text-white/80 text-center max-w-[16rem] leading-snug">
+
+        {subtitle && !compact ? (
+          <span
+            className="text-[10px] text-white/70 text-center max-w-[16rem] leading-snug"
+            aria-hidden
+          >
             {subtitle}
           </span>
         ) : null}

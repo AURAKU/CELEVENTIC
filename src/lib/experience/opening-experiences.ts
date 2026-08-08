@@ -357,28 +357,137 @@ export function previewAutoOpensReveal(id: OpeningExperienceId | string | undefi
   return false;
 }
 
+export interface PreviewTapCopy {
+  label: string;
+  subtitle?: string;
+  /**
+   * The beats this tap actually plays, opening gesture first and arrival last.
+   * Callers splice a music beat between them when the template has a track, so
+   * the affordance promises the experience rather than describing the artwork.
+   */
+  steps: [string, string];
+}
+
+/**
+ * Curated gesture copy per opening. The generic fallback names the mechanic,
+ * these name what the guest's finger does and what answers it.
+ */
+const OPENING_TAP_COPY: Partial<Record<OpeningExperienceId, PreviewTapCopy>> = {
+  "satin-bow": {
+    label: "Tap to untie the bow",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Bow unties", "Invite opens"],
+  },
+  "blush-gate": {
+    label: "Tap to lift the wax seal",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Seal lifts", "Golden gate opens"],
+  },
+  "ring-box": {
+    label: "Tap to open the ring box",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Lid lifts", "Invite reveals"],
+  },
+  "candle-light": {
+    label: "Tap to light the candle",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Candle lights", "Invite reveals"],
+  },
+  "gift-box": {
+    label: "Tap to open the gift box",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Box opens", "Invite reveals"],
+  },
+  "flower-bloom": {
+    label: "Tap to bloom the flower",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Petals bloom", "Invite reveals"],
+  },
+  "petal-fall": {
+    label: "Tap to let the petals fall",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Petals cascade", "Invite reveals"],
+  },
+  scratch: {
+    label: "Tap to scratch the foil",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Foil scratches away", "Invite reveals"],
+  },
+  "scroll-unroll": {
+    label: "Tap to unroll the scroll",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Scroll unrolls", "Invite reveals"],
+  },
+  passport: {
+    label: "Tap to open the passport",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Booklet opens", "Invite reveals"],
+  },
+  archway: {
+    label: "Tap to open the archway",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Gates swing open", "Invite reveals"],
+  },
+  "palace-entrance": {
+    label: "Tap to enter the palace",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Hall lights up", "Invite reveals"],
+  },
+  "press-hold": {
+    label: "Press and hold to unlock",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Lock releases", "Invite reveals"],
+  },
+  "magazine-page-turn": {
+    label: "Tap to turn the page",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Cover turns", "Invite reveals"],
+  },
+};
+
 /** Affordance copy for catalogue tiles that mirror the live opening cover. */
 export function previewTapLabelForOpening(
   id: OpeningExperienceId | string | undefined
-): { label: string; subtitle?: string } {
+): PreviewTapCopy {
   if (!id || id === "none") {
-    return { label: "Tap to view invitation" };
+    return {
+      label: "Tap to view invitation",
+      steps: ["Invite opens", "Explore as a guest"],
+    };
   }
+  const curated = OPENING_TAP_COPY[id as OpeningExperienceId];
+  if (curated) return curated;
+
   if (isEnvelopeExperience(id as OpeningExperienceId)) {
     return {
       label: "Tap to open envelope",
-      subtitle: "Seal opens · invite reveals as guests see it",
+      subtitle: "Play the opening exactly as your guests will see it",
+      steps: ["Seal lifts", "Invite reveals"],
     };
   }
   if (isCurtainExperience(id)) {
     return {
       label: "Tap to open curtains",
-      subtitle: "Curtains part · invite reveals as guests see it",
+      subtitle: "Play the opening exactly as your guests will see it",
+      steps: ["Curtains part", "Invite reveals"],
     };
   }
   const meta = getOpeningExperience(id as OpeningExperienceId);
   return {
     label: meta?.label ? `Tap to open · ${meta.label}` : "Tap to view invitation",
     subtitle: meta?.description,
+    steps: ["Opening plays", "Invite reveals"],
   };
+}
+
+/**
+ * Full beat list for the affordance: the mechanic's own beats with the music
+ * cue spliced in where a guest would actually hear it — on the opening gesture.
+ */
+export function previewTapStepsForOpening(
+  id: OpeningExperienceId | string | undefined,
+  hasMusic: boolean
+): string[] {
+  const { steps } = previewTapLabelForOpening(id);
+  return hasMusic ? [steps[0], "Music begins", steps[1]] : [...steps];
 }
