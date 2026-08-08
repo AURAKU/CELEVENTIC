@@ -26,6 +26,11 @@ const ROUTES = [
   // Public thank-you shells must never render the branded error card.
   "/events/demo/thank-you",
   "/thank-you/demo-token",
+  // Event Guide public shells — invalid tokens must stay calm (200 page / 404 API).
+  "/event-guide/health-check-token",
+  "/event-guide/invalid-token-xyz",
+  "/api/public/event-guide/invalid-token-xyz",
+  "/event-guide-sw.js",
 ];
 
 async function check(path) {
@@ -38,8 +43,37 @@ async function check(path) {
   const errorCard =
     text.includes("unexpected error") ||
     (text.includes("Something went wrong") && text.includes("Try again"));
-  const bad = res.status >= 500 || errorCard;
+  let bad = res.status >= 500 || errorCard;
+
+  // Invalid Event Guide page must render the unavailable shell, not crash.
+  if (path === "/event-guide/invalid-token-xyz") {
+    if (res.status !== 200 || !text.includes("This guide link is not active")) bad = true;
+  }
+  // Invalid Event Guide API must refuse with NOT_FOUND, never 500.
+  if (path === "/api/public/event-guide/invalid-token-xyz") {
+    if (res.status !== 404 || !text.includes("NOT_FOUND")) bad = true;
+  }
+
   return { path, status: res.status, errorCard, bad };
+}
+
+async function checkEventGuideSeating() {
+  const path = "/api/public/event-guide/invalid-token-xyz/seating";
+  try {
+    const res = await fetch(BASE + path, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": "CeleventicSmoke/1.0",
+      },
+      body: JSON.stringify({ query: "Ada" }),
+    });
+    const text = await res.text();
+    const bad = res.status !== 404 || !text.includes("disabled");
+    return { path: `POST ${path}`, status: res.status, errorCard: false, bad };
+  } catch (err) {
+    return { path: `POST ${path}`, status: 0, errorCard: false, bad: true, err: String(err) };
+  }
 }
 
 const results = [];
@@ -50,6 +84,7 @@ for (const path of ROUTES) {
     results.push({ path, status: 0, errorCard: false, bad: true, err: String(err) });
   }
 }
+results.push(await checkEventGuideSeating());
 
 let failed = 0;
 for (const r of results) {
