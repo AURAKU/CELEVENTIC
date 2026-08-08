@@ -15,6 +15,7 @@ import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import { EnvelopeCollectionReveal } from "@/components/experience/envelope-collection-reveal";
 import { CurtainReveal } from "@/components/invitation-os/reveal/curtain-reveal";
 import { BlushGateReveal } from "@/components/invitation-os/reveal/blush-gate-reveal";
+import { SatinBowReveal } from "@/components/invitation-os/reveal/satin-bow-reveal";
 import {
   mergeWeddingBoard,
   resolveGateTitle,
@@ -138,6 +139,25 @@ export function TemplatePreviewGlimpse({
             onComplete={noop}
           />
         </div>
+      </div>
+    );
+  }
+
+  // Satin Bow: the tied ivory card itself is the poster, so the tile shows the
+  // exact cover the guest taps rather than a generic scaled invitation.
+  if (openingId === "satin-bow") {
+    return (
+      <div
+        className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}
+        aria-hidden
+      >
+        <SatinBowReveal
+          staticPreview
+          eventTitle={preview.event.title}
+          hostName={preview.event.hostName}
+          guestName={preview.guestName}
+          onComplete={noop}
+        />
       </div>
     );
   }

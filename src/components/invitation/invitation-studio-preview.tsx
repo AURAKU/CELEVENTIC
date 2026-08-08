@@ -19,6 +19,7 @@ import { InviteViewportShell } from "@/components/invitation/invite-viewport-she
 import {
   previewAutoOpensReveal,
   previewTapLabelForOpening,
+  previewTapStepsForOpening,
 } from "@/lib/experience/opening-experiences";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 
@@ -112,20 +113,14 @@ export function InvitationStudioPreview({
         <PreviewTapAffordance
           hasMusic={hasMusic}
           label={tapCopy.label}
-          subtitle={
-            autoOpenReveal && hasMusic
-              ? `${tapCopy.subtitle ?? "Opens as guests see it"} · music begins`
-              : tapCopy.subtitle ??
-                (hasMusic
-                  ? "Music starts automatically, use the corner button to mute"
-                  : "Full guest experience with reveal and gallery")
-          }
+          subtitle={tapCopy.subtitle ?? "Full guest experience with reveal and gallery"}
+          steps={previewTapStepsForOpening(openingId, hasMusic)}
           onOpen={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setActivated(true);
           }}
-          aria-label="Tap to open live studio preview"
+          aria-label="Tap to play this template's opening"
         />
       </InviteViewportShell>
     );
