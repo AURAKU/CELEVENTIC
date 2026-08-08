@@ -73,8 +73,6 @@ export const ORGANIZER_NAV: NavSection[] = [
       { href: "/dashboard/events", labelKey: "dashboard.nav_events", icon: Calendar },
       { href: "/dashboard/events/create", labelKey: "dashboard.nav_create_event", icon: Plus },
       { href: "/dashboard/invitations/workspace", labelKey: "dashboard.nav_collaborations", icon: Mail },
-      { href: "/dashboard/events", labelKey: "dashboard.nav_tasks", icon: Clock },
-      { href: "/dashboard/events", labelKey: "dashboard.nav_calendar", icon: Calendar },
       { href: "/dashboard/organizers", labelKey: "dashboard.nav_find_organizer", icon: Users },
       { href: "/dashboard/ai-planner", labelKey: "dashboard.nav_ai_planner", icon: Sparkles },
     ],
@@ -84,7 +82,7 @@ export const ORGANIZER_NAV: NavSection[] = [
     labelKey: "dashboard.nav_section_guests",
     items: [
       { href: "/dashboard/guests", labelKey: "dashboard.nav_guests", icon: Users },
-      { href: "/dashboard/guests", labelKey: "dashboard.nav_rsvp", icon: Users },
+      { href: "/dashboard/guests?focus=rsvp", labelKey: "dashboard.nav_rsvp", icon: Users },
       { href: "/dashboard/tickets", labelKey: "dashboard.nav_tickets", icon: Ticket },
       { href: "/dashboard/seating", labelKey: "dashboard.nav_seating", icon: Armchair },
       { href: "/dashboard/qr-admission", labelKey: "dashboard.nav_qr", icon: QrCode },

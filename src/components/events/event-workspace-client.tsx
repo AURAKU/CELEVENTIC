@@ -15,7 +15,9 @@ import {
   Search,
   Send,
 } from "lucide-react";
-import { PaginatedSection } from "@/components/ui/paginated-section";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
+import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 const COLLABORATOR_ROLES = [
   "LEAD_ORGANIZER",
@@ -36,6 +38,8 @@ interface WorkspaceClientProps {
   eventTitle: string;
 }
 
+type PageMeta = { total: number; pages: number };
+
 export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientProps) {
   const [tab, setTab] = useState("team");
   const [collaborators, setCollaborators] = useState<Record<string, unknown>[]>([]);
@@ -51,39 +55,109 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
   const [chatBody, setChatBody] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const {
+    page: teamPage,
+    setPage: setTeamPage,
+    resetPage: resetTeamPage,
+    appendToParams: appendTeamParams,
+  } = usePagination(ADMIN_TABLE_LIMIT);
+  const {
+    page: taskPage,
+    setPage: setTaskPage,
+    resetPage: resetTaskPage,
+    appendToParams: appendTaskParams,
+  } = usePagination(ADMIN_TABLE_LIMIT);
+  const {
+    page: activityPage,
+    setPage: setActivityPage,
+    appendToParams: appendActivityParams,
+  } = usePagination(ADMIN_TABLE_LIMIT);
+  const {
+    page: chatPage,
+    setPage: setChatPage,
+    resetPage: resetChatPage,
+    appendToParams: appendChatParams,
+  } = usePagination(ADMIN_TABLE_LIMIT);
+
+  const [teamMeta, setTeamMeta] = useState<PageMeta>({ total: 0, pages: 1 });
+  const [taskMeta, setTaskMeta] = useState<PageMeta>({ total: 0, pages: 1 });
+  const [activityMeta, setActivityMeta] = useState<PageMeta>({ total: 0, pages: 1 });
+  const [chatMeta, setChatMeta] = useState<PageMeta>({ total: 0, pages: 1 });
+
+  const applyPage = useCallback((payload: unknown): { items: Record<string, unknown>[]; meta: PageMeta } => {
+    if (Array.isArray(payload)) {
+      return { items: payload as Record<string, unknown>[], meta: { total: payload.length, pages: 1 } };
+    }
+    const data = (payload ?? {}) as {
+      items?: Record<string, unknown>[];
+      total?: number;
+      pages?: number;
+    };
+    const items = data.items ?? [];
+    return {
+      items,
+      meta: {
+        total: data.total ?? items.length,
+        pages: Math.max(1, data.pages ?? 1),
+      },
+    };
+  }, []);
+
   const loadCollaborators = useCallback(async () => {
-    const res = await fetch(`/api/events/${eventId}/collaborators`);
+    const params = appendTeamParams(new URLSearchParams());
+    const res = await fetch(`/api/events/${eventId}/collaborators?${params}`);
     const d = await res.json();
-    if (res.ok) setCollaborators(d.data.items ?? []);
-  }, [eventId]);
+    if (!res.ok) return;
+    const { items, meta } = applyPage(d.data);
+    setCollaborators(items);
+    setTeamMeta(meta);
+  }, [eventId, appendTeamParams, applyPage]);
 
   const loadActivity = useCallback(async () => {
-    const res = await fetch(`/api/events/${eventId}/activity`);
+    const params = appendActivityParams(new URLSearchParams());
+    const res = await fetch(`/api/events/${eventId}/activity?${params}`);
     const d = await res.json();
-    if (res.ok) setActivity(d.data.items ?? []);
-  }, [eventId]);
+    if (!res.ok) return;
+    const { items, meta } = applyPage(d.data);
+    setActivity(items);
+    setActivityMeta(meta);
+  }, [eventId, appendActivityParams, applyPage]);
 
   const loadTasks = useCallback(async () => {
-    const res = await fetch(`/api/events/${eventId}/tasks`);
+    const params = appendTaskParams(new URLSearchParams());
+    const res = await fetch(`/api/events/${eventId}/tasks?${params}`);
     const d = await res.json();
-    if (res.ok) setTasks(d.data.items ?? []);
-  }, [eventId]);
+    if (!res.ok) return;
+    const { items, meta } = applyPage(d.data);
+    setTasks(items);
+    setTaskMeta(meta);
+  }, [eventId, appendTaskParams, applyPage]);
 
   const loadMessages = useCallback(async () => {
-    const res = await fetch(`/api/events/${eventId}/chat/${channel}/messages`);
+    const params = appendChatParams(new URLSearchParams());
+    const res = await fetch(`/api/events/${eventId}/chat/${channel}/messages?${params}`);
     const d = await res.json();
-    if (res.ok) setMessages(d.data.items ?? []);
-  }, [eventId, channel]);
+    if (!res.ok) return;
+    const { items, meta } = applyPage(d.data);
+    setMessages(items);
+    setChatMeta(meta);
+  }, [eventId, channel, appendChatParams, applyPage]);
 
   useEffect(() => {
-    loadCollaborators();
-    loadActivity();
-    loadTasks();
-  }, [loadCollaborators, loadActivity, loadTasks]);
+    void loadCollaborators();
+  }, [loadCollaborators, teamPage]);
 
   useEffect(() => {
-    if (tab === "chat") loadMessages();
-  }, [tab, channel, loadMessages]);
+    void loadActivity();
+  }, [loadActivity, activityPage]);
+
+  useEffect(() => {
+    void loadTasks();
+  }, [loadTasks, taskPage]);
+
+  useEffect(() => {
+    if (tab === "chat") void loadMessages();
+  }, [tab, channel, chatPage, loadMessages]);
 
   async function searchUsers() {
     if (!searchQ.trim()) return;
@@ -108,8 +182,9 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
     setSearchQ("");
     setSearchResults([]);
     setSelectedUserId("");
-    loadCollaborators();
-    loadActivity();
+    resetTeamPage();
+    await loadCollaborators();
+    await loadActivity();
   }
 
   async function createTask() {
@@ -120,8 +195,9 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
       body: JSON.stringify({ title: newTask }),
     });
     setNewTask("");
-    loadTasks();
-    loadActivity();
+    resetTaskPage();
+    await loadTasks();
+    await loadActivity();
   }
 
   async function sendMessage() {
@@ -132,7 +208,8 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
       body: JSON.stringify({ channelSlug: channel, body: chatBody }),
     });
     setChatBody("");
-    loadMessages();
+    resetChatPage();
+    await loadMessages();
   }
 
   return (
@@ -210,14 +287,13 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
           <Card>
             <CardHeader><CardTitle className="text-base">Collaborators</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <PaginatedSection
-                items={collaborators}
-                limit={10}
-                keyFor={(c) => String((c as { id: string }).id)}
-                renderItem={(c) => {
+              {collaborators.length === 0 ? (
+                <p className="text-sm text-slate-500">No collaborators yet.</p>
+              ) : (
+                collaborators.map((c) => {
                   const col = c as { id: string; role: string; user?: { name: string; email?: string } };
                   return (
-                    <div className="stack-mobile p-3 border rounded-lg">
+                    <div key={col.id} className="stack-mobile p-3 border rounded-lg">
                       <div className="min-w-0">
                         <p className="font-medium truncate">{col.user?.name ?? "Member"}</p>
                         <p className="text-xs text-slate-500 truncate">{col.user?.email}</p>
@@ -225,7 +301,14 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
                       <Badge variant="outline" className="shrink-0">{col.role.replace(/_/g, " ")}</Badge>
                     </div>
                   );
-                }}
+                })
+              )}
+              <PaginationBar
+                page={teamPage}
+                pages={teamMeta.pages}
+                total={teamMeta.total}
+                limit={ADMIN_TABLE_LIMIT}
+                onPageChange={setTeamPage}
               />
             </CardContent>
           </Card>
@@ -241,34 +324,41 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
             />
             <Button onClick={createTask}>Add</Button>
           </div>
-          <PaginatedSection
-            items={tasks}
-            limit={10}
-            keyFor={(t) => String((t as { id: string }).id)}
-            renderItem={(t) => {
-              const task = t as { id: string; title: string; status: string; priority: string };
-              return (
-                <div className="stack-mobile p-3 border rounded-lg">
-                  <span className="min-w-0 break-words">{task.title}</span>
-                  <div className="flex gap-2 shrink-0">
-                    <Badge variant="outline">{task.priority}</Badge>
-                    <Badge>{task.status}</Badge>
+          {tasks.length === 0 ? (
+            <p className="text-sm text-slate-500">No tasks yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {tasks.map((t) => {
+                const task = t as { id: string; title: string; status: string; priority: string };
+                return (
+                  <div key={task.id} className="stack-mobile p-3 border rounded-lg">
+                    <span className="min-w-0 break-words">{task.title}</span>
+                    <div className="flex gap-2 shrink-0">
+                      <Badge variant="outline">{task.priority}</Badge>
+                      <Badge>{task.status}</Badge>
+                    </div>
                   </div>
-                </div>
-              );
-            }}
+                );
+              })}
+            </div>
+          )}
+          <PaginationBar
+            page={taskPage}
+            pages={taskMeta.pages}
+            total={taskMeta.total}
+            limit={ADMIN_TABLE_LIMIT}
+            onPageChange={setTaskPage}
           />
         </TabsContent>
 
         <TabsContent value="activity" className="mt-4 space-y-2">
-          <PaginatedSection
-            items={activity}
-            limit={12}
-            keyFor={(a) => String((a as { id: string }).id)}
-            renderItem={(a) => {
+          {activity.length === 0 ? (
+            <p className="text-sm text-slate-500">No activity yet.</p>
+          ) : (
+            activity.map((a) => {
               const item = a as { id: string; action: string; createdAt: string; user?: { name: string } };
               return (
-                <div className="text-sm p-3 border rounded-lg">
+                <div key={item.id} className="text-sm p-3 border rounded-lg">
                   <span className="font-medium">{item.user?.name ?? "System"}</span>{" "}
                   <span className="text-slate-600">{item.action.replace(/\./g, " ")}</span>
                   <span className="text-xs text-slate-400 block mt-1">
@@ -276,7 +366,14 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
                   </span>
                 </div>
               );
-            }}
+            })
+          )}
+          <PaginationBar
+            page={activityPage}
+            pages={activityMeta.pages}
+            total={activityMeta.total}
+            limit={ADMIN_TABLE_LIMIT}
+            onPageChange={setActivityPage}
           />
         </TabsContent>
 
@@ -287,30 +384,39 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
                 key={ch}
                 size="sm"
                 variant={channel === ch ? "default" : "outline"}
-                onClick={() => setChannel(ch)}
+                onClick={() => {
+                  setChannel(ch);
+                  resetChatPage();
+                }}
               >
                 #{ch}
               </Button>
             ))}
           </div>
-          <div className="border rounded-lg p-4 min-h-[240px] max-h-[360px] overflow-auto">
-            <PaginatedSection
-              items={messages}
-              limit={20}
-              keyFor={(m) => String((m as { id: string }).id)}
-              renderItem={(m) => {
+          <div className="border rounded-lg p-4 min-h-[240px] max-h-[360px] overflow-auto space-y-2">
+            {messages.length === 0 ? (
+              <p className="text-sm text-slate-500">No messages in #{channel} yet.</p>
+            ) : (
+              messages.map((m) => {
                 const msg = m as { id: string; body?: string; sender?: { name: string }; createdAt: string };
                 return (
-                  <div className="text-sm break-words">
+                  <div key={msg.id} className="text-sm break-words">
                     <span className="font-semibold">{msg.sender?.name}</span>: {msg.body}
                     <span className="text-xs text-slate-400 ml-2">
                       {new Date(msg.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
                 );
-              }}
-            />
+              })
+            )}
           </div>
+          <PaginationBar
+            page={chatPage}
+            pages={chatMeta.pages}
+            total={chatMeta.total}
+            limit={ADMIN_TABLE_LIMIT}
+            onPageChange={setChatPage}
+          />
           <div className="flex gap-2">
             <Input
               placeholder={`Message #${channel}`}

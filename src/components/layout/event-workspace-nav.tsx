@@ -48,17 +48,24 @@ export function EventWorkspaceNav({ items, eventTitle, eventType }: EventWorkspa
           return (
             <Link
               key={item.id}
-              href={item.isLocked ? `#upgrade-${item.featureKey}` : item.href}
+              href={
+                item.isLocked
+                  ? `/dashboard/settings?tab=billing&upgrade=${encodeURIComponent(item.featureKey ?? item.id)}`
+                  : item.href
+              }
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                 item.isLocked
-                  ? "text-slate-500 cursor-not-allowed opacity-70"
+                  ? "text-slate-500 opacity-80 hover:text-white hover:bg-white/8"
                   : active
                     ? "bg-white/15 text-white shadow-sm ring-1 ring-white/10"
                     : "text-slate-400 hover:text-white hover:bg-white/8"
               )}
-              onClick={item.isLocked ? (e) => e.preventDefault() : undefined}
-              title={item.isLocked ? `Upgrade to ${item.requiredPlan ?? "premium"} to unlock` : undefined}
+              title={
+                item.isLocked
+                  ? `Upgrade to ${item.requiredPlan ?? "premium"} to unlock — opens billing`
+                  : undefined
+              }
             >
               <Icon className={cn("h-4 w-4 shrink-0", active && !item.isLocked && "text-brand-300")} />
               <span className="truncate flex-1">{item.label}</span>

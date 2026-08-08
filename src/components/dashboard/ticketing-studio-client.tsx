@@ -31,6 +31,7 @@ import { TICKET_TYPES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { PaginationBar } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
+import { useClientPagination } from "@/hooks/use-client-pagination";
 import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 interface TicketItem {
@@ -91,6 +92,20 @@ export function TicketingStudioClient() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const {
+    page: ticketPage,
+    pages: ticketPages,
+    total: ticketTotal,
+    items: pagedTickets,
+    setPage: setTicketPage,
+  } = useClientPagination(tickets, 8);
+  const {
+    page: promoPage,
+    pages: promoPages,
+    total: promoTotal,
+    items: pagedPromos,
+    setPage: setPromoPage,
+  } = useClientPagination(promos, 8);
 
   const [form, setForm] = useState({
     name: "",
@@ -405,7 +420,7 @@ export function TicketingStudioClient() {
                       <p className="text-center text-slate-500 py-8">No ticket types yet.</p>
                     ) : (
                       <div className="space-y-3">
-                        {tickets.map((ticket) => (
+                        {pagedTickets.map((ticket) => (
                           <div key={ticket.id} className="rounded-lg border p-4">
                             {editingId === ticket.id ? (
                               <div className="space-y-3">
@@ -460,6 +475,13 @@ export function TicketingStudioClient() {
                             )}
                           </div>
                         ))}
+                        <PaginationBar
+                          page={ticketPage}
+                          pages={ticketPages}
+                          total={ticketTotal}
+                          limit={8}
+                          onPageChange={setTicketPage}
+                        />
                       </div>
                     )}
                   </CardContent>
@@ -542,7 +564,7 @@ export function TicketingStudioClient() {
                       <p className="text-slate-500 text-sm">No promo codes yet.</p>
                     ) : (
                       <div className="space-y-2">
-                        {promos.map((p) => (
+                        {pagedPromos.map((p) => (
                           <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
                             <div>
                               <p className="font-mono font-semibold">{p.code}</p>
@@ -551,6 +573,13 @@ export function TicketingStudioClient() {
                             <Button size="sm" variant="ghost" className="text-red-600" onClick={() => void deletePromo(p.id)}>Remove</Button>
                           </div>
                         ))}
+                        <PaginationBar
+                          page={promoPage}
+                          pages={promoPages}
+                          total={promoTotal}
+                          limit={8}
+                          onPageChange={setPromoPage}
+                        />
                       </div>
                     )}
                   </CardContent>
