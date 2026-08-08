@@ -128,15 +128,16 @@ describe("vendor access card admission", () => {
     );
     const { history, summary } = await getVendorTeamPassHistory(pass.id, 50);
 
-    assert.equal(history.length, 2);
+    assert.equal(history.items.length, 2);
+    assert.equal(history.total, 2);
     assert.equal(summary.entries, 2);
     assert.equal(summary.peopleAdmitted, 2);
     assert.equal(summary.currentCycle, 2);
     assert.deepEqual(
-      history.map((h) => h.entryCycle).sort(),
+      history.items.map((h) => h.entryCycle).sort(),
       [1, 2]
     );
-    for (const row of history) {
+    for (const row of history.items) {
       assert.equal(row.outcome, "ADMITTED");
       assert.equal(row.channel, "qr");
       assert.equal(row.gate, "Main Entrance");
@@ -156,8 +157,8 @@ describe("vendor access card admission", () => {
 
     const { history, summary } = await getVendorTeamPassHistory(pass.id, 50);
     assert.equal(summary.deniedAttempts, 1);
-    assert.equal(history[0].outcome, "DENIED");
-    assert.ok(history[0].denialReason && history[0].denialReason.length > 0);
+    assert.equal(history.items[0].outcome, "DENIED");
+    assert.ok(history.items[0].denialReason && history.items[0].denialReason.length > 0);
   });
 
   it("stops a limited card once its re-entries are spent", async () => {

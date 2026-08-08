@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { buildVendorTeamPassUrl } from "@/lib/vendor-pass/token-format";
 import { VendorEntryLog } from "@/components/vendor-pass/vendor-entry-log";
+import { ensureSingleShareUrl, openWhatsAppShare } from "@/lib/invitation/whatsapp-share";
 
 type VendorPassRow = {
   id: string;
@@ -395,7 +396,68 @@ export function VendorTeamPassesPanel({
       setError(json.error ?? "Revoke failed");
       return;
     }
+    setNotice("Pass revoked. Scanners will reject it.");
     await load(page);
+  }
+
+  /**
+   * Organiser/admin remove: hard-delete when unused; archive when admission
+   * history exists so audit trails stay intact.
+   */
+  async function removePass(row: VendorPassRow) {
+    const hasHistory = row.totalEntries > 0 || row.totalAdmitted > 0 || row.admittedCount > 0;
+    const message = hasHistory
+      ? `“${row.title}” has entry history. Archive it so scanners reject the pass while keeping the log?`
+      : `Permanently delete “${row.title}”? This cannot be undone.`;
+    if (!window.confirm(message)) return;
+
+    setBusy(true);
+    setError("");
+    try {
+      const attempt = async (archive: boolean) => {
+        const res = await fetch(`/api/vendor-passes/${row.id}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ confirm: true, archive }),
+        });
+        const json = await res.json().catch(() => ({}));
+        return { res, json };
+      };
+
+      let { res, json } = await attempt(hasHistory);
+      // Race: UI thought unused but server has admission rows — archive instead.
+      if (
+        !hasHistory &&
+        !res.ok &&
+        typeof json?.error === "string" &&
+        /admission history/i.test(json.error)
+      ) {
+        if (
+          !window.confirm(
+            `“${row.title}” has entry history on the server. Archive it instead of deleting?`
+          )
+        ) {
+          return;
+        }
+        ({ res, json } = await attempt(true));
+      }
+
+      if (!res.ok || json?.success === false) {
+        setError(vendorPassErrorMessage(json?.error, "Could not delete this vendor pass"));
+        return;
+      }
+      const archived = hasHistory || Boolean(json?.data?.archivedAt) || json?.data?.status === "ARCHIVED";
+      setNotice(
+        archived
+          ? `“${row.title}” archived. It no longer appears in the active list.`
+          : `“${row.title}” deleted.`
+      );
+      await load(page);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -813,16 +875,22 @@ export function VendorTeamPassesPanel({
                   >
                     <Copy className="h-4 w-4" /> Copy link
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" asChild>
-                    <a
-                      href={`https://wa.me/?text=${encodeURIComponent(
-                        `${row.title} — ${row.vendorName}\nAccess code ${row.admissionCode}\n${resolvePassHref(row)}`
-                      )}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      WhatsApp
-                    </a>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      const href = resolvePassHref(row);
+                      openWhatsAppShare(
+                        ensureSingleShareUrl(
+                          `${row.title} — ${row.vendorName}\nAccess code ${row.admissionCode}`,
+                          href
+                        )
+                      );
+                    }}
+                  >
+                    WhatsApp
                   </Button>
                   <Button
                     type="button"
@@ -899,6 +967,23 @@ export function VendorTeamPassesPanel({
                       Revoke
                     </Button>
                   )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                    disabled={busy}
+                    onClick={() => void removePass(row)}
+                    aria-label={`Delete ${row.title}`}
+                    title={
+                      row.totalEntries > 0 || row.totalAdmitted > 0 || row.admittedCount > 0
+                        ? "Archive this pass (keeps entry history)"
+                        : "Delete this pass permanently"
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
                 </div>
               </div>
 

@@ -12,7 +12,7 @@ import type {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
-import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
+import { paginatedResult, parsePaginationInput, type PaginatedResult } from "@/lib/pagination";
 import { normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import { generateVendorManualCode } from "@/lib/qr-hub/vendor-token";
 import {
@@ -942,13 +942,36 @@ export interface VendorEntryLogRow {
   scannedByName: string | null;
 }
 
+function normalizeHistoryPagination(input?: number | { page?: number; limit?: number }) {
+  if (typeof input === "number") {
+    return parsePaginationInput({ page: 1, limit: input }, { limit: 50, maxLimit: 200 });
+  }
+  return parsePaginationInput(input, { limit: 20, maxLimit: 100 });
+}
+
+export interface VendorEntryLogSummary {
+  entries: number;
+  peopleAdmitted: number;
+  deniedAttempts: number;
+  currentCycle: number;
+  inCurrentCycle: number;
+  teamCapacity: number;
+  multiEntry: boolean;
+  accessLabel: string;
+  firstEntryAt: string | null;
+  lastEntryAt: string | null;
+}
+
 /**
  * The vendor access card's entry log: every scan, admitted or refused, newest
  * first, with the scanner's name resolved in one extra query.
  */
-export async function getVendorTeamPassHistory(passId: string, limit = 50) {
-  const take = Math.min(200, Math.max(1, Math.trunc(limit)));
-  const [pass, rows, totals] = await Promise.all([
+export async function getVendorTeamPassHistory(
+  passId: string,
+  pagination?: number | { page?: number; limit?: number }
+): Promise<{ history: PaginatedResult<VendorEntryLogRow>; summary: VendorEntryLogSummary }> {
+  const { page, limit, skip } = normalizeHistoryPagination(pagination);
+  const [pass, total, rows, totals] = await Promise.all([
     prisma.vendorTeamPass.findUnique({
       where: { id: passId },
       select: {
@@ -966,10 +989,12 @@ export async function getVendorTeamPassHistory(passId: string, limit = 50) {
         lastAdmittedAt: true,
       },
     }),
+    prisma.vendorTeamPassAdmission.count({ where: { passId } }),
     prisma.vendorTeamPassAdmission.findMany({
       where: { passId },
       orderBy: { createdAt: "desc" },
-      take,
+      skip,
+      take: limit,
     }),
     prisma.vendorTeamPassAdmission.groupBy({
       by: ["outcome"],
@@ -1008,7 +1033,7 @@ export async function getVendorTeamPassHistory(passId: string, limit = 50) {
   }));
 
   return {
-    history,
+    history: paginatedResult(history, total, page, limit),
     summary: {
       entries: admitted?._count._all ?? 0,
       peopleAdmitted: admitted?._sum.quantity ?? 0,
@@ -1020,7 +1045,6 @@ export async function getVendorTeamPassHistory(passId: string, limit = 50) {
       accessLabel: pass ? describeReentryPolicy(pass) : "",
       firstEntryAt: pass?.firstAdmittedAt?.toISOString() ?? null,
       lastEntryAt: pass?.lastAdmittedAt?.toISOString() ?? null,
-      truncated: rows.length === take,
     },
   };
 }

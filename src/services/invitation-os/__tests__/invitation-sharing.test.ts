@@ -50,4 +50,18 @@ describe("InvitationSharingService.buildWhatsAppPack", () => {
     assert.equal(link, "https://www.celeventic.com/invite/xyz789?guest=tok_123");
     assert.doesNotMatch(link, /localhost/);
   });
+
+  it("keeps a single invite URL in guest WhatsApp copy", () => {
+    const pack = service.buildWhatsAppPack({
+      eventTitle: "Ama's Birthday",
+      sharePath: "https://www.celeventic.com/https://www.celeventic.com/invite/xyz789",
+      hostName: "Ama",
+    });
+    const message = pack.guestMessage("Kwame", "tok_123");
+    assert.equal(
+      (message.match(/https?:\/\/www\.celeventic\.com\/invite\/xyz789/g) ?? []).length,
+      1
+    );
+    assert.doesNotMatch(message, /there\.,/);
+  });
 });

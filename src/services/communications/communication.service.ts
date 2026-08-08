@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { GUEST_TIERS } from "@/lib/constants";
+import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 import {
   getProviderCredentials,
   isProviderEnabled,
@@ -80,6 +81,63 @@ export class CommunicationService {
       },
       include: { messages: true },
     });
+  }
+
+  async listUserCampaigns(
+    userId: string,
+    input?: {
+      eventId?: string | null;
+      page?: number | string | null;
+      limit?: number | string | null;
+    }
+  ) {
+    const { page, limit, skip } = parsePaginationInput(input, { limit: 20, maxLimit: 100 });
+    const where = {
+      userId,
+      ...(input?.eventId ? { eventId: input.eventId } : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.campaign.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          channel: true,
+          status: true,
+          guestTier: true,
+          totalCost: true,
+          sentCount: true,
+          failedCount: true,
+          createdAt: true,
+          eventId: true,
+          _count: { select: { messages: true } },
+        },
+      }),
+      prisma.campaign.count({ where }),
+    ]);
+
+    return paginatedResult(
+      items.map((c) => ({
+        id: c.id,
+        name: c.name,
+        channel: c.channel,
+        status: c.status,
+        guestTier: c.guestTier,
+        totalCost: Number(c.totalCost),
+        sentCount: c.sentCount,
+        failedCount: c.failedCount,
+        recipientCount: c._count.messages,
+        eventId: c.eventId,
+        createdAt: c.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      limit
+    );
   }
 
   async sendCampaign(campaignId: string) {
