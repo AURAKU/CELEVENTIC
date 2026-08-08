@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { eventQrLinkService } from "@/services/qr-hub/event-qr-link.service";
 import { prisma } from "@/lib/prisma";
 import { readCompanionMenuConfig } from "@/lib/admission/companion-studio";
+import { liveInvitationWhere } from "@/lib/invitation/live-invitation";
 
 type Ctx = { params: Promise<{ publicToken: string }> };
 
@@ -12,7 +13,7 @@ export default async function EventMenuPage({ params }: Ctx) {
   if (link.event.status === "CANCELLED") notFound();
 
   const invitation = await prisma.invitation.findFirst({
-    where: { eventId: link.eventId, status: { in: ["PUBLISHED", "APPROVED"] } },
+    where: liveInvitationWhere(link.eventId),
     orderBy: { updatedAt: "desc" },
     select: { featureConfig: true },
   });

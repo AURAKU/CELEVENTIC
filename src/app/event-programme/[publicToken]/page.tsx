@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { eventQrLinkService } from "@/services/qr-hub/event-qr-link.service";
 import { prisma } from "@/lib/prisma";
 import { resolveCompanionTheme } from "@/lib/admission/event-companion-theme";
+import { liveInvitationWhere } from "@/lib/invitation/live-invitation";
 
 type Ctx = { params: Promise<{ publicToken: string }> };
 
@@ -11,19 +12,19 @@ export default async function EventProgrammePage({ params }: Ctx) {
   if (!link || link.type !== "PROGRAMME" || link.status !== "ACTIVE") notFound();
 
   const invitation = await prisma.invitation.findFirst({
-    where: { eventId: link.eventId, status: { in: ["PUBLISHED", "APPROVED"] } },
+    where: liveInvitationWhere(link.eventId),
     orderBy: { updatedAt: "desc" },
-    include: { design: true, event: true },
+    select: { designConfig: true, template: { select: { slug: true, config: true } } },
   });
 
   let items: Array<{ time?: string; title: string; detail?: string }> = [];
   try {
     if (invitation) {
-      const theme = await resolveCompanionTheme(invitation as never);
+      const theme = resolveCompanionTheme(invitation);
       items = (theme.programmeItems ?? []).map((item) => ({
         time: item.time,
         title: item.title,
-        detail: item.detail,
+        detail: item.description,
       }));
     }
   } catch {

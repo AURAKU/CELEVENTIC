@@ -5,8 +5,25 @@ import { generatePublicLinkToken } from "@/lib/qr-hub/vendor-token";
 import { validateCustomQrDestination } from "@/lib/qr-hub/types";
 import { createAuditLog } from "@/lib/audit";
 
+type StandardQrLinkType = Exclude<EventQrLinkType, "CUSTOM">;
+
+/**
+ * Link types that `ensureAllStandard` provisions for every event. The Event
+ * Guide types are deliberately absent: the online guide link is minted on first
+ * publish and the venue-offline link only when the organizer configures a local
+ * address, so events that never opt in don't accumulate dead QR codes.
+ */
+const AUTO_PROVISIONED: readonly StandardQrLinkType[] = [
+  "MENU",
+  "SEATING_LOOKUP",
+  "PROGRAMME",
+  "VENUE",
+  "HELP",
+  "COMPANION_LANDING",
+];
+
 const DEFAULTS: Record<
-  Exclude<EventQrLinkType, "CUSTOM">,
+  StandardQrLinkType,
   { title: string; heading: string; subtitle: string; footerText: string; path: string }
 > = {
   MENU: {
@@ -51,10 +68,25 @@ const DEFAULTS: Record<
     footerText: "Admission required for personal details",
     path: "/event-companion",
   },
+  EVENT_GUIDE: {
+    title: "Event Guide",
+    heading: "Event Guide",
+    subtitle: "Scan for the programme, your seat and the menu.",
+    footerText: "Programme · Seating · Menu",
+    path: "/event-guide",
+  },
+  EVENT_GUIDE_OFFLINE: {
+    title: "Event Guide — venue backup",
+    heading: "Event Guide — venue backup",
+    subtitle: "Works only on the event Wi-Fi at this venue.",
+    footerText: "Backup · Event Wi-Fi only",
+    // Resolved from the link's venue-local destinationUrl, never a hosted path.
+    path: "/event-guide",
+  },
 };
 
 export class EventQrLinkService {
-  async ensureStandard(eventId: string, type: Exclude<EventQrLinkType, "CUSTOM">, createdById?: string) {
+  async ensureStandard(eventId: string, type: StandardQrLinkType, createdById?: string) {
     const defaults = DEFAULTS[type];
     const existing = await prisma.eventQrLink.findFirst({
       where: { eventId, type, title: defaults.title },
@@ -77,9 +109,8 @@ export class EventQrLinkService {
   }
 
   async ensureAllStandard(eventId: string, createdById?: string) {
-    const types = Object.keys(DEFAULTS) as Array<Exclude<EventQrLinkType, "CUSTOM">>;
     const links = [];
-    for (const type of types) {
+    for (const type of AUTO_PROVISIONED) {
       links.push(await this.ensureStandard(eventId, type, createdById));
     }
     return links;
@@ -111,8 +142,12 @@ export class EventQrLinkService {
   }
 
   async publicUrl(link: { publicToken: string; type: EventQrLinkType; destinationUrl?: string | null }) {
-    if (link.type === "CUSTOM" && link.destinationUrl) return link.destinationUrl;
-    const defaults = DEFAULTS[link.type as Exclude<EventQrLinkType, "CUSTOM">];
+    // Custom links and the venue-offline guide both point somewhere we don't
+    // host — the latter at a local address only reachable on the event Wi-Fi.
+    if ((link.type === "CUSTOM" || link.type === "EVENT_GUIDE_OFFLINE") && link.destinationUrl) {
+      return link.destinationUrl;
+    }
+    const defaults = DEFAULTS[link.type as StandardQrLinkType];
     const base = await getServerAppUrl();
     return `${base}${defaults.path}/${link.publicToken}`;
   }
