@@ -53,12 +53,26 @@ const PASS_LOGO_RATIOS: Record<QrLogoSizePreset, number> = {
   bold: 0.19,
 };
 
+/**
+ * Event Guide mode — maximum decode reliability for guest device cameras
+ * (iPhone Camera, Google Lens, tablet gallery). Pure black modules, extra-wide
+ * quiet zone, and **no center logo** so finder patterns stay intact under
+ * warm venue lighting and uneven focus.
+ */
+const GUIDE_DARK = "#000000";
+const GUIDE_LIGHT = "#FFFFFF";
+const GUIDE_MARGIN = 8;
+
 function resolveLogoRatio(mode: QrDisplayMode, logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE): number {
+  if (mode === "guide") return 0;
   if (mode === "pass") return PASS_LOGO_RATIOS[logoSize];
   return QR_LOGO_SIZE_PRESETS[logoSize];
 }
 
 function colorsForMode(mode: QrDisplayMode, logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE) {
+  if (mode === "guide") {
+    return { dark: GUIDE_DARK, light: GUIDE_LIGHT, margin: GUIDE_MARGIN, logoRatio: 0 };
+  }
   return mode === "pass"
     ? { dark: PASS_DARK, light: PASS_LIGHT, margin: PASS_MARGIN, logoRatio: resolveLogoRatio(mode, logoSize) }
     : { dark: BRAND_DARK, light: BRAND_LIGHT, margin: QR_MARGIN, logoRatio: resolveLogoRatio(mode, logoSize) };
@@ -311,6 +325,11 @@ export async function generateBrandedQrPng(
   const { dark, light, margin } = colorsForMode(mode, logoSize);
   const qrBuffer = await renderCrispQrPng(targetUrl, size, { dark, light, margin });
 
+  // Guide mode: never overlay a logo — guest phone cameras need every module.
+  if (mode === "guide") {
+    return qrBuffer;
+  }
+
   const { logoOnFrame, offset } = await buildLogoOverlay(size, centerImageUrl, mode, logoSize);
 
   return sharp(qrBuffer)
@@ -335,6 +354,10 @@ export async function generateBrandedQrSvg(
     errorCorrectionLevel: ERROR_LEVEL,
     color: { dark, light },
   });
+
+  if (mode === "guide" || logoRatio <= 0) {
+    return qrSvg;
+  }
 
   const logoSource = await loadCenterImageBuffer(centerImageUrl);
   const { frameSize, radius, pad, innerLogo } = logoInsetLayout(size, logoRatio);

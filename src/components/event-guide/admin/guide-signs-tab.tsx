@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Download, RefreshCw } from "lucide-react";
+import { QR_GUIDE_DISPLAY_MIN_PX } from "@/lib/qr/qr-constants";
 import type { GuideAction } from "./event-guide-builder";
 import type { GuideBuilderState } from "./guide-builder-types";
 
@@ -15,6 +16,9 @@ import type { GuideBuilderState } from "./guide-builder-types";
  * The two QR types are shown as clearly separate things. Rotating the online
  * code does not touch the venue backup, and the dual layout is only offered
  * when a backup destination actually exists.
+ *
+ * Previews use guide mode (pure black modules, wide quiet zone, no center logo)
+ * so organizers see the same scannable code guests get on printed boards.
  */
 export function GuideSignsTab({
   state,
@@ -37,6 +41,7 @@ export function GuideSignsTab({
   const backup = state.links.venueOffline;
   const backupReady = Boolean(state.guide.venueOfflineEnabled && backup?.url);
   const published = state.guide.status === "PUBLISHED";
+  const previewPx = Math.max(QR_GUIDE_DISPLAY_MIN_PX, 256);
 
   async function download(format: "pdf" | "png") {
     setDownloading(true);
@@ -66,6 +71,12 @@ export function GuideSignsTab({
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-slate-600">
+        Codes are black-on-white with a wide quiet zone and no logo overlay — built for iPhone,
+        Android, and tablet cameras under venue lighting. Point any camera at the printed board to
+        open the live Event Guide link.
+      </p>
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="stack-mobile">
@@ -74,14 +85,17 @@ export function GuideSignsTab({
           </CardHeader>
           <CardContent className="space-y-3">
             {state.links.online.qrPreviewUrl ? (
-              <Image
-                src={state.links.online.qrPreviewUrl}
-                alt="Event Guide QR code"
-                width={180}
-                height={180}
-                unoptimized
-                className="rounded-lg border bg-white"
-              />
+              <div className="inline-flex rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <Image
+                  src={state.links.online.qrPreviewUrl}
+                  alt="Event Guide QR code"
+                  width={previewPx}
+                  height={previewPx}
+                  unoptimized
+                  className="bg-white"
+                  style={{ width: previewPx, height: previewPx }}
+                />
+              </div>
             ) : null}
             <p className="break-all text-xs text-slate-500">{state.links.online.url}</p>
             <div className="flex flex-wrap gap-2">
@@ -124,14 +138,17 @@ export function GuideSignsTab({
           <CardContent className="space-y-3">
             {backupReady && backup?.qrPreviewUrl ? (
               <>
-                <Image
-                  src={backup.qrPreviewUrl}
-                  alt="Venue offline Event Guide QR code"
-                  width={180}
-                  height={180}
-                  unoptimized
-                  className="rounded-lg border bg-white"
-                />
+                <div className="inline-flex rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <Image
+                    src={backup.qrPreviewUrl}
+                    alt="Venue offline Event Guide QR code"
+                    width={previewPx}
+                    height={previewPx}
+                    unoptimized
+                    className="bg-white"
+                    style={{ width: previewPx, height: previewPx }}
+                  />
+                </div>
                 <p className="break-all text-xs text-slate-500">{backup.url}</p>
                 <p className="text-xs text-amber-700">
                   Only works for devices on

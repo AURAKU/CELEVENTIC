@@ -25,6 +25,7 @@ import {
 } from "@/lib/event-guide/seating-finder";
 import { OFFLINE_SEATING_MODE_LABELS, type OfflineSeatingMode } from "@/lib/event-guide/offline-pack";
 import { SIGN_SIZES, SIGN_TEMPLATES } from "@/lib/event-guide/signage";
+import { QR_GUIDE_PREVIEW_SIZE } from "@/lib/qr/qr-constants";
 
 export const dynamic = "force-dynamic";
 
@@ -162,7 +163,12 @@ export async function GET(req: Request) {
           publicToken: link.publicToken,
           status: link.status,
           url: guideUrl,
-          qrPreviewUrl: eventQrLinkService.qrPreview(guideUrl, guard.eventId, 512),
+          qrPreviewUrl: eventQrLinkService.qrPreview(
+            guideUrl,
+            guard.eventId,
+            QR_GUIDE_PREVIEW_SIZE,
+            "guide"
+          ),
         },
         venueOffline: offlineLink
           ? {
@@ -170,7 +176,12 @@ export async function GET(req: Request) {
               status: offlineLink.status,
               url: offlineLink.destinationUrl,
               qrPreviewUrl: offlineLink.destinationUrl
-                ? eventQrLinkService.qrPreview(offlineLink.destinationUrl, guard.eventId, 512)
+                ? eventQrLinkService.qrPreview(
+                    offlineLink.destinationUrl,
+                    guard.eventId,
+                    QR_GUIDE_PREVIEW_SIZE,
+                    "guide"
+                  )
                 : null,
             }
           : null,
