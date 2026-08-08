@@ -7,7 +7,7 @@ import {
   tableDisplayName,
 } from "@/lib/seating/seating-types";
 import type { GuideSeatingConfig, GuideSeatingMatch } from "@/lib/event-guide/types";
-import { ChairGlyph, PAPER_WASH, RoundTable, SprigDivider } from "./guide-motifs";
+import { ChairGlyph, RoundTable, SprigDivider } from "./guide-motifs";
 
 type Fonts = { heading: string; body: string; eyebrow: string; script: string };
 
@@ -238,7 +238,7 @@ export function GuideSeating({
             {byCode ? "Your admission code" : "Your name"}
           </label>
 
-          <div className="relative">
+          <div>
             <input
               id="guide-seat-query"
               value={query}
@@ -294,21 +294,28 @@ export function GuideSeating({
               }}
             />
 
+            {/*
+              In-flow suggestions (not absolute). An overlay sat on top of
+              “Find my table”, short-query hints, and the privacy line — guests
+              reading those phrases while typing. Expanding here pushes the
+              button down instead of covering anything.
+            */}
             {open ? (
               <ul
                 id={listId}
                 role="listbox"
                 data-testid="event-guide-seating-suggestions"
                 aria-label="Matching names"
-                className="absolute inset-x-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border shadow-lg"
+                className="mt-2 max-h-[9.5rem] overflow-y-auto overscroll-contain rounded-xl border divide-y scroll-smooth"
                 style={{
                   borderColor: "var(--guide-hairline)",
                   background: "var(--guide-paper)",
-                  backgroundImage: PAPER_WASH,
+                  // Soft enough not to compete with the seat card copy.
+                  boxShadow: "0 1px 0 color-mix(in srgb, var(--guide-hairline) 70%, transparent)",
                 }}
               >
                 {suggestions.map((name, index) => (
-                  <li key={name} role="none">
+                  <li key={name} role="none" style={{ borderColor: "var(--guide-hairline)" }}>
                     <button
                       type="button"
                       id={`${listId}-option-${index}`}
@@ -318,15 +325,17 @@ export function GuideSeating({
                       onMouseDown={(event) => event.preventDefault()}
                       onMouseEnter={() => setActive(index)}
                       onClick={() => choose(name)}
-                      className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[0.95rem] transition-colors"
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[0.9rem] leading-snug transition-colors"
                       style={{
                         background:
-                          index === active ? "var(--guide-hairline)" : "transparent",
+                          index === active
+                            ? "color-mix(in srgb, var(--guide-hairline) 55%, transparent)"
+                            : "transparent",
                         color: "var(--guide-text)",
                       }}
                     >
                       <ChairGlyph
-                        className="h-4 w-4 shrink-0 opacity-60"
+                        className="h-3.5 w-3.5 shrink-0 opacity-45"
                         style={{ color: "var(--guide-secondary)" }}
                       />
                       <span className="truncate">{name}</span>
