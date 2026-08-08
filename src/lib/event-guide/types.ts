@@ -197,7 +197,7 @@ export const GUIDE_UNAVAILABLE_COPY: Record<
   },
 };
 
-/** Result of a privacy-safe seating lookup. Never contains ids or contacts. */
+/** Result of a privacy-safe seating lookup. Never contains internal ids or contacts. */
 export interface GuideSeatingMatch {
   partyName: string;
   tableNumber: string | null;
@@ -209,6 +209,11 @@ export interface GuideSeatingMatch {
   partyMembers: string[];
   /** Unnamed plus-ones travelling with this party, shown as an allowance. */
   plusOnes: number;
+  /**
+   * This party's own admission code, for the seat card QR + digits.
+   * Only returned after a successful lookup of *this* party — never for others.
+   */
+  admissionCode: string | null;
 }
 
 export type GuideSeatingOutcome =
