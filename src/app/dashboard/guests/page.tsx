@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
@@ -22,6 +23,15 @@ const CRM_STATUSES = ["INVITED", "OPENED", "ACCEPTED", "DECLINED", "MAYBE", "CHE
  * (browse + search) is where organisers and admins edit or delete afterwards.
  */
 export default function GuestsPage() {
+  return (
+    <Suspense fallback={<p className="text-slate-500 py-12 text-center">Loading guests…</p>}>
+      <GuestsPageInner />
+    </Suspense>
+  );
+}
+
+function GuestsPageInner() {
+  const searchParams = useSearchParams();
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
   const [stats, setStats] = useState({ counts: {} as Record<string, number>, total: 0, noResponse: 0 });
   const [filter, setFilter] = useState<string>("all");
@@ -32,6 +42,14 @@ export default function GuestsPage() {
   const [auditOpen, setAuditOpen] = useState(false);
   const [crmTab, setCrmTab] = useState<"guests" | "vendors">("guests");
   const [vendorCreateOpen, setVendorCreateOpen] = useState(false);
+
+  useEffect(() => {
+    const focus = searchParams.get("focus");
+    if (focus === "rsvp") {
+      setFilter("NO_RESPONSE");
+      setCrmTab("guests");
+    }
+  }, [searchParams]);
 
   const loadStats = useCallback(async () => {
     if (!eventId) {
@@ -49,10 +67,11 @@ export default function GuestsPage() {
 
   useEffect(() => {
     setRecentlyCreated([]);
-    setFilter("all");
+    const focus = searchParams.get("focus");
+    setFilter(focus === "rsvp" ? "NO_RESPONSE" : "all");
     setResetError("");
     setRefreshToken((token) => token + 1);
-  }, [eventId]);
+  }, [eventId, searchParams]);
 
   const upsertRecent = useCallback((card: SearchResultCard) => {
     setRecentlyCreated((current) => {

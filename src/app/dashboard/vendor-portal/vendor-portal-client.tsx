@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Store, MessageSquare, ExternalLink, Send, Calendar, Users, Package, Clock, Star, Receipt, Trash2 } from "lucide-react";
 import { PaginationBar } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
+import { useClientPagination } from "@/hooks/use-client-pagination";
 import { ADMIN_TABLE_LIMIT } from "@/lib/pagination";
 
 interface VendorMediaItem {
@@ -29,7 +30,7 @@ const SECTION_TO_TAB: Record<string, string> = {
   overview: "overview",
   portfolio: "portfolio",
   bookings: "bookings",
-  quotes: "bookings",
+  quotes: "quotes",
   clients: "clients",
   services: "services",
   availability: "availability",
@@ -50,7 +51,24 @@ export default function VendorPortalClient() {
   const [leadTotal, setLeadTotal] = useState(0);
   const [leadPages, setLeadPages] = useState(1);
   const { page: leadPage, setPage: setLeadPage, appendToParams: appendLeadParams } = usePagination(ADMIN_TABLE_LIMIT);
+  const {
+    page: bookingPage,
+    setPage: setBookingPage,
+    appendToParams: appendBookingParams,
+  } = usePagination(ADMIN_TABLE_LIMIT);
+  const {
+    page: quotePage,
+    setPage: setQuotePage,
+    appendToParams: appendQuoteParams,
+  } = usePagination(ADMIN_TABLE_LIMIT);
   const [bookings, setBookings] = useState<{ id: string; status: string; serviceName?: string; organizer?: { name: string } }[]>([]);
+  const [bookingTotal, setBookingTotal] = useState(0);
+  const [bookingPages, setBookingPages] = useState(1);
+  const [quotes, setQuotes] = useState<
+    { id: string; title: string; amount: number; status: string; lead?: { contactName?: string } }[]
+  >([]);
+  const [quoteTotal, setQuoteTotal] = useState(0);
+  const [quotePages, setQuotePages] = useState(1);
   const [quoteLead, setQuoteLead] = useState<string | null>(null);
   const [quoteForm, setQuoteForm] = useState({ title: "", amount: "", description: "" });
   const [quoteSending, setQuoteSending] = useState(false);
@@ -87,14 +105,28 @@ export default function VendorPortalClient() {
   }
 
   function loadBookings() {
-    return fetch("/api/marketplace/bookings").then((r) => r.json()).then((res) => {
-      if (res.success) setBookings(res.data.items);
+    const params = appendBookingParams(new URLSearchParams());
+    return fetch(`/api/marketplace/bookings?${params}`).then((r) => r.json()).then((res) => {
+      if (!res.success) return;
+      setBookings(res.data.items ?? []);
+      setBookingTotal(res.data.total ?? res.data.items?.length ?? 0);
+      setBookingPages(Math.max(1, res.data.pages ?? 1));
+    });
+  }
+
+  function loadQuotes() {
+    const params = appendQuoteParams(new URLSearchParams());
+    return fetch(`/api/marketplace/quotes?${params}`).then((r) => r.json()).then((res) => {
+      if (!res.success) return;
+      setQuotes(res.data.items ?? []);
+      setQuoteTotal(res.data.total ?? res.data.items?.length ?? 0);
+      setQuotePages(Math.max(1, res.data.pages ?? 1));
     });
   }
 
   function loadPortfolioMedia() {
     return fetch("/api/vendor-os/media").then((r) => r.json()).then((res) => {
-      if (res.success) setPortfolioMedia(res.data);
+      if (res.success) setPortfolioMedia(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
     });
   }
 
@@ -112,28 +144,44 @@ export default function VendorPortalClient() {
   }
 
   useEffect(() => {
-    const params = appendLeadParams(new URLSearchParams());
+    const leadParams = appendLeadParams(new URLSearchParams());
+    const bookingParams = appendBookingParams(new URLSearchParams());
     Promise.all([
       fetch("/api/vendor-os/me").then((r) => r.json()),
-      fetch(`/api/vendor-os/leads?${params}`).then((r) => r.json()),
-      fetch("/api/marketplace/bookings").then((r) => r.json()),
+      fetch(`/api/vendor-os/leads?${leadParams}`).then((r) => r.json()),
+      fetch(`/api/marketplace/bookings?${bookingParams}`).then((r) => r.json()),
     ]).then(([me, leadsRes, bookingsRes]) => {
       if (me.success && me.data) {
         setVendor(me.data.vendor);
         setUsage(me.data.usage);
       }
       if (leadsRes.success) applyLeadsPayload(leadsRes.data);
-      if (bookingsRes.success) setBookings(bookingsRes.data.items);
+      if (bookingsRes.success) {
+        setBookings(bookingsRes.data.items ?? []);
+        setBookingTotal(bookingsRes.data.total ?? bookingsRes.data.items?.length ?? 0);
+        setBookingPages(Math.max(1, bookingsRes.data.pages ?? 1));
+      }
       setLoading(false);
     });
     void loadPortfolioMedia();
-  }, [appendLeadParams]);
+    void loadQuotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!loading) void loadLeads();
-    // Reload when page changes after initial mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadPage]);
+
+  useEffect(() => {
+    if (!loading) void loadBookings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingPage]);
+
+  useEffect(() => {
+    if (!loading) void loadQuotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotePage]);
 
   useEffect(() => {
     if (sectionParam && SECTION_TO_TAB[sectionParam]) {
@@ -152,7 +200,7 @@ export default function VendorPortalClient() {
 
   async function refreshUsage() {
     const me = await fetch("/api/vendor-os/me").then((r) => r.json());
-    if (me.success?.data) setUsage(me.data.usage);
+    if (me.success && me.data) setUsage(me.data.usage);
   }
 
   async function sendQuote(leadId: string) {
@@ -175,6 +223,7 @@ export default function VendorPortalClient() {
       setQuoteLead(null);
       setQuoteForm({ title: "", amount: "", description: "" });
       await loadLeads();
+      await loadQuotes();
     }
   }
 
@@ -198,6 +247,14 @@ export default function VendorPortalClient() {
       await loadLeads();
     }
   }
+
+  const {
+    page: mediaPage,
+    pages: mediaPages,
+    total: mediaTotal,
+    items: pagedMedia,
+    setPage: setMediaPage,
+  } = useClientPagination(portfolioMedia, 12);
 
   if (loading) return <p className="text-slate-500 py-12 text-center">Loading...</p>;
 
@@ -307,6 +364,7 @@ export default function VendorPortalClient() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
+          <TabsTrigger value="quotes">Quotes</TabsTrigger>
           <TabsTrigger value="clients">Clients</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="availability">Availability</TabsTrigger>
@@ -336,7 +394,7 @@ export default function VendorPortalClient() {
               <CardContent className="pt-5">
                 <div className="flex justify-between text-xs text-slate-500 mb-1">
                   <span>Portfolio Images</span>
-                  <span>{usage ? `${usage.usage.images}/${usage.limits.imageLimit}` : ", "}</span>
+                  <span>{usage ? `${usage.usage.images}/${usage.limits.imageLimit}` : "—"}</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-[#0B8A83] rounded-full transition-all" style={{ width: `${Math.min(imagePct, 100)}%` }} />
@@ -373,30 +431,39 @@ export default function VendorPortalClient() {
               {portfolioMedia.length === 0 ? (
                 <p className="text-sm text-slate-500">No portfolio media yet, upload photos or videos above.</p>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {portfolioMedia.map((m) => (
-                    <div key={m.id} className="relative rounded-lg border overflow-hidden aspect-square bg-slate-100 group">
-                      <UploadedMedia
-                        src={m.url}
-                        alt={m.caption ?? "Portfolio item"}
-                        className="w-full h-full object-cover"
-                        video={m.type === "video"}
-                        controls={m.type === "video"}
-                        autoPlay={false}
-                      />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="secondary"
-                        className="absolute top-1.5 right-1.5 h-7 w-7 opacity-90"
-                        onClick={() => void deletePortfolioMedia(m.id)}
-                        disabled={deletingMediaId === m.id}
-                        aria-label="Remove"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {pagedMedia.map((m) => (
+                      <div key={m.id} className="relative rounded-lg border overflow-hidden aspect-square bg-slate-100">
+                        <UploadedMedia
+                          src={m.url}
+                          alt={m.caption ?? "Portfolio item"}
+                          className="w-full h-full object-cover"
+                          video={m.type === "video"}
+                          controls={m.type === "video"}
+                          autoPlay={false}
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          className="absolute top-1.5 right-1.5 h-7 w-7 opacity-90"
+                          onClick={() => void deletePortfolioMedia(m.id)}
+                          disabled={deletingMediaId === m.id}
+                          aria-label="Remove"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <PaginationBar
+                    page={mediaPage}
+                    pages={mediaPages}
+                    total={mediaTotal}
+                    limit={12}
+                    onPageChange={setMediaPage}
+                  />
                 </div>
               )}
             </CardContent>
@@ -408,26 +475,85 @@ export default function VendorPortalClient() {
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><Calendar className="h-4 w-4" /> Active Bookings</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               {bookings.length === 0 ? (
-                <p className="text-slate-500 text-sm">No confirmed bookings yet. Send quotes from leads below.</p>
-              ) : bookings.map((b) => (
-                <div key={b.id} className="rounded-lg border p-3 text-sm flex flex-wrap justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{b.serviceName ?? "Booking"}</p>
-                    <p className="text-xs text-slate-500">{b.organizer?.name ?? "Organizer"}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{b.status}</Badge>
-                    {["DEPOSIT_PAID", "CONFIRMED", "IN_PROGRESS"].includes(b.status) && (
-                      <Button size="sm" variant="outline" onClick={() => void markDelivered(b.id)}>Mark delivered</Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                <p className="text-slate-500 text-sm">No confirmed bookings yet. Send quotes from the Quotes tab.</p>
+              ) : (
+                <>
+                  {bookings.map((b) => (
+                    <div key={b.id} className="rounded-lg border p-3 text-sm flex flex-wrap justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{b.serviceName ?? "Booking"}</p>
+                        <p className="text-xs text-slate-500">{b.organizer?.name ?? "Organizer"}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{b.status}</Badge>
+                        {["DEPOSIT_PAID", "CONFIRMED", "IN_PROGRESS"].includes(b.status) && (
+                          <Button size="sm" variant="outline" onClick={() => void markDelivered(b.id)}>Mark delivered</Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <PaginationBar
+                    page={bookingPage}
+                    pages={bookingPages}
+                    total={bookingTotal}
+                    limit={ADMIN_TABLE_LIMIT}
+                    onPageChange={setBookingPage}
+                  />
+                </>
+              )}
             </CardContent>
           </Card>
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Leads & Enquiries</CardTitle></CardHeader>
             <CardContent>{leadsList}</CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="quotes" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Receipt className="h-4 w-4" /> Sent Quotes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {quotes.length === 0 ? (
+                <p className="text-sm text-slate-500">No quotes yet. Open a lead under Bookings to send one.</p>
+              ) : (
+                <>
+                  {quotes.map((q) => (
+                    <div key={q.id} className="rounded-lg border p-3 text-sm flex flex-wrap justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{q.title}</p>
+                        <p className="text-xs text-slate-500">{q.lead?.contactName ?? "Lead"}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">{q.amount}</span>
+                        <Badge variant="outline">{q.status}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                  <PaginationBar
+                    page={quotePage}
+                    pages={quotePages}
+                    total={quoteTotal}
+                    limit={ADMIN_TABLE_LIMIT}
+                    onPageChange={setQuotePage}
+                  />
+                </>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Create from a lead</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-slate-600">Quotes start from an enquiry. Open Bookings → Leads to reply and send a quote.</p>
+              <Button variant="outline" size="sm" onClick={() => handleTabChange("bookings")}>
+                Open leads
+              </Button>
+            </CardContent>
           </Card>
         </TabsContent>
 
