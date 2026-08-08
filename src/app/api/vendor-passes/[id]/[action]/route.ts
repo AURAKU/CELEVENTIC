@@ -43,6 +43,26 @@ async function authorizeScan(passId: string) {
   return { ctx: auth.ctx!, eventId: pass.eventId };
 }
 
+/** Entry logs are host-facing: guest managers read them without scan rights. */
+async function authorizeHistoryRead(passId: string) {
+  const pass = await prisma.vendorTeamPass.findUnique({
+    where: { id: passId },
+    select: { eventId: true },
+  });
+  if (!pass) return { error: NextResponse.json({ error: "Not found" }, { status: 404 }) };
+  const auth = await authorizeEventAny(
+    pass.eventId,
+    [
+      EventPermissionKey.MANAGE_VENDOR_ACCESS,
+      EventPermissionKey.MANAGE_GUESTS,
+      EventPermissionKey.SCAN_QR,
+    ],
+    "You do not have permission to view vendor entry logs"
+  );
+  if (auth.error) return { error: auth.error };
+  return { ctx: auth.ctx!, eventId: pass.eventId };
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string; action: string }> }
@@ -114,6 +134,7 @@ export async function POST(
       deviceInfo: typeof body?.deviceInfo === "string" ? body.deviceInfo : null,
       dryRun: Boolean(body?.dryRun),
       clientRecordId: typeof body?.clientRecordId === "string" ? body.clientRecordId : null,
+      channel: "dashboard",
     });
     if (!result.found) return NextResponse.json({ error: "Pass not found" }, { status: 404 });
     if (!result.ok) {
@@ -123,10 +144,10 @@ export async function POST(
   }
 
   if (action === "history") {
-    const auth = await authorizeScan(id);
+    const auth = await authorizeHistoryRead(id);
     if ("error" in auth && auth.error) return auth.error;
-    const history = await getVendorTeamPassHistory(id);
-    return NextResponse.json({ success: true, data: { history } });
+    const data = await getVendorTeamPassHistory(id, Number(body?.limit) || 50);
+    return NextResponse.json({ success: true, data });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 404 });
@@ -140,8 +161,9 @@ export async function GET(
   if (action !== "history") {
     return NextResponse.json({ error: "Unknown action" }, { status: 404 });
   }
-  const auth = await authorizeScan(id);
+  const auth = await authorizeHistoryRead(id);
   if ("error" in auth && auth.error) return auth.error;
-  const history = await getVendorTeamPassHistory(id);
-  return NextResponse.json({ success: true, data: { history } });
+  const limit = Number(new URL(req.url).searchParams.get("limit") ?? 50);
+  const data = await getVendorTeamPassHistory(id, Number.isFinite(limit) ? limit : 50);
+  return NextResponse.json({ success: true, data });
 }

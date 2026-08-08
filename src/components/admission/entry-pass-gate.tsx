@@ -25,6 +25,7 @@ import { AdmissionScanPrompt } from "@/components/admission/admission-scan-promp
 import { cn } from "@/lib/utils";
 import { formatAdmissionCode, normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import { classifyGateInput } from "@/lib/admission/gate-scan";
+import { isMultiEntryPass } from "@/lib/vendor-pass/capacity";
 import type { AdmissionDecision } from "@/lib/admission/pass-decision";
 import { QR_SCAN_SAME_CODE_MS } from "@/lib/qr/qr-constants";
 import {
@@ -33,14 +34,18 @@ import {
 } from "@/lib/admission/seating-continuity";
 import { seatDisplayName, tableDisplayName } from "@/lib/seating/seating-types";
 import {
+  downloadGatePack,
+  notifyPackChanged,
+  syncGateQueue,
+  OFFLINE_PACK_EVENT,
+} from "@/lib/admission/offline-gate";
+import {
   clearPackage,
-  dequeue,
   enqueue,
   hashTokenInBrowser,
   listQueue,
   loadPackage,
   projectLocalState,
-  savePackage,
   type QueuedAdmission,
 } from "@/lib/admission/offline-store";
 import type { OfflinePackage } from "@/services/admission/offline-admission.service";
@@ -84,6 +89,18 @@ interface EntryPassGateProps {
    * fall through to legacy guest `manualCode` check-in (same secure server path).
    */
   onUnresolvedCode?: (code: string) => void;
+  /**
+   * Off when the page already owns a single code/token entry box, so hosts
+   * never face two places to type the same admission code.
+   */
+  showManualEntry?: boolean;
+  /** Fires after a real admit so the page can refresh its scan log and stats. */
+  onAdmitted?: () => void;
+  /**
+   * Off when the page renders the shared "Offline gate pack" card, so download
+   * and sync live in exactly one place.
+   */
+  showPackControls?: boolean;
 }
 
 const TONE_STYLES: Record<AdmissionDecision["tone"], string> = {
@@ -110,6 +127,9 @@ export function EntryPassGate({
   hideCamera = true,
   scanHandlerRef,
   onUnresolvedCode,
+  showManualEntry = true,
+  onAdmitted,
+  showPackControls = true,
 }: EntryPassGateProps) {
   const [manualCode, setManualCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -130,7 +150,6 @@ export function EntryPassGate({
   const [offlineMode, setOfflineMode] = useState(false);
   const [pkg, setPkg] = useState<OfflinePackage | null>(null);
   const [queue, setQueue] = useState<QueuedAdmission[]>([]);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState("");
 
   const lastScanRef = useRef<{ text: string; at: number } | null>(null);
@@ -154,21 +173,39 @@ export function EntryPassGate({
     }
   }, [eventId]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  /** Persist first, then tell the rest of the page — the queue is the receipt. */
+  const queueAdmission = useCallback(
+    async (record: QueuedAdmission) => {
+      await enqueue(record);
       try {
-        const stored = await loadPackage(eventId);
-        if (!cancelled) setPkg(stored);
+        setQueue(await listQueue(eventId));
       } catch {
-        /* no package yet */
+        /* storage unavailable, the gate still works online */
       }
-      await refreshQueue();
-    })();
-    return () => {
-      cancelled = true;
-    };
+      notifyPackChanged(eventId);
+    },
+    [eventId]
+  );
+
+  const reloadLocalState = useCallback(async () => {
+    try {
+      setPkg(await loadPackage(eventId));
+    } catch {
+      /* no package yet */
+    }
+    await refreshQueue();
   }, [eventId, refreshQueue]);
+
+  useEffect(() => {
+    void reloadLocalState();
+    // The shared pack card may download, sync or clear on our behalf.
+    const onPackChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ eventId?: string }>).detail;
+      if (!detail?.eventId || detail.eventId === eventId) void reloadLocalState();
+    };
+    window.addEventListener(OFFLINE_PACK_EVENT, onPackChanged);
+    return () => window.removeEventListener(OFFLINE_PACK_EVENT, onPackChanged);
+  }, [eventId, reloadLocalState]);
 
   const localState = useMemo(
     () => (pkg ? projectLocalState(pkg, queue) : null),
@@ -186,29 +223,13 @@ export function EntryPassGate({
     setBusy(true);
     setSyncMessage("");
     try {
-      const [pkgRes, deviceRes] = await Promise.all([
-        fetch(`/api/admission/offline?eventId=${encodeURIComponent(eventId)}`),
-        fetch("/api/admission/offline", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "register",
-            eventId,
-            deviceName:
-              typeof navigator !== "undefined"
-                ? navigator.userAgent.slice(0, 60)
-                : "gate-device",
-          }),
-        }),
-      ]);
-      const pkgJson = await pkgRes.json();
-      const deviceJson = await deviceRes.json();
-      if (!pkgJson.success) throw new Error(pkgJson.error ?? "Could not download guest list");
-      if (deviceJson.success) setDeviceId(deviceJson.data.deviceId);
-
-      await savePackage(pkgJson.data);
-      setPkg(pkgJson.data);
-      setSyncMessage(`Offline list ready, ${pkgJson.data.passes.length} passes cached.`);
+      const next = await downloadGatePack(eventId);
+      setPkg(next);
+      setSyncMessage(
+        `Offline list ready, ${next.passes.length} passes and ${
+          next.vendorTeamPasses?.length ?? 0
+        } vendor access cards cached.`
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Offline download failed");
     } finally {
@@ -217,56 +238,21 @@ export function EntryPassGate({
   }, [eventId]);
 
   const syncQueue = useCallback(async () => {
-    const pending = await listQueue(eventId);
-    if (!pending.length) {
-      setSyncMessage("Nothing to sync.");
-      return;
-    }
-    if (!deviceId) {
-      setError("Register this device (download the offline list) before syncing.");
-      return;
-    }
-
     setBusy(true);
     try {
-      const res = await fetch("/api/admission/offline", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "sync",
-          eventId,
-          deviceId,
-          records: pending.map((r) => ({
-            clientRecordId: r.clientRecordId,
-            tokenHash: r.tokenHash,
-            code: r.code,
-            quantity: r.quantity,
-            guestIds: r.guestIds,
-            capturedAt: r.capturedAt,
-            usedManualCode: r.usedManualCode,
-          })),
-        }),
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error ?? "Sync failed");
-
-      // Only clear records the server actually accounted for; anything it could
-      // not resolve stays queued so nothing is quietly dropped.
-      const settled = json.data.outcomes
-        .filter((o: { state: string }) => o.state !== "rejected")
-        .map((o: { clientRecordId: string }) => o.clientRecordId);
-      await dequeue(settled);
+      const result = await syncGateQueue(eventId);
       await refreshQueue();
-
       setSyncMessage(
-        `Synced ${json.data.applied} · ${json.data.conflicts} need review · ${json.data.duplicates} already recorded`
+        result.applied + result.duplicates + result.conflicts === 0
+          ? "Nothing to sync."
+          : `Synced ${result.applied} · ${result.conflicts} need review · ${result.duplicates} already recorded`
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync failed");
     } finally {
       setBusy(false);
     }
-  }, [deviceId, eventId, refreshQueue]);
+  }, [eventId, refreshQueue]);
 
   const admitOffline = useCallback(
     async (input: {
@@ -332,9 +318,16 @@ export function EntryPassGate({
         const queuedQty = queue
           .filter((q) => q.tokenHash === vendor.tokenHash || q.code === vendor.admissionCode)
           .reduce((sum, q) => sum + Math.max(1, q.quantity), 0);
-        const admitted = vendor.admittedCount + queuedQty;
         const capacity = vendor.teamCapacity;
-        const remainingVendor = Math.max(0, capacity - admitted);
+        // Access cards keep working after the team is in: wrap the queued
+        // headcount into the current cycle instead of blocking the scan.
+        const multiEntry = vendor.multiEntry ?? isMultiEntryPass(vendor);
+        const admitted = multiEntry
+          ? (vendor.admittedCount + queuedQty) % Math.max(1, capacity)
+          : vendor.admittedCount + queuedQty;
+        const remainingVendor = multiEntry
+          ? Math.max(1, capacity - admitted)
+          : Math.max(0, capacity - admitted);
 
         if (remainingVendor <= 0) {
           playScanFeedback(false);
@@ -413,8 +406,7 @@ export function EntryPassGate({
           usedManualCode: Boolean(code && !input.token),
           displayName: vendor.title,
         };
-        await enqueue(record);
-        await refreshQueue();
+        await queueAdmission(record);
         const resulting = admitted + qty;
         playScanFeedback(true);
         return show({
@@ -547,8 +539,7 @@ export function EntryPassGate({
         usedManualCode: Boolean(code && !input.token),
         displayName: pass.n,
       };
-      await enqueue(record);
-      await refreshQueue();
+      await queueAdmission(record);
 
       const resulting = pass.a + requested;
       playScanFeedback(true);
@@ -578,7 +569,7 @@ export function EntryPassGate({
         offline: true,
       });
     },
-    [eventId, localState, pkg, queue, refreshQueue]
+    [eventId, localState, pkg, queue, queueAdmission]
   );
 
   const admitOnline = useCallback(
@@ -630,6 +621,8 @@ export function EntryPassGate({
         };
         setResult(next);
         setPromptOpen(true);
+        // Only real admits change the ledger; previews must not spam refetches.
+        if (!input.dryRun && data.decision.admitQuantity > 0) onAdmitted?.();
         return next;
       } catch {
         setError("Network problem. Switch on offline mode to keep admitting.");
@@ -640,7 +633,7 @@ export function EntryPassGate({
         setBusy(false);
       }
     },
-    [eventId, gate]
+    [eventId, gate, onAdmitted]
   );
 
   /**
@@ -927,36 +920,45 @@ export function EntryPassGate({
             />
             <span className="font-medium text-slate-700">Offline mode</span>
           </label>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={downloadPackage} disabled={busy}>
-              <CloudDownload className="mr-1 h-3.5 w-3.5" aria-hidden />
-              {pkg ? "Refresh list" : "Download list"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={syncQueue}
-              disabled={busy || !queue.length}
-            >
-              <CloudUpload className="mr-1 h-3.5 w-3.5" aria-hidden />
-              Sync {queue.length > 0 ? `(${queue.length})` : ""}
-            </Button>
-            {pkg && (
+          {showPackControls ? (
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={downloadPackage} disabled={busy}>
+                <CloudDownload className="mr-1 h-3.5 w-3.5" aria-hidden />
+                {pkg ? "Refresh list" : "Download list"}
+              </Button>
               <Button
                 size="sm"
-                variant="ghost"
-                onClick={async () => {
-                  await clearPackage(eventId);
-                  setPkg(null);
-                  setOfflineMode(false);
-                }}
-                disabled={busy || queue.length > 0}
-                title={queue.length > 0 ? "Sync queued admissions first" : undefined}
+                variant="outline"
+                onClick={syncQueue}
+                disabled={busy || !queue.length}
               >
-                Clear
+                <CloudUpload className="mr-1 h-3.5 w-3.5" aria-hidden />
+                Sync {queue.length > 0 ? `(${queue.length})` : ""}
               </Button>
-            )}
-          </div>
+              {pkg && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    await clearPackage(eventId);
+                    setPkg(null);
+                    setOfflineMode(false);
+                    notifyPackChanged(eventId);
+                  }}
+                  disabled={busy || queue.length > 0}
+                  title={queue.length > 0 ? "Sync queued admissions first" : undefined}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          ) : (
+            <p className="ml-auto text-xs text-slate-500">
+              {pkg
+                ? `${pkg.passes.length} passes cached · manage the pack above`
+                : "Download the offline gate pack above to admit without signal"}
+            </p>
+          )}
         </div>
 
         {pkg && (
@@ -969,40 +971,42 @@ export function EntryPassGate({
 
         {hideCamera ? (
           <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
-            Use the <span className="font-medium text-slate-800">single camera above</span> to scan
-            Guest Entry Pass QR codes. Pass tokens are admitted here automatically; legacy guest QR
-            codes still use the check-in panel.
+            Scan with the <span className="font-medium text-slate-800">camera above</span> or type
+            into <span className="font-medium text-slate-800">Enter code manually</span> — guest
+            passes, vendor access cards and legacy guest QR all admit through that one box.
           </p>
         ) : null}
 
-        <div className="space-y-1.5">
-          <Label htmlFor="entry-pass-code" className="text-xs">
-            Admission code (4 or 6 digits)
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="entry-pass-code"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="0000"
-              value={manualCode}
-              maxLength={7}
-              onChange={(e) => setManualCode(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void submitManualCode();
-              }}
-              className="font-mono text-lg tracking-[0.25em]"
-            />
-            <Button onClick={() => void submitManualCode()} disabled={busy}>
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <Keyboard className="h-4 w-4" aria-hidden />
-              )}
-              <span className="ml-1.5">Look up</span>
-            </Button>
+        {showManualEntry && (
+          <div className="space-y-1.5">
+            <Label htmlFor="entry-pass-code" className="text-xs">
+              Admission code (4 or 6 digits)
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="entry-pass-code"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="0000"
+                value={manualCode}
+                maxLength={7}
+                onChange={(e) => setManualCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void submitManualCode();
+                }}
+                className="font-mono text-lg tracking-[0.25em]"
+              />
+              <Button onClick={() => void submitManualCode()} disabled={busy}>
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <Keyboard className="h-4 w-4" aria-hidden />
+                )}
+                <span className="ml-1.5">Look up</span>
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {error && (
           <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">

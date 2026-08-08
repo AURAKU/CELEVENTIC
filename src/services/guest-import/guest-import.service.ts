@@ -14,6 +14,7 @@ import { dispatchJob } from "@/lib/queue";
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 import {
   mergeImportOptions,
+  optionsAffectRowDerivation,
   type ColumnMapping,
   type ImportOptions,
   type NormalizedRow,
@@ -50,6 +51,19 @@ import { GUEST_IMPORT_QUEUE } from "./queues";
  */
 
 const ROW_WRITE_CHUNK = 200;
+
+/**
+ * Rows the generator will pick up: everything not explicitly skipped and not
+ * already dealt with. Merge and update decisions count — a list where every
+ * duplicate was resolved as "update the existing guest" is real work, not an
+ * empty import. Confirmation, the preview count and the progress screen all
+ * read from this one definition so they can never disagree.
+ */
+const PENDING_ROW_FILTER = (batchId: string): Prisma.GuestImportRowWhereInput => ({
+  batchId,
+  decision: { not: "SKIP" },
+  status: { in: ["READY", "NEEDS_REVIEW", "DUPLICATE"] },
+});
 
 export interface CreateBatchInput {
   eventId: string;
@@ -211,6 +225,89 @@ export class GuestImportService {
   }
 
   /**
+   * Save organiser choices onto a draft, re-deriving rows only when the change
+   * demands it.
+   *
+   * This distinction is the whole point. Re-deriving rebuilds every row from
+   * the source cells, which silently discards renamed guests, corrected
+   * allowances and — worst of all — the create/skip decisions that unblock
+   * confirmation. A message or a tag cannot change how a row was parsed, so
+   * saving one must leave the review alone.
+   */
+  async applyBatchPatch(
+    batchId: string,
+    userId: string,
+    patch: { mapping?: ColumnMapping; options?: Partial<ImportOptions> }
+  ): Promise<BatchPreview> {
+    const batch = await this.requireDraft(batchId);
+    const needsRemap =
+      patch.mapping != null ||
+      optionsAffectRowDerivation(batch.options as Partial<ImportOptions> | null, patch.options);
+
+    return needsRemap
+      ? this.remapBatch(batchId, userId, patch)
+      : this.updateOptions(batch, userId, patch.options ?? {});
+  }
+
+  /** Persist generation-time settings without disturbing a single row. */
+  private async updateOptions(
+    batch: GuestImportBatch,
+    userId: string,
+    patch: Partial<ImportOptions>
+  ): Promise<BatchPreview> {
+    const options = mergeImportOptions({
+      ...((batch.options as Partial<ImportOptions> | null) ?? {}),
+      ...patch,
+    });
+
+    const updated = await prisma.guestImportBatch.update({
+      where: { id: batch.id },
+      data: { options: options as unknown as Prisma.InputJsonValue },
+    });
+
+    await createAuditLog({
+      userId,
+      action: "UPDATE",
+      entity: "guest_import_batch",
+      entityId: batch.id,
+      details: { kind: "import_options_updated" },
+    });
+
+    return {
+      batch: updated,
+      // Nothing was re-derived, so the column guesses the caller already holds
+      // are still the current ones.
+      suggestions: [],
+      summary: {
+        total: updated.totalRows,
+        ready: updated.readyRows,
+        review: updated.reviewRows,
+        duplicate: updated.duplicateRows,
+        invalid: updated.invalidRows,
+        skipped: updated.skippedRows,
+        heads: await this.pendingHeads(batch.id),
+      },
+    };
+  }
+
+  /** Rows that will be created if the batch is confirmed exactly as decided. */
+  async pendingWork(batchId: string): Promise<{ rows: number; heads: number }> {
+    const [rows, heads] = await Promise.all([
+      prisma.guestImportRow.count({ where: PENDING_ROW_FILTER(batchId) }),
+      this.pendingHeads(batchId),
+    ]);
+    return { rows, heads };
+  }
+
+  private async pendingHeads(batchId: string): Promise<number> {
+    const aggregate = await prisma.guestImportRow.aggregate({
+      where: { ...PENDING_ROW_FILTER(batchId), decision: "CREATE" },
+      _sum: { partySize: true },
+    });
+    return aggregate._sum.partySize ?? 0;
+  }
+
+  /**
    * Re-derive every row from the stored source cells under a new mapping or
    * new options. Cheap because `raw` was kept positionally — the organiser
    * never has to re-upload to fix a mis-detected column.
@@ -300,11 +397,16 @@ export class GuestImportService {
     const batch = await this.requireDraft(batchId);
     const options = mergeImportOptions(batch.options as Partial<ImportOptions> | null);
 
+    // One read for the whole batch of edits: "skip all duplicates" on a
+    // 5,000-row import used to mean 5,000 round trips before the first write.
+    const existing = await prisma.guestImportRow.findMany({
+      where: { id: { in: updates.map((u) => u.rowId) }, batchId },
+    });
+    const byId = new Map(existing.map((row) => [row.id, row]));
+
     let updated = 0;
     for (const update of updates) {
-      const row = await prisma.guestImportRow.findFirst({
-        where: { id: update.rowId, batchId },
-      });
+      const row = byId.get(update.rowId);
       if (!row) continue;
 
       const nextName = update.name?.trim() ?? row.name;
@@ -445,7 +547,9 @@ export class GuestImportService {
     });
     if (unreviewed > 0 && !opts.allowUnreviewedDuplicates) {
       throw new Error(
-        `${unreviewed} possible duplicate${unreviewed === 1 ? "" : "s"} still need a decision. Choose create or skip for each, or confirm again to skip them all.`
+        unreviewed === 1
+          ? "1 possible duplicate still needs a decision. Choose create or skip for it, or confirm again to skip it."
+          : `${unreviewed} possible duplicates still need a decision. Choose create or skip for each, or confirm again to skip them all.`
       );
     }
 
@@ -457,15 +561,8 @@ export class GuestImportService {
       });
     }
 
-    // Must match what the generator will actually pick up: merge and update
-    // decisions are real work, so a list where every duplicate was resolved as
-    // "update the existing guest" is a valid import, not an empty one.
     const queuedRows = await prisma.guestImportRow.count({
-      where: {
-        batchId,
-        decision: { not: "SKIP" },
-        status: { in: ["READY", "NEEDS_REVIEW", "DUPLICATE"] },
-      },
+      where: PENDING_ROW_FILTER(batchId),
     });
     if (queuedRows === 0) {
       throw new Error("No rows are set to be created. Review the list and try again.");
@@ -544,9 +641,10 @@ export class GuestImportService {
     const batch = await prisma.guestImportBatch.findUnique({ where: { id: batchId } });
     if (!batch) return null;
 
-    const [rowGroups, deliveryGroups] = await Promise.all([
+    const [rowGroups, deliveryGroups, pendingWork] = await Promise.all([
       prisma.guestImportRow.groupBy({ by: ["status"], where: { batchId }, _count: true }),
       prisma.guestImportDelivery.groupBy({ by: ["status"], where: { batchId }, _count: true }),
+      this.pendingWork(batchId),
     ]);
 
     const rows = Object.fromEntries(rowGroups.map((g) => [g.status, g._count]));
@@ -559,6 +657,13 @@ export class GuestImportService {
       batch,
       rows,
       deliveries,
+      // What confirming right now would actually create — duplicates the
+      // organiser resolved as "create" included, skips excluded.
+      pendingRows: pendingWork.rows,
+      pendingHeads: pendingWork.heads,
+      unreviewedDuplicates: await prisma.guestImportRow.count({
+        where: { batchId, status: "DUPLICATE", reviewedAt: null },
+      }),
       percent: batch.totalRows > 0 ? Math.round((done / batch.totalRows) * 100) : 0,
       remaining: batch.status === "DRAFT" ? 0 : pending,
       finished: ["COMPLETED", "PARTIAL", "FAILED", "CANCELLED", "ROLLED_BACK"].includes(

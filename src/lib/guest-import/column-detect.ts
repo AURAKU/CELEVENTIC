@@ -293,6 +293,34 @@ export function suggestColumnMapping(table: ParsedTable): ColumnSuggestion[] {
   });
 }
 
+/**
+ * Is this pasted block really a table, or a name list with punctuation in it?
+ *
+ * The question only has teeth for pasted text, where there is no file
+ * extension to trust. A delimiter proves nothing on its own: "Mensah, Kofi"
+ * splits exactly like a two-column CSV, and reading it as one imports a guest
+ * called "Mensah" and throws the rest away without a word in the preview.
+ *
+ * A recognisable header settles it — that came out of a spreadsheet. Failing
+ * that, the test is whether the split would lose anything: every column
+ * holding text must have a field to go to. An unmapped column with content in
+ * it is exactly the "Adjoa" in "Mensah, Adjoa", and dropping it is far worse
+ * than keeping the line whole for the organiser to correct in the preview.
+ *
+ * A rejected paste still goes to `parseLines`, which lifts out a trailing
+ * email or phone per line — so a contact-bearing list loses nothing either.
+ */
+export function looksLikeDelimitedTable(table: ParsedTable): boolean {
+  if (table.columnCount <= 1 || table.rows.length === 0) return false;
+  if (table.headers?.some((header) => scoreHeader(header) != null)) return true;
+
+  return !suggestColumnMapping(table).some(
+    (suggestion) =>
+      suggestion.field === ImportField.IGNORE &&
+      table.rows.some((row) => (row[suggestion.index] ?? "").trim().length > 0)
+  );
+}
+
 export function mappingFromSuggestions(suggestions: ColumnSuggestion[]): ColumnMapping {
   const mapping: ColumnMapping = {};
   for (const suggestion of suggestions) mapping[suggestion.index] = suggestion.field;

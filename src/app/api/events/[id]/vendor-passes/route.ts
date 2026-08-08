@@ -8,6 +8,10 @@ import {
   createVendorTeamPass,
   listVendorTeamPasses,
 } from "@/services/vendor-pass/vendor-team-pass.service";
+import {
+  resolveVendorPassTypeSelection,
+  VendorPassTypeError,
+} from "@/services/vendor-pass/vendor-pass-type.service";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +27,9 @@ const createSchema = z.object({
   companyName: z.string().max(120).optional().nullable(),
   categoryLabel: z.string().max(80).optional().nullable(),
   teamCapacity: z.number().int().min(1).max(500).optional(),
+  /** Access-card behaviour; omitted means UNLIMITED re-entry. */
+  reentryPolicy: z.enum(["NONE", "ONE", "UNLIMITED", "CUSTOM"]).optional(),
+  reentryLimit: z.number().int().min(1).max(999).optional().nullable(),
   accessZones: z.array(z.string().min(1).max(60)).max(20).optional(),
   setupAccess: z.boolean().optional(),
   breakdownAccess: z.boolean().optional(),
@@ -95,14 +102,25 @@ export async function POST(
   }
 
   try {
+    // The picker is per-event, so the selected type is resolved server-side:
+    // a stale tab must not mint a pass against a type this event has retired.
+    const passTypeSelection = await resolveVendorPassTypeSelection({
+      eventId,
+      value: parsed.data.passType,
+      categoryLabel: parsed.data.categoryLabel,
+    });
     const pass = await createVendorTeamPass({
       eventId,
       actorUserId: auth.ctx.userId,
       ...parsed.data,
-      passType: parsed.data.passType as never,
+      passType: passTypeSelection.passType,
+      categoryLabel: passTypeSelection.categoryLabel,
     });
     return NextResponse.json({ success: true, data: pass });
   } catch (error) {
+    if (error instanceof VendorPassTypeError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Could not create vendor pass" },
       { status: 400 }

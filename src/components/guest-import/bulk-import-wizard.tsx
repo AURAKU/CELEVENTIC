@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { TEMPLATE_COLUMN_GUIDE } from "@/lib/guest-import/template";
 import { ColumnMappingPanel } from "./column-mapping-panel";
 import { ImportPreviewTable } from "./import-preview-table";
+import { requestJson } from "./request";
 import type { BatchProgress, ColumnSuggestionView, ImportBatchView } from "./types";
 
 /**
@@ -40,6 +41,8 @@ type Step = "source" | "map" | "review" | "generate";
 const POLL_INTERVAL_FAST_MS = 800;
 const POLL_INTERVAL_MS = 1500;
 const POLL_ERROR_BACKOFF_MS = 2500;
+/** Give up polling after this many failures in a row and say so. */
+const MAX_POLL_ERRORS = 5;
 
 interface Props {
   eventId: string;
@@ -116,48 +119,36 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
   useEffect(() => {
     let cancelled = false;
     async function loadHelpers() {
-      try {
-        const [tagRes, seatingRes] = await Promise.all([
-          fetch(`/api/events/${eventId}/guest-tags`),
-          fetch(`/api/events/${eventId}/seating`),
-        ]);
-        const tagJson = await tagRes.json().catch(() => ({}));
-        const seatingJson = await seatingRes.json().catch(() => ({}));
-        if (cancelled) return;
-        if (tagRes.ok) {
-          setTags(
-            ((tagJson.data?.tags as TagOption[]) ?? []).map((tag) => ({
-              id: tag.id,
-              label: tag.label,
-            }))
-          );
-        }
-        if (seatingRes.ok) {
-          const plans = (seatingJson.data?.plans as Array<{
-            id: string;
-            planType?: string;
-            name?: string;
-          }>) ?? [];
-          const mapped = plans.map((plan) => ({
-            id: plan.id,
-            planType: plan.planType,
-            label:
-              plan.planType === "CEREMONY"
-                ? "Main Ceremony"
-                : plan.planType === "RECEPTION"
-                  ? "Event Seating"
-                  : plan.name || "Seating plan",
-          }));
-          setSeatingPlans(mapped);
-          setSettings((current) => {
-            if (current.seatingPlanId || mapped.length === 0) return current;
-            const reception =
-              mapped.find((plan) => plan.planType === "RECEPTION") ?? mapped[0]!;
-            return { ...current, seatingPlanId: reception.id };
-          });
-        }
-      } catch {
-        /* helpers are optional for paste/upload */
+      const [tagResult, seatingResult] = await Promise.all([
+        requestJson<{ tags: TagOption[] }>(`/api/events/${eventId}/guest-tags`),
+        requestJson<{ plans: Array<{ id: string; planType?: string; name?: string }> }>(
+          `/api/events/${eventId}/seating`
+        ),
+      ]);
+      if (cancelled) return;
+
+      // Tags and seating plans only enrich the import; a name-only paste works
+      // without either, so a failure here is never surfaced as an error.
+      if (tagResult.ok) {
+        setTags((tagResult.data?.tags ?? []).map((tag) => ({ id: tag.id, label: tag.label })));
+      }
+      if (seatingResult.ok) {
+        const mapped = (seatingResult.data?.plans ?? []).map((plan) => ({
+          id: plan.id,
+          planType: plan.planType,
+          label:
+            plan.planType === "CEREMONY"
+              ? "Main Ceremony"
+              : plan.planType === "RECEPTION"
+                ? "Event Seating"
+                : plan.name || "Seating plan",
+        }));
+        setSeatingPlans(mapped);
+        setSettings((current) => {
+          if (current.seatingPlanId || mapped.length === 0) return current;
+          const reception = mapped.find((plan) => plan.planType === "RECEPTION") ?? mapped[0]!;
+          return { ...current, seatingPlanId: reception.id };
+        });
       }
     }
     void loadHelpers();
@@ -180,6 +171,12 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
     []
   );
 
+  type StagedPayload = {
+    batch: ImportBatchView;
+    suggestions: ColumnSuggestionView[];
+    truncated?: boolean;
+  };
+
   async function stagePaste() {
     if (!pasted.trim()) {
       setError("Paste at least one guest name.");
@@ -187,18 +184,17 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
     }
     setBusy(true);
     setError("");
-    const res = await fetch("/api/guest-import/batches", {
+    const result = await requestJson<StagedPayload>("/api/guest-import/batches", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ eventId, text: pasted, options: optionsPayload() }),
     });
-    const data = await res.json();
     setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Could not read that list.");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
-    handleStaged(data.data);
+    handleStaged(result.data);
   }
 
   async function stageFile(file: File) {
@@ -209,72 +205,82 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
     form.append("file", file);
     form.append("options", JSON.stringify(optionsPayload()));
 
-    const res = await fetch("/api/guest-import/batches", { method: "POST", body: form });
-    const data = await res.json();
+    const result = await requestJson<StagedPayload>("/api/guest-import/batches", {
+      method: "POST",
+      body: form,
+    });
     setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Could not read that file.");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
-    handleStaged(data.data);
+    handleStaged(result.data);
   }
 
   async function applyMapping(mapping: Record<number, string>) {
     if (!batch) return;
     setBusy(true);
     setError("");
-    const res = await fetch(`/api/guest-import/batches/${batch.id}`, {
+    const result = await requestJson<StagedPayload>(`/api/guest-import/batches/${batch.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mapping, options: optionsPayload() }),
     });
-    const data = await res.json();
     setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Could not apply that mapping.");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
-    setBatch(data.data.batch);
-    setSuggestions(data.data.suggestions ?? []);
+    setBatch(result.data.batch);
+    setSuggestions(result.data.suggestions ?? []);
     setStep("review");
   }
 
+  const batchId = batch?.id;
+
   const refreshBatch = useCallback(async () => {
-    if (!batch) return;
-    const res = await fetch(`/api/guest-import/batches/${batch.id}`);
-    const data = await res.json();
-    if (res.ok) {
-      setProgress(data.data);
-      setBatch(data.data.batch);
-    }
-  }, [batch]);
+    if (!batchId) return;
+    const result = await requestJson<BatchProgress>(`/api/guest-import/batches/${batchId}`, {
+      cache: "no-store",
+    });
+    if (!result.ok) return;
+    setProgress(result.data);
+    setBatch(result.data.batch);
+  }, [batchId]);
+
+  // Entering review: load the true "what will be created" figures, which the
+  // batch counters alone cannot express once duplicates have been decided.
+  useEffect(() => {
+    if (step === "review") void refreshBatch();
+  }, [step, refreshBatch]);
 
   async function confirm(allowUnreviewedDuplicates = false) {
     if (!batch) return;
     setBusy(true);
     setError("");
-    // Persist latest organiser choices (message, tags, allowance, duplicates)
-    // before generation starts — review-step edits must not be lost.
-    const persist = await fetch(`/api/guest-import/batches/${batch.id}`, {
+
+    // Save the choices generation reads (message, tags, publish, passes). The
+    // API only re-derives rows when a parsing option changed, so the review —
+    // renamed guests, corrected allowances, duplicate decisions — survives.
+    const persisted = await requestJson(`/api/guest-import/batches/${batch.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ options: optionsPayload() }),
     });
-    if (!persist.ok) {
-      const data = await persist.json().catch(() => ({}));
+    if (!persisted.ok) {
       setBusy(false);
-      setError(data.error ?? "Could not save import settings.");
+      setError(persisted.error);
       return;
     }
-    const res = await fetch(`/api/guest-import/batches/${batch.id}/confirm`, {
+
+    const result = await requestJson(`/api/guest-import/batches/${batch.id}/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ allowUnreviewedDuplicates }),
     });
-    const data = await res.json();
     setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Could not start the import.");
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
     setStep("generate");
@@ -284,31 +290,38 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
   // Poll while generation runs. Each GET also self-heals when the jobs worker
   // is offline, so progress advances even without `npm run jobs:worker`.
   useEffect(() => {
-    if (step !== "generate" || !batch) return;
+    if (step !== "generate" || !batchId) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let polls = 0;
+    let consecutiveErrors = 0;
 
     const tick = async () => {
-      try {
-        const res = await fetch(`/api/guest-import/batches/${batch.id}`, {
-          cache: "no-store",
-        });
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          timer = setTimeout(tick, POLL_ERROR_BACKOFF_MS);
+      const result = await requestJson<BatchProgress>(`/api/guest-import/batches/${batchId}`, {
+        cache: "no-store",
+      });
+      if (cancelled) return;
+
+      if (!result.ok) {
+        consecutiveErrors += 1;
+        // Generation continues server-side, so a flaky poll is not a failed
+        // import — but say so rather than spinning silently forever.
+        if (consecutiveErrors >= MAX_POLL_ERRORS) {
+          setError(
+            `${result.error} Creation is still running in the background — reopen this import from History to check on it.`
+          );
           return;
         }
-        setProgress(data.data);
-        setBatch(data.data.batch);
-        polls += 1;
-        if (!data.data.finished) {
-          const delay = polls < 4 ? POLL_INTERVAL_FAST_MS : POLL_INTERVAL_MS;
-          timer = setTimeout(tick, delay);
-        }
-      } catch {
-        if (!cancelled) timer = setTimeout(tick, POLL_ERROR_BACKOFF_MS);
+        timer = setTimeout(tick, POLL_ERROR_BACKOFF_MS);
+        return;
+      }
+
+      consecutiveErrors = 0;
+      setProgress(result.data);
+      setBatch(result.data.batch);
+      polls += 1;
+      if (!result.data.finished) {
+        timer = setTimeout(tick, polls < 4 ? POLL_INTERVAL_FAST_MS : POLL_INTERVAL_MS);
       }
     };
 
@@ -317,7 +330,15 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [step, batch?.id]);
+  }, [step, batchId]);
+
+  // Server truth once the review screen has loaded it, batch counters as the
+  // first-paint fallback. A duplicate the organiser chose to create counts in
+  // the former and is invisible to the latter.
+  const pendingRows =
+    progress?.pendingRows ??
+    (batch ? batch.readyRows + batch.reviewRows + batch.duplicateRows : 0);
+  const pendingHeads = progress?.pendingHeads ?? 0;
 
   function reset() {
     setBatch(null);
@@ -351,7 +372,10 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
                   id="guest-paste"
                   rows={10}
                   value={pasted}
-                  onChange={(e) => setPasted(e.target.value)}
+                  onChange={(e) => {
+                    setPasted(e.target.value);
+                    if (error) setError("");
+                  }}
                   placeholder={"Ama Serwaa\nMr & Mrs Boateng\nKofi Mensah +1\nThe Asante Family\nKwabena Osei, kwabena@example.com, 0244123456"}
                   className="font-mono text-sm"
                 />
@@ -570,41 +594,52 @@ export function BulkImportWizard({ eventId, eventTitle }: Props) {
       {step === "review" && batch && (
         <div className="space-y-4">
           <SummaryStrip batch={batch} />
-          <ImportPreviewTable batchId={batch.id} editable onChanged={refreshBatch} />
+          <ImportPreviewTable
+            batchId={batch.id}
+            editable
+            onChanged={refreshBatch}
+            duplicatesInBatch={progress?.unreviewedDuplicates ?? batch.duplicateRows}
+          />
 
-          {settings.message !== undefined && (
-            <Card>
-              <CardContent className="space-y-1.5 p-4">
-                <Label htmlFor="import-message">Message on every invitation (optional)</Label>
-                <Textarea
-                  id="import-message"
-                  rows={2}
-                  value={settings.message}
-                  onChange={(e) => setSettings((s) => ({ ...s, message: e.target.value }))}
-                  placeholder="We would be honoured by your presence."
-                />
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardContent className="space-y-1.5 p-4">
+              <Label htmlFor="import-message">Message on every invitation (optional)</Label>
+              <Textarea
+                id="import-message"
+                rows={2}
+                value={settings.message}
+                onChange={(e) => setSettings((s) => ({ ...s, message: e.target.value }))}
+                placeholder="We would be honoured by your presence."
+              />
+            </CardContent>
+          </Card>
 
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:flex-wrap sm:items-center">
             <p className="text-sm text-slate-600">
-              Ready to create <strong>{batch.readyRows + batch.reviewRows}</strong> invitation
-              {batch.readyRows + batch.reviewRows === 1 ? "" : "s"}
+              Ready to create <strong>{pendingRows}</strong> invitation
+              {pendingRows === 1 ? "" : "s"}
+              {pendingHeads > 0 ? `, admitting ${pendingHeads} in total` : ""}
               {eventTitle ? ` for ${eventTitle}` : ""}. Nothing is sent yet.
             </p>
-            <div className="ml-auto flex gap-2">
+            <div className="flex gap-2 sm:ml-auto">
               <Button variant="ghost" onClick={reset} disabled={busy}>
                 Start over
               </Button>
-              <Button onClick={() => confirm(false)} disabled={busy}>
+              <Button onClick={() => confirm(false)} disabled={busy || pendingRows === 0}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Create invitations
               </Button>
             </div>
           </div>
 
-          {error.includes("duplicate") && (
+          {pendingRows === 0 && (
+            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
+              Every row is set to skip or cannot be imported. Fix a name or switch a row to create
+              before continuing.
+            </p>
+          )}
+
+          {error.toLowerCase().includes("duplicate") && (
             <Button variant="outline" onClick={() => confirm(true)} disabled={busy}>
               Skip the remaining duplicates and continue
             </Button>
@@ -707,6 +742,7 @@ function GenerationPanel({
 }) {
   const [sending, setSending] = useState(false);
   const [deliveryNote, setDeliveryNote] = useState("");
+  const [deliveryError, setDeliveryError] = useState("");
   const [channels, setChannels] = useState<string[]>([]);
   const finished = progress?.finished ?? false;
   const percent = progress?.percent ?? 0;
@@ -714,25 +750,35 @@ function GenerationPanel({
   async function send() {
     if (channels.length === 0) return;
     setSending(true);
-    const res = await fetch(`/api/guest-import/batches/${batch.id}/deliveries`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "send", channels }),
-    });
-    const data = await res.json();
+    setDeliveryError("");
+    const result = await requestJson<{ queued: number; skipped: number }>(
+      `/api/guest-import/batches/${batch.id}/deliveries`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send", channels }),
+      }
+    );
     setSending(false);
+
+    if (!result.ok) {
+      setDeliveryError(result.error);
+      return;
+    }
+
+    const { queued, skipped } = result.data;
     setDeliveryNote(
-      res.ok
-        ? `Queued ${data.data.queued} message${data.data.queued === 1 ? "" : "s"}. ${data.data.skipped} guest${data.data.skipped === 1 ? "" : "s"} had no contact details, share their links by hand. Delivery continues automatically.`
-        : (data.error ?? "Could not queue delivery.")
+      `Queued ${queued} message${queued === 1 ? "" : "s"}.` +
+        (skipped > 0
+          ? ` ${skipped} guest${skipped === 1 ? " has" : "s have"} no contact details — share their links by hand.`
+          : "") +
+        " Delivery continues automatically."
     );
     onRefresh();
-    // Kick progress polls so inline delivery drain advances without a worker.
-    if (res.ok) {
-      void fetch(`/api/guest-import/batches/${batch.id}/deliveries?page=1&limit=1`, {
-        cache: "no-store",
-      });
-    }
+    // Poking the list endpoint drains the queue inline when no worker is up.
+    void requestJson(`/api/guest-import/batches/${batch.id}/deliveries?page=1&limit=1`, {
+      cache: "no-store",
+    });
   }
 
   return (
@@ -805,8 +851,11 @@ function GenerationPanel({
               Guests with no phone or email are skipped, not failed, their links stay
               ready for you to share by hand.
             </p>
+            {deliveryError && (
+              <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{deliveryError}</p>
+            )}
             {deliveryNote && <p className="text-sm text-slate-700">{deliveryNote}</p>}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button onClick={send} disabled={sending || channels.length === 0}>
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Queue delivery

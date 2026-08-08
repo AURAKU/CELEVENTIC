@@ -17,8 +17,12 @@ import { normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import { generateVendorManualCode } from "@/lib/qr-hub/vendor-token";
 import {
   clampTeamCapacity,
+  currentEntryCycle,
   DEFAULT_ACCESS_ZONES,
   deriveVendorPassStatus,
+  describeReentryPolicy,
+  isMultiEntryPass,
+  reentryAllowance,
   remainingCapacity,
   resolveAdmitQuantity,
   type VendorAdmitMode,
@@ -50,6 +54,26 @@ function parseZones(value: unknown): string[] {
   return [...DEFAULT_ACCESS_ZONES];
 }
 
+/**
+ * Vendor passes are access cards: unless the host asks for a stricter mode they
+ * keep re-opening after the team is fully in. CUSTOM without a usable limit
+ * would silently behave like a single-visit pass, so it falls back to ONE.
+ */
+function normalizeReentry(
+  policy: VendorReentryPolicy | undefined,
+  limit: number | null | undefined
+): { policy: VendorReentryPolicy; limit: number | null } {
+  const known: VendorReentryPolicy[] = ["NONE", "ONE", "UNLIMITED", "CUSTOM"];
+  const resolved = policy && known.includes(policy) ? policy : "UNLIMITED";
+  if (resolved === "CUSTOM") {
+    const count = Math.trunc(limit ?? 0);
+    if (count < 1) return { policy: "ONE", limit: 1 };
+    return { policy: "CUSTOM", limit: Math.min(999, count) };
+  }
+  if (resolved === "ONE") return { policy: "ONE", limit: 1 };
+  return { policy: resolved, limit: null };
+}
+
 async function allocateCode(eventId: string, length = 6): Promise<string> {
   for (let i = 0; i < 40; i++) {
     const code = generateVendorManualCode(length);
@@ -78,6 +102,12 @@ function toView(
     categoryLabel: string | null;
     teamCapacity: number;
     admittedCount: number;
+    reentryPolicy: VendorReentryPolicy;
+    reentryLimit: number | null;
+    reentryUsed: number;
+    entryCycle: number;
+    totalEntries: number;
+    totalAdmitted: number;
     accessZones: unknown;
     setupAccess: boolean;
     breakdownAccess: boolean;
@@ -104,6 +134,7 @@ function toView(
   opts: { includeToken?: boolean; baseUrl?: string } = {}
 ) {
   const remaining = remainingCapacity(pass);
+  const allowance = reentryAllowance(pass);
   const token = opts.includeToken ? vendorTeamTokenFromNonce(pass.tokenNonce) : null;
   return {
     id: pass.id,
@@ -122,6 +153,15 @@ function toView(
     teamCapacity: pass.teamCapacity,
     admittedCount: pass.admittedCount,
     remainingCount: remaining,
+    reentryPolicy: pass.reentryPolicy,
+    reentryLimit: pass.reentryLimit,
+    reentryUsed: pass.reentryUsed,
+    reentryRemaining: allowance.remaining,
+    multiEntry: allowance.allowed,
+    accessLabel: describeReentryPolicy(pass),
+    entryCycle: currentEntryCycle(pass),
+    totalEntries: pass.totalEntries,
+    totalAdmitted: pass.totalAdmitted,
     accessZones: parseZones(pass.accessZones),
     setupAccess: pass.setupAccess,
     breakdownAccess: pass.breakdownAccess,
@@ -190,6 +230,8 @@ export async function createVendorTeamPass(input: CreateVendorTeamPassInput) {
   if (passMode === "INDIVIDUAL") capacity = 1;
   if (passMode === "TEAM" && capacity < 2) capacity = 2;
 
+  const reentry = normalizeReentry(input.reentryPolicy, input.reentryLimit);
+
   const { nonce, token } = mintVendorTeamToken();
   const codeLength = input.codeLength === 4 ? 4 : 6;
   const admissionCode = await allocateCode(input.eventId, codeLength);
@@ -231,8 +273,8 @@ export async function createVendorTeamPass(input: CreateVendorTeamPassInput) {
       status: "ACTIVE",
       validFrom: input.validFrom ? new Date(input.validFrom) : null,
       validUntil: input.validUntil ? new Date(input.validUntil) : null,
-      reentryPolicy: input.reentryPolicy ?? "NONE",
-      reentryLimit: input.reentryLimit ?? null,
+      reentryPolicy: reentry.policy,
+      reentryLimit: reentry.limit,
       members: members.length
         ? {
             create: members.map((name, index) => ({
@@ -260,6 +302,8 @@ export async function createVendorTeamPass(input: CreateVendorTeamPassInput) {
       passMode,
       teamCapacity: capacity,
       passType: pass.passType,
+      reentryPolicy: reentry.policy,
+      reentryLimit: reentry.limit,
     },
   });
 
@@ -395,6 +439,16 @@ export async function updateVendorTeamPass(
   }
   if (patch.validUntil !== undefined) {
     data.validUntil = patch.validUntil ? new Date(patch.validUntil) : null;
+  }
+
+  if (patch.reentryPolicy) {
+    const reentry = normalizeReentry(patch.reentryPolicy, patch.reentryLimit);
+    data.reentryPolicy = reentry.policy;
+    data.reentryLimit = reentry.limit;
+  } else if (patch.reentryLimit !== undefined && current.reentryPolicy === "CUSTOM") {
+    const reentry = normalizeReentry("CUSTOM", patch.reentryLimit);
+    data.reentryPolicy = reentry.policy;
+    data.reentryLimit = reentry.limit;
   }
 
   if (typeof patch.teamCapacity === "number") {
@@ -613,7 +667,9 @@ async function findPassForAdmit(input: {
   return { pass: null, wrongEvent: false as const };
 }
 
-export async function admitVendorTeamPass(input: {
+export type VendorEntryChannel = "qr" | "manual_code" | "dashboard" | "offline";
+
+export interface AdmitVendorTeamPassInput {
   eventId: string;
   token?: string | null;
   code?: string | null;
@@ -626,7 +682,50 @@ export async function admitVendorTeamPass(input: {
   offline?: boolean;
   clientRecordId?: string | null;
   dryRun?: boolean;
-}) {
+  channel?: VendorEntryChannel | null;
+}
+
+/**
+ * Record a refused scan so the host sees the full story on the entry log —
+ * a vendor turned away at 11pm matters as much as one let in.
+ */
+async function logDeniedEntry(
+  pass: { id: string; eventId: string; entryCycle: number },
+  input: AdmitVendorTeamPassInput,
+  reason: string
+): Promise<void> {
+  if (input.dryRun) return;
+  await prisma.vendorTeamPassAdmission
+    .create({
+      data: {
+        passId: pass.id,
+        eventId: pass.eventId,
+        quantity: 0,
+        mode: input.mode,
+        outcome: "DENIED",
+        denialReason: reason,
+        entryCycle: Math.max(1, pass.entryCycle),
+        channel: resolveChannel(input),
+        scannedById: input.scannerUserId,
+        gate: input.gate ?? null,
+        deviceInfo: input.deviceInfo ?? null,
+        offline: Boolean(input.offline),
+        // Denied attempts never consume the idempotency key: the same record
+        // must still be able to sync successfully later.
+        clientRecordId: null,
+      },
+    })
+    .catch(() => undefined);
+}
+
+function resolveChannel(input: AdmitVendorTeamPassInput): string {
+  if (input.channel) return input.channel;
+  if (input.offline) return "offline";
+  if (input.passId) return "dashboard";
+  return input.code ? "manual_code" : "qr";
+}
+
+export async function admitVendorTeamPass(input: AdmitVendorTeamPassInput) {
   const include = {
     members: { orderBy: { sortOrder: "asc" as const } },
     event: { select: { id: true, title: true } },
@@ -670,49 +769,41 @@ export async function admitVendorTeamPass(input: {
   const resolvedPass = lookup.pass;
 
   const now = new Date();
-  if (resolvedPass.validFrom && now < resolvedPass.validFrom) {
+  const deny = async (reason: string) => {
+    await logDeniedEntry(resolvedPass, input, reason);
     return {
       found: true as const,
       ok: false as const,
-      error: "This pass is not valid yet.",
+      error: reason,
       pass: toView(resolvedPass),
     };
+  };
+
+  if (resolvedPass.validFrom && now < resolvedPass.validFrom) {
+    return deny("This pass is not valid yet.");
   }
   if (resolvedPass.validUntil && now > resolvedPass.validUntil) {
-    return {
-      found: true as const,
-      ok: false as const,
-      error: "This pass has expired.",
-      pass: toView(resolvedPass),
-    };
+    return deny("This pass has expired.");
   }
 
-  const decision = resolveAdmitQuantity(
-    {
-      teamCapacity: resolvedPass.teamCapacity,
-      admittedCount: resolvedPass.admittedCount,
-      status: resolvedPass.status,
-    },
-    input.mode,
-    input.quantity
-  );
+  const decision = resolveAdmitQuantity(resolvedPass, input.mode, input.quantity);
   if (!decision.ok) {
-    return {
-      found: true as const,
-      ok: false as const,
-      error: decision.error,
-      pass: toView(resolvedPass),
-    };
+    return deny(decision.error);
   }
 
   if (input.dryRun) {
+    const capacityForCycle = decision.startsNewCycle
+      ? resolvedPass.teamCapacity
+      : remainingCapacity(resolvedPass);
     return {
       found: true as const,
       ok: true as const,
       dryRun: true as const,
       quantity: decision.quantity,
+      startsNewCycle: decision.startsNewCycle,
+      entryCycle: decision.entryCycle,
       pass: toView(resolvedPass),
-      remainingAfter: remainingCapacity(resolvedPass) - decision.quantity,
+      remainingAfter: capacityForCycle - decision.quantity,
     };
   }
 
@@ -733,18 +824,17 @@ export async function admitVendorTeamPass(input: {
   }
 
   const result = await prisma.$transaction(async (tx) => {
+    // Re-resolve against the freshest row: a concurrent scan may have filled the
+    // cycle (or already re-opened the card) since the decision above.
     const current = await tx.vendorTeamPass.findUnique({ where: { id: resolvedPass.id } });
     if (!current) return null;
-    if (
-      current.revision !== resolvedPass.revision &&
-      current.admittedCount !== resolvedPass.admittedCount
-    ) {
-      // Concurrent update — re-check remaining
-    }
-    const remaining = remainingCapacity(current);
-    if (decision.quantity > remaining) return { conflict: true as const, current };
 
-    const nextAdmitted = current.admittedCount + decision.quantity;
+    const live = resolveAdmitQuantity(current, input.mode, input.quantity);
+    if (!live.ok) return { conflict: true as const, error: live.error };
+
+    const nextAdmitted = live.startsNewCycle
+      ? live.quantity
+      : current.admittedCount + live.quantity;
     const nextStatus = deriveVendorPassStatus(nextAdmitted, current.teamCapacity);
     const updated = await tx.vendorTeamPass.updateMany({
       where: {
@@ -756,18 +846,25 @@ export async function admitVendorTeamPass(input: {
         admittedCount: nextAdmitted,
         revision: current.revision + 1,
         status: nextStatus as VendorTeamPassStatus,
+        entryCycle: live.entryCycle,
+        reentryUsed: live.startsNewCycle ? current.reentryUsed + 1 : current.reentryUsed,
+        totalEntries: current.totalEntries + 1,
+        totalAdmitted: current.totalAdmitted + live.quantity,
         firstAdmittedAt: current.firstAdmittedAt ?? now,
         lastAdmittedAt: now,
       },
     });
-    if (updated.count !== 1) return { conflict: true as const, current };
+    if (updated.count !== 1) return { conflict: true as const };
 
     await tx.vendorTeamPassAdmission.create({
       data: {
         passId: current.id,
         eventId: current.eventId,
-        quantity: decision.quantity,
+        quantity: live.quantity,
         mode: input.mode,
+        outcome: "ADMITTED",
+        entryCycle: live.entryCycle,
+        channel: resolveChannel(input),
         scannedById: input.scannerUserId,
         gate: input.gate ?? null,
         deviceInfo: input.deviceInfo ?? null,
@@ -776,15 +873,24 @@ export async function admitVendorTeamPass(input: {
       },
     });
 
-    return { conflict: false as const };
+    return {
+      conflict: false as const,
+      quantity: live.quantity,
+      startsNewCycle: live.startsNewCycle,
+      entryCycle: live.entryCycle,
+    };
   });
 
   if (!result || result.conflict) {
+    const reason =
+      (result && "error" in result ? result.error : null) ??
+      "Another scan just used the remaining capacity. Refresh and try again.";
+    await logDeniedEntry(resolvedPass, input, reason);
     const fresh = await getVendorTeamPass(resolvedPass.id);
     return {
       found: true as const,
       ok: false as const,
-      error: "Another scan just used the remaining capacity. Refresh and try again.",
+      error: reason,
       pass: fresh!,
     };
   }
@@ -799,28 +905,124 @@ export async function admitVendorTeamPass(input: {
       kind: "vendor_team_pass_admitted",
       eventId: input.eventId,
       mode: input.mode,
-      quantity: decision.quantity,
+      quantity: result.quantity,
+      entryCycle: result.entryCycle,
+      reentry: result.startsNewCycle,
       admittedCount: fresh?.admittedCount,
       teamCapacity: fresh?.teamCapacity,
+      totalEntries: fresh?.totalEntries,
     },
   });
 
   return {
     found: true as const,
     ok: true as const,
-    quantity: decision.quantity,
+    quantity: result.quantity,
+    startsNewCycle: result.startsNewCycle,
+    entryCycle: result.entryCycle,
     pass: fresh!,
     guestAdmissionIncremented: false,
     companionUnlocked: false,
   };
 }
 
+export interface VendorEntryLogRow {
+  id: string;
+  createdAt: string;
+  outcome: "ADMITTED" | "DENIED";
+  denialReason: string | null;
+  quantity: number;
+  mode: string;
+  entryCycle: number;
+  channel: string | null;
+  gate: string | null;
+  deviceInfo: string | null;
+  offline: boolean;
+  scannedById: string | null;
+  scannedByName: string | null;
+}
+
+/**
+ * The vendor access card's entry log: every scan, admitted or refused, newest
+ * first, with the scanner's name resolved in one extra query.
+ */
 export async function getVendorTeamPassHistory(passId: string, limit = 50) {
-  return prisma.vendorTeamPassAdmission.findMany({
-    where: { passId },
-    orderBy: { createdAt: "desc" },
-    take: Math.min(100, Math.max(1, limit)),
-  });
+  const take = Math.min(200, Math.max(1, Math.trunc(limit)));
+  const [pass, rows, totals] = await Promise.all([
+    prisma.vendorTeamPass.findUnique({
+      where: { id: passId },
+      select: {
+        id: true,
+        teamCapacity: true,
+        admittedCount: true,
+        status: true,
+        entryCycle: true,
+        totalEntries: true,
+        totalAdmitted: true,
+        reentryPolicy: true,
+        reentryLimit: true,
+        reentryUsed: true,
+        firstAdmittedAt: true,
+        lastAdmittedAt: true,
+      },
+    }),
+    prisma.vendorTeamPassAdmission.findMany({
+      where: { passId },
+      orderBy: { createdAt: "desc" },
+      take,
+    }),
+    prisma.vendorTeamPassAdmission.groupBy({
+      by: ["outcome"],
+      where: { passId },
+      _count: { _all: true },
+      _sum: { quantity: true },
+    }),
+  ]);
+
+  const scannerIds = [...new Set(rows.map((r) => r.scannedById).filter((v): v is string => !!v))];
+  const scanners = scannerIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: scannerIds } },
+        select: { id: true, name: true, email: true },
+      })
+    : [];
+  const scannerById = new Map(scanners.map((u) => [u.id, u.name || u.email || null]));
+
+  const admitted = totals.find((t) => t.outcome === "ADMITTED");
+  const denied = totals.find((t) => t.outcome === "DENIED");
+
+  const history: VendorEntryLogRow[] = rows.map((row) => ({
+    id: row.id,
+    createdAt: row.createdAt.toISOString(),
+    outcome: row.outcome === "DENIED" ? "DENIED" : "ADMITTED",
+    denialReason: row.denialReason,
+    quantity: row.quantity,
+    mode: row.mode,
+    entryCycle: row.entryCycle,
+    channel: row.channel,
+    gate: row.gate,
+    deviceInfo: row.deviceInfo,
+    offline: row.offline,
+    scannedById: row.scannedById,
+    scannedByName: row.scannedById ? scannerById.get(row.scannedById) ?? null : null,
+  }));
+
+  return {
+    history,
+    summary: {
+      entries: admitted?._count._all ?? 0,
+      peopleAdmitted: admitted?._sum.quantity ?? 0,
+      deniedAttempts: denied?._count._all ?? 0,
+      currentCycle: pass ? currentEntryCycle(pass) : 1,
+      inCurrentCycle: pass?.admittedCount ?? 0,
+      teamCapacity: pass?.teamCapacity ?? 0,
+      multiEntry: pass ? isMultiEntryPass(pass) : false,
+      accessLabel: pass ? describeReentryPolicy(pass) : "",
+      firstEntryAt: pass?.firstAdmittedAt?.toISOString() ?? null,
+      lastEntryAt: pass?.lastAdmittedAt?.toISOString() ?? null,
+      truncated: rows.length === take,
+    },
+  };
 }
 
 /** Offline package slice — capacity-aware vendor team passes for one event. */
@@ -847,12 +1049,18 @@ export async function offlineVendorTeamSlice(eventId: string) {
       validFrom: true,
       validUntil: true,
       entryMode: true,
+      reentryPolicy: true,
+      reentryLimit: true,
+      reentryUsed: true,
+      entryCycle: true,
+      totalEntries: true,
       updatedAt: true,
     },
   });
   return rows.map((row) => ({
     ...row,
     remainingCount: remainingCapacity(row),
+    multiEntry: isMultiEntryPass(row),
     accessZones: parseZones(row.accessZones),
     kind: "vendor_team_pass" as const,
   }));

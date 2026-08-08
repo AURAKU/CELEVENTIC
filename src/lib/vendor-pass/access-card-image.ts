@@ -10,6 +10,7 @@ import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
 import { CELEVENTIC_LOGO_MARK, CELEVENTIC_OFFICIAL_LOGO } from "@/lib/qr/qr-constants";
 import { formatAdmissionCode } from "@/lib/admission/pass-code";
 import { CELEVENTIC_PALETTE } from "@/lib/experience/celeventic-palette";
+import { vendorPassTypeLabel } from "@/lib/vendor-pass/pass-types";
 
 const CARD_W = 1080;
 const CARD_H = 1720;
@@ -22,6 +23,8 @@ export type VendorAccessCardImageInput = {
   eventTitle?: string | null;
   passMode: string;
   passType: string;
+  /** Label of an event-specific pass type, snapshotted when the pass was issued. */
+  categoryLabel?: string | null;
   teamCapacity: number;
   admittedCount?: number;
   admissionCode: string;
@@ -93,7 +96,7 @@ export async function generateVendorAccessCardPng(
     input.passMode === "INDIVIDUAL"
       ? "Individual Pass"
       : `Team Pass · ${input.teamCapacity} people`;
-  const typeLabel = input.passType.replace(/_/g, " ");
+  const typeLabel = vendorPassTypeLabel(input.passType, input.categoryLabel);
   const eventLine = input.eventTitle ? truncate(input.eventTitle, 48) : "";
   const title = truncate(input.title, 48);
   const validLine = input.validUntil

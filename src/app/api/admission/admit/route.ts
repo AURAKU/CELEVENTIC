@@ -99,6 +99,7 @@ export async function POST(req: Request) {
       gate: data.gate ?? null,
       deviceInfo: deviceInfo(req),
       dryRun: data.dryRun,
+      channel: data.code && !vendorToken ? "manual_code" : "qr",
     });
 
     if (vendorResult.found) {
@@ -129,6 +130,10 @@ export async function POST(req: Request) {
         });
       }
       const passView = vendorResult.pass;
+      const startsNewCycle =
+        "startsNewCycle" in vendorResult ? Boolean(vendorResult.startsNewCycle) : false;
+      const entryCycle =
+        "entryCycle" in vendorResult ? (vendorResult.entryCycle as number) : undefined;
       const decision = vendorGateDecision({
         pass: passView,
         ok: vendorResult.ok,
@@ -136,6 +141,8 @@ export async function POST(req: Request) {
         quantity: vendorResult.ok ? vendorResult.quantity : undefined,
         error: vendorResult.ok ? undefined : vendorResult.error,
         quantityConfirmed: data.quantityConfirmed,
+        startsNewCycle,
+        entryCycle,
       });
 
       await createAuditLog({
@@ -149,6 +156,8 @@ export async function POST(req: Request) {
           eventId: data.eventId,
           outcome: decision.outcome,
           quantity: decision.admitQuantity,
+          entryCycle,
+          reentry: startsNewCycle,
         },
       });
 
@@ -170,6 +179,10 @@ export async function POST(req: Request) {
             passType: passView.passType,
             contactName: passView.contactName,
             remainingCount: passView.remainingCount,
+            multiEntry: passView.multiEntry,
+            accessLabel: passView.accessLabel,
+            entryCycle: passView.entryCycle,
+            totalEntries: passView.totalEntries,
           },
           party: [],
           seating: null,

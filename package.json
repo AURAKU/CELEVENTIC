@@ -90,12 +90,13 @@
         "test:guest-import-e2e": "tsx --test --test-concurrency=1 src/services/guest-import/__tests__/*.test.ts",
         "test:guest-search": "tsx --test src/lib/guest-search/__tests__/*.test.ts",
         "test:guest-search-e2e": "tsx --test --test-concurrency=1 src/services/guest-search/__tests__/*.test.ts",
-        "test:all": "npm run test:auth && npm run test:video && npm run test:media-audit && npm run test:transformstream-race && npm run test:uploads-stream-safe && npm run test:video-pipeline && npm run test:uploads && npm run test:experience-engine && npm run test:opening-preview && npm run test:live-editability && npm run test:currency && npm run test:social && npm run test:app-url && npm run test:invitation-sharing && npm run test:gifts && npm run test:admission && npm run test:admission-passes && npm run test:guest-import && npm run test:guest-import-e2e && npm run test:guest-search && npm run test:guest-search-e2e && npm run test:event-guide",
+        "test:all": "npm run test:auth && npm run test:video && npm run test:media-audit && npm run test:transformstream-race && npm run test:uploads-stream-safe && npm run test:video-pipeline && npm run test:uploads && npm run test:experience-engine && npm run test:opening-preview && npm run test:live-editability && npm run test:currency && npm run test:social && npm run test:app-url && npm run test:invitation-sharing && npm run test:gifts && npm run test:admission && npm run test:admission-passes && npm run test:vendor-pass-types && npm run test:guest-import && npm run test:guest-import-e2e && npm run test:guest-search && npm run test:guest-search-e2e && npm run test:event-guide",
         "db:studio": "prisma studio",
         "brand:assets": "node scripts/setup-brand-assets.mjs",
         "prepare:local": "node scripts/setup-brand-assets.mjs && npm run db:push",
         "postinstall": "prisma generate",
-        "predev": "node scripts/setup-brand-assets.mjs"
+        "predev": "node scripts/setup-brand-assets.mjs",
+        "test:vendor-pass-types": "tsx --test --test-concurrency=1 src/lib/vendor-pass/__tests__/*.test.ts src/services/vendor-pass/__tests__/*.test.ts"
     },
     "dependencies": {
         "@auth/prisma-adapter": "^2.9.1",

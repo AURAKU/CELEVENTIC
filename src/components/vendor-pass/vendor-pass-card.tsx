@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { formatAdmissionCode } from "@/lib/admission/pass-code";
 import { QR_PASS_DISPLAY_MIN_PX, QR_PASS_DISPLAY_SOURCE_PX } from "@/lib/qr/qr-constants";
 import { BRAND_LOGO_MARK } from "@/lib/brand/constants";
+import { vendorPassTypeLabel } from "@/lib/vendor-pass/pass-types";
 
 const QR_IMAGE_RENDERING = { imageRendering: "pixelated" as const };
 
@@ -13,6 +14,7 @@ export function VendorPassCard({
   eventTitle,
   passMode,
   passType,
+  categoryLabel,
   teamCapacity,
   admittedCount,
   admissionCode,
@@ -27,6 +29,8 @@ export function VendorPassCard({
   eventTitle?: string | null;
   passMode: string;
   passType: string;
+  /** Label of an event-specific pass type, snapshotted when the pass was issued. */
+  categoryLabel?: string | null;
   teamCapacity: number;
   admittedCount?: number;
   admissionCode: string;
@@ -43,7 +47,7 @@ export function VendorPassCard({
   const zones = accessZones.length ? accessZones.join(" · ") : "General Event Area";
   const passKind =
     passMode === "INDIVIDUAL" ? "Individual Pass" : `Team Pass · ${teamCapacity}`;
-  const typeLabel = passType.replace(/_/g, " ");
+  const typeLabel = vendorPassTypeLabel(passType, categoryLabel);
   const capacityLine =
     passMode === "INDIVIDUAL"
       ? "1 person authorized"

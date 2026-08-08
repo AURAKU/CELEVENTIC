@@ -1,6 +1,7 @@
 import type { GuestImportSource } from "@prisma/client";
 import { MAX_IMPORT_ROWS, type ParsedTable } from "./types";
 import { parseLines, parseTable, sniffDelimiter } from "./table-parse";
+import { looksLikeDelimitedTable } from "./column-detect";
 import { looksLikeXlsx, parseXlsx, XlsxParseError } from "./xlsx";
 
 /**
@@ -41,14 +42,14 @@ export function parsePastedText(text: string): ParseResult {
   const delimiter = sniffDelimiter(text);
   const table = parseTable(text, delimiter);
 
-  // A single column means it was really a name-per-line paste; re-parse that
-  // way so quoting rules never split "Mensah, Kofi" into two guests.
-  if (table.columnCount <= 1) {
-    const lines = parseLines(text);
-    return capRows(lines, "PASTE_LINES");
+  // Splitting on punctuation is only safe when the columns prove themselves.
+  // Anything else is a name-per-line paste, where `parseLines` keeps
+  // "Mensah, Kofi" whole and still lifts out a trailing email or phone.
+  if (!looksLikeDelimitedTable(table)) {
+    return capRows(parseLines(text), "PASTE_LINES");
   }
 
-  return capRows(table, delimiter === "\t" ? "PASTE_TABLE" : "PASTE_TABLE");
+  return capRows(table, "PASTE_TABLE");
 }
 
 /** Parse an uploaded file by sniffing its bytes. */

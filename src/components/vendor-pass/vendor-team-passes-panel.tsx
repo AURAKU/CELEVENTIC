@@ -8,16 +8,34 @@ import { Badge } from "@/components/ui/badge";
 import { PaginationBar } from "@/components/ui/pagination";
 import {
   DEFAULT_ACCESS_ZONES,
-  VENDOR_PASS_TYPE_OPTIONS,
+  VENDOR_ACCESS_MODE_OPTIONS,
 } from "@/lib/vendor-pass/capacity";
-import { Copy, Loader2, Plus, RefreshCw, Shield } from "lucide-react";
+import {
+  mergeVendorPassTypeOptions,
+  vendorPassTypeLabel,
+  type VendorPassTypeOption,
+} from "@/lib/vendor-pass/pass-types";
+import {
+  Copy,
+  Loader2,
+  LogIn,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  ScrollText,
+  Settings2,
+  Shield,
+  Trash2,
+} from "lucide-react";
 import { buildVendorTeamPassUrl } from "@/lib/vendor-pass/token-format";
+import { VendorEntryLog } from "@/components/vendor-pass/vendor-entry-log";
 
 type VendorPassRow = {
   id: string;
   title: string;
   vendorName: string;
   passType: string;
+  categoryLabel: string | null;
   passMode: string;
   entryMode: string;
   teamCapacity: number;
@@ -30,6 +48,14 @@ type VendorPassRow = {
   publicToken: string;
   contactName: string | null;
   lastAdmittedAt: string | null;
+  reentryPolicy: string;
+  reentryLimit: number | null;
+  reentryRemaining: number | null;
+  multiEntry: boolean;
+  accessLabel: string;
+  entryCycle: number;
+  totalEntries: number;
+  totalAdmitted: number;
 };
 
 /** Always resolve against the current origin so local passes don’t open on live (and vice versa). */
@@ -74,6 +100,21 @@ export function VendorTeamPassesPanel({
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(openCreateDefault);
   const [busy, setBusy] = useState(false);
+  /** Pass ids whose entry log is expanded, and a per-pass refetch counter. */
+  const [openLogs, setOpenLogs] = useState<Record<string, boolean>>({});
+  const [logReload, setLogReload] = useState<Record<string, number>>({});
+  const [admittingId, setAdmittingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
+  /** Per-event pass types: the picker plus the organiser's manage panel. */
+  const [passTypes, setPassTypes] = useState<VendorPassTypeOption[]>(() =>
+    mergeVendorPassTypeOptions([])
+  );
+  const [hiddenTypes, setHiddenTypes] = useState<Array<{ key: string; label: string }>>([]);
+  const [typeUsage, setTypeUsage] = useState<Record<string, number>>({});
+  const [managingTypes, setManagingTypes] = useState(false);
+  const [newTypeLabel, setNewTypeLabel] = useState("");
+  const [typeBusy, setTypeBusy] = useState(false);
+  const [typeError, setTypeError] = useState("");
 
   useEffect(() => {
     if (openCreateDefault) setCreating(true);
@@ -89,6 +130,8 @@ export function VendorTeamPassesPanel({
     passMode: "TEAM" as "INDIVIDUAL" | "TEAM",
     entryMode: "INDIVIDUAL_ENTRY",
     teamCapacity: 8,
+    reentryPolicy: "UNLIMITED",
+    reentryLimit: 2,
     notes: "",
     memberNames: "",
   });
@@ -125,10 +168,129 @@ export function VendorTeamPassesPanel({
     [eventId, page, q]
   );
 
+  const loadPassTypes = useCallback(async () => {
+    if (!eventId) return;
+    try {
+      const res = await fetch(
+        `/api/events/${encodeURIComponent(eventId)}/vendor-pass-types`,
+        { cache: "no-store" }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) return;
+      const options: VendorPassTypeOption[] = json.data?.options ?? [];
+      if (!options.length) return;
+      setPassTypes(options);
+      setHiddenTypes(json.data?.hidden ?? []);
+      setTypeUsage(
+        Object.fromEntries(
+          (json.data?.managed ?? []).map((item: { key: string; inUseCount: number }) => [
+            item.key,
+            item.inUseCount,
+          ])
+        )
+      );
+      // The selected type may have just been removed by another organiser.
+      setForm((f) =>
+        options.some((option) => option.value === f.passType)
+          ? f
+          : { ...f, passType: options[0].value }
+      );
+    } catch {
+      // The built-in list stays usable when the picker cannot be refreshed.
+    }
+  }, [eventId]);
+
   useEffect(() => {
     void load(1);
+    void loadPassTypes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
+
+  async function addPassType() {
+    const label = newTypeLabel.trim();
+    if (label.length < 2) {
+      setTypeError("Enter a pass type name (at least 2 characters).");
+      return;
+    }
+    setTypeBusy(true);
+    setTypeError("");
+    try {
+      const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/vendor-pass-types`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTypeError(vendorPassErrorMessage(json.error, "Could not add pass type"));
+        return;
+      }
+      setNewTypeLabel("");
+      await loadPassTypes();
+      if (json.data?.value) setForm((f) => ({ ...f, passType: json.data.value }));
+      setNotice(`Pass type "${json.data?.label ?? label}" added.`);
+    } catch {
+      setTypeError("Could not reach the server.");
+    } finally {
+      setTypeBusy(false);
+    }
+  }
+
+  async function restorePassType(key: string) {
+    setTypeBusy(true);
+    setTypeError("");
+    try {
+      const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/vendor-pass-types`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTypeError(vendorPassErrorMessage(json.error, "Could not restore pass type"));
+        return;
+      }
+      await loadPassTypes();
+    } catch {
+      setTypeError("Could not reach the server.");
+    } finally {
+      setTypeBusy(false);
+    }
+  }
+
+  /**
+   * Removing a type never invalidates a printed pass: the server hides built-ins
+   * and deactivates custom types that are still in use, and only asks for
+   * confirmation when passes would be affected.
+   */
+  async function removePassType(option: VendorPassTypeOption) {
+    const verb = option.deletable ? "Delete" : "Hide";
+    if (!window.confirm(`${verb} the "${option.label}" pass type for this event?`)) return;
+
+    setTypeBusy(true);
+    setTypeError("");
+    try {
+      const url = `/api/events/${encodeURIComponent(eventId)}/vendor-pass-types/${encodeURIComponent(option.key)}`;
+      let res = await fetch(url, { method: "DELETE" });
+      let json = await res.json().catch(() => ({}));
+
+      if (!res.ok && json?.requiresConfirmation) {
+        if (!window.confirm(`${json.error}`)) return;
+        res = await fetch(`${url}?confirm=1`, { method: "DELETE" });
+        json = await res.json().catch(() => ({}));
+      }
+      if (!res.ok) {
+        setTypeError(vendorPassErrorMessage(json.error, "Could not remove pass type"));
+        return;
+      }
+      await loadPassTypes();
+      setNotice(json.data?.message ?? "Pass type removed.");
+    } catch {
+      setTypeError("Could not reach the server.");
+    } finally {
+      setTypeBusy(false);
+    }
+  }
 
   async function createPass() {
     setBusy(true);
@@ -147,6 +309,8 @@ export function VendorTeamPassesPanel({
           passMode: form.passMode,
           entryMode: form.entryMode,
           teamCapacity: form.passMode === "INDIVIDUAL" ? 1 : form.teamCapacity,
+          reentryPolicy: form.reentryPolicy,
+          reentryLimit: form.reentryPolicy === "CUSTOM" ? form.reentryLimit : null,
           accessZones: [...DEFAULT_ACCESS_ZONES],
           notes: form.notes || null,
           memberNames: form.memberNames
@@ -161,19 +325,22 @@ export function VendorTeamPassesPanel({
         return;
       }
       setCreating(false);
-      setForm({
+      setForm((f) => ({
         title: "",
         vendorName: "",
         contactName: "",
         phone: "",
         email: "",
-        passType: "MUSICAL_BAND",
+        // Keep the type selected — hosts usually issue several of the same kind.
+        passType: f.passType,
         passMode: "TEAM",
         entryMode: "INDIVIDUAL_ENTRY",
         teamCapacity: 8,
+        reentryPolicy: "UNLIMITED",
+        reentryLimit: 2,
         notes: "",
         memberNames: "",
-      });
+      }));
       await load(1);
       if (json.data?.publicToken) {
         window.open(buildVendorTeamPassUrl(json.data.publicToken, window.location.origin), "_blank");
@@ -184,6 +351,35 @@ export function VendorTeamPassesPanel({
       setError("Could not reach the server.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  /**
+   * Host-side admission for a vendor who walked up without a scanner. Uses the
+   * same service as the gate, so the entry log reads identically either way.
+   */
+  async function admitOne(row: VendorPassRow) {
+    setAdmittingId(row.id);
+    setError("");
+    setNotice("");
+    try {
+      const res = await fetch(`/api/vendor-passes/${row.id}/admit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "one", quantity: 1 }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.success === false) {
+        setError(vendorPassErrorMessage(json?.error, "Could not log this entry"));
+        return;
+      }
+      setNotice(`Entry logged for ${row.title}.`);
+      setLogReload((prev) => ({ ...prev, [row.id]: (prev[row.id] ?? 0) + 1 }));
+      await load(page);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setAdmittingId(null);
     }
   }
 
@@ -222,6 +418,12 @@ export function VendorTeamPassesPanel({
         </div>
       )}
 
+      {notice && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {notice}
+        </div>
+      )}
+
       {creating && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="font-bold text-slate-900">New vendor / team pass</h3>
@@ -243,35 +445,133 @@ export function VendorTeamPassesPanel({
               />
             </label>
             <label className="text-sm">
-              <span className="mb-1 block font-medium">Contact person</span>
+              <span className="mb-1 block font-medium">Contact person name</span>
               <Input
                 value={form.contactName}
                 onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
+                placeholder="Full name"
               />
             </label>
-            <label className="text-sm">
-              <span className="mb-1 block font-medium">Pass type</span>
+            <div className="text-sm">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <label className="font-medium" htmlFor="vendor-pass-type">
+                  Pass type
+                </label>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline"
+                  onClick={() => setManagingTypes((open) => !open)}
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                  {managingTypes ? "Done" : "Manage types"}
+                </button>
+              </div>
               <select
+                id="vendor-pass-type"
                 className="h-10 w-full rounded-md border border-slate-200 px-3"
                 value={form.passType}
                 onChange={(e) => setForm((f) => ({ ...f, passType: e.target.value }))}
               >
-                {VENDOR_PASS_TYPE_OPTIONS.map((opt) => (
+                {passTypes.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
+
+            {managingTypes && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                <p className="text-sm font-medium text-slate-900">Pass types for this event</p>
+                <p className="mt-0.5 text-xs text-slate-600">
+                  Add your own types (Catering, Security, DJ crew…). Removing a type never
+                  affects passes already issued — they keep their printed label.
+                </p>
+
+                {typeError && (
+                  <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                    {typeError}
+                  </div>
+                )}
+
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    value={newTypeLabel}
+                    onChange={(e) => setNewTypeLabel(e.target.value)}
+                    placeholder="New pass type (e.g. Catering)"
+                    maxLength={60}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void addPassType();
+                      }
+                    }}
+                  />
+                  <Button type="button" size="sm" disabled={typeBusy} onClick={() => void addPassType()}>
+                    {typeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Add type
+                  </Button>
+                </div>
+
+                <ul className="mt-3 flex flex-wrap gap-1.5">
+                  {passTypes.map((opt) => (
+                    <li
+                      key={opt.value}
+                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1 text-xs text-slate-700"
+                    >
+                      <span>{opt.label}</span>
+                      {opt.source === "CUSTOM" && (typeUsage[opt.key] ?? 0) > 0 && (
+                        <span className="text-slate-400">· {typeUsage[opt.key]} in use</span>
+                      )}
+                      <button
+                        type="button"
+                        disabled={typeBusy}
+                        aria-label={`${opt.deletable ? "Delete" : "Hide"} ${opt.label}`}
+                        title={
+                          opt.deletable
+                            ? "Delete this custom pass type"
+                            : "Built-in type — hide it for this event"
+                        }
+                        className="rounded-full p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                        onClick={() => void removePassType(opt)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                {hiddenTypes.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-medium text-slate-600">Hidden built-in types</p>
+                    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                      {hiddenTypes.map((hidden) => (
+                        <li key={hidden.key}>
+                          <button
+                            type="button"
+                            disabled={typeBusy}
+                            className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 py-1 pl-3 pr-2 text-xs text-slate-500 hover:border-brand-400 hover:text-brand-700 disabled:opacity-50"
+                            onClick={() => void restorePassType(hidden.key)}
+                          >
+                            {hidden.label}
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
             <label className="text-sm">
-              <span className="mb-1 block font-medium">Phone</span>
+              <span className="mb-1 block font-medium">Phone (optional)</span>
               <Input
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               />
             </label>
             <label className="text-sm">
-              <span className="mb-1 block font-medium">Email</span>
+              <span className="mb-1 block font-medium">Email (optional)</span>
               <Input
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -330,6 +630,37 @@ export function VendorTeamPassesPanel({
                 <option value="ADMIT_FULL_TEAM">Admit full team (confirm)</option>
               </select>
             </label>
+            <label className="text-sm">
+              <span className="mb-1 block font-medium">Access mode</span>
+              <select
+                className="h-10 w-full rounded-md border border-slate-200 px-3"
+                value={form.reentryPolicy}
+                onChange={(e) => setForm((f) => ({ ...f, reentryPolicy: e.target.value }))}
+              >
+                {VENDOR_ACCESS_MODE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-slate-500">
+                {VENDOR_ACCESS_MODE_OPTIONS.find((o) => o.value === form.reentryPolicy)?.hint ?? ""}
+              </span>
+            </label>
+            {form.reentryPolicy === "CUSTOM" && (
+              <label className="text-sm">
+                <span className="mb-1 block font-medium">Re-entries allowed</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={form.reentryLimit}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, reentryLimit: Number(e.target.value) || 1 }))
+                  }
+                />
+              </label>
+            )}
             <label className="text-sm sm:col-span-2">
               <span className="mb-1 block font-medium">Optional named members (one per line)</span>
               <textarea
@@ -394,20 +725,58 @@ export function VendorTeamPassesPanel({
                   <h3 className="truncate font-bold text-slate-900">{row.title}</h3>
                   <p className="text-sm text-slate-600">{row.vendorName}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Badge variant="outline">
+                      {vendorPassTypeLabel(row.passType, row.categoryLabel)}
+                    </Badge>
                     <Badge variant="outline">{row.passMode}</Badge>
                     <Badge variant="outline">{row.status}</Badge>
-                    <Badge variant="outline">
-                      {row.admittedCount}/{row.teamCapacity} admitted
+                    <Badge variant={row.multiEntry ? "success" : "outline"}>
+                      {row.accessLabel}
                     </Badge>
+                    <Badge variant="outline">
+                      {row.admittedCount}/{row.teamCapacity} in this entry
+                    </Badge>
+                    {row.totalEntries > 0 && (
+                      <Badge variant="outline">
+                        {row.totalEntries} scans · {row.totalAdmitted} admitted all-time
+                      </Badge>
+                    )}
+                    {row.entryCycle > 1 && <Badge variant="outline">Entry #{row.entryCycle}</Badge>}
                     <Badge variant="outline" className="font-mono">
                       {row.admissionCode}
                     </Badge>
                   </div>
                   <p className="mt-2 text-xs text-slate-500">
                     Access: {row.accessZones.join(" · ")}
+                    {row.lastAdmittedAt
+                      ? ` · last entry ${new Date(row.lastAdmittedAt).toLocaleString()}`
+                      : ""}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={admittingId === row.id || row.status === "REVOKED"}
+                    onClick={() => void admitOne(row)}
+                  >
+                    {admittingId === row.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogIn className="h-4 w-4" />
+                    )}
+                    Log entry
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setOpenLogs((prev) => ({ ...prev, [row.id]: !prev[row.id] }))}
+                  >
+                    <ScrollText className="h-4 w-4" />
+                    {openLogs[row.id] ? "Hide entry log" : "Entry log"}
+                  </Button>
                   <Button type="button" size="sm" variant="outline" asChild>
                     <Link href={buildVendorTeamPassUrl(row.publicToken)} target="_blank">
                       View Pass
@@ -532,6 +901,14 @@ export function VendorTeamPassesPanel({
                   )}
                 </div>
               </div>
+
+              {openLogs[row.id] && (
+                <VendorEntryLog
+                  passId={row.id}
+                  className="mt-4"
+                  reloadToken={logReload[row.id] ?? 0}
+                />
+              )}
             </article>
           ))
         )}

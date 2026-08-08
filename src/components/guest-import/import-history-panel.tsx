@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaginationBar } from "@/components/ui/pagination";
 import { ImportPreviewTable } from "./import-preview-table";
+import { requestJson } from "./request";
 import type { ImportBatchView } from "./types";
 
 /**
@@ -29,6 +30,12 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED: "bg-slate-100 text-slate-500",
 };
 
+interface LifecycleResult {
+  invitationsRemoved?: number;
+  passesRevoked?: number;
+  invitationsRestored?: number;
+}
+
 export function ImportHistoryPanel({ eventId }: { eventId: string }) {
   const [batches, setBatches] = useState<ImportBatchView[]>([]);
   const [page, setPage] = useState(1);
@@ -36,17 +43,24 @@ export function ImportHistoryPanel({ eventId }: { eventId: string }) {
   const [total, setTotal] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [safety, setSafety] = useState<Record<string, { canRollback: boolean; reason: string | null }>>({});
-  const [busy, setBusy] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/guest-import/batches?eventId=${eventId}&page=${page}&limit=20`);
-    const data = await res.json();
-    if (res.ok) {
-      setBatches(data.data.items ?? []);
-      setPages(data.data.pages ?? 1);
-      setTotal(data.data.total ?? 0);
+    const result = await requestJson<{ items: ImportBatchView[]; pages: number; total: number }>(
+      `/api/guest-import/batches?eventId=${encodeURIComponent(eventId)}&page=${page}&limit=20`
+    );
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
     }
+    setError("");
+    setBatches(result.data.items ?? []);
+    setPages(result.data.pages ?? 1);
+    setTotal(result.data.total ?? 0);
   }, [eventId, page]);
 
   useEffect(() => {
@@ -54,50 +68,66 @@ export function ImportHistoryPanel({ eventId }: { eventId: string }) {
   }, [load]);
 
   const checkSafety = useCallback(async (batchId: string) => {
-    const res = await fetch(`/api/guest-import/batches/${batchId}/lifecycle`);
-    const data = await res.json();
-    if (res.ok) {
-      setSafety((prev) => ({
-        ...prev,
-        [batchId]: { canRollback: data.data.canRollback, reason: data.data.reason },
-      }));
-    }
+    const result = await requestJson<{ canRollback: boolean; reason: string | null }>(
+      `/api/guest-import/batches/${batchId}/lifecycle`
+    );
+    if (!result.ok) return;
+    setSafety((prev) => ({
+      ...prev,
+      [batchId]: { canRollback: result.data.canRollback, reason: result.data.reason },
+    }));
   }, []);
 
   async function act(batchId: string, action: "rollback" | "archive" | "restore") {
-    setBusy(true);
+    setPendingAction(`${batchId}:${action}`);
     setMessage("");
-    const res = await fetch(`/api/guest-import/batches/${batchId}/lifecycle`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, reason: "Organiser requested from import history" }),
-    });
-    const data = await res.json();
-    setBusy(false);
+    setError("");
 
-    if (!res.ok) {
-      setMessage(data.error ?? "That did not work.");
-      if (data.suggestArchive) {
-        setSafety((prev) => ({ ...prev, [batchId]: { canRollback: false, reason: data.error } }));
+    const result = await requestJson<LifecycleResult>(
+      `/api/guest-import/batches/${batchId}/lifecycle`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, reason: "Organiser requested from import history" }),
+      }
+    );
+    setPendingAction(null);
+
+    if (!result.ok) {
+      setError(result.error);
+      // A refused rollback means somebody has been admitted; record that so the
+      // button stops offering an action the server will keep rejecting.
+      if (action === "rollback") {
+        setSafety((prev) => ({ ...prev, [batchId]: { canRollback: false, reason: result.error } }));
       }
       return;
     }
 
     setMessage(
       action === "rollback"
-        ? `Rolled back, removed ${data.data.invitationsRemoved} invitation${data.data.invitationsRemoved === 1 ? "" : "s"}.`
+        ? `Rolled back — removed ${result.data.invitationsRemoved ?? 0} invitation${result.data.invitationsRemoved === 1 ? "" : "s"}.`
         : action === "archive"
-          ? `Archived, revoked ${data.data.passesRevoked} pass${data.data.passesRevoked === 1 ? "" : "es"}.`
-          : `Restored ${data.data.invitationsRestored} invitation${data.data.invitationsRestored === 1 ? "" : "s"}.`
+          ? `Archived — revoked ${result.data.passesRevoked ?? 0} pass${result.data.passesRevoked === 1 ? "" : "es"}.`
+          : `Restored ${result.data.invitationsRestored ?? 0} invitation${result.data.invitationsRestored === 1 ? "" : "s"}.`
     );
-    await load();
+    await Promise.all([load(), checkSafety(batchId)]);
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center gap-2 p-8 text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading past imports…
+        </CardContent>
+      </Card>
+    );
   }
 
   if (batches.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center text-slate-500">
-          No imports yet. Your first bulk import will appear here.
+          {error || "No imports yet. Your first bulk import will appear here."}
         </CardContent>
       </Card>
     );
@@ -105,6 +135,7 @@ export function ImportHistoryPanel({ eventId }: { eventId: string }) {
 
   return (
     <div className="space-y-4">
+      {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
       {message && <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">{message}</p>}
 
       <Card>
@@ -136,7 +167,7 @@ export function ImportHistoryPanel({ eventId }: { eventId: string }) {
                   {batch.status.replace("_", " ").toLowerCase()}
                 </span>
 
-                <div className="ml-auto flex flex-wrap gap-2">
+                <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -154,18 +185,44 @@ export function ImportHistoryPanel({ eventId }: { eventId: string }) {
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={busy || safety[batch.id]?.canRollback === false}
+                        disabled={
+                          pendingAction != null || safety[batch.id]?.canRollback === false
+                        }
                         onClick={() => act(batch.id, "rollback")}
                         title={safety[batch.id]?.reason ?? "Remove everything this import created"}
                       >
-                        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Undo2 className="h-3.5 w-3.5" />}
+                        {pendingAction === `${batch.id}:rollback` ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Undo2 className="h-3.5 w-3.5" />
+                        )}
                         Roll back
                       </Button>
-                      <Button size="sm" variant="outline" disabled={busy} onClick={() => act(batch.id, "archive")}>
-                        <Archive className="h-3.5 w-3.5" /> Archive
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={pendingAction != null}
+                        onClick={() => act(batch.id, "archive")}
+                      >
+                        {pendingAction === `${batch.id}:archive` ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Archive className="h-3.5 w-3.5" />
+                        )}
+                        Archive
                       </Button>
-                      <Button size="sm" variant="ghost" disabled={busy} onClick={() => act(batch.id, "restore")}>
-                        <RotateCcw className="h-3.5 w-3.5" /> Restore
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={pendingAction != null}
+                        onClick={() => act(batch.id, "restore")}
+                      >
+                        {pendingAction === `${batch.id}:restore` ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        )}
+                        Restore
                       </Button>
                     </>
                   )}

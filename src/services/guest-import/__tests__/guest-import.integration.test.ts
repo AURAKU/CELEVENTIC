@@ -266,7 +266,7 @@ describe("duplicates", () => {
 
     await assert.rejects(
       () => guestImportService.confirmBatch(second.batch.id, organizerId),
-      /need a decision/i,
+      /needs? a decision/i,
       "an unreviewed duplicate must never be silently resolved"
     );
   });
@@ -335,6 +335,109 @@ describe("duplicates", () => {
     );
     const after = await db.invitation.findUniqueOrThrow({ where: { id: original.id } });
     assert.equal(after.id, original.id);
+  });
+});
+
+describe("saving settings from the review step", () => {
+  /**
+   * The wizard saves the organiser's settings immediately before confirming.
+   * That save used to re-derive every row from the source cells, which threw
+   * away renamed guests, corrected allowances and — fatally — the duplicate
+   * decisions that confirmation waits for. The import became impossible to
+   * complete: resolve every duplicate, press create, get told the duplicates
+   * still need a decision.
+   */
+  it("keeps every review edit when a generation-time setting is saved", async () => {
+    const db = await loadPrisma();
+    const { guestImportService } = await import("../guest-import.service");
+
+    const repeated = `Settings Repeat ${RUN}`;
+    const { batch } = await stageBatch([repeated, repeated, `Settings Other ${RUN}`]);
+
+    const rows = await db.guestImportRow.findMany({
+      where: { batchId: batch.id },
+      orderBy: { rowIndex: "asc" },
+    });
+    await guestImportService.updateRows(batch.id, organizerId, [
+      { rowId: rows[0].id, name: `Settings Renamed ${RUN}`, partySize: 4 },
+      { rowId: rows[1].id, decision: "SKIP" },
+    ]);
+
+    await guestImportService.applyBatchPatch(batch.id, organizerId, {
+      options: { message: "See you there.", publishImmediately: false, defaultTagIds: [] },
+    });
+
+    const after = await db.guestImportRow.findMany({
+      where: { batchId: batch.id },
+      orderBy: { rowIndex: "asc" },
+    });
+    assert.equal(after[0].name, `Settings Renamed ${RUN}`, "the rename survives");
+    assert.equal(after[0].partySize, 4, "the corrected allowance survives");
+    assert.equal(after[1].decision, "SKIP", "the duplicate decision survives");
+    assert.ok(after[1].reviewedAt, "the row is still marked reviewed");
+
+    const stored = await db.guestImportBatch.findUniqueOrThrow({ where: { id: batch.id } });
+    assert.equal((stored.options as Record<string, unknown>).message, "See you there.");
+
+    // And the whole point: confirmation is no longer blocked.
+    const { queuedRows } = await guestImportService.confirmBatch(batch.id, organizerId);
+    assert.equal(queuedRows, 2, "the renamed guest and the other row, not the skipped duplicate");
+
+    await generateFully(batch.id);
+    const invitation = await db.invitation.findFirstOrThrow({
+      where: { importBatchId: batch.id, name: `Settings Renamed ${RUN}` },
+    });
+    assert.equal(invitation.admissionAllowance, 4, "the gate honours the reviewed allowance");
+    assert.equal(invitation.status, "DRAFT", "the saved publish setting was applied");
+  });
+
+  it("re-derives rows when a setting changes how they parse", async () => {
+    const db = await loadPrisma();
+    const { guestImportService } = await import("../guest-import.service");
+
+    const { batch } = await stageBatch([`Rederive One ${RUN}`, `Rederive Two ${RUN}`]);
+    const [first] = await db.guestImportRow.findMany({
+      where: { batchId: batch.id },
+      orderBy: { rowIndex: "asc" },
+    });
+    await guestImportService.updateRows(batch.id, organizerId, [
+      { rowId: first.id, partySize: 7 },
+    ]);
+
+    // The default allowance decides what a row with no stated size admits, so
+    // changing it has to reach rows the organiser has not touched.
+    await guestImportService.applyBatchPatch(batch.id, organizerId, {
+      options: { defaultPartySize: 3 },
+    });
+
+    const after = await db.guestImportRow.findMany({
+      where: { batchId: batch.id },
+      orderBy: { rowIndex: "asc" },
+    });
+    assert.deepEqual(after.map((row) => row.partySize), [3, 3]);
+  });
+
+  it("counts what confirming would actually create, skips excluded", async () => {
+    const db = await loadPrisma();
+    const { guestImportService } = await import("../guest-import.service");
+
+    const { batch } = await stageBatch([
+      `Pending One ${RUN}`,
+      `Pending Two ${RUN}`,
+      `Pending Three ${RUN}`,
+    ]);
+    const rows = await db.guestImportRow.findMany({
+      where: { batchId: batch.id },
+      orderBy: { rowIndex: "asc" },
+    });
+    await guestImportService.updateRows(batch.id, organizerId, [
+      { rowId: rows[0].id, partySize: 5 },
+      { rowId: rows[2].id, decision: "SKIP" },
+    ]);
+
+    const pending = await guestImportService.pendingWork(batch.id);
+    assert.equal(pending.rows, 2, "the skipped row is not counted");
+    assert.equal(pending.heads, 6, "five heads plus one, the skip contributing nothing");
   });
 });
 
