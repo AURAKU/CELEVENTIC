@@ -6,7 +6,7 @@ import {
   Heart, Mail, Users, Armchair, Clock, Store, Gift, QrCode, Image, Sparkles,
   MessageSquare, Wallet, UsersRound, Flower2, Video, Archive, Cake, Ticket,
   Palette, Presentation, UserPlus, Calendar, BarChart3, Music, Layers, Mic,
-  BadgeCheck, Star, Tent, Map, LayoutDashboard, Lock,
+  BadgeCheck, Star, Tent, Map, LayoutDashboard, BookOpen, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WorkspaceNavItem } from "@/hooks/use-event-workspace";
@@ -15,7 +15,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Heart, Mail, Users, Armchair, Clock, Store, Gift, QrCode, Image, Sparkles,
   MessageSquare, Wallet, UsersRound, Flower2, Video, Archive, Cake, Ticket,
   Palette, Presentation, UserPlus, Calendar, BarChart3, Music, Layers, Mic,
-  BadgeCheck, Star, Tent, Map, LayoutDashboard,
+  BadgeCheck, Star, Tent, Map, LayoutDashboard, BookOpen,
 };
 
 interface EventWorkspaceNavProps {

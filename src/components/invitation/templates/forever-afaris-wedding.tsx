@@ -47,6 +47,27 @@ function resolveBoard(design: InvitationRenderProps["design"]): ResolvedWeddingB
   return mergeWeddingBoard(fromStudio);
 }
 
+/**
+ * Fluid type scale — readable on ~360px phones through desktop, without
+ * locking guests into fixed 10–13px labels that collapse on retina mobiles.
+ */
+const T = {
+  label: "text-[clamp(0.8125rem,2.1vw,0.95rem)]",
+  labelTight: "text-[clamp(0.75rem,1.9vw,0.875rem)]",
+  body: "text-[clamp(1.0625rem,2.6vw,1.25rem)]",
+  bodyLg: "text-[clamp(1.125rem,2.8vw,1.35rem)]",
+  name: "block font-[family-name:var(--font-cinzel)] text-[clamp(1.55rem,5.2vw,2.35rem)] font-semibold leading-tight tracking-[0.1em]",
+  script: "font-[family-name:var(--font-great-vibes)] text-[clamp(2.5rem,7.5vw,3.6rem)] leading-none",
+  scriptSm: "font-[family-name:var(--font-great-vibes)] text-[clamp(2.1rem,6.5vw,3rem)] leading-tight",
+  sectionLabel: "text-[clamp(0.8125rem,2vw,0.95rem)] uppercase tracking-[0.3em]",
+  cta: "text-[clamp(0.78rem,1.9vw,0.9rem)] uppercase tracking-[0.2em]",
+  programmeTime: "text-[clamp(0.75rem,1.8vw,0.875rem)] uppercase tracking-[0.18em]",
+  programmeTitle:
+    "break-words font-[family-name:var(--font-cinzel)] text-[clamp(1.05rem,2.8vw,1.25rem)] font-semibold leading-snug",
+  programmeDesc:
+    "mt-1 whitespace-pre-line break-words font-[family-name:var(--font-cormorant)] text-[clamp(0.98rem,2.4vw,1.125rem)] leading-relaxed",
+} as const;
+
 /* -------------------------------- motion -------------------------------- */
 
 const EASE_SILK = [0.22, 1, 0.36, 1] as const;
@@ -75,13 +96,17 @@ function Reveal({
   delay?: number;
   as?: "div" | "section";
 }) {
-  const { variants } = useReveal();
+  const { variants, reduced } = useReveal();
+  const staticPreview = useInvitationStaticPreview();
+  // Live invites scroll inside `.invite-viewport-root` (fixed + overflow-y),
+  // not the window. Framer's whileInView defaults to the browser viewport, so
+  // sections that are on-screen in the invite scroller can stay opacity:0
+  // forever — including the full Order of the Day. Animate in on mount instead.
   const common = {
     className,
     variants,
-    initial: "hidden" as const,
-    whileInView: "show" as const,
-    viewport: { once: true, amount: 0.35 },
+    initial: staticPreview || reduced ? ("show" as const) : ("hidden" as const),
+    animate: "show" as const,
     transition: { delay },
   };
   if (as === "section") return <motion.section {...common}>{children}</motion.section>;
@@ -176,13 +201,13 @@ function WeddingDateSaveRow({
         }}
       >
         <div
-          className="flex flex-col justify-center text-right text-[10px] uppercase tracking-[0.2em]"
+          className={`flex flex-col justify-center text-right ${T.labelTight} uppercase tracking-[0.2em]`}
           style={{ color: C.cocoa }}
         >
           <span>{weekday}</span>
         </div>
         <div
-          className="px-3 font-[family-name:var(--font-cinzel)] text-lg font-semibold"
+          className="px-3 font-[family-name:var(--font-cinzel)] text-[clamp(1.15rem,3.2vw,1.4rem)] font-semibold"
           style={{
             color: C.ink,
             borderLeft: `1px solid ${C.border}`,
@@ -192,14 +217,14 @@ function WeddingDateSaveRow({
           <div className="py-1">{displayDate}</div>
         </div>
         <div
-          className="flex min-w-[5.25rem] flex-col justify-center whitespace-nowrap text-left text-base font-semibold uppercase tracking-[0.12em] sm:text-lg"
+          className="flex min-w-[5.5rem] flex-col justify-center whitespace-nowrap text-left text-[clamp(1.05rem,2.8vw,1.25rem)] font-semibold uppercase tracking-[0.12em]"
           style={{ color: C.cocoa }}
         >
           <span>{timeLabel}</span>
         </div>
       </button>
       <p
-        className="mt-2.5 font-[family-name:var(--font-cormorant)] text-[11px] tracking-[0.14em] transition-opacity duration-300"
+        className={`mt-2.5 font-[family-name:var(--font-cormorant)] ${T.label} tracking-[0.14em] transition-opacity duration-300`}
         style={{
           color: state === "error" ? C.rose : state === "done" ? C.goldDeep : C.cocoa,
           opacity: staticPreview ? 0.45 : state === "idle" ? 0.72 : 1,
@@ -265,14 +290,11 @@ function WeddingCountdown({
 
   return (
     <div className="text-center">
-      <p
-        className="font-[family-name:var(--font-great-vibes)] text-3xl"
-        style={{ color: C.goldDeep }}
-      >
+      <p className={T.scriptSm} style={{ color: C.goldDeep }}>
         {heading}
       </p>
       {parts.expired ? (
-        <p className="mt-4 text-sm uppercase tracking-[0.28em]" style={{ color: C.cocoa }}>
+        <p className={`mt-4 ${T.sectionLabel}`} style={{ color: C.cocoa }}>
           {expiredMessage}
         </p>
       ) : (
@@ -280,7 +302,7 @@ function WeddingCountdown({
           {cells.map(([value, label]) => (
             <div
               key={label}
-              className="flex min-w-[62px] flex-col items-center rounded-xl px-2 py-3 sm:min-w-[76px]"
+              className="flex min-w-[68px] flex-col items-center rounded-xl px-2 py-3 sm:min-w-[84px]"
               style={{
                 background: `linear-gradient(180deg, ${C.linen}, ${C.ivory})`,
                 border: `1px solid ${C.border}`,
@@ -288,13 +310,13 @@ function WeddingCountdown({
               }}
             >
               <span
-                className="font-[family-name:var(--font-cinzel)] text-3xl font-semibold tabular-nums sm:text-4xl"
+                className="font-[family-name:var(--font-cinzel)] text-[clamp(1.75rem,5vw,2.35rem)] font-semibold tabular-nums"
                 style={{ color: C.ink }}
               >
                 {String(value).padStart(2, "0")}
               </span>
               <span
-                className="mt-1 text-[9px] uppercase tracking-[0.22em] sm:text-[10px]"
+                className={`mt-1 ${T.labelTight} uppercase tracking-[0.22em]`}
                 style={{ color: C.cocoa }}
               >
                 {label}
@@ -374,7 +396,7 @@ function ScratchCard({
       style={{ border: `1px solid ${C.border}`, background: `linear-gradient(180deg, ${C.linen}, ${C.ivory})` }}
     >
       <p
-        className="px-6 py-8 text-center font-[family-name:var(--font-cormorant)] text-[14px] leading-relaxed"
+        className={`px-6 py-8 text-center font-[family-name:var(--font-cormorant)] ${T.bodyLg} leading-relaxed`}
         style={{ color: C.cocoa }}
       >
         {message}
@@ -402,7 +424,7 @@ function ScratchCard({
         <button
           type="button"
           onClick={() => setRevealed(true)}
-          className="absolute inset-x-0 bottom-3 mx-auto w-fit rounded-full px-4 py-1.5 text-[10px] uppercase tracking-[0.24em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className={`absolute inset-x-0 bottom-3 mx-auto w-fit rounded-full px-4 py-1.5 ${T.cta} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
           style={{ color: C.ink, background: `${C.linen}dd`, border: `1px solid ${C.border}` }}
         >
           {prompt}
@@ -537,11 +559,11 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             style={{ background: `${C.linen}cc`, border: `1px solid ${C.border}` }}
             data-invite-field="guest-welcome"
           >
-            <span className="text-[10px] uppercase tracking-[0.28em]" style={{ color: C.cocoa }}>
+            <span className={`${T.label} uppercase tracking-[0.28em]`} style={{ color: C.cocoa }}>
               Invited guest
             </span>
             <span
-              className="font-[family-name:var(--font-cinzel)] text-lg"
+              className="font-[family-name:var(--font-cinzel)] text-[clamp(1.2rem,3.5vw,1.5rem)]"
               style={{ color: C.goldDeep }}
               data-invite-field="guest-name"
             >
@@ -559,42 +581,30 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           />
         )}
 
-        <p className="text-[11px] uppercase tracking-[0.34em]" style={{ color: C.cocoa }}>
+        <p className={`${T.label} uppercase tracking-[0.3em]`} style={{ color: C.cocoa }}>
           {board.eyebrow}
         </p>
 
         {board.scriptTitle && (
-          <p
-            className="mt-3 font-[family-name:var(--font-great-vibes)] text-4xl leading-none"
-            style={{ color: C.goldDeep }}
-          >
+          <p className={`mt-3 ${T.script}`} style={{ color: C.goldDeep }}>
             {board.scriptTitle}
           </p>
         )}
 
-        <h1 className="mt-6 space-y-1">
-          <span
-            className="block font-[family-name:var(--font-cinzel)] text-2xl font-semibold leading-tight tracking-[0.12em] sm:text-[1.7rem]"
-            style={{ color: C.ink }}
-          >
+        <h1 className="mt-6 space-y-2">
+          <span className={T.name} style={{ color: C.ink }}>
             {couple1}
           </span>
-          <span
-            className="block font-[family-name:var(--font-great-vibes)] text-4xl leading-none"
-            style={{ color: C.goldDeep }}
-          >
+          <span className={`block ${T.script}`} style={{ color: C.goldDeep }}>
             and
           </span>
-          <span
-            className="block font-[family-name:var(--font-cinzel)] text-xl font-semibold leading-tight tracking-[0.1em] sm:text-2xl"
-            style={{ color: C.ink }}
-          >
+          <span className={T.name} style={{ color: C.ink }}>
             {couple2}
           </span>
         </h1>
 
         <p
-          className="mx-auto mt-6 max-w-[22rem] font-[family-name:var(--font-cormorant)] text-[13px] leading-relaxed"
+          className={`mx-auto mt-6 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.bodyLg} leading-relaxed`}
           style={{ color: C.cocoa }}
         >
           {board.invitationCopy}
@@ -606,15 +616,15 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       features.familyIntro && board.familyIntro ? (
         <Reveal as="section" className="text-center">
           {familyHeading ? (
-            <h2 className="text-[12px] uppercase tracking-[0.34em]" style={{ color: C.gold }}>
+            <h2 className={T.sectionLabel} style={{ color: C.gold }}>
               {familyHeading}
             </h2>
           ) : null}
           <p
             className={
               familyHeading
-                ? "mx-auto mt-4 max-w-[24rem] font-[family-name:var(--font-cormorant)] text-[13.5px] leading-relaxed"
-                : "mx-auto max-w-[24rem] font-[family-name:var(--font-cormorant)] text-[13.5px] leading-relaxed"
+                ? `mx-auto mt-4 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.body} leading-relaxed`
+                : `mx-auto max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.body} leading-relaxed`
             }
             style={{ color: C.cocoa }}
           >
@@ -640,13 +650,13 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}
           >
             <div
-              className="flex flex-col justify-center text-right text-[10px] uppercase tracking-[0.2em]"
+              className={`flex flex-col justify-center text-right ${T.labelTight} uppercase tracking-[0.2em]`}
               style={{ color: C.cocoa }}
             >
               <span>{weekday}</span>
             </div>
             <div
-              className="px-3 font-[family-name:var(--font-cinzel)] text-lg font-semibold"
+              className="px-3 font-[family-name:var(--font-cinzel)] text-[clamp(1.15rem,3.2vw,1.4rem)] font-semibold"
               style={{
                 color: C.ink,
                 borderLeft: `1px solid ${C.border}`,
@@ -656,7 +666,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
               <div className="py-1">{displayDate}</div>
             </div>
             <div
-              className="flex min-w-[5.25rem] flex-col justify-center whitespace-nowrap text-left text-base font-semibold uppercase tracking-[0.12em] sm:text-lg"
+              className="flex min-w-[5.5rem] flex-col justify-center whitespace-nowrap text-left text-[clamp(1.05rem,2.8vw,1.25rem)] font-semibold uppercase tracking-[0.12em]"
               style={{ color: C.cocoa }}
             >
               <span>{timeLabel}</span>
@@ -665,7 +675,10 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         )}
 
         {!features.location && venueName ? (
-          <p className="mt-5 font-[family-name:var(--font-cinzel)] text-sm tracking-[0.14em]" style={{ color: C.ink }}>
+          <p
+            className="mt-5 font-[family-name:var(--font-cinzel)] text-[clamp(0.95rem,2.5vw,1.15rem)] tracking-[0.14em]"
+            style={{ color: C.ink }}
+          >
             {venueName}
           </p>
         ) : null}
@@ -673,11 +686,17 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         {features.location ? (
           <div className="mt-7 text-center">
             <VenueSketch palette={C} />
-            <p className="mt-4 font-[family-name:var(--font-cinzel)] text-sm tracking-[0.14em]" style={{ color: C.ink }}>
+            <p
+              className="mt-4 font-[family-name:var(--font-cinzel)] text-[clamp(0.95rem,2.5vw,1.15rem)] tracking-[0.14em]"
+              style={{ color: C.ink }}
+            >
               {venueName}
             </p>
             {board.venueAddress && (
-              <p className="mt-1 font-[family-name:var(--font-cormorant)] text-[13px]" style={{ color: C.cocoa }}>
+              <p
+                className={`mt-1 font-[family-name:var(--font-cormorant)] ${T.body}`}
+                style={{ color: C.cocoa }}
+              >
                 {board.venueAddress}
               </p>
             )}
@@ -686,7 +705,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                 href={mapsHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 text-[11px] uppercase tracking-[0.22em] transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className={`mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 ${T.cta} transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
                 style={{
                   color: C.ink,
                   background: `linear-gradient(135deg, ${C.goldSoft}, ${C.gold})`,
@@ -700,16 +719,13 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         ) : null}
 
         {board.receptionText && (
-          <p
-            className="mt-5 font-[family-name:var(--font-great-vibes)] text-2xl"
-            style={{ color: C.goldDeep }}
-          >
+          <p className={`mt-5 ${T.scriptSm}`} style={{ color: C.goldDeep }}>
             {board.receptionText}
           </p>
         )}
         {board.accessNote && (
           <p
-            className="mx-auto mt-4 w-fit max-w-full rounded-full border px-4 py-2 text-xs font-semibold uppercase leading-relaxed tracking-[0.2em]"
+            className={`mx-auto mt-4 w-fit max-w-full rounded-full border px-4 py-2 ${T.labelTight} font-semibold uppercase leading-relaxed tracking-[0.2em]`}
             style={{
               color: C.cocoa,
               borderColor: C.rose,
@@ -737,14 +753,14 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     greeting:
       features.greeting && board.greetingBody ? (
         <Reveal as="section" className="text-center">
-          <h2 className="font-[family-name:var(--font-great-vibes)] text-3xl" style={{ color: C.goldDeep }}>
+          <h2 className={T.scriptSm} style={{ color: C.goldDeep }}>
             {board.greetingHeading}
           </h2>
           {/* Guest name already shown in welcome, never repeat it here. */}
           {!(features.guestWelcome && invitedGuestName) && (
             <>
               <p
-                className="mt-3 font-[family-name:var(--font-cinzel)] text-base tracking-[0.1em]"
+                className="mt-3 font-[family-name:var(--font-cinzel)] text-[clamp(1.1rem,3vw,1.35rem)] tracking-[0.1em]"
                 style={{ color: C.ink }}
                 data-invite-field="greeting-name"
               >
@@ -754,7 +770,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             </>
           )}
           <p
-            className="mx-auto mt-4 max-w-[23rem] font-[family-name:var(--font-cormorant)] text-[14px] italic leading-relaxed"
+            className={`mx-auto mt-4 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.bodyLg} italic leading-relaxed`}
             style={{ color: C.cocoa }}
           >
             {board.greetingBody}
@@ -764,49 +780,43 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     programme:
       features.programme && board.programmeItems.length > 0 ? (
-        <Reveal as="section">
-          <h2
-            className="text-center font-[family-name:var(--font-great-vibes)] text-3xl"
-            style={{ color: C.goldDeep }}
-          >
-            {board.programmeHeading}
-          </h2>
-          <ol className="relative mt-6 space-y-6 pl-8">
+        <section className="w-full min-w-0">
+          <Reveal>
+            <h2 className={`text-center ${T.scriptSm}`} style={{ color: C.goldDeep }}>
+              {board.programmeHeading}
+            </h2>
+          </Reveal>
+          {/* Always-visible list — never gate programme copy behind scroll IO. */}
+          <ol className="relative mt-6 space-y-5 pl-7 sm:space-y-6 sm:pl-8">
             <span
               aria-hidden
-              className="absolute bottom-2 left-[9px] top-2 w-px"
+              className="absolute bottom-2 left-[8px] top-2 w-px sm:left-[9px]"
               style={{ background: `linear-gradient(180deg, ${C.gold}, ${C.blushDeep})` }}
             />
-            {board.programmeItems.map((item, i) => (
-              <Reveal key={item.id} delay={reduced ? 0 : i * 0.06}>
-                <li className="relative">
-                  <span
-                    aria-hidden
-                    className="absolute -left-8 top-1 h-[13px] w-[13px] rounded-full"
-                    style={{ background: C.gold, boxShadow: `0 0 0 3px ${C.ivory}, 0 0 10px ${C.goldSoft}` }}
-                  />
-                  <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: C.gold }}>
+            {board.programmeItems.map((item) => (
+              <li key={item.id} className="relative min-w-0">
+                <span
+                  aria-hidden
+                  className="absolute -left-7 top-1 h-[13px] w-[13px] rounded-full sm:-left-8"
+                  style={{ background: C.gold, boxShadow: `0 0 0 3px ${C.ivory}, 0 0 10px ${C.goldSoft}` }}
+                />
+                {item.time ? (
+                  <p className={T.programmeTime} style={{ color: C.gold }}>
                     {item.time}
                   </p>
-                  <p
-                    className="font-[family-name:var(--font-cinzel)] text-base font-semibold"
-                    style={{ color: C.ink }}
-                  >
-                    {item.title}
+                ) : null}
+                <p className={T.programmeTitle} style={{ color: C.ink }}>
+                  {item.title}
+                </p>
+                {item.description && (
+                  <p className={T.programmeDesc} style={{ color: C.cocoa }}>
+                    {item.description}
                   </p>
-                  {item.description && (
-                    <p
-                      className="font-[family-name:var(--font-cormorant)] text-[13px]"
-                      style={{ color: C.cocoa }}
-                    >
-                      {item.description}
-                    </p>
-                  )}
-                </li>
-              </Reveal>
+                )}
+              </li>
             ))}
           </ol>
-        </Reveal>
+        </section>
       ) : null,
 
     // Venue renders inside details so it always follows date/time and precedes
@@ -815,7 +825,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     dressCode: features.dressCode ? (
       <Reveal as="section" className="text-center">
-        <h2 className="text-[12px] uppercase tracking-[0.34em]" style={{ color: C.gold }}>
+        <h2 className={T.sectionLabel} style={{ color: C.gold }}>
           {board.dressCodeHeading}
         </h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -828,13 +838,13 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     guestPolicy: features.guestPolicy ? (
       <Reveal as="section" className="text-center">
         <h2
-          className="mx-auto max-w-[24rem] font-[family-name:var(--font-cinzel)] text-sm font-semibold uppercase tracking-[0.12em]"
+          className="mx-auto max-w-[34rem] font-[family-name:var(--font-cinzel)] text-[clamp(0.95rem,2.5vw,1.15rem)] font-semibold uppercase tracking-[0.12em]"
           style={{ color: C.ink }}
         >
           {board.guestPolicyHeading}
         </h2>
         <p
-          className="mx-auto mt-4 max-w-[24rem] font-[family-name:var(--font-cormorant)] text-[13.5px] leading-relaxed"
+          className={`mx-auto mt-4 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.body} leading-relaxed`}
           style={{ color: C.cocoa }}
         >
           {board.guestPolicyBody}
@@ -862,7 +872,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         />
         {board.rsvpContacts.length > 0 && (
           <div className="mt-5 text-center">
-            <p className="text-[11px] uppercase tracking-[0.28em]" style={{ color: C.cocoa }}>
+            <p className={`${T.label} uppercase tracking-[0.28em]`} style={{ color: C.cocoa }}>
               Kindly confirm with
             </p>
             <div className="mt-2 flex flex-col items-center gap-1">
@@ -870,7 +880,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                 <a
                   key={`${c.name}-${c.phone}`}
                   href={`tel:${c.phone.replace(/\s/g, "")}`}
-                  className="font-[family-name:var(--font-cormorant)] text-[13px] uppercase tracking-[0.08em] hover:opacity-80"
+                  className={`font-[family-name:var(--font-cormorant)] ${T.body} uppercase tracking-[0.08em] hover:opacity-80`}
                   style={{ color: C.ink }}
                 >
                   {c.name}, {c.phone}
@@ -885,11 +895,11 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     story:
       features.story && board.storyBody ? (
         <Reveal as="section" className="text-center">
-          <h2 className="font-[family-name:var(--font-great-vibes)] text-3xl" style={{ color: C.goldDeep }}>
+          <h2 className={T.scriptSm} style={{ color: C.goldDeep }}>
             {board.storyHeading}
           </h2>
           <p
-            className="mx-auto mt-4 max-w-[24rem] font-[family-name:var(--font-cormorant)] text-[14px] italic leading-relaxed"
+            className={`mx-auto mt-4 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.bodyLg} italic leading-relaxed`}
             style={{ color: C.cocoa }}
           >
             {board.storyBody}
@@ -900,10 +910,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     gallery:
       features.gallery && galleryImages.length > 0 ? (
         <Reveal as="section">
-          <h2
-            className="text-center font-[family-name:var(--font-great-vibes)] text-3xl"
-            style={{ color: C.goldDeep }}
-          >
+          <h2 className={`text-center ${T.scriptSm}`} style={{ color: C.goldDeep }}>
             {board.galleryHeading}
           </h2>
           <div className="mt-5 grid grid-cols-2 gap-3">
@@ -918,7 +925,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                   alt={m.name || "Wedding moment"}
                   fill
                   loading="lazy"
-                  sizes="(max-width: 480px) 45vw, 220px"
+                  sizes="(max-width: 640px) 45vw, 280px"
                   className="object-cover"
                   unoptimized={shouldUnoptimizeNextImage(m.url)}
                 />
@@ -931,7 +938,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     scratch:
       features.scratch && board.scratchMessage && !staticPreview ? (
         <Reveal as="section" className="text-center">
-          <h2 className="font-[family-name:var(--font-great-vibes)] text-3xl" style={{ color: C.goldDeep }}>
+          <h2 className={T.scriptSm} style={{ color: C.goldDeep }}>
             {board.scratchHeading}
           </h2>
           <ScratchCard prompt={board.scratchPrompt} message={board.scratchMessage} palette={C} />
@@ -941,11 +948,11 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     memory:
       features.memory && (memoryUploadUrl || memoryAlbumUrl) && !staticPreview ? (
         <Reveal as="section" className="text-center">
-          <h2 className="font-[family-name:var(--font-great-vibes)] text-3xl" style={{ color: C.goldDeep }}>
+          <h2 className={T.scriptSm} style={{ color: C.goldDeep }}>
             {board.memoryHeading}
           </h2>
           <p
-            className="mx-auto mt-3 max-w-[22rem] font-[family-name:var(--font-cormorant)] text-[13.5px] leading-relaxed"
+            className={`mx-auto mt-3 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.body} leading-relaxed`}
             style={{ color: C.cocoa }}
           >
             {board.memoryBody}
@@ -954,7 +961,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             {memoryUploadUrl && (
               <Link
                 href={memoryUploadUrl}
-                className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[11px] uppercase tracking-[0.22em] transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className={`inline-flex items-center gap-2 rounded-full px-6 py-3 ${T.cta} transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
                 style={{
                   color: C.ink,
                   background: `linear-gradient(135deg, ${C.goldSoft}, ${C.gold})`,
@@ -967,7 +974,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             {memoryAlbumUrl && (
               <Link
                 href={memoryAlbumUrl}
-                className="inline-flex items-center gap-2 border-b pb-0.5 text-[11px] uppercase tracking-[0.22em] transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className={`inline-flex items-center gap-2 border-b pb-0.5 ${T.cta} transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
                 style={{ color: C.cocoa, borderColor: C.border }}
               >
                 View the album
@@ -979,23 +986,23 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     closing: features.closing ? (
       <Reveal as="section" className="text-center">
-        <h2 className="font-[family-name:var(--font-great-vibes)] text-4xl" style={{ color: C.goldDeep }}>
+        <h2 className={T.script} style={{ color: C.goldDeep }}>
           {board.closingHeading}
         </h2>
         <p
-          className="mx-auto mt-4 max-w-[22rem] font-[family-name:var(--font-cormorant)] text-[14px] leading-relaxed"
+          className={`mx-auto mt-4 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.bodyLg} leading-relaxed`}
           style={{ color: C.cocoa }}
         >
           {board.closingMessage}
         </p>
         {board.closingSignature && (
-          <p className="mt-4 font-[family-name:var(--font-great-vibes)] text-3xl" style={{ color: C.ink }}>
+          <p className={`mt-4 ${T.scriptSm}`} style={{ color: C.ink }}>
             {board.closingSignature}
           </p>
         )}
         {board.hashtag && (
           <p
-            className="mt-4 font-[family-name:var(--font-cinzel)] text-xs font-bold tracking-[0.2em]"
+            className={`mt-4 font-[family-name:var(--font-cinzel)] ${T.label} font-bold tracking-[0.2em]`}
             style={{ color: C.gold }}
           >
             {board.hashtag}
@@ -1005,7 +1012,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <button
             type="button"
             onClick={requestInvitationReplay}
-            className="mt-7 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[11px] uppercase tracking-[0.22em] transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            className={`mt-7 inline-flex items-center gap-2 rounded-full px-5 py-2.5 ${T.cta} transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
             style={{ color: C.cocoa, background: `${C.linen}cc`, border: `1px solid ${C.border}` }}
           >
             ↻ {board.replayLabel}
@@ -1028,9 +1035,9 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       }}
     >
       <PageFlora palette={C} />
-      <div className="relative mx-auto w-full max-w-[480px] px-5 pb-16 pt-10 sm:px-7">
+      <div className="relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[560px] sm:px-7 sm:pt-10 md:max-w-[640px] lg:max-w-[720px]">
         {visible.map((entry, i) => (
-          <div key={entry.id}>
+          <div key={entry.id} className="min-w-0">
             {i > 0 && <Divider palette={C} />}
             {entry.node}
             {entry.id === "hero" && props.placeCard && (
@@ -1082,7 +1089,7 @@ function HeroPortrait({
         ref={frameRef}
         className="relative mx-auto overflow-hidden"
         style={{
-          width: "min(76vw, 260px)",
+          width: "min(78vw, 320px)",
           aspectRatio: "3 / 4",
           borderRadius: "9999px 9999px 14px 14px",
           border: `1px solid ${C.goldSoft}`,
@@ -1096,7 +1103,7 @@ function HeroPortrait({
             alt={caption || "The couple"}
             fill
             priority
-            sizes="(max-width: 480px) 76vw, 260px"
+            sizes="(max-width: 640px) 78vw, 320px"
             className="object-cover"
             unoptimized={shouldUnoptimizeNextImage(url)}
           />
@@ -1112,7 +1119,7 @@ function HeroPortrait({
       </div>
       {caption && (
         <p
-          className="mt-3 text-center font-[family-name:var(--font-cormorant)] text-[12.5px] italic"
+          className={`mt-3 text-center font-[family-name:var(--font-cormorant)] ${T.body} italic`}
           style={{ color: C.cocoa }}
         >
           {caption}
@@ -1136,10 +1143,13 @@ function DressCard({
       className="rounded-2xl px-5 py-5 text-left"
       style={{ background: `linear-gradient(180deg, ${C.linen}, ${C.ivory})`, border: `1px solid ${C.border}` }}
     >
-      <p className="font-[family-name:var(--font-great-vibes)] text-2xl" style={{ color: C.goldDeep }}>
+      <p className={T.scriptSm} style={{ color: C.goldDeep }}>
         {label}
       </p>
-      <p className="mt-2 font-[family-name:var(--font-cormorant)] text-[13px] leading-relaxed" style={{ color: C.cocoa }}>
+      <p
+        className={`mt-2 font-[family-name:var(--font-cormorant)] ${T.body} leading-relaxed`}
+        style={{ color: C.cocoa }}
+      >
         {body}
       </p>
     </div>

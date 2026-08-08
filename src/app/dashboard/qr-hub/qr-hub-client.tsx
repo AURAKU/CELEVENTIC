@@ -61,6 +61,13 @@ type HubData = {
   };
 };
 
+/**
+ * Kinds the generic print pack can render. `EVENT_GUIDE_OFFLINE` is absent on
+ * purpose: a venue-local code is meaningless without the "works only on the
+ * event Wi-Fi" warning beside it, and only the Event Guide's own Signs tab
+ * lays that out. Printing it from here would put an apparently-dead QR on a
+ * welcome board.
+ */
 const PACK_KINDS: QrHubAssetKind[] = [
   "GIFT",
   "MENU",
@@ -68,6 +75,7 @@ const PACK_KINDS: QrHubAssetKind[] = [
   "MEMORY_UPLOAD",
   "MEMORY_ALBUM",
   "PROGRAMME",
+  "EVENT_GUIDE",
   "VENUE",
   "HELP",
   "VENDOR",

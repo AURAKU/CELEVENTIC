@@ -517,7 +517,7 @@ export function CeleventicSoftIntro({
                 fill
                 sizes="100vw"
                 priority
-                style={{ objectFit: "cover", objectPosition: "center" }}
+                style={{ objectFit: "contain", objectPosition: "center" }}
               />
             </div>
           </>
@@ -569,10 +569,6 @@ export function CeleventicSoftIntro({
                     ? "Try again"
                     : "Open Invitation"}
             </button>
-            <p className={styles.openGateFootnote}>
-              <span className={styles.openGateFootnoteDot} aria-hidden />
-              Best with sound on
-            </p>
           </div>
         </div>
       )}

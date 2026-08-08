@@ -60,12 +60,51 @@ export function resolveCompanionMenu(
   return readCompanionMenuConfig(canonicalConfig);
 }
 
+/** A single clock reading: `2:00 PM`, `2pm`, `3.30pm`, `14:00`. */
+const TIME_ATOM = String.raw`\d{1,2}(?:[:.]\d{2})?\s*[ap]\.?\s?m\.?|\d{1,2}[:.]\d{2}`;
+
+/**
+ * A leading time (or time range) and the rest of the line.
+ *
+ * The range arm exists so `1:00 PM – 2:00 PM Guest arrival` keeps both ends of
+ * the range in `time` instead of reading the second one as the title.
+ */
+const LEADING_TIME = new RegExp(
+  String.raw`^((?:${TIME_ATOM})(?:\s*(?:—|–|-|to)\s*(?:${TIME_ATOM}))?)` +
+    String.raw`(?:\s*(?:—|–|\||•|:)\s*|\s*-\s*|\s+)(.+)$`,
+  "i"
+);
+
+/**
+ * Title/description separator.
+ *
+ * A bare hyphen only separates when whitespace sits on at least one side, so
+ * `Father-daughter dance` and `Non-stop highlife` survive as written.
+ */
+const SEPARATOR = /\s*(?:—|–|\||•)\s*|\s+-\s*|\s*-\s+/;
+
+/** `3.30pm` → `3:30 PM`, `1:00 PM-2:00 PM` → `1:00 PM – 2:00 PM`. */
+function normalizeTimeLabel(value: string): string {
+  return value
+    .trim()
+    .replace(/(\d)\s*\.\s*(\d)/g, "$1:$2")
+    .replace(/(\d)\s*([ap])\.?\s?m\.?/gi, (_match, digit: string, marker: string) => {
+      return `${digit} ${marker.toUpperCase()}M`;
+    })
+    .replace(/\s*(?:—|–|-)\s*|\s+to\s+/gi, " – ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /**
  * Parse a pasted programme outline into structured items.
  * Accepts lines like:
  * - `2:00 PM — Ceremony — Exchange of vows`
  * - `2:00 PM | Ceremony`
+ * - `1:00 PM - Guest arrival`
+ * - `1:00 PM – 2:00 PM Guest arrival`
  * - `Ceremony at 2:00 PM`
+ * - `14:00 Ceremony`
  * - plain titles (time left blank)
  */
 export function parseProgrammeOutline(text: string): WeddingBoardProgrammeItem[] {
@@ -80,7 +119,20 @@ export function parseProgrammeOutline(text: string): WeddingBoardProgrammeItem[]
     .filter(Boolean);
 
   return lines.map((line, index) => {
-    const parts = line.split(/\s*(?:—|–|-|\||•)\s*/).map((p) => p.trim()).filter(Boolean);
+    const leading = line.match(LEADING_TIME);
+    if (leading?.[1] && leading[2]) {
+      const parts = leading[2].split(SEPARATOR).map((p) => p.trim()).filter(Boolean);
+      const title = parts[0] ?? leading[2].trim();
+      return {
+        id: `prog-${index + 1}-${slugFragment(title)}`,
+        time: normalizeTimeLabel(leading[1]),
+        title,
+        description: parts.slice(1).join(" — ") || undefined,
+      };
+    }
+
+    // Times a clock regex will not own, such as `5 — Ceremony`.
+    const parts = line.split(SEPARATOR).map((p) => p.trim()).filter(Boolean);
     if (parts.length >= 2 && looksLikeTime(parts[0]!)) {
       return {
         id: `prog-${index + 1}-${slugFragment(parts[1]!)}`,
@@ -96,15 +148,6 @@ export function parseProgrammeOutline(text: string): WeddingBoardProgrammeItem[]
         id: `prog-${index + 1}-${slugFragment(atMatch[1])}`,
         time: atMatch[2].trim(),
         title: atMatch[1].trim(),
-      };
-    }
-
-    const leadingTime = line.match(/^(\d{1,2}[:.]\d{2}\s*(?:am|pm)?)\s+(.+)$/i);
-    if (leadingTime?.[1] && leadingTime[2]) {
-      return {
-        id: `prog-${index + 1}-${slugFragment(leadingTime[2])}`,
-        time: leadingTime[1].replace(".", ":").toUpperCase(),
-        title: leadingTime[2].trim(),
       };
     }
 

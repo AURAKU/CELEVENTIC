@@ -180,6 +180,8 @@ model User {
   vendorTeamPassesCreated    VendorTeamPass[]               @relation("VendorTeamPassCreator")
   vendorPassTypesCreated     EventVendorPassType[]          @relation("EventVendorPassTypeCreator")
   eventQrLinksCreated        EventQrLink[]                  @relation("EventQrLinkCreator")
+  eventGuidesCreated         EventGuide[]                   @relation("EventGuideCreator")
+  eventGuidePacksCreated     EventGuideOfflinePack[]        @relation("EventGuideOfflinePackCreator")
   guestImportBatches         GuestImportBatch[]       @relation("GuestImportBatchCreator")
   generalPassBatches         GeneralPassBatch[]       @relation("GeneralPassBatchCreator")
 
@@ -360,6 +362,7 @@ model Event {
   giftWithdrawals      EventWalletWithdrawalRequest[]
   sharedAccessPasses   SharedEventAccessPass[]
   eventQrLinks         EventQrLink[]
+  eventGuide           EventGuide?
   admissionSettings    EventAdmissionSettings?
   guestPasses          GuestPass[]
   vendorTeamPasses     VendorTeamPass[]
@@ -5505,6 +5508,10 @@ enum EventQrLinkType {
   VENUE
   HELP
   COMPANION_LANDING
+  /// Unified public Event Guide (Programme | Seating | Menu) on the live domain.
+  EVENT_GUIDE
+  /// Venue-local Event Guide served by an Offline Venue Pack on the event Wi-Fi.
+  EVENT_GUIDE_OFFLINE
   CUSTOM
 }
 
@@ -5850,4 +5857,169 @@ model VendorTeamPassAdmission {
   @@index([passId, outcome, createdAt])
   @@index([eventId, createdAt])
   @@map("vendor_team_pass_admissions")
+}
+
+// ─── Event Guide ─────────────────────────────────────────────────
+
+enum EventGuideStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum EventGuideTab {
+  PROGRAMME
+  SEATING
+  MENU
+}
+
+/// How a guest identifies themselves in the public seating finder.
+enum EventGuideSeatingMode {
+  ADMISSION_CODE
+  GUEST_NAME
+}
+
+/// What a Venue Offline Pack is allowed to carry for seating lookups.
+/// CODE_ONLY and HASHED_NAME ship no readable guest names.
+enum EventGuideOfflineSeatingMode {
+  DISABLED
+  CODE_ONLY
+  HASHED_NAME
+  NAME_INDEX
+}
+
+enum EventGuideOfflinePackStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+/// One unified guest-facing Event Guide per event. Holds configuration and the
+/// immutable published snapshot; programme/menu authoring still composes the
+/// event's invitation sources unless the organizer overrides them here.
+model EventGuide {
+  id      String @id @default(cuid())
+  eventId String @unique
+
+  enabled    Boolean          @default(false)
+  status     EventGuideStatus @default(DRAFT)
+  defaultTab EventGuideTab    @default(PROGRAMME)
+
+  /// Bumped on every organizer write — drives optimistic concurrency.
+  version          Int       @default(1)
+  /// `version` at the moment of the last publish; keys public + offline caches.
+  publishedVersion Int?
+  publishedAt      DateTime?
+  publishedById    String?
+
+  // — Header —
+  showCelebrants Boolean @default(true)
+  showDate       Boolean @default(true)
+  showVenue      Boolean @default(true)
+  showWelcome    Boolean @default(true)
+  celebrantsText String?
+  welcomeMessage String?
+
+  // — Theme —
+  /// true = inherit the event invitation theme; false = use themeOverrides only.
+  useInvitationTheme Boolean @default(true)
+  /// Validated subset: { colors?, fonts?, backgroundImageUrl? }.
+  themeOverrides     Json?
+
+  // — Content overrides (null = compose from the invitation) —
+  /// Draft programme items: [{ id, time, title, description? }].
+  programmeDraft Json?
+  /// Draft menu: { menuBody, menuUrl, sections? }.
+  menuDraft      Json?
+  /// Optional attachments: [{ label, url, kind: "pdf" | "image" }].
+  attachments    Json?
+
+  // — Published snapshot (guest + offline read path) —
+  publishedPayload Json?
+
+  // — Seating finder —
+  seatingEnabled  Boolean               @default(true)
+  seatingMode     EventGuideSeatingMode @default(ADMISSION_CODE)
+  seatingMinQuery Int                   @default(4)
+  seatingMaxMatch Int                   @default(3)
+  seatingNote     String?
+
+  // — Offline —
+  /// Level 1: allow guests' browsers to cache the published guide shell.
+  offlineEnabled      Boolean                      @default(true)
+  /// Level 2: organizer opted into the Venue Offline Pack.
+  venueOfflineEnabled Boolean                      @default(false)
+  offlineSeatingMode  EventGuideOfflineSeatingMode @default(DISABLED)
+  /// Local address the Venue Offline QR points at, e.g. http://eventguide.local
+  venueLocalUrl       String?
+  venueWifiName       String?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event       Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy   User?                    @relation("EventGuideCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  offlinePacks EventGuideOfflinePack[]
+  viewStats   EventGuideViewStat[]
+
+  @@index([eventId, status])
+  @@map("event_guides")
+}
+
+/// A signed, expiring Venue Offline Pack. Only sha256(token) is stored.
+model EventGuideOfflinePack {
+  id      String @id @default(cuid())
+  guideId String
+
+  tokenHash   String                      @unique
+  tokenPrefix String                      @default("egp1")
+  packVersion Int                         @default(1)
+  /// Guide `version` captured when the pack was built — drives sync conflicts.
+  guideVersion Int
+  status      EventGuideOfflinePackStatus @default(ACTIVE)
+  seatingMode EventGuideOfflineSeatingMode @default(DISABLED)
+  /// HMAC-SHA256 over the packed file digests; the local runner verifies it.
+  signature   String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  revokedReason String?
+
+  lastSyncedAt      DateTime?
+  lastSyncReport    Json?
+  /// Client record ids already applied, so a replayed queue never double-counts.
+  syncedRecordCount Int      @default(0)
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  guide     EventGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  createdBy User?      @relation("EventGuideOfflinePackCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([guideId, status])
+  @@index([tokenHash])
+  @@map("event_guide_offline_packs")
+}
+
+/// Privacy-conscious analytics: aggregate counters only, never per-visitor rows.
+model EventGuideViewStat {
+  id      String        @id @default(cuid())
+  guideId String
+  /// UTC calendar day, `YYYY-MM-DD`.
+  day     String
+  tab     EventGuideTab
+  /// "ONLINE" | "VENUE_OFFLINE"
+  channel String        @default("ONLINE")
+  views   Int           @default(0)
+  /// Seating searches attempted / matched — counts only, never queries.
+  searches Int          @default(0)
+  matches  Int          @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  guide EventGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, day, tab, channel])
+  @@index([guideId, day])
+  @@map("event_guide_view_stats")
 }

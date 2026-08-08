@@ -26,14 +26,27 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [symbols, setSymbols] = useState<Record<string, string>>({ GHS: "₵", USD: "$", GBP: "£" });
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Rates are a nicety, never a reason to take the page down.
+   *
+   * This polls every 45s on every page of the app, so a single blip — an
+   * offline phone, a redeploy, a 500 whose body is empty and blows up
+   * `res.json()` — used to escape as an unhandled rejection and surface as the
+   * app-wide error card. The last known rates stay on screen instead.
+   */
   const refreshRates = useCallback(async () => {
     try {
       const res = await fetch("/api/commerce/currencies", { cache: "no-store" });
-      const d = await res.json();
-      if (d.success) {
-        setRates(d.data.rates);
-        setSymbols(d.data.symbols);
-      }
+      if (!res.ok) return;
+      const d = (await res.json()) as {
+        success?: boolean;
+        data?: { rates?: Record<string, number>; symbols?: Record<string, string> };
+      };
+      if (!d?.success || !d.data) return;
+      if (d.data.rates) setRates(d.data.rates);
+      if (d.data.symbols) setSymbols(d.data.symbols);
+    } catch {
+      // Keep the rates we already have.
     } finally {
       setLoading(false);
     }

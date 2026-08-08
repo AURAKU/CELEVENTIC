@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard, Heart, Mail, Users, Armchair, Clock, Store, Gift, QrCode, Image, Sparkles,
   MessageSquare, Wallet, Flower2, Video, Archive, Cake, Ticket, Palette, Presentation,
-  UserPlus, Calendar, BarChart3, Music, Layers, Mic, BadgeCheck, Star, Tent, Map, Lock,
+  UserPlus, Calendar, BarChart3, Music, Layers, Mic, BadgeCheck, Star, Tent, Map, BookOpen, Lock,
 } from "lucide-react";
 import { useEventWorkspace, setActiveEventId } from "@/hooks/use-event-workspace";
 import { EventInfoEditor } from "@/components/events/event-info-editor";
@@ -17,6 +17,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard, Heart, Mail, Users, Armchair, Clock, Store, Gift, QrCode, Image, Sparkles,
   MessageSquare, Wallet, UsersRound: Users, Flower2, Video, Archive, Cake, Ticket, Palette,
   Presentation, UserPlus, Calendar, BarChart3, Music, Layers, Mic, BadgeCheck, Star, Tent, Map,
+  BookOpen,
 };
 
 interface EventOverviewClientProps {
