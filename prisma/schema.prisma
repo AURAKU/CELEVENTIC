@@ -5494,6 +5494,7 @@ model GuestImportDelivery {
   batch GuestImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
   row   GuestImportRow?  @relation(fields: [rowId], references: [id], onDelete: SetNull)
 
+  @@unique([batchId, rowId, channel])
   @@index([batchId, status])
   @@index([status, queuedAt])
   @@map("guest_import_deliveries")

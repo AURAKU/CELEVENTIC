@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { funeralService } from "@/services/funeral/funeral.service";
+import { parsePaginationFromUrl } from "@/lib/pagination";
 
 const schema = z.object({
   eventId: z.string(),
@@ -11,10 +12,10 @@ const schema = z.object({
 
 export async function GET(req: Request) {
   const eventId = new URL(req.url).searchParams.get("eventId");
-  const page = new URL(req.url).searchParams.get("page");
   if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
 
-  const data = await funeralService.getCandles(eventId, page ? parseInt(page, 10) : 1);
+  const { page, limit } = parsePaginationFromUrl(req.url);
+  const data = await funeralService.getCandles(eventId, page, limit);
   return NextResponse.json({ success: true, data });
 }
 

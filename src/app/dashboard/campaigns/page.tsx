@@ -8,11 +8,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquare, Send } from "lucide-react";
+import { MessageSquare, Send, History } from "lucide-react";
 import { GUEST_TIERS } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
+import { PaginationBar } from "@/components/ui/pagination";
+import { Badge } from "@/components/ui/badge";
+import { DEFAULT_LIMIT } from "@/lib/pagination";
+
+type CampaignRow = {
+  id: string;
+  name: string;
+  channel: string;
+  status: string;
+  recipientCount: number;
+  totalCost: number;
+  sentCount: number;
+  failedCount: number;
+  createdAt: string;
+};
 
 export default function CampaignsPage() {
   return (
@@ -35,12 +50,48 @@ function CampaignsContent() {
   const [preview, setPreview] = useState<{ estimatedCost: number; recipientCount: number } | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [history, setHistory] = useState<CampaignRow[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPages, setHistoryPages] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (channelParam === "EMAIL" || channelParam === "SMS" || channelParam === "WHATSAPP") {
       setForm((f) => ({ ...f, channel: channelParam }));
     }
   }, [channelParam]);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [eventId]);
+
+  async function loadHistory(currentPage = historyPage) {
+    if (!eventId) {
+      setHistory([]);
+      setHistoryTotal(0);
+      setHistoryPages(1);
+      return;
+    }
+    setHistoryLoading(true);
+    const params = new URLSearchParams({
+      eventId,
+      page: String(currentPage),
+      limit: String(DEFAULT_LIMIT),
+    });
+    const res = await fetch(`/api/campaigns?${params}`);
+    const data = await res.json();
+    if (res.ok) {
+      setHistory(data.data.items ?? []);
+      setHistoryTotal(data.data.total ?? 0);
+      setHistoryPages(data.data.pages ?? 1);
+    }
+    setHistoryLoading(false);
+  }
+
+  useEffect(() => {
+    void loadHistory(historyPage);
+  }, [eventId, historyPage]);
 
   async function handlePreview() {
     const recipientList = form.recipients.split("\n").filter(Boolean);
@@ -89,6 +140,8 @@ function CampaignsContent() {
     if (res.ok) {
       setSuccess(`Campaign created with ${recipientList.length} recipients!`);
       setForm({ ...form, name: "", recipients: "" });
+      setHistoryPage(1);
+      void loadHistory(1);
     } else {
       setError(data.error || "Campaign creation failed");
     }
@@ -164,6 +217,65 @@ function CampaignsContent() {
             <p>Recipients: <strong>{preview.recipientCount}</strong></p>
             <p>Estimated Cost: <strong>{formatCurrency(preview.estimatedCost)}</strong></p>
             <p className="page-subtitle">Tiers: {GUEST_TIERS.join(", ")} guests</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {eventId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-brand-600" /> Campaign History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {historyLoading ? (
+              <p className="text-sm text-slate-500 py-4 text-center">Loading campaigns…</p>
+            ) : history.length === 0 ? (
+              <p className="text-sm text-slate-500 py-4 text-center">No campaigns yet for this event.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-slate-500">
+                      <th className="py-2 pr-3 font-medium">Name</th>
+                      <th className="py-2 pr-3 font-medium">Channel</th>
+                      <th className="py-2 pr-3 font-medium">Status</th>
+                      <th className="py-2 pr-3 font-medium">Recipients</th>
+                      <th className="py-2 pr-3 font-medium">Cost</th>
+                      <th className="py-2 font-medium">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((c) => (
+                      <tr key={c.id} className="border-b last:border-0">
+                        <td className="py-2 pr-3 font-medium">{c.name}</td>
+                        <td className="py-2 pr-3">{c.channel}</td>
+                        <td className="py-2 pr-3">
+                          <Badge variant="outline">{c.status}</Badge>
+                        </td>
+                        <td className="py-2 pr-3">{c.recipientCount}</td>
+                        <td className="py-2 pr-3">{formatCurrency(c.totalCost)}</td>
+                        <td className="py-2 text-slate-500">
+                          {new Date(c.createdAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <PaginationBar
+              page={historyPage}
+              pages={historyPages}
+              total={historyTotal}
+              limit={DEFAULT_LIMIT}
+              onPageChange={setHistoryPage}
+            />
           </CardContent>
         </Card>
       )}

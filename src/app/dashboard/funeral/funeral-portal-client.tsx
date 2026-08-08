@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import {
   MEMORIAL_LOCALES,
 } from "@/lib/funeral/funeral-constants";
 import { PaginatedSection } from "@/components/ui/paginated-section";
+import { PaginationBar } from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/use-pagination";
 
 const SECTION_TO_TAB: Record<string, string> = {
   invitations: "obituary",
@@ -45,6 +47,9 @@ const TAB_TO_SECTION: Record<string, string> = {
   livestream: "livestream",
   legacy: "legacy",
 };
+
+const TRIBUTE_PAGE_LIMIT = 10;
+const GUESTBOOK_PAGE_LIMIT = 10;
 
 interface FuneralProfile {
   deceasedName: string;
@@ -79,7 +84,11 @@ export function FuneralPortalClient() {
   const [profile, setProfile] = useState<FuneralProfile | null>(null);
   const [program, setProgram] = useState<{ id: string; title: string; startTime: string | null }[]>([]);
   const [tributes, setTributes] = useState<{ id: string; userName: string; message: string; approvalStatus: string; isFeatured: boolean }[]>([]);
+  const [tributeTotal, setTributeTotal] = useState(0);
+  const [tributePages, setTributePages] = useState(1);
   const [guestbook, setGuestbook] = useState<{ id: string; userName: string; message: string; approvalStatus: string }[]>([]);
+  const [guestbookTotal, setGuestbookTotal] = useState(0);
+  const [guestbookPages, setGuestbookPages] = useState(1);
   const [timeline, setTimeline] = useState<{ id: string; year: number; title: string }[]>([]);
   const [livestreams, setLivestreams] = useState<{ id: string; title: string; streamUrl: string }[]>([]);
   const [candleTotal, setCandleTotal] = useState(0);
@@ -95,6 +104,43 @@ export function FuneralPortalClient() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const {
+    page: tributePage,
+    setPage: setTributePage,
+    appendToParams: tributeParams,
+    resetPage: resetTributePage,
+  } = usePagination(TRIBUTE_PAGE_LIMIT);
+  const {
+    page: guestbookPage,
+    setPage: setGuestbookPage,
+    appendToParams: guestbookParams,
+    resetPage: resetGuestbookPage,
+  } = usePagination(GUESTBOOK_PAGE_LIMIT);
+
+  const loadTributes = useCallback(async () => {
+    if (!eventId) return;
+    const params = tributeParams(new URLSearchParams({ eventId, pending: "1" }));
+    const res = await fetch(`/api/funeral/tributes?${params}`);
+    const d = await res.json();
+    if (res.ok) {
+      setTributes(d.data.items ?? []);
+      setTributeTotal(d.data.total ?? 0);
+      setTributePages(d.data.pages ?? 1);
+    }
+  }, [eventId, tributeParams]);
+
+  const loadGuestbook = useCallback(async () => {
+    if (!eventId) return;
+    const params = guestbookParams(new URLSearchParams({ eventId, pending: "1" }));
+    const res = await fetch(`/api/funeral/guestbook?${params}`);
+    const d = await res.json();
+    if (res.ok) {
+      setGuestbook(d.data.items ?? []);
+      setGuestbookTotal(d.data.total ?? 0);
+      setGuestbookPages(d.data.pages ?? 1);
+    }
+  }, [eventId, guestbookParams]);
+
   async function load() {
     if (!eventId) return;
     const res = await fetch(`/api/funeral?eventId=${eventId}`);
@@ -103,8 +149,6 @@ export function FuneralPortalClient() {
       const p = d.data.profile;
       setProfile(p);
       setProgram(d.data.program);
-      setTributes(d.data.tributes.items);
-      setGuestbook(d.data.guestbook.items);
       setTimeline(d.data.timeline);
       setLivestreams(d.data.livestreams);
       setCandleTotal(d.data.candles.total);
@@ -132,6 +176,15 @@ export function FuneralPortalClient() {
   }
 
   useEffect(() => { if (eventId) load(); }, [eventId]);
+
+  useEffect(() => {
+    if (!eventId) return;
+    resetTributePage();
+    resetGuestbookPage();
+  }, [eventId, resetTributePage, resetGuestbookPage]);
+
+  useEffect(() => { void loadTributes(); }, [loadTributes]);
+  useEffect(() => { void loadGuestbook(); }, [loadGuestbook]);
 
   useEffect(() => {
     if (sectionParam && SECTION_TO_TAB[sectionParam]) {
@@ -183,7 +236,7 @@ export function FuneralPortalClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "moderate", tributeId: id, status, featured }),
     });
-    load();
+    void loadTributes();
   }
 
   async function moderateGuestbook(id: string, status: "APPROVED" | "REJECTED") {
@@ -192,7 +245,7 @@ export function FuneralPortalClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "moderate", entryId: id, status }),
     });
-    load();
+    void loadGuestbook();
   }
 
   return (
@@ -370,29 +423,36 @@ export function FuneralPortalClient() {
             <Card>
               <CardHeader><CardTitle className="text-base">Tribute Wall Moderation</CardTitle></CardHeader>
               <CardContent className="space-y-2">
-                <PaginatedSection
-                  items={tributes}
-                  limit={10}
-                  keyFor={(t) => t.id}
-                  renderItem={(t) => (
-                    <div className="p-3 border rounded-lg text-sm min-w-0">
-                      <div className="stack-mobile gap-2">
-                        <span className="font-medium truncate min-w-0">{t.userName}</span>
-                        <Badge className="shrink-0 self-start">{t.approvalStatus}</Badge>
-                      </div>
-                      <p className="mt-1 text-slate-600 break-words">{t.message}</p>
-                      {t.approvalStatus === "PENDING" && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <Button size="sm" className="touch-target" onClick={() => moderateTribute(t.id, "APPROVED")}>Approve</Button>
-                          <Button size="sm" variant="outline" className="touch-target" onClick={() => moderateTribute(t.id, "REJECTED")}>Reject</Button>
+                {tributes.length === 0 ? (
+                  <p className="text-sm text-slate-500">No tributes yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {tributes.map((t) => (
+                      <div key={t.id} className="p-3 border rounded-lg text-sm min-w-0">
+                        <div className="stack-mobile gap-2">
+                          <span className="font-medium truncate min-w-0">{t.userName}</span>
+                          <Badge className="shrink-0 self-start">{t.approvalStatus}</Badge>
                         </div>
-                      )}
-                      {t.approvalStatus === "APPROVED" && !t.isFeatured && (
-                        <Button size="sm" variant="outline" className="touch-target mt-2" onClick={() => moderateTribute(t.id, "APPROVED", true)}>Feature</Button>
-                      )}
-                    </div>
-                  )}
-                  empty={<p className="text-sm text-slate-500">No tributes yet.</p>}
+                        <p className="mt-1 text-slate-600 break-words">{t.message}</p>
+                        {t.approvalStatus === "PENDING" && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <Button size="sm" className="touch-target" onClick={() => moderateTribute(t.id, "APPROVED")}>Approve</Button>
+                            <Button size="sm" variant="outline" className="touch-target" onClick={() => moderateTribute(t.id, "REJECTED")}>Reject</Button>
+                          </div>
+                        )}
+                        {t.approvalStatus === "APPROVED" && !t.isFeatured && (
+                          <Button size="sm" variant="outline" className="touch-target mt-2" onClick={() => moderateTribute(t.id, "APPROVED", true)}>Feature</Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <PaginationBar
+                  page={tributePage}
+                  pages={tributePages}
+                  total={tributeTotal}
+                  limit={TRIBUTE_PAGE_LIMIT}
+                  onPageChange={setTributePage}
                 />
               </CardContent>
             </Card>
@@ -402,26 +462,33 @@ export function FuneralPortalClient() {
             <Card>
               <CardHeader><CardTitle className="text-base">Guestbook Moderation</CardTitle></CardHeader>
               <CardContent className="space-y-2">
-                <PaginatedSection
-                  items={guestbook}
-                  limit={10}
-                  keyFor={(g) => g.id}
-                  renderItem={(g) => (
-                    <div className="p-3 border rounded-lg text-sm min-w-0">
-                      <div className="stack-mobile gap-2">
-                        <span className="truncate min-w-0">{g.userName}</span>
-                        <Badge className="shrink-0 self-start">{g.approvalStatus}</Badge>
-                      </div>
-                      <p className="mt-1 break-words">{g.message}</p>
-                      {g.approvalStatus === "PENDING" && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <Button size="sm" className="touch-target" onClick={() => moderateGuestbook(g.id, "APPROVED")}>Approve</Button>
-                          <Button size="sm" variant="outline" className="touch-target" onClick={() => moderateGuestbook(g.id, "REJECTED")}>Reject</Button>
+                {guestbook.length === 0 ? (
+                  <p className="text-sm text-slate-500">No guestbook entries yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {guestbook.map((g) => (
+                      <div key={g.id} className="p-3 border rounded-lg text-sm min-w-0">
+                        <div className="stack-mobile gap-2">
+                          <span className="truncate min-w-0">{g.userName}</span>
+                          <Badge className="shrink-0 self-start">{g.approvalStatus}</Badge>
                         </div>
-                      )}
-                    </div>
-                  )}
-                  empty={<p className="text-sm text-slate-500">No guestbook entries yet.</p>}
+                        <p className="mt-1 break-words">{g.message}</p>
+                        {g.approvalStatus === "PENDING" && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <Button size="sm" className="touch-target" onClick={() => moderateGuestbook(g.id, "APPROVED")}>Approve</Button>
+                            <Button size="sm" variant="outline" className="touch-target" onClick={() => moderateGuestbook(g.id, "REJECTED")}>Reject</Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <PaginationBar
+                  page={guestbookPage}
+                  pages={guestbookPages}
+                  total={guestbookTotal}
+                  limit={GUESTBOOK_PAGE_LIMIT}
+                  onPageChange={setGuestbookPage}
                 />
               </CardContent>
             </Card>

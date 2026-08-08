@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { contributionService } from "@/services/contributions/contribution.service";
 import { verifyEventAccess } from "@/lib/event-access";
+import { parsePaginationFromUrl } from "@/lib/pagination";
 
 const contributeSchema = z.object({
   eventId: z.string(),
@@ -22,8 +23,15 @@ export async function GET(req: Request) {
 
   try {
     await verifyEventAccess(eventId, session.user.id, session.user.role);
-    const stats = await contributionService.getContributionStats(eventId);
-    return NextResponse.json({ success: true, data: stats });
+    const { page, limit } = parsePaginationFromUrl(req.url, { limit: 20, maxLimit: 100 });
+    const [stats, contributions] = await Promise.all([
+      contributionService.getContributionStats(eventId),
+      contributionService.listContributions(eventId, { page, limit }),
+    ]);
+    return NextResponse.json({
+      success: true,
+      data: { ...stats, contributions },
+    });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Access denied" }, { status: 403 });
   }

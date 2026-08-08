@@ -46,13 +46,19 @@ type HubData = {
     total: number;
     limit: number;
   };
-  vendorScans: Array<{
-    id: string;
-    result: string;
-    gate: string | null;
-    operatorRoleNote: string | null;
-    createdAt: string;
-  }>;
+  vendorScans: {
+    items: Array<{
+      id: string;
+      result: string;
+      gate: string | null;
+      operatorRoleNote: string | null;
+      createdAt: string;
+    }>;
+    page: number;
+    pages: number;
+    total: number;
+    limit: number;
+  };
   permissions: {
     canManage: boolean;
     canDownload: boolean;
@@ -93,6 +99,7 @@ export function QrHubClient() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [passPage, setPassPage] = useState(1);
+  const [scanPage, setScanPage] = useState(1);
   const [packKinds, setPackKinds] = useState<QrHubAssetKind[]>([
     "GIFT",
     "MENU",
@@ -107,7 +114,9 @@ export function QrHubClient() {
     if (!eventId) return;
     setLoading(true);
     setError("");
-    const res = await fetch(`/api/qr-hub?eventId=${eventId}&passPage=${passPage}`);
+    const res = await fetch(
+      `/api/qr-hub?eventId=${eventId}&passPage=${passPage}&scanPage=${scanPage}`
+    );
     const payload = await res.json();
     setLoading(false);
     if (!res.ok) {
@@ -115,7 +124,7 @@ export function QrHubClient() {
       return;
     }
     setData(payload.data);
-  }, [eventId, passPage]);
+  }, [eventId, passPage, scanPage]);
 
   useEffect(() => {
     if (eventId) void load();
@@ -388,20 +397,29 @@ export function QrHubClient() {
               <CardContent className="space-y-2">
                 {!data.permissions.canViewScans ? (
                   <p className="text-sm text-slate-500">You do not have permission to view scans.</p>
-                ) : data.vendorScans.length === 0 ? (
+                ) : data.vendorScans.items.length === 0 ? (
                   <p className="text-sm text-slate-500">No vendor scans yet.</p>
                 ) : (
-                  data.vendorScans.map((scan) => (
-                    <div key={scan.id} className="rounded-lg border px-3 py-2 text-sm">
-                      <strong>{scan.result}</strong>
-                      {scan.operatorRoleNote ? ` · ${scan.operatorRoleNote}` : ""}
-                      {scan.gate ? ` · ${scan.gate}` : ""}
-                      <span className="text-xs text-slate-500">
-                        {" "}
-                        · {new Date(scan.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                  ))
+                  <>
+                    {data.vendorScans.items.map((scan) => (
+                      <div key={scan.id} className="rounded-lg border px-3 py-2 text-sm">
+                        <strong>{scan.result}</strong>
+                        {scan.operatorRoleNote ? ` · ${scan.operatorRoleNote}` : ""}
+                        {scan.gate ? ` · ${scan.gate}` : ""}
+                        <span className="text-xs text-slate-500">
+                          {" "}
+                          · {new Date(scan.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                    <PaginationBar
+                      page={data.vendorScans.page}
+                      pages={data.vendorScans.pages}
+                      total={data.vendorScans.total}
+                      limit={data.vendorScans.limit}
+                      onPageChange={setScanPage}
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>

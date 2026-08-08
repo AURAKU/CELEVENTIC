@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { funeralService } from "@/services/funeral/funeral.service";
 import { verifyEventAccess } from "@/lib/event-access";
+import { parsePaginationFromUrl } from "@/lib/pagination";
 
 const submitSchema = z.object({
   eventId: z.string(),
@@ -34,7 +35,8 @@ export async function GET(req: Request) {
     }
   }
 
-  const data = await funeralService.getGuestbook(eventId, pending);
+  const { page, limit } = parsePaginationFromUrl(req.url);
+  const data = await funeralService.getGuestbook(eventId, pending, page, limit);
   return NextResponse.json({ success: true, data });
 }
 

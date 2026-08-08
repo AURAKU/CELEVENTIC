@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,9 @@ const COLLABORATOR_ROLES = [
 
 const CHANNELS = ["general", "guests", "design", "finance", "vendors", "urgent", "announcements"];
 
+const VALID_TABS = ["team", "tasks", "activity", "chat"] as const;
+type WorkspaceTab = (typeof VALID_TABS)[number];
+
 interface WorkspaceClientProps {
   eventId: string;
   eventTitle: string;
@@ -40,8 +44,14 @@ interface WorkspaceClientProps {
 
 type PageMeta = { total: number; pages: number };
 
-export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientProps) {
-  const [tab, setTab] = useState("team");
+function EventWorkspaceClientInner({ eventId, eventTitle }: WorkspaceClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawTab = searchParams.get("tab");
+  const urlTab: WorkspaceTab | null = VALID_TABS.includes(rawTab as WorkspaceTab)
+    ? (rawTab as WorkspaceTab)
+    : null;
+  const [tab, setTab] = useState<WorkspaceTab>(urlTab ?? "team");
   const [collaborators, setCollaborators] = useState<Record<string, unknown>[]>([]);
   const [activity, setActivity] = useState<Record<string, unknown>[]>([]);
   const [tasks, setTasks] = useState<Record<string, unknown>[]>([]);
@@ -83,6 +93,21 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
   const [taskMeta, setTaskMeta] = useState<PageMeta>({ total: 0, pages: 1 });
   const [activityMeta, setActivityMeta] = useState<PageMeta>({ total: 0, pages: 1 });
   const [chatMeta, setChatMeta] = useState<PageMeta>({ total: 0, pages: 1 });
+
+  useEffect(() => {
+    if (urlTab) setTab(urlTab);
+  }, [urlTab]);
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const next = VALID_TABS.includes(value as WorkspaceTab) ? (value as WorkspaceTab) : "team";
+      setTab(next);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", next);
+      router.replace(`/dashboard/events/${eventId}/workspace?${params.toString()}`, { scroll: false });
+    },
+    [eventId, router, searchParams]
+  );
 
   const applyPage = useCallback((payload: unknown): { items: Record<string, unknown>[]; meta: PageMeta } => {
     if (Array.isArray(payload)) {
@@ -219,7 +244,7 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
         <p className="text-slate-500">{eventTitle}, collaborate with your team</p>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="team"><Users className="h-4 w-4 mr-1" /> Team</TabsTrigger>
           <TabsTrigger value="tasks"><ListTodo className="h-4 w-4 mr-1" /> Tasks</TabsTrigger>
@@ -431,5 +456,13 @@ export function EventWorkspaceClient({ eventId, eventTitle }: WorkspaceClientPro
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export function EventWorkspaceClient(props: WorkspaceClientProps) {
+  return (
+    <Suspense fallback={<p className="text-slate-500 py-8 text-center">Loading workspace…</p>}>
+      <EventWorkspaceClientInner {...props} />
+    </Suspense>
   );
 }

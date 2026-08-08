@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { parsePaginationFromUrl, parsePaginationInput } from "@/lib/pagination";
 import { authorizeEventAny, guardRate } from "@/lib/guest-search/api-auth";
 import { EventPermissionKey } from "@/lib/workspace/permission-keys";
 import {
@@ -146,7 +147,11 @@ export async function POST(
   if (action === "history") {
     const auth = await authorizeHistoryRead(id);
     if ("error" in auth && auth.error) return auth.error;
-    const data = await getVendorTeamPassHistory(id, Number(body?.limit) || 50);
+    const { page, limit } = parsePaginationInput({
+      page: body?.page,
+      limit: body?.limit ?? 50,
+    });
+    const data = await getVendorTeamPassHistory(id, { page, limit });
     return NextResponse.json({ success: true, data });
   }
 
@@ -163,7 +168,7 @@ export async function GET(
   }
   const auth = await authorizeHistoryRead(id);
   if ("error" in auth && auth.error) return auth.error;
-  const limit = Number(new URL(req.url).searchParams.get("limit") ?? 50);
-  const data = await getVendorTeamPassHistory(id, Number.isFinite(limit) ? limit : 50);
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: 20 });
+  const data = await getVendorTeamPassHistory(id, { page, limit });
   return NextResponse.json({ success: true, data });
 }

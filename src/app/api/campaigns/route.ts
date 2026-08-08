@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { communicationService } from "@/services/communications/communication.service";
 import { verifyEventAccess } from "@/lib/event-access";
+import { parsePaginationFromUrl } from "@/lib/pagination";
 
 const createSchema = z.object({
   eventId: z.string().min(1),
@@ -16,6 +17,33 @@ const createSchema = z.object({
   })),
   guestTier: z.number().optional(),
 });
+
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const eventId = url.searchParams.get("eventId");
+  const { page, limit } = parsePaginationFromUrl(req.url, { limit: 20, maxLimit: 100 });
+
+  if (eventId) {
+    try {
+      await verifyEventAccess(eventId, session.user.id, session.user.role);
+    } catch {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+  }
+
+  const data = await communicationService.listUserCampaigns(session.user.id, {
+    eventId,
+    page,
+    limit,
+  });
+
+  return NextResponse.json({ success: true, data });
+}
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
