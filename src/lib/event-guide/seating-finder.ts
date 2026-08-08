@@ -85,6 +85,8 @@ export interface CandidateParty {
   invitationId: string;
   partyName: string;
   guests: CandidateGuest[];
+  /** Live guest-pass code for this party, when known. */
+  admissionCode?: string | null;
 }
 
 /**
@@ -154,6 +156,12 @@ export function buildSeatingMatch(party: CandidateParty): GuideSeatingMatch {
     ceremonySeatLabel: ceremony?.seatLabel ?? null,
     partyMembers: partyGuests.map((g) => g.name.trim()).filter((name) => name.length > 0),
     plusOnes: partyGuests.reduce((total, g) => total + Math.max(0, g.plusOnes), 0),
+    admissionCode: (() => {
+      const raw = party.admissionCode?.trim() || null;
+      if (!raw) return null;
+      const digits = raw.replace(/[^0-9]/g, "");
+      return digits.length >= 4 ? digits : null;
+    })(),
   };
 }
 

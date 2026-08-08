@@ -6,6 +6,7 @@ import {
   tableCaptionValue,
   tableDisplayName,
 } from "@/lib/seating/seating-types";
+import { formatAdmissionCode, normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import type { GuideSeatingConfig, GuideSeatingMatch } from "@/lib/event-guide/types";
 import { ChairGlyph, RoundTable, SprigDivider } from "./guide-motifs";
 
@@ -393,9 +394,9 @@ export function GuideSeating({
 /**
  * The answer, as a card a guest could have found waiting on their plate.
  *
- * The table is drawn once, large, with the number set inside it — that is the
- * one thing they came for and it should be readable across a hall. The seat,
- * the zone and the people they are seated with are the small print under it.
+ * Shows, in this order: their name, the seat they were assigned, then their
+ * admission QR with the code digits underneath so a door steward can scan or
+ * read the number aloud without opening another app.
  */
 function SeatCard({
   match,
@@ -415,6 +416,13 @@ function SeatCard({
       : seal.length <= 4
         ? "text-[1.6rem]"
         : "text-[1.05rem]";
+
+  const seatLine = [
+    match.seatLabel ? seatDisplayName(match.seatLabel) : null,
+    match.zone,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
 
   return (
     <div data-testid="event-guide-seating-result">
@@ -437,9 +445,13 @@ function SeatCard({
               color: "var(--guide-label, var(--guide-secondary))",
             }}
           >
-            Reserved for
+            Your name
           </p>
-          <p className="mt-1.5 text-[1.45rem] leading-tight" style={{ fontFamily: fonts.script }}>
+          <p
+            className="mt-1.5 text-[1.45rem] leading-tight"
+            style={{ fontFamily: fonts.script }}
+            data-testid="event-guide-seating-name"
+          >
             {match.partyName}
           </p>
 
@@ -475,13 +487,17 @@ function SeatCard({
                 >
                   {tableDisplayName(match.tableNumber)}
                 </p>
-                {match.seatLabel || match.zone ? (
-                  <p className="mt-1 text-[0.88rem] opacity-80">
-                    {[match.seatLabel ? seatDisplayName(match.seatLabel) : null, match.zone]
-                      .filter(Boolean)
-                      .join("  ·  ")}
+                {seatLine ? (
+                  <p
+                    className="mt-1.5 text-[1.05rem] font-semibold"
+                    style={{ color: "var(--guide-primary)" }}
+                    data-testid="event-guide-seating-seat"
+                  >
+                    {seatLine}
                   </p>
-                ) : null}
+                ) : (
+                  <p className="mt-1 text-[0.88rem] opacity-80">Your seat at this table</p>
+                )}
               </figcaption>
             </figure>
           ) : null}
@@ -502,7 +518,7 @@ function SeatCard({
                 {match.ceremonyRowLabel}
               </p>
               {match.ceremonySeatLabel ? (
-                <p className="mt-1 text-[0.88rem] opacity-80">
+                <p className="mt-1 text-[0.95rem] font-semibold opacity-90">
                   {seatDisplayName(match.ceremonySeatLabel)}
                 </p>
               ) : null}
@@ -519,6 +535,10 @@ function SeatCard({
                 Your seat has not been assigned yet. Please ask a member of the host team.
               </p>
             </div>
+          ) : null}
+
+          {match.admissionCode ? (
+            <AdmissionPassMark code={match.admissionCode} fonts={fonts} />
           ) : null}
 
           {match.partyMembers.length > 0 ? (
@@ -553,6 +573,80 @@ function SeatCard({
       <p className="mt-3 px-2 text-center text-[0.72rem] leading-relaxed opacity-60">
         Only your own party is ever shown, and nothing is stored on your phone.
       </p>
+    </div>
+  );
+}
+
+/** QR of this party's admission code, with the digits printed under it. */
+function AdmissionPassMark({ code, fonts }: { code: string; fonts: Fonts }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const digits = normalizeAdmissionCode(code);
+  const display = formatAdmissionCode(digits);
+
+  useEffect(() => {
+    if (!digits) {
+      setSrc(null);
+      return;
+    }
+    let cancelled = false;
+    void import("qrcode")
+      .then((QRCode) =>
+        QRCode.toDataURL(digits, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 168,
+          color: { dark: "#0f172a", light: "#ffffff" },
+        })
+      )
+      .then((url) => {
+        if (!cancelled) setSrc(url);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [digits]);
+
+  if (!digits) return null;
+
+  return (
+    <div
+      className="mt-7 border-t pt-5"
+      style={{ borderColor: "var(--guide-hairline)" }}
+      data-testid="event-guide-seating-admission"
+    >
+      <p
+        className="text-[0.66rem] font-semibold uppercase tracking-[0.22em] opacity-75"
+        style={{ fontFamily: fonts.eyebrow }}
+      >
+        Your admission pass
+      </p>
+      <div className="mx-auto mt-3 w-fit rounded-2xl border bg-white p-3 shadow-sm" style={{ borderColor: "var(--guide-hairline)" }}>
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element -- data URL from qrcode
+          <img
+            src={src}
+            alt={`Admission QR for code ${display}`}
+            width={168}
+            height={168}
+            className="h-40 w-40"
+          />
+        ) : (
+          <div className="flex h-40 w-40 items-center justify-center text-[0.75rem] opacity-50">
+            Preparing pass…
+          </div>
+        )}
+      </div>
+      <p
+        className="mt-3 font-mono text-[1.35rem] font-semibold tracking-[0.18em] tabular-nums"
+        style={{ color: "var(--guide-primary)", fontFamily: fonts.heading }}
+        data-testid="event-guide-seating-admission-code"
+      >
+        {display}
+      </p>
+      <p className="mt-1 text-[0.78rem] opacity-65">Show this code at the door</p>
     </div>
   );
 }

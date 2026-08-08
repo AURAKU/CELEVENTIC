@@ -266,11 +266,12 @@ describe("party isolation", () => {
 });
 
 describe("the shape of a match", () => {
-  it("carries no identifiers, contacts or admission codes", () => {
+  it("carries the guest-facing fields only — no internal ids or contacts", () => {
     const match = buildSeatingMatch(
       party({
         invitationId: "inv_secret",
         partyName: "The Okafor Family",
+        admissionCode: "123456",
         guests: [
           guest({
             name: "Chidi Okafor",
@@ -284,6 +285,7 @@ describe("the shape of a match", () => {
 
     const keys = Object.keys(match).sort();
     assert.deepEqual(keys, [
+      "admissionCode",
       "ceremonyRowLabel",
       "ceremonySeatLabel",
       "partyMembers",
@@ -294,9 +296,21 @@ describe("the shape of a match", () => {
       "zone",
     ]);
 
+    assert.equal(match.admissionCode, "123456");
     const json = JSON.stringify(match);
     assert.doesNotMatch(json, /inv_secret|guest_secret_id/);
     assert.doesNotMatch(json, /@/, "no email may appear in a seating match");
+  });
+
+  it("omits admissionCode when the party has no live pass", () => {
+    const match = buildSeatingMatch(
+      party({
+        invitationId: "inv_1",
+        partyName: "No pass yet",
+        guests: [guest({ name: "A" })],
+      })
+    );
+    assert.equal(match.admissionCode, null);
   });
 });
 
