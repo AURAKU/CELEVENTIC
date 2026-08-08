@@ -173,8 +173,10 @@ async function checkHealth() {
   record(
     "health",
     "reports a build fingerprint",
-    Boolean(build && (build.commit || build.buildId)),
-    build ? `commit=${build.commit ?? "-"} buildId=${build.buildId ?? "-"}` : "no build field",
+    Boolean(build && (build.commit || build.shortCommit || build.buildId)),
+    build
+      ? `commit=${build.commit ?? build.shortCommit ?? "-"} buildId=${build.buildId ?? "-"} builtAt=${build.builtAt ?? "-"}`
+      : "no build field",
     { warn: true }
   );
   if (build?.startedAt) say(`       process started ${build.startedAt}`);

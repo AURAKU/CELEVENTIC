@@ -129,9 +129,15 @@ npx prisma migrate status
 
 log "Building Next.js (previous .next already backed up)"
 rm -rf .next
+export CELEVENTIC_BUILD_COMMIT="$NEW_COMMIT"
+export CELEVENTIC_BUILD_BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+# Bake commit into the server bundle so a stale PM2/.env SHA cannot win.
+node scripts/write-build-meta.mjs
 npm run build
 [[ -f .next/BUILD_ID ]] || die ".next/BUILD_ID missing after build"
+[[ -f .next/celeventic-build-meta.json ]] || die ".next/celeventic-build-meta.json missing after build"
 log "BUILD_ID=$(cat .next/BUILD_ID)"
+log "BUILD_META=$(tr -d '\n' < .next/celeventic-build-meta.json)"
 
 log "Restarting only ${APP_NAME}"
 pm2 restart "$APP_NAME" --update-env
@@ -140,11 +146,23 @@ pm2 save
 
 sleep 3
 curl -fsS "$HEALTH_LOCAL" >/dev/null || die "Local health failed: ${HEALTH_LOCAL}"
+bash scripts/verify-build-commit.sh "$NEW_COMMIT" "$HEALTH_LOCAL" || die "Local build integrity check failed"
 curl -fsS "$HEALTH_PUBLIC" >/dev/null || log "Public health check failed (DNS/firewall?) — local passed"
+if curl -fsS "$HEALTH_PUBLIC" >/dev/null 2>&1; then
+  bash scripts/verify-build-commit.sh "$NEW_COMMIT" "$HEALTH_PUBLIC" \
+    || die "Public health commit mismatch — deployed process is stale or wrong host"
+fi
 
 log "Smoke: health + home"
 curl -fsS -o /dev/null -w "live home %{http_code}\n" https://www.celeventic.com/ || true
 curl -fsS -o /dev/null -w "live health %{http_code}\n" https://www.celeventic.com/api/health || true
+
+# Event Guide surfaces must remain reachable after metadata-only deploys.
+curl -fsS -o /dev/null -w "event-guide public shell %{http_code}\n" \
+  "https://www.celeventic.com/event-guide/health-check-token" || true
+[[ -d src/app/dashboard/events ]] || die "dashboard events routes missing"
+[[ -d src/app/event-guide ]] || die "public event-guide routes missing"
+[[ -d src/app/api/event-guide ]] || die "event-guide API routes missing"
 
 trap - ERR
 log "Deploy complete"
