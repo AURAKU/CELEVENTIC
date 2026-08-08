@@ -74,3 +74,6 @@ public/uploads/**
 # dev server or `next start` is serving from.
 .next-ship-check/
 .next-verify/
+
+# Build fingerprint written by scripts/write-build-meta.mjs (repo root copy)
+.celeventic-build-meta.json
