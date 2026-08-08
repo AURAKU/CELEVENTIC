@@ -7,26 +7,47 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = await params;
-  const page = await thankYouService.getPublishedBySlug(slug);
-  if (!page) {
-    return NextResponse.json({ error: "Thank-you page not found or not published" }, { status: 404 });
-  }
+  try {
+    const { slug } = await params;
+    const page = await thankYouService.getPublishedBySlug(slug);
+    if (!page) {
+      return NextResponse.json(
+        { error: "Thank-you page not found or not published" },
+        { status: 404 }
+      );
+    }
 
-  const uploadToken = await eventMemoryTokenService.getOrCreateUploadToken(page.eventId);
-  const baseUrl = await getServerAppUrl();
-  const formatted = thankYouService.formatPublicPage(page);
+    const baseUrl = await getServerAppUrl();
+    const formatted = thankYouService.formatPublicPage(page);
+    if (!formatted) {
+      return NextResponse.json(
+        { error: "Thank-you page not found or not published" },
+        { status: 404 }
+      );
+    }
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      page: {
-        ...formatted,
-        shareToken: page.shareToken,
+    let uploadUrl: string | undefined;
+    try {
+      const uploadToken = await eventMemoryTokenService.getOrCreateUploadToken(page.eventId);
+      uploadUrl = `${baseUrl}/memory-upload/${uploadToken.token}`;
+    } catch {
+      uploadUrl = undefined;
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        page: {
+          ...formatted,
+          shareToken: page.shareToken,
+        },
+        event: page.event,
+        uploadUrl,
+        memoriesUrl: `${baseUrl}/events/${slug}/memories`,
       },
-      event: page.event,
-      uploadUrl: `${baseUrl}/memory-upload/${uploadToken.token}`,
-      memoriesUrl: `${baseUrl}/events/${slug}/memories`,
-    },
-  });
+    });
+  } catch (error) {
+    console.error("[public/events/thank-you]", error);
+    return NextResponse.json({ error: "Thank-you page unavailable" }, { status: 500 });
+  }
 }

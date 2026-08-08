@@ -65,7 +65,30 @@ describe("thank you design resolution", () => {
     assert.equal(design.themeSource, "INVITATION");
     assert.equal(design.accentColor, "#AABBCC");
     assert.equal(design.backgroundColor, "#FEFEFE");
-    assert.ok(design.displayFontStack.toLowerCase().includes("playfair") || design.displayFontStack.includes("--font-playfair"));
+    assert.ok(
+      design.displayFontStack.toLowerCase().includes("playfair") ||
+        design.displayFontStack.includes("--font-playfair")
+    );
+  });
+
+  it("does not crash when invitation colours are non-hex", () => {
+    const design = resolveThankYouDesign({
+      templateId: "eternal-ivory",
+      themeSource: "INVITATION",
+      invitation: {
+        backgroundColor: "linear-gradient(90deg, red, blue)",
+        accentColor: "tomato",
+        textColor: "",
+      },
+    });
+    assert.ok(design.backgroundColor);
+    assert.equal(typeof design.isLight, "boolean");
+  });
+
+  it("orderedEnabledSections tolerates missing section config", () => {
+    assert.ok(orderedEnabledSections(null).length > 0);
+    assert.ok(orderedEnabledSections(undefined).length > 0);
+    assert.ok(orderedEnabledSections({ sections: [] }).length > 0);
   });
 
   it("uses preset design when themeSource is PRESET", () => {

@@ -5,9 +5,13 @@ import { useParams } from "next/navigation";
 import { PageLoader } from "@/components/ui/page-loader";
 import { CeleventicIntroExperience } from "@/components/invitations/CeleventicIntroExperience";
 import { ThankYouPublicView } from "@/components/thank-you/thank-you-public-view";
-import type { ThankYouTemplate } from "@/lib/thank-you/templates";
+import { getThankYouTemplate, type ThankYouTemplate } from "@/lib/thank-you/templates";
 import type { ResolvedThankYouDesign } from "@/lib/thank-you/types";
-import type { ThankYouGuestbookConfig, ThankYouSectionConfig, ThankYouSharingConfig } from "@/lib/thank-you/types";
+import type {
+  ThankYouGuestbookConfig,
+  ThankYouSectionConfig,
+  ThankYouSharingConfig,
+} from "@/lib/thank-you/types";
 
 type PublicThankYouPayload = {
   page: {
@@ -28,7 +32,7 @@ type PublicThankYouPayload = {
     signatureImageUrl?: string | null;
     audioUrl: string | null;
     shareToken?: string | null;
-    template: ThankYouTemplate;
+    template?: ThankYouTemplate | null;
     design?: ResolvedThankYouDesign;
     sectionConfig?: ThankYouSectionConfig;
     guestbookConfig?: ThankYouGuestbookConfig;
@@ -61,29 +65,42 @@ export default function ThankYouByTokenPage() {
   const [data, setData] = useState<PublicThankYouPayload | null>(null);
 
   useEffect(() => {
-    fetch(`/api/public/thank-you/${token}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setData(d.data);
+    let cancelled = false;
+    fetch(`/api/public/thank-you/${encodeURIComponent(token)}`)
+      .then(async (r) => {
+        const body = await r.json().catch(() => null);
+        if (cancelled) return;
+        if (body?.success) setData(body.data);
         setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   if (loading) return <PageLoader />;
   if (!data) return <p className="py-20 text-center text-slate-500">Thank-you page not found.</p>;
 
+  const template = data.page.template?.id
+    ? data.page.template
+    : getThankYouTemplate("eternal-ivory");
+  const accent =
+    data.page.design?.accentColor?.trim() ||
+    template.accentColor ||
+    "#0B8A83";
+
   const qrImageUrl = data.uploadUrl
-    ? `/api/qr/image?data=${encodeURIComponent(data.uploadUrl)}&size=256`
+    ? `/api/qr/image?data=${encodeURIComponent(data.uploadUrl)}&size=256&mode=guide`
     : undefined;
 
   if (phase === "intro") {
     return (
       <CeleventicIntroExperience
-        logoUrl={data.event.logoUrl ?? undefined}
         onComplete={() => setPhase("content")}
-        themeColors={{
-          accent: data.page.design?.accentColor ?? data.page.template.accentColor,
-        }}
+        themeColors={{ accent }}
       />
     );
   }
@@ -108,7 +125,7 @@ export default function ThankYouByTokenPage() {
       heroImageUrl={data.page.heroImageUrl}
       signatureImageUrl={data.page.signatureImageUrl}
       audioUrl={data.page.audioUrl}
-      template={data.page.template}
+      template={template}
       design={data.page.design}
       sectionConfig={data.page.sectionConfig}
       guestbookConfig={data.page.guestbookConfig}
