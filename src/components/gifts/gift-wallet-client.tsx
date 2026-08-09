@@ -92,6 +92,7 @@ interface CampaignState {
   requireGuestContact: boolean;
   allowAnonymous: boolean;
   showOnInvitation: boolean;
+  showOnCompanion: boolean;
   themeSource: string;
 }
 
@@ -588,8 +589,8 @@ function GiftLinkCard({
             </Button>
           </div>
           <p className="text-xs text-slate-500">
-            Print this QR on your invitation cards or share the link in your digital invite. Guests
-            never see totals or other guests&apos; gifts.
+            Print this QR for Event Guide signs or share it from Event Companion. Guests never see
+            totals or other guests&apos; gifts. The digital invitation does not show a gift section.
           </p>
         </div>
       </CardContent>
@@ -866,6 +867,7 @@ function SettingsPanel({
     requireGuestName: campaign.requireGuestName,
     requireGuestContact: campaign.requireGuestContact,
     showOnInvitation: campaign.showOnInvitation,
+    showOnCompanion: campaign.showOnCompanion !== false,
     themeSource: campaign.themeSource,
   });
 
@@ -1005,10 +1007,21 @@ function SettingsPanel({
             onChange={(v) => setForm({ ...form, themeSource: v ? "INVITATION" : "PRESET" })}
           />
           <Toggle
-            label="Show gift section in the digital invitation"
+            label="Show gift on Event Guide"
             checked={form.showOnInvitation}
             onChange={(v) => setForm({ ...form, showOnInvitation: v })}
           />
+          <Toggle
+            label="Show gift on Event Companion"
+            checked={form.showOnCompanion}
+            onChange={(v) => setForm({ ...form, showOnCompanion: v })}
+          />
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+          Guests only see gifts when <strong>Gift the Couple</strong> is turned on in Event Companion
+          studio and this campaign is <strong>Live</strong>. Digital invitations never show a gift
+          section — only Event Guide and Event Companion.
         </div>
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">

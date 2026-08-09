@@ -5,6 +5,7 @@ import { giftThemeToCssVars } from "@/lib/gifts/gift-theme";
 import { listEnabledGiftPaymentMethods } from "@/lib/gifts/gift-providers";
 import { assertNoPrivateGiftData } from "@/lib/gifts/gift-privacy";
 import { sanitizeCompanionReturnUrl } from "@/lib/gifts/gift-placement";
+import { assertGuestGiftPaymentsAllowed } from "@/lib/gifts/gift-guest-access";
 import { GiftExperience } from "@/components/gifts/gift-experience";
 
 /**
@@ -27,6 +28,9 @@ export async function generateMetadata({
   const context = await giftCampaignService.getByPublicToken(publicToken);
   if (!context) return { title: "Gift" };
 
+  const access = await assertGuestGiftPaymentsAllowed(context.event.id);
+  if (!access.ok) return { title: "Gift", robots: { index: false, follow: false } };
+
   return {
     title: `${context.campaign.title} · ${context.event.title}`,
     description: context.campaign.subtitle ?? undefined,
@@ -48,6 +52,9 @@ export default async function GiftPage({
 
   const context = await giftCampaignService.getByPublicToken(publicToken);
   if (!context) notFound();
+
+  const access = await assertGuestGiftPaymentsAllowed(context.event.id);
+  if (!access.ok) notFound();
 
   const guest = await giftCampaignService.resolvePersonalisedGuest(
     context.campaign,

@@ -35,6 +35,7 @@ import {
   detectGiftVerificationMismatch,
   sanitizeCompanionReturnUrl,
 } from "@/lib/gifts/gift-placement";
+import { assertGuestGiftPaymentsAllowed } from "@/lib/gifts/gift-guest-access";
 
 /**
  * Gift payments.
@@ -91,6 +92,11 @@ export class GiftPaymentService {
     if (!context) throw new GiftPaymentError("This gift link is not available", 404);
 
     const { campaign, event } = context;
+
+    // Feature must be ON for this event — UI hide alone is not enough.
+    const access = await assertGuestGiftPaymentsAllowed(event.id);
+    if (!access.ok) throw new GiftPaymentError(access.message, access.status);
+
     const closed = giftCampaignService.resolveClosedReason(campaign);
     if (closed) throw new GiftPaymentError(closed, 409);
 

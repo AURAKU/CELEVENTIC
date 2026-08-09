@@ -7,34 +7,68 @@ import {
   isCampaignPlaceable,
   isGuestScopedToCampaignEvent,
   sanitizeCompanionReturnUrl,
+  sanitizeGiftReturnUrl,
 } from "../gift-placement";
 import { amountsMatch } from "../money";
 import { companionGiftTeaser, getGiftCopy } from "../gift-copy";
 import { assertNoPrivateGiftData, type PublicGiftPaymentView } from "../gift-privacy";
 
-test("companion placement ignores showOnInvitation", () => {
+test("digital invitation never places gift CTAs", () => {
+  const campaign = {
+    status: "ACTIVE",
+    showOnInvitation: true,
+    showOnCompanion: true,
+    closesAt: null,
+  };
+  assert.equal(isCampaignPlaceable(campaign, "invitation"), false);
+});
+
+test("event-guide placement uses showOnInvitation flag", () => {
+  assert.equal(
+    isCampaignPlaceable(
+      { status: "ACTIVE", showOnInvitation: true, showOnCompanion: false },
+      "event-guide"
+    ),
+    true
+  );
+  assert.equal(
+    isCampaignPlaceable(
+      { status: "ACTIVE", showOnInvitation: false, showOnCompanion: true },
+      "event-guide"
+    ),
+    false
+  );
+});
+
+test("companion placement ignores showOnInvitation and respects showOnCompanion", () => {
   const campaign = {
     status: "ACTIVE",
     showOnInvitation: false,
     closesAt: null,
   };
   assert.equal(isCampaignPlaceable(campaign, "companion"), true);
-  assert.equal(isCampaignPlaceable(campaign, "invitation"), false);
+  assert.equal(isCampaignPlaceable(campaign, "event-guide"), false);
+  assert.equal(
+    isCampaignPlaceable({ ...campaign, showOnCompanion: false }, "companion"),
+    false
+  );
 });
 
-test("draft and paused campaigns never place on companion", () => {
-  assert.equal(
-    isCampaignPlaceable({ status: "DRAFT", showOnInvitation: true }, "companion"),
-    false
-  );
-  assert.equal(
-    isCampaignPlaceable({ status: "PAUSED", showOnInvitation: true }, "companion"),
-    false
-  );
-  assert.equal(
-    isCampaignPlaceable({ status: "CLOSED", showOnInvitation: true }, "companion"),
-    false
-  );
+test("draft and paused campaigns never place on guest surfaces", () => {
+  for (const surface of ["companion", "event-guide"] as const) {
+    assert.equal(
+      isCampaignPlaceable({ status: "DRAFT", showOnInvitation: true }, surface),
+      false
+    );
+    assert.equal(
+      isCampaignPlaceable({ status: "PAUSED", showOnInvitation: true }, surface),
+      false
+    );
+    assert.equal(
+      isCampaignPlaceable({ status: "CLOSED", showOnInvitation: true }, surface),
+      false
+    );
+  }
 });
 
 test("closed-by-date campaigns are not placeable", () => {
@@ -42,17 +76,21 @@ test("closed-by-date campaigns are not placeable", () => {
   assert.equal(
     isCampaignPlaceable(
       { status: "ACTIVE", showOnInvitation: true, closesAt: past },
-      "companion",
+      "event-guide",
       new Date("2026-07-29T00:00:00.000Z")
     ),
     false
   );
 });
 
-test("companion return URLs must be relative invite paths", () => {
+test("gift return URLs must be relative invite or event-guide paths", () => {
   assert.equal(
     sanitizeCompanionReturnUrl("/invite/abc/event-day?guest=tok"),
     "/invite/abc/event-day?guest=tok"
+  );
+  assert.equal(
+    sanitizeGiftReturnUrl("/event-guide/tok_abc?tab=programme"),
+    "/event-guide/tok_abc?tab=programme"
   );
   assert.equal(sanitizeCompanionReturnUrl("https://evil.example/phish"), null);
   assert.equal(sanitizeCompanionReturnUrl("//evil.example"), null);
@@ -69,6 +107,13 @@ test("companion gift URLs carry guest token and safe return", () => {
   assert.match(built, /^\/gift\/gft_token\?/);
   assert.match(built, /g=guest-1/);
   assert.match(built, /return=%2Finvite%2Fabc%2Fevent-day/);
+});
+
+test("event-guide return path is preserved on gift URL", () => {
+  const built = buildCompanionGiftUrl("https://app.example/gift/gft_token", {
+    companionReturnUrl: "/event-guide/guide_tok",
+  });
+  assert.match(built, /return=%2Fevent-guide%2Fguide_tok/);
 });
 
 test("guest personalisation is event-scoped", () => {

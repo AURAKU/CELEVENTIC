@@ -62,7 +62,8 @@ const FEATURE_HINTS: Record<string, string> = {
   SEATING_REVEAL: "Shows table and seat after check-in.",
   LIVE_PROGRAMME: "Shows the order of the day on the companion.",
   EVENT_MENU: "Shows the dining menu section.",
-  GIFT_WALLET: "Cash gift / contributions entry from TAKE PART.",
+  GIFT_WALLET:
+    "Cash gifts on Event Companion and Event Guide (when placement is on). Off by default.",
   MEMORY_VAULT: "Photo & video uploads from guests.",
   GUEST_HELP: "Help / contact actions for admitted guests.",
   ANNOUNCEMENTS: "Host announcements on the companion.",

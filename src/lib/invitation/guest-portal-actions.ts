@@ -297,14 +297,13 @@ export function resolveGuestPortalActions(
     });
   }
 
-  if (ctx.hubTabs.includes("gifts") || ctx.registryUrl) {
+  if (ctx.registryUrl) {
     actions.push({
       key: "CONTRIBUTION",
       ...ACTION_LABELS.CONTRIBUTION,
-      kind: ctx.registryUrl ? "href" : "scroll",
-      href: ctx.registryUrl ?? undefined,
-      external: Boolean(ctx.registryUrl),
-      onClick: () => handlers.scrollTo("gifts"),
+      kind: "href",
+      href: ctx.registryUrl,
+      external: true,
       visible: true,
       sectionId: "gifts",
     });

@@ -15,6 +15,14 @@ import { OfflineBanner, type GuideConnection } from "./offline-banner";
 import { GuideProgramme } from "./guide-programme";
 import { GuideMenuPanel } from "./guide-menu";
 import { GuideSeating } from "./guide-seating";
+import { GuideGiftCard } from "./guide-gift-card";
+
+export type EventGuideGiftPlacement = {
+  giftUrl: string;
+  title: string;
+  teaser: string;
+  ctaLabel: string;
+};
 
 const TAB_LABELS: Record<EventGuideTabKey, string> = {
   programme: "Programme",
@@ -41,10 +49,13 @@ export function EventGuideExperience({
   publicToken,
   initialPayload,
   initialTab,
+  gift = null,
 }: {
   publicToken: string;
   initialPayload: EventGuidePayload;
   initialTab: EventGuideTabKey;
+  /** Live gift CTA — resolved per request, never baked into the offline snapshot. */
+  gift?: EventGuideGiftPlacement | null;
 }) {
   const [payload, setPayload] = useState(initialPayload);
   const [tab, setTab] = useState<EventGuideTabKey>(initialTab);
@@ -226,6 +237,19 @@ export function EventGuideExperience({
           </p>
         ) : null}
       </header>
+
+      {gift?.giftUrl ? (
+        <GuideGiftCard
+          giftUrl={gift.giftUrl}
+          title={gift.title}
+          teaser={gift.teaser}
+          ctaLabel={gift.ctaLabel}
+          fonts={fonts}
+          colors={theme.colors}
+          accentWash={theme.accentWash}
+          onAccent={onAccent}
+        />
+      ) : null}
 
       <nav
         aria-label="Event Guide sections"

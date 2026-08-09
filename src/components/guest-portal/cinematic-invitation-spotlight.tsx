@@ -300,24 +300,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
       ),
     });
 
-    if (hubTabs.includes("gifts") && props.giftUrl) {
-      list.push({
-        id: "gifts",
-        durationMs: slideMs,
-        content: (
-          <div className="max-w-sm mx-auto px-6 w-full text-center space-y-3">
-            <p className="text-xs uppercase tracking-[0.35em]" style={{ color: accent }}>
-              {props.giftTitle ?? "Send a Gift"}
-            </p>
-            <Button variant="outline" size="sm" asChild className="border-white/30 text-white hover:bg-white/10">
-              <a href={props.giftUrl} target="_blank" rel="noopener noreferrer">
-                {props.giftCtaLabel ?? "Send a Gift"}
-              </a>
-            </Button>
-          </div>
-        ),
-      });
-    }
+    // Gift Wallet CTAs are Event Guide + Event Companion only — not the cinematic invite.
 
     if (showRsvp) {
       list.push({

@@ -293,16 +293,12 @@ export class GiftCampaignService {
   }
 
   /**
-   * What the digital invitation needs to show a gift section, or null when the
-   * event has no live campaign. Returning null is the feature flag: an event
-   * that has never opened gifting renders exactly as it does today.
-   *
-   * A personalised QR mode appends the guest's token so the gift page can
-   * prefill their name without the guest typing it again.
+   * @deprecated Digital invitation no longer shows gift CTAs. Always null.
+   * Kept so leftover callers fail closed instead of leaking a gift section.
    */
   async resolveInvitePlacement(
-    eventId: string,
-    options: { guestQrToken?: string | null } = {}
+    _eventId: string,
+    _options: { guestQrToken?: string | null } = {}
   ): Promise<{
     giftUrl: string;
     qrImageUrl: string;
@@ -311,28 +307,49 @@ export class GiftCampaignService {
     ctaLabel: string;
     privacyNote: string;
   } | null> {
+    return null;
+  }
+
+  /**
+   * Public Event Guide gift CTA placement.
+   *
+   * Uses the legacy `showOnInvitation` column as the Event Guide surface flag.
+   * Still requires an ACTIVE, open campaign (never auto-activates DRAFT).
+   * Callers must also gate on `GIFT_WALLET` / `isGuestGiftWalletEnabled`.
+   */
+  async resolveEventGuidePlacement(
+    eventId: string,
+    options: {
+      guestQrToken?: string | null;
+      guideReturnUrl?: string | null;
+    } = {}
+  ): Promise<{
+    giftUrl: string;
+    title: string;
+    subtitle: string;
+    ctaLabel: string;
+    teaser: string;
+    privacyNote: string;
+  } | null> {
     const campaign = await this.getByEvent(eventId);
     if (!campaign) return null;
-    if (!isCampaignPlaceable(campaign, "invitation")) return null;
+    if (!isCampaignPlaceable(campaign, "event-guide")) return null;
     if (this.resolveClosedReason(campaign)) return null;
 
-    const { giftUrl } = await this.links(campaign);
-    const personalised =
-      campaign.qrMode === "PERSONALISED_GIFT_QR" && options.guestQrToken
-        ? `${giftUrl}?g=${encodeURIComponent(options.guestQrToken)}`
-        : giftUrl;
+    const { giftUrl: baseGiftUrl } = await this.links(campaign);
+    const giftUrl = buildCompanionGiftUrl(baseGiftUrl, {
+      guestQrToken:
+        campaign.qrMode === "PERSONALISED_GIFT_QR" ? options.guestQrToken : null,
+      companionReturnUrl: options.guideReturnUrl,
+    });
     const copy = resolveGiftCopy(campaign.giftType, campaign);
 
     return {
-      giftUrl: personalised,
-      // The QR encodes the same URL as the button so scanning from a printed
-      // card and tapping in the invite land a guest in the identical flow.
-      qrImageUrl: `/api/qr/image?data=${encodeURIComponent(personalised)}&eventId=${encodeURIComponent(
-        campaign.eventId
-      )}&size=512`,
+      giftUrl,
       title: copy.title,
       subtitle: copy.subtitle,
-      ctaLabel: copy.ctaLabel,
+      ctaLabel: copy.ctaLabel || "Send a Gift",
+      teaser: companionGiftTeaser(campaign.giftType),
       privacyNote: copy.privacyNote,
     };
   }
@@ -340,9 +357,10 @@ export class GiftCampaignService {
   /**
    * Post-admission Event Companion TAKE PART placement.
    *
-   * Independent of `showOnInvitation` — organisers can hide the ceremony card
-   * while still offering gifting after gate admission. Still requires an
+   * Independent of Event Guide placement — organisers can offer gifting after
+   * gate admission without the guide CTA (or the reverse). Still requires an
    * ACTIVE, open campaign (never auto-activates DRAFT).
+   * Callers must also gate on `GIFT_WALLET` / `isGuestGiftWalletEnabled`.
    */
   async resolveCompanionPlacement(
     eventId: string,

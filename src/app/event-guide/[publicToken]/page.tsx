@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { eventGuideService } from "@/services/event-guide/event-guide.service";
+import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
+import { isGuestGiftWalletEnabled } from "@/lib/gifts/gift-guest-access";
 import { resolveTabFromQuery } from "@/lib/event-guide/types";
 import { EventGuideExperience } from "@/components/event-guide/event-guide-experience";
 import { GuideUnavailable } from "@/components/event-guide/guide-unavailable";
@@ -17,6 +19,9 @@ type Ctx = {
  * Renders the *published snapshot* only — a draft edit is unreachable here by
  * construction. Any problem resolves to a themed unavailable page rather than a
  * 404 shell or a 500, because a guest meets this page standing at a venue.
+ *
+ * Gift CTAs are resolved live (not from the snapshot) so turning GIFT_WALLET
+ * off immediately hides them without republishing the guide.
  */
 export async function generateMetadata({ params }: Ctx): Promise<Metadata> {
   const { publicToken } = await params;
@@ -52,12 +57,31 @@ export default async function EventGuidePage({ params, searchParams }: Ctx) {
 
   const initialTab = resolveTabFromQuery(query.tab, result.payload.defaultTab);
 
+  const giftEnabled = await isGuestGiftWalletEnabled(result.eventId).catch(() => false);
+  const giftPlacement = giftEnabled
+    ? await giftCampaignService
+        .resolveEventGuidePlacement(result.eventId, {
+          guideReturnUrl: `/event-guide/${encodeURIComponent(publicToken)}`,
+        })
+        .catch(() => null)
+    : null;
+
   return (
     <EventGuideExperience
       publicToken={publicToken}
       initialPayload={result.payload}
       initialTab={
         initialTab === "seating" && !result.payload.seating.enabled ? "programme" : initialTab
+      }
+      gift={
+        giftPlacement
+          ? {
+              giftUrl: giftPlacement.giftUrl,
+              title: giftPlacement.title,
+              teaser: giftPlacement.teaser,
+              ctaLabel: giftPlacement.ctaLabel,
+            }
+          : null
       }
     />
   );

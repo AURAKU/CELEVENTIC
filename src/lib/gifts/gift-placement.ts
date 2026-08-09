@@ -1,16 +1,23 @@
 /**
- * Placement rules for where a live gift campaign may appear.
+ * Placement rules for where a live gift campaign may appear to guests.
  *
- * Invitation ceremony and Event Companion are separate surfaces:
- * - Invitation uses `showOnInvitation` so organisers can hide the in-invite card
- *   while still sharing a printed QR / companion CTA.
- * - Companion (post-admission TAKE PART) only needs an ACTIVE, open campaign.
+ * Guest CTAs are limited to:
+ * - Event Guide (public guide page) — uses `showOnInvitation` column
+ *   (legacy name; digital invitation never shows gift CTAs anymore)
+ * - Event Companion (post-admission TAKE PART) — uses `showOnCompanion`
+ *
+ * Direct `/gift/{token}` checkout still works when the feature is on, so a
+ * printed QR can land guests in Paystack without a CTA on the invitation.
  */
 
-export type GiftPlacementSurface = "invitation" | "companion";
+export type GiftPlacementSurface = "invitation" | "event-guide" | "companion";
 
 export interface GiftCampaignPlacementInput {
   status: string;
+  /**
+   * Legacy column name. When true, the gift CTA may render on Event Guide.
+   * Digital invitation pages never use this for placement anymore.
+   */
   showOnInvitation: boolean;
   /** Defaults true for legacy campaigns that pre-date the column. */
   showOnCompanion?: boolean;
@@ -31,7 +38,9 @@ export function isCampaignPlaceable(
   now: Date = new Date()
 ): boolean {
   if (campaign.status !== "ACTIVE") return false;
-  if (surface === "invitation" && !campaign.showOnInvitation) return false;
+  // Digital invitation: never place a guest gift CTA here.
+  if (surface === "invitation") return false;
+  if (surface === "event-guide" && !campaign.showOnInvitation) return false;
   if (surface === "companion" && campaign.showOnCompanion === false) return false;
 
   const opensAt = asDate(campaign.opensAt);
@@ -44,15 +53,20 @@ export function isCampaignPlaceable(
 }
 
 /**
- * Only allow returning into our own invite/companion routes after checkout.
+ * Only allow returning into our own invite/companion/guide routes after checkout.
  * Blocks open redirects via absolute URLs or protocol-relative paths.
  */
 export function sanitizeCompanionReturnUrl(raw: string | null | undefined): string | null {
+  return sanitizeGiftReturnUrl(raw);
+}
+
+/** Safe relative return path after a verified gift (invite, companion, or Event Guide). */
+export function sanitizeGiftReturnUrl(raw: string | null | undefined): string | null {
   if (typeof raw !== "string") return null;
   const trimmed = raw.trim();
   if (!trimmed) return null;
   if (trimmed.length > 500) return null;
-  if (!trimmed.startsWith("/invite/")) return null;
+  if (!trimmed.startsWith("/invite/") && !trimmed.startsWith("/event-guide/")) return null;
   if (trimmed.startsWith("//")) return null;
   if (/[\s\\]/.test(trimmed)) return null;
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) return null;
@@ -60,8 +74,8 @@ export function sanitizeCompanionReturnUrl(raw: string | null | undefined): stri
 }
 
 /**
- * Build the guest gift URL for companion, preserving personalisation and a
- * safe return path back to Event Companion after a verified gift.
+ * Build the guest gift URL, preserving personalisation and a safe return path
+ * after a verified gift (companion or Event Guide).
  */
 export function buildCompanionGiftUrl(
   giftUrl: string,
@@ -71,7 +85,7 @@ export function buildCompanionGiftUrl(
   const guest = options.guestQrToken?.trim();
   if (guest) url.searchParams.set("g", guest);
 
-  const returnUrl = sanitizeCompanionReturnUrl(options.companionReturnUrl);
+  const returnUrl = sanitizeGiftReturnUrl(options.companionReturnUrl);
   if (returnUrl) url.searchParams.set("return", returnUrl);
 
   return `${url.pathname}${url.search}`;

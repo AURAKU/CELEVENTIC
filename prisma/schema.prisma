@@ -4777,8 +4777,8 @@ model EventGiftCampaign {
   hideTotalsFromGuests     Boolean @default(true)
   showContributorsToGuests Boolean @default(false)
 
-  /// Render the gift section inside the digital invitation. Turning this off
-  /// keeps the campaign live for the printed QR and the shared link only.
+  /// Guest Event Guide gift CTA. (Legacy column name — digital invitation never
+  /// shows gift CTAs; this flag now gates the public Event Guide surface.)
   showOnInvitation Boolean @default(true)
   /// Render the gift card inside Event Companion (post-admission TAKE PART).
   showOnCompanion  Boolean @default(true)

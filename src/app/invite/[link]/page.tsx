@@ -19,7 +19,6 @@ import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
-import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { resolveShareOgImage } from "@/lib/social/share-image";
 import { buildShareDescription } from "@/lib/social/share-description";
 import { APP_NAME } from "@/lib/constants";
@@ -437,12 +436,8 @@ export default async function InvitePage({
     backgroundVideoUrl: resolvePublicMediaUrl(rawBackground.backgroundVideoUrl) || null,
   };
 
-  // Gift Wallet placement, null unless the event has a live campaign with
-  // invitation placement on, so invites without gifting are untouched.
-  const giftPlacement = await giftCampaignService
-    .resolveInvitePlacement(event.id, { guestQrToken })
-    .catch(() => null);
-
+  // Gift Wallet CTAs are Event Guide + Event Companion only — never the
+  // digital invitation ceremony page.
   return (
     <PremiumInviteWrapper
       revealEnabled={revealMode !== "none"}
@@ -502,12 +497,12 @@ export default async function InvitePage({
       memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
       memoryUploadQrImageUrl={resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl) || null}
       memoryAlbumTitle={memoryLinks?.eventTitle ?? null}
-      giftUrl={giftPlacement?.giftUrl ?? null}
-      giftQrImageUrl={resolvePublicMediaUrl(giftPlacement?.qrImageUrl) || null}
-      giftTitle={giftPlacement?.title ?? null}
-      giftSubtitle={giftPlacement?.subtitle ?? null}
-      giftCtaLabel={giftPlacement?.ctaLabel ?? null}
-      giftPrivacyNote={giftPlacement?.privacyNote ?? null}
+      giftUrl={null}
+      giftQrImageUrl={null}
+      giftTitle={null}
+      giftSubtitle={null}
+      giftCtaLabel={null}
+      giftPrivacyNote={null}
       eventId={event.id}
       contactEmail={productionOrder?.contactEmail ?? null}
       seatingEnabled={seatingPlan && Boolean(seatQrDataUrl && seatLookupUrl)}
