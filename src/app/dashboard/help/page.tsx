@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 const FAQ = [
   {
     q: "How do I create my first event?",
-    a: "Go to Events → Create Event, pick your event type, add details, and choose a package.",
+    a: "Go to Events → Create Event, pick your event type, add details, and choose a package. Or open Celeventic Guide for a full walkthrough.",
   },
   {
     q: "How do I invite guests?",
@@ -31,8 +31,8 @@ export default function HelpPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <PageHeader
-        title="Help & Support"
-        subtitle="Answers, guides, and ways to reach us, tailored for every Celeventic user."
+        title="Help & Guides"
+        subtitle="Celeventic Guide tutorials, quick answers, and ways to reach us."
         icon={HelpCircle}
       />
 
@@ -41,13 +41,15 @@ export default function HelpPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-brand-600" />
-              Getting Started
+              Celeventic Guide
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-500 mb-4">New here? Resume your setup guide anytime.</p>
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/getting-started">Resume Onboarding</Link>
+            <p className="text-sm text-slate-500 mb-4">
+              Motion tutorials for guests, organizers, vendors, and scanners.
+            </p>
+            <Button asChild>
+              <Link href="/guide">Open Celeventic Guide</Link>
             </Button>
           </CardContent>
         </Card>
@@ -91,7 +93,12 @@ export default function HelpPage() {
         Report a problem or request a feature via{" "}
         <a href="mailto:support@celeventic.com" className="text-brand-600 hover:underline">
           support@celeventic.com
-        </a>
+        </a>{" "}
+        or{" "}
+        <Link href="/legal/contact" className="text-brand-600 hover:underline">
+          contact
+        </Link>
+        .
       </p>
     </div>
   );

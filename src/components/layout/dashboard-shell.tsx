@@ -5,6 +5,7 @@ import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { TermsAcceptanceGate } from "@/components/legal/terms-acceptance-gate";
+import { ContextualHelpTrigger } from "@/components/celeventic-guide/contextual-help";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -35,6 +36,7 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
           <div className="page-scaffold mx-auto w-full max-w-7xl">{children}</div>
         </main>
         <MobileBottomNav />
+        <ContextualHelpTrigger />
       </div>
     </div>
   );
