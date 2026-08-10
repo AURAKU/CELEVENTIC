@@ -608,8 +608,13 @@ export function EventCompanionExperience({
         <footer className="mt-16 text-center">
           <Link
             href={inviteHref}
-            className="text-xs uppercase tracking-[0.24em] underline-offset-4 hover:underline sm:text-sm"
-            style={{ color: colors.secondary, fontFamily: fonts.eyebrow, fontWeight: 600 }}
+            className="text-xs uppercase tracking-[0.24em] underline decoration-from-font underline-offset-[0.35em] transition-opacity hover:opacity-80 sm:text-sm"
+            style={{
+              color: colors.primary,
+              fontFamily: fonts.eyebrow,
+              fontWeight: 700,
+              textDecorationColor: colors.secondary,
+            }}
           >
             View invitation
           </Link>
