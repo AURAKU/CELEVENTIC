@@ -189,7 +189,9 @@ describe("naming the course for its glyph", () => {
     assert.equal(menuCourseKind("Starters"), "starter");
     assert.equal(menuCourseKind("Soup & Salad"), "soup");
     assert.equal(menuCourseKind("MAIN DISHES"), "main");
+    assert.equal(menuCourseKind("PROTEIN"), "main");
     assert.equal(menuCourseKind("Sides"), "side");
+    assert.equal(menuCourseKind("SAUCES"), "side");
     assert.equal(menuCourseKind("Dessert"), "dessert");
     assert.equal(menuCourseKind("Drinks & Bar"), "drink");
     assert.equal(menuCourseKind("Welcome cocktails"), "welcome");

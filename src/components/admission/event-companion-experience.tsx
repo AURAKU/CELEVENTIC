@@ -16,6 +16,7 @@ import { EVENT_TIME_ZONE } from "@/lib/constants";
 import type { ResolvedFeature } from "@/lib/invitation-features/registry";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
+import { CompanionMenuPanel } from "@/components/admission/companion-menu";
 import { GuestSeatingCard } from "@/components/seating/guest-seating-card";
 import { cn } from "@/lib/utils";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
@@ -341,30 +342,14 @@ export function EventCompanionExperience({
               Menu
             </h2>
             <SectionRule color={`${colors.secondary}99`} />
-            {menuBody?.trim() ? (
-              <p
-                className="mx-auto mt-6 max-w-md whitespace-pre-line text-base leading-relaxed sm:text-lg"
-                style={{ color: colors.primary, fontWeight: 500 }}
-              >
-                {menuBody.trim()}
-              </p>
-            ) : null}
-            {menuUrl ? (
-              <Link
-                href={menuUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-7 inline-flex min-h-[48px] items-center justify-center rounded-full px-8 text-xs uppercase tracking-[0.2em] transition-transform active:scale-[0.98] sm:text-sm"
-                style={{
-                  background: colors.secondary,
-                  color: colors.background,
-                  fontFamily: fonts.eyebrow,
-                  fontWeight: 600,
-                }}
-              >
-                View full menu
-              </Link>
-            ) : null}
+            <CompanionMenuPanel
+              menuBody={menuBody}
+              menuUrl={menuUrl}
+              colors={colors}
+              paperWash={theme.paperWash}
+              fonts={fonts}
+              LinkComponent={Link}
+            />
           </section>
         ) : null}
 

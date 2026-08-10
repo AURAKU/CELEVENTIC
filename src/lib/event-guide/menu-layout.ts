@@ -71,7 +71,7 @@ const KIND_PATTERNS: Array<{ kind: MenuCourseKind; pattern: RegExp }> = [
   { kind: "welcome", pattern: /\b(?:welcome|reception|arrival|canap[ée]|cocktail|amuse)/i },
   { kind: "soup", pattern: /\b(?:soup|salad|broth|light bite)/i },
   { kind: "starter", pattern: /\b(?:starter|appetiser|appetizer|appetite|hors|entr[ée]e?s?\b(?!\s*\/)|first course|small chops|finger food)/i },
-  { kind: "main", pattern: /\b(?:main|entree|entr[ée]e|principal|second course|buffet|hot dish|carver|from the grill)/i },
+  { kind: "main", pattern: /\b(?:main|entree|entr[ée]e|principal|second course|buffet|hot dish|carver|from the grill|protein)/i },
   { kind: "side", pattern: /\b(?:side|accompani|extra|condiment|sauce|garnish)/i },
   { kind: "dessert", pattern: /\b(?:dessert|sweet|pudding|cake|pastr|ice cream|fruit)/i },
   { kind: "drink", pattern: /\b(?:drink|beverage|bar|wine|juice|refreshment|toast|champagne|mocktail|water)/i },
