@@ -13,6 +13,10 @@ import {
 } from "@/lib/gifts/gift-copy";
 import { parseSuggestedAmounts } from "@/lib/gifts/money";
 import { resolveGiftTheme, type GiftTheme } from "@/lib/gifts/gift-theme";
+import {
+  extractInvitationHashtag,
+  resolveGiftStatusBrandSegment,
+} from "@/lib/gifts/gift-brand-label";
 import type { PublicGiftCampaignView } from "@/lib/gifts/gift-privacy";
 import {
   buildCompanionGiftUrl,
@@ -43,6 +47,11 @@ export interface CampaignWithContext {
   };
   theme: GiftTheme;
   templateSlug: string | null;
+  /**
+   * Second segment for `hosts · brand` on gift status/confirm.
+   * Hashtag when present (normalized), else the event title.
+   */
+  statusBrandSegment: string;
 }
 
 export interface EnsureCampaignOptions {
@@ -143,11 +152,24 @@ export class GiftCampaignService {
     if (campaign.status === "ARCHIVED" || campaign.status === "DRAFT") return null;
     if (campaign.event.status === "CANCELLED") return null;
 
-    const { theme, templateSlug } = await this.resolveTheme(campaign.eventId, {
+    const { theme, templateSlug, design } = await this.resolveTheme(campaign.eventId, {
       invitationDesign: campaign.invitation?.designConfig as InvitationDesignConfig | null,
       invitationTemplateSlug: campaign.invitation?.template?.slug ?? null,
       presetId: campaign.themePresetId,
       themeSource: campaign.themeSource,
+    });
+
+    const thankYou = await prisma.thankYouPage.findUnique({
+      where: { eventId: campaign.eventId },
+      select: { eventHashtag: true },
+    });
+
+    const statusBrandSegment = resolveGiftStatusBrandSegment({
+      eventTitle: campaign.event.title,
+      eventHashtag: thankYou?.eventHashtag,
+      invitationHashtag: extractInvitationHashtag(design),
+      templateSlug,
+      eventSlug: campaign.event.slug,
     });
 
     const { event, invitation: _invitation, ...campaignFields } = campaign;
@@ -158,6 +180,7 @@ export class GiftCampaignService {
       event: { ...event, eventType: String(event.eventType), status: String(event.status) },
       theme,
       templateSlug,
+      statusBrandSegment,
     };
   }
 
@@ -174,11 +197,16 @@ export class GiftCampaignService {
       presetId?: string | null;
       themeSource?: string | null;
     }
-  ): Promise<{ theme: GiftTheme; templateSlug: string | null }> {
+  ): Promise<{
+    theme: GiftTheme;
+    templateSlug: string | null;
+    design: InvitationDesignConfig | null;
+  }> {
     if (input.themeSource === "PRESET") {
       return {
         theme: resolveGiftTheme({ presetId: input.presetId }),
         templateSlug: null,
+        design: null,
       };
     }
 
@@ -207,6 +235,7 @@ export class GiftCampaignService {
     return {
       theme: resolveGiftTheme({ design, templateSlug, presetId: input.presetId }),
       templateSlug,
+      design,
     };
   }
 

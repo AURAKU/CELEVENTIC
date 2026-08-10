@@ -56,7 +56,7 @@ export default async function GiftStatusPage({
       initial={view}
       themeVars={giftThemeToCssVars(context.theme)}
       thankYou={{ title: copy.thankYouTitle, message: copy.thankYouMessage }}
-      eventTitle={context.event.title}
+      brandSegment={context.statusBrandSegment}
       hostName={context.event.hostName}
     />
   );

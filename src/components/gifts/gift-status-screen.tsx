@@ -22,7 +22,8 @@ interface Props {
   initial: PublicGiftPaymentView;
   themeVars: GiftThemeCssVars;
   thankYou: { title: string; message: string };
-  eventTitle: string;
+  /** Second segment after hosts · — hashtag when present, else event title. */
+  brandSegment: string;
   hostName: string;
 }
 
@@ -35,7 +36,7 @@ export function GiftStatusScreen({
   initial,
   themeVars,
   thankYou,
-  eventTitle,
+  brandSegment,
   hostName,
 }: Props) {
   const [gift, setGift] = useState<PublicGiftPaymentView>(initial);
@@ -84,7 +85,7 @@ export function GiftStatusScreen({
           <SuccessPanel
             gift={gift}
             thankYou={thankYou}
-            eventTitle={eventTitle}
+            brandSegment={brandSegment}
             hostName={hostName}
           />
         ) : gift.state === "failed" ? (
@@ -109,12 +110,12 @@ export function GiftStatusScreen({
 function SuccessPanel({
   gift,
   thankYou,
-  eventTitle,
+  brandSegment,
   hostName,
 }: {
   gift: PublicGiftPaymentView;
   thankYou: { title: string; message: string };
-  eventTitle: string;
+  brandSegment: string;
   hostName: string;
 }) {
   return (
@@ -152,8 +153,8 @@ function SuccessPanel({
         <p className="gift-script mt-7 text-2xl" style={{ color: "var(--gift-color-accent)" }}>
           {formatMinor(gift.amountMinor, gift.currency)}
         </p>
-        <p className="mt-1 text-xs uppercase tracking-[0.24em]" style={{ color: "var(--gift-color-ink-muted)" }}>
-          {hostName} · {eventTitle}
+        <p className="gift-hosts mt-1 text-xs uppercase">
+          {hostName} · {brandSegment}
         </p>
         <dl className="mx-auto mt-6 max-w-sm space-y-2 text-left text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
           <div className="flex justify-between gap-3">
