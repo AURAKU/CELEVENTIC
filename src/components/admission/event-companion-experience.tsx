@@ -448,48 +448,122 @@ export function EventCompanionExperience({
               {enabled("GIFT_WALLET") && giftUrl ? (
                 <Link
                   href={giftUrl}
-                  className="block rounded-2xl px-5 py-5 transition-colors"
+                  className="group relative block overflow-hidden rounded-2xl px-5 py-5 transition-transform duration-200 ease-out active:scale-[0.985]"
                   style={{
-                    background: `linear-gradient(145deg, ${theme.accentWash}, ${colors.background})`,
-                    border: `1px solid ${colors.secondary}40`,
-                    boxShadow: `0 18px 40px -32px ${colors.primary}`,
+                    background: `
+                      radial-gradient(ellipse 90% 70% at 100% 0%, ${colors.secondary}28, transparent 55%),
+                      radial-gradient(ellipse 70% 60% at 0% 100%, ${colors.accent}16, transparent 50%),
+                      linear-gradient(165deg, ${theme.accentWash} 0%, ${colors.background} 48%, ${colors.secondary}12 100%)
+                    `,
+                    border: `1px solid ${colors.secondary}55`,
+                    boxShadow: `
+                      0 22px 48px -30px ${colors.secondary},
+                      inset 0 1px 0 ${colors.secondary}40
+                    `,
                   }}
                   data-testid="companion-gift-card"
                 >
                   <span
-                    className="block text-xs font-bold uppercase tracking-[0.22em] sm:text-sm"
+                    className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full opacity-50 blur-3xl transition-opacity duration-500 group-hover:opacity-80"
+                    style={{ background: colors.secondary }}
+                    aria-hidden
+                  />
+                  <span className="relative flex items-start gap-3.5">
+                    <span
+                      className="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform duration-300 ease-out group-hover:scale-105 group-active:scale-95"
+                      style={{
+                        background: `linear-gradient(145deg, ${colors.secondary}42, ${colors.secondary}16)`,
+                        border: `1px solid ${colors.secondary}60`,
+                        boxShadow: `0 10px 22px -14px ${colors.secondary}, inset 0 1px 0 ${colors.background}88`,
+                        color: colors.secondary,
+                      }}
+                      aria-hidden
+                    >
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M12 7.5c0-1.8 1.2-3.2 2.8-3.2 1.1 0 1.9.7 2.2 1.6.2.7 0 1.5-.6 2.1L12 12.4 7.6 8c-.6-.6-.8-1.4-.6-2.1.3-.9 1.1-1.6 2.2-1.6 1.6 0 2.8 1.4 2.8 3.2Z"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill={`${colors.secondary}22`}
+                        />
+                        <path
+                          d="M4.5 10.5h15v2.2c0 .4-.3.8-.8.8H5.3c-.5 0-.8-.4-.8-.8v-2.2Z"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinejoin="round"
+                          fill={`${colors.secondary}18`}
+                        />
+                        <path
+                          d="M6 13.5h12v5.2c0 .7-.5 1.3-1.2 1.3H7.2c-.7 0-1.2-.6-1.2-1.3v-5.2Z"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinejoin="round"
+                          fill={`${colors.background}aa`}
+                        />
+                        <path
+                          d="M12 7.5v12.5"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className="block text-[0.7rem] font-semibold uppercase tracking-[0.24em] sm:text-xs"
+                        style={{
+                          color: colors.secondary,
+                          fontFamily: fonts.eyebrow,
+                        }}
+                      >
+                        {giftHeadline || "A gift, from the heart"}
+                      </span>
+                      <span
+                        className="mt-1.5 block text-xl font-semibold leading-snug sm:text-2xl"
+                        style={{
+                          color: colors.primary,
+                          fontFamily: fonts.heading,
+                        }}
+                      >
+                        {giftTitle || "Send a Gift"}
+                      </span>
+                      <span
+                        className="mt-2 block text-sm leading-relaxed sm:text-[0.95rem]"
+                        style={{ color: colors.text, opacity: 0.88 }}
+                      >
+                        {giftTeaser ||
+                          "Your presence at this celebration means the most. Should you wish to send a gift to the celebrants, you may do so securely here."}
+                      </span>
+                    </span>
+                  </span>
+                  <span
+                    className="relative mt-5 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold tracking-wide transition-transform duration-200 group-hover:translate-y-[-1px] sm:text-[0.95rem]"
                     style={{
-                      color: colors.primary,
+                      background: `linear-gradient(135deg, ${colors.secondary} 0%, ${colors.secondary}d8 55%, ${colors.secondary} 100%)`,
+                      color: colors.background,
+                      boxShadow: `0 14px 28px -18px ${colors.secondary}, inset 0 1px 0 ${colors.background}55`,
                       fontFamily: fonts.eyebrow,
                     }}
                   >
-                    {giftHeadline || "A gift, from the heart"}
-                  </span>
-                  <span
-                    className="mt-2 block text-lg font-bold leading-snug sm:text-xl"
-                    style={{ color: colors.primary, fontFamily: fonts.heading }}
-                  >
-                    {giftTitle || "Send a Gift"}
-                  </span>
-                  <span
-                    className="mt-2 block text-sm leading-relaxed sm:text-base"
-                    style={{ color: colors.text, opacity: 0.92 }}
-                  >
-                    {giftTeaser ||
-                      "Your presence at this celebration means the most. Should you wish to send a gift to the celebrants, you may do so securely here."}
-                  </span>
-                  <span
-                    className="mt-4 inline-flex min-h-[48px] items-center justify-center rounded-full px-5 text-sm font-bold"
-                    style={{
-                      background: colors.primary,
-                      color: colors.background,
-                    }}
-                  >
                     {giftCtaLabel || "Send a Gift"}
+                    <span
+                      className="transition-transform duration-200 group-hover:translate-x-0.5"
+                      aria-hidden
+                    >
+                      →
+                    </span>
                   </span>
                   <span
-                    className="mt-3 block text-xs font-semibold uppercase tracking-[0.14em]"
-                    style={{ color: colors.secondary }}
+                    className="relative mt-3.5 block text-center text-[0.65rem] font-semibold uppercase tracking-[0.16em] sm:text-xs"
+                    style={{ color: colors.secondary, opacity: 0.9 }}
                   >
                     {giftOptionalNote || "Entirely optional · Securely processed"}
                   </span>
