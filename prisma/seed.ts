@@ -3,6 +3,7 @@ import { ensurePlatformAccounts } from "../src/lib/auth/ensure-platform-accounts
 import { seedCommerceEngine } from "../src/services/commerce/commerce-seed.service";
 import { translationService } from "../src/services/i18n/translation.service";
 import { invitationBlockService } from "../src/services/invitations/invitation-block.service";
+import { seedCeleventicGuides } from "../src/services/celeventic-guide/guide.service";
 import { seedVendorOs } from "../src/services/vendor-os/vendor-os-seed.service";
 import { slugify } from "../src/lib/utils";
 import { normalizePackageFeatureKeys } from "../src/lib/packages/feature-catalog";
@@ -317,6 +318,9 @@ async function main() {
 
   await invitationBlockService.seedTemplates();
   console.log("  Block builder: invitation block templates seeded");
+
+  const guideSeed = await seedCeleventicGuides();
+  console.log(`  Celeventic Guide: ${guideSeed.created} created, ${guideSeed.updated} updated (${guideSeed.total} catalog)`);
 }
 
 main()

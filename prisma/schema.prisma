@@ -6023,3 +6023,92 @@ model EventGuideViewStat {
   @@index([guideId, day])
   @@map("event_guide_view_stats")
 }
+
+// ─── Celeventic Guide (Learn Celeventic) ─────────────────────────
+// Product help platform — distinct from Event Guide (guest companion).
+
+enum HelpGuideStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum HelpGuideRole {
+  GUEST
+  ORGANIZER
+  VENDOR
+  SCANNER
+  ADMIN
+}
+
+enum HelpGuideCategory {
+  GETTING_STARTED
+  INVITATIONS
+  RSVP
+  GUESTS
+  SEATING
+  EVENT_GUIDE
+  ADMISSION
+  MEMORY
+  VENDOR
+  SCANNING
+  CELEBRATE
+  PLATFORM
+}
+
+model HelpGuide {
+  id              String            @id @default(cuid())
+  slug            String            @unique
+  title           String
+  summary         String
+  body            String            @default("")
+  role            HelpGuideRole
+  category        HelpGuideCategory
+  status          HelpGuideStatus   @default(DRAFT)
+  sortOrder       Int               @default(0)
+  featured        Boolean           @default(false)
+  /// Admin-only guides must never appear on public /guide.
+  adminOnly       Boolean           @default(false)
+  posterUrl       String?
+  videoUrl        String?
+  captionsEnUrl   String?
+  captionsFrUrl   String?
+  storyboardKey   String?
+  transcript      String            @default("")
+  synonyms        String            @default("[]") // JSON string array
+  contextRoutes   String            @default("[]") // JSON string array of route prefixes
+  ogTitle         String?
+  ogDescription   String?
+  relatedSlugs    String            @default("[]") // JSON string array
+  viewCount       Int               @default(0)
+  helpfulYes      Int               @default(0)
+  helpfulNo       Int               @default(0)
+  publishedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  steps           GuideStep[]
+
+  @@index([status, role, sortOrder])
+  @@index([category, status])
+  @@index([featured, status])
+  @@map("help_guides")
+}
+
+model GuideStep {
+  id          String    @id @default(cuid())
+  guideId     String
+  sortOrder   Int       @default(0)
+  title       String
+  body        String    @default("")
+  /// motion | tip | warning | checklist
+  stepType    String    @default("motion")
+  mediaUrl    String?
+  motionKey   String?
+  durationMs  Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  guide       HelpGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([guideId, sortOrder])
+  @@map("guide_steps")
+}
