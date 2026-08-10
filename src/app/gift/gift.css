@@ -9,11 +9,30 @@
 
 .gift-shell {
   min-height: 100dvh;
+  position: relative;
+  isolation: isolate;
   background:
-    radial-gradient(120% 80% at 50% 0%, var(--gift-color-surface-alt) 0%, transparent 60%),
-    var(--gift-color-surface);
+    radial-gradient(110% 70% at 50% -8%, color-mix(in srgb, var(--gift-color-accent) 16%, transparent) 0%, transparent 55%),
+    radial-gradient(90% 55% at 100% 12%, color-mix(in srgb, var(--gift-color-surface-alt) 88%, transparent) 0%, transparent 50%),
+    radial-gradient(80% 50% at 0% 88%, color-mix(in srgb, var(--gift-color-accent-soft) 35%, transparent) 0%, transparent 48%),
+    linear-gradient(180deg, var(--gift-color-surface-alt) 0%, var(--gift-color-surface) 42%, var(--gift-color-surface) 100%);
   color: var(--gift-color-ink);
   font-family: var(--gift-font-body);
+}
+
+/* Soft linen weave — atmosphere only, never competes with content. */
+.gift-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image:
+    radial-gradient(circle at 20% 30%, var(--gift-color-accent) 0.6px, transparent 0.7px),
+    radial-gradient(circle at 80% 70%, var(--gift-color-ink) 0.5px, transparent 0.6px);
+  background-size: 18px 18px, 22px 22px;
+  background-position: 0 0, 9px 11px;
 }
 
 .gift-display {
@@ -25,11 +44,27 @@
   font-family: var(--gift-font-script);
 }
 
+/* Host / couple names — clear, confident, not faded. */
+.gift-hosts {
+  color: var(--gift-color-ink);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-wrap: balance;
+}
+
 .gift-card {
-  background: color-mix(in srgb, var(--gift-color-surface) 92%, white);
-  border: 1px solid var(--gift-color-border);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--gift-color-surface) 78%, white) 0%,
+      color-mix(in srgb, var(--gift-color-surface) 94%, white) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--gift-color-border) 85%, var(--gift-color-accent) 15%);
   border-radius: var(--gift-radius);
-  box-shadow: 0 18px 48px -28px rgb(0 0 0 / 35%);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 55%, transparent) inset,
+    0 18px 48px -28px rgb(0 0 0 / 28%),
+    0 8px 20px -16px color-mix(in srgb, var(--gift-color-accent) 28%, transparent);
 }
 
 .gift-rule {
@@ -41,18 +76,29 @@
     var(--gift-color-accent) 65%,
     transparent
   );
-  opacity: 0.55;
+  opacity: 0.65;
 }
 
 .gift-cta {
-  background: var(--gift-color-accent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gift-color-accent) 88%, white) 0%,
+    var(--gift-color-accent) 55%,
+    color-mix(in srgb, var(--gift-color-accent) 88%, black) 100%
+  );
   color: var(--gift-color-on-accent);
   border-radius: calc(var(--gift-radius) * 0.7);
-  transition: transform 180ms ease, filter 180ms ease;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 35%, transparent) inset,
+    0 10px 24px -12px color-mix(in srgb, var(--gift-color-accent) 55%, transparent);
+  transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
 }
 
 .gift-cta:hover:not(:disabled) {
-  filter: brightness(1.06);
+  filter: brightness(1.05);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 40%, transparent) inset,
+    0 14px 28px -12px color-mix(in srgb, var(--gift-color-accent) 62%, transparent);
 }
 
 .gift-cta:active:not(:disabled) {
@@ -62,17 +108,31 @@
 .gift-cta:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .gift-chip {
   border: 1px solid var(--gift-color-border);
   border-radius: calc(var(--gift-radius) * 0.6);
-  transition: border-color 160ms ease, background-color 160ms ease;
+  background: color-mix(in srgb, var(--gift-color-surface) 70%, white);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.gift-chip:hover {
+  border-color: color-mix(in srgb, var(--gift-color-accent) 45%, var(--gift-color-border));
+  transform: translateY(-1px);
 }
 
 .gift-chip[data-selected="true"] {
   border-color: var(--gift-color-accent);
-  background: color-mix(in srgb, var(--gift-color-accent) 12%, transparent);
+  background: color-mix(in srgb, var(--gift-color-accent) 14%, white);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gift-color-accent) 35%, transparent);
+  color: var(--gift-color-ink);
+  font-weight: 600;
 }
 
 .gift-step-enter {
@@ -90,10 +150,44 @@
   }
 }
 
-/* Ribbon sweep across the gift box on the landing screen. */
+/* Gift mark — warm seal with ribbon, depth, and a soft pulse. */
 .gift-ribbon {
   position: relative;
   overflow: hidden;
+  width: 6.5rem;
+  height: 6.5rem;
+  border-radius: calc(var(--gift-radius) * 1.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(
+      120% 100% at 30% 18%,
+      color-mix(in srgb, white 55%, transparent) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--gift-color-accent-soft) 70%, white) 0%,
+      color-mix(in srgb, var(--gift-color-surface-alt) 55%, var(--gift-color-accent) 18%) 48%,
+      color-mix(in srgb, var(--gift-color-accent) 22%, var(--gift-color-surface)) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--gift-color-accent) 38%, var(--gift-color-border));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 65%, transparent) inset,
+    0 16px 36px -18px color-mix(in srgb, var(--gift-color-accent) 45%, transparent),
+    0 0 0 6px color-mix(in srgb, var(--gift-color-accent) 8%, transparent);
+  animation: gift-ribbon-breathe 4.8s ease-in-out infinite;
+}
+
+.gift-ribbon::before {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--gift-color-accent) 28%, transparent);
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .gift-ribbon::after {
@@ -102,13 +196,28 @@
   inset: 0;
   background: linear-gradient(
     115deg,
-    transparent 35%,
-    color-mix(in srgb, var(--gift-color-accent) 45%, white) 50%,
-    transparent 65%
+    transparent 32%,
+    color-mix(in srgb, white 55%, var(--gift-color-accent) 20%) 50%,
+    transparent 68%
   );
   transform: translateX(-120%);
   animation: gift-ribbon-sweep 5.5s ease-in-out 1.2s infinite;
   pointer-events: none;
+}
+
+.gift-ribbon-icon {
+  position: relative;
+  z-index: 1;
+  width: 2.65rem;
+  height: 2.65rem;
+  color: var(--gift-color-accent);
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--gift-color-ink) 12%, transparent));
+}
+
+.gift-ribbon-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 @keyframes gift-ribbon-sweep {
@@ -118,6 +227,24 @@
   }
   100% {
     transform: translateX(120%);
+  }
+}
+
+@keyframes gift-ribbon-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 1px 0 color-mix(in srgb, white 65%, transparent) inset,
+      0 16px 36px -18px color-mix(in srgb, var(--gift-color-accent) 45%, transparent),
+      0 0 0 6px color-mix(in srgb, var(--gift-color-accent) 8%, transparent);
+  }
+  50% {
+    transform: scale(1.025);
+    box-shadow:
+      0 1px 0 color-mix(in srgb, white 70%, transparent) inset,
+      0 20px 40px -16px color-mix(in srgb, var(--gift-color-accent) 55%, transparent),
+      0 0 0 8px color-mix(in srgb, var(--gift-color-accent) 12%, transparent);
   }
 }
 
@@ -163,6 +290,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .gift-step-enter,
+  .gift-ribbon,
   .gift-ribbon::after,
   .gift-petal,
   .gift-pending-pulse {
@@ -173,7 +301,12 @@
     display: none;
   }
 
-  .gift-cta {
+  .gift-cta,
+  .gift-chip {
     transition: none;
+  }
+
+  .gift-chip:hover {
+    transform: none;
   }
 }

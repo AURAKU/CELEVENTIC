@@ -124,7 +124,9 @@ function SuccessPanel({
         <div
           className="mx-auto flex h-16 w-16 items-center justify-center rounded-full"
           style={{
-            background: "color-mix(in srgb, var(--gift-color-accent) 18%, transparent)",
+            background:
+              "radial-gradient(circle at 35% 30%, color-mix(in srgb, white 45%, transparent), color-mix(in srgb, var(--gift-color-accent) 22%, transparent))",
+            border: "1px solid color-mix(in srgb, var(--gift-color-accent) 35%, transparent)",
             boxShadow: "0 0 40px color-mix(in srgb, var(--gift-color-accent) 35%, transparent)",
           }}
         >

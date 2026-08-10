@@ -145,10 +145,7 @@ export function GiftExperience({
     <main className="gift-shell" style={themeVars as React.CSSProperties}>
       <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 py-10 sm:py-16">
         <header className="text-center">
-          <p
-            className="text-[11px] uppercase tracking-[0.32em]"
-            style={{ color: "var(--gift-color-ink-muted)" }}
-          >
+          <p className="gift-hosts text-[11px] uppercase sm:text-xs">
             {campaign.event.hostName}
           </p>
           <h1 className="gift-display mt-3 text-3xl leading-tight sm:text-4xl">
@@ -257,11 +254,62 @@ export function GiftExperience({
 function ClosedNotice({ reason }: { reason: string | null }) {
   return (
     <div className="gift-card gift-step-enter p-8 text-center">
-      <Gift className="mx-auto h-8 w-8" style={{ color: "var(--gift-color-accent)" }} aria-hidden />
-      <p className="gift-display mt-4 text-xl">Gifting has closed</p>
+      <GiftMark />
+      <p className="gift-display mt-5 text-xl">Gifting has closed</p>
       <p className="mt-2 text-sm" style={{ color: "var(--gift-color-ink-muted)" }}>
         {reason ?? "Thank you for thinking of the celebrants."}
       </p>
+    </div>
+  );
+}
+
+/** Warm gift seal — filled bow + box, themed via currentColor. */
+function GiftMark() {
+  return (
+    <div className="gift-ribbon mx-auto" aria-hidden>
+      <span className="gift-ribbon-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M10 22.5h28v17.5a3 3 0 0 1-3 3H13a3 3 0 0 1-3-3V22.5Z"
+            fill="currentColor"
+            fillOpacity="0.18"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8.5 16.5h31a2.5 2.5 0 0 1 0 5h-31a2.5 2.5 0 1 1 0-5Z"
+            fill="currentColor"
+            fillOpacity="0.28"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M24 16.5v26.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M24 16.5c-1.2-5.2-5.4-8-9.2-7.2-2.8.6-4.3 3.2-3.5 5.6.7 2.2 3.6 3.4 12.7 1.6Z"
+            fill="currentColor"
+            fillOpacity="0.55"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M24 16.5c1.2-5.2 5.4-8 9.2-7.2 2.8.6 4.3 3.2 3.5 5.6-.7 2.2-3.6 3.4-12.7 1.6Z"
+            fill="currentColor"
+            fillOpacity="0.55"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <circle cx="24" cy="16.5" r="2.2" fill="currentColor" />
+        </svg>
+      </span>
     </div>
   );
 }
@@ -275,28 +323,20 @@ function LandingStep({
 }) {
   return (
     <div className="gift-step-enter text-center">
-      <div
-        className="gift-ribbon mx-auto flex h-24 w-24 items-center justify-center rounded-2xl"
-        style={{
-          background: "color-mix(in srgb, var(--gift-color-accent) 14%, transparent)",
-          border: "1px solid var(--gift-color-border)",
-        }}
-      >
-        <Gift className="h-10 w-10" style={{ color: "var(--gift-color-accent)" }} aria-hidden />
-      </div>
+      <GiftMark />
 
-      <h2 className="gift-display mt-7 text-2xl">{campaign.title}</h2>
+      <h2 className="gift-display mt-7 text-2xl sm:text-[1.7rem]">{campaign.title}</h2>
       {campaign.guest?.name && (
-        <p className="gift-script mt-2 text-lg" style={{ color: "var(--gift-color-accent)" }}>
+        <p className="gift-script mt-2 text-xl" style={{ color: "var(--gift-color-accent)" }}>
           {campaign.guest.name}
         </p>
       )}
-      <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--gift-color-ink-muted)" }}>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed" style={{ color: "var(--gift-color-ink-muted)" }}>
         {campaign.subtitle}
       </p>
-      <p className="mt-5 text-sm leading-relaxed">{campaign.description}</p>
+      <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed">{campaign.description}</p>
       <p
-        className="mt-4 text-xs font-semibold uppercase tracking-[0.16em]"
+        className="mt-5 text-[11px] font-semibold uppercase tracking-[0.18em]"
         style={{ color: "var(--gift-color-accent)" }}
       >
         Entirely optional · Securely processed
@@ -305,9 +345,6 @@ function LandingStep({
       <button type="button" onClick={onStart} className="gift-cta mt-8 w-full px-6 py-4 text-sm font-medium tracking-wide">
         Continue
       </button>
-      <p className="mt-3 text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
-        You may close this page at any time — gifting is never required.
-      </p>
     </div>
   );
 }
@@ -345,7 +382,7 @@ function AmountStep({
             onClick={() => onPick(value)}
             data-selected={amountMinor === value && !customAmount}
             aria-pressed={amountMinor === value && !customAmount}
-            className="gift-chip px-4 py-4 text-sm font-medium"
+            className="gift-chip gift-display px-4 py-4 text-base tracking-wide"
           >
             {formatMinor(value, campaign.currency, { withSymbol: false })}
           </button>
@@ -367,10 +404,10 @@ function AmountStep({
               value={customAmount}
               onChange={(e) => onCustom(e.target.value)}
               placeholder="0.00"
-              className="w-full rounded-lg border px-3 py-3 text-base outline-none"
+              className="w-full rounded-lg border px-3 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-[var(--gift-color-accent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--gift-color-accent)_18%,transparent)]"
               style={{
                 borderColor: "var(--gift-color-border)",
-                background: "transparent",
+                background: "color-mix(in srgb, var(--gift-color-surface) 55%, white)",
                 color: "var(--gift-color-ink)",
               }}
             />
@@ -475,10 +512,10 @@ function DetailsStep({
               maxLength={500}
               value={guestMessage}
               onChange={(e) => onChange({ guestMessage: e.target.value })}
-              className="mt-2 w-full rounded-lg border px-3 py-3 text-sm outline-none"
+              className="mt-2 w-full rounded-lg border px-3 py-3 text-sm outline-none transition-[border-color,box-shadow] focus:border-[var(--gift-color-accent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--gift-color-accent)_18%,transparent)]"
               style={{
                 borderColor: "var(--gift-color-border)",
-                background: "transparent",
+                background: "color-mix(in srgb, var(--gift-color-surface) 55%, white)",
                 color: "var(--gift-color-ink)",
               }}
             />
@@ -630,8 +667,8 @@ function ConfirmStep({
         )}
       </button>
 
-      <p className="mt-4 text-center text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
-        You will approve this on your phone or card. Nothing is taken until you
+      <p className="mt-4 text-center text-xs leading-relaxed" style={{ color: "var(--gift-color-ink-muted)" }}>
+        You&apos;ll approve this on your phone or card — nothing is taken until you
         authorise it.
       </p>
     </div>
@@ -716,10 +753,10 @@ function Field({
         value={value}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-2 w-full rounded-lg border px-3 py-3 text-base outline-none"
+        className="mt-2 w-full rounded-lg border px-3 py-3 text-base outline-none transition-[border-color,box-shadow] focus:border-[var(--gift-color-accent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--gift-color-accent)_18%,transparent)]"
         style={{
           borderColor: "var(--gift-color-border)",
-          background: "transparent",
+          background: "color-mix(in srgb, var(--gift-color-surface) 55%, white)",
           color: "var(--gift-color-ink)",
         }}
       />
