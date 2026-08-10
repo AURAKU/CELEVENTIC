@@ -169,7 +169,7 @@ export const ORGANIZER_NAV: NavSection[] = [
       { href: "/dashboard/privacy-center", labelKey: "dashboard.nav_privacy", icon: Lock },
       { href: "/dashboard/settings?tab=security", labelKey: "dashboard.nav_security", icon: Shield },
       { href: "/dashboard/settings?tab=billing", labelKey: "dashboard.nav_billing", icon: CreditCard },
-      { href: "/dashboard/help", labelKey: "dashboard.nav_help", icon: BookOpen },
+      { href: "/guide", labelKey: "dashboard.nav_help", icon: BookOpen },
     ],
   },
 ];

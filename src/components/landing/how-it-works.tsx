@@ -1,6 +1,10 @@
 "use client";
 
+import { useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import Link from "next/link";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { JourneyPreviewStrip } from "@/components/celeventic-guide/journey-preview-strip";
 
 const STEP_KEYS = [
   { step: "01", title: "landing.how_old_s1_title", desc: "landing.how_old_s1_desc" },
@@ -11,22 +15,45 @@ const STEP_KEYS = [
 
 export function HowItWorks() {
   const { t } = useLocale();
+  const reduce = useReducedMotion();
 
   return (
     <section id="how-it-works" className="py-28 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-50/30 to-transparent" />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-20">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-16">
+        <div className="text-center max-w-3xl mx-auto">
           <h2 className="section-heading">
             {t("landing.how_works_title")}{" "}
             <span className="text-gradient">{t("landing.how_works_brand")}</span>{" "}
             {t("landing.how_works_suffix")}
           </h2>
           <p className="section-subheading mx-auto">{t("landing.how_subtitle_short")}</p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/guide/how-celeventic-works"
+              className="inline-flex items-center rounded-xl bg-brand-700 text-white px-5 py-2.5 text-sm font-semibold hover:bg-brand-800 transition"
+            >
+              See How It Works
+            </Link>
+            <Link
+              href="/guide"
+              className="inline-flex items-center rounded-xl border border-brand-200 bg-white/80 text-brand-800 px-5 py-2.5 text-sm font-semibold hover:border-brand-400 transition"
+            >
+              Browse Celeventic Guide
+            </Link>
+          </div>
         </div>
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {STEP_KEYS.map((item, i) => (
-            <div key={item.step} className="relative text-center group">
+            <motion.div
+              key={item.step}
+              className="relative text-center group"
+              initial={reduce ? false : { opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ delay: reduce ? 0 : i * 0.05, duration: 0.35 }}
+            >
               {i < STEP_KEYS.length - 1 && (
                 <div className="hidden lg:block absolute top-7 left-[60%] w-[80%] h-px bg-gradient-to-r from-brand-300 to-transparent" />
               )}
@@ -35,9 +62,11 @@ export function HowItWorks() {
               </div>
               <h3 className="font-display font-semibold text-slate-900 text-lg">{t(item.title)}</h3>
               <p className="text-sm text-slate-500 mt-2 leading-relaxed">{t(item.desc)}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
+
+        <JourneyPreviewStrip />
       </div>
     </section>
   );

@@ -242,7 +242,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "dashboard", key: "nav_collaborations", enValue: "Collaborations", frValue: "Collaborations" },
   { namespace: "dashboard", key: "nav_tasks", enValue: "Tasks", frValue: "Tâches" },
   { namespace: "dashboard", key: "nav_calendar", enValue: "Calendar", frValue: "Calendrier" },
-  { namespace: "dashboard", key: "nav_help", enValue: "Help & Support", frValue: "Aide et support" },
+  { namespace: "dashboard", key: "nav_help", enValue: "Help & Guides", frValue: "Aide et guides" },
   { namespace: "dashboard", key: "mobile_nav_home", enValue: "Home", frValue: "Accueil" },
   { namespace: "dashboard", key: "mobile_nav_events", enValue: "Events", frValue: "Événements" },
   { namespace: "dashboard", key: "mobile_nav_marketplace", enValue: "Marketplace", frValue: "Marketplace" },

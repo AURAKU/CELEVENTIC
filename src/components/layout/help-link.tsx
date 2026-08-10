@@ -9,8 +9,8 @@ interface HelpLinkProps {
 }
 
 export function HelpLink({
-  href = "/dashboard/help",
-  label = "Help",
+  href = "/guide",
+  label = "Help & Guides",
   className,
 }: HelpLinkProps) {
   return (
