@@ -572,32 +572,94 @@ export function EventCompanionExperience({
               {showHelp && callablePhone ? (
                 <a
                   href={`tel:${callablePhone}`}
-                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5"
+                  className="group relative flex min-h-[64px] items-center gap-3.5 overflow-hidden rounded-2xl px-5 py-4 transition-transform duration-200 ease-out active:scale-[0.985]"
                   style={{
-                    background: `${colors.primary}08`,
-                    border: `1px solid ${colors.secondary}28`,
+                    background: `
+                      radial-gradient(ellipse 80% 90% at 0% 50%, ${colors.secondary}14, transparent 55%),
+                      linear-gradient(145deg, ${colors.background} 0%, ${theme.paperWash} 48%, ${colors.primary}07 100%)
+                    `,
+                    border: `1px solid ${colors.secondary}42`,
+                    boxShadow: `
+                      0 18px 40px -30px ${colors.primary},
+                      inset 0 1px 0 ${colors.background}
+                    `,
                   }}
                 >
-                  <span>
+                  <span
+                    className="pointer-events-none absolute -left-6 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full opacity-40 blur-2xl transition-opacity duration-500 group-hover:opacity-70"
+                    style={{ background: colors.secondary }}
+                    aria-hidden
+                  />
+                  <span
+                    className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform duration-300 ease-out group-hover:scale-105 group-active:scale-95"
+                    style={{
+                      background: `linear-gradient(145deg, ${colors.primary} 0%, ${colors.primary}e8 100%)`,
+                      border: `1px solid ${colors.secondary}55`,
+                      boxShadow: `0 12px 24px -16px ${colors.primary}, inset 0 1px 0 ${colors.secondary}44`,
+                      color: colors.background,
+                    }}
+                    aria-hidden
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6.6 3.8h2.2c.5 0 .9.3 1 .8l.7 2.8c.1.4 0 .9-.3 1.2L9 10.2a12.4 12.4 0 0 0 4.8 4.8l1.6-1.2c.3-.3.8-.4 1.2-.3l2.8.7c.5.1.8.5.8 1v2.2c0 .6-.5 1.1-1.1 1-3.4-.5-6.6-2.3-9-4.7-2.4-2.4-4.2-5.6-4.7-9-.1-.6.4-1.1 1-1.1Z"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinejoin="round"
+                        fill={`${colors.secondary}40`}
+                      />
+                      <path
+                        d="M15.2 5.4c1.5.4 2.7 1.6 3.1 3.1M16 7.8c.7.2 1.3.8 1.5 1.5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
+                    </svg>
+                  </span>
+                  <span className="relative min-w-0 flex-1">
                     <span
-                      className="block text-xs uppercase tracking-[0.2em] sm:text-sm"
+                      className="block text-[0.7rem] font-semibold uppercase tracking-[0.24em] sm:text-xs"
                       style={{
                         color: colors.secondary,
                         fontFamily: fonts.eyebrow,
-                        fontWeight: 600,
                       }}
                     >
                       Need help
                     </span>
                     <span
-                      className="mt-1 block text-base sm:text-lg"
-                      style={{ color: colors.primary, fontWeight: 500 }}
+                      className="mt-1.5 block text-lg font-semibold leading-snug sm:text-xl"
+                      style={{
+                        color: colors.primary,
+                        fontFamily: fonts.heading,
+                      }}
                     >
-                      Call host · {contactPhoneDisplay}
+                      Call host
+                    </span>
+                    <span
+                      className="mt-1 block text-sm tabular-nums sm:text-[0.95rem]"
+                      style={{ color: colors.text, opacity: 0.88 }}
+                    >
+                      {contactPhoneDisplay}
                     </span>
                   </span>
-                  <span style={{ color: colors.secondary }} aria-hidden>
-                    →
+                  <span
+                    className="relative inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.18em] transition-transform duration-200 group-hover:translate-x-0.5 sm:text-xs"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.secondary} 0%, ${colors.secondary}d8 100%)`,
+                      color: colors.background,
+                      boxShadow: `0 10px 20px -14px ${colors.secondary}`,
+                      fontFamily: fonts.eyebrow,
+                    }}
+                  >
+                    Call
+                    <span aria-hidden>→</span>
                   </span>
                 </a>
               ) : null}
