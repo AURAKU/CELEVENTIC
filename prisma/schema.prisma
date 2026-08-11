@@ -6134,6 +6134,12 @@ enum HelpGuideCategory {
   TROUBLESHOOTING
 }
 
+enum HelpGuideReviewStatus {
+  CURRENT
+  REVIEW_REQUIRED
+  OUTDATED
+}
+
 model HelpGuide {
   id              String            @id @default(cuid())
   slug            String            @unique
@@ -6148,7 +6154,14 @@ model HelpGuide {
   /// Admin-only guides must never appear on public /guide.
   adminOnly       Boolean           @default(false)
   posterUrl       String?
+  thumbnailUrl    String?
+  /// Legacy/primary playback URL (prefer mobile/desktop/mp4/webm when set).
   videoUrl        String?
+  mp4Url          String?
+  webmUrl         String?
+  mobileVideoUrl  String?
+  desktopVideoUrl String?
+  durationSec     Int?
   captionsEnUrl   String?
   captionsFrUrl   String?
   /// Separable voiceover track (EN). Distinct from video audio when recorded.
@@ -6157,11 +6170,22 @@ model HelpGuide {
   voiceoverFrUrl  String?
   storyboardKey   String?
   transcript      String            @default("")
+  narrationScript String            @default("")
+  a11yDescription String            @default("")
+  /// True when no real MP4/WebM has been uploaded yet.
+  videoProductionRequired Boolean   @default(true)
+  /// Product feature key used for freshness flagging (never auto-deletes guides).
+  featureKey      String?
+  lastVerifiedAt  DateTime?
+  verifiedAgainstBuild String?
+  verifiedAgainstFeatureVersion String?
+  reviewStatus    HelpGuideReviewStatus @default(CURRENT)
   synonyms        String            @default("[]") // JSON string array
   contextRoutes   String            @default("[]") // JSON string array of route prefixes
   ogTitle         String?
   ogDescription   String?
   relatedSlugs    String            @default("[]") // JSON string array
+  analyticsEvents String            @default("[]") // JSON string array of event names
   /// Admin-controlled "New" badge (also shown while newUntil is in the future).
   isNew           Boolean           @default(false)
   newUntil        DateTime?
@@ -6175,10 +6199,13 @@ model HelpGuide {
   updatedAt       DateTime          @updatedAt
   steps           GuideStep[]
   feedback        HelpGuideFeedback[]
+  versions        HelpGuideVersion[]
 
   @@index([status, role, sortOrder])
   @@index([category, status])
   @@index([featured, status])
+  @@index([featureKey])
+  @@index([reviewStatus])
   @@index([scheduledPublishAt])
   @@map("help_guides")
 }
@@ -6193,6 +6220,23 @@ model HelpGuideFeedback {
 
   @@index([guideId, createdAt])
   @@map("help_guide_feedback")
+}
+
+/// Immutable snapshot retained on each admin edit — supports rollback without changing slug/analytics.
+model HelpGuideVersion {
+  id          String    @id @default(cuid())
+  guideId     String
+  version     Int
+  snapshot    String // JSON: guide fields + steps
+  editorId    String?
+  editorLabel String?
+  note        String    @default("")
+  createdAt   DateTime  @default(now())
+  guide       HelpGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, version])
+  @@index([guideId, createdAt])
+  @@map("help_guide_versions")
 }
 
 model GuideStep {

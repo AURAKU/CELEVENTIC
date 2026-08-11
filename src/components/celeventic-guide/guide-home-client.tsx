@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { GuideCard, type GuideCardData } from "./guide-card";
 import { StartHereJourneys } from "./start-here-journeys";
 import { FirstTimeHelpBanner } from "./first-time-help-banner";
+import { GuestQuickActions } from "./guest-quick-actions";
 import { PUBLIC_GUIDE_ROLES, GUIDE_ROLE_LABELS, GUIDE_CATEGORY_LABELS } from "@/lib/celeventic-guide/types";
 import type { GuideCategory, GuideRole } from "@/lib/celeventic-guide/types";
 import { trackGuideEvent } from "@/lib/celeventic-guide/analytics";
@@ -84,6 +85,7 @@ export function GuideHomeClient({
     <div className="space-y-8">
       <FirstTimeHelpBanner />
       <StartHereJourneys preferredRole={preferredRole} />
+      {(role === "GUEST" || preferredRole === "GUEST") && <GuestQuickActions />}
 
       <div className="relative max-w-xl">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden />

@@ -110,15 +110,85 @@ export function MotionWalkthrough({
 }
 
 function MotionGlyph({ motionKey }: { motionKey: string }) {
-  const label = motionKey.replace(/-/g, " ");
+  const key = motionKey.toLowerCase();
+  const reduce = useReducedMotion();
+  const kind =
+    key.includes("qr") || key.includes("admit") || key.includes("scan")
+      ? "qr"
+      : key.includes("phone") || key.includes("invite") || key.includes("rsvp") || key.includes("open")
+        ? "phone"
+        : key.includes("seat") || key.includes("table") || key.includes("guide")
+          ? "guide"
+          : "pulse";
+
   return (
-    <div className="relative h-28 w-28 rounded-full border border-white/25 bg-white/10 backdrop-blur-sm flex items-center justify-center">
-      <motion.div
-        className="absolute inset-3 rounded-full border border-gold-400/50"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-      />
-      <span className="relative text-sm font-semibold uppercase tracking-wide text-center px-2">{label}</span>
+    <div className="relative h-36 w-36 flex items-center justify-center" aria-hidden>
+      {kind === "phone" && (
+        <motion.div
+          className="relative h-32 w-20 rounded-[1.25rem] border-2 border-white/70 bg-slate-950/80 shadow-xl overflow-hidden"
+          initial={reduce ? false : { y: 10, opacity: 0.7 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: reduce ? 0 : 0.5 }}
+        >
+          <div className="absolute top-2 inset-x-6 h-1 rounded-full bg-white/30" />
+          <motion.div
+            className="absolute inset-x-3 top-6 bottom-4 rounded-lg bg-gradient-to-br from-brand-400/40 to-gold-400/30"
+            animate={reduce ? undefined : { opacity: [0.55, 1, 0.55] }}
+            transition={{ duration: 2.4, repeat: Infinity }}
+          />
+        </motion.div>
+      )}
+      {kind === "qr" && (
+        <motion.div
+          className="relative h-28 w-28 rounded-2xl border border-white/40 bg-white p-3 shadow-lg"
+          animate={reduce ? undefined : { scale: [1, 1.04, 1] }}
+          transition={{ duration: 2.2, repeat: Infinity }}
+        >
+          <svg viewBox="0 0 40 40" className="h-full w-full text-slate-900">
+            <rect x="2" y="2" width="12" height="12" fill="currentColor" />
+            <rect x="26" y="2" width="12" height="12" fill="currentColor" />
+            <rect x="2" y="26" width="12" height="12" fill="currentColor" />
+            <rect x="18" y="18" width="4" height="4" fill="currentColor" />
+            <rect x="24" y="18" width="4" height="4" fill="currentColor" />
+            <rect x="18" y="24" width="4" height="4" fill="currentColor" />
+            <rect x="30" y="24" width="6" height="6" fill="currentColor" />
+            <rect x="24" y="30" width="4" height="4" fill="currentColor" />
+          </svg>
+          <motion.div
+            className="absolute inset-x-2 h-0.5 bg-brand-500/80"
+            animate={reduce ? undefined : { top: ["20%", "80%", "20%"] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.div>
+      )}
+      {kind === "guide" && (
+        <motion.div
+          className="relative h-28 w-40 rounded-2xl border border-white/35 bg-white/10 backdrop-blur-sm p-3"
+          animate={reduce ? undefined : { y: [0, -4, 0] }}
+          transition={{ duration: 2.6, repeat: Infinity }}
+        >
+          <div className="h-2 w-16 rounded bg-gold-300/80 mb-3" />
+          <div className="space-y-2">
+            <div className="h-1.5 w-full rounded bg-white/35" />
+            <div className="h-1.5 w-4/5 rounded bg-white/25" />
+            <div className="h-1.5 w-3/5 rounded bg-white/20" />
+          </div>
+        </motion.div>
+      )}
+      {kind === "pulse" && (
+        <div className="relative h-28 w-28 rounded-full border border-white/25 bg-white/10 backdrop-blur-sm flex items-center justify-center">
+          {!reduce && (
+            <motion.div
+              className="absolute inset-3 rounded-full border border-gold-400/50"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+            />
+          )}
+          <span className="relative text-sm font-semibold uppercase tracking-wide text-center px-2">
+            {motionKey.replace(/-/g, " ")}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

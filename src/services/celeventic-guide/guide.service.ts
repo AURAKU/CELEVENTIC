@@ -12,6 +12,8 @@ import { searchGuides } from "@/lib/celeventic-guide/search";
 import { resolveRelatedGuides } from "@/lib/celeventic-guide/related";
 import type { GuideRole } from "@/lib/celeventic-guide/types";
 import { isGuideMarkedNew } from "@/lib/celeventic-guide/guide-new";
+import { retainGuideVersion } from "@/services/celeventic-guide/versioning.service";
+import { resolveGuidePlayback } from "@/lib/celeventic-guide/media";
 
 export type HelpGuideWithSteps = HelpGuide & { steps: GuideStep[] };
 
@@ -246,11 +248,21 @@ export async function recordGuideView(slug: string) {
     .catch(() => undefined);
 }
 
-export async function recordGuideFeedback(slug: string, helpful: boolean) {
-  await prisma.helpGuide.update({
+export async function recordGuideFeedback(slug: string, helpful: boolean, reason?: string) {
+  const guide = await prisma.helpGuide.update({
     where: { slug },
     data: helpful ? { helpfulYes: { increment: 1 } } : { helpfulNo: { increment: 1 } },
   });
+  const cleaned = (reason || "").trim().slice(0, 500);
+  if (cleaned) {
+    try {
+      await prisma.helpGuideFeedback.create({
+        data: { guideId: guide.id, helpful, reason: cleaned },
+      });
+    } catch {
+      /* feedback table may not be migrated yet in some envs */
+    }
+  }
 }
 
 export async function listAdminGuides() {
