@@ -67,7 +67,7 @@ export function GuestFirstTimeIntro({
     rememberGuestIntro(invitationId, status, guestId);
     setTourOpen(false);
     setCardVisible(false);
-    trackGuideEvent(status === "skipped" ? "guide_tour_skipped" : "guide_tour_completed", {
+    trackGuideEvent(status === "skipped" ? "guide_tour_skip" : "guide_tour_complete", {
       tour: "guest-zero-intro",
       invitationId: invitationId.slice(0, 24),
     });
@@ -106,7 +106,7 @@ export function GuestFirstTimeIntro({
                   onClick={() => {
                     setBeatIndex(0);
                     setTourOpen(true);
-                    trackGuideEvent("guide_tour_started", { tour: "guest-zero-intro" });
+                    trackGuideEvent("guide_tour_start", { tour: "guest-zero-intro" });
                   }}
                 >
                   Show Me Around

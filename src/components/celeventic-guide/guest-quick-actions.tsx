@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComponentType } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -17,7 +18,7 @@ import { GUEST_QUICK_ACTIONS } from "@/lib/celeventic-guide/guest-zero-experienc
 import { cn } from "@/lib/utils";
 import { trackGuideEvent } from "@/lib/celeventic-guide/analytics";
 
-const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   "open-invitation": BookOpen,
   rsvp: CalendarDays,
   "show-qr": QrCode,

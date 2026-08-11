@@ -1,6 +1,8 @@
 import type { GuideCatalogEntry, GuideStepSeed } from "./types";
 import { GUEST_ZERO_CATALOG_ADDITIONS } from "./guest-catalog";
 import { mergeGuideCatalogs } from "./guest-zero-experience";
+import { CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS } from "./catalog-completeness";
+import { PRIORITY_VIDEO_SLUGS } from "./types";
 
 function steps(...items: Array<[string, string] | GuideStepSeed>): GuideStepSeed[] {
   return items.map((item, i) => {
@@ -697,6 +699,198 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     ),
   },
 
+  // ── Catalog depth: Tickets / Payments / Gifts / Marketplace / Privacy / Troubleshooting ──
+  {
+    slug: "tickets-overview",
+    title: "Tickets Overview",
+    summary: "How ticketed entry works alongside QR admission on Celeventic.",
+    role: "ORGANIZER",
+    category: "TICKETS",
+    status: "PUBLISHED",
+    sortOrder: 40,
+    synonyms: ["sell tickets", "ticket types", "paid entry"],
+    relatedSlugs: ["qr-admission-organizer", "payments-overview"],
+    posterUrl: "/guides/posters/how-celeventic-works.svg",
+    isNew: true,
+    steps: steps(
+      ["Choose ticketed or invite-only", "Match the mode to your event."],
+      ["Configure ticket types", "Set capacity and pricing when enabled."],
+      ["Admit with QR", "Tickets still resolve to scannable admission."]
+    ),
+  },
+  {
+    slug: "payments-overview",
+    title: "Payments Overview",
+    summary: "Understand guest payments, payouts, and receipts in Celeventic.",
+    role: "ORGANIZER",
+    category: "PAYMENTS",
+    status: "PUBLISHED",
+    sortOrder: 41,
+    synonyms: ["payout", "checkout", "payment status"],
+    relatedSlugs: ["tickets-overview", "organizer-gifts"],
+    posterUrl: "/guides/posters/how-celeventic-works.svg",
+    steps: steps(
+      ["Enable payment features", "Turn on what your plan supports."],
+      ["Track status", "See completed, pending, and failed payments."],
+      ["Reconcile safely", "Use receipts and ledger views — never guess."]
+    ),
+  },
+  {
+    slug: "guest-gifts",
+    title: "Send a Gift",
+    summary: "How guests send cash gifts or registry contributions from the invitation.",
+    role: "GUEST",
+    category: "GIFTS",
+    status: "PUBLISHED",
+    sortOrder: 42,
+    synonyms: ["cash gift", "contribute", "registry gift"],
+    relatedSlugs: ["organizer-gifts", "open-your-invitation"],
+    contextRoutes: ["/invite"],
+    posterUrl: "/guides/posters/welcome.svg",
+    isNew: true,
+    steps: steps(
+      ["Open Gifts", "From your invitation, choose the gifts or contribute action."],
+      ["Choose amount", "Pick an amount and add a short note if you like."],
+      ["Confirm", "You'll see a receipt when payment succeeds."]
+    ),
+  },
+  {
+    slug: "organizer-gifts",
+    title: "Gifts & Contributions",
+    summary: "Enable guest gifts, monitor contributions, and thank givers.",
+    role: "ORGANIZER",
+    category: "GIFTS",
+    status: "PUBLISHED",
+    sortOrder: 43,
+    synonyms: ["gift registry", "contributions dashboard"],
+    relatedSlugs: ["guest-gifts", "payments-overview"],
+    posterUrl: "/guides/posters/how-celeventic-works.svg",
+    steps: steps(
+      ["Enable gifts", "Turn on gifts for your event."],
+      ["Share with guests", "Guests find gifts on the invitation."],
+      ["Review & thank", "Track contributions and follow up."]
+    ),
+  },
+  {
+    slug: "marketplace-basics",
+    title: "Marketplace Basics",
+    summary: "Discover vendors and services without leaving Celeventic.",
+    role: "ORGANIZER",
+    category: "MARKETPLACE",
+    status: "PUBLISHED",
+    sortOrder: 44,
+    synonyms: ["find vendors", "hire vendor", "marketplace"],
+    relatedSlugs: ["vendor-passes-organizer", "create-an-event"],
+    posterUrl: "/guides/posters/how-celeventic-works.svg",
+    steps: steps(
+      ["Browse categories", "Photography, catering, décor, and more."],
+      ["Shortlist", "Save vendors that fit your event."],
+      ["Coordinate", "Connect booking with vendor passes when ready."]
+    ),
+  },
+  {
+    slug: "privacy-and-data",
+    title: "Privacy & Your Data",
+    summary: "What Celeventic stores for invitations, RSVPs, and admission — and your choices.",
+    role: "GUEST",
+    category: "PRIVACY",
+    status: "PUBLISHED",
+    sortOrder: 45,
+    synonyms: ["data privacy", "personal information", "GDPR"],
+    relatedSlugs: ["welcome-to-celeventic"],
+    posterUrl: "/guides/posters/welcome.svg",
+    steps: steps(
+      ["Only what the host needs", "RSVP and admission details stay event-scoped."],
+      ["Secure links", "Treat invitation links like tickets — don't reshare blindly."],
+      ["Ask the host", "Contact the organizer or support for data requests."]
+    ),
+  },
+  {
+    slug: "troubleshoot-invitation-wont-open",
+    title: "Invitation Won't Open",
+    summary: "Fix common invite link, browser, and media playback issues.",
+    role: "GUEST",
+    category: "TROUBLESHOOTING",
+    status: "PUBLISHED",
+    sortOrder: 46,
+    synonyms: ["broken invite", "link not working", "won't load"],
+    relatedSlugs: ["open-your-invitation"],
+    posterUrl: "/guides/posters/invitation.svg",
+    steps: steps(
+      ["Retry the original link", "Open from WhatsApp, SMS, or email — not a screenshot."],
+      ["Try another browser", "Safari or Chrome usually work best."],
+      ["Ask the host", "They can resend your personal link."]
+    ),
+  },
+  {
+    slug: "troubleshoot-qr-wont-scan",
+    title: "QR Won't Scan",
+    summary: "Brighten the screen, avoid glare, and keep the code uncropped.",
+    role: "GUEST",
+    category: "TROUBLESHOOTING",
+    status: "PUBLISHED",
+    sortOrder: 47,
+    synonyms: ["qr failed", "scan error", "admission failed"],
+    relatedSlugs: ["your-qr-admission-pass", "scan-guest"],
+    posterUrl: "/guides/posters/qr-pass.svg",
+    steps: steps(
+      ["Raise brightness", "Fill the screen with your QR."],
+      ["Hold steady", "Avoid glare and don't crop the code."],
+      ["Ask staff", "They can look you up if the camera fails."]
+    ),
+  },
+  {
+    slug: "troubleshoot-rsvp-fail",
+    title: "RSVP Not Saving",
+    summary: "Recover when RSVP submissions fail or seem stuck.",
+    role: "GUEST",
+    category: "TROUBLESHOOTING",
+    status: "PUBLISHED",
+    sortOrder: 48,
+    synonyms: ["rsvp error", "can't respond"],
+    relatedSlugs: ["rsvp"],
+    posterUrl: "/guides/posters/rsvp.svg",
+    steps: steps(
+      ["Check connection", "Submit again on stable wifi or data."],
+      ["Refresh the invite", "Reopen the original link."],
+      ["Contact the host", "They can update your RSVP manually."]
+    ),
+  },
+  {
+    slug: "troubleshoot-seat-not-found",
+    title: "Seat Not Found",
+    summary: "What to do when your name isn't in seating lookup yet.",
+    role: "GUEST",
+    category: "TROUBLESHOOTING",
+    status: "PUBLISHED",
+    sortOrder: 49,
+    synonyms: ["no seat", "missing table"],
+    relatedSlugs: ["find-your-seat", "event-guide-guest"],
+    posterUrl: "/guides/posters/seating.svg",
+    steps: steps(
+      ["Try alternate spelling", "Search a few letters of your first or last name."],
+      ["Check Event Guide", "Seating may publish closer to the event."],
+      ["Ask an usher", "Hosts can place you if the chart is still updating."]
+    ),
+  },
+  {
+    slug: "troubleshoot-event-guide-unavailable",
+    title: "Event Guide Unavailable",
+    summary: "When the companion isn't published or the link looks wrong.",
+    role: "GUEST",
+    category: "TROUBLESHOOTING",
+    status: "PUBLISHED",
+    sortOrder: 50,
+    synonyms: ["guide offline", "companion missing"],
+    relatedSlugs: ["event-guide-guest"],
+    posterUrl: "/guides/posters/event-guide.svg",
+    steps: steps(
+      ["Confirm the link", "Use the QR or URL from your host."],
+      ["Try later", "Guides may publish closer to event day."],
+      ["Ask the host", "They control publish status."]
+    ),
+  },
+
   // Admin-only (restricted server-side)
   {
     slug: "admin-guide-manager",
@@ -718,9 +912,17 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
 
 export const CELEVENTIC_GUIDE_CATALOG = mergeGuideCatalogs(
   CELEVENTIC_GUIDE_CATALOG_BASE,
-  GUEST_ZERO_CATALOG_ADDITIONS
+  GUEST_ZERO_CATALOG_ADDITIONS,
+  CELEVENTIC_GUIDE_COMPLETENESS_ADDITIONS
 ) as GuideCatalogEntry[];
 
 export function getCatalogBySlug(slug: string): GuideCatalogEntry | undefined {
   return CELEVENTIC_GUIDE_CATALOG.find((g) => g.slug === slug);
+}
+
+export function catalogRequiresVideoProduction(slug: string): boolean {
+  const g = getCatalogBySlug(slug);
+  if (!g) return false;
+  if (g.videoUrl || g.mp4Url || g.webmUrl || g.mobileVideoUrl) return false;
+  return g.videoProductionRequired !== false || (PRIORITY_VIDEO_SLUGS as readonly string[]).includes(slug);
 }
