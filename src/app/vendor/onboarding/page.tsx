@@ -129,7 +129,7 @@ export default function VendorOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-app-viewport bg-gradient-to-b from-slate-50 to-white">
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 text-[#0B8A83] font-semibold">

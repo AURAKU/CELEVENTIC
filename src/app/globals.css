@@ -59,20 +59,41 @@
     @apply border-slate-200/80;
   }
 
+  :root {
+    /* Prefer dynamic viewport height; cascade keeps older browsers working. */
+    --app-viewport-min-height: 100vh;
+    --app-viewport-height: 100vh;
+  }
+
+  @supports (height: 100svh) {
+    :root {
+      --app-viewport-min-height: 100svh;
+      --app-viewport-height: 100svh;
+    }
+  }
+
+  @supports (height: 100dvh) {
+    :root {
+      --app-viewport-min-height: 100dvh;
+      --app-viewport-height: 100dvh;
+    }
+  }
+
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     height: 100%;
+    height: var(--app-viewport-height);
     overflow-x: hidden;
   }
 
   body {
     @apply bg-ivory text-slate-900 antialiased;
     min-height: 100%;
-    min-height: 100dvh;
-    min-height: 100svh;
-    max-width: 100vw;
+    min-height: var(--app-viewport-min-height);
+    width: 100%;
+    max-width: 100%;
     overflow-x: hidden;
     background-image:
       radial-gradient(ellipse 80% 50% at 50% -20%, rgba(11, 138, 131, 0.08), transparent),
@@ -307,10 +328,62 @@
     isolation: isolate;
   }
 
+  /* —— App / public viewport fills (mobile + tablet + desktop) —— */
+  .min-h-app-viewport {
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    min-height: var(--app-viewport-min-height);
+  }
+
+  .h-app-viewport {
+    height: 100vh;
+    height: 100svh;
+    height: 100dvh;
+    height: var(--app-viewport-height);
+  }
+
+  /* Full-bleed public surfaces with optional centered content stage. */
+  .public-viewport-shell {
+    @apply relative w-full min-w-0 overflow-x-hidden;
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    min-height: var(--app-viewport-min-height);
+  }
+
+  .public-viewport-stage {
+    @apply mx-auto w-full min-w-0 px-4 sm:px-6 lg:px-8;
+    max-width: 72rem; /* ~max-w-6xl — luxury stage, not a phone stub */
+  }
+
+  .memory-viewport-stage {
+    @apply mx-auto w-full min-w-0;
+    max-width: 28rem; /* phone-comfortable on small screens */
+  }
+
+  @media (min-width: 640px) {
+    .memory-viewport-stage {
+      max-width: 42rem; /* sm: ~max-w-2xl */
+    }
+  }
+
+  @media (min-width: 768px) {
+    .memory-viewport-stage {
+      max-width: 48rem; /* md: ~max-w-3xl */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .memory-viewport-stage {
+      max-width: 64rem; /* lg: ~max-w-5xl */
+    }
+  }
+
   /* —— Invite viewport: iOS/Android/Windows fullscreen + safe areas —— */
   .invite-viewport-root {
     width: 100%;
-    max-width: 100vw;
+    max-width: 100%;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
@@ -319,15 +392,18 @@
     position: fixed;
     inset: 0;
     z-index: 50;
-    /* Prefer dynamic viewport; keep a svh min for older Safari. Never lock
-       max-height to svh — iOS chrome show/hide would clip invite content. */
+    /* Prefer dynamic viewport last. Never lock max-height to svh — iOS
+       chrome show/hide would clip invite content. */
     min-height: 100vh;
-    min-height: 100dvh;
     min-height: 100svh;
+    min-height: 100dvh;
+    min-height: var(--app-viewport-min-height);
     height: 100%;
+    height: 100svh;
     height: 100dvh;
+    height: var(--app-viewport-height);
     width: 100%;
-    max-width: 100vw;
+    max-width: 100%;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     padding-top: env(safe-area-inset-top, 0px);
@@ -821,6 +897,10 @@
   /* Platform-wide page content adapts to phone / tablet / desktop. */
   .page-scaffold {
     @apply w-full min-w-0 max-w-full space-y-4 sm:space-y-6;
+  }
+
+  .page-scaffold-host {
+    @apply flex flex-col min-h-0;
   }
 
   .page-scaffold-host > * {

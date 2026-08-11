@@ -13,7 +13,7 @@ export function FloralGardenTemplate({ invitation, event, design, guestId, guest
   const { colors, studio } = design;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#fdf8f3" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4" style={{ background: "#fdf8f3" }}>
       <div className="relative w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden inv-fade-in border border-rose-100">
         <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-rose-100/80 to-transparent pointer-events-none" />
         <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-rose-200/40 blur-2xl" />

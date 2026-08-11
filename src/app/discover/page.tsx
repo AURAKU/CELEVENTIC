@@ -15,7 +15,7 @@ export default async function PublicDiscoverPage() {
   return (
     <>
       <HeaderShell />
-      <main className="min-h-screen bg-mesh">
+      <main className="min-h-app-viewport bg-mesh">
         <section className="bg-gradient-hero text-white py-20 px-4 text-center relative overflow-hidden">
           <div className="absolute inset-0 grid-pattern opacity-20" />
           <div className="relative">

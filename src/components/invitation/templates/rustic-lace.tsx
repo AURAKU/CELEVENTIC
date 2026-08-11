@@ -15,7 +15,7 @@ export function RusticLaceTemplate({ invitation, event, design, guestId, guestNa
   const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: "#2a1810" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4" style={{ backgroundColor: "#2a1810" }}>
       <div
         className="relative w-full max-w-md shadow-2xl inv-fade-in overflow-hidden"
         style={{

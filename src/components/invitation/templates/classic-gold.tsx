@@ -15,7 +15,7 @@ export function ClassicGoldTemplate({ invitation, event, design, guestId, guestN
   const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: "#f5f3ef" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: "#f5f3ef" }}>
       <div
         className="relative w-full max-w-md bg-white shadow-2xl inv-fade-in overflow-hidden"
         style={{ color: colors.text }}

@@ -14,7 +14,7 @@ export function ArchGreenTemplate({ invitation, event, design, guestId, guestNam
   const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: "#0f1a14" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: "#0f1a14" }}>
       <div
         className="relative w-full max-w-sm inv-fade-in overflow-hidden rounded-t-[50%] rounded-b-lg shadow-2xl"
         style={{ backgroundColor: colors.background, color: colors.text, minHeight: "580px" }}

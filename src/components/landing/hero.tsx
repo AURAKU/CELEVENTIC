@@ -41,7 +41,7 @@ export function Hero() {
     : { initial: { opacity: 1, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.55, delay: 0.12 } };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-hero text-white">
+    <section className="relative min-h-app-viewport overflow-hidden bg-gradient-hero text-white">
       <ClientErrorBoundary>
         <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
           <HeroScene />

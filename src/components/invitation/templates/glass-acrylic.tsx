@@ -13,7 +13,7 @@ export function GlassAcrylicTemplate({ invitation, event, design, guestId, guest
   const { colors, studio } = design;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ background: "linear-gradient(160deg, #0a1628 0%, #1a3a5c 50%, #0B8A83 100%)" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4 sm:p-8" style={{ background: "linear-gradient(160deg, #0a1628 0%, #1a3a5c 50%, #0B8A83 100%)" }}>
       <div
         className="relative w-full max-w-md rounded-3xl overflow-hidden inv-fade-in backdrop-blur-xl border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.4)]"
         style={{ background: "rgba(255,255,255,0.08)" }}

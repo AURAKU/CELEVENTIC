@@ -112,7 +112,7 @@ export default function PublicEventPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen flex items-center justify-center p-6">
+        <main className="min-h-app-viewport flex items-center justify-center p-6">
           <p className="text-slate-500">{error}</p>
         </main>
         <Footer />
@@ -124,7 +124,7 @@ export default function PublicEventPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen flex items-center justify-center">Loading...</main>
+        <main className="min-h-app-viewport flex items-center justify-center">Loading...</main>
         <Footer />
       </>
     );
@@ -140,7 +140,7 @@ export default function PublicEventPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FAF8F4]">
+      <main className="min-h-app-viewport bg-[#FAF8F4]">
         <section className="bg-[#0F172A] text-white py-16 px-4">
           <div className="max-w-3xl mx-auto text-center">
             <Badge className="mb-4 bg-[#0B8A83]/20 text-[#0B8A83] border-[#0B8A83]/30">

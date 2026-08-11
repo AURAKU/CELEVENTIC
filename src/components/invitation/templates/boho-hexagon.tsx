@@ -16,7 +16,7 @@ export function BohoHexagonTemplate({ invitation, event, design, guestId, guestN
   const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: colors.background }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: colors.background }}>
       <div className="relative w-full max-w-md inv-fade-in">
         <FloralCorner className="-top-2 -left-2" />
         <FloralCorner className="-top-2 -right-2 scale-x-[-1]" />

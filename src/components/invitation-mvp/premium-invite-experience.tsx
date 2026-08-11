@@ -190,7 +190,7 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
+    <div className="min-h-app-viewport bg-[#FAF8F4]">
       {useBlocks && welcomeBlocks.length > 0 && (
         <section className="mx-auto max-w-2xl px-4 pb-2 pt-10">
           <BlockRenderer blocks={welcomeBlocks} context={blockContext} />

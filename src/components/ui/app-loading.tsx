@@ -5,13 +5,13 @@ import { useLocale } from "@/components/i18n/locale-provider";
 
 export function AppLoading() {
   const { t } = useLocale();
-  return <PageLoader label={t("common.loading_celeventic")} className="min-h-screen" />;
+  return <PageLoader label={t("common.loading_celeventic")} className="min-h-app-viewport" />;
 }
 
 export function AuthLoading() {
   const { t } = useLocale();
   return (
-    <div className="min-h-screen flex items-center justify-center bg-mesh">
+    <div className="min-h-app-viewport flex items-center justify-center bg-mesh">
       <PageLoader label={t("common.loading_sign_in")} />
     </div>
   );

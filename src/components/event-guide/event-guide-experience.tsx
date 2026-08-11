@@ -157,7 +157,7 @@ export function EventGuideExperience({
 
   if (revoked) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#fbf8f3] px-6 text-center">
+      <main className="flex min-h-app-viewport items-center justify-center bg-[#fbf8f3] px-6 text-center">
         <div className="max-w-sm">
           <h1 className="font-serif text-2xl text-[#2b2118]">This guide has been retired</h1>
           <p className="mt-3 text-sm text-[#5c5346]">
@@ -175,7 +175,7 @@ export function EventGuideExperience({
       data-testid="event-guide"
       data-tab={tab}
       data-version={payload.version}
-      className="min-h-dvh px-5 pb-16 pt-10"
+      className="min-h-app-viewport px-5 pb-[max(4rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]"
       style={
         {
           "--guide-accent": theme.colors.accent,
@@ -197,7 +197,7 @@ export function EventGuideExperience({
         } as React.CSSProperties
       }
     >
-      <header className="mx-auto w-full max-w-xl text-center">
+      <header className="mx-auto w-full max-w-xl md:max-w-2xl text-center">
         <p
           className="text-[0.68rem] font-semibold uppercase tracking-[0.3em]"
           style={{ fontFamily: fonts.eyebrow, color: theme.labelColor ?? theme.colors.secondary }}
@@ -229,7 +229,7 @@ export function EventGuideExperience({
 
       <nav
         aria-label="Event Guide sections"
-        className="mx-auto mt-8 flex w-full max-w-xl gap-1 rounded-full p-1"
+        className="mx-auto mt-8 flex w-full max-w-xl md:max-w-2xl gap-1 rounded-full p-1"
         style={{ background: theme.accentWash }}
       >
         {tabs.map((key) => {
@@ -254,7 +254,7 @@ export function EventGuideExperience({
         })}
       </nav>
 
-      <div className="mx-auto mt-6 w-full max-w-xl">
+      <div className="mx-auto mt-6 w-full max-w-xl md:max-w-2xl">
         <OfflineBanner
           connection={connection}
           syncedAt={syncedAt}

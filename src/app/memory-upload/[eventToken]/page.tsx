@@ -51,7 +51,10 @@ export default function MemoryUploadPage() {
     : `${baseUrl}/events/${data.event.slug}`;
 
   return (
-    <div className="min-h-screen py-8 px-4" style={data.theme?.cssVars}>
+    <div
+      className="public-viewport-shell py-8 px-4 sm:px-6 pb-[max(2rem,env(safe-area-inset-bottom))]"
+      style={data.theme?.cssVars}
+    >
       <GuestMemoryUpload
         token={token}
         eventTitle={data.event.title}

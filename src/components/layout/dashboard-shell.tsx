@@ -16,7 +16,7 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-mesh">
+    <div className="flex min-h-app-viewport bg-mesh">
       <TermsAcceptanceGate />
       {mobileOpen && (
         <div
@@ -29,10 +29,10 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
         <DashboardSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       </Suspense>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-app-viewport">
         {adminBanner}
         <DashboardTopbar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 bg-dashboard grid-pattern min-w-0 overflow-x-hidden page-scaffold-host">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-[max(6rem,calc(env(safe-area-inset-bottom)+4.5rem))] lg:pb-8 bg-dashboard grid-pattern min-w-0 overflow-x-hidden page-scaffold-host">
           <div className="page-scaffold mx-auto w-full max-w-7xl">{children}</div>
         </main>
         <MobileBottomNav />

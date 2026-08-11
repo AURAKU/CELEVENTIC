@@ -26,7 +26,7 @@ export function LegalHubLayout() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-mesh">
+      <main className="min-h-app-viewport bg-mesh">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <Link
             href="/"

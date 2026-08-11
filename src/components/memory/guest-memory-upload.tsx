@@ -263,7 +263,8 @@ export function GuestMemoryUpload({
   };
 
   return (
-    <div className="max-w-lg mx-auto space-y-6" style={shellStyle}>
+    <div className="memory-viewport-stage space-y-6 rounded-none sm:rounded-3xl sm:border sm:shadow-sm overflow-hidden" style={shellStyle}>
+      <div className="space-y-6 px-0 sm:px-6 sm:py-6">
       <header className="text-center space-y-2 pt-2">
         <Camera className="h-10 w-10 mx-auto" style={{ color: "var(--memory-color-accent, #0B8A83)" }} />
         <h1
@@ -540,6 +541,7 @@ export function GuestMemoryUpload({
             <a href={invitationUrl}>Back to invitation</a>
           </Button>
         ) : null}
+      </div>
       </div>
     </div>
   );

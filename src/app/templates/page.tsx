@@ -50,7 +50,7 @@ export default async function PublicTemplatesPage({
   return (
     <>
       <HeaderShell />
-      <main className="min-h-screen bg-mesh">
+      <main className="min-h-app-viewport bg-mesh">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <Badge variant="secondary" className="mb-4">

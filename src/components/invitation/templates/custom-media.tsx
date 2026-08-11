@@ -17,13 +17,13 @@ export function CustomMediaTemplate({ invitation, event, design, guestId, guestN
   const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: colors.background }}>
+    <div className="min-h-app-viewport relative" style={{ backgroundColor: colors.background }}>
       {hasVideoBg && (
         <div className="fixed inset-0 z-0">
           <HeroMedia media={design.media?.filter((m) => m.role === "background")} animation="none" className="h-full w-full" overlay />
         </div>
       )}
-      <div className="relative z-10 flex items-center justify-center min-h-screen p-4 sm:p-8">
+      <div className="relative z-10 flex items-center justify-center min-h-app-viewport p-4 sm:p-8">
         <div className="w-full max-w-lg inv-fade-in">
           <FloralCorner className="absolute -top-3 -left-3 z-20 opacity-50" />
           <FloralCorner className="absolute -top-3 -right-3 z-20 scale-x-[-1] opacity-50" />

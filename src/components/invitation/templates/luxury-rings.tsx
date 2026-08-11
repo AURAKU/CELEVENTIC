@@ -15,7 +15,7 @@ export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestN
   const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "radial-gradient(ellipse at center, #1a1a1a 0%, #000 100%)" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4" style={{ background: "radial-gradient(ellipse at center, #1a1a1a 0%, #000 100%)" }}>
       <div className="relative w-full max-w-md inv-fade-in">
         <div className="absolute -inset-px rounded-lg bg-gradient-to-b from-[#D4AF37]/40 via-transparent to-[#D4AF37]/20" />
         <div className="relative overflow-hidden rounded-lg" style={{ backgroundColor: colors.background, color: colors.text }}>

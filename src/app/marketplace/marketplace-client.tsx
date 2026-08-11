@@ -58,7 +58,7 @@ export function MarketplaceClient() {
   }, [search, category, city, verified, sort, resetPage]);
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
+    <div className="min-h-app-viewport bg-[#FAF8F4]">
       <div className="bg-gradient-to-br from-[#0F172A] via-[#1a3a38] to-[#0B8A83] text-white py-16 px-4">
         <div className="max-w-5xl mx-auto text-center space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm">

@@ -13,7 +13,7 @@ export function PassportLuxeTemplate({ invitation, event, design, guestId, guest
   const { colors, studio } = design;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#0a1628" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4" style={{ background: "#0a1628" }}>
       <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-[#D4A63A]/30 inv-fade-in">
         <div className="bg-gradient-to-br from-[#0B3D3A] to-[#062A28] px-6 py-4 flex items-center justify-between border-b border-[#D4A63A]/20 inv-text-on-dark">
           <span className="text-[10px] tracking-[0.35em] uppercase text-[#D4A63A]">Passport</span>
