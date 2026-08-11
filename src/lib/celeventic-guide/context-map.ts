@@ -8,27 +8,32 @@ export interface ContextHelpMapping {
 }
 
 /**
- * Route-aware contextual help. Invitation template surfaces are intentionally excluded
- * so we never float intrusive help over guest invitation templates.
+ * Route-aware contextual help (§58/§62). Invitation templates & /invite blocked.
  */
 export const CONTEXT_HELP_MAP: ContextHelpMapping[] = [
   {
     routePrefix: "/dashboard/guests",
-    guideSlugs: ["add-guests", "import-guests", "guest-tags"],
+    guideSlugs: ["add-guests", "import-guests", "guest-tags", "troubleshoot-rsvp-fail"],
     tourId: "guest-list",
     label: "Guest list help",
   },
   {
     routePrefix: "/dashboard/seating",
-    guideSlugs: ["seating-organizer", "smart-auto-seating", "find-your-seat"],
+    guideSlugs: ["seating-organizer", "smart-auto-seating", "find-your-seat", "troubleshoot-seat-not-found"],
     tourId: "seating",
     label: "Seating help",
   },
   {
     routePrefix: "/dashboard/events",
-    guideSlugs: ["event-guide-organizer", "programme-and-menu", "event-guide-qr", "create-an-event"],
-    tourId: "event-guide",
-    label: "Event Guide help",
+    guideSlugs: ["event-guide-organizer", "programme-and-menu", "event-guide-qr", "collaboration-workspace"],
+    tourId: "event-workspace",
+    label: "Event & Guide help",
+  },
+  {
+    routePrefix: "/dashboard/qr-hub",
+    guideSlugs: ["qr-hub", "event-guide-qr", "generate-qr-identities", "vendor-passes-organizer"],
+    tourId: "qr-hub",
+    label: "QR Hub help",
   },
   {
     routePrefix: "/dashboard/qr-admission",
@@ -38,15 +43,9 @@ export const CONTEXT_HELP_MAP: ContextHelpMapping[] = [
   },
   {
     routePrefix: "/dashboard/qr",
-    guideSlugs: ["qr-admission-organizer", "offline-admission", "scan-guest"],
+    guideSlugs: ["qr-admission-organizer", "offline-admission", "scan-guest", "troubleshoot-qr-wont-scan"],
     tourId: "qr-admission",
     label: "QR admission help",
-  },
-  {
-    routePrefix: "/dashboard/admission",
-    guideSlugs: ["qr-admission-organizer", "offline-admission", "generate-qr-identities"],
-    tourId: "qr-admission",
-    label: "Admission help",
   },
   {
     routePrefix: "/dashboard/invitations",
@@ -56,12 +55,92 @@ export const CONTEXT_HELP_MAP: ContextHelpMapping[] = [
   },
   {
     routePrefix: "/dashboard/memory",
-    guideSlugs: ["memory-vault-organizer", "memory-vault-guest", "wishes-organizer"],
+    guideSlugs: ["memory-vault-organizer", "memory-vault-guest", "wishes-organizer", "troubleshoot-memory-upload-failed"],
     label: "Memory Vault help",
+  },
+  {
+    routePrefix: "/dashboard/tickets",
+    guideSlugs: ["tickets-organizer", "tickets-overview", "payments-overview"],
+    label: "Tickets help",
+  },
+  {
+    routePrefix: "/dashboard/gifts",
+    guideSlugs: ["gifts-organizer", "organizer-gifts", "wallet-organizer"],
+    label: "Gifts help",
+  },
+  {
+    routePrefix: "/dashboard/wallet",
+    guideSlugs: ["wallet-organizer", "payments-overview", "gifts-organizer"],
+    label: "Wallet help",
+  },
+  {
+    routePrefix: "/dashboard/contributions",
+    guideSlugs: ["contributions-organizer", "gifts-organizer"],
+    label: "Contributions help",
+  },
+  {
+    routePrefix: "/marketplace",
+    guideSlugs: ["marketplace-organizer", "marketplace-basics", "venues-organizer"],
+    label: "Marketplace help",
+  },
+  {
+    routePrefix: "/dashboard/venues",
+    guideSlugs: ["venues-organizer", "marketplace-organizer"],
+    label: "Venues help",
+  },
+  {
+    routePrefix: "/dashboard/vendor-portal",
+    guideSlugs: ["vendor-portal", "vendor-pass", "troubleshoot-vendor-pass"],
+    label: "Vendor portal help",
+  },
+  {
+    routePrefix: "/dashboard/messages",
+    guideSlugs: ["communications-organizer"],
+    label: "Messages help",
+  },
+  {
+    routePrefix: "/dashboard/campaigns",
+    guideSlugs: ["communications-organizer"],
+    label: "Campaigns help",
+  },
+  {
+    routePrefix: "/dashboard/settings",
+    guideSlugs: ["settings-overview", "privacy-security", "payments-overview"],
+    label: "Settings help",
+  },
+  {
+    routePrefix: "/dashboard/privacy-center",
+    guideSlugs: ["privacy-security", "privacy-and-data"],
+    label: "Privacy help",
+  },
+  {
+    routePrefix: "/dashboard/funeral",
+    guideSlugs: ["event-os-funeral", "contributions-organizer", "memory-vault-organizer"],
+    label: "FuneralOS help",
+  },
+  {
+    routePrefix: "/dashboard/getting-started",
+    guideSlugs: ["organizer-quick-start", "create-an-event", "build-an-invitation"],
+    tourId: "organizer-quick-start",
+    label: "Getting started",
+  },
+  {
+    routePrefix: "/dashboard/design-studio",
+    guideSlugs: ["design-studio", "build-an-invitation"],
+    label: "Design Studio help",
+  },
+  {
+    routePrefix: "/admission",
+    guideSlugs: ["your-qr-admission-pass", "troubleshoot-qr-wont-scan"],
+    label: "Admission pass help",
+  },
+  {
+    routePrefix: "/guide",
+    guideSlugs: ["how-celeventic-works", "welcome-to-celeventic"],
+    label: "Learn Celeventic",
   },
 ];
 
-/** Paths where contextual float/drawer must never appear (invitation templates & public invite). */
 export const CONTEXT_HELP_BLOCKLIST_PREFIXES = [
   "/invite/",
   "/invitations/templates",
