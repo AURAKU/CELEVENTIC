@@ -115,8 +115,18 @@ export async function DELETE(
     const result = await deleteVendorTeamPass(id, auth.ctx!.userId, true);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Delete failed";
+    const needsArchive = /admission history/i.test(message);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Delete failed" },
+      {
+        error: message,
+        ...(needsArchive
+          ? {
+              code: "HAS_ADMISSION_HISTORY",
+              hint: "Archive instead — QR becomes invalid and entry history is kept.",
+            }
+          : {}),
+      },
       { status: 400 }
     );
   }
