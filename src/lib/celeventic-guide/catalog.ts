@@ -1,4 +1,6 @@
 import type { GuideCatalogEntry, GuideStepSeed } from "./types";
+import { GUEST_ZERO_CATALOG_ADDITIONS } from "./guest-catalog";
+import { mergeGuideCatalogs } from "./guest-zero-experience";
 
 function steps(...items: Array<[string, string] | GuideStepSeed>): GuideStepSeed[] {
   return items.map((item, i) => {
@@ -9,8 +11,8 @@ function steps(...items: Array<[string, string] | GuideStepSeed>): GuideStepSeed
   });
 }
 
-/** Initial Celeventic Guide catalog (~37 + flagship). videoUrl intentionally null until recorded. */
-export const CELEVENTIC_GUIDE_CATALOG: GuideCatalogEntry[] = [
+/** Base catalog. Guest zero-experience additions merge by slug below. */
+const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
   {
     slug: "how-celeventic-works",
     title: "How Celeventic Works",
@@ -25,6 +27,8 @@ export const CELEVENTIC_GUIDE_CATALOG: GuideCatalogEntry[] = [
     synonyms: ["see how it works", "how it works", "learn celeventic", "overview", "platform tour"],
     relatedSlugs: ["welcome-to-celeventic", "open-your-invitation", "rsvp"],
     posterUrl: "/guides/posters/how-celeventic-works.svg",
+    captionsEnUrl: "/guides/captions/how-celeventic-works.en.vtt",
+    isNew: true,
     transcript:
       "Welcome to Celeventic. First you receive a beautiful invitation. Then you RSVP. On event day your QR pass admits you. The Event Guide helps you find programme, seating, and menu. You celebrate together. Afterward, Memory Vault keeps the moments.",
     steps: steps(
@@ -711,6 +715,11 @@ export const CELEVENTIC_GUIDE_CATALOG: GuideCatalogEntry[] = [
     ),
   },
 ];
+
+export const CELEVENTIC_GUIDE_CATALOG = mergeGuideCatalogs(
+  CELEVENTIC_GUIDE_CATALOG_BASE,
+  GUEST_ZERO_CATALOG_ADDITIONS
+) as GuideCatalogEntry[];
 
 export function getCatalogBySlug(slug: string): GuideCatalogEntry | undefined {
   return CELEVENTIC_GUIDE_CATALOG.find((g) => g.slug === slug);

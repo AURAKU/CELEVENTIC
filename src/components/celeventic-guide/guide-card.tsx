@@ -11,6 +11,7 @@ export interface GuideCardData {
   posterUrl: string | null;
   hasVideo: boolean;
   stepCount: number;
+  isNew?: boolean;
 }
 
 export function GuideCard({ guide }: { guide: GuideCardData }) {
@@ -31,10 +32,15 @@ export function GuideCard({ guide }: { guide: GuideCardData }) {
         ) : (
           <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.35),transparent_55%)]" />
         )}
-        <div className="absolute inset-x-0 bottom-0 p-3 flex gap-2">
+        <div className="absolute inset-x-0 bottom-0 p-3 flex flex-wrap gap-2">
           <span className="rounded-md bg-black/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
             {GUIDE_ROLE_LABELS[guide.role as GuideRole] ?? guide.role}
           </span>
+          {guide.isNew && (
+            <span className="rounded-md bg-emerald-400/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-900">
+              New
+            </span>
+          )}
           {guide.featured && (
             <span className="rounded-md bg-gold-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-900">
               Featured

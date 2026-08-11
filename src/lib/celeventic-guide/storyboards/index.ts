@@ -1,3 +1,5 @@
+import { CELEVENTIC_GUIDE_CATALOG } from "../catalog";
+
 export interface StoryboardBeat {
   id: string;
   title: string;
@@ -161,13 +163,82 @@ export const MICRO_STORYBOARDS: GuideStoryboard[] = [
   },
 ];
 
-const ALL = [HOW_CELEVENTIC_WORKS_STORYBOARD, ...MICRO_STORYBOARDS];
+
+
+function aspectForRole(role: string): GuideStoryboard["aspect"] {
+  if (role === "ORGANIZER" || role === "ADMIN") return "16:9";
+  if (role === "SCANNER") return "1:1";
+  return "9:16";
+}
+
+/** Expand flagship beats already defined above; micros for remaining catalog slugs. */
+export function storyboardFromCatalogEntry(entry: {
+  slug: string;
+  title: string;
+  role: string;
+  posterUrl?: string | null;
+  captionsEnUrl?: string | null;
+  captionsFrUrl?: string | null;
+  steps: Array<{ title: string; body: string; motionKey?: string; durationMs?: number }>;
+}): GuideStoryboard {
+  return {
+    key: entry.slug,
+    title: entry.title,
+    aspect: aspectForRole(entry.role),
+    videoUrl: null,
+    posterUrl: entry.posterUrl ?? null,
+    captionsEnUrl: entry.captionsEnUrl ?? null,
+    captionsFrUrl: entry.captionsFrUrl ?? null,
+    notes: "Auto-generated micro storyboard from guide steps (no MP4 claimed).",
+    beats: entry.steps.map((step, i) => ({
+      id: `beat-${i + 1}`,
+      title: step.title,
+      narration: step.body,
+      motionKey: step.motionKey || `step-${i + 1}`,
+      durationMs: step.durationMs ?? 2400,
+      captionEn: step.title,
+    })),
+  };
+}
+
+const HAND_TUNED = new Map<string, GuideStoryboard>([
+  [HOW_CELEVENTIC_WORKS_STORYBOARD.key, HOW_CELEVENTIC_WORKS_STORYBOARD],
+  ...MICRO_STORYBOARDS.map((s) => [s.key, s] as const),
+]);
+
+const GENERATED = new Map<string, GuideStoryboard>();
+
+for (const entry of CELEVENTIC_GUIDE_CATALOG) {
+  const key = entry.storyboardKey ?? entry.slug;
+  if (HAND_TUNED.has(key) || GENERATED.has(key)) continue;
+  if (entry.adminOnly) continue;
+  GENERATED.set(
+    key,
+    storyboardFromCatalogEntry({
+      slug: key,
+      title: entry.title,
+      role: entry.role,
+      posterUrl: entry.posterUrl,
+      captionsEnUrl: entry.captionsEnUrl,
+      captionsFrUrl: entry.captionsFrUrl,
+      steps: entry.steps,
+    })
+  );
+}
+
+const ALL = [...HAND_TUNED.values(), ...GENERATED.values()];
 
 export function getStoryboard(key: string | null | undefined): GuideStoryboard | null {
   if (!key) return null;
-  return ALL.find((s) => s.key === key) ?? null;
+  return HAND_TUNED.get(key) ?? GENERATED.get(key) ?? null;
 }
 
 export function listStoryboards(): GuideStoryboard[] {
   return ALL;
+}
+
+export function storyboardAspectCss(aspect: GuideStoryboard["aspect"]): string {
+  if (aspect === "16:9") return "aspect-video";
+  if (aspect === "1:1") return "aspect-square";
+  return "aspect-[9/16]";
 }

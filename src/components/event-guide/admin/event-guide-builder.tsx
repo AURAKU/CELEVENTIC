@@ -105,7 +105,7 @@ export function EventGuideBuilder({
   const published = guide.status === "PUBLISHED";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="event-guide-builder">
       <header className="stack-mobile">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">Event Guide</h1>
@@ -158,14 +158,14 @@ export function EventGuideBuilder({
         </p>
       ) : null}
 
-      <Tabs value={tab} onValueChange={(value) => setTab(value as BuilderTab)}>
+      <div data-tour="event-guide-content" className="contents"><Tabs value={tab} onValueChange={(value) => setTab(value as BuilderTab)}>
         <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="seating">Seating</TabsTrigger>
           <TabsTrigger value="signs">QR &amp; Signs</TabsTrigger>
           <TabsTrigger value="offline">Offline</TabsTrigger>
-          <TabsTrigger value="publish">Publish</TabsTrigger>
+          <TabsTrigger value="publish" data-tour="event-guide-publish">Publish</TabsTrigger>
         </TabsList>
 
         <TabsContent value="content" className="mt-4">

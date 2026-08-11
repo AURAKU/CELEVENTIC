@@ -42,6 +42,7 @@ const adminSections: NavSection[] = [
       { href: "/admin/inspiration", label: "Inspiration Engine", icon: Sparkles },
       { href: "/admin/pages", label: "CMS Pages", icon: Eye },
       { href: "/admin/guides", label: "Celeventic Guide", icon: BookOpen },
+      { href: "/admin/guides/coverage", label: "Guide Coverage", icon: BarChart3 },
       { href: "/admin/translations", label: "Languages", icon: Globe },
       { href: "/admin/legal", label: "Legal Center", icon: FileText },
     ],

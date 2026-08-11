@@ -10,7 +10,9 @@ import {
   CONTEXT_HELP_MAP,
 } from "../context-map";
 import { sanitizeGuideText, sanitizeGuideSlug, parseJsonStringArray } from "../sanitize";
-import { getStoryboard, HOW_CELEVENTIC_WORKS_STORYBOARD } from "../storyboards";
+import { getStoryboard, HOW_CELEVENTIC_WORKS_STORYBOARD, listStoryboards } from "../storyboards";
+import { START_HERE_JOURNEYS } from "../journeys";
+import { isGuideMarkedNew } from "../guide-new";
 import { getMiniTour, MINI_TOURS } from "../tours";
 import { guideStorageKey } from "../tour-storage";
 
@@ -131,10 +133,32 @@ describe("celeventic-guide storyboards + tours", () => {
   });
 
   it("ships two mini tours with completion storage keys", () => {
-    assert.equal(MINI_TOURS.length, 2);
+    assert.ok(MINI_TOURS.length >= 4);
     assert.ok(getMiniTour("guest-list"));
     assert.ok(getMiniTour("seating"));
     assert.ok(guideStorageKey("tour", "guest-list").includes("celeventic-guide"));
+  });
+});
+
+describe("celeventic-guide journeys + storyboards coverage", () => {
+  it("ships Start Here journeys for four public roles", () => {
+    assert.equal(START_HERE_JOURNEYS.length, 4);
+    assert.deepEqual(
+      START_HERE_JOURNEYS.map((j) => j.role).sort(),
+      ["GUEST", "ORGANIZER", "SCANNER", "VENDOR"]
+    );
+  });
+
+  it("generates micros for public catalog guides", () => {
+    const boards = listStoryboards();
+    assert.ok(boards.length >= 30);
+    assert.ok(boards.every((b) => b.videoUrl === null));
+  });
+
+  it("marks New badge from isNew or newUntil", () => {
+    assert.equal(isGuideMarkedNew({ isNew: true }), true);
+    assert.equal(isGuideMarkedNew({ isNew: false, newUntil: new Date(Date.now() + 86400000) }), true);
+    assert.equal(isGuideMarkedNew({ isNew: false, newUntil: new Date(Date.now() - 86400000) }), false);
   });
 });
 

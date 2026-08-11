@@ -26,18 +26,33 @@ export const CONTEXT_HELP_MAP: ContextHelpMapping[] = [
   },
   {
     routePrefix: "/dashboard/events",
-    guideSlugs: ["event-guide-organizer", "programme-and-menu", "event-guide-qr"],
+    guideSlugs: ["event-guide-organizer", "programme-and-menu", "event-guide-qr", "create-an-event"],
+    tourId: "event-guide",
     label: "Event Guide help",
+  },
+  {
+    routePrefix: "/dashboard/qr-admission",
+    guideSlugs: ["qr-admission-organizer", "offline-admission", "scan-guest"],
+    tourId: "qr-admission",
+    label: "QR admission help",
   },
   {
     routePrefix: "/dashboard/qr",
     guideSlugs: ["qr-admission-organizer", "offline-admission", "scan-guest"],
+    tourId: "qr-admission",
     label: "QR admission help",
   },
   {
     routePrefix: "/dashboard/admission",
     guideSlugs: ["qr-admission-organizer", "offline-admission", "generate-qr-identities"],
+    tourId: "qr-admission",
     label: "Admission help",
+  },
+  {
+    routePrefix: "/dashboard/invitations",
+    guideSlugs: ["build-an-invitation", "open-your-invitation", "group-invitations-organizer"],
+    tourId: "invitation-studio",
+    label: "Invitation Studio help",
   },
   {
     routePrefix: "/dashboard/memory",

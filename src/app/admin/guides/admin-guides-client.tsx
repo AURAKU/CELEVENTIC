@@ -26,6 +26,7 @@ export function AdminGuidesClient() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
+  const [analytics, setAnalytics] = useState<{ totals: { views: number; yes: number; no: number }; guides: Array<{ slug: string; title: string; viewCount: number; helpfulYes: number; helpfulNo: number }> } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -40,6 +41,12 @@ export function AdminGuidesClient() {
 
   useEffect(() => {
     void load();
+    void (async () => {
+      try {
+        const res = await fetch("/api/admin/guides/analytics");
+        if (res.ok) setAnalytics(await res.json());
+      } catch { /* ignore */ }
+    })();
   }, [load]);
 
   const seed = async () => {
@@ -122,6 +129,14 @@ export function AdminGuidesClient() {
           <RefreshCw className="h-4 w-4 mr-1.5" /> Seed catalog
         </Button>
       </div>
+
+      {analytics ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 grid sm:grid-cols-3 gap-4 text-sm">
+          <div><p className="text-slate-500">Total views</p><p className="text-2xl font-semibold">{analytics.totals.views}</p></div>
+          <div><p className="text-slate-500">Helpful yes</p><p className="text-2xl font-semibold">{analytics.totals.yes}</p></div>
+          <div><p className="text-slate-500">Not really</p><p className="text-2xl font-semibold">{analytics.totals.no}</p></div>
+        </div>
+      ) : null}
 
       {loading ? (
         <p className="text-sm text-slate-500">Loading…</p>
