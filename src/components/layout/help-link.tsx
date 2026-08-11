@@ -9,7 +9,7 @@ interface HelpLinkProps {
 }
 
 export function HelpLink({
-  href = "/guide",
+  href = "/legal/faq",
   label = "Help & Guides",
   className,
 }: HelpLinkProps) {

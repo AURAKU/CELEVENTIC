@@ -48,6 +48,15 @@ export interface GuideCatalogEntry {
   steps: GuideStepSeed[];
 }
 
+/** Role-aware Start Here paths shown on Celeventic Guide / FAQ hub. */
+export interface StartHereJourney {
+  id: string;
+  role: GuideRole;
+  title: string;
+  summary: string;
+  slugs: string[];
+}
+
 export interface GuideSearchHit {
   slug: string;
   title: string;

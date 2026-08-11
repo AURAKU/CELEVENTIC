@@ -370,7 +370,8 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
 
   // ── CMS pages (about, faq, contact) ──
   { namespace: "legal", key: "about_desc", enValue: "The Intelligent Event Operating System.", frValue: "Le système d'exploitation événementiel intelligent." },
-  { namespace: "legal", key: "faq_desc", enValue: "Common questions about invitations, tickets, and payments.", frValue: "Questions fréquentes sur invitations, billets et paiements." },
+  { namespace: "legal", key: "faq_desc", enValue: "Celeventic Guide tutorials, Start Here journeys, and common questions.", frValue: "Tutoriels Celeventic Guide, parcours Start Here et questions fréquentes." },
+  { namespace: "legal", key: "faq_title", enValue: "FAQ & Guides", frValue: "FAQ et guides" },
   { namespace: "legal", key: "contact_desc", enValue: "Reach the Celeventic team.", frValue: "Contactez l'équipe Celeventic." },
 
   // ── Loaders & auth layout ──

@@ -56,7 +56,7 @@ export function DashboardTopbar({ onMenuClick, className }: DashboardTopbarProps
         </div>
         <PreferencesMenu compact />
         <Link
-          href="/guide"
+          href="/legal/faq"
           className="hidden sm:inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl hover:bg-slate-100 transition-colors touch-manipulation"
           aria-label={t("dashboard.nav_help")}
         >

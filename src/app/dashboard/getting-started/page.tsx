@@ -187,7 +187,7 @@ export default function GettingStartedPage() {
           Skip for now
         </button>
         <Link
-          href="/dashboard/help"
+          href="/legal/faq"
           className="inline-flex items-center gap-1.5 text-brand-600 hover:underline"
         >
           <Sparkles className="h-4 w-4" />
