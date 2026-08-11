@@ -95,7 +95,7 @@ export function OrganizerDashboard({
           emptyTitle="No client events yet"
           emptyDesc="Create an event or accept a workspace invitation to get started."
           secondaryHref="/dashboard/invitations/workspace"
-          secondaryLabel="View Invitations"
+          secondaryLabel="Pending collaboration invites"
           userId={userId}
           isAdmin={isAdmin}
           canEdit={canEditEvents ?? true}
@@ -104,7 +104,7 @@ export function OrganizerDashboard({
           actions={[
             { href: "/dashboard/events/create", label: "Create Event", icon: Calendar },
             { href: "/dashboard/organizers", label: "Organizer Directory", icon: Users },
-            { href: "/dashboard/invitations/workspace", label: "Invite Client", icon: Mail },
+            { href: "/dashboard/events", label: "Invite Client", icon: Mail },
             { href: "/dashboard/messages", label: "Messages", icon: Mail },
             { href: "/marketplace", label: "Find Vendor", icon: Sparkles },
             { href: "/dashboard/campaigns", label: "Send Campaign", icon: Mail },

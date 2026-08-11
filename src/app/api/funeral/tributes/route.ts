@@ -6,6 +6,7 @@ import { funeralService } from "@/services/funeral/funeral.service";
 import { verifyEventAccess } from "@/lib/event-access";
 import { isAdminRole } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
+import { parsePaginationFromUrl } from "@/lib/pagination";
 
 const tributeSchema = z.object({
   eventId: z.string(),
@@ -20,6 +21,26 @@ const moderateSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED", "PENDING"]),
   featured: z.boolean().optional(),
 });
+
+export async function GET(req: Request) {
+  const eventId = new URL(req.url).searchParams.get("eventId");
+  const pending = new URL(req.url).searchParams.get("pending") === "1";
+  if (!eventId) return NextResponse.json({ error: "eventId required" }, { status: 400 });
+
+  const session = await getServerSession(authOptions);
+  if (pending) {
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+      await verifyEventAccess(eventId, session.user.id, session.user.role);
+    } catch {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  const { page, limit } = parsePaginationFromUrl(req.url);
+  const data = await funeralService.getTributes(eventId, pending, page, limit);
+  return NextResponse.json({ success: true, data });
+}
 
 export async function POST(req: Request) {
   try {

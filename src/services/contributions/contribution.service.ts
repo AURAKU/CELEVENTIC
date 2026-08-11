@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { walletService } from "@/services/wallet/wallet.service";
+import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 
 export interface CreateContributionInput {
   eventId: string;
@@ -92,21 +93,53 @@ export class ContributionService {
   }
 
   async getContributionStats(eventId: string) {
-    const [total, count, recent] = await Promise.all([
+    const [total, count] = await Promise.all([
       prisma.contribution.aggregate({ where: { eventId }, _sum: { amount: true } }),
       prisma.contribution.count({ where: { eventId } }),
-      prisma.contribution.findMany({
-        where: { eventId },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      }),
     ]);
 
     return {
       total: Number(total._sum.amount ?? 0),
       count,
-      recent,
     };
+  }
+
+  async listContributions(
+    eventId: string,
+    input?: { page?: number | string | null; limit?: number | string | null }
+  ) {
+    const { page, limit, skip } = parsePaginationInput(input, { limit: 20, maxLimit: 100 });
+
+    const [items, total] = await Promise.all([
+      prisma.contribution.findMany({
+        where: { eventId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          contributor: true,
+          amount: true,
+          message: true,
+          isAnonymous: true,
+          createdAt: true,
+        },
+      }),
+      prisma.contribution.count({ where: { eventId } }),
+    ]);
+
+    return paginatedResult(
+      items.map((c) => ({
+        id: c.id,
+        contributor: c.isAnonymous ? "Anonymous" : c.contributor,
+        amount: String(c.amount),
+        message: c.message,
+        createdAt: c.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      limit
+    );
   }
 }
 

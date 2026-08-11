@@ -169,7 +169,13 @@ function GuestsPageInner() {
             </Button>
           )}
           <Button asChild variant="outline" className="w-full justify-center sm:w-auto">
-            <Link href="/dashboard/guests/import">
+            <Link
+              href={
+                eventId
+                  ? `/dashboard/guests/import?eventId=${encodeURIComponent(eventId)}`
+                  : "/dashboard/guests/import"
+              }
+            >
               <Upload className="h-4 w-4 shrink-0" /> Bulk import
             </Link>
           </Button>

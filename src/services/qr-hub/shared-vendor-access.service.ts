@@ -10,7 +10,7 @@ import {
   buildVendorPassUrl,
 } from "@/lib/qr-hub/vendor-token";
 import { VENDOR_PRINT_ROLES } from "@/lib/qr-hub/types";
-import type { SharedAccessPassScanResult, SharedAccessPassStatus } from "@prisma/client";
+import type { SharedAccessScanResult, SharedAccessPassStatus } from "@prisma/client";
 
 const DEFAULT_VARIANT_KEYS = [
   "dj",
@@ -266,7 +266,7 @@ export class SharedVendorAccessService {
     } | null,
     eventId: string,
     gate?: string | null
-  ): SharedAccessPassScanResult {
+  ): SharedAccessScanResult {
     if (!pass) return "INVALID_CODE";
     if (pass.eventId !== eventId) return "WRONG_EVENT";
     if (pass.status === "REVOKED" || pass.status === "REISSUED") return "REVOKED";
@@ -280,7 +280,7 @@ export class SharedVendorAccessService {
     return "VALID";
   }
 
-  private messageFor(result: SharedAccessPassScanResult): string {
+  private messageFor(result: SharedAccessScanResult): string {
     switch (result) {
       case "EXPIRED":
         return "This vendor access pass has expired.";

@@ -29,6 +29,8 @@ import {
 } from "@/lib/thank-you/resolve-design";
 import { ExternalLink, Send, Eye, QrCode, Download, ArrowUp, ArrowDown } from "lucide-react";
 import { PageLoader } from "@/components/ui/page-loader";
+import { PaginationBar } from "@/components/ui/pagination";
+import { FEED_LIMIT } from "@/lib/pagination";
 import { ThankYouPublicView } from "@/components/thank-you/thank-you-public-view";
 import { FormDraftStatusBar } from "@/components/forms/form-draft-status-bar";
 import { isBlankFormDraft, readFormDraft, useFormDraft } from "@/hooks/use-form-draft";
@@ -105,6 +107,10 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
     Array<{ id: string; authorName: string; message: string; status: string; source: string; isPinned: boolean; isFeatured: boolean }>
   >([]);
   const [moderationQuery, setModerationQuery] = useState("");
+  const [moderationPage, setModerationPage] = useState(1);
+  const [moderationTotal, setModerationTotal] = useState(0);
+  const [moderationPages, setModerationPages] = useState(1);
+  const [moderationLoading, setModerationLoading] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("mobile");
 
   const draft = useFormDraft<ThankYouForm>({
@@ -124,14 +130,12 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
 
     async function load() {
       setLoading(true);
-      const [tyRes, qrRes, msgRes] = await Promise.all([
+      const [tyRes, qrRes] = await Promise.all([
         fetch(`/api/events/${eventId}/thank-you`),
         fetch(`/api/events/${eventId}/memory-qr/generate`),
-        fetch(`/api/events/${eventId}/thank-you/messages?limit=40`),
       ]);
       const ty = await tyRes.json();
       const qr = await qrRes.json();
-      const msgs = await msgRes.json();
       if (cancelled) return;
 
       if (ty.success) {
@@ -181,7 +185,6 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
         }
       }
       if (qr.success && qr.data?.qrImageUrl) setQrImageUrl(qr.data.qrImageUrl);
-      if (msgs.success) setModeration(msgs.data.items ?? []);
       setHydrated(true);
       setLoading(false);
     }
@@ -191,6 +194,38 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
       cancelled = true;
     };
   }, [eventId, userId, sessionStatus]);
+
+  useEffect(() => {
+    if (!hydrated || sessionStatus === "loading") return;
+    let cancelled = false;
+
+    async function loadMessages() {
+      setModerationLoading(true);
+      const params = new URLSearchParams({
+        page: String(moderationPage),
+        limit: String(FEED_LIMIT),
+      });
+      if (moderationQuery.trim()) params.set("q", moderationQuery.trim());
+      const res = await fetch(`/api/events/${eventId}/thank-you/messages?${params}`);
+      const msgs = await res.json();
+      if (cancelled) return;
+      if (msgs.success) {
+        setModeration(msgs.data.items ?? []);
+        setModerationTotal(msgs.data.total ?? 0);
+        setModerationPages(msgs.data.pages ?? 1);
+      }
+      setModerationLoading(false);
+    }
+
+    void loadMessages();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, hydrated, sessionStatus, moderationPage, moderationQuery]);
+
+  useEffect(() => {
+    setModerationPage(1);
+  }, [moderationQuery, eventId]);
 
   function handleClearDraft() {
     draft.clearDraft();
@@ -325,16 +360,6 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
       }),
     [form.templateId, form.themeSource, form.fontPairingId]
   );
-
-  const filteredModeration = moderation.filter((item) => {
-    if (!moderationQuery.trim()) return true;
-    const q = moderationQuery.toLowerCase();
-    return (
-      item.authorName.toLowerCase().includes(q) ||
-      item.message.toLowerCase().includes(q) ||
-      item.status.toLowerCase().includes(q)
-    );
-  });
 
   const slug = eventSlug || "";
 
@@ -654,10 +679,12 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
                 value={moderationQuery}
                 onChange={(e) => setModerationQuery(e.target.value)}
               />
-              {filteredModeration.length === 0 ? (
+              {moderationLoading ? (
+                <p className="text-sm text-slate-500">Loading messages…</p>
+              ) : moderation.length === 0 ? (
                 <p className="text-sm text-slate-500">No guest messages yet.</p>
               ) : (
-                filteredModeration.map((item) => (
+                moderation.map((item) => (
                   <div key={item.id} className="rounded-xl border p-3 text-sm">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{item.authorName}</p>
@@ -687,6 +714,13 @@ export function ThankYouEditor({ eventId, eventSlug }: ThankYouEditorProps) {
                   </div>
                 ))
               )}
+              <PaginationBar
+                page={moderationPage}
+                pages={moderationPages}
+                total={moderationTotal}
+                limit={FEED_LIMIT}
+                onPageChange={setModerationPage}
+              />
             </CardContent>
           </Card>
         </TabsContent>

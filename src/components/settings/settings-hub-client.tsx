@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
+import { useEventContext } from "@/hooks/use-event-context";
 import { isAdminRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@prisma/client";
@@ -93,6 +94,15 @@ function formatWhen(value?: string | Date | null) {
   }
 }
 
+const SALES_MAILTO =
+  "mailto:support@celeventic.com?subject=Celeventic%20plan%20upgrade&body=Hi%20Celeventic%20team%2C%0A%0AI%27d%20like%20to%20upgrade%20my%20organization%20plan.%0A%0A";
+
+function collaboratorInviteHref(eventId: string) {
+  return eventId
+    ? `/dashboard/events/${eventId}/workspace?tab=team`
+    : "/dashboard/events";
+}
+
 function SectionMessage({
   tone,
   children,
@@ -147,7 +157,8 @@ function QuickLink({
 
 function SettingsHubContent() {
   const searchParams = useSearchParams();
-  const rawTab = searchParams.get("tab") ?? "account";
+  const upgradeParam = searchParams.get("upgrade");
+  const rawTab = searchParams.get("tab") ?? (upgradeParam ? "billing" : "account");
   const tab: SettingsTab = VALID_TABS.includes(rawTab as SettingsTab)
     ? (rawTab as SettingsTab)
     : "account";
@@ -168,7 +179,7 @@ function SettingsHubContent() {
         {tab === "integrations" && <IntegrationsSection />}
         {tab === "privacy" && <PrivacySection />}
         {tab === "security" && <SecuritySection />}
-        {tab === "billing" && <BillingSection />}
+        {tab === "billing" && <BillingSection upgradeHighlight={upgradeParam} />}
       </div>
     </DashboardPageShell>
   );
@@ -466,6 +477,8 @@ function OrganizationSection() {
 }
 
 function TeamSection() {
+  const { eventId } = useEventContext();
+  const inviteHref = collaboratorInviteHref(eventId);
   const [members, setMembers] = useState<
     Array<{
       id: string;
@@ -509,20 +522,34 @@ function TeamSection() {
           </div>
           {canManage && (
             <Button asChild size="sm" className="bg-[#0B8A83] shrink-0">
-              <Link href="/dashboard/invitations/workspace">Invite collaborators</Link>
+              <Link href={inviteHref}>Invite collaborators</Link>
             </Button>
           )}
         </CardHeader>
         <CardContent className="space-y-3">
+          {!eventId && (
+            <SectionMessage tone="info">
+              Pick an event from Events, then invite collaborators from that event&apos;s workspace
+              team tab.
+            </SectionMessage>
+          )}
           {members.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center">
               <p className="text-sm text-slate-600">No teammates in this workspace yet.</p>
               <p className="text-xs text-slate-500 mt-1">
-                Invite collaborators from workspace invitations so they can help plan and run events.
+                Invite collaborators from an event workspace so they can help plan and run
+                celebrations.
               </p>
-              <Button asChild size="sm" className="mt-4" variant="outline">
-                <Link href="/dashboard/invitations/workspace">Open workspace invites</Link>
-              </Button>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <Link href={inviteHref}>
+                    {eventId ? "Open event team workspace" : "Choose an event"}
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="ghost">
+                  <Link href="/dashboard/invitations/workspace">Pending collaboration invites</Link>
+                </Button>
+              </div>
             </div>
           ) : (
             members.map((m) => (
@@ -548,10 +575,18 @@ function TeamSection() {
           )}
         </CardContent>
       </Card>
-      <p className="text-xs text-slate-500">
-        Event-level staff for the gate still live under each event’s QR Admission and seating tools —
-        organization team is your shared workspace roster.
-      </p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <p className="text-xs text-slate-500">
+          Event-level staff for the gate still live under each event&apos;s QR Admission and seating
+          tools — organization team is your shared workspace roster.
+        </p>
+        <Link
+          href="/dashboard/invitations/workspace"
+          className="text-xs font-medium text-[#0B8A83] hover:underline shrink-0"
+        >
+          Pending collaboration invites
+        </Link>
+      </div>
     </div>
   );
 }
@@ -894,7 +929,8 @@ function SecuritySection() {
   );
 }
 
-function BillingSection() {
+function BillingSection({ upgradeHighlight }: { upgradeHighlight?: string | null }) {
+  const billingRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<{
     currentPlan: string;
     eventCount: number;
@@ -914,6 +950,11 @@ function BillingSection() {
       .catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!upgradeHighlight || loading) return;
+    billingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [upgradeHighlight, loading]);
+
   if (loading) return <PageLoader />;
   if (!data) {
     return (
@@ -926,8 +967,18 @@ function BillingSection() {
   }
 
   return (
-    <div className="space-y-4">
-      <Card className="border-slate-200/80 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
+    <div ref={billingRef} className="space-y-4">
+      {upgradeHighlight && (
+        <SectionMessage tone="info">
+          {`Upgrade your plan to unlock ${upgradeHighlight.replace(/_/g, " ").toLowerCase()}. Contact sales or compare packages below.`}
+        </SectionMessage>
+      )}
+      <Card
+        className={cn(
+          "border-slate-200/80 shadow-[0_8px_30px_rgba(15,23,42,0.05)]",
+          upgradeHighlight && "ring-2 ring-[#0B8A83]/40"
+        )}
+      >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-[#0B8A83]" />
@@ -950,8 +1001,13 @@ function BillingSection() {
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/marketplace">Marketplace</Link>
+            <Link href="/marketplace">Marketplace</Link>
           </Button>
+          {upgradeHighlight && (
+            <Button asChild variant="outline" size="sm">
+              <a href={SALES_MAILTO}>Contact sales to upgrade</a>
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -983,8 +1039,8 @@ function BillingSection() {
                     Current plan
                   </Badge>
                 ) : (
-                  <Button variant="outline" size="sm" disabled>
-                    Upgrade (contact sales)
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={SALES_MAILTO}>Upgrade — contact sales</a>
                   </Button>
                 )}
               </CardContent>

@@ -3,9 +3,10 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { invitationSharingService } from "@/services/invitation-os/invitation-sharing.service";
 import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
+import { paginatedResult, parsePaginationFromUrl } from "@/lib/pagination";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   const session = await getSession();
@@ -34,23 +35,36 @@ export async function GET(
     hostName: order.hostName ?? undefined,
   });
 
-  const guests = order.eventId
-    ? await prisma.guest.findMany({ where: { eventId: order.eventId }, take: 100 })
-    : [];
+  const { page, limit, skip } = parsePaginationFromUrl(req.url, { limit: 50, maxLimit: 100 });
+
+  const guestWhere = order.eventId ? { eventId: order.eventId } : null;
+  const [guests, guestTotal] = guestWhere
+    ? await Promise.all([
+        prisma.guest.findMany({
+          where: guestWhere,
+          orderBy: { name: "asc" },
+          skip,
+          take: limit,
+        }),
+        prisma.guest.count({ where: guestWhere }),
+      ])
+    : [[], 0];
+
+  const guestMessages = guests.map((g) => ({
+    guestId: g.id,
+    name: g.name,
+    message: pack.guestMessage(g.name, g.qrToken),
+    link: pack.guestPersonalizedLink(g.qrToken, g.name),
+    whatsAppUrl: invitationSharingService.whatsAppUrl(pack.guestMessage(g.name, g.qrToken)),
+  }));
 
   return NextResponse.json({
     success: true,
     data: {
       ...pack,
       whatsAppGeneralUrl: invitationSharingService.whatsAppUrl(pack.generalText),
-      guestMessages: guests.map((g) => ({
-        guestId: g.id,
-        name: g.name,
-        message: pack.guestMessage(g.name, g.qrToken),
-        link: pack.guestPersonalizedLink(g.qrToken, g.name),
-        whatsAppUrl: invitationSharingService.whatsAppUrl(pack.guestMessage(g.name, g.qrToken)),
-      })),
-      bulkText: pack.bulkCampaignText(order.eventTitle ?? "Event", guests.length),
+      guestMessages: paginatedResult(guestMessages, guestTotal, page, limit),
+      bulkText: pack.bulkCampaignText(order.eventTitle ?? "Event", guestTotal),
     },
   });
 }

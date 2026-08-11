@@ -5,28 +5,58 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PaginationBar } from "@/components/ui/pagination";
 import { Heart } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { EventPicker } from "@/components/dashboard/event-picker";
 import { useEventContext } from "@/hooks/use-event-context";
+import { DEFAULT_LIMIT } from "@/lib/pagination";
+
+type ContributionRow = {
+  id: string;
+  contributor: string;
+  amount: string;
+  message: string | null;
+  createdAt: string;
+};
 
 export default function ContributionsPage() {
   const { events, eventId, setEventId, loading: eventsLoading } = useEventContext();
-  const [stats, setStats] = useState<{ total: number; count: number; recent: { contributor: string; amount: string; message: string | null }[] } | null>(null);
+  const [stats, setStats] = useState<{ total: number; count: number } | null>(null);
+  const [contributions, setContributions] = useState<ContributionRow[]>([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [form, setForm] = useState({ contributor: "", amount: "", message: "", isAnonymous: false });
   const [error, setError] = useState("");
 
-  async function loadStats() {
+  useEffect(() => {
+    setPage(1);
+  }, [eventId]);
+
+  async function loadStats(currentPage = page) {
     if (!eventId) return;
-    const res = await fetch(`/api/contributions?eventId=${eventId}`);
+    const params = new URLSearchParams({
+      eventId,
+      page: String(currentPage),
+      limit: String(DEFAULT_LIMIT),
+    });
+    const res = await fetch(`/api/contributions?${params}`);
     const d = await res.json();
-    if (res.ok) setStats(d.data);
-    else setError(d.error);
+    if (res.ok) {
+      setStats({ total: d.data.total, count: d.data.count });
+      const list = d.data.contributions;
+      setContributions(list?.items ?? []);
+      setTotal(list?.total ?? 0);
+      setPages(list?.pages ?? 1);
+    } else {
+      setError(d.error);
+    }
   }
 
   useEffect(() => {
-    if (eventId) loadStats();
-  }, [eventId]);
+    if (eventId) void loadStats(page);
+  }, [eventId, page]);
 
   async function contribute(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +69,8 @@ export default function ContributionsPage() {
     const d = await res.json();
     if (res.ok) {
       setForm({ contributor: "", amount: "", message: "", isAnonymous: false });
-      loadStats();
+      setPage(1);
+      void loadStats(1);
     } else {
       setError(d.error || "Failed to record contribution");
     }
@@ -81,14 +112,26 @@ export default function ContributionsPage() {
               <p className="text-sm text-slate-500">{stats.count} contributions</p>
             </CardHeader>
             <CardContent className="space-y-2">
-              {stats.recent.length === 0 ? (
+              {contributions.length === 0 ? (
                 <p className="text-center text-slate-500 py-4">No contributions yet.</p>
-              ) : stats.recent.map((c, i) => (
-                <div key={i} className="flex justify-between text-sm py-2 border-b">
-                  <span>{c.contributor}</span>
-                  <span className="font-medium">{formatCurrency(c.amount)}</span>
-                </div>
-              ))}
+              ) : (
+                contributions.map((c) => (
+                  <div key={c.id} className="flex justify-between gap-3 text-sm py-2 border-b">
+                    <div className="min-w-0">
+                      <span className="font-medium">{c.contributor}</span>
+                      {c.message && <p className="text-xs text-slate-500 truncate">{c.message}</p>}
+                    </div>
+                    <span className="shrink-0 font-medium">{formatCurrency(c.amount)}</span>
+                  </div>
+                ))
+              )}
+              <PaginationBar
+                page={page}
+                pages={pages}
+                total={total}
+                limit={DEFAULT_LIMIT}
+                onPageChange={setPage}
+              />
             </CardContent>
           </Card>
         </div>

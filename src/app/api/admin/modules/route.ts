@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminRole } from "@/lib/roles";
 import { funeralService } from "@/services/funeral/funeral.service";
+import { parsePaginationInput, paginatedResult } from "@/lib/pagination";
 import type { UserRole } from "@prisma/client";
 
 async function requireAdmin() {
@@ -15,9 +16,31 @@ async function requireAdmin() {
   return session;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const url = new URL(req.url);
+  const ai = parsePaginationInput(
+    { page: url.searchParams.get("aiPage"), limit: url.searchParams.get("aiLimit") },
+    { limit: 15 }
+  );
+  const device = parsePaginationInput(
+    { page: url.searchParams.get("devicePage"), limit: url.searchParams.get("deviceLimit") },
+    { limit: 20 }
+  );
+  const tribute = parsePaginationInput(
+    { page: url.searchParams.get("tributePage"), limit: url.searchParams.get("tributeLimit") },
+    { limit: 20 }
+  );
+  const scan = parsePaginationInput(
+    { page: url.searchParams.get("scanPage"), limit: url.searchParams.get("scanLimit") },
+    { limit: 20 }
+  );
+  const sync = parsePaginationInput(
+    { page: url.searchParams.get("syncPage"), limit: url.searchParams.get("syncLimit") },
+    { limit: 10 }
+  );
 
   const [
     aiRequests,
@@ -29,11 +52,16 @@ export async function GET() {
     memoryVaults,
     memoryItems,
     recentAi,
+    recentAiTotal,
     walletTotals,
     devices,
+    devicesTotal,
     pendingTributes,
+    pendingTributesTotal,
     recentScans,
+    recentScansTotal,
     syncLogs,
+    syncLogsTotal,
   ] = await Promise.all([
     prisma.aiRequest.count(),
     prisma.wallet.count(),
@@ -45,34 +73,44 @@ export async function GET() {
     prisma.eventMemory.count(),
     prisma.aiRequest.findMany({
       orderBy: { createdAt: "desc" },
-      take: 15,
+      skip: ai.skip,
+      take: ai.limit,
       include: { user: { select: { name: true, email: true } } },
     }),
+    prisma.aiRequest.count(),
     prisma.wallet.aggregate({ _sum: { revenue: true, expenses: true, balance: true } }),
     prisma.offlineDevice.findMany({
       orderBy: { createdAt: "desc" },
-      take: 20,
+      skip: device.skip,
+      take: device.limit,
       include: {
         user: { select: { name: true } },
         event: { select: { title: true } },
       },
     }),
+    prisma.offlineDevice.count(),
     prisma.tributeMessage.findMany({
       where: { approvalStatus: "PENDING" },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      skip: tribute.skip,
+      take: tribute.limit,
       include: { event: { select: { title: true, slug: true } } },
     }),
+    prisma.tributeMessage.count({ where: { approvalStatus: "PENDING" } }),
     prisma.qrScan.findMany({
       orderBy: { createdAt: "desc" },
-      take: 20,
+      skip: scan.skip,
+      take: scan.limit,
       include: { event: { select: { title: true } } },
     }),
+    prisma.qrScan.count(),
     prisma.offlineSyncLog.findMany({
       orderBy: { createdAt: "desc" },
-      take: 10,
+      skip: sync.skip,
+      take: sync.limit,
       include: { device: { select: { deviceName: true } } },
     }),
+    prisma.offlineSyncLog.count(),
   ]);
 
   const aiProviderSetting = await prisma.adminSetting.findUnique({
@@ -84,7 +122,7 @@ export async function GET() {
     data: {
       aiPlanner: {
         totalRequests: aiRequests,
-        recent: recentAi,
+        recent: paginatedResult(recentAi, recentAiTotal, ai.page, ai.limit),
         activeProvider: (aiProviderSetting?.value as { provider?: string })?.provider ?? "mock",
       },
       wallet: {
@@ -93,10 +131,19 @@ export async function GET() {
         totalExpenses: Number(walletTotals._sum.expenses ?? 0),
         totalBalance: Number(walletTotals._sum.balance ?? 0),
       },
-      offlineQr: { devices: offlineDevices, checkins: offlineScans, deviceList: devices, syncLogs },
-      funeral: { profiles: funeralProfiles, pendingTributes: tributesPending, tributeList: pendingTributes },
+      offlineQr: {
+        devices: offlineDevices,
+        checkins: offlineScans,
+        deviceList: paginatedResult(devices, devicesTotal, device.page, device.limit),
+        syncLogs: paginatedResult(syncLogs, syncLogsTotal, sync.page, sync.limit),
+      },
+      funeral: {
+        profiles: funeralProfiles,
+        pendingTributes: tributesPending,
+        tributeList: paginatedResult(pendingTributes, pendingTributesTotal, tribute.page, tribute.limit),
+      },
       memory: { vaults: memoryVaults, items: memoryItems },
-      recentScans,
+      recentScans: paginatedResult(recentScans, recentScansTotal, scan.page, scan.limit),
     },
   });
 }

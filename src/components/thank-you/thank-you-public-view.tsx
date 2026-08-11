@@ -177,7 +177,14 @@ export function ThankYouPublicView(props: ThankYouPublicViewProps) {
   async function sharePage() {
     const url = window.location.href;
     if (share.allowNativeShare && navigator.share) {
-      await navigator.share({ title: displayTitle, text: message ?? undefined, url });
+      // Some share targets (WhatsApp) paste both `text` and `url`, which
+      // doubles the link when the message body already includes it.
+      const textAlreadyHasUrl = Boolean(message && /https?:\/\//i.test(message));
+      await navigator.share(
+        textAlreadyHasUrl
+          ? { title: displayTitle, text: message ?? undefined }
+          : { title: displayTitle, text: message ?? undefined, url }
+      );
       return;
     }
     if (share.allowCopyLink) {
