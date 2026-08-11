@@ -1,38 +1,13 @@
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+/**
+ * Client-safe Memory Vault identity helpers (no Node.js builtins).
+ * Server hashing lives in `memory-guest-identity-crypto.ts`.
+ */
 
 export const MEMORY_GUEST_KEY_STORAGE = "celeventic.memory.guestKey";
 export const MEMORY_CONSENT_STORAGE_PREFIX = "celeventic.memory.consent.";
 export const MEMORY_COMMENT_TOKENS_STORAGE = "celeventic.memory.commentTokens";
 
-/** Hash a raw guest identifier before persistence (privacy-safe). */
-export function hashMemoryGuestKey(raw: string): string {
-  return createHash("sha256").update(raw.trim()).digest("hex");
-}
-
-export function generateMemoryGuestRawKey(): string {
-  return randomBytes(24).toString("base64url");
-}
-
-export function generateMemoryAuthorToken(): string {
-  return randomBytes(24).toString("base64url");
-}
-
-export function hashMemoryAuthorToken(token: string): string {
-  return createHash("sha256").update(token.trim()).digest("hex");
-}
-
-export function memoryAuthorTokenMatches(
-  storedHash: string | null | undefined,
-  token: string
-): boolean {
-  if (!storedHash || !token.trim()) return false;
-  const incoming = Buffer.from(hashMemoryAuthorToken(token), "utf8");
-  const expected = Buffer.from(storedHash, "utf8");
-  if (incoming.length !== expected.length) return false;
-  return timingSafeEqual(incoming, expected);
-}
-
-/** Client helpers — safe to import from "use client" modules via dynamic guard. */
+/** Client helpers — safe to import from "use client" modules. */
 export function readOrCreateClientGuestKey(): string {
   if (typeof window === "undefined") return "";
   try {

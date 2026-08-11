@@ -22,7 +22,9 @@ export interface TutorialViewModel {
   posterUrl: string | null;
   videoUrl: string | null;
   captionsEnUrl: string | null;
+  captionsFrUrl?: string | null;
   transcript: string;
+  videoProductionRequired?: boolean;
   storyboard: GuideStoryboard | null;
   steps: Array<{ id: string; sortOrder: number; title: string; body: string; stepType: string }>;
   related: Array<{ slug: string; title: string; summary: string }>;
@@ -52,19 +54,12 @@ export function TutorialClient({ guide }: { guide: TutorialViewModel }) {
             slug={guide.slug}
             title={guide.title}
             videoUrl={guide.videoUrl}
-            mp4Url={guide.mp4Url}
-            webmUrl={guide.webmUrl}
-            mobileVideoUrl={guide.mobileVideoUrl}
-            desktopVideoUrl={guide.desktopVideoUrl}
             posterUrl={guide.posterUrl}
-            thumbnailUrl={guide.thumbnailUrl}
-            captionsUrl={guide.captionsEnUrl}
-            captionsFrUrl={guide.captionsFrUrl}
+            captionsEnUrl={guide.captionsEnUrl}
+            captionsFrUrl={guide.captionsFrUrl ?? null}
             transcript={guide.transcript}
-            videoProductionRequired={guide.videoProductionRequired}
-            a11yDescription={guide.a11yDescription}
           />
-          {guide.videoProductionRequired !== false && !guide.videoUrl && !guide.mp4Url ? (
+          {guide.videoProductionRequired !== false && !guide.videoUrl ? (
             <p className="text-center text-xs font-semibold uppercase tracking-wide text-amber-800">
               VIDEO PRODUCTION REQUIRED — interactive walkthrough ships now
             </p>

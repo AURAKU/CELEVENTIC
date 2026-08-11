@@ -9,7 +9,7 @@ import {
 import {
   hashMemoryAuthorToken,
   memoryAuthorTokenMatches,
-} from "../memory-guest-identity";
+} from "../memory-guest-identity-crypto";
 
 describe("memory social permissions", () => {
   it("guests can add comments but not delete without token", () => {

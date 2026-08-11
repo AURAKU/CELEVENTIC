@@ -3,7 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import { PageLoader } from "@/components/ui/page-loader";
-import { PublicMemoriesGallery, type MemoryGalleryItem } from "@/components/memory/public-memories-gallery";
+import { PublicMemoriesGallery, type MemoryGalleryItem, type MemoryThemeVars } from "@/components/memory/public-memories-gallery";
 import { readOrCreateClientGuestKey } from "@/lib/memory/memory-guest-identity";
 
 type MediaFilter = "all" | "image" | "video";
@@ -56,7 +56,7 @@ export default function EventMemoriesBySlugPage() {
       }}
       activeFilter={filter}
       loading={loading}
-      themeVars={data.theme?.cssVars}
+      themeVars={data.theme?.cssVars as MemoryThemeVars | undefined}
       viewToken={data.viewToken}
       canModerate={Boolean(data.canModerate)}
     />

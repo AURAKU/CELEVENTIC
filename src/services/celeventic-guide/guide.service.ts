@@ -281,6 +281,37 @@ export async function recordGuideFeedback(slug: string, helpful: boolean, reason
   }
 }
 
+/** Admin dashboard strip: aggregate counters across published + draft guides. */
+export async function getGuideAnalyticsSummary() {
+  const [totals, topViewed, topHelpful] = await Promise.all([
+    prisma.helpGuide.aggregate({
+      _sum: { viewCount: true, helpfulYes: true, helpfulNo: true },
+      _count: { _all: true },
+    }),
+    prisma.helpGuide.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { viewCount: "desc" },
+      take: 5,
+      select: { slug: true, title: true, viewCount: true },
+    }),
+    prisma.helpGuide.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { helpfulYes: "desc" },
+      take: 5,
+      select: { slug: true, title: true, helpfulYes: true, helpfulNo: true },
+    }),
+  ]);
+
+  return {
+    guideCount: totals._count._all,
+    views: totals._sum.viewCount ?? 0,
+    helpfulYes: totals._sum.helpfulYes ?? 0,
+    helpfulNo: totals._sum.helpfulNo ?? 0,
+    topViewed,
+    topHelpful,
+  };
+}
+
 export async function listAdminGuides() {
   return prisma.helpGuide.findMany({
     include: { steps: { orderBy: { sortOrder: "asc" } } },

@@ -47,6 +47,19 @@ export function validateMemoryFile(
 }
 
 /**
+ * Canonical dotted extension for storing an image (or unknown MIME fallback) from MIME.
+ * Source filename extension is resolved separately via `extractExtension` (no leading dot).
+ */
+export function resolveMemoryOutputExtension(mimeType: string): string {
+  return EXT_MAP[mimeType] ?? ".bin";
+}
+
+/** Unique, filesystem-safe base name for Memory Vault uploads (no extension). */
+export function buildMemorySafeBaseName(now = Date.now(), rand = Math.random): string {
+  return `${now}-${rand().toString(36).slice(2, 10)}`;
+}
+
+/**
  * Legacy generic memory upload path (`/api/memories/upload`). The main guest UI
  * (`GuestMemoryUpload`) only ever sends video through the universal `VideoUploader`
  * (`category: "GUESTBOOK"`, which always FFmpeg-transcodes — see
@@ -57,31 +70,37 @@ export function validateMemoryFile(
  * (`src/lib/video/video-processor.ts`) the invitations upload route uses, producing a
  * browser-universal H.264/AAC MP4 + a JPEG poster (used as `thumbnailUrl`, previously null
  * for every video on this path).
+ *
+ * Extension flow:
+ * - `sourceExt` — from the original filename (no leading dot), type detection only
+ * - `outputExt` — from MIME via `resolveMemoryOutputExtension` (leading dot), storage name
+ * - videos always persist as `.mp4` after processing
  */
 export async function storeMemoryFile(
   eventId: string,
   file: File
 ): Promise<{ url: string; thumbnailUrl: string | null; mediaType: "image" | "video"; sizeBytes: number }> {
   const buffer = Buffer.from(await file.arrayBuffer());
-  const ext = extractExtension(file.name);
+  // Source filename extension (no leading dot), used only for type detection.
+  const sourceExt = extractExtension(file.name);
   const isVideoUpload =
     ALLOWED_VIDEO.has(file.type) ||
     file.type.startsWith("video/") ||
-    (!!ext && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(ext));
+    (!!sourceExt && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(sourceExt));
 
   if (isVideoUpload) {
     const sniff = sniffVideoContainer(buffer.subarray(0, 262_144));
     if (sniff.disallowed) {
       throw new Error(`File was rejected — detected as ${sniff.disallowed.label}, not a video.`);
     }
-    const extHint = sniff.container ?? EXT_MAP[file.type]?.replace(".", "") ?? "mp4";
+    const extHint = sniff.container ?? EXT_MAP[file.type]?.replace(".", "") ?? sourceExt ?? "mp4";
     const result = await processVideoFile(buffer, { extensionHint: extHint });
     if (!result.success || !result.outputBuffer) {
       throw new Error(
         result.error ?? "We couldn't process this video for playback. Please try again or upload an MP4 (H.264)."
       );
     }
-    const safeBase = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const safeBase = buildMemorySafeBaseName();
     const { url } = await storeUploadFile("memories", eventId, `${safeBase}.mp4`, result.outputBuffer);
     let thumbnailUrl: string | null = null;
     if (result.posterBuffer) {
@@ -93,8 +112,9 @@ export async function storeMemoryFile(
     return { url, thumbnailUrl, mediaType: "video", sizeBytes: result.outputBuffer.length };
   }
 
-  const ext = EXT_MAP[file.type] ?? ".bin";
-  const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+  // Dotted extension for the stored image object (MIME → safe suffix).
+  const outputExt = resolveMemoryOutputExtension(file.type);
+  const safeName = `${buildMemorySafeBaseName()}${outputExt}`;
   try {
     const { processImageBuffer } = await import("@/lib/media/image-processor");
     const processed = await processImageBuffer(buffer, {
@@ -119,7 +139,7 @@ export async function storeMemoryFile(
   let thumbnailUrl: string | null = null;
 
   try {
-    const thumbName = `thumb-${safeName.replace(ext, ".jpg")}`;
+    const thumbName = `thumb-${safeName.replace(outputExt, ".jpg")}`;
     const thumbBuffer = await sharp(buffer)
       .rotate()
       .resize(400, 400, { fit: "inside", withoutEnlargement: true })

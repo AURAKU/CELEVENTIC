@@ -24,7 +24,7 @@ import {
 import { processVideoFile } from "@/lib/video/video-processor";
 import { VIDEO_PROCESS_QUEUE } from "@/lib/video/queues";
 import { vendorMediaService } from "@/services/vendor-os/vendor-media.service";
-import { hashMemoryGuestKey } from "@/lib/memory/memory-guest-identity";
+import { hashMemoryGuestKey } from "@/lib/memory/memory-guest-identity-crypto";
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
 import type { VideoCategory } from "@/lib/video/constants";
 import { buildRawVideoKey } from "@/lib/video/key-builder";

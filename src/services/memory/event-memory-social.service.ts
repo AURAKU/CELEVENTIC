@@ -6,7 +6,7 @@ import {
   hashMemoryAuthorToken,
   hashMemoryGuestKey,
   memoryAuthorTokenMatches,
-} from "@/lib/memory/memory-guest-identity";
+} from "@/lib/memory/memory-guest-identity-crypto";
 import {
   resolveMemoryCommentCapabilities,
   viewerCanDeleteMemoryComment,
