@@ -11,7 +11,10 @@ export type GuideAnalyticsEvent =
   | "guide_tour_complete"
   | "guide_tour_skip"
   | "guide_feedback"
-  | "guide_motion_replay";
+  | "guide_motion_replay"
+  | "guide_first_time_dismiss"
+  | "guide_first_time_cta"
+  | "guide_journey_start";
 
 export function trackGuideEvent(
   event: GuideAnalyticsEvent,

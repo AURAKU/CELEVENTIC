@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { HelpGuide, GuideStep, HelpGuideRole, HelpGuideStatus, HelpGuideCategory } from "@prisma/client";
+import type { HelpGuide, GuideStep, HelpGuideRole, HelpGuideStatus, HelpGuideCategory, HelpGuideReviewStatus } from "@prisma/client";
 import { CELEVENTIC_GUIDE_CATALOG } from "@/lib/celeventic-guide/catalog";
 import {
   parseJsonStringArray,
@@ -10,7 +10,7 @@ import {
 import { isGuidePubliclyVisible, roleFromUserRole } from "@/lib/celeventic-guide/visibility";
 import { searchGuides } from "@/lib/celeventic-guide/search";
 import { resolveRelatedGuides } from "@/lib/celeventic-guide/related";
-import type { GuideRole } from "@/lib/celeventic-guide/types";
+import type { GuideCatalogEntry, GuideRole } from "@/lib/celeventic-guide/types";
 import { isGuideMarkedNew } from "@/lib/celeventic-guide/guide-new";
 import { retainGuideVersion } from "@/services/celeventic-guide/versioning.service";
 import { resolveGuidePlayback } from "@/lib/celeventic-guide/media";
@@ -36,18 +36,20 @@ export async function promoteScheduledGuides() {
   return due.length;
 }
 
-function mapDbToSearchShape(g: HelpGuide) {
+function mapDbToSearchShape(g: HelpGuide): GuideCatalogEntry {
   return {
     slug: g.slug,
     title: g.title,
     summary: g.summary,
     synonyms: parseJsonStringArray(g.synonyms),
-    category: g.category,
+    category: g.category as GuideCatalogEntry["category"],
     role: g.role as GuideRole,
     featured: g.featured,
     adminOnly: g.adminOnly,
     status: g.status as "DRAFT" | "PUBLISHED" | "ARCHIVED",
     relatedSlugs: parseJsonStringArray(g.relatedSlugs),
+    sortOrder: g.sortOrder,
+    steps: [],
   };
 }
 

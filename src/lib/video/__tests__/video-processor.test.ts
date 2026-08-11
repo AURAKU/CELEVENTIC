@@ -670,7 +670,7 @@ describe("even output dimensions — the exact reported bug: '[libx264] width no
       ).catch(() => t.skip("ffmpeg unavailable/unable to generate the 1206x2622 fixture on this machine"));
 
       const portraitProbe = probe({ width: 1206, height: 2622, isHdr: false });
-      const fullCaps = { hasZscale: false, hasTonemap: false, hasLibx264: true, hasAac: true, hasHevcDecoder: true };
+      const fullCaps = { hasZscale: false, hasTonemap: false, hasLibx264: true, hasAac: true, hasHevcDecoder: true, hasColorspace: false };
 
       // Before the `force_divisible_by=2` fix this threw: "[libx264] width not divisible by 2
       // (883x1920)" — must not throw now, and the retry-on-divisibility safety net in
@@ -730,7 +730,7 @@ describe("even output dimensions — the exact reported bug: '[libx264] width no
       await chmod(fakeFfmpegPath, 0o755);
       process.env.FFMPEG_PATH = fakeFfmpegPath;
 
-      const fullCaps = { hasZscale: false, hasTonemap: false, hasLibx264: true, hasAac: true, hasHevcDecoder: true };
+      const fullCaps = { hasZscale: false, hasTonemap: false, hasLibx264: true, hasAac: true, hasHevcDecoder: true, hasColorspace: false };
       await transcodeWithHdrFallback(inputPath, outputPath, probe(), 30_000, fullCaps);
 
       const { stat } = await import("node:fs/promises");
@@ -793,7 +793,7 @@ describe("transcodeWithHdrFallback — retries once, cleans up partial output, n
     try {
       await writeFile(inputPath, await makeTinyH264Mp4());
       const hdrProbe = probe({ isHdr: true, videoCodec: "hevc", colorTransfer: "smpte2084" });
-      const fullCaps = { hasZscale: true, hasTonemap: true, hasLibx264: true, hasAac: true, hasHevcDecoder: true };
+      const fullCaps = { hasZscale: true, hasTonemap: true, hasLibx264: true, hasAac: true, hasHevcDecoder: true, hasColorspace: true };
 
       await transcodeWithHdrFallback(inputPath, outputPath, hdrProbe, 60_000, fullCaps);
 

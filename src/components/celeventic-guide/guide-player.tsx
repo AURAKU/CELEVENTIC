@@ -196,10 +196,11 @@ export function GuidePlayer({
 
   const share = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
+    const canNativeShare = typeof navigator.share === "function";
     try {
-      if (navigator.share) await navigator.share({ title, url });
+      if (canNativeShare) await navigator.share({ title, url });
       else await navigator.clipboard.writeText(url);
-      trackGuideEvent("guide_share", { slug, method: navigator.share ? "native" : "clipboard" });
+      trackGuideEvent("guide_share", { slug, method: canNativeShare ? "native" : "clipboard" });
     } catch {
       /* cancelled */
     }

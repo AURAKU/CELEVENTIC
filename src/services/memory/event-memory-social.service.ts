@@ -26,7 +26,7 @@ export async function isMemoryEventModerator(
   });
   if (event?.organizerId === userId) return true;
   const collab = await prisma.eventCollaborator.findFirst({
-    where: { eventId, userId, status: "ACTIVE" },
+    where: { eventId, userId, isActive: true },
     select: { id: true },
   });
   return Boolean(collab);

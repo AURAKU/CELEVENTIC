@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { PageLoader } from "@/components/ui/page-loader";
 import { GuestMemoryUpload } from "@/components/memory/guest-memory-upload";
 import { readOrCreateClientGuestKey } from "@/lib/memory/memory-guest-identity";
+import type { MemoryThemeCssVars } from "@/lib/memory/memory-theme";
 
 export default function MemoryUploadPage() {
   const params = useParams();
@@ -63,7 +64,7 @@ export default function MemoryUploadPage() {
         windowOpen={data.settings.windowOpen && data.settings.isEnabled}
         memoriesUrl={memoriesUrl}
         invitationUrl={invitationUrl}
-        themeVars={data.theme?.cssVars}
+        themeVars={data.theme?.cssVars as MemoryThemeCssVars | undefined}
         initialHasConsent={Boolean(data.hasConsent)}
         approvalRequired={Boolean(data.settings.approvalRequired)}
       />

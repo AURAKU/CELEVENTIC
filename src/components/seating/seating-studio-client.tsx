@@ -261,7 +261,7 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
       plusOnes?: number;
       invitationId?: string | null;
       partySize?: number;
-      tags?: Array<{ label: string }>;
+      tags?: Array<{ id?: string; label: string }>;
       admission?: {
         allowance: number;
         admittedCount: number;
@@ -273,8 +273,8 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
     const guestList: StudioGuest[] = ((json.data.guests ?? []) as ApiGuest[]).map((guest) => ({
       id: guest.id,
       name: guest.name,
-      email: guest.email,
-      phone: guest.phone,
+      email: guest.email ?? null,
+      phone: guest.phone ?? null,
       qrToken: guest.qrToken,
       status: guest.status,
       plusOnes: guest.plusOnes ?? 0,
@@ -283,7 +283,10 @@ export function SeatingStudioClient({ eventId }: SeatingStudioClientProps) {
         guest.partySize ??
         guest.admission?.allowance ??
         Math.max(1, 1 + Math.max(0, guest.plusOnes ?? 0)),
-      tags: guest.tags ?? [],
+      tags: (guest.tags ?? []).map((tag, index) => ({
+        id: tag.id ?? `${guest.id}-tag-${index}`,
+        label: tag.label,
+      })),
       vip: Boolean(guest.tags?.some((tag) => /vip/i.test(tag.label))),
       accessible: Boolean(
         guest.tags?.some((tag) => /access|wheelchair/i.test(tag.label))
