@@ -347,6 +347,9 @@ model Event {
   memorySettings       EventMemorySettings?
   memoryUploads        EventMemoryUpload[]
   memoryTokens         EventMemoryToken[]
+  memoryLikes          EventMemoryLike[]
+  memoryComments       EventMemoryComment[]
+  memoryConsents       EventMemoryConsent[]
   collaborators        EventCollaborator[]
   workspaceInvitations WorkspaceInvitation[]
   activityLogs         EventActivityLog[]
@@ -3269,6 +3272,8 @@ model EventMemoryUpload {
   guest      Guest?      @relation(fields: [guestId], references: [id], onDelete: SetNull)
   approvedBy User?       @relation("MemoryApprovals", fields: [approvedById], references: [id])
   videoAsset VideoAsset? @relation(fields: [videoAssetId], references: [id], onDelete: SetNull)
+  likes      EventMemoryLike[]
+  comments   EventMemoryComment[]
 
   @@index([eventId, status])
   @@index([eventId, createdAt])
@@ -3288,6 +3293,69 @@ model EventMemoryToken {
 
   @@index([eventId, type])
   @@map("event_memory_tokens")
+}
+
+/**
+ * Guest like on an approved memory. guestKey is a privacy-safe hash of a
+ * stable client identifier (never store the raw device/guest token here).
+ */
+model EventMemoryLike {
+  id        String   @id @default(cuid())
+  eventId   String
+  memoryId  String
+  guestKey  String
+  createdAt DateTime @default(now())
+
+  event  Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memory EventMemoryUpload @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@unique([memoryId, guestKey])
+  @@index([eventId, memoryId])
+  @@map("event_memory_likes")
+}
+
+/**
+ * Guest comment on an approved memory. authorTokenHash enables delete-own,
+ * matching Guest Wishes authorship.
+ */
+model EventMemoryComment {
+  id              String   @id @default(cuid())
+  eventId         String
+  memoryId        String
+  guestId         String?
+  authorName      String
+  message         String
+  authorTokenHash String?
+  guestKey        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  event  Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memory EventMemoryUpload @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@index([memoryId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([authorTokenHash])
+  @@map("event_memory_comments")
+}
+
+/**
+ * One-time upload consent per guest for a vault. After the first successful
+ * consent, guests are not prompted again for the same event.
+ */
+model EventMemoryConsent {
+  id          String   @id @default(cuid())
+  eventId     String
+  guestKey    String
+  guestId     String?
+  consentedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, guestKey])
+  @@index([eventId])
+  @@map("event_memory_consents")
 }
 
 // ─── Invitation MVP Product ─────────────────────────────────────
@@ -6054,6 +6122,22 @@ enum HelpGuideCategory {
   SCANNING
   CELEBRATE
   PLATFORM
+  TICKETS
+  PAYMENTS
+  GIFTS
+  MARKETPLACE
+  WALLET
+  CONTRIBUTIONS
+  COMMUNICATIONS
+  PRIVACY
+  COLLABORATION
+  TROUBLESHOOTING
+}
+
+enum HelpGuideReviewStatus {
+  CURRENT
+  REVIEW_REQUIRED
+  OUTDATED
 }
 
 model HelpGuide {
@@ -6070,16 +6154,43 @@ model HelpGuide {
   /// Admin-only guides must never appear on public /guide.
   adminOnly       Boolean           @default(false)
   posterUrl       String?
+  thumbnailUrl    String?
+  /// Legacy/primary playback URL (prefer mobile/desktop/mp4/webm when set).
   videoUrl        String?
+  mp4Url          String?
+  webmUrl         String?
+  mobileVideoUrl  String?
+  desktopVideoUrl String?
+  durationSec     Int?
   captionsEnUrl   String?
   captionsFrUrl   String?
+  /// Separable voiceover track (EN). Distinct from video audio when recorded.
+  voiceoverEnUrl  String?
+  /// Separable voiceover track (FR). Localization hook.
+  voiceoverFrUrl  String?
   storyboardKey   String?
   transcript      String            @default("")
+  narrationScript String            @default("")
+  a11yDescription String            @default("")
+  /// True when no real MP4/WebM has been uploaded yet.
+  videoProductionRequired Boolean   @default(true)
+  /// Product feature key used for freshness flagging (never auto-deletes guides).
+  featureKey      String?
+  lastVerifiedAt  DateTime?
+  verifiedAgainstBuild String?
+  verifiedAgainstFeatureVersion String?
+  reviewStatus    HelpGuideReviewStatus @default(CURRENT)
   synonyms        String            @default("[]") // JSON string array
   contextRoutes   String            @default("[]") // JSON string array of route prefixes
   ogTitle         String?
   ogDescription   String?
   relatedSlugs    String            @default("[]") // JSON string array
+  analyticsEvents String            @default("[]") // JSON string array of event names
+  /// Admin-controlled "New" badge (also shown while newUntil is in the future).
+  isNew           Boolean           @default(false)
+  newUntil        DateTime?
+  /// When set and status is DRAFT, guide auto-publishes once this time is reached.
+  scheduledPublishAt DateTime?
   viewCount       Int               @default(0)
   helpfulYes      Int               @default(0)
   helpfulNo       Int               @default(0)
@@ -6087,11 +6198,45 @@ model HelpGuide {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   steps           GuideStep[]
+  feedback        HelpGuideFeedback[]
+  versions        HelpGuideVersion[]
 
   @@index([status, role, sortOrder])
   @@index([category, status])
   @@index([featured, status])
+  @@index([featureKey])
+  @@index([reviewStatus])
+  @@index([scheduledPublishAt])
   @@map("help_guides")
+}
+
+model HelpGuideFeedback {
+  id        String    @id @default(cuid())
+  guideId   String
+  helpful   Boolean
+  reason    String    @default("")
+  createdAt DateTime  @default(now())
+  guide     HelpGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([guideId, createdAt])
+  @@map("help_guide_feedback")
+}
+
+/// Immutable snapshot retained on each admin edit — supports rollback without changing slug/analytics.
+model HelpGuideVersion {
+  id          String    @id @default(cuid())
+  guideId     String
+  version     Int
+  snapshot    String // JSON: guide fields + steps
+  editorId    String?
+  editorLabel String?
+  note        String    @default("")
+  createdAt   DateTime  @default(now())
+  guide       HelpGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, version])
+  @@index([guideId, createdAt])
+  @@map("help_guide_versions")
 }
 
 model GuideStep {

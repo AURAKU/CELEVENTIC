@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Captions,
   Maximize2,
@@ -16,8 +16,12 @@ import { cn } from "@/lib/utils";
 import { loadVideoPosition, rememberVideoPosition } from "@/lib/celeventic-guide/tour-storage";
 import { trackGuideEvent } from "@/lib/celeventic-guide/analytics";
 import { Button } from "@/components/ui/button";
+import { storyboardAspectCss } from "@/lib/celeventic-guide/storyboards";
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
+
+type CaptionLocale = "en" | "fr";
+type Aspect = "9:16" | "16:9" | "1:1";
 
 export function GuidePlayer({
   slug,
@@ -25,22 +29,31 @@ export function GuidePlayer({
   videoUrl,
   posterUrl,
   captionsUrl,
+  captionsEnUrl,
+  captionsFrUrl,
   transcript,
+  aspect = "9:16",
   className,
 }: {
   slug: string;
   title: string;
   videoUrl: string | null;
   posterUrl: string | null;
+  /** @deprecated prefer captionsEnUrl */
   captionsUrl?: string | null;
+  captionsEnUrl?: string | null;
+  captionsFrUrl?: string | null;
   transcript?: string;
+  aspect?: Aspect;
   className?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [volume, setVolume] = useState(0.8);
   const [captionsOn, setCaptionsOn] = useState(true);
+  const [captionLocale, setCaptionLocale] = useState<CaptionLocale>("en");
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -48,18 +61,42 @@ export function GuidePlayer({
   const [showTranscript, setShowTranscript] = useState(false);
   const milestones = useRef(new Set<number>());
 
+  const enCaptions = captionsEnUrl ?? captionsUrl ?? null;
+  const frCaptions = captionsFrUrl ?? null;
+  const aspectClass = storyboardAspectCss(aspect);
+  const maxW = aspect === "16:9" ? "max-w-2xl" : aspect === "1:1" ? "max-w-md" : "max-w-sm";
+
+  useEffect(() => {
+    try {
+      const nav = typeof navigator !== "undefined" ? navigator.language.toLowerCase() : "en";
+      if (nav.startsWith("fr") && frCaptions) setCaptionLocale("fr");
+    } catch {
+      /* ignore */
+    }
+  }, [frCaptions]);
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !videoUrl) return;
     const start = loadVideoPosition(slug);
     const onLoaded = () => {
-      if (start > 0 && start < (v.duration || Infinity) - 2) {
-        v.currentTime = start;
-      }
+      if (start > 0 && start < (v.duration || Infinity) - 2) v.currentTime = start;
+      v.volume = volume;
     };
     v.addEventListener("loadedmetadata", onLoaded);
     return () => v.removeEventListener("loadedmetadata", onLoaded);
-  }, [slug, videoUrl]);
+  }, [slug, videoUrl, volume]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    for (let i = 0; i < v.textTracks.length; i++) {
+      const track = v.textTracks[i];
+      const wantLang = captionLocale === "fr" ? "fr" : "en";
+      const match = track.language === wantLang || (!track.language && wantLang === "en");
+      track.mode = captionsOn && match ? "showing" : "disabled";
+    }
+  }, [captionsOn, captionLocale, enCaptions, frCaptions, videoUrl]);
 
   const onTime = useCallback(() => {
     const v = videoRef.current;
@@ -95,6 +132,23 @@ export function GuidePlayer({
     if (!v) return;
     v.muted = !v.muted;
     setMuted(v.muted);
+  };
+
+  const onVolume = (value: number) => {
+    const v = videoRef.current;
+    const next = Math.min(1, Math.max(0, value));
+    setVolume(next);
+    if (v) {
+      v.volume = next;
+      if (next > 0 && v.muted) {
+        v.muted = false;
+        setMuted(false);
+      }
+      if (next === 0) {
+        v.muted = true;
+        setMuted(true);
+      }
+    }
   };
 
   const cycleSpeed = () => {
@@ -135,7 +189,7 @@ export function GuidePlayer({
       try {
         await v.requestPictureInPicture();
       } catch {
-        /* unsupported / denied */
+        /* unsupported */
       }
     }
   };
@@ -151,11 +205,23 @@ export function GuidePlayer({
     }
   };
 
+  const progressLabel = useMemo(() => {
+    const fmt = (s: number) => {
+      const m = Math.floor(s / 60);
+      const r = Math.floor(s % 60);
+      return `${m}:${String(r).padStart(2, "0")}`;
+    };
+    return `${fmt(progress)} / ${fmt(duration || 0)}`;
+  }, [progress, duration]);
+
   if (!videoUrl) {
     return (
       <div
         className={cn(
-          "relative aspect-[9/16] max-h-[70vh] w-full max-w-sm mx-auto overflow-hidden rounded-2xl bg-gradient-to-br from-brand-800 via-brand-600 to-slate-900",
+          "relative w-full mx-auto overflow-hidden rounded-2xl bg-gradient-to-br from-brand-800 via-brand-600 to-slate-900",
+          aspectClass,
+          maxW,
+          "max-h-[70vh]",
           className
         )}
       >
@@ -180,7 +246,12 @@ export function GuidePlayer({
     <div className={cn("space-y-3", className)}>
       <div
         ref={shellRef}
-        className="relative aspect-[9/16] max-h-[70vh] w-full max-w-sm mx-auto overflow-hidden rounded-2xl bg-black group"
+        className={cn(
+          "relative w-full mx-auto overflow-hidden rounded-2xl bg-black group",
+          aspectClass,
+          maxW,
+          "max-h-[70vh]"
+        )}
       >
         <video
           ref={videoRef}
@@ -196,19 +267,22 @@ export function GuidePlayer({
           aria-label={title}
         >
           <source src={videoUrl} />
-          {captionsUrl && (
-            <track kind="captions" srcLang="en" label="English" src={captionsUrl} default={captionsOn} />
+          {enCaptions && (
+            <track kind="captions" srcLang="en" label="English" src={enCaptions} default={captionLocale === "en"} />
+          )}
+          {frCaptions && (
+            <track kind="captions" srcLang="fr" label="Français" src={frCaptions} default={captionLocale === "fr"} />
           )}
         </video>
 
-        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3 space-y-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition">
           <input
             type="range"
             min={0}
-            max={duration || 1}
+            max={duration || 0}
             step={0.1}
             value={progress}
-            aria-label="Playback progress"
+            aria-label="Seek"
             className="w-full accent-brand-400"
             onChange={(e) => {
               const v = videoRef.current;
@@ -217,76 +291,78 @@ export function GuidePlayer({
               setProgress(t);
             }}
           />
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-white">
-            <IconBtn label={playing ? "Pause" : "Play"} onClick={togglePlay}>
+          <div className="flex flex-wrap items-center gap-1.5 text-white">
+            <Button type="button" size="sm" variant="ghost" className="text-white hover:bg-white/15" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
               {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            </IconBtn>
-            <IconBtn label={muted ? "Unmute" : "Mute"} onClick={toggleMute}>
-              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            </IconBtn>
-            <IconBtn label="Captions" onClick={() => setCaptionsOn((c) => !c)} pressed={captionsOn}>
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="text-white hover:bg-white/15" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
+              {muted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={muted ? 0 : volume}
+              aria-label="Volume"
+              className="w-20 accent-brand-400"
+              onChange={(e) => onVolume(Number(e.target.value))}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="text-white hover:bg-white/15"
+              onClick={() => setCaptionsOn((c) => !c)}
+              aria-pressed={captionsOn}
+              aria-label="Toggle captions"
+            >
               <Captions className="h-4 w-4" />
-            </IconBtn>
-            <IconBtn label={`Speed ${speed}x`} onClick={cycleSpeed}>
-              <span className="text-[11px] font-semibold">{speed}x</span>
-            </IconBtn>
-            <IconBtn label="Replay" onClick={replay}>
+            </Button>
+            {frCaptions && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-white hover:bg-white/15 text-xs"
+                onClick={() => setCaptionLocale((l) => (l === "en" ? "fr" : "en"))}
+                aria-label="Caption language"
+              >
+                {captionLocale.toUpperCase()}
+              </Button>
+            )}
+            <Button type="button" size="sm" variant="ghost" className="text-white hover:bg-white/15 text-xs" onClick={cycleSpeed}>
+              {speed}x
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="text-white hover:bg-white/15" onClick={replay} aria-label="Replay">
               <RotateCcw className="h-4 w-4" />
-            </IconBtn>
-            <IconBtn label="Picture in picture" onClick={pip}>
-              <span className="text-[10px] font-bold">PiP</span>
-            </IconBtn>
-            <IconBtn label={fullscreen ? "Exit fullscreen" : "Fullscreen"} onClick={toggleFs}>
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="text-white hover:bg-white/15 text-xs" onClick={pip}>
+              PiP
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="text-white hover:bg-white/15" onClick={toggleFs} aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}>
               {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </IconBtn>
-            <IconBtn label="Share" onClick={share}>
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="text-white hover:bg-white/15" onClick={share} aria-label="Share">
               <Share2 className="h-4 w-4" />
-            </IconBtn>
+            </Button>
+            <span className="ml-auto text-[11px] tabular-nums text-white/80">{progressLabel}</span>
           </div>
         </div>
       </div>
 
       {transcript ? (
-        <div className="max-w-sm mx-auto">
-          <button
-            type="button"
-            className="text-sm text-brand-700 hover:underline"
-            onClick={() => setShowTranscript((s) => !s)}
-            aria-expanded={showTranscript}
-          >
+        <div className="space-y-2">
+          <Button type="button" size="sm" variant="outline" onClick={() => setShowTranscript((s) => !s)}>
             {showTranscript ? "Hide transcript" : "Show transcript"}
-          </button>
+          </Button>
           {showTranscript && (
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap rounded-xl border border-slate-100 bg-white/70 p-4">
+            <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap rounded-xl border border-slate-200 bg-white/80 p-4">
               {transcript}
             </p>
           )}
         </div>
       ) : null}
     </div>
-  );
-}
-
-function IconBtn({
-  label,
-  onClick,
-  children,
-  pressed,
-}: {
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-  pressed?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={pressed}
-      onClick={onClick}
-      className="inline-flex h-8 min-w-8 items-center justify-center rounded-md bg-white/10 px-1.5 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-    >
-      {children}
-    </button>
   );
 }

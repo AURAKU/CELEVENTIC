@@ -105,7 +105,7 @@ export function EventGuideBuilder({
   const published = guide.status === "PUBLISHED";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="event-guide-builder">
       <header className="stack-mobile">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">Event Guide</h1>
@@ -158,35 +158,39 @@ export function EventGuideBuilder({
         </p>
       ) : null}
 
-      <Tabs value={tab} onValueChange={(value) => setTab(value as BuilderTab)}>
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="seating">Seating</TabsTrigger>
-          <TabsTrigger value="signs">QR &amp; Signs</TabsTrigger>
-          <TabsTrigger value="offline">Offline</TabsTrigger>
-          <TabsTrigger value="publish">Publish</TabsTrigger>
-        </TabsList>
+      <div data-tour="event-guide-content">
+        <Tabs value={tab} onValueChange={(value) => setTab(value as BuilderTab)}>
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+            <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="seating">Seating</TabsTrigger>
+            <TabsTrigger value="signs">QR &amp; Signs</TabsTrigger>
+            <TabsTrigger value="offline">Offline</TabsTrigger>
+            <TabsTrigger value="publish" data-tour="event-guide-publish">
+              Publish
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="content" className="mt-4">
-          <GuideContentTab state={state} run={run} busy={busy} />
-        </TabsContent>
-        <TabsContent value="appearance" className="mt-4">
-          <GuideAppearanceTab state={state} run={run} busy={busy} />
-        </TabsContent>
-        <TabsContent value="seating" className="mt-4">
-          <GuideSeatingTab state={state} run={run} busy={busy} />
-        </TabsContent>
-        <TabsContent value="signs" className="mt-4">
-          <GuideSignsTab state={state} run={run} busy={busy} eventId={eventId} />
-        </TabsContent>
-        <TabsContent value="offline" className="mt-4">
-          <GuideOfflineTab state={state} run={run} busy={busy} eventId={eventId} />
-        </TabsContent>
-        <TabsContent value="publish" className="mt-4">
-          <GuidePublishTab state={state} run={run} busy={busy} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="content" className="mt-4">
+            <GuideContentTab state={state} run={run} busy={busy} />
+          </TabsContent>
+          <TabsContent value="appearance" className="mt-4">
+            <GuideAppearanceTab state={state} run={run} busy={busy} />
+          </TabsContent>
+          <TabsContent value="seating" className="mt-4">
+            <GuideSeatingTab state={state} run={run} busy={busy} />
+          </TabsContent>
+          <TabsContent value="signs" className="mt-4">
+            <GuideSignsTab state={state} run={run} busy={busy} eventId={eventId} />
+          </TabsContent>
+          <TabsContent value="offline" className="mt-4">
+            <GuideOfflineTab state={state} run={run} busy={busy} eventId={eventId} />
+          </TabsContent>
+          <TabsContent value="publish" className="mt-4">
+            <GuidePublishTab state={state} run={run} busy={busy} />
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {busy ? (
         <p className="flex items-center gap-2 text-sm text-slate-500">

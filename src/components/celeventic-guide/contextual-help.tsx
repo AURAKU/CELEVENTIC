@@ -104,7 +104,7 @@ export function ContextualHelpTrigger() {
                 </Button>
               )}
               <Button type="button" variant="ghost" size="sm" asChild>
-                <Link href="/guide" onClick={() => setOpen(false)}>
+                <Link href="/legal/faq" onClick={() => setOpen(false)}>
                   Browse all guides
                 </Link>
               </Button>

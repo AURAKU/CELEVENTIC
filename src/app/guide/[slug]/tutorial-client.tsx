@@ -52,10 +52,23 @@ export function TutorialClient({ guide }: { guide: TutorialViewModel }) {
             slug={guide.slug}
             title={guide.title}
             videoUrl={guide.videoUrl}
+            mp4Url={guide.mp4Url}
+            webmUrl={guide.webmUrl}
+            mobileVideoUrl={guide.mobileVideoUrl}
+            desktopVideoUrl={guide.desktopVideoUrl}
             posterUrl={guide.posterUrl}
+            thumbnailUrl={guide.thumbnailUrl}
             captionsUrl={guide.captionsEnUrl}
+            captionsFrUrl={guide.captionsFrUrl}
             transcript={guide.transcript}
+            videoProductionRequired={guide.videoProductionRequired}
+            a11yDescription={guide.a11yDescription}
           />
+          {guide.videoProductionRequired !== false && !guide.videoUrl && !guide.mp4Url ? (
+            <p className="text-center text-xs font-semibold uppercase tracking-wide text-amber-800">
+              VIDEO PRODUCTION REQUIRED — interactive walkthrough ships now
+            </p>
+          ) : null}
         </div>
 
         <div className="space-y-8">

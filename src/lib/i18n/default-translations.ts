@@ -44,7 +44,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "footer", key: "discover_events", enValue: "Discover Events", frValue: "Découvrir les événements" },
   { namespace: "footer", key: "about", enValue: "About", frValue: "À propos" },
   { namespace: "footer", key: "contact", enValue: "Contact", frValue: "Contact" },
-  { namespace: "footer", key: "faq", enValue: "FAQ", frValue: "FAQ" },
+  { namespace: "footer", key: "faq", enValue: "FAQ & Guides", frValue: "FAQ et guides" },
   { namespace: "footer", key: "terms", enValue: "Terms", frValue: "Conditions" },
   { namespace: "footer", key: "privacy", enValue: "Privacy", frValue: "Confidentialité" },
   { namespace: "footer", key: "refund", enValue: "Refund Policy", frValue: "Politique de remboursement" },

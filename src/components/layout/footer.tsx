@@ -22,7 +22,7 @@ export function Footer() {
     [t("footer.company")]: [
       { label: t("footer.about"), href: "/legal/about" },
       { label: t("footer.contact"), href: "/legal/contact" },
-      { label: t("footer.faq"), href: "/legal/faq" },
+      { label: t("footer.faq"), href: "/legal/faq" }, // FAQ & Guides hub (Celeventic Guide)
     ],
     [t("footer.legal")]: [
       { label: t("footer.legal_center"), href: "/legal" },

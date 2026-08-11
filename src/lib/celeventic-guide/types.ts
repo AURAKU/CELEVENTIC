@@ -1,5 +1,6 @@
 export type GuideRole = "GUEST" | "ORGANIZER" | "VENDOR" | "SCANNER" | "ADMIN";
 export type GuideStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type GuideReviewStatus = "CURRENT" | "REVIEW_REQUIRED" | "OUTDATED";
 export type GuideCategory =
   | "GETTING_STARTED"
   | "INVITATIONS"
@@ -12,7 +13,17 @@ export type GuideCategory =
   | "VENDOR"
   | "SCANNING"
   | "CELEBRATE"
-  | "PLATFORM";
+  | "PLATFORM"
+  | "TICKETS"
+  | "PAYMENTS"
+  | "GIFTS"
+  | "MARKETPLACE"
+  | "WALLET"
+  | "CONTRIBUTIONS"
+  | "COMMUNICATIONS"
+  | "PRIVACY"
+  | "COLLABORATION"
+  | "TROUBLESHOOTING";
 
 export type GuideStepType = "motion" | "tip" | "warning" | "checklist";
 
@@ -37,15 +48,41 @@ export interface GuideCatalogEntry {
   adminOnly?: boolean;
   storyboardKey?: string;
   transcript?: string;
+  narrationScript?: string;
+  a11yDescription?: string;
   synonyms?: string[];
   contextRoutes?: string[];
   relatedSlugs?: string[];
   ogTitle?: string;
   ogDescription?: string;
   posterUrl?: string | null;
+  thumbnailUrl?: string | null;
   videoUrl?: string | null;
+  mp4Url?: string | null;
+  webmUrl?: string | null;
+  mobileVideoUrl?: string | null;
+  desktopVideoUrl?: string | null;
   captionsEnUrl?: string | null;
+  captionsFrUrl?: string | null;
+  voiceoverEnUrl?: string | null;
+  voiceoverFrUrl?: string | null;
+  durationSec?: number | null;
+  featureKey?: string;
+  videoProductionRequired?: boolean;
+  reviewStatus?: GuideReviewStatus;
+  analyticsEvents?: string[];
+  isNew?: boolean;
+  newUntil?: string | null;
   steps: GuideStepSeed[];
+}
+
+/** Role-aware Start Here paths shown on Celeventic Guide home. */
+export interface StartHereJourney {
+  id: string;
+  role: GuideRole;
+  title: string;
+  summary: string;
+  slugs: string[];
 }
 
 export interface GuideSearchHit {
@@ -67,6 +104,8 @@ export interface PublicGuideCard {
   featured: boolean;
   posterUrl: string | null;
   hasVideo: boolean;
+  videoProductionRequired?: boolean;
+  isNew?: boolean;
   stepCount: number;
 }
 
@@ -91,6 +130,28 @@ export const GUIDE_CATEGORY_LABELS: Record<GuideCategory, string> = {
   SCANNING: "Scanning",
   CELEBRATE: "Celebrate",
   PLATFORM: "Platform",
+  TICKETS: "Tickets",
+  PAYMENTS: "Payments",
+  GIFTS: "Gifts",
+  MARKETPLACE: "Marketplace",
+  WALLET: "Wallet",
+  CONTRIBUTIONS: "Contributions",
+  COMMUNICATIONS: "Communications",
+  PRIVACY: "Privacy",
+  COLLABORATION: "Collaboration",
+  TROUBLESHOOTING: "Troubleshooting",
 };
 
 export const PUBLIC_GUIDE_ROLES: GuideRole[] = ["GUEST", "ORGANIZER", "VENDOR", "SCANNER"];
+
+/** Priority titles requiring real screen-recorded MP4 delivery (§53). Never invent files. */
+export const PRIORITY_VIDEO_SLUGS = [
+  "how-celeventic-works",
+  "open-your-invitation",
+  "rsvp",
+  "your-qr-admission-pass",
+  "find-your-seat",
+  "event-guide-guest",
+  "memory-vault-guest",
+  "organizer-quick-start",
+] as const;

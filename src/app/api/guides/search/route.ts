@@ -9,6 +9,8 @@ export async function GET(req: Request) {
   const q = url.searchParams.get("q");
   const role = url.searchParams.get("role") as GuideRole | null;
   const category = url.searchParams.get("category");
+  const page = Math.max(1, Number(url.searchParams.get("page") || 1) || 1);
+  const pageSize = Math.min(48, Math.max(1, Number(url.searchParams.get("pageSize") || 12) || 12));
   const session = await getServerSession(authOptions);
 
   let guides = await listPublicGuides({
@@ -28,5 +30,15 @@ export async function GET(req: Request) {
     });
   }
 
-  return NextResponse.json({ guides });
+  const total = guides.length;
+  const start = (page - 1) * pageSize;
+  const pageGuides = guides.slice(start, start + pageSize);
+
+  return NextResponse.json({
+    guides: pageGuides,
+    total,
+    page,
+    pageSize,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+  });
 }

@@ -16,8 +16,8 @@ export function ErrorState({
   title,
   description,
   onRetry,
-  supportHref = "/dashboard/help",
-  supportLabel = "Contact Support",
+  supportHref = "/legal/faq",
+  supportLabel = "Help & Guides",
 }: ErrorStateProps) {
   return (
     <div

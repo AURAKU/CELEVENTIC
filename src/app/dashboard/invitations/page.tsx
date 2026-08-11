@@ -82,7 +82,10 @@ function InvitationsHubContent() {
 
 function InvitationsHubHeader({ active }: { active: InvitationsTab }) {
   return (
-    <div className="space-y-4">
+    <div data-tour="invitation-studio" data-tour-root="1" className="space-y-4">
+      <span data-tour="invitation-create" className="sr-only" />
+      <span data-tour="invitation-distribute" className="sr-only" />
+
       <div>
         <h1 className="text-2xl font-bold">Invitations</h1>
         <p className="page-subtitle">Design, distribute, and measure your event invitations.</p>

@@ -48,8 +48,8 @@ export const CMS_PAGES: Record<
     defaultContent: INFO_PAGE_DEFAULTS.about.contentEn,
   },
   faq: {
-    title: "Frequently Asked Questions",
-    description: "Common questions about invitations, tickets, and payments.",
+    title: "FAQ & Guides",
+    description: "Celeventic Guide tutorials, Start Here journeys, and common questions.",
     defaultContent: INFO_PAGE_DEFAULTS.faq.contentEn,
   },
   contact: {

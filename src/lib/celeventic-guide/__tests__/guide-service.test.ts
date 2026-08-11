@@ -36,13 +36,16 @@ describe("celeventic-guide service CRUD + visibility", () => {
   });
 
   it("does not expose draft or archived publicly", async () => {
+    const slug = `temp-draft-guide-test-${Date.now()}`;
+    const existing = await prisma.helpGuide.findUnique({ where: { slug: "temp-draft-guide-test" } });
+    if (existing) await deleteAdminGuide(existing.id);
     const created = await createAdminGuide({
       title: "Temp Draft Guide",
       summary: "draft",
       role: "GUEST",
       category: "PLATFORM",
       status: "DRAFT",
-      slug: "temp-draft-guide-test",
+      slug,
     });
     assert.equal(await getPublicGuideBySlug(created.slug), null);
     await updateAdminGuide(created.id, { status: "ARCHIVED" });

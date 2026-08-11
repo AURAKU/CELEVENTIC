@@ -300,7 +300,10 @@ export default function QrVerifyPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div data-tour="qr-admission-hub" className="max-w-2xl mx-auto space-y-6">
+      <span data-tour="qr-admission-passes" className="sr-only" />
+      <span data-tour="qr-admission-offline" className="sr-only" />
+
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">Gate verify & offline pack</h1>

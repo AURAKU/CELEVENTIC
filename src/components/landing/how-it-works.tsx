@@ -36,7 +36,7 @@ export function HowItWorks() {
               See How It Works
             </Link>
             <Link
-              href="/guide"
+              href="/legal/faq"
               className="inline-flex items-center rounded-xl border border-brand-200 bg-white/80 text-brand-800 px-5 py-2.5 text-sm font-semibold hover:border-brand-400 transition"
             >
               Browse Celeventic Guide

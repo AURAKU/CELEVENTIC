@@ -11,7 +11,7 @@ import { ExternalLink, Loader2 } from "lucide-react";
 
 const INFO_PAGES = [
   { slug: "about", title: "About", publicPath: "/legal/about" },
-  { slug: "faq", title: "FAQ", publicPath: "/legal/faq" },
+  { slug: "faq", title: "FAQ & Guides", publicPath: "/legal/faq" },
   { slug: "contact", title: "Contact", publicPath: "/legal/contact", note: "Phone, email, and hours are managed in Contact Settings and sync here when empty." },
 ] as const;
 

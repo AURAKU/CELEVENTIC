@@ -22,7 +22,10 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await ctx.params;
   const body = await req.json().catch(() => ({}));
-  const guide = await updateAdminGuide(id, body);
+  const guide = await updateAdminGuide(id, body, {
+    editorId: session.user?.id ?? null,
+    editorLabel: session.user?.email ?? session.user?.name ?? null,
+  });
   if (!guide) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ guide });
 }

@@ -11,8 +11,30 @@ import { isGuidePubliclyVisible, roleFromUserRole } from "@/lib/celeventic-guide
 import { searchGuides } from "@/lib/celeventic-guide/search";
 import { resolveRelatedGuides } from "@/lib/celeventic-guide/related";
 import type { GuideRole } from "@/lib/celeventic-guide/types";
+import { isGuideMarkedNew } from "@/lib/celeventic-guide/guide-new";
+import { retainGuideVersion } from "@/services/celeventic-guide/versioning.service";
+import { resolveGuidePlayback } from "@/lib/celeventic-guide/media";
 
 export type HelpGuideWithSteps = HelpGuide & { steps: GuideStep[] };
+
+/** Auto-publish guides whose scheduledPublishAt has elapsed. */
+export async function promoteScheduledGuides() {
+  const due = await prisma.helpGuide.findMany({
+    where: {
+      status: "DRAFT",
+      scheduledPublishAt: { lte: new Date() },
+      adminOnly: false,
+    },
+    select: { id: true },
+  });
+  for (const row of due) {
+    await prisma.helpGuide.update({
+      where: { id: row.id },
+      data: { status: "PUBLISHED", publishedAt: new Date() },
+    });
+  }
+  return due.length;
+}
 
 function mapDbToSearchShape(g: HelpGuide) {
   return {
@@ -36,6 +58,7 @@ export async function seedCeleventicGuides(options?: { forceUpdate?: boolean }) 
   for (const entry of CELEVENTIC_GUIDE_CATALOG) {
     const slug = sanitizeGuideSlug(entry.slug);
     const existing = await prisma.helpGuide.findUnique({ where: { slug } });
+    const hasVideo = !!(entry.videoUrl || entry.mp4Url || entry.webmUrl || entry.mobileVideoUrl);
     const data = {
       title: sanitizeGuideText(entry.title, 200),
       summary: sanitizeGuideText(entry.summary, 500),
@@ -47,13 +70,28 @@ export async function seedCeleventicGuides(options?: { forceUpdate?: boolean }) 
       featured: !!entry.featured,
       adminOnly: !!entry.adminOnly,
       posterUrl: entry.posterUrl ?? null,
+      thumbnailUrl: entry.thumbnailUrl ?? entry.posterUrl ?? null,
       videoUrl: entry.videoUrl ?? null,
+      mp4Url: entry.mp4Url ?? null,
+      webmUrl: entry.webmUrl ?? null,
+      mobileVideoUrl: entry.mobileVideoUrl ?? null,
+      desktopVideoUrl: entry.desktopVideoUrl ?? null,
+      durationSec: entry.durationSec ?? null,
       captionsEnUrl: entry.captionsEnUrl ?? null,
+      captionsFrUrl: entry.captionsFrUrl ?? null,
+      voiceoverEnUrl: entry.voiceoverEnUrl ?? null,
+      voiceoverFrUrl: entry.voiceoverFrUrl ?? null,
       storyboardKey: entry.storyboardKey ?? entry.slug,
       transcript: sanitizeGuideText(entry.transcript ?? "", 12000),
+      narrationScript: sanitizeGuideText(entry.narrationScript ?? entry.transcript ?? "", 12000),
+      a11yDescription: sanitizeGuideText(entry.a11yDescription ?? entry.summary, 500),
+      videoProductionRequired: entry.videoProductionRequired !== false && !hasVideo,
+      featureKey: entry.featureKey ?? null,
+      isNew: !!entry.isNew,
       synonyms: toJsonStringArray(entry.synonyms ?? []),
       contextRoutes: toJsonStringArray(entry.contextRoutes ?? []),
       relatedSlugs: toJsonStringArray(entry.relatedSlugs ?? []),
+      analyticsEvents: toJsonStringArray(entry.analyticsEvents ?? []),
       ogTitle: sanitizeGuideText(entry.ogTitle ?? entry.title, 200),
       ogDescription: sanitizeGuideText(entry.ogDescription ?? entry.summary, 300),
       publishedAt: (entry.status ?? "PUBLISHED") === "PUBLISHED" ? new Date() : null,
@@ -226,11 +264,21 @@ export async function recordGuideView(slug: string) {
     .catch(() => undefined);
 }
 
-export async function recordGuideFeedback(slug: string, helpful: boolean) {
-  await prisma.helpGuide.update({
+export async function recordGuideFeedback(slug: string, helpful: boolean, reason?: string) {
+  const guide = await prisma.helpGuide.update({
     where: { slug },
     data: helpful ? { helpfulYes: { increment: 1 } } : { helpfulNo: { increment: 1 } },
   });
+  const cleaned = (reason || "").trim().slice(0, 500);
+  if (cleaned) {
+    try {
+      await prisma.helpGuideFeedback.create({
+        data: { guideId: guide.id, helpful, reason: cleaned },
+      });
+    } catch {
+      /* feedback table may not be migrated yet in some envs */
+    }
+  }
 }
 
 export async function listAdminGuides() {
@@ -264,17 +312,33 @@ export async function createAdminGuide(input: Record<string, unknown>) {
       featured: !!input.featured,
       adminOnly: !!input.adminOnly,
       posterUrl: input.posterUrl ? sanitizeGuideText(input.posterUrl, 500) : null,
+      thumbnailUrl: input.thumbnailUrl ? sanitizeGuideText(input.thumbnailUrl, 500) : null,
       videoUrl: input.videoUrl ? sanitizeGuideText(input.videoUrl, 500) : null,
+      mp4Url: input.mp4Url ? sanitizeGuideText(input.mp4Url, 500) : null,
+      webmUrl: input.webmUrl ? sanitizeGuideText(input.webmUrl, 500) : null,
+      mobileVideoUrl: input.mobileVideoUrl ? sanitizeGuideText(input.mobileVideoUrl, 500) : null,
+      desktopVideoUrl: input.desktopVideoUrl ? sanitizeGuideText(input.desktopVideoUrl, 500) : null,
+      durationSec: input.durationSec != null ? Number(input.durationSec) || null : null,
       captionsEnUrl: input.captionsEnUrl ? sanitizeGuideText(input.captionsEnUrl, 500) : null,
       captionsFrUrl: input.captionsFrUrl ? sanitizeGuideText(input.captionsFrUrl, 500) : null,
       storyboardKey: input.storyboardKey ? sanitizeGuideSlug(input.storyboardKey) : null,
       transcript: sanitizeGuideText(input.transcript, 12000),
+      narrationScript: sanitizeGuideText(input.narrationScript, 12000),
+      a11yDescription: sanitizeGuideText(input.a11yDescription ?? input.summary, 500),
+      videoProductionRequired: input.videoProductionRequired != null ? !!input.videoProductionRequired : true,
+      featureKey: input.featureKey ? sanitizeGuideText(input.featureKey, 80) : null,
+      reviewStatus: (input.reviewStatus as HelpGuideReviewStatus) ?? "CURRENT",
       synonyms: toJsonStringArray(Array.isArray(input.synonyms) ? (input.synonyms as string[]) : parseJsonStringArray(input.synonyms)),
       contextRoutes: toJsonStringArray(
         Array.isArray(input.contextRoutes) ? (input.contextRoutes as string[]) : parseJsonStringArray(input.contextRoutes)
       ),
       relatedSlugs: toJsonStringArray(
         Array.isArray(input.relatedSlugs) ? (input.relatedSlugs as string[]) : parseJsonStringArray(input.relatedSlugs)
+      ),
+      analyticsEvents: toJsonStringArray(
+        Array.isArray(input.analyticsEvents)
+          ? (input.analyticsEvents as string[])
+          : parseJsonStringArray(input.analyticsEvents)
       ),
       ogTitle: sanitizeGuideText(input.ogTitle ?? input.title, 200),
       ogDescription: sanitizeGuideText(input.ogDescription ?? input.summary, 300),
@@ -284,9 +348,24 @@ export async function createAdminGuide(input: Record<string, unknown>) {
   return guide;
 }
 
-export async function updateAdminGuide(id: string, input: Record<string, unknown>) {
-  const existing = await prisma.helpGuide.findUnique({ where: { id } });
+export async function updateAdminGuide(
+  id: string,
+  input: Record<string, unknown>,
+  opts?: { editorId?: string | null; editorLabel?: string | null; skipVersion?: boolean }
+) {
+  const existing = await prisma.helpGuide.findUnique({
+    where: { id },
+    include: { steps: { orderBy: { sortOrder: "asc" } } },
+  });
   if (!existing) return null;
+
+  if (!opts?.skipVersion) {
+    await retainGuideVersion(id, {
+      editorId: opts?.editorId,
+      editorLabel: opts?.editorLabel,
+      note: "pre-edit",
+    }).catch(() => undefined);
+  }
 
   const status = input.status != null ? (String(input.status) as HelpGuideStatus) : existing.status;
   const data: Record<string, unknown> = {
@@ -302,7 +381,17 @@ export async function updateAdminGuide(id: string, input: Record<string, unknown
   if (input.featured != null) data.featured = !!input.featured;
   if (input.adminOnly != null) data.adminOnly = !!input.adminOnly;
   if (input.posterUrl !== undefined) data.posterUrl = input.posterUrl ? sanitizeGuideText(input.posterUrl, 500) : null;
+  if (input.thumbnailUrl !== undefined)
+    data.thumbnailUrl = input.thumbnailUrl ? sanitizeGuideText(input.thumbnailUrl, 500) : null;
   if (input.videoUrl !== undefined) data.videoUrl = input.videoUrl ? sanitizeGuideText(input.videoUrl, 500) : null;
+  if (input.mp4Url !== undefined) data.mp4Url = input.mp4Url ? sanitizeGuideText(input.mp4Url, 500) : null;
+  if (input.webmUrl !== undefined) data.webmUrl = input.webmUrl ? sanitizeGuideText(input.webmUrl, 500) : null;
+  if (input.mobileVideoUrl !== undefined)
+    data.mobileVideoUrl = input.mobileVideoUrl ? sanitizeGuideText(input.mobileVideoUrl, 500) : null;
+  if (input.desktopVideoUrl !== undefined)
+    data.desktopVideoUrl = input.desktopVideoUrl ? sanitizeGuideText(input.desktopVideoUrl, 500) : null;
+  if (input.durationSec !== undefined)
+    data.durationSec = input.durationSec != null ? Number(input.durationSec) || null : null;
   if (input.captionsEnUrl !== undefined)
     data.captionsEnUrl = input.captionsEnUrl ? sanitizeGuideText(input.captionsEnUrl, 500) : null;
   if (input.captionsFrUrl !== undefined)
@@ -310,6 +399,12 @@ export async function updateAdminGuide(id: string, input: Record<string, unknown
   if (input.storyboardKey !== undefined)
     data.storyboardKey = input.storyboardKey ? sanitizeGuideSlug(input.storyboardKey) : null;
   if (input.transcript != null) data.transcript = sanitizeGuideText(input.transcript, 12000);
+  if (input.narrationScript != null) data.narrationScript = sanitizeGuideText(input.narrationScript, 12000);
+  if (input.a11yDescription != null) data.a11yDescription = sanitizeGuideText(input.a11yDescription, 500);
+  if (input.featureKey !== undefined)
+    data.featureKey = input.featureKey ? sanitizeGuideText(input.featureKey, 80) : null;
+  if (input.reviewStatus != null) data.reviewStatus = String(input.reviewStatus) as HelpGuideReviewStatus;
+  if (input.videoProductionRequired != null) data.videoProductionRequired = !!input.videoProductionRequired;
   if (input.synonyms != null)
     data.synonyms = toJsonStringArray(Array.isArray(input.synonyms) ? (input.synonyms as string[]) : parseJsonStringArray(input.synonyms));
   if (input.contextRoutes != null)
@@ -320,15 +415,28 @@ export async function updateAdminGuide(id: string, input: Record<string, unknown
     data.relatedSlugs = toJsonStringArray(
       Array.isArray(input.relatedSlugs) ? (input.relatedSlugs as string[]) : parseJsonStringArray(input.relatedSlugs)
     );
+  if (input.analyticsEvents != null)
+    data.analyticsEvents = toJsonStringArray(
+      Array.isArray(input.analyticsEvents)
+        ? (input.analyticsEvents as string[])
+        : parseJsonStringArray(input.analyticsEvents)
+    );
   if (input.ogTitle != null) data.ogTitle = sanitizeGuideText(input.ogTitle, 200);
   if (input.ogDescription != null) data.ogDescription = sanitizeGuideText(input.ogDescription, 300);
   if (input.slug != null) data.slug = sanitizeGuideSlug(input.slug);
+
+  const nextVideo =
+    (data.videoUrl as string | null | undefined) ??
+    (data.mp4Url as string | null | undefined) ??
+    (data.webmUrl as string | null | undefined) ??
+    (data.mobileVideoUrl as string | null | undefined);
+  if (nextVideo) data.videoProductionRequired = false;
 
   if (status === "PUBLISHED" && existing.status !== "PUBLISHED") {
     data.publishedAt = new Date();
   }
 
-  const guide = await prisma.helpGuide.update({ where: { id }, data });
+  await prisma.helpGuide.update({ where: { id }, data });
 
   if (Array.isArray(input.steps)) {
     await prisma.guideStep.deleteMany({ where: { guideId: id } });
