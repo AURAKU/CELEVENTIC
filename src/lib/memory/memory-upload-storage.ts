@@ -2,9 +2,11 @@ import sharp from "sharp";
 import { storeUploadFile } from "@/lib/uploads/file-storage";
 import { processVideoFile } from "@/lib/video/video-processor";
 import { sniffVideoContainer } from "@/lib/video/container-sniff";
+import { ALLOWED_VIDEO_MIME_TYPES, ALLOWED_VIDEO_EXTENSIONS } from "@/lib/video/constants";
+import { extractExtension } from "@/lib/video/validation";
 
 const ALLOWED_IMAGE = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/jfif", "image/pjpeg"]);
-const ALLOWED_VIDEO = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+const ALLOWED_VIDEO = new Set<string>(ALLOWED_VIDEO_MIME_TYPES);
 
 const EXT_MAP: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -22,12 +24,20 @@ export function validateMemoryFile(
   mimeType: string,
   sizeBytes: number,
   maxImageMb: number,
-  maxVideoMb: number
+  maxVideoMb: number,
+  fileName?: string
 ): { valid: boolean; reason?: string; mediaType?: "image" | "video" } {
-  const isImage = ALLOWED_IMAGE.has(mimeType);
-  const isVideo = ALLOWED_VIDEO.has(mimeType);
+  const ext = fileName ? extractExtension(fileName) : null;
+  const isImage = ALLOWED_IMAGE.has(mimeType) || (!!ext && ["jpg", "jpeg", "png", "webp", "gif", "jfif"].includes(ext));
+  const isVideo =
+    ALLOWED_VIDEO.has(mimeType) ||
+    mimeType.startsWith("video/") ||
+    (!!ext && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(ext));
   if (!isImage && !isVideo) {
-    return { valid: false, reason: "Unsupported file type. Use JPEG, PNG, WebP, MP4, or WebM." };
+    return {
+      valid: false,
+      reason: "That file type isn’t supported. Try a photo (JPEG/PNG/WebP) or a video (MP4/MOV). If a video fails, export it as MP4 and try again.",
+    };
   }
   const maxBytes = (isImage ? maxImageMb : maxVideoMb) * 1024 * 1024;
   if (sizeBytes > maxBytes) {
@@ -53,8 +63,13 @@ export async function storeMemoryFile(
   file: File
 ): Promise<{ url: string; thumbnailUrl: string | null; mediaType: "image" | "video"; sizeBytes: number }> {
   const buffer = Buffer.from(await file.arrayBuffer());
+  const ext = extractExtension(file.name);
+  const isVideoUpload =
+    ALLOWED_VIDEO.has(file.type) ||
+    file.type.startsWith("video/") ||
+    (!!ext && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(ext));
 
-  if (ALLOWED_VIDEO.has(file.type)) {
+  if (isVideoUpload) {
     const sniff = sniffVideoContainer(buffer.subarray(0, 262_144));
     if (sniff.disallowed) {
       throw new Error(`File was rejected — detected as ${sniff.disallowed.label}, not a video.`);

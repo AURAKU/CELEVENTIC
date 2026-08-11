@@ -24,6 +24,7 @@ import {
 import { processVideoFile } from "@/lib/video/video-processor";
 import { VIDEO_PROCESS_QUEUE } from "@/lib/video/queues";
 import { vendorMediaService } from "@/services/vendor-os/vendor-media.service";
+import { hashMemoryGuestKey } from "@/lib/memory/memory-guest-identity";
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
 import type { VideoCategory } from "@/lib/video/constants";
 import { buildRawVideoKey } from "@/lib/video/key-builder";
@@ -353,10 +354,12 @@ async function runPreQueueSideEffects(asset: VideoAsset): Promise<{ ok: true } |
 
   const context = (asset.context as Record<string, unknown> | null) ?? {};
   try {
+    const rawGuestKey = typeof context.guestKey === "string" ? context.guestKey : null;
     await eventMemoryUploadService.createGuestUpload({
       eventId: asset.eventId,
       uploaderName: typeof context.guestName === "string" ? context.guestName : undefined,
       uploaderPhone: typeof context.guestPhone === "string" ? context.guestPhone : undefined,
+      uploaderGuestKey: rawGuestKey && rawGuestKey.length >= 8 ? hashMemoryGuestKey(rawGuestKey) : null,
       mediaType: "video",
       mediaUrl: "",
       caption: typeof context.caption === "string" ? context.caption : undefined,
@@ -609,9 +612,16 @@ async function markVideoReady(
 /** Category-specific fan-out once a video is ready: update the guestbook row / create the vendor portfolio row. */
 async function runReadySideEffects(asset: VideoAsset & { memoryUpload?: { id: string } | null }) {
   if (asset.category === "GUESTBOOK" && asset.memoryUpload) {
+    // Grid cells must show a still poster — never the video file. Prefer the light
+    // thumbnail derivative, then the detail poster, never leave thumbnailUrl empty when
+    // a poster exists.
+    const posterStill = asset.thumbnailUrl || asset.posterUrl || null;
     await prisma.eventMemoryUpload.update({
       where: { id: asset.memoryUpload.id },
-      data: { mediaUrl: asset.processedMp4Url ?? "", thumbnailUrl: asset.thumbnailUrl },
+      data: {
+        mediaUrl: asset.processedMp4Url ?? "",
+        thumbnailUrl: posterStill,
+      },
     });
   }
 

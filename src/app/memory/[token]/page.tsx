@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import { PageLoader } from "@/components/ui/page-loader";
-import { PublicMemoriesGallery } from "@/components/memory/public-memories-gallery";
+import { PublicMemoriesGallery, type MemoryGalleryItem } from "@/components/memory/public-memories-gallery";
+import { readOrCreateClientGuestKey } from "@/lib/memory/memory-guest-identity";
 
 type MediaFilter = "all" | "image" | "video";
 
@@ -23,7 +24,10 @@ export default function MemoryTokenGalleryPage() {
   const [data, setData] = useState<{
     event: { title: string; hostName: string };
     allowDownloads: boolean;
-    memories: { items: unknown[]; page: number; pages: number; total: number };
+    canModerate?: boolean;
+    viewToken?: string;
+    theme?: { cssVars?: CSSProperties };
+    memories: { items: MemoryGalleryItem[]; page: number; pages: number; total: number };
   } | null>(null);
 
   const handleFilterChange = useCallback((next: MediaFilter) => {
@@ -34,8 +38,11 @@ export default function MemoryTokenGalleryPage() {
   const loadGallery = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const guestKey = readOrCreateClientGuestKey();
     const mediaParam = filter === "all" ? "" : `&mediaType=${filter}`;
-    const res = await fetch(`/api/public/memories/${token}?page=${page}&limit=21${mediaParam}`);
+    const res = await fetch(
+      `/api/public/memories/${token}?page=${page}&limit=21${mediaParam}&guestKey=${encodeURIComponent(guestKey)}`
+    );
     const d = await res.json();
     if (d.success) {
       setData(d.data);
@@ -59,7 +66,7 @@ export default function MemoryTokenGalleryPage() {
     <PublicMemoriesGallery
       eventTitle={data.event.title}
       hostName={data.event.hostName}
-      items={data.memories.items as Parameters<typeof PublicMemoriesGallery>[0]["items"]}
+      items={data.memories.items}
       page={data.memories.page}
       pages={data.memories.pages}
       total={data.memories.total}
@@ -68,6 +75,9 @@ export default function MemoryTokenGalleryPage() {
       onFilterChange={handleFilterChange}
       activeFilter={filter}
       loading={loading}
+      themeVars={data.theme?.cssVars}
+      viewToken={data.viewToken ?? token}
+      canModerate={Boolean(data.canModerate)}
     />
   );
 }

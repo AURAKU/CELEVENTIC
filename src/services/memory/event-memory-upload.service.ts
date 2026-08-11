@@ -8,6 +8,8 @@ export interface CreateGuestUploadInput {
   guestId?: string;
   uploaderName?: string;
   uploaderPhone?: string;
+  /** Privacy-safe hash — enables guest delete-own. */
+  uploaderGuestKey?: string | null;
   mediaType: "image" | "video";
   mediaUrl: string;
   thumbnailUrl?: string | null;
@@ -54,6 +56,7 @@ export class EventMemoryUploadService {
         guestId: input.guestId,
         uploaderName: input.uploaderName,
         uploaderPhone: input.uploaderPhone,
+        uploaderGuestKey: input.uploaderGuestKey ?? null,
         mediaType: input.mediaType,
         mediaUrl: input.mediaUrl,
         thumbnailUrl: input.thumbnailUrl,
