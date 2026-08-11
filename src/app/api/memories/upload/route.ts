@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
 import { eventMemorySettingsService } from "@/services/memory/event-memory-settings.service";
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
+import { eventMemorySocialService } from "@/services/memory/event-memory-social.service";
 import { storeMemoryFile, validateMemoryFile } from "@/lib/memory/memory-upload-storage";
 
-// Node runtime required: video uploads on this legacy path are transcoded with FFmpeg via
-// node:child_process (see memory-upload-storage.ts). maxDuration is a no-op on self-hosted
-// (pm2/systemd) but caps gracefully on platforms that enforce one.
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
@@ -34,11 +32,11 @@ export async function POST(req: Request) {
     const uploaderPhone = (form.get("uploaderPhone") as string) ?? undefined;
     const caption = (form.get("caption") as string) ?? undefined;
     const consentGiven = form.get("consent") === "true" || form.get("consentGiven") === "true";
+    const rawGuestKey = (form.get("guestKey") as string) ?? req.headers.get("x-memory-guest-key");
     const file = form.get("file") as File | null;
 
     if (!token) return NextResponse.json({ error: "Upload token required" }, { status: 400 });
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    if (!consentGiven) return NextResponse.json({ error: "Consent is required" }, { status: 400 });
 
     const tokenRecord = await eventMemoryTokenService.resolveToken(token);
     if (!tokenRecord || tokenRecord.type !== "UPLOAD") {
@@ -49,8 +47,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Upload rate limit exceeded. Try again later." }, { status: 429 });
     }
 
+    const guestKeyHash = eventMemorySocialService.resolveGuestKeyHash(rawGuestKey);
+    const consent = await eventMemorySocialService.ensureConsentForUpload({
+      eventId: tokenRecord.eventId,
+      guestKeyHash,
+      consentGiven,
+    });
+    if (!consent.ok) {
+      return NextResponse.json({ error: consent.error }, { status: 400 });
+    }
+
     const settings = await eventMemorySettingsService.getOrCreate(tokenRecord.eventId);
-    const validation = validateMemoryFile(file.type, file.size, settings.maxImageSizeMb, settings.maxVideoSizeMb);
+    const validation = validateMemoryFile(
+      file.type,
+      file.size,
+      settings.maxImageSizeMb,
+      settings.maxVideoSizeMb,
+      file.name
+    );
     if (!validation.valid) return NextResponse.json({ error: validation.reason }, { status: 400 });
 
     const stored = await storeMemoryFile(tokenRecord.eventId, file);
@@ -58,10 +72,12 @@ export async function POST(req: Request) {
       eventId: tokenRecord.eventId,
       uploaderName,
       uploaderPhone,
+      uploaderGuestKey: guestKeyHash,
       mediaType: stored.mediaType,
       mediaUrl: stored.url,
+      thumbnailUrl: stored.thumbnailUrl,
       caption,
-      consentGiven,
+      consentGiven: true,
     });
 
     return NextResponse.json({
@@ -69,6 +85,7 @@ export async function POST(req: Request) {
       data: {
         id: upload.id,
         status: upload.status,
+        consentRecorded: Boolean(guestKeyHash),
         message: upload.status === "PENDING" ? "Upload received, pending organizer approval" : "Upload successful",
       },
     }, { status: 201 });

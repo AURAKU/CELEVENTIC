@@ -3262,6 +3262,8 @@ model EventMemoryUpload {
   rejectionReason String?
   isFeatured      Boolean                 @default(false)
   consentGiven    Boolean                 @default(false)
+  /** Privacy-safe hash of guest device key — enables delete-own for uploads. */
+  uploaderGuestKey String?
   approvedById    String?
   approvedAt      DateTime?
   createdAt       DateTime                @default(now())
@@ -3277,6 +3279,7 @@ model EventMemoryUpload {
 
   @@index([eventId, status])
   @@index([eventId, createdAt])
+  @@index([eventId, uploaderGuestKey])
   @@map("event_memory_uploads")
 }
 

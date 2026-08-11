@@ -61,6 +61,7 @@ export interface VideoUploaderProps {
   guestToken?: string;
   guestName?: string;
   guestPhone?: string;
+  guestKey?: string;
   mute?: boolean;
   role?: string;
   label?: string;
@@ -95,6 +96,7 @@ export function VideoUploader({
   guestToken,
   guestName,
   guestPhone,
+  guestKey,
   mute,
   role,
   label,
@@ -378,6 +380,7 @@ export function VideoUploader({
         guestToken,
         guestName,
         guestPhone,
+  guestKey,
         context: { role, mute },
       });
       assetIdRef.current = presign.data.assetId;

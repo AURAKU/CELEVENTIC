@@ -35,6 +35,8 @@ export interface ResolvePrincipalInput {
   guestToken?: string | null;
   guestName?: string | null;
   guestPhone?: string | null;
+  /** Raw client guest key — hashed before persistence on EventMemoryUpload. */
+  guestKey?: string | null;
 }
 
 /**
@@ -59,6 +61,7 @@ export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Prom
           guestToken: input.guestToken,
           guestName: input.guestName ?? null,
           guestPhone: input.guestPhone ?? null,
+          guestKey: input.guestKey ?? null,
         },
       };
     }

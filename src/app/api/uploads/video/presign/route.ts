@@ -23,6 +23,7 @@ interface PresignRequestBody {
   guestToken?: string;
   guestName?: string;
   guestPhone?: string;
+  guestKey?: string;
   context?: { role?: string; mute?: boolean };
 }
 
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       guestToken: body.guestToken,
       guestName: body.guestName,
       guestPhone: body.guestPhone,
+      guestKey: body.guestKey,
     });
   } catch (error) {
     if (error instanceof UploadAuthError) {

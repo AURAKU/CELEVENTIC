@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.service";
 import { eventMemorySettingsService } from "@/services/memory/event-memory-settings.service";
+import { eventMemoryThemeService } from "@/services/memory/event-memory-theme.service";
+import {
+  eventMemorySocialService,
+  isMemoryEventModerator,
+} from "@/services/memory/event-memory-social.service";
+import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
 import { parsePaginationFromUrl } from "@/lib/pagination";
 
 export async function GET(
@@ -18,14 +26,37 @@ export async function GET(
   }
 
   const { page, limit } = parsePaginationFromUrl(req.url);
-  const memories = await eventMemoryUploadService.listApprovedPublic(event.id, page, limit);
+  const url = new URL(req.url);
+  const mediaRaw = url.searchParams.get("mediaType");
+  const mediaType = mediaRaw === "image" || mediaRaw === "video" ? mediaRaw : undefined;
+  const rawGuestKey = url.searchParams.get("guestKey") ?? req.headers.get("x-memory-guest-key");
+  const guestKeyHash = eventMemorySocialService.resolveGuestKeyHash(rawGuestKey);
+
+  const session = await getServerSession(authOptions);
+  const canModerate = await isMemoryEventModerator(event.id, session?.user?.id, session?.user?.role);
+
+  const memories = await eventMemoryUploadService.listApprovedPublic(event.id, page, limit, mediaType);
+  const enriched = await eventMemorySocialService.enrichApprovedItems(memories.items, guestKeyHash, {
+    canModerate,
+  });
+  const { publicTheme } = await eventMemoryThemeService.resolveForEvent(event.id);
+  const viewToken = await eventMemoryTokenService.getOrCreateViewToken(event.id);
 
   return NextResponse.json({
     success: true,
     data: {
-      event: { title: event.title, hostName: event.hostName },
+      event: {
+        id: event.id,
+        title: event.title,
+        hostName: event.hostName,
+        coverImageUrl: event.coverImageUrl,
+        logoUrl: event.logoUrl,
+      },
       allowDownloads: settings.allowDownloads,
-      memories,
+      theme: publicTheme,
+      canModerate,
+      viewToken: viewToken.token,
+      memories: { ...memories, items: enriched },
     },
   });
 }
