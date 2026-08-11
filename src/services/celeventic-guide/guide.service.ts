@@ -58,6 +58,7 @@ export async function seedCeleventicGuides(options?: { forceUpdate?: boolean }) 
   for (const entry of CELEVENTIC_GUIDE_CATALOG) {
     const slug = sanitizeGuideSlug(entry.slug);
     const existing = await prisma.helpGuide.findUnique({ where: { slug } });
+    const hasVideo = !!(entry.videoUrl || entry.mp4Url || entry.webmUrl || entry.mobileVideoUrl);
     const data = {
       title: sanitizeGuideText(entry.title, 200),
       summary: sanitizeGuideText(entry.summary, 500),
@@ -69,13 +70,28 @@ export async function seedCeleventicGuides(options?: { forceUpdate?: boolean }) 
       featured: !!entry.featured,
       adminOnly: !!entry.adminOnly,
       posterUrl: entry.posterUrl ?? null,
+      thumbnailUrl: entry.thumbnailUrl ?? entry.posterUrl ?? null,
       videoUrl: entry.videoUrl ?? null,
+      mp4Url: entry.mp4Url ?? null,
+      webmUrl: entry.webmUrl ?? null,
+      mobileVideoUrl: entry.mobileVideoUrl ?? null,
+      desktopVideoUrl: entry.desktopVideoUrl ?? null,
+      durationSec: entry.durationSec ?? null,
       captionsEnUrl: entry.captionsEnUrl ?? null,
+      captionsFrUrl: entry.captionsFrUrl ?? null,
+      voiceoverEnUrl: entry.voiceoverEnUrl ?? null,
+      voiceoverFrUrl: entry.voiceoverFrUrl ?? null,
       storyboardKey: entry.storyboardKey ?? entry.slug,
       transcript: sanitizeGuideText(entry.transcript ?? "", 12000),
+      narrationScript: sanitizeGuideText(entry.narrationScript ?? entry.transcript ?? "", 12000),
+      a11yDescription: sanitizeGuideText(entry.a11yDescription ?? entry.summary, 500),
+      videoProductionRequired: entry.videoProductionRequired !== false && !hasVideo,
+      featureKey: entry.featureKey ?? null,
+      isNew: !!entry.isNew,
       synonyms: toJsonStringArray(entry.synonyms ?? []),
       contextRoutes: toJsonStringArray(entry.contextRoutes ?? []),
       relatedSlugs: toJsonStringArray(entry.relatedSlugs ?? []),
+      analyticsEvents: toJsonStringArray(entry.analyticsEvents ?? []),
       ogTitle: sanitizeGuideText(entry.ogTitle ?? entry.title, 200),
       ogDescription: sanitizeGuideText(entry.ogDescription ?? entry.summary, 300),
       publishedAt: (entry.status ?? "PUBLISHED") === "PUBLISHED" ? new Date() : null,
