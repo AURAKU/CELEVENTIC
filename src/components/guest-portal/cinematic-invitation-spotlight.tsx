@@ -344,6 +344,8 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
                   props.placeCard?.recipient.partySize ??
                   1
                 }
+                initialRsvpStatus={props.initialRsvpStatus}
+                initialAttendingCount={props.initialAttendingCount}
                 accentColor={accent}
                 variant="dark"
                 buttonStyle={props.design.studio?.buttonStyle}

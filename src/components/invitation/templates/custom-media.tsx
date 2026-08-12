@@ -8,7 +8,7 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function CustomMediaTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
+export function CustomMediaTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
@@ -55,7 +55,7 @@ export function CustomMediaTemplate({ invitation, event, design, guestId, guestN
                 <p className="text-xs text-brand-600">Designed from your uploaded sample</p>
               )}
               {showCardQr && qrDataUrl && <Image src={qrDataUrl} alt="QR" width={110} height={110} className="mx-auto rounded"  unoptimized />}
-              <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.primary} />
+              <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor={colors.primary} />
               <InvitationActions event={event} pdfUrl={pdfAsset?.url} />
             </div>
           </div>

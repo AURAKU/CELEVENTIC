@@ -42,6 +42,9 @@ export interface PageRenderContext {
   category: InviteCategory;
   guestId?: string;
   guestName?: string;
+  partyAllowance?: number;
+  initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
+  initialAttendingCount?: number | null;
   /** Catalog slug, for viral-footer attribution */
   templateSlug?: string;
   rsvpRequired?: boolean;

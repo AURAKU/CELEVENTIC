@@ -95,6 +95,12 @@ export interface PremiumInviteExperienceProps {
   placeCard?: PlaceCardViewData | null;
   /** Heads this invitation admits — drives RSVP companion-slot controls. */
   partyAllowance?: number;
+  /**
+   * Existing RSVP for this personalized guest — thank-you persists on refresh.
+   */
+  initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
+  /** Confirmed attending heads when `initialRsvpStatus` is ACCEPTED. */
+  initialAttendingCount?: number | null;
 }
 
 function Countdown({ target, begunLabel, label }: { target: string; begunLabel: string; label: string }) {

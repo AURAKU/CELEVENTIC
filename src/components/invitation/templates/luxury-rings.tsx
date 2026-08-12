@@ -8,7 +8,7 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
+export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
@@ -47,7 +47,7 @@ export function LuxuryRingsTemplate({ invitation, event, design, guestId, guestN
             {event.venueName && <p className="text-sm tracking-wider">{event.venueName}</p>}
             {event.contactPhone && <p className="text-xs inv-muted-on-dark">RSVP {event.contactPhone}</p>}
             {showCardQr && qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />}
-            <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} textColor={colors.text} variant="dark" />
+            <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor={colors.secondary} textColor={colors.text} variant="dark" />
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} variant="dark" />
           </div>
         </div>

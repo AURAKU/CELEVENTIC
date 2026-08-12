@@ -42,6 +42,10 @@ import {
 } from "@/lib/invitation/guest-event-details";
 import { isOpenHostInvitation } from "@/services/guest-search/rsvp-self-registration.service";
 import { resolvePostAdmissionEnabled } from "@/lib/admission/canonical-companion";
+import {
+  confirmedAttendingFromParty,
+  rsvpChoiceFromGuest,
+} from "@/lib/invitation/rsvp-persisted-state";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -429,6 +433,19 @@ export default async function InvitePage({
     entryPass?.partySize ?? placeCard?.party.allowance
   );
 
+  // Keep Kindly Respond on thank-you when this guest already replied.
+  const initialRsvpStatus = personalizedGuest
+    ? rsvpChoiceFromGuest(personalizedGuest)
+    : null;
+  const initialAttendingCount = initialRsvpStatus
+    ? Math.min(
+        partyAllowance,
+        confirmedAttendingFromParty(
+          (invitation.guests ?? []).filter((g) => !("archivedAt" in g && g.archivedAt))
+        )
+      )
+    : null;
+
   const catalogTemplate = productionOrder?.template;
   const revealMode = design.studio?.revealMode;
   const rawBackground = resolveBackgroundMedia(design, catalogTemplate);
@@ -483,6 +500,8 @@ export default async function InvitePage({
       entryPass={entryPass}
       placeCard={placeCard}
       partyAllowance={partyAllowance}
+      initialRsvpStatus={initialRsvpStatus}
+      initialAttendingCount={initialAttendingCount}
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       companionUrl={companionUrl}

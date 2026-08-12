@@ -7,7 +7,7 @@ import { VineBorder } from "../shared/invitation-ornaments";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function ArchGreenTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
+export function ArchGreenTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
@@ -68,6 +68,9 @@ export function ArchGreenTemplate({ invitation, event, design, guestId, guestNam
             invitationId={invitation.id}
             guestId={guestId}
             guestName={guestName}
+            partyAllowance={partyAllowance}
+            initialRsvpStatus={initialRsvpStatus}
+            initialAttendingCount={initialAttendingCount}
             accentColor={colors.accent}
             textColor={colors.text}
             variant="dark"

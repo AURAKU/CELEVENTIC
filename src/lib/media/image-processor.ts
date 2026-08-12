@@ -21,7 +21,7 @@ export interface ProcessedImageDerivatives {
   errorMessage?: string;
 }
 
-const MAX_INPUT_BYTES = 25 * 1024 * 1024;
+const MAX_INPUT_BYTES = 50 * 1024 * 1024;
 const MAX_DIMENSION = 8000;
 
 /** Magic-byte sniff — never trust filename/MIME alone. */
@@ -68,16 +68,23 @@ export async function processImageBuffer(
   const base = options.baseName ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
   try {
-    const pipeline = sharp(buffer, { failOn: "error", animated: false }).rotate();
-    const meta = await pipeline.metadata();
+    const masterBase = sharp(buffer, { failOn: "error", animated: false }).rotate();
+    const meta = await masterBase.metadata();
     const width = meta.width ?? 0;
     const height = meta.height ?? 0;
     if (!width || !height) return failed("Could not read image dimensions.");
-    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-      return failed(`Image dimensions exceed ${MAX_DIMENSION}px.`);
-    }
 
-    const master = sharp(buffer, { failOn: "error" }).rotate();
+    // Oversized camera dumps: downscale into the safe window instead of rejecting.
+    const longest = Math.max(width, height);
+    const needsDownscale = longest > MAX_DIMENSION;
+    const master = needsDownscale
+      ? masterBase.resize({
+          width: width >= height ? MAX_DIMENSION : undefined,
+          height: height > width ? MAX_DIMENSION : undefined,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+      : masterBase;
 
     const [thumbBuf, mediumBuf, largeBuf, optimisedBuf, originalBuf] = await Promise.all([
       master

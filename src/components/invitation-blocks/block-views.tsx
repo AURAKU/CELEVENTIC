@@ -562,6 +562,8 @@ export function BlockView({ block, ctx }: BlockViewProps) {
             guestId={ctx.guestId}
             guestName={ctx.guestName}
             partyAllowance={ctx.partyAllowance}
+            initialRsvpStatus={ctx.initialRsvpStatus}
+            initialAttendingCount={ctx.initialAttendingCount}
           />
         </BlockShell>
       );

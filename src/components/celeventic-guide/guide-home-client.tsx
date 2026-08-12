@@ -8,6 +8,7 @@ import { GuideCard, type GuideCardData } from "./guide-card";
 import { StartHereJourneys } from "./start-here-journeys";
 import { FirstTimeHelpBanner } from "./first-time-help-banner";
 import { GuestQuickActions } from "./guest-quick-actions";
+import { GuestFirstTimeIntro } from "./guest-first-time-intro";
 import { PUBLIC_GUIDE_ROLES, GUIDE_ROLE_LABELS, GUIDE_CATEGORY_LABELS } from "@/lib/celeventic-guide/types";
 import type { GuideCategory, GuideRole } from "@/lib/celeventic-guide/types";
 import { trackGuideEvent } from "@/lib/celeventic-guide/analytics";
@@ -22,6 +23,7 @@ export function GuideHomeClient({
   initialGuides: GuideCardData[];
   preferredRole?: GuideRole | null;
 }) {
+  const [forceGuestTour, setForceGuestTour] = useState(false);
   const [q, setQ] = useState("");
   const [role, setRole] = useState<GuideRole | "ALL">(preferredRole && preferredRole !== "ADMIN" ? preferredRole : "ALL");
   const [category, setCategory] = useState<GuideCategory | "ALL">("ALL");
@@ -29,6 +31,13 @@ export function GuideHomeClient({
   const [searching, setSearching] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(initialGuides.length);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const qParam = params.get("q")?.toLowerCase() ?? "";
+    setForceGuestTour(qParam.includes("show me around") || params.get("tour") === "1");
+  }, []);
 
   useEffect(() => {
     setPage(1);
@@ -85,7 +94,16 @@ export function GuideHomeClient({
     <div className="space-y-8">
       <FirstTimeHelpBanner />
       <StartHereJourneys preferredRole={preferredRole} />
-      {(role === "GUEST" || preferredRole === "GUEST") && <GuestQuickActions />}
+      {(role === "GUEST" || preferredRole === "GUEST") && (
+        <div className="space-y-4">
+          <GuestFirstTimeIntro
+            invitationId="celeventic-guide-hub"
+            guestId="guide-visitor"
+            forceOpen={forceGuestTour}
+          />
+          <GuestQuickActions />
+        </div>
+      )}
 
       <div className="relative max-w-xl">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden />

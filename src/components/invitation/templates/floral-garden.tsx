@@ -7,7 +7,7 @@ import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 import { StudioButton } from "../shared/studio-button";
 
-export function FloralGardenTemplate({ invitation, event, design, guestId, guestName }: InvitationRenderProps) {
+export function FloralGardenTemplate({ invitation, event, design, guestId, guestName, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors, studio } = design;
@@ -33,7 +33,7 @@ export function FloralGardenTemplate({ invitation, event, design, guestId, guest
           {(event.venueName || event.landmark) && (
             <p className="text-sm text-rose-950">{event.venueName}{event.landmark ? ` · ${event.landmark}` : ""}</p>
           )}
-          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} label={studio?.rsvpLabel} />
+          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor={colors.secondary} label={studio?.rsvpLabel} />
           <StudioButton studio={studio} accent={colors.secondary}>
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} />
           </StudioButton>

@@ -8,7 +8,7 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function ClassicGoldTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
+export function ClassicGoldTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
@@ -74,6 +74,9 @@ export function ClassicGoldTemplate({ invitation, event, design, guestId, guestN
             invitationId={invitation.id}
             guestId={guestId}
             guestName={guestName}
+            partyAllowance={partyAllowance}
+            initialRsvpStatus={initialRsvpStatus}
+            initialAttendingCount={initialAttendingCount}
             accentColor={colors.secondary}
           />
           <InvitationActions

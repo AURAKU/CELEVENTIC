@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
-import { pickMemoryFullSrc, pickMemoryGridSrc, isMemoryVideo } from "@/lib/memory/memory-media-urls";
+import { pickMemoryFullSrc, pickMemoryGridSrc, resolveMemoryPhotoSrcSet, isMemoryVideo } from "@/lib/memory/memory-media-urls";
 import {
   readOrCreateClientGuestKey,
   readOwnedCommentTokens,
@@ -573,6 +573,8 @@ export function PublicMemoriesGallery({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={resolvePublicMediaUrl(pickMemoryFullSrc(lightbox))}
+                srcSet={resolveMemoryPhotoSrcSet(lightbox, resolvePublicMediaUrl)}
+                sizes="(max-width: 768px) 100vw, min(1200px, 92vw)"
                 alt={lightbox.caption ?? ""}
                 className="max-w-full max-h-full object-contain"
               />

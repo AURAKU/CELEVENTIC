@@ -9,7 +9,16 @@ import type { PageRenderContext } from "@/lib/invite-blueprints/blueprint-types"
  * Preview invitations short-circuit inside the panel (isPreviewInvitationId).
  */
 export function RsvpBlock({ context }: { context: PageRenderContext }) {
-  const { theme, invitation, guestId, guestName, design } = context;
+  const {
+    theme,
+    invitation,
+    guestId,
+    guestName,
+    design,
+    partyAllowance,
+    initialRsvpStatus,
+    initialAttendingCount,
+  } = context;
   const variant = isDarkColor(theme.color.surface) ? "dark" : "light";
 
   return (
@@ -18,6 +27,9 @@ export function RsvpBlock({ context }: { context: PageRenderContext }) {
         invitationId={invitation.id}
         guestId={guestId}
         guestName={guestName}
+        partyAllowance={partyAllowance}
+        initialRsvpStatus={initialRsvpStatus}
+        initialAttendingCount={initialAttendingCount}
         accentColor={theme.color.accent}
         variant={variant}
         buttonStyle={design.studio?.buttonStyle}
