@@ -17,7 +17,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #000;
+  background: #fff;
   color: var(--soft-ivory);
   outline: none;
   isolation: isolate;
@@ -41,7 +41,7 @@
   min-height: 100%;
   max-width: none;
   max-height: none;
-  background: #000;
+  background: #fff;
   opacity: 1;
   visibility: visible;
 }
@@ -69,13 +69,13 @@
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: #000;
+  background: #fff;
   width: 100%;
   height: 100%;
 }
 
 /*
- * Intro frame letterboxes on a black stage: the entire brand clip stays
+ * Intro frame letterboxes on a white stage: the entire brand clip stays
  * visible on phone, tablet, and desktop (never cropped by cover).
  */
 .introVideo {
@@ -89,7 +89,7 @@
   max-height: 100%;
   object-fit: contain;
   object-position: center center;
-  background: #000;
+  background: #fff;
   opacity: 1;
   visibility: visible;
   pointer-events: none;
@@ -100,7 +100,7 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: #000;
+  background: #fff;
 }
 
 .posterStill img {
@@ -111,10 +111,8 @@
 /*
  * Premium opening gate — required before live intro playback + audio.
  *
- * Brand-first, not generic dark glass: the card carries the Celeventic
- * identity from `public/brand/logo-full.png` — a deep teal-to-midnight body,
- * a gold hairline, and the teal/gold/coral burst that radiates from the
- * logo's "C". Guests should recognise Celeventic before they read a word.
+ * Brand-first: one continuous teal field (same as the invite tile) so the
+ * gate and card read as a single surface — no floating slab, no drop shadow.
  */
 .openGate {
   position: absolute;
@@ -129,27 +127,24 @@
     max(1rem, env(safe-area-inset-right, 0px))
     max(1rem, env(safe-area-inset-bottom, 0px))
     max(1rem, env(safe-area-inset-left, 0px));
+  /* Opaque place-card teal — matches `.openGateCard` so edges disappear. */
   background:
     radial-gradient(
-      ellipse 70% 48% at 50% 46%,
-      rgba(15, 176, 166, 0.3) 0%,
-      rgba(6, 72, 66, 0.55) 34%,
-      rgba(3, 22, 28, 0.8) 68%,
-      rgba(2, 10, 14, 0.92) 100%
+      120% 80% at 50% 0%,
+      rgba(15, 176, 166, 0.28) 0%,
+      transparent 62%
     ),
-    /* Gold breath at the top and bottom edges, echoing the logo's warm rays. */
     linear-gradient(
-      180deg,
-      rgba(212, 166, 58, 0.12) 0%,
-      transparent 22%,
-      transparent 78%,
-      rgba(212, 166, 58, 0.1) 100%
-    ),
-    linear-gradient(180deg, rgba(2, 10, 14, 0.5) 0%, rgba(2, 10, 14, 0.82) 100%);
+      170deg,
+      #0b8a83 0%,
+      #064842 34%,
+      #041e26 74%,
+      #020e14 100%
+    );
   pointer-events: auto;
 }
 
-/* Radiating brand burst behind the card — the logo's rays, abstracted. */
+/* Radiating brand burst behind the card — muted so the field stays flat. */
 .openGateAura {
   position: absolute;
   left: 50%;
@@ -159,32 +154,12 @@
   transform: translate(-50%, -50%);
   border-radius: 9999px;
   pointer-events: none;
-  background:
-    radial-gradient(circle, rgba(11, 138, 131, 0.42) 0%, transparent 58%),
-    conic-gradient(
-      from 0deg,
-      rgba(212, 166, 58, 0.2) 0deg,
-      transparent 26deg,
-      rgba(11, 138, 131, 0.22) 60deg,
-      transparent 92deg,
-      rgba(255, 107, 87, 0.16) 128deg,
-      transparent 160deg,
-      rgba(212, 166, 58, 0.2) 200deg,
-      transparent 232deg,
-      rgba(11, 138, 131, 0.22) 274deg,
-      transparent 306deg,
-      rgba(255, 107, 87, 0.16) 338deg,
-      transparent 360deg
-    );
-  filter: blur(26px);
-  opacity: 0.85;
-  animation: cele-aura-breathe 6.5s ease-in-out infinite;
+  display: none;
 }
 
 /*
- * The card is a deepening of the same brand field, not a separate slab: no hard
- * edge, a gold hairline that fades at the corners, and a gradient that
- * continues the teal→midnight fall of `.openGate` behind it.
+ * Same teal as `.openGate` — transparent body so the card melts into the
+ * full-bleed field. No shadow, no glass slab.
  *
  * Size ladder (fits viewport with safe-area gutters):
  *   phone  ~ min(28rem, 100%)
@@ -208,27 +183,12 @@
     clamp(1.55rem, 3.8vw, 2.75rem)
     clamp(1.35rem, 3.6vw, 2.5rem)
     clamp(1.35rem, 3.2vw, 2.25rem);
-  border-radius: clamp(1.45rem, 3.2vw, 2.1rem);
-  border: 1px solid rgba(212, 166, 58, 0.3);
-  background:
-    radial-gradient(
-      120% 80% at 50% 0%,
-      rgba(15, 176, 166, 0.22) 0%,
-      transparent 62%
-    ),
-    linear-gradient(
-      170deg,
-      rgba(11, 138, 131, 0.3) 0%,
-      rgba(6, 72, 66, 0.5) 34%,
-      rgba(4, 30, 38, 0.72) 74%,
-      rgba(2, 14, 20, 0.8) 100%
-    );
-  box-shadow:
-    0 34px 90px rgba(2, 10, 14, 0.5),
-    0 0 60px rgba(11, 138, 131, 0.16),
-    0 1px 0 rgba(232, 197, 106, 0.24) inset;
-  backdrop-filter: blur(18px) saturate(1.2);
-  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   overflow: hidden;
 }
 

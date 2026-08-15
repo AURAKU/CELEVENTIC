@@ -46,9 +46,8 @@ import { resolveEventLifecycle } from "@/lib/experience/lifecycle";
 import { EventDayBanner } from "@/components/experience/event-day-banner";
 import { PostEventExperience } from "@/components/experience/post-event-experience";
 import { CinematicInvitationSpotlight } from "@/components/guest-portal/cinematic-invitation-spotlight";
-import { GuestFirstTimeIntro } from "@/components/celeventic-guide/guest-first-time-intro";
 import { GuestHelpChip } from "@/components/celeventic-guide/guest-contextual-help";
-import { GuestQuickActions } from "@/components/celeventic-guide/guest-quick-actions";
+import { InviteGuestHelpFab } from "@/components/celeventic-guide/guest-quick-actions";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import { formatEventDetailsTime } from "@/lib/invitation-blocks/event-details";
@@ -210,6 +209,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     guestId: props.guestId,
     guestName: props.guestName,
     partyAllowance: props.partyAllowance,
+    initialRsvpStatus: props.initialRsvpStatus,
+    initialAttendingCount: props.initialAttendingCount,
     qrDataUrl: props.qrDataUrl,
     admissionManualCode: props.admissionManualCode,
     memoryVaultEnabled: props.memoryVaultEnabled,
@@ -271,6 +272,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             category: categoryForBlueprint(props.design?.blueprintId),
             guestId: props.guestId,
             guestName: props.guestName,
+            partyAllowance: props.partyAllowance,
+            initialRsvpStatus: props.initialRsvpStatus,
+            initialAttendingCount: props.initialAttendingCount,
             templateSlug: props.templateSlug,
             rsvpRequired: props.rsvpRequired,
             previewMode: isPreviewInvitationId(props.invitation.id),
@@ -298,11 +302,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   if (cinematicMode) {
     return (
       <div className="relative">
-        {!props.embedded && (
-          <div className="absolute top-3 left-3 right-3 z-[70] pointer-events-auto">
-            <GuestFirstTimeIntro invitationId={props.invitation.id} guestId={props.guestId} />
-          </div>
-        )}
+        {!props.embedded && <InviteGuestHelpFab />}
       <CinematicInvitationSpotlight
         {...props}
         embedded={props.embedded}
@@ -418,6 +418,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           entryPass={props.entryPass}
           placeCard={props.placeCard}
           partyAllowance={props.partyAllowance}
+          initialRsvpStatus={props.initialRsvpStatus}
+          initialAttendingCount={props.initialAttendingCount}
           partyAdmission={props.partyAdmission}
           seatTable={props.seatTable}
           seatLabel={props.seatLabel}
@@ -455,17 +457,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         )}
 
         <div className="mx-auto max-w-2xl px-4 py-6 invite-content-pad space-y-8">
-          {!props.embedded && (
-            <GuestFirstTimeIntro invitationId={props.invitation.id} guestId={props.guestId} />
-          )}
-          {!props.embedded && (
-            <GuestQuickActions
-              mode="invite"
-              onSectionJump={(sectionId) => {
-                document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-            />
-          )}
+          {!props.embedded && <InviteGuestHelpFab />}
           {lifecyclePhase === "event-day" && (
             <PortalSection id="event-day">
               <EventDayBanner
@@ -476,10 +468,6 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 mapsLink={props.event.mapsLink}
                 accentColor={accent}
               />
-              <div className="mt-2 flex flex-wrap gap-2">
-                <GuestHelpChip topicId="event-day" />
-                <GuestHelpChip topicId="event-guide" />
-              </div>
             </PortalSection>
           )}
 
@@ -673,6 +661,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                     props.placeCard?.recipient.partySize ??
                     1
                   }
+                  initialRsvpStatus={props.initialRsvpStatus}
+                  initialAttendingCount={props.initialAttendingCount}
                   accentColor={props.design.colors?.accent ?? "#0B8A83"}
                 />
               </div>

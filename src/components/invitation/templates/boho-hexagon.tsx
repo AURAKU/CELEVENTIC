@@ -8,7 +8,7 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function BohoHexagonTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
+export function BohoHexagonTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
@@ -16,7 +16,7 @@ export function BohoHexagonTemplate({ invitation, event, design, guestId, guestN
   const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: colors.background }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4 sm:p-8" style={{ backgroundColor: colors.background }}>
       <div className="relative w-full max-w-md inv-fade-in">
         <FloralCorner className="-top-2 -left-2" />
         <FloralCorner className="-top-2 -right-2 scale-x-[-1]" />
@@ -56,7 +56,7 @@ export function BohoHexagonTemplate({ invitation, event, design, guestId, guestN
               </p>
             )}
             {showCardQr && qrDataUrl && <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />}
-            <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} />
+            <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor={colors.secondary} />
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} />
           </div>
         </div>

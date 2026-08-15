@@ -68,7 +68,7 @@ export default async function GuideTutorialPage({ params }: Props) {
   return (
     <>
       <HeaderShell />
-      <main className="relative min-h-screen">
+      <main className="relative min-h-app-viewport">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(11,138,131,0.1),transparent_50%),linear-gradient(180deg,#faf8f4,#fff)]" />
         <TutorialClient
           guide={{

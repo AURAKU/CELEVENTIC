@@ -210,7 +210,7 @@ export function ThankYouPublicView(props: ThankYouPublicViewProps) {
 
   return (
     <div
-      className={cn("relative min-h-screen overflow-x-hidden", motionClass)}
+      className={cn("relative min-h-app-viewport overflow-x-hidden", motionClass)}
       style={{
         ...cssVars,
         backgroundColor: resolved.backgroundColor,

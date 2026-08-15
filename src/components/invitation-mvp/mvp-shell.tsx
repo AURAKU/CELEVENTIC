@@ -30,7 +30,7 @@ export function MvpShell({ children, step, title, subtitle, variant = "default" 
   ];
 
   return (
-    <div className={`min-h-screen ${isWorkspace ? "bg-slate-100" : "bg-[#FAF8F4]"}`}>
+    <div className={`min-h-app-viewport ${isWorkspace ? "bg-slate-100" : "bg-[#FAF8F4]"}`}>
       <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/90 backdrop-blur-xl">
         <div className={`mx-auto flex h-14 items-center justify-between px-4 ${isWorkspace ? "max-w-[100vw]" : "max-w-6xl"}`}>
           <Logo size="sm" />

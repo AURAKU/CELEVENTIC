@@ -28,7 +28,7 @@ export async function CeleventicGuideHome({
   const guides = await listPublicGuides({ viewerRole: session?.user?.role as string | undefined });
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-app-viewport">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(11,138,131,0.12),transparent_55%),linear-gradient(180deg,#faf8f4_0%,#f3f7f6_40%,#ffffff_100%)]" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10">
         <header className="max-w-3xl space-y-4">

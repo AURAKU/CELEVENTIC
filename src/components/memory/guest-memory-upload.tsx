@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
+  ArrowLeft,
   Camera,
   CheckCircle2,
   ImagePlus,
+  Images,
   Loader2,
   RotateCcw,
   Upload,
@@ -22,6 +24,12 @@ import {
   readOrCreateClientGuestKey,
   writeLocalConsent,
 } from "@/lib/memory/memory-guest-identity";
+import {
+  extensionForBlob,
+  formatBytes,
+  MEMORY_VAULT_IMAGE_COMPRESSION,
+  smartCompressImage,
+} from "@/lib/image/smart-compress";
 
 type MemoryThemeVars = CSSProperties & Record<`--memory-${string}`, string>;
 
@@ -46,22 +54,39 @@ type PhotoQueueItem = {
   id: string;
   file: File;
   previewUrl: string;
-  status: "ready" | "uploading" | "done" | "error";
+  status: "preparing" | "ready" | "uploading" | "done" | "error";
   progress: number;
   error?: string;
+  /** Original bytes before smart compress (for friendly “optimized” hints). */
+  originalBytes?: number;
 };
 
-const IMAGE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif";
+/** Accept anything the OS calls a photo — we normalize before upload. */
+const IMAGE_ACCEPT =
+  "image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif,.avif,.bmp,.tif,.tiff";
+
+/** Absolute raw intake before optimization (phone dumps, HEIC bursts). */
+const RAW_INTAKE_MAX_MB = 100;
 
 function friendlyImageError(message: string, maxMb: number): string {
   const lower = message.toLowerCase();
   if (lower.includes("large") || lower.includes("size")) {
-    return `That photo is too large. Please choose one under ${maxMb}MB.`;
+    return `That photo couldn’t be optimized under ${maxMb}MB. Try another shot or export a smaller copy.`;
   }
-  if (lower.includes("type") || lower.includes("unsupported")) {
-    return "That photo format isn’t supported. Try JPEG or PNG.";
+  if (lower.includes("type") || lower.includes("unsupported") || lower.includes("format")) {
+    return "We couldn’t read that photo format. Try JPEG, HEIC, PNG, or WebP.";
   }
   return message || "We couldn’t upload that photo. Please try again.";
+}
+
+function isProbablyImage(file: File): boolean {
+  if (file.type.startsWith("image/")) return true;
+  return /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i.test(file.name);
+}
+
+function compressedFileName(originalName: string, blob: Blob): string {
+  const base = originalName.replace(/\.[^.]+$/, "") || "memory";
+  return `${base}.${extensionForBlob(blob)}`;
 }
 
 export function GuestMemoryUpload({
@@ -86,7 +111,6 @@ export function GuestMemoryUpload({
   const guestKey = useMemo(() => readOrCreateClientGuestKey(), []);
 
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [caption, setCaption] = useState("");
   const [consent, setConsent] = useState(false);
   const [hasConsent, setHasConsent] = useState(initialHasConsent || readLocalConsent(token));
@@ -123,6 +147,8 @@ export function GuestMemoryUpload({
   const consentOk = hasConsent || consent;
   const photoSlotsLeft = Math.max(0, maxPhotosPerGuest - photos.filter((p) => p.status !== "error").length);
   const uploading = photos.some((p) => p.status === "uploading");
+  const preparing = photos.some((p) => p.status === "preparing");
+  const readyToShare = photos.some((p) => p.status === "ready" || p.status === "error");
 
   const markConsented = useCallback(async () => {
     writeLocalConsent(token);
@@ -158,9 +184,9 @@ export function GuestMemoryUpload({
       showError(gate);
       return;
     }
-    const incoming = Array.from(list).filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name));
+    const incoming = Array.from(list).filter(isProbablyImage);
     if (!incoming.length) {
-      showError("Please choose photo files (JPEG, PNG, or WebP).");
+      showError("Please choose photo files from your camera roll.");
       return;
     }
     if (photoSlotsLeft <= 0) {
@@ -168,22 +194,101 @@ export function GuestMemoryUpload({
       return;
     }
 
-    const accepted: PhotoQueueItem[] = [];
+    const rawCap = Math.max(maxImageSizeMb, RAW_INTAKE_MAX_MB) * 1024 * 1024;
+    const staged: PhotoQueueItem[] = [];
     for (const file of incoming.slice(0, photoSlotsLeft)) {
-      if (file.size > maxImageSizeMb * 1024 * 1024) {
-        showError(`“${file.name}” is too large. Max ${maxImageSizeMb}MB per photo.`);
+      if (file.size > rawCap) {
+        showError(
+          `“${file.name}” is unusually large (${formatBytes(file.size)}). Please pick a smaller export.`
+        );
         continue;
       }
-      accepted.push({
+      staged.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         file,
         previewUrl: URL.createObjectURL(file),
-        status: "ready",
+        status: "preparing",
         progress: 0,
+        originalBytes: file.size,
       });
     }
-    if (accepted.length) setPhotos((prev) => [...prev, ...accepted]);
+    if (!staged.length) return;
+    setPhotos((prev) => [...prev, ...staged]);
     setError("");
+    for (const item of staged) {
+      void preparePhoto(item.id, item.file, item.previewUrl);
+    }
+  }
+
+  async function preparePhoto(id: string, source: File, previewUrl: string) {
+    const maxBytes = maxImageSizeMb * 1024 * 1024;
+    try {
+      const result = await smartCompressImage(source, MEMORY_VAULT_IMAGE_COMPRESSION);
+      let nextBlob = result.blob;
+      let nextFile = new File([nextBlob], compressedFileName(source.name, nextBlob), {
+        type: nextBlob.type || "image/jpeg",
+        lastModified: Date.now(),
+      });
+
+      // Still over event budget after smart compress — try a tighter pass.
+      if (nextFile.size > maxBytes) {
+        const tighter = await smartCompressImage(source, {
+          ...MEMORY_VAULT_IMAGE_COMPRESSION,
+          maxEdge: 1800,
+          targetBytes: Math.min(
+            MEMORY_VAULT_IMAGE_COMPRESSION.targetBytes ?? 2_800_000,
+            maxBytes * 0.85
+          ),
+          minQuality: 0.7,
+          minEdge: 960,
+        });
+        nextBlob = tighter.blob;
+        nextFile = new File([nextBlob], compressedFileName(source.name, nextBlob), {
+          type: nextBlob.type || "image/jpeg",
+          lastModified: Date.now(),
+        });
+      }
+
+      if (nextFile.size > maxBytes) {
+        throw new Error(`Image exceeds ${maxImageSizeMb}MB limit.`);
+      }
+
+      const nextPreview = URL.createObjectURL(nextFile);
+      setPhotos((prev) =>
+        prev.map((p) => {
+          if (p.id !== id) return p;
+          if (p.previewUrl !== nextPreview) URL.revokeObjectURL(p.previewUrl);
+          return {
+            ...p,
+            file: nextFile,
+            previewUrl: nextPreview,
+            status: "ready",
+            originalBytes: result.originalBytes,
+            error: undefined,
+          };
+        })
+      );
+    } catch {
+      // Browser couldn't decode (common for HEIC on some desktops) — upload raw if under cap.
+      if (source.size <= maxBytes) {
+        setPhotos((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? { ...p, file: source, previewUrl, status: "ready", originalBytes: source.size }
+              : p
+          )
+        );
+        return;
+      }
+      const message = friendlyImageError(
+        `We couldn’t optimize “${source.name}” under ${maxImageSizeMb}MB.`,
+        maxImageSizeMb
+      );
+      setPhotos((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: "error", error: message } : p))
+      );
+      showError(message);
+    }
   }
 
   function removePhoto(id: string) {
@@ -213,7 +318,6 @@ export function GuestMemoryUpload({
       fd.append("consent", "true");
       fd.append("guestKey", guestKey);
       if (name) fd.append("uploaderName", name);
-      if (phone) fd.append("uploaderPhone", phone);
       if (caption) fd.append("caption", caption);
 
       const { ok, json } = await uploadFormDataWithProgress("/api/memories/upload", fd, (pct) => {
@@ -263,7 +367,8 @@ export function GuestMemoryUpload({
   };
 
   return (
-    <div className="max-w-lg mx-auto space-y-6" style={shellStyle}>
+    <div className="memory-viewport-stage space-y-6 rounded-none sm:rounded-3xl sm:border sm:shadow-sm overflow-hidden" style={shellStyle}>
+      <div className="space-y-6 px-0 sm:px-6 sm:py-6">
       <header className="text-center space-y-2 pt-2">
         <Camera className="h-10 w-10 mx-auto" style={{ color: "var(--memory-color-accent, #0B8A83)" }} />
         <h1
@@ -319,15 +424,9 @@ export function GuestMemoryUpload({
           borderRadius: "var(--memory-radius, 18px)",
         }}
       >
-        <div className="grid sm:grid-cols-2 gap-3 sticky top-0 z-10 py-1" style={{ background: "inherit" }}>
-          <div className="space-y-1">
-            <Label>Your name {allowAnonymousUploads ? "(optional)" : "*"}</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Guest name" className="min-h-11" />
-          </div>
-          <div className="space-y-1">
-            <Label>Phone (optional)</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+233..." className="min-h-11" />
-          </div>
+        <div className="sticky top-0 z-10 space-y-1 py-1" style={{ background: "inherit" }}>
+          <Label>Your name {allowAnonymousUploads ? "(optional)" : "*"}</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Guest name" className="min-h-11" />
         </div>
 
         <div className="space-y-1">
@@ -388,7 +487,8 @@ export function GuestMemoryUpload({
           <ImagePlus className="h-9 w-9 mx-auto mb-2 opacity-50" />
           <p className="text-sm mb-1 font-medium">Add photos</p>
           <p className="text-xs mb-4" style={{ color: "var(--memory-color-ink-muted, #94a3b8)" }}>
-            {photos.filter((p) => p.status !== "error").length}/{maxPhotosPerGuest} slots · up to {maxImageSizeMb}MB each
+            {photos.filter((p) => p.status !== "error").length}/{maxPhotosPerGuest} slots · any size or
+            format · we optimize automatically
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             <Button
@@ -442,6 +542,12 @@ export function GuestMemoryUpload({
                 <div key={item.id} className="relative aspect-[4/5] rounded-xl overflow-hidden bg-slate-100">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.previewUrl} alt="" className="w-full h-full object-cover" />
+                  {item.status === "preparing" ? (
+                    <div className="absolute inset-0 bg-black/45 flex flex-col items-center justify-center text-white text-xs gap-1">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Optimizing…
+                    </div>
+                  ) : null}
                   {item.status === "uploading" ? (
                     <div className="absolute inset-0 bg-black/45 flex flex-col items-center justify-center text-white text-xs gap-1">
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -486,11 +592,11 @@ export function GuestMemoryUpload({
               type="button"
               className="w-full min-h-12 gap-2"
               style={{ background: "var(--memory-color-accent, #0B8A83)", color: "var(--memory-color-on-accent, #fff)" }}
-              disabled={uploading || !photos.some((p) => p.status === "ready" || p.status === "error")}
+              disabled={uploading || preparing || !readyToShare}
               onClick={() => void uploadAllReady()}
             >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {uploading ? "Uploading…" : "Share selected photos"}
+              {uploading || preparing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {preparing ? "Optimizing photos…" : uploading ? "Uploading…" : "Share selected photos"}
             </Button>
           </div>
         ) : null}
@@ -498,14 +604,12 @@ export function GuestMemoryUpload({
         {/* Videos — MultiVideoUploader (chunked/resumable when S3 available) */}
         <div className="pt-2 border-t" style={{ borderColor: "var(--memory-color-border, #e5e7eb)" }}>
           <p className="text-xs mb-2" style={{ color: "var(--memory-color-ink-muted, #94a3b8)" }}>
-            Videos · up to {maxVideosPerGuest} · {maxVideoSizeMb}MB each · phone, DSLR, WhatsApp/TikTok/Instagram
-            exports and screen recordings (including iPhone HEVC) are accepted and processed for playback.
+            Up to {maxVideosPerGuest} · {maxVideoSizeMb}MB each
           </p>
           <MultiVideoUploader
             category="GUESTBOOK"
             guestToken={token}
             guestName={name || undefined}
-            guestPhone={phone || undefined}
             guestKey={guestKey}
             disabled={videoDisabled}
             allowCameraCapture
@@ -529,17 +633,61 @@ export function GuestMemoryUpload({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 justify-center pb-8">
-        {memoriesUrl ? (
-          <Button variant="outline" asChild className="min-h-11">
-            <a href={memoriesUrl}>View approved memories</a>
-          </Button>
-        ) : null}
-        {invitationUrl ? (
-          <Button variant="ghost" asChild className="min-h-11">
-            <a href={invitationUrl}>Back to invitation</a>
-          </Button>
-        ) : null}
+      {(memoriesUrl || invitationUrl) && (
+        <nav
+          aria-label="Memory upload navigation"
+          className="flex flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-center pb-8 pt-1"
+        >
+          {memoriesUrl ? (
+            <a
+              href={memoriesUrl}
+              className={cn(
+                "group inline-flex min-h-[52px] flex-1 items-center justify-center gap-2.5 rounded-2xl px-5",
+                "text-[15px] font-semibold tracking-wide transition-[transform,box-shadow,filter] duration-200",
+                "hover:brightness-[1.03] active:scale-[0.985]",
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              )}
+              style={{
+                background:
+                  "linear-gradient(165deg, var(--memory-color-accent, #0B8A83) 0%, color-mix(in srgb, var(--memory-color-accent, #0B8A83) 78%, #064842) 100%)",
+                color: "var(--memory-color-on-accent, #fff)",
+                boxShadow:
+                  "0 14px 32px -16px color-mix(in srgb, var(--memory-color-accent, #0B8A83) 70%, transparent), inset 0 1px 0 rgba(255,255,255,0.22)",
+                outlineColor: "var(--memory-color-accent, #0B8A83)",
+              }}
+            >
+              <Images className="h-5 w-5 shrink-0 opacity-95" aria-hidden />
+              <span>View approved memories</span>
+            </a>
+          ) : null}
+          {invitationUrl ? (
+            <a
+              href={invitationUrl}
+              className={cn(
+                "group inline-flex min-h-[52px] flex-1 items-center justify-center gap-2.5 rounded-2xl border px-5",
+                "text-[15px] font-semibold tracking-wide transition-[transform,background-color,border-color] duration-200",
+                "hover:brightness-[1.02] active:scale-[0.985]",
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              )}
+              style={{
+                borderColor:
+                  "color-mix(in srgb, var(--memory-color-accent, #0B8A83) 45%, var(--memory-color-border, #d6d3d1))",
+                background:
+                  "color-mix(in srgb, var(--memory-color-surface, #fff) 88%, white)",
+                color: "var(--memory-color-accent, #0B8A83)",
+                boxShadow: "0 10px 28px -20px rgba(15, 23, 42, 0.45)",
+                outlineColor: "var(--memory-color-accent, #0B8A83)",
+              }}
+            >
+              <ArrowLeft
+                className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5"
+                aria-hidden
+              />
+              <span>Back to invitation</span>
+            </a>
+          ) : null}
+        </nav>
+      )}
       </div>
     </div>
   );

@@ -21,6 +21,9 @@ function InviteBody({
   guestName,
   qrDataUrl,
   entryPass,
+  partyAllowance,
+  initialRsvpStatus,
+  initialAttendingCount,
   variant = "default",
 }: InvitationRenderProps & { variant?: "default" | "dark" | "light" | "neon" | "corporate" }) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
@@ -77,6 +80,9 @@ function InviteBody({
         invitationId={invitation.id}
         guestId={guestId}
         guestName={guestName}
+        partyAllowance={partyAllowance}
+        initialRsvpStatus={initialRsvpStatus}
+        initialAttendingCount={initialAttendingCount}
         accentColor={colors.secondary}
         textColor={colors.text}
         variant={dark ? "dark" : "light"}

@@ -12,6 +12,12 @@ import {
   rsvpPartyCapacityLine,
   rsvpPartySlotGuidance,
 } from "@/lib/invitation/rsvp-party-slots";
+import {
+  normalizeRsvpChoice,
+  readPersistedRsvp,
+  writePersistedRsvp,
+  type PersistedRsvpChoice,
+} from "@/lib/invitation/rsvp-persisted-state";
 import { cn } from "@/lib/utils";
 import { TM_PALETTE as PALETTE } from "./traditional-marriage-palette";
 
@@ -33,11 +39,14 @@ export interface TraditionalMarriageRespondProps {
   showRsvp: boolean;
   /** Organiser-set heads this invitation admits (gate + RSVP ceiling). */
   partyAllowance?: number;
+  /** Server-known RSVP — thank-you on refresh / reopen. */
+  initialRsvpStatus?: PersistedRsvpChoice | null;
+  initialAttendingCount?: number | null;
   organizerPhone?: string | null;
   organizerEmail?: string | null;
 }
 
-type RsvpChoice = "ACCEPTED" | "DECLINED" | "MAYBE";
+type RsvpChoice = PersistedRsvpChoice;
 
 const CHOICES: { id: RsvpChoice; label: string; whisper: string }[] = [
   { id: "ACCEPTED", label: "Accept", whisper: "With joy" },
@@ -57,25 +66,52 @@ export function TraditionalMarriageRespond({
   rsvpHeading = "R.S.V.P",
   showRsvp,
   partyAllowance = 1,
+  initialRsvpStatus = null,
+  initialAttendingCount = null,
   organizerPhone,
   organizerEmail,
 }: TraditionalMarriageRespondProps) {
   const { t } = useLocale();
   const staticPreview = useInvitationStaticPreview();
   const allowance = Math.max(1, Math.trunc(partyAllowance || 1));
-  const [rsvpStatus, setRsvpStatus] = useState<RsvpChoice | null>(null);
-  const [confirmedAttending, setConfirmedAttending] = useState(allowance);
+  const seededStatus = normalizeRsvpChoice(initialRsvpStatus);
+  const seededAttending = clampAttendingCount(
+    initialAttendingCount ?? allowance,
+    allowance
+  );
+  const [rsvpStatus, setRsvpStatus] = useState<RsvpChoice | null>(seededStatus);
+  const [confirmedAttending, setConfirmedAttending] = useState(seededAttending);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [guestName, setGuestName] = useState(initialGuestName?.trim() ?? "");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [attendingCount, setAttendingCount] = useState(allowance);
+  const [attendingCount, setAttendingCount] = useState(seededAttending);
   const [pressed, setPressed] = useState<RsvpChoice | null>(null);
 
   useEffect(() => {
     setAttendingCount((prev) => clampAttendingCount(prev, allowance));
   }, [allowance]);
+
+  // Server status first; same-browser local backup when props are missing.
+  useEffect(() => {
+    if (seededStatus) {
+      setRsvpStatus(seededStatus);
+      setConfirmedAttending(seededAttending);
+      setAttendingCount(seededAttending);
+      writePersistedRsvp(invitationId, guestId, {
+        status: seededStatus,
+        attendingCount: seededAttending,
+      });
+      return;
+    }
+    const cached = readPersistedRsvp(invitationId, guestId);
+    if (!cached) return;
+    setRsvpStatus(cached.status);
+    const attending = clampAttendingCount(cached.attendingCount, allowance);
+    setConfirmedAttending(attending);
+    setAttendingCount(attending);
+  }, [invitationId, guestId, seededStatus, seededAttending, allowance]);
 
   const nameLocked = Boolean(guestId && guestName.trim());
   const showReachHosts = Boolean(organizerPhone || organizerEmail);
@@ -125,6 +161,10 @@ export function TraditionalMarriageRespond({
       if (res.ok) {
         setConfirmedAttending(cappedAttending);
         setRsvpStatus(response);
+        writePersistedRsvp(invitationId, guestId, {
+          status: response,
+          attendingCount: cappedAttending,
+        });
       } else setError(data.error || t("rsvp.submit_failed"));
     } catch {
       setError(t("rsvp.submit_failed"));

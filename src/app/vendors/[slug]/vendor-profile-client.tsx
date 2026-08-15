@@ -62,7 +62,7 @@ export function VendorProfileClient({ vendor }: { vendor: VendorProfile }) {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4] overflow-x-hidden">
+    <div className="min-h-app-viewport bg-[#FAF8F4] overflow-x-hidden">
       <div
         className="h-48 sm:h-64 bg-gradient-to-br from-[#0B8A83]/30 to-[#0F172A]/20 relative"
         style={coverUrl ? { backgroundImage: `url(${coverUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}

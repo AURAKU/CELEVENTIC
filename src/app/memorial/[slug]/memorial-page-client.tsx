@@ -184,7 +184,7 @@ export function MemorialPageClient() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0F172A] text-[#FAF8F4] flex items-center justify-center p-6">
+      <div className="min-h-app-viewport bg-[#0F172A] text-[#FAF8F4] flex items-center justify-center p-6">
         <div className="text-center">
           <Heart className="h-12 w-12 text-[#D4A63A] mx-auto mb-4" />
           <h1 className="text-xl font-semibold">Memorial Not Available</h1>
@@ -196,13 +196,13 @@ export function MemorialPageClient() {
   }
 
   if (loading || !data) {
-    return <div className="min-h-screen bg-[#0F172A] flex items-center justify-center text-[#FAF8F4]">Loading memorial…</div>;
+    return <div className="min-h-app-viewport bg-[#0F172A] flex items-center justify-center text-[#FAF8F4]">Loading memorial…</div>;
   }
 
   const p = data.profile;
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-[#FAF8F4] overflow-x-hidden min-w-0">
+    <div className="min-h-app-viewport bg-[#0F172A] text-[#FAF8F4] overflow-x-hidden min-w-0">
       <header className="border-b border-white/10 py-10 px-6 text-center">
         {p.photoUrl && (
           // eslint-disable-next-line @next/next/no-img-element

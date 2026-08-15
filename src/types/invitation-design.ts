@@ -170,6 +170,13 @@ export interface InvitationRenderProps {
    */
   partyAllowance?: number;
   /**
+   * Existing RSVP for this personalized guest — keeps Kindly Respond on thank-you
+   * across refresh / reopen instead of re-opening Accept.
+   */
+  initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
+  /** Confirmed attending heads when `initialRsvpStatus` is ACCEPTED. */
+  initialAttendingCount?: number | null;
+  /**
    * Partial admission → Event Access CTA above the entry-pass QR.
    */
   partyAdmission?: {

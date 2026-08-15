@@ -14,6 +14,12 @@ import {
   rsvpPartyCapacityLine,
   rsvpPartySlotGuidance,
 } from "@/lib/invitation/rsvp-party-slots";
+import {
+  normalizeRsvpChoice,
+  readPersistedRsvp,
+  writePersistedRsvp,
+  type PersistedRsvpChoice,
+} from "@/lib/invitation/rsvp-persisted-state";
 
 interface InvitationRsvpPanelProps {
   invitationId: string;
@@ -26,6 +32,8 @@ interface InvitationRsvpPanelProps {
   label?: string;
   /** Organiser-set heads this invitation admits. */
   partyAllowance?: number;
+  initialRsvpStatus?: PersistedRsvpChoice | null;
+  initialAttendingCount?: number | null;
 }
 
 export function InvitationRsvpPanel({
@@ -37,17 +45,24 @@ export function InvitationRsvpPanel({
   buttonStyle,
   label,
   partyAllowance = 1,
+  initialRsvpStatus = null,
+  initialAttendingCount = null,
 }: InvitationRsvpPanelProps) {
   const { t } = useLocale();
   const allowance = Math.max(1, Math.trunc(partyAllowance || 1));
-  const [rsvpStatus, setRsvpStatus] = useState<string | null>(null);
-  const [confirmedAttending, setConfirmedAttending] = useState(allowance);
+  const seededStatus = normalizeRsvpChoice(initialRsvpStatus);
+  const seededAttending = clampAttendingCount(
+    initialAttendingCount ?? allowance,
+    allowance
+  );
+  const [rsvpStatus, setRsvpStatus] = useState<string | null>(seededStatus);
+  const [confirmedAttending, setConfirmedAttending] = useState(seededAttending);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [guestName, setGuestName] = useState(initialGuestName?.trim() ?? "");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [attendingCount, setAttendingCount] = useState(allowance);
+  const [attendingCount, setAttendingCount] = useState(seededAttending);
   const nameLocked = Boolean(guestId && guestName.trim());
   const capacityCopy = rsvpPartyCapacityLine(allowance);
   const slotGuidance = useMemo(
@@ -58,6 +73,25 @@ export function InvitationRsvpPanel({
   useEffect(() => {
     setAttendingCount((prev) => clampAttendingCount(prev, allowance));
   }, [allowance]);
+
+  useEffect(() => {
+    if (seededStatus) {
+      setRsvpStatus(seededStatus);
+      setConfirmedAttending(seededAttending);
+      setAttendingCount(seededAttending);
+      writePersistedRsvp(invitationId, guestId, {
+        status: seededStatus,
+        attendingCount: seededAttending,
+      });
+      return;
+    }
+    const cached = readPersistedRsvp(invitationId, guestId);
+    if (!cached) return;
+    setRsvpStatus(cached.status);
+    const attending = clampAttendingCount(cached.attendingCount, allowance);
+    setConfirmedAttending(attending);
+    setAttendingCount(attending);
+  }, [invitationId, guestId, seededStatus, seededAttending, allowance]);
 
   async function handleRsvp(response: "ACCEPTED" | "DECLINED" | "MAYBE") {
     if (isPreviewInvitationId(invitationId)) {
@@ -91,6 +125,10 @@ export function InvitationRsvpPanel({
     if (res.ok) {
       setConfirmedAttending(cappedAttending);
       setRsvpStatus(response);
+      writePersistedRsvp(invitationId, guestId, {
+        status: response,
+        attendingCount: cappedAttending,
+      });
     } else setError(data.error || t("rsvp.submit_failed"));
     setLoading(false);
   }

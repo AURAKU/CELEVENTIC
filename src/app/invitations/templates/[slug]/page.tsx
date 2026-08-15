@@ -30,7 +30,7 @@ export default async function TemplateDetailPage({
   return (
     <>
       <HeaderShell />
-      <main className="min-h-screen bg-[#FAF8F4] py-12">
+      <main className="min-h-app-viewport bg-[#FAF8F4] py-12">
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid lg:grid-cols-2 gap-10 mb-16">
             <div>

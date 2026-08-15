@@ -4,7 +4,7 @@ import "../globals.css";
 export default function InviteLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className={`${invitationFontVars} scroll-smooth invite-route-shell w-full min-h-[100vh] min-h-[100dvh] min-h-[100svh]`}
+      className={`${invitationFontVars} scroll-smooth invite-route-shell w-full min-w-0 min-h-app-viewport`}
     >
       {children}
     </div>

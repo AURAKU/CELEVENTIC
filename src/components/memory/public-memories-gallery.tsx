@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
-import { pickMemoryFullSrc, pickMemoryGridSrc, isMemoryVideo } from "@/lib/memory/memory-media-urls";
+import { pickMemoryFullSrc, pickMemoryGridSrc, resolveMemoryPhotoSrcSet, isMemoryVideo } from "@/lib/memory/memory-media-urls";
 import {
   readOrCreateClientGuestKey,
   readOwnedCommentTokens,
@@ -345,7 +345,8 @@ export function PublicMemoriesGallery({
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen" style={shellStyle}>
+    <div className="public-viewport-shell" style={shellStyle}>
+      <div className="memory-viewport-stage">
       <header
         className="sticky top-0 z-20 backdrop-blur-md border-b"
         style={{
@@ -361,7 +362,7 @@ export function PublicMemoriesGallery({
             Event memories
           </p>
           <h1
-            className="text-xl sm:text-2xl font-bold leading-tight"
+            className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight"
             style={{ fontFamily: "var(--memory-font-display, Georgia, serif)" }}
           >
             {eventTitle}
@@ -402,10 +403,10 @@ export function PublicMemoriesGallery({
         </div>
       </header>
 
-      <div className="px-0.5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="px-0.5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         {loading && localItems.length === 0 ? (
-          <div className="grid grid-cols-3 gap-0.5 p-0.5">
-            {Array.from({ length: 9 }).map((_, i) => (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-0.5 p-0.5">
+            {Array.from({ length: 12 }).map((_, i) => (
               <div
                 key={i}
                 className="aspect-[4/5] animate-pulse"
@@ -438,7 +439,7 @@ export function PublicMemoriesGallery({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-0.5">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-0.5">
             {localItems.map((item) => {
               const gridSrc = resolvePublicMediaUrl(pickMemoryGridSrc(item));
               const video = isMemoryVideo(item);
@@ -494,6 +495,7 @@ export function PublicMemoriesGallery({
             className="mt-4 px-4"
           />
         ) : null}
+      </div>
       </div>
 
       {lightbox ? (
@@ -571,6 +573,8 @@ export function PublicMemoriesGallery({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={resolvePublicMediaUrl(pickMemoryFullSrc(lightbox))}
+                srcSet={resolveMemoryPhotoSrcSet(lightbox, resolvePublicMediaUrl)}
+                sizes="(max-width: 768px) 100vw, min(1200px, 92vw)"
                 alt={lightbox.caption ?? ""}
                 className="max-w-full max-h-full object-contain"
               />

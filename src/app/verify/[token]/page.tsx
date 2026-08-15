@@ -14,7 +14,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ token: 
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF8F4] px-4">
+    <div className="min-h-app-viewport flex items-center justify-center bg-[#FAF8F4] px-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardContent className="p-10 text-center space-y-4">
           <Logo className="justify-center mx-auto" size="lg" />

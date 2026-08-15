@@ -417,6 +417,8 @@ export function TraditionalMarriageCeremonyTemplate(props: TraditionalMarriagePr
               props.placeCard?.recipient.partySize ??
               1
             }
+            initialRsvpStatus={props.initialRsvpStatus}
+            initialAttendingCount={props.initialAttendingCount}
             organizerPhone={organizerPhone}
             organizerEmail={organizerEmail}
           />

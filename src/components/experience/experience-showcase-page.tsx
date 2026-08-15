@@ -18,7 +18,7 @@ export function ExperienceShowcasePage() {
   const audioPreview = AUDIO_EXPERIENCE_CATALOG.slice(0, 8);
 
   return (
-    <div className="min-h-screen bg-[#050508] text-white">
+    <div className="min-h-app-viewport bg-[#050508] text-white">
       {/* Hero */}
       <section className="relative overflow-hidden pt-28 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(212,175,55,0.15)_0%,_transparent_55%)]" />

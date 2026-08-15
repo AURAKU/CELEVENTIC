@@ -7,13 +7,13 @@ import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 import { StudioButton } from "../shared/studio-button";
 
-export function GlassAcrylicTemplate({ invitation, event, design, guestId, guestName }: InvitationRenderProps) {
+export function GlassAcrylicTemplate({ invitation, event, design, guestId, guestName, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors, studio } = design;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ background: "linear-gradient(160deg, #0a1628 0%, #1a3a5c 50%, #0B8A83 100%)" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4 sm:p-8" style={{ background: "linear-gradient(160deg, #0a1628 0%, #1a3a5c 50%, #0B8A83 100%)" }}>
       <div
         className="relative w-full max-w-md rounded-3xl overflow-hidden inv-fade-in backdrop-blur-xl border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.4)]"
         style={{ background: "rgba(255,255,255,0.08)" }}
@@ -33,7 +33,7 @@ export function GlassAcrylicTemplate({ invitation, event, design, guestId, guest
               <p className="text-sm inv-caption-on-dark pt-2">{event.venueName}{event.landmark ? `, ${event.landmark}` : ""}</p>
             )}
           </div>
-          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor="#7dd3fc" label={studio?.rsvpLabel} />
+          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor="#7dd3fc" label={studio?.rsvpLabel} />
           <StudioButton studio={studio} accent="#7dd3fc">
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} />
           </StudioButton>

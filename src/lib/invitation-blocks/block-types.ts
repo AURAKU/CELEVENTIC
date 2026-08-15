@@ -197,6 +197,9 @@ export interface BlockRenderContext {
   guestName?: string;
   /** Heads this invitation admits — RSVP companion slots. */
   partyAllowance?: number;
+  /** Existing RSVP — keep thank-you across refresh. */
+  initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
+  initialAttendingCount?: number | null;
   qrDataUrl?: string;
   admissionManualCode?: string | null;
   memoryVaultEnabled?: boolean;

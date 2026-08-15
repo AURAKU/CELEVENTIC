@@ -78,7 +78,7 @@ export default async function EventMiniSitePage({ params }: { params: Promise<{ 
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
+    <div className="min-h-app-viewport bg-[#FAF8F4]">
       <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <BrandMotto size="sm" />

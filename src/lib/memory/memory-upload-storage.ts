@@ -5,20 +5,37 @@ import { sniffVideoContainer } from "@/lib/video/container-sniff";
 import { ALLOWED_VIDEO_MIME_TYPES, ALLOWED_VIDEO_EXTENSIONS } from "@/lib/video/constants";
 import { extractExtension } from "@/lib/video/validation";
 
-const ALLOWED_IMAGE = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/jfif", "image/pjpeg"]);
+const ALLOWED_IMAGE = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/jfif",
+  "image/pjpeg",
+  "image/heic",
+  "image/heif",
+  "image/avif",
+  "image/jpg",
+]);
 const ALLOWED_VIDEO = new Set<string>(ALLOWED_VIDEO_MIME_TYPES);
 
 const EXT_MAP: Record<string, string> = {
   "image/jpeg": ".jpg",
+  "image/jpg": ".jpg",
   "image/png": ".png",
   "image/webp": ".webp",
   "image/gif": ".gif",
   "image/jfif": ".jpg",
   "image/pjpeg": ".jpg",
+  "image/heic": ".heic",
+  "image/heif": ".heif",
+  "image/avif": ".avif",
   "video/mp4": ".mp4",
   "video/webm": ".webm",
   "video/quicktime": ".mov",
 };
+
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif", "jfif", "heic", "heif", "avif"];
 
 export function validateMemoryFile(
   mimeType: string,
@@ -28,7 +45,8 @@ export function validateMemoryFile(
   fileName?: string
 ): { valid: boolean; reason?: string; mediaType?: "image" | "video" } {
   const ext = fileName ? extractExtension(fileName) : null;
-  const isImage = ALLOWED_IMAGE.has(mimeType) || (!!ext && ["jpg", "jpeg", "png", "webp", "gif", "jfif"].includes(ext));
+  const isImage =
+    ALLOWED_IMAGE.has(mimeType) || (!!ext && IMAGE_EXTENSIONS.includes(ext));
   const isVideo =
     ALLOWED_VIDEO.has(mimeType) ||
     mimeType.startsWith("video/") ||
@@ -36,12 +54,18 @@ export function validateMemoryFile(
   if (!isImage && !isVideo) {
     return {
       valid: false,
-      reason: "That file type isn’t supported. Try a photo (JPEG/PNG/WebP) or a video (MP4/MOV). If a video fails, export it as MP4 and try again.",
+      reason:
+        "That file type isn’t supported. Try any common photo (JPEG, HEIC, PNG, WebP) or a video (MP4/MOV).",
     };
   }
   const maxBytes = (isImage ? maxImageMb : maxVideoMb) * 1024 * 1024;
   if (sizeBytes > maxBytes) {
-    return { valid: false, reason: `File too large. Max ${isImage ? maxImageMb : maxVideoMb}MB.` };
+    return {
+      valid: false,
+      reason: isImage
+        ? `That photo is still too large after optimization (max ${maxImageMb}MB). Try another shot or export a smaller copy.`
+        : `File too large. Max ${maxVideoMb}MB.`,
+    };
   }
   return { valid: true, mediaType: isImage ? "image" : "video" };
 }
