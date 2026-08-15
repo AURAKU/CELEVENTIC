@@ -468,10 +468,6 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                 mapsLink={props.event.mapsLink}
                 accentColor={accent}
               />
-              <div className="mt-2 flex flex-wrap gap-2">
-                <GuestHelpChip topicId="event-day" />
-                <GuestHelpChip topicId="event-guide" />
-              </div>
             </PortalSection>
           )}
 
