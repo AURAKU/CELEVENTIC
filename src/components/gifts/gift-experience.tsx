@@ -48,7 +48,6 @@ export function GiftExperience({
   const [amountMinor, setAmountMinor] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [guestName, setGuestName] = useState(campaign.guest?.name ?? "");
-  const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestMessage, setGuestMessage] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -99,7 +98,7 @@ export function GiftExperience({
 
   const detailsValid =
     (!campaign.requireGuestName || isAnonymous || guestName.trim().length > 1) &&
-    (!campaign.requireGuestContact || Boolean(guestEmail.trim() || guestPhone.trim()));
+    (!campaign.requireGuestContact || Boolean(guestPhone.trim()));
 
   async function submit() {
     if (amountMinor === null || !method) return;
@@ -115,7 +114,6 @@ export function GiftExperience({
           amountMinor,
           method,
           guestName: isAnonymous ? undefined : guestName.trim() || undefined,
-          guestEmail: guestEmail.trim() || undefined,
           guestPhone: guestPhone.trim() || undefined,
           guestMessage: guestMessage.trim() || undefined,
           isAnonymous,
@@ -181,14 +179,12 @@ export function GiftExperience({
             <DetailsStep
               campaign={campaign}
               guestName={guestName}
-              guestEmail={guestEmail}
               guestPhone={guestPhone}
               guestMessage={guestMessage}
               isAnonymous={isAnonymous}
               valid={detailsValid}
               onChange={(patch) => {
                 if (patch.guestName !== undefined) setGuestName(patch.guestName);
-                if (patch.guestEmail !== undefined) setGuestEmail(patch.guestEmail);
                 if (patch.guestPhone !== undefined) {
                   setGuestPhone(patch.guestPhone);
                   const detected = detectMethodFromPhone(patch.guestPhone);
@@ -305,9 +301,6 @@ function LandingStep({
       <button type="button" onClick={onStart} className="gift-cta mt-8 w-full px-6 py-4 text-sm font-medium tracking-wide">
         Continue
       </button>
-      <p className="mt-3 text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
-        You may close this page at any time — gifting is never required.
-      </p>
     </div>
   );
 }
@@ -400,7 +393,6 @@ function AmountStep({
 function DetailsStep({
   campaign,
   guestName,
-  guestEmail,
   guestPhone,
   guestMessage,
   isAnonymous,
@@ -411,13 +403,12 @@ function DetailsStep({
 }: {
   campaign: PublicGiftCampaignView;
   guestName: string;
-  guestEmail: string;
   guestPhone: string;
   guestMessage: string;
   isAnonymous: boolean;
   valid: boolean;
   onChange: (patch: Partial<Record<
-    "guestName" | "guestEmail" | "guestPhone" | "guestMessage",
+    "guestName" | "guestPhone" | "guestMessage",
     string
   >> & { isAnonymous?: boolean }) => void;
   onNext: () => void;
@@ -440,15 +431,6 @@ function DetailsStep({
             autoComplete="name"
           />
         )}
-
-        <Field
-          id="gift-email"
-          label="Email for your receipt"
-          type="email"
-          value={guestEmail}
-          onChange={(v) => onChange({ guestEmail: v })}
-          autoComplete="email"
-        />
 
         <Field
           id="gift-phone"
@@ -511,7 +493,7 @@ function DetailsStep({
       {!valid && (
         <p className="mt-3 text-center text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
           {campaign.requireGuestContact
-            ? "Add an email or phone number so we can send your receipt."
+            ? "Add a mobile money number so we can send your receipt."
             : "Tell the host who this gift is from."}
         </p>
       )}
