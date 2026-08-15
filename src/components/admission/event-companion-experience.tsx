@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Gift, Phone } from "lucide-react";
 import {
   companionFontStyles,
   type CompanionTheme,
@@ -448,48 +449,74 @@ export function EventCompanionExperience({
               {enabled("GIFT_WALLET") && giftUrl ? (
                 <Link
                   href={giftUrl}
-                  className="block rounded-2xl px-5 py-5 transition-colors"
+                  className="group relative block overflow-hidden rounded-[1.35rem] px-5 py-6 transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:px-6"
                   style={{
-                    background: `linear-gradient(145deg, ${theme.accentWash}, ${colors.background})`,
-                    border: `1px solid ${colors.secondary}40`,
-                    boxShadow: `0 18px 40px -32px ${colors.primary}`,
+                    background: `linear-gradient(165deg, ${colors.background} 0%, ${theme.accentWash} 55%, ${colors.background} 100%)`,
+                    border: `1px solid ${colors.secondary}55`,
+                    boxShadow: `inset 0 0 0 1px ${colors.secondary}22, 0 22px 44px -28px ${colors.primary}73`,
+                    outlineColor: colors.secondary,
                   }}
                   data-testid="companion-gift-card"
                 >
                   <span
-                    className="block text-xs font-bold uppercase tracking-[0.22em] sm:text-sm"
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-8 top-0 h-px"
                     style={{
-                      color: colors.primary,
-                      fontFamily: fonts.eyebrow,
+                      background: `linear-gradient(90deg, transparent, ${colors.secondary}, transparent)`,
                     }}
-                  >
-                    {giftHeadline || "A gift, from the heart"}
+                  />
+                  <span className="flex items-start gap-3.5">
+                    <span
+                      className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                      style={{
+                        background: `${colors.secondary}18`,
+                        border: `1px solid ${colors.secondary}66`,
+                        boxShadow: `0 0 0 4px ${colors.secondary}12`,
+                        color: colors.secondary,
+                      }}
+                    >
+                      <Gift className="h-5 w-5" strokeWidth={1.6} aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className="block text-[10px] font-semibold uppercase tracking-[0.28em] sm:text-[11px]"
+                        style={{
+                          color: colors.secondary,
+                          fontFamily: fonts.eyebrow,
+                        }}
+                      >
+                        {giftHeadline || "A gift, from the heart"}
+                      </span>
+                      <span
+                        className="mt-1.5 block text-xl font-semibold leading-snug sm:text-[1.35rem]"
+                        style={{ color: colors.primary, fontFamily: fonts.heading }}
+                      >
+                        {giftTitle || "Send a Gift"}
+                      </span>
+                    </span>
                   </span>
                   <span
-                    className="mt-2 block text-lg font-bold leading-snug sm:text-xl"
-                    style={{ color: colors.primary, fontFamily: fonts.heading }}
-                  >
-                    {giftTitle || "Send a Gift"}
-                  </span>
-                  <span
-                    className="mt-2 block text-sm leading-relaxed sm:text-base"
-                    style={{ color: colors.text, opacity: 0.92 }}
+                    className="mt-3.5 block text-sm leading-relaxed sm:text-[0.95rem]"
+                    style={{ color: colors.text, opacity: 0.88 }}
                   >
                     {giftTeaser ||
                       "Your presence at this celebration means the most. Should you wish to send a gift to the celebrants, you may do so securely here."}
                   </span>
                   <span
-                    className="mt-4 inline-flex min-h-[48px] items-center justify-center rounded-full px-5 text-sm font-bold"
+                    className="mt-5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold tracking-[0.14em] transition-[filter,box-shadow] duration-300 group-hover:brightness-[1.06] group-hover:shadow-md"
                     style={{
-                      background: colors.primary,
-                      color: colors.background,
+                      background: colors.secondary,
+                      color: colors.primary,
+                      boxShadow: `0 12px 28px -12px ${colors.secondary}`,
+                      fontFamily: fonts.eyebrow,
                     }}
                   >
+                    <Gift className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
                     {giftCtaLabel || "Send a Gift"}
                   </span>
                   <span
-                    className="mt-3 block text-xs font-semibold uppercase tracking-[0.14em]"
-                    style={{ color: colors.secondary }}
+                    className="mt-3.5 block text-center text-[10px] font-medium uppercase tracking-[0.18em]"
+                    style={{ color: colors.secondary, opacity: 0.9 }}
                   >
                     {giftOptionalNote || "Entirely optional · Securely processed"}
                   </span>
@@ -498,32 +525,56 @@ export function EventCompanionExperience({
               {showHelp && callablePhone ? (
                 <a
                   href={`tel:${callablePhone}`}
-                  className="flex min-h-[56px] items-center justify-between rounded-2xl px-5 py-3.5"
+                  className="group flex items-center gap-3.5 rounded-[1.25rem] px-5 py-4 transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                  aria-label={`Call the host at ${contactPhoneDisplay}`}
                   style={{
-                    background: `${colors.primary}08`,
-                    border: `1px solid ${colors.secondary}28`,
+                    background: `linear-gradient(165deg, ${colors.background} 0%, ${theme.paperWash} 100%)`,
+                    border: `1px solid ${colors.secondary}45`,
+                    boxShadow: `inset 0 0 0 1px ${colors.secondary}18, 0 18px 36px -28px ${colors.primary}55`,
+                    outlineColor: colors.secondary,
                   }}
                 >
-                  <span>
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                    style={{
+                      background: `${colors.secondary}18`,
+                      border: `1px solid ${colors.secondary}66`,
+                      boxShadow: `0 0 0 4px ${colors.secondary}12`,
+                      color: colors.secondary,
+                    }}
+                  >
+                    <Phone className="h-5 w-5" strokeWidth={1.6} aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
                     <span
-                      className="block text-xs uppercase tracking-[0.2em] sm:text-sm"
-                      style={{
-                        color: colors.secondary,
-                        fontFamily: fonts.eyebrow,
-                        fontWeight: 600,
-                      }}
+                      className="block text-[10px] font-semibold uppercase tracking-[0.28em] sm:text-[11px]"
+                      style={{ color: colors.secondary, fontFamily: fonts.eyebrow }}
                     >
                       Need help
                     </span>
                     <span
-                      className="mt-1 block text-base sm:text-lg"
-                      style={{ color: colors.primary, fontWeight: 500 }}
+                      className="mt-1 block text-base leading-snug sm:text-lg"
+                      style={{ color: colors.primary, fontFamily: fonts.heading, fontWeight: 600 }}
                     >
-                      Call host · {contactPhoneDisplay}
+                      Call the host
+                    </span>
+                    <span
+                      className="mt-0.5 block truncate text-sm tabular-nums tracking-wide"
+                      style={{ color: colors.secondary }}
+                    >
+                      {contactPhoneDisplay}
                     </span>
                   </span>
-                  <span style={{ color: colors.secondary }} aria-hidden>
-                    →
+                  <span
+                    className="flex h-11 shrink-0 items-center justify-center rounded-full px-4 text-[11px] font-semibold uppercase tracking-[0.16em] transition-[filter,box-shadow] duration-300 group-hover:brightness-[1.06]"
+                    style={{
+                      background: colors.secondary,
+                      color: colors.primary,
+                      boxShadow: `0 10px 22px -12px ${colors.secondary}`,
+                      fontFamily: fonts.eyebrow,
+                    }}
+                  >
+                    Call
                   </span>
                 </a>
               ) : null}
