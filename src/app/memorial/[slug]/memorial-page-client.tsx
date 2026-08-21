@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,18 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { CONTRIBUTION_PURPOSES } from "@/lib/funeral/funeral-constants";
 import { PaginatedSection } from "@/components/ui/paginated-section";
+import {
+  FamilyAnnouncementBlock,
+  FuneralDressCodeSection,
+  FuneralExperienceShell,
+  FuneralMemorialIntro,
+  FuneralProgrammeTimeline,
+  MemorialClosing,
+  MemorialPortraitHero,
+} from "@/components/funeral-experience";
+import { resolveMotionLevel } from "@/lib/funeral-experience/experience-resolver";
+import { computeAgeYears, formatLifeDates } from "@/lib/funeral-experience/terminology";
+import type { FuneralMotionLevel } from "@/lib/funeral-experience/themes";
 
 type Tab =
   | "obituary"
@@ -80,7 +92,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "timeline", label: "Life Journey" },
   { id: "tributes", label: "Tributes" },
   { id: "candles", label: "Candles" },
-  { id: "guestbook", label: "Guestbook" },
+  { id: "guestbook", label: "Condolences" },
   { id: "gallery", label: "Gallery" },
   { id: "contribute", label: "Support" },
   { id: "livestream", label: "Livestream" },
@@ -89,7 +101,7 @@ const TABS: { id: Tab; label: string }[] = [
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-[#D4A63A] text-sm font-semibold uppercase tracking-wider">{title}</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--funeral-gold, #D4A63A)" }}>{title}</h2>
       {children}
     </section>
   );
@@ -115,6 +127,15 @@ export function MemorialPageClient() {
     isAnonymous: false,
   });
   const [submitMsg, setSubmitMsg] = useState("");
+  const [introDone, setIntroDone] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, []);
+
+  const motion: FuneralMotionLevel = resolveMotionLevel("ceremonial", reduceMotion, false);
 
   const load = useCallback(async (section = "overview") => {
     const res = await fetch(`/api/memorial/${slug}?section=${section}&limit=20`);
@@ -200,42 +221,82 @@ export function MemorialPageClient() {
   }
 
   const p = data.profile;
+  const lifeDatesLabel = formatLifeDates({
+    dateOfBirth: p.dateOfBirth,
+    dateOfPassing: p.dateOfPassing,
+    format: "sunrise-sunset",
+  });
+  const ageYears = computeAgeYears(p.dateOfBirth, p.dateOfPassing);
+  const nameParts = p.deceasedName.trim().split(/\s+/);
+  const givenName = nameParts.length > 1 ? nameParts[0] : null;
+  const familyNamePart = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+  const announcement =
+    p.familyInformation?.trim() ||
+    (p.familyName
+      ? `The ${p.familyName} and allied families respectfully invite relatives, friends and well-wishers to join us as we celebrate a life well lived.`
+      : "");
+  const programmeItems = data.program.map((item, index) => ({
+    id: `program-${index}`,
+    title: item.title,
+    description: item.description,
+    startTime: item.startTime,
+    venue: index === 0 ? p.burialVenue || data.venueName : null,
+  }));
 
   return (
-    <div className="min-h-app-viewport bg-[#0F172A] text-[#FAF8F4] overflow-x-hidden min-w-0">
-      <header className="border-b border-white/10 py-10 px-6 text-center">
-        {p.photoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.photoUrl} alt={p.deceasedName} className="w-28 h-28 rounded-full object-cover mx-auto mb-5 border-2 border-[#D4A63A]/50" />
-        )}
-        <p className="text-[#D4A63A] text-xs tracking-[0.25em] uppercase mb-2">In Loving Memory</p>
-        <h1 className="text-3xl md:text-4xl font-display font-semibold">{p.deceasedName}</h1>
-        {p.familyName && <p className="text-slate-400 mt-2">The {p.familyName} Family</p>}
-        {p.dateOfPassing && (
-          <p className="text-sm text-slate-500 mt-3 flex items-center justify-center gap-2">
-            <Calendar className="h-4 w-4" />
-            {new Date(p.dateOfPassing).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-          </p>
-        )}
-        {data.stats && (
-          <div className="flex flex-wrap justify-center gap-4 mt-6 text-xs text-slate-400">
-            <span className="inline-flex items-center gap-1"><Flame className="h-3.5 w-3.5 text-amber-400" />{data.stats.candleCount} candles</span>
-            <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5 text-rose-400" />{data.stats.tributeCount} tributes</span>
-            <span className="inline-flex items-center gap-1"><BookOpen className="h-3.5 w-3.5" />{data.stats.guestbookCount} messages</span>
-          </div>
-        )}
-      </header>
+    <FuneralExperienceShell themeId="golden-legacy" motion={motion}>
+      {!introDone ? (
+        <FuneralMemorialIntro
+          memorialKey={slug}
+          introId="candle-remembrance"
+          deceasedName={p.deceasedName}
+          lifeDatesLabel={lifeDatesLabel || undefined}
+          familyLine={p.familyName ? `The ${p.familyName} and allied families` : undefined}
+          motion={motion}
+          policy="once"
+          onEnter={() => setIntroDone(true)}
+        />
+      ) : null}
 
-      <nav className="sticky top-0 z-40 border-b border-white/10 bg-[#0F172A]/95 backdrop-blur overflow-x-auto">
+      <div
+        className="min-h-app-viewport overflow-x-hidden min-w-0"
+        style={{ opacity: introDone ? 1 : 0.4 }}
+      >
+      <MemorialPortraitHero
+        photoUrl={p.photoUrl}
+        fullName={p.deceasedName}
+        givenName={givenName}
+        familyName={familyNamePart}
+        relationship={p.familyName ? `The ${p.familyName} Family` : null}
+        lifeDatesLabel={lifeDatesLabel}
+        ageYears={ageYears}
+        frameShape="oval"
+      />
+
+      {data.stats ? (
+        <div className="flex flex-wrap justify-center gap-4 -mt-2 mb-4 text-xs" style={{ color: "var(--funeral-muted)" }}>
+          <span className="inline-flex items-center gap-1"><Flame className="h-3.5 w-3.5 text-amber-400" />{data.stats.candleCount} candles</span>
+          <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5 text-rose-400" />{data.stats.tributeCount} tributes</span>
+          <span className="inline-flex items-center gap-1"><BookOpen className="h-3.5 w-3.5" />{data.stats.guestbookCount} messages</span>
+        </div>
+      ) : null}
+
+      <nav
+        className="sticky top-0 z-40 border-b backdrop-blur overflow-x-auto"
+        style={{ borderColor: "var(--funeral-border)", background: "color-mix(in srgb, var(--funeral-bg) 92%, transparent)" }}
+      >
         <div className="flex gap-1 px-4 py-2 min-w-max max-w-4xl mx-auto">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => { setTab(t.id); setSubmitMsg(""); }}
-              className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
-                tab === t.id ? "bg-[#0B8A83] text-white" : "text-slate-400 hover:text-white hover:bg-white/5"
-              }`}
+              className="px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors"
+              style={
+                tab === t.id
+                  ? { background: "var(--funeral-primary)", color: "#fff" }
+                  : { color: "var(--funeral-muted)" }
+              }
             >
               {t.label}
             </button>
@@ -245,11 +306,17 @@ export function MemorialPageClient() {
 
       <main className="max-w-3xl mx-auto px-6 py-10 space-y-8">
         {submitMsg && (
-          <p className="text-sm text-[#0B8A83] bg-[#0B8A83]/10 border border-[#0B8A83]/30 rounded-xl px-4 py-3">{submitMsg}</p>
+          <p
+            className="text-sm rounded-xl px-4 py-3"
+            style={{ color: "var(--funeral-gold)", border: "1px solid var(--funeral-border)", background: "var(--funeral-surface)" }}
+          >
+            {submitMsg}
+          </p>
         )}
 
         {tab === "obituary" && (
           <div className="space-y-8">
+            <FamilyAnnouncementBlock text={announcement} />
             {[
               ["Biography", p.biography],
               ["Family", p.familyInformation],
@@ -262,61 +329,43 @@ export function MemorialPageClient() {
             ].map(([label, text]) =>
               text ? (
                 <Section key={label as string} title={label as string}>
-                  <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{text as string}</p>
+                  <p className="leading-relaxed whitespace-pre-wrap" style={{ color: "var(--funeral-muted)" }}>{text as string}</p>
                 </Section>
               ) : null
             )}
-            {p.dateOfBirth && (
-              <Section title="Dates">
-                <p className="text-slate-400 text-sm">
-                  Born {new Date(p.dateOfBirth).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-                  {p.dateOfPassing && (
-                    <> · Passed {new Date(p.dateOfPassing).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</>
-                  )}
-                </p>
-              </Section>
-            )}
+            {programmeItems.length > 0 ? <FuneralProgrammeTimeline items={programmeItems.slice(0, 6)} /> : null}
+            <FuneralDressCodeSection
+              days={[
+                { day: "Friday", label: "All Black", colors: ["black"] },
+                { day: "Saturday", label: "Black & Red", colors: ["black", "red"] },
+                { day: "Sunday", label: "Black & White", colors: ["black", "white"] },
+              ]}
+            />
+            <MemorialClosing deceasedName={p.deceasedName} lifeDatesLabel={lifeDatesLabel} />
           </div>
         )}
 
         {tab === "program" && (
           <div className="space-y-6">
-            {data.program.length > 0 && (
-              <Section title="Funeral Program">
-                <PaginatedSection
-                  items={data.program.map((item, index) => ({ ...item, id: `program-${index}` }))}
-                  limit={10}
-                  keyFor={(item) => item.id}
-                  renderItem={(item) => (
-                    <div className="stack-mobile p-4 rounded-lg bg-white/5 border border-white/10 min-w-0">
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">{item.title}</p>
-                        {item.description && <p className="text-xs text-slate-500 mt-1 break-words">{item.description}</p>}
-                      </div>
-                      {item.startTime && <span className="text-slate-500 text-sm shrink-0">{item.startTime}</span>}
-                    </div>
-                  )}
-                />
-              </Section>
-            )}
+            {programmeItems.length > 0 && <FuneralProgrammeTimeline items={programmeItems} />}
             {(p.burialVenue || data.venueName) && (
               <Section title="Venue">
-                <Card className="bg-white/5 border-white/10">
+                <Card style={{ background: "var(--funeral-surface)", borderColor: "var(--funeral-border)" }}>
                   <CardContent className="p-4 space-y-2">
-                    <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[#0B8A83]" />{p.burialVenue ?? data.venueName}</p>
-                    {p.burialDirections && <p className="text-slate-400 text-sm">{p.burialDirections}</p>}
+                    <p className="flex items-center gap-2"><MapPin className="h-4 w-4" style={{ color: "var(--funeral-gold)" }} />{p.burialVenue ?? data.venueName}</p>
+                    {p.burialDirections && <p className="text-sm" style={{ color: "var(--funeral-muted)" }}>{p.burialDirections}</p>}
                     {data.mapsLink && (
-                      <a href={data.mapsLink} target="_blank" rel="noopener noreferrer" className="text-[#0B8A83] text-sm inline-block">Open in Maps</a>
+                      <a href={data.mapsLink} target="_blank" rel="noopener noreferrer" className="text-sm inline-block" style={{ color: "var(--funeral-gold)" }}>Open in Maps</a>
                     )}
                   </CardContent>
                 </Card>
               </Section>
             )}
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="border-white/20 text-white" asChild>
+              <Button variant="outline" asChild>
                 <Link href={`/events/${slug}/memories`}>Memory Gallery</Link>
               </Button>
-              <Button variant="outline" className="border-white/20 text-white" asChild>
+              <Button variant="outline" asChild>
                 <Link href={`/events/${slug}/thank-you`}>Thank You Page</Link>
               </Button>
             </div>
@@ -572,9 +621,10 @@ export function MemorialPageClient() {
         )}
       </main>
 
-      <footer className="text-center py-8 text-xs text-slate-600 border-t border-white/10">
-        Memorial by <Link href="/" className="text-[#0B8A83]">Celeventic FuneralOS</Link>
+      <footer className="text-center py-8 text-xs border-t" style={{ color: "var(--funeral-muted)", borderColor: "var(--funeral-border)" }}>
+        Memorial by <Link href="/" style={{ color: "var(--funeral-gold)" }}>Celeventic</Link>
       </footer>
-    </div>
+      </div>
+    </FuneralExperienceShell>
   );
 }

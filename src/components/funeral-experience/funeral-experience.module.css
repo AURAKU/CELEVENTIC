@@ -1,0 +1,330 @@
+/**
+ * Funeral Experience shell + ceremonial motion.
+ * Dignity over spectacle. Reduced-motion collapses to fades.
+ */
+
+.shell {
+  --funeral-motion-speed: 1;
+  min-height: 100dvh;
+  background: var(--funeral-bg);
+  color: var(--funeral-text);
+  font-family: var(--funeral-body-font);
+}
+
+.shell[data-motion="none"] {
+  --funeral-motion-speed: 0;
+}
+
+.shell[data-motion="minimal"] {
+  --funeral-motion-speed: 0.35;
+}
+
+.shell[data-motion="gentle"] {
+  --funeral-motion-speed: 0.7;
+}
+
+.shell[data-motion="ceremonial"] {
+  --funeral-motion-speed: 1;
+}
+
+.shell[data-motion="cinematic"] {
+  --funeral-motion-speed: 1.15;
+}
+
+.heading {
+  font-family: var(--funeral-heading-font);
+  color: var(--funeral-primary);
+  letter-spacing: -0.02em;
+}
+
+.script {
+  font-family: var(--funeral-script-font);
+  color: var(--funeral-secondary);
+  font-weight: 400;
+}
+
+.gold {
+  color: var(--funeral-gold);
+}
+
+.muted {
+  color: var(--funeral-muted);
+}
+
+.surface {
+  background: var(--funeral-surface);
+  border: 1px solid var(--funeral-border);
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--funeral-gold);
+  background: var(--funeral-primary);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.btnPrimary:hover {
+  opacity: 0.92;
+}
+
+.btnPrimary:active {
+  transform: scale(0.98);
+}
+
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--funeral-border);
+  background: transparent;
+  color: var(--funeral-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.divider {
+  height: 1px;
+  width: min(12rem, 40%);
+  margin: 1rem auto;
+  background: linear-gradient(90deg, transparent, var(--funeral-gold), transparent);
+}
+
+/* —— Intro overlay —— */
+.introRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: #050505;
+  color: #f5f0e8;
+  text-align: center;
+}
+
+.introFlame {
+  width: 3px;
+  height: 48px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 20%, #fff7ed, #fbbf24 40%, #b45309 80%);
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.55);
+  animation: funeral-flame calc(2.4s / var(--funeral-motion-speed, 1)) ease-in-out infinite;
+}
+
+@keyframes funeral-flame {
+  0%,
+  100% {
+    transform: scaleY(1) translateY(0);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scaleY(1.12) translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.introClouds {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.18), transparent 50%),
+    radial-gradient(ellipse at 70% 40%, rgba(255, 248, 230, 0.12), transparent 45%),
+    linear-gradient(180deg, #1a1a1a 0%, #2a241c 100%);
+  pointer-events: none;
+}
+
+.introTextile {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 12px,
+      rgba(212, 175, 55, 0.15) 12px,
+      rgba(212, 175, 55, 0.15) 14px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 18px,
+      rgba(185, 28, 28, 0.12) 18px,
+      rgba(185, 28, 28, 0.12) 20px
+    );
+  pointer-events: none;
+}
+
+.introControls {
+  position: absolute;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 0 1rem;
+}
+
+/* —— Hero —— */
+.hero {
+  position: relative;
+  padding: 2.5rem 1.25rem 2rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.portraitFrame {
+  width: min(220px, 58vw);
+  aspect-ratio: 3 / 4;
+  margin: 0 auto 1.25rem;
+  border-radius: 999px 999px 48% 48%;
+  border: 3px solid var(--funeral-frame);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  background: var(--funeral-surface);
+}
+
+.portraitFrame[data-shape="oval"] {
+  border-radius: 50% / 42%;
+}
+
+.portraitFrame[data-shape="circle"] {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.portraitFrame[data-shape="rect"] {
+  border-radius: 1rem;
+  aspect-ratio: 3 / 4;
+}
+
+.portraitImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ageBadge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0.75rem auto 0;
+  border-radius: 50%;
+  border: 2px solid var(--funeral-gold);
+  color: var(--funeral-primary);
+  font-family: var(--funeral-heading-font);
+  line-height: 1.05;
+}
+
+.ageBadge small {
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--funeral-muted);
+}
+
+.ageBadge strong {
+  font-size: 1.25rem;
+}
+
+/* —— Programme —— */
+.programmeList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.programmeItem {
+  position: relative;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--funeral-border);
+  background: var(--funeral-surface);
+}
+
+.programmeItem::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--funeral-gold);
+}
+
+.programmeDay {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--funeral-gold);
+  font-weight: 700;
+}
+
+.programmeTitle {
+  margin-top: 0.25rem;
+  font-family: var(--funeral-heading-font);
+  font-size: 1.05rem;
+  color: var(--funeral-primary);
+}
+
+/* —— Dress code —— */
+.dressGrid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .dressGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.dressCard {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--funeral-border);
+  background: var(--funeral-surface);
+  text-align: center;
+}
+
+.swatches {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.65rem 0 0.35rem;
+}
+
+.swatch {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .introFlame {
+    animation: none;
+  }
+}
