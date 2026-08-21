@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
 import { checkUploadRateLimit } from "@/lib/video/quota";
+import { rateLimitKeyForAsset } from "@/lib/video/owner";
 import { presignUploadPart, listUploadedParts, VideoStorageNotConfiguredError } from "@/lib/video/s3-video";
 import { PRESIGN_EXPIRY_SECONDS } from "@/lib/video/constants";
 
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Upload session is not active." }, { status: 409 });
   }
 
-  const rate = await checkUploadRateLimit("part", asset.ownerId ?? asset.id);
+  const rate = await checkUploadRateLimit("part", rateLimitKeyForAsset(asset));
   if (!rate.allowed) {
     return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   }

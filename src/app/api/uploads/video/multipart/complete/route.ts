@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
 import { checkUploadRateLimit } from "@/lib/video/quota";
+import { rateLimitKeyForAsset } from "@/lib/video/owner";
 import { completeMultipartUpload, abortMultipartUpload, VideoStorageNotConfiguredError } from "@/lib/video/s3-video";
 import { finalizeVideoUpload } from "@/lib/video/processing";
 import { serializeVideoAsset } from "@/lib/video/serialize";
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No active multipart upload for this asset." }, { status: 409 });
   }
 
-  const rate = await checkUploadRateLimit("complete", asset.ownerId ?? asset.id);
+  const rate = await checkUploadRateLimit("complete", rateLimitKeyForAsset(asset));
   if (!rate.allowed) {
     return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   }

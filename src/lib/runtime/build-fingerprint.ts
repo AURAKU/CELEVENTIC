@@ -9,9 +9,9 @@ import { EMBEDDED_BUILD_META } from "@/lib/runtime/build-meta.generated";
  * Commit must come from the **build** that produced `.next`, not from a stale
  * PM2 / `.env` value. Live used to report an old SHA (e.g. 0fa4bd4…) after a
  * successful deploy of a newer main tip because `CELEVENTIC_COMMIT_SHA` in the
- * process environment outlived the build. Prefer the module written by
- * `scripts/write-build-meta.mjs` at `prebuild` time — it is compiled into the
- * server bundle and cannot drift on `pm2 restart`.
+ * process environment outlived the build. Prefer `.next/celeventic-build-meta.json`
+ * written by `scripts/write-build-meta.mjs --emit-next` — it cannot drift on
+ * `pm2 restart` and does not dirty the git worktree.
  */
 
 function sanitizeCommit(value: string | undefined | null): string | null {
@@ -36,13 +36,11 @@ function resolveCommitFromEnv(): string | null {
 }
 
 /**
- * Prefer embedded build meta (immutable), then `.next/celeventic-build-meta.json`,
- * then process env (legacy / CI). Env is last so a stale PM2 value cannot win.
+ * Prefer `.next/celeventic-build-meta.json` (written at postbuild), then the
+ * static embedded stub, then process env (legacy / CI). Env is last so a stale
+ * PM2 value cannot win over a freshly built `.next` meta file.
  */
 function resolveCommit(): string | null {
-  const embedded = sanitizeCommit(EMBEDDED_BUILD_META.commit);
-  if (embedded) return embedded.length >= 40 ? embedded.slice(0, 40) : embedded;
-
   try {
     const distDir = process.env.NEXT_DIST_DIR || ".next";
     const raw = readFileSync(join(process.cwd(), distDir, "celeventic-build-meta.json"), "utf8");
@@ -50,8 +48,11 @@ function resolveCommit(): string | null {
     const fromDisk = sanitizeCommit(parsed.commit);
     if (fromDisk) return fromDisk.length >= 40 ? fromDisk.slice(0, 40) : fromDisk;
   } catch {
-    /* missing in older builds */
+    /* missing in older builds / dev */
   }
+
+  const embedded = sanitizeCommit(EMBEDDED_BUILD_META.commit);
+  if (embedded) return embedded.length >= 40 ? embedded.slice(0, 40) : embedded;
 
   const fromEnv = resolveCommitFromEnv();
   if (fromEnv) return fromEnv.length >= 40 ? fromEnv.slice(0, 40) : fromEnv;
@@ -59,7 +60,6 @@ function resolveCommit(): string | null {
 }
 
 function resolveBuiltAt(): string | null {
-  if (EMBEDDED_BUILD_META.builtAt) return EMBEDDED_BUILD_META.builtAt;
   try {
     const distDir = process.env.NEXT_DIST_DIR || ".next";
     const raw = readFileSync(join(process.cwd(), distDir, "celeventic-build-meta.json"), "utf8");
@@ -68,6 +68,7 @@ function resolveBuiltAt(): string | null {
   } catch {
     /* ignore */
   }
+  if (EMBEDDED_BUILD_META.builtAt) return EMBEDDED_BUILD_META.builtAt;
   return process.env.CELEVENTIC_BUILD_BUILT_AT?.trim() || null;
 }
 
