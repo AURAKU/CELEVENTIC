@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,8 @@ import { UploadedMedia } from "@/components/media/uploaded-media";
 import {
   Heart,
   MapPin,
-  Calendar,
   Flame,
   BookOpen,
-  Video,
-  ImageIcon,
   Clock,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
