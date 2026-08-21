@@ -1,13 +1,9 @@
 "use client";
 
 import styles from "./funeral-experience.module.css";
+import type { DressCodeDay } from "@/lib/funeral-experience/experience-config";
 
-export type DressCodeDay = {
-  day: string;
-  label: string;
-  colors: string[];
-  note?: string;
-};
+export type { DressCodeDay };
 
 const DEFAULT_SWATCH: Record<string, string> = {
   black: "#111111",

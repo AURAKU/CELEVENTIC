@@ -17,11 +17,27 @@ import {
   ADINKRA_SYMBOLS,
   CULTURAL_RELIGIOUS_PRESETS,
 } from "@/lib/funeral-experience/terminology";
+import {
+  mapLegacyThemeToExperience,
+  parseFamilyContactsBlob,
+  resolveMemorialExperience,
+  serializeFamilyContactsBlob,
+} from "@/lib/funeral-experience/experience-config";
+import {
+  buildIcsCalendar,
+  combineEventDateAndTime,
+  googleCalendarUrl,
+} from "@/lib/funeral-experience/calendar";
+import {
+  detectLowBandwidth,
+  HASH_TO_TAB,
+  inferProgrammeDayLabel,
+} from "@/lib/funeral-experience/programme-utils";
 import { getInviteBlueprint, categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry";
 
 describe("funeral experience themes", () => {
-  it("ships at least 10 flagship themes", () => {
-    assert.ok(FUNERAL_EXPERIENCE_THEMES.length >= 10);
+  it("ships at least 12 flagship themes", () => {
+    assert.ok(FUNERAL_EXPERIENCE_THEMES.length >= 12);
     assert.equal(resolveFuneralTheme("eternal-rose").id, "eternal-rose");
     assert.equal(resolveFuneralTheme("missing").id, "eternal-rose");
     const vars = funeralThemeCssVars(resolveFuneralTheme("ghana-heritage"));
@@ -78,5 +94,57 @@ describe("ghanaian funeral blueprints", () => {
       assert.equal(categoryForBlueprint(id), "funeral");
       assert.equal(getInviteBlueprint(id).category, "funeral");
     }
+  });
+});
+
+describe("experience config blob", () => {
+  it("maps legacy themes and preserves contacts", () => {
+    assert.equal(mapLegacyThemeToExperience("midnight-ivory"), "golden-legacy");
+    const parsed = parseFamilyContactsBlob([
+      { name: "Kwame", role: "Family Representative", phone: "0240000000" },
+    ]);
+    assert.equal(parsed.contacts[0]?.name, "Kwame");
+    const round = serializeFamilyContactsBlob(parsed.contacts, {
+      ...parsed.experience,
+      aka: "Uncle K",
+      honorificTitle: "Nana",
+    });
+    assert.equal(round.experience.aka, "Uncle K");
+    assert.equal(round.contacts.length, 1);
+  });
+
+  it("resolves memorial experience from profile fields", () => {
+    const resolved = resolveMemorialExperience({
+      theme: "ghana-heritage",
+      templateSlug: "kente-border-farewell",
+      revealStyle: "MEMORIAL_BOOK",
+      familyContacts: {
+        contacts: [],
+        experience: { v: 1, aka: "Auntie", introPolicy: "once" },
+      },
+    });
+    assert.equal(resolved.themeId, "ghana-heritage");
+    assert.equal(resolved.introId, "ghanaian-regal");
+    assert.equal(resolved.experience.aka, "Auntie");
+  });
+});
+
+describe("calendar + programme utils", () => {
+  it("builds ICS and Google Calendar links", () => {
+    const start = combineEventDateAndTime("2026-03-14T00:00:00.000Z", "9:00 AM");
+    assert.equal(start.getHours(), 9);
+    const ics = buildIcsCalendar([
+      { title: "Burial Service", start, location: "Accra", description: "Family gathering" },
+    ]);
+    assert.match(ics, /BEGIN:VCALENDAR/);
+    assert.match(ics, /Burial Service/);
+    assert.match(googleCalendarUrl({ title: "Wake", start }), /calendar\.google\.com/);
+  });
+
+  it("infers day labels and hash tabs", () => {
+    assert.equal(inferProgrammeDayLabel("Saturday Interment", null, 0), "Saturday");
+    assert.equal(HASH_TO_TAB.memories, "gallery");
+    assert.equal(HASH_TO_TAB.contributions, "contribute");
+    assert.equal(typeof detectLowBandwidth(), "boolean");
   });
 });

@@ -1,44 +1,72 @@
-# Celeventic Funeral Experience OS — Phase 0 Audit Summary
+# Celeventic Funeral Experience OS — Audit & Execution Status
 
 **Branch:** `feature/funeral-experience-os`  
-**Date:** 2026-08-21  
-**Principle:** Honour the deceased; reuse existing FuneralOS / invitation / Memory Vault / QR / payments.
+**Updated:** 2026-08-21  
+**Principle:** Honour the deceased; reuse FuneralOS / invitation / Memory Vault / QR / payments. Do not deploy from this task.
 
-## What already exists (reuse)
+## Phase 0 — Existing systems (reused)
 
 | System | Status |
 |--------|--------|
-| FuneralOS Prisma models | Complete (profile, programme, tributes, candles, guestbook, timeline, livestream, family, media, legacy) |
-| `/memorial/[slug]` public site | Complete APIs + tabs; upgraded with Experience shell |
-| Invitation funeral SKUs (11) | Catalogue + seals + memorial audio |
-| Candle opening | `candle-light` reveal |
-| Memory Vault | Shared event vault — do not duplicate |
-| Contributions | `/api/public/contribute` |
-| QR / maps / RSVP | Shared infrastructure |
+| FuneralOS Prisma models | EXISTS — profile, programme, tributes, candles, guestbook, timeline, livestream, family, media, legacy |
+| `/memorial/[slug]` + `/api/memorial` | EXISTS — upgraded Experience shell |
+| Invitation funeral SKUs (11) | EXISTS — catalogue + seals + memorial audio categories |
+| Memory Vault | EXISTS — linked via CTA; not duplicated |
+| Contributions | EXISTS — `/api/public/contribute` |
+| QR / maps / RSVP (invitation) | EXISTS — shared infra; memorial hash anchors wired |
+| Event Guide | PARTIAL — memorial signage only; full funeralisation still remaining |
 
-## Gaps closed in this foundation commit
+## Implemented in Experience OS (this branch)
 
-- Theme token system (12 flagship themes)
-- Intro resolver (maps legacy reveal styles)
-- Terminology + cultural/religious presets + Adinkra meanings
-- Memorial shell, portrait hero, programme timeline, dress code, closing
-- Candle intro with Enter / Skip + once-per-device memory
-- Ghanaian blueprint ID registration
-- Template collection constants aligned to live SKUs
+| Area | Status |
+|------|--------|
+| 12 theme token families | DONE |
+| Theme CSS skins (rose / heritage / heavenly / etc.) | DONE (token + shell atmospheres) |
+| Intros A–F (candle, heavenly, regal, floral, memory journey, minimal) | DONE (cinematic phases + reduced-motion) |
+| Profile-driven theme / intro / motion | DONE via `theme`, `revealStyle`, `templateSlug`, experience blob |
+| Experience config (AKA, title, dress, flower, announcement mode) | DONE — stored in `familyContacts.experience` (no destructive migration) |
+| Portrait hero + frames + age + AKA | DONE |
+| Programme timeline + day inference | DONE |
+| Multi-venue cards + directions | DONE (config + burial/event fallback) |
+| Dress code cards (editable in FuneralOS) | DONE |
+| Calendar (Google + ICS) | DONE |
+| Share (native / WhatsApp / copy / email) | DONE |
+| OG / Twitter metadata | DONE on `/memorial/[slug]` |
+| Memory Vault CTA | DONE |
+| Symbolic flower tribute (opt-in) | DONE |
+| Audio controller (opt-in, no forced autoplay) | DONE |
+| Low-bandwidth detection | DONE (defers video + heavy audio) |
+| Reduced motion | DONE |
+| Hash anchors for QR (`#tributes`, `#memories`, `#livestream`, …) | DONE |
+| API section aliases (`contribute`/`livestream`) | DONE |
+| FuneralOS editor: theme, title, AKA, dress, announcement/flower | DONE |
+| Terminology + cultural presets + Adinkra meanings | DONE |
+| Unit tests (themes, intros, config, calendar, programme) | DONE |
 
-## Still remaining (next commits)
+## Still remaining / optional next commits
 
-- Full cinematic intros (heavenly / regal / floral / memory journey) with motion
-- Eternal Rose / Heavenly Peace visual ornament assets (original, not copied)
-- Editor upgrade for theme/intro/dress-code/AKA/titles
-- Multi-venue first-class model fields
-- Social share cards / printable assets
-- Event Guide funeralisation
-- Family/media portal UI
-- Playwright guest journey
-- Low-bandwidth mode switch
-- Do not deploy from this task
+- First-class Prisma fields for multi-day programme day + venueId (currently inferred / JSON)
+- Full Event Guide funeralisation
+- Printable A4/A5/social render pipeline
+- Dedicated social card image generator (beyond OG portrait)
+- Photo-aware palette suggestions
+- Playwright guest journey suite
+- Marketplace funeral template moderation UI
+- Funeral-specific RSVP on memorial page (invitation RSVP already adapts)
+- Production deploy (explicitly out of scope for this task)
 
-## Reference study (not copied)
+## Reference study
 
-Studied owner references in Downloads (blush floral Emelia layout, heavenly memorial, Ghanaian regal Paul Kwadwo Djang layout). Extracted composition, hierarchy, multi-day programme, dress code, allied families, Sunrise/Sunset, A.K.A., age badge — rebuilt as Celeventic components without reproducing artwork, faces, or watermarks.
+Studied refs in `docs/funeral-experience/refs/` (blush / heavenly / regal). Extracted hierarchy, multi-day programme, dress code, allied families, Sunrise/Sunset — rebuilt as Celeventic components without copying artwork, faces, or watermarks.
+
+## Safe production deploy (when owner approves — do not run from this task)
+
+```bash
+# On VPS after merging to main — example only:
+cd /path/to/CELEVENTIC && git pull && npm ci --include=dev \
+  && npx prisma generate && npx prisma migrate deploy \
+  && NODE_OPTIONS="--max-old-space-size=4096" CELEVENTIC_BUILD_COMMIT="$(git rev-parse HEAD)" npm run build \
+  && pm2 restart celeventic
+```
+
+Never touch Spark & Drive. Never `prisma migrate reset` / `db push` against production.db.

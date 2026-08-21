@@ -214,7 +214,7 @@ export class FuneralService {
       return { ...base, gallery: paginatedResult(items, total, page, take) };
     }
 
-    if (section === "contributions") {
+    if (section === "contributions" || section === "contribute" || section === "support") {
       const [items, total] = await Promise.all([
         prisma.contribution.findMany({
           where: { eventId: event.id, isAnonymous: false },
@@ -238,7 +238,7 @@ export class FuneralService {
       };
     }
 
-    if (section === "livestreams") {
+    if (section === "livestreams" || section === "livestream") {
       const items = await prisma.memorialLivestream.findMany({
         where: { eventId: event.id },
         orderBy: [{ isLive: "desc" }, { sortOrder: "asc" }],
