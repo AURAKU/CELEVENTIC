@@ -46,7 +46,7 @@ export async function CeleventicGuideHome({
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
             Motion tutorials, Start Here journeys, quick actions, and answers for guests, organizers,
-            vendors, and scanners — all in one place. Ask Guide AI anytime for platform help.
+            vendors, and scanners — all in one place. Open Customer Service anytime for platform help.
           </p>
           <Link
             href="/guide/how-celeventic-works"
@@ -73,7 +73,7 @@ export async function CeleventicGuideHome({
 
         <p className="text-center text-sm text-slate-500 pb-4">
           Still need help? Use{" "}
-          <span className="font-medium text-slate-700">Ask Guide AI</span>, email{" "}
+          <span className="font-medium text-slate-700">Customer Service</span>, email{" "}
           <a href="mailto:support@celeventic.com" className="text-brand-700 hover:underline">
             support@celeventic.com
           </a>

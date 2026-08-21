@@ -159,8 +159,18 @@ function sectionsForCategory(category: string): {
 } {
   if (category === "Funeral") {
     return {
-      supported: ["invitation", "story", "venue-map", "gallery", "memory", "outro"],
-      optional: ["countdown", "livestream", "timeline"],
+      supported: [
+        "invitation",
+        "story",
+        "venue-map",
+        "gallery",
+        "memory",
+        "rsvp",
+        "gifts",
+        "timeline",
+        "outro",
+      ],
+      optional: ["countdown", "livestream"],
     };
   }
   if (category === "Corporate" || category === "Conference") {
@@ -258,8 +268,11 @@ function motionFromCatalog(t: CatalogTemplate): MotionLanguage {
 
 function parallaxFromCatalog(t: CatalogTemplate): ParallaxIntensity {
   if (t.hasParallax && t.motionProfileId === "layered-drift") return "cinematic";
+  if (t.category === "Funeral") {
+    // Soft memorial depth only — never wedding-style layered drift.
+    return t.hasParallax || t.motionProfileId === "solemn" ? "subtle" : "none";
+  }
   if (t.hasParallax) return "moderate";
-  if (t.category === "Funeral") return "none";
   return "subtle";
 }
 

@@ -24,6 +24,7 @@ import {
 } from "@/lib/invitation-studio/studio-scenes";
 import { cn } from "@/lib/utils";
 import { hubTabsForEventType } from "@/lib/invitation/wedding-experience-filters";
+import { hubTabLabelsForEventType } from "@/lib/invitation-studio/hub-tab-labels";
 
 interface StudioScenesPanelProps {
   scenes: StudioSceneConfig[];
@@ -54,6 +55,7 @@ export function StudioScenesPanel({
   const [customTitle, setCustomTitle] = useState("Custom section");
 
   const allowedTabs = hubTabsForEventType(eventType);
+  const tabLabels = hubTabLabelsForEventType(eventType);
   const usedTabs = new Set(
     scenes.filter((s) => s.tabId !== "custom").map((s) => s.tabId as HubTabId)
   );
@@ -65,7 +67,7 @@ export function StudioScenesPanel({
       {
         id: `scene-${tab}-${Date.now().toString(36)}`,
         tabId: tab,
-        title: HUB_TAB_LABELS[tab] ?? tab,
+        title: tabLabels[tab] ?? HUB_TAB_LABELS[tab] ?? tab,
         visible: true,
       },
     ]);
@@ -238,7 +240,7 @@ export function StudioScenesPanel({
                     className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-[#0B8A83] hover:text-[#0B8A83]"
                   >
                     <Plus className="h-3 w-3" />
-                    {HUB_TAB_LABELS[tab]}
+                    {tabLabels[tab] ?? HUB_TAB_LABELS[tab]}
                   </button>
                 ))}
               </div>

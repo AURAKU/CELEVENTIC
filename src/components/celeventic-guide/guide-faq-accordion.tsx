@@ -60,7 +60,7 @@ const FAQ = [
     q: "Something is not working — where do I go?",
     a: (
       <>
-        Search guides above, use <span className="font-medium text-slate-700">Ask Guide AI</span>, or
+        Search guides above, use <span className="font-medium text-slate-700">Customer Service</span>, or
         WhatsApp / call{" "}
         <a href="tel:+233595968686" className="text-brand-700 hover:underline font-medium">
           0595968686

@@ -12,6 +12,10 @@ import {
   STUDIO_BUTTON_ACTION_OPTIONS,
   studioButtonActionLabel,
 } from "@/lib/experience-engine/action-registry";
+import {
+  hostChecklistLabelForEventType,
+  isFuneralEventType,
+} from "@/lib/invitation/catalog-event-type";
 
 export type PublishCheckSeverity = "error" | "warning" | "ok";
 
@@ -27,6 +31,8 @@ export interface StudioPublishContext {
   eventTitle?: string | null;
   eventDate?: string | Date | null;
   hostName?: string | null;
+  eventType?: string | null;
+  deceasedName?: string | null;
   galleryUrls?: string[];
   musicSelection?: MusicSelection | null;
   mapsLink?: string | null;
@@ -41,10 +47,15 @@ export function buildPublishChecklist(ctx: StudioPublishContext): PublishCheckIt
   const items: PublishCheckItem[] = [];
   const title = ctx.eventTitle?.trim();
   const host = ctx.hostName?.trim();
+  const deceased = ctx.deceasedName?.trim();
   const gallery = ctx.galleryUrls ?? [];
   const hero = heroUrlFromDesign(ctx.design);
   const experience = ctx.design.experience;
-  const scenes = mergeScenesWithTabs(experience?.scenes, experience?.enabledTabs ?? DEFAULT_HUB_TABS);
+  const scenes = mergeScenesWithTabs(
+    experience?.scenes,
+    experience?.enabledTabs ?? DEFAULT_HUB_TABS,
+    ctx.eventType
+  );
   const tabs = experience?.scenes?.length
     ? enabledTabsFromScenes(scenes)
     : (experience?.enabledTabs ?? DEFAULT_HUB_TABS);
@@ -60,9 +71,20 @@ export function buildPublishChecklist(ctx: StudioPublishContext): PublishCheckIt
     detail: title ? title : "Add an event title in Details before publishing.",
   });
 
+  if (isFuneralEventType(ctx.eventType)) {
+    items.push({
+      id: "deceased",
+      label: "Deceased name",
+      severity: deceased ? "ok" : "error",
+      detail: deceased
+        ? deceased
+        : "Add the deceased name in Details before publishing.",
+    });
+  }
+
   items.push({
     id: "host",
-    label: "Host / couple names",
+    label: hostChecklistLabelForEventType(ctx.eventType),
     severity: host ? "ok" : "warning",
     detail: host ? host : "Guests see the host name on the invite — worth filling in.",
   });

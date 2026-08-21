@@ -22,7 +22,7 @@ const WELCOME: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi — I’m Celeventic Guide AI. Ask how the platform works, where to find a feature, or what to do as a guest, host, scanner, or vendor. I only answer Celeventic questions. For a live agent, WhatsApp or call 0595968686.",
+    "Hi — I’m Celeventic Customer Service. Tell me what you need help with (invitations, RSVP, QR passes, Event Guide, gifts, vendors, Memory Vault, or the dashboard). I’ll give clear step-by-step guidance. For a live agent, WhatsApp or call 0595968686.",
   relatedGuides: [{ slug: "how-celeventic-works", title: "How Celeventic Works" }],
 };
 
@@ -79,7 +79,7 @@ export function GuideAssistantChat() {
         throw new Error(
           typeof data.error === "string"
             ? data.error
-            : "Could not reach Guide AI. Please try again."
+            : "Could not reach Customer Service. Please try again."
         );
       }
 
@@ -134,13 +134,13 @@ export function GuideAssistantChat() {
             <header className="flex items-start justify-between gap-3 bg-gradient-to-br from-[#0F172A] via-[#134e4a] to-[#0B8A83] px-4 py-3.5 text-white">
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">
-                  Celeventic Guide AI
+                  Celeventic Customer Service
                 </p>
                 <h2 id={titleId} className="font-display text-lg font-semibold leading-tight">
-                  Ask about the platform
+                  How can we help?
                 </h2>
                 <p className="mt-0.5 text-xs text-white/75">
-                  Platform help only · escalate to {GUIDE_SUPPORT_CONTACT.displayPhone}
+                  Step-by-step platform help · escalate to {GUIDE_SUPPORT_CONTACT.displayPhone}
                 </p>
               </div>
               <button
@@ -190,7 +190,7 @@ export function GuideAssistantChat() {
               {sending && (
                 <div className="flex items-center gap-2 text-xs text-slate-500 px-1">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Guide AI is thinking…
+                  Customer Service is typing…
                 </div>
               )}
             </div>
@@ -214,7 +214,7 @@ export function GuideAssistantChat() {
             <div className="flex gap-2 border-t border-slate-100 bg-white px-3 py-2">
               <a
                 href={guideSupportWhatsAppUrl(
-                  "Hello Celeventic support — I need help from Guide AI handoff."
+                  "Hello Celeventic Customer Care — I need help from Customer Service chat."
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -246,7 +246,7 @@ export function GuideAssistantChat() {
                       void sendMessage(input);
                     }
                   }}
-                  placeholder="Ask about Celeventic…"
+                  placeholder="Describe your issue or question…"
                   className="min-h-[44px] flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
                   disabled={sending}
                   maxLength={2000}
@@ -278,7 +278,7 @@ export function GuideAssistantChat() {
           aria-haspopup="dialog"
         >
           {open ? <X className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
-          {open ? "Close" : "Ask Guide AI"}
+          {open ? "Close" : "Customer Service"}
         </Button>
       </div>
     </>

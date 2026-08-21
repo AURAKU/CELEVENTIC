@@ -233,6 +233,12 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "fade",
       introText: "In loving memory",
       studio: { revealMode: "curtain", buttonStyle: "solemn", fullScreen: true },
+      experience: {
+        openingExperience: "candle-light",
+        outroExperience: "candle-legacy",
+        introVariant: "candlelight",
+        slideshowStyle: "timeline-gallery",
+      },
     },
   },
   "neon-celebration-party": {

@@ -40,7 +40,7 @@ describe("answerGuideQuestion", () => {
   it("refuses off-topic and stays on platform", async () => {
     const res = await answerGuideQuestion({ message: "Tell me a joke about politics" });
     assert.equal(res.source, "policy");
-    assert.match(res.reply, /only help with Celeventic/i);
+    assert.match(res.reply, /only help with (this platform|Celeventic)|Customer Service/i);
     assert.doesNotMatch(res.reply, /senator|election result/i);
   });
 
@@ -57,10 +57,16 @@ describe("answerGuideQuestion", () => {
     delete process.env.OPENAI_API_KEY;
     try {
       const res = await answerGuideQuestion({ message: "How do I RSVP to an invitation?" });
-      assert.ok(res.reply.length > 20);
+      assert.ok(res.reply.length > 80);
+      assert.match(res.reply, /Follow these steps:|steps:/i);
       assert.ok(res.relatedGuides.length > 0 || /rsvp|invitation/i.test(res.reply));
     } finally {
       if (prev !== undefined) process.env.OPENAI_API_KEY = prev;
     }
+  });
+
+  it("greets as Customer Service", async () => {
+    const res = await answerGuideQuestion({ message: "Hello" });
+    assert.match(res.reply, /Customer Service/i);
   });
 });

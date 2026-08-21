@@ -1,5 +1,6 @@
 import type { HubTabId } from "@/lib/experience/experience-types";
 import { DEFAULT_HUB_TABS as DEFAULTS } from "@/lib/experience/experience-types";
+import { isFuneralEventType } from "@/lib/invitation/catalog-event-type";
 
 export const DEFAULT_HUB_TABS = DEFAULTS;
 
@@ -18,3 +19,17 @@ export const HUB_TAB_LABELS_FALLBACK: Record<HubTabId, string> = {
   memory: "Memories",
   livestream: "Livestream",
 };
+
+const FUNERAL_HUB_TAB_LABELS: Partial<Record<HubTabId, string>> = {
+  story: "Tribute",
+  gifts: "Contributions",
+  memory: "Memorial gallery",
+  timeline: "Programme",
+};
+
+export function hubTabLabelsForEventType(
+  eventType?: string | null
+): Record<HubTabId, string> {
+  if (!isFuneralEventType(eventType)) return HUB_TAB_LABELS_FALLBACK;
+  return { ...HUB_TAB_LABELS_FALLBACK, ...FUNERAL_HUB_TAB_LABELS };
+}

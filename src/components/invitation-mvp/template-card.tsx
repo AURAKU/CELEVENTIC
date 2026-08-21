@@ -6,6 +6,7 @@ import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-
 import type { CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { withoutCatalogDashes } from "@/lib/invitation-mvp/catalog-public-copy";
 import { getLayoutSignatureFeatures } from "@/lib/invitation/layout-template-signatures";
+import { resolveOrderEventType } from "@/lib/invitation/catalog-event-type";
 
 interface TemplateCardProps {
   template: CatalogTemplate;
@@ -30,9 +31,10 @@ export function TemplateCard({ template, showActions = true }: TemplateCardProps
     getLayoutSignatureFeatures(template.layoutSlug) ?? template.features;
   // Studio 2.0 paged templates open the real viewer in preview mode.
   const isPaged = Boolean(template.themeId && template.blueprintId);
+  const eventType = resolveOrderEventType(template.category);
   const detailHref = isPaged
     ? `/invitations/preview/${template.slug}`
-    : `/invitations/templates/${template.slug}`;
+    : `/invitations/templates/${template.slug}?eventType=${encodeURIComponent(eventType)}`;
   const name = withoutCatalogDashes(template.name);
   const description = withoutCatalogDashes(template.description);
   const style = withoutCatalogDashes(template.style);

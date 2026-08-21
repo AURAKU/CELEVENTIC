@@ -9,24 +9,32 @@
  * - Custom scenes (tabId "custom") do not appear in guest hub tabs until content blocks exist.
  */
 import type { HubTabId, StudioSceneConfig } from "@/lib/experience/experience-types";
-import { DEFAULT_HUB_TABS, HUB_TAB_LABELS_FALLBACK } from "@/lib/invitation-studio/hub-tab-labels";
+import {
+  DEFAULT_HUB_TABS,
+  hubTabLabelsForEventType,
+} from "@/lib/invitation-studio/hub-tab-labels";
 
 /** @deprecated Prefer StudioSceneConfig from experience-types */
 export type StudioScene = StudioSceneConfig;
 
-export function scenesFromEnabledTabs(enabledTabs?: HubTabId[]): StudioScene[] {
+export function scenesFromEnabledTabs(
+  enabledTabs?: HubTabId[],
+  eventType?: string | null
+): StudioScene[] {
   const tabs = enabledTabs?.length ? enabledTabs : DEFAULT_HUB_TABS;
+  const labels = hubTabLabelsForEventType(eventType);
   return tabs.map((tabId) => ({
     id: `scene-${tabId}`,
     tabId,
-    title: HUB_TAB_LABELS_FALLBACK[tabId] ?? tabId,
+    title: labels[tabId] ?? tabId,
     visible: true,
   }));
 }
 
 export function mergeScenesWithTabs(
   scenes: StudioScene[] | undefined,
-  enabledTabs?: HubTabId[]
+  enabledTabs?: HubTabId[],
+  eventType?: string | null
 ): StudioScene[] {
   if (scenes?.length) {
     return scenes.map((s) => ({
@@ -34,7 +42,7 @@ export function mergeScenesWithTabs(
       visible: s.visible !== false,
     }));
   }
-  return scenesFromEnabledTabs(enabledTabs);
+  return scenesFromEnabledTabs(enabledTabs, eventType);
 }
 
 export function enabledTabsFromScenes(scenes: StudioScene[]): HubTabId[] {

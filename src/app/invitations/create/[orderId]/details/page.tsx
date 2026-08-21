@@ -19,6 +19,14 @@ import type { MusicSelection } from "@/lib/music/music-types";
 import { parseMusicSelection } from "@/lib/music/validate-selection";
 import type { AiCreatorOutput } from "@/services/invitation-os/ai-invitation-creator.service";
 import { isBlankFormDraft, readFormDraft, useFormDraft } from "@/hooks/use-form-draft";
+import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
+import {
+  isBirthdayEventType,
+  isCoupleNameEventType,
+  isCorporateLikeEventType,
+  isFuneralEventType,
+  resolveOrderEventType,
+} from "@/lib/invitation/catalog-event-type";
 
 type LanguageMode = "EN_ONLY" | "FR_ONLY" | "EN_FR";
 
@@ -115,8 +123,13 @@ export default function EventDetailsPage() {
             eventTitleFr = frVersion.eventTitle ?? "";
             storyFr = frVersion.story ?? "";
           }
+          const catalog = getCatalogTemplate(o.templateSlug as string);
+          const healedType = resolveOrderEventType(
+            catalog?.category,
+            o.eventType as string | undefined
+          );
           const serverForm: DetailsForm = {
-            eventType: o.eventType ?? "WEDDING",
+            eventType: healedType,
             hostName: o.hostName ?? "",
             coupleName1: o.coupleName1 ?? "",
             coupleName2: o.coupleName2 ?? "",
@@ -212,9 +225,19 @@ export default function EventDetailsPage() {
 
   if (loading) return <PageLoader label={t("common.loading")} className="min-h-screen" />;
 
-  const isWedding = form.eventType === "WEDDING" || form.eventType === "ENGAGEMENT";
-  const isFuneral = form.eventType === "FUNERAL";
+  const isWedding = isCoupleNameEventType(form.eventType);
+  const isFuneral = isFuneralEventType(form.eventType);
+  const isBirthday = isBirthdayEventType(form.eventType);
+  const isCorporate = isCorporateLikeEventType(form.eventType);
   const showFrench = form.languageMode === "EN_FR" || form.languageMode === "FR_ONLY";
+  const hostLabel = isFuneral
+    ? t("forms.family_host_name")
+    : isBirthday
+      ? t("forms.organizer_name")
+      : isCorporate
+        ? t("forms.company_host_name")
+        : t("forms.host_name");
+  const storyLabel = isFuneral ? t("forms.tribute_story") : t("forms.story");
 
   return (
     <MvpShell step={1} title={t("forms.event_details_title")} subtitle={t("forms.event_details_subtitle")}>
@@ -252,9 +275,12 @@ export default function EventDetailsPage() {
           </div>
         )}
         {isFuneral && (
-          <div><Label>{t("forms.deceased_name")}</Label><Input value={form.deceasedName} onChange={(e) => setForm({ ...form, deceasedName: e.target.value })} /></div>
+          <div><Label>{t("forms.deceased_name")}</Label><Input value={form.deceasedName} onChange={(e) => setForm({ ...form, deceasedName: e.target.value })} required /></div>
         )}
-        <div><Label>{t("forms.host_name")}</Label><Input value={form.hostName} onChange={(e) => setForm({ ...form, hostName: e.target.value })} /></div>
+        {isBirthday && (
+          <div><Label>{t("forms.celebrant_name")}</Label><Input value={form.coupleName1} onChange={(e) => setForm({ ...form, coupleName1: e.target.value })} /></div>
+        )}
+        <div><Label>{hostLabel}</Label><Input value={form.hostName} onChange={(e) => setForm({ ...form, hostName: e.target.value })} /></div>
         <div><Label>{t("forms.event_title")}</Label><Input value={form.eventTitle} onChange={(e) => setForm({ ...form, eventTitle: e.target.value })} required /></div>
         {showFrench && (
           <div><Label>{t("forms.event_title_fr")}</Label><Input value={form.eventTitleFr} onChange={(e) => setForm({ ...form, eventTitleFr: e.target.value })} /></div>
@@ -271,7 +297,7 @@ export default function EventDetailsPage() {
           <div><Label>{t("forms.contact_phone")}</Label><Input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} /></div>
           <div><Label>{t("forms.contact_email")}</Label><Input type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} /></div>
         </div>
-        <div><Label>{t("forms.story")}</Label><Textarea rows={4} value={form.story} onChange={(e) => setForm({ ...form, story: e.target.value })} /></div>
+        <div><Label>{storyLabel}</Label><Textarea rows={4} value={form.story} onChange={(e) => setForm({ ...form, story: e.target.value })} /></div>
         {showFrench && (
           <div><Label>{t("forms.story_fr")}</Label><Textarea rows={4} value={form.storyFr} onChange={(e) => setForm({ ...form, storyFr: e.target.value })} /></div>
         )}

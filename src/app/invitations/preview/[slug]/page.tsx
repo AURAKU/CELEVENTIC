@@ -5,6 +5,7 @@ import { categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry
 import { getSampleEvent, getSampleInvitation } from "@/lib/invite-blueprints/sample-data";
 import { FUNERAL_THEME_IDS, WEDDING_THEME_IDS } from "@/lib/invitation-theme/theme-registry";
 import { TemplatePreviewShell } from "@/components/invitation-paged/template-preview-shell";
+import { resolveOrderEventType } from "@/lib/invitation/catalog-event-type";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function TemplatePreviewPage({
   const design = getDefaultDesignConfig(template.slug);
   const category = categoryForBlueprint(template.blueprintId);
   const themeIds = category === "funeral" ? FUNERAL_THEME_IDS : WEDDING_THEME_IDS;
+  const eventType = resolveOrderEventType(template.category);
 
   return (
     <TemplatePreviewShell
@@ -39,7 +41,7 @@ export default async function TemplatePreviewPage({
       invitation={getSampleInvitation(template.slug)}
       category={category}
       themeIds={themeIds}
-      eventType={category === "funeral" ? "FUNERAL" : "WEDDING"}
+      eventType={eventType}
     />
   );
 }
