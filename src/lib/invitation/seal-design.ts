@@ -16,7 +16,15 @@ export type SealDesignId =
   | "gold-foil-rim"
   | "cream-linen"
   | "forest-green"
-  | "charcoal";
+  | "charcoal"
+  /** Funeral / memorial poured-wax materials — never peach wedding pearl */
+  | "soft-candle"
+  | "ivory-dove"
+  | "garnet-cloth"
+  | "heritage-bronze"
+  | "silver-vigil"
+  | "obsidian-gold"
+  | "soft-slate";
 
 /** "auto" keeps the smart default (Cinzel for monograms, Great Vibes for words). */
 export type SealFontChoice =
@@ -278,7 +286,242 @@ export const SEAL_DESIGN_PRESETS: SealDesignPreset[] = [
     monogramColor: "#E7D9A8",
     wordColor: "#D9C685",
   },
+  {
+    id: "soft-candle",
+    label: "Soft Candle Wax",
+    description: "Warm amber mourning wax — candlelight memorial envelopes.",
+    swatch: "linear-gradient(135deg, #f6e2b8 0%, #c4893a 55%, #6b3a14 100%)",
+    face: [
+      { offset: "0%", color: "#fff6e4" },
+      { offset: "18%", color: "#f6e2b8" },
+      { offset: "40%", color: "#e8c07a" },
+      { offset: "62%", color: "#c4893a" },
+      { offset: "88%", color: "#8a5420" },
+      { offset: "100%", color: "#5c3512" },
+    ],
+    deep: [
+      { offset: "0%", color: "#c4893a" },
+      { offset: "55%", color: "#8a5420" },
+      { offset: "100%", color: "#5c3512" },
+    ],
+    rim: [
+      { offset: "0%", color: "#fff0d4" },
+      { offset: "40%", color: "#d4a45a" },
+      { offset: "100%", color: "#6b3a14" },
+    ],
+    well: [
+      { offset: "0%", color: "#d4a45a" },
+      { offset: "100%", color: "#6b3a14" },
+    ],
+    bead: [
+      { offset: "0%", color: "#fff8ea" },
+      { offset: "100%", color: "#e8c07a" },
+    ],
+    monogramColor: "#FFF4DF",
+    wordColor: "#F5E6B8",
+  },
+  {
+    id: "ivory-dove",
+    label: "Ivory Dove",
+    description: "Pale ivory wax with quiet pearl sheen — soft farewell envelopes.",
+    swatch: "linear-gradient(135deg, #ffffff 0%, #ebe4d8 55%, #b9ae9c 100%)",
+    face: [
+      { offset: "0%", color: "#ffffff" },
+      { offset: "20%", color: "#f7f2ea" },
+      { offset: "45%", color: "#ebe4d8" },
+      { offset: "70%", color: "#d4c9b8" },
+      { offset: "100%", color: "#b9ae9c" },
+    ],
+    deep: [
+      { offset: "0%", color: "#d4c9b8" },
+      { offset: "100%", color: "#9e9280" },
+    ],
+    rim: [
+      { offset: "0%", color: "#ffffff" },
+      { offset: "50%", color: "#ddd4c6" },
+      { offset: "100%", color: "#a89c8a" },
+    ],
+    well: [
+      { offset: "0%", color: "#e8e0d4" },
+      { offset: "100%", color: "#b9ae9c" },
+    ],
+    bead: [
+      { offset: "0%", color: "#ffffff" },
+      { offset: "100%", color: "#e8e0d4" },
+    ],
+    monogramColor: "#6B5E4E",
+    wordColor: "#7A6B58",
+  },
+  {
+    id: "garnet-cloth",
+    label: "Garnet Cloth Wax",
+    description: "Deep black-red poured wax for black-and-red funeral cloth rites.",
+    swatch: "linear-gradient(135deg, #c45a5a 0%, #6b1220 55%, #1a0508 100%)",
+    dark: true,
+    face: [
+      { offset: "0%", color: "#e8a0a0" },
+      { offset: "18%", color: "#b84048" },
+      { offset: "42%", color: "#7a1828" },
+      { offset: "68%", color: "#4a0e18" },
+      { offset: "100%", color: "#1a0508" },
+    ],
+    deep: [
+      { offset: "0%", color: "#6b1220" },
+      { offset: "100%", color: "#1a0508" },
+    ],
+    rim: [
+      { offset: "0%", color: "#d4a050" },
+      { offset: "50%", color: "#8a1828" },
+      { offset: "100%", color: "#2a080c" },
+    ],
+    well: [
+      { offset: "0%", color: "#7a1828" },
+      { offset: "100%", color: "#1a0508" },
+    ],
+    bead: [
+      { offset: "0%", color: "#f5e6b8" },
+      { offset: "100%", color: "#c9a227" },
+    ],
+    monogramColor: "#F5E6B8",
+    wordColor: "#E8C96A",
+  },
+  {
+    id: "heritage-bronze",
+    label: "Heritage Bronze",
+    description: "Warm bronze and kente-gold wax for heritage farewell envelopes.",
+    swatch: "linear-gradient(135deg, #f0d090 0%, #a86b28 55%, #4a2e10 100%)",
+    face: [
+      { offset: "0%", color: "#f8e8c4" },
+      { offset: "22%", color: "#e8c878" },
+      { offset: "48%", color: "#c4893a" },
+      { offset: "72%", color: "#8a5420" },
+      { offset: "100%", color: "#4a2e10" },
+    ],
+    deep: [
+      { offset: "0%", color: "#a86b28" },
+      { offset: "100%", color: "#4a2e10" },
+    ],
+    rim: [
+      { offset: "0%", color: "#f5e6b8" },
+      { offset: "50%", color: "#c4893a" },
+      { offset: "100%", color: "#5c3512" },
+    ],
+    well: [
+      { offset: "0%", color: "#c4893a" },
+      { offset: "100%", color: "#4a2e10" },
+    ],
+    bead: [
+      { offset: "0%", color: "#fff8e0" },
+      { offset: "100%", color: "#d4a63a" },
+    ],
+    monogramColor: "#2A1808",
+    wordColor: "#3B2410",
+  },
+  {
+    id: "silver-vigil",
+    label: "Silver Vigil",
+    description: "Cool silver-pearl wax for white-cloth homegoing envelopes.",
+    swatch: "linear-gradient(135deg, #f4f6f8 0%, #b8c0c8 55%, #6a747e 100%)",
+    face: [
+      { offset: "0%", color: "#ffffff" },
+      { offset: "20%", color: "#eef1f4" },
+      { offset: "45%", color: "#c8d0d8" },
+      { offset: "70%", color: "#98a2ac" },
+      { offset: "100%", color: "#6a747e" },
+    ],
+    deep: [
+      { offset: "0%", color: "#98a2ac" },
+      { offset: "100%", color: "#4a545e" },
+    ],
+    rim: [
+      { offset: "0%", color: "#ffffff" },
+      { offset: "50%", color: "#a8b2bc" },
+      { offset: "100%", color: "#5a646e" },
+    ],
+    well: [
+      { offset: "0%", color: "#b8c0c8" },
+      { offset: "100%", color: "#6a747e" },
+    ],
+    bead: [
+      { offset: "0%", color: "#ffffff" },
+      { offset: "100%", color: "#d0d8e0" },
+    ],
+    monogramColor: "#3A4450",
+    wordColor: "#4A5460",
+  },
+  {
+    id: "obsidian-gold",
+    label: "Obsidian Gold",
+    description: "Midnight wax with a gold bead — one-week vigil and night rites.",
+    swatch: "linear-gradient(135deg, #6a6a6a 0%, #1a1a1a 55%, #050505 100%)",
+    dark: true,
+    face: [
+      { offset: "0%", color: "#8a8a8a" },
+      { offset: "25%", color: "#4a4a4a" },
+      { offset: "55%", color: "#222222" },
+      { offset: "100%", color: "#080808" },
+    ],
+    deep: [
+      { offset: "0%", color: "#2a2a2a" },
+      { offset: "100%", color: "#050505" },
+    ],
+    rim: [
+      { offset: "0%", color: "#e8c96a" },
+      { offset: "40%", color: "#3a3a3a" },
+      { offset: "100%", color: "#0a0a0a" },
+    ],
+    well: [
+      { offset: "0%", color: "#3a3a3a" },
+      { offset: "100%", color: "#080808" },
+    ],
+    bead: [
+      { offset: "0%", color: "#f5e6b8" },
+      { offset: "100%", color: "#c9a227" },
+    ],
+    monogramColor: "#F5E6B8",
+    wordColor: "#E8C96A",
+  },
+  {
+    id: "soft-slate",
+    label: "Soft Slate",
+    description: "Muted blue-grey wax — quiet memorial pages.",
+    swatch: "linear-gradient(135deg, #d0d8e0 0%, #6a7888 55%, #2a3440 100%)",
+    dark: true,
+    face: [
+      { offset: "0%", color: "#e8eef4" },
+      { offset: "22%", color: "#b0bcc8" },
+      { offset: "48%", color: "#788898" },
+      { offset: "75%", color: "#4a5868" },
+      { offset: "100%", color: "#2a3440" },
+    ],
+    deep: [
+      { offset: "0%", color: "#5a6878" },
+      { offset: "100%", color: "#1a2430" },
+    ],
+    rim: [
+      { offset: "0%", color: "#d8e0e8" },
+      { offset: "50%", color: "#687888" },
+      { offset: "100%", color: "#2a3440" },
+    ],
+    well: [
+      { offset: "0%", color: "#687888" },
+      { offset: "100%", color: "#2a3440" },
+    ],
+    bead: [
+      { offset: "0%", color: "#f0f4f8" },
+      { offset: "100%", color: "#a8b4c0" },
+    ],
+    monogramColor: "#F0F4F8",
+    wordColor: "#E0E8F0",
+  },
 ];
+
+/** CSS linear-gradient string from a seal face stop list — for CSS circular envelopes. */
+export function sealFaceCssBackground(designId?: string | null): string {
+  const preset = getSealDesignPreset(designId);
+  const stops = preset.face.map((s) => `${s.color} ${s.offset}`).join(", ");
+  return `linear-gradient(145deg, ${stops})`;
+}
 
 export const DEFAULT_SEAL_DESIGN: SealDesignId = "classic-peach-pearl";
 

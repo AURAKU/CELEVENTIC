@@ -50,3 +50,28 @@ export function clearTourCompletion(tourId: string) {
     /* ignore */
   }
 }
+
+const PENDING_WELCOME_TOUR = "pending-welcome-tour";
+
+/** Mark that Finish Setup should open the navigation tutor on the next dashboard visit. */
+export function markPendingWelcomeTour() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(guideStorageKey("flag", PENDING_WELCOME_TOUR), "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Returns true once, then clears — so the tour only auto-starts after setup. */
+export function consumePendingWelcomeTour(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const key = guideStorageKey("flag", PENDING_WELCOME_TOUR);
+    const pending = localStorage.getItem(key) === "1";
+    if (pending) localStorage.removeItem(key);
+    return pending;
+  } catch {
+    return false;
+  }
+}

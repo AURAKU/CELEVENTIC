@@ -91,6 +91,9 @@ export function TemplatePreviewGlimpse({
     coupleName1: visionBoard.coupleName1,
     coupleName2: visionBoard.coupleName2,
     hostName: preview.event.hostName,
+    eventCategory: category,
+    eventTitle: preview.event.title,
+    invitationName: preview.event.title,
   });
   const sealStyle = resolveSealStyle(visionBoard);
 

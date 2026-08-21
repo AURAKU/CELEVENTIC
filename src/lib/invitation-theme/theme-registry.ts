@@ -105,8 +105,8 @@ const candlelightElegy: InvitationThemeTokens = {
     packId: "memorial-candle",
     placements: { coverTop: "candle", divider: "ribbon" },
   },
-  // Funerals default to still — motion must feel solemn, never playful.
-  motion: { profileId: "still", intensity: 0 },
+  // Funerals use solemn motion — slow fades, never playful drift.
+  motion: { profileId: "solemn", intensity: 0.35 },
   spacing: { pagePadding: "grand", blockGap: "regular", radius: 16, shadow: "soft" },
 };
 
@@ -140,7 +140,7 @@ const whiteLilyMemorial: InvitationThemeTokens = {
     packId: "white-lily",
     placements: { coverTop: "lily", divider: "lily" },
   },
-  motion: { profileId: "still", intensity: 0 },
+  motion: { profileId: "solemn", intensity: 0.25 },
   spacing: { pagePadding: "regular", blockGap: "airy", radius: 12, shadow: "none" },
 };
 
@@ -209,8 +209,148 @@ const royalMourning: InvitationThemeTokens = {
     packId: "memorial-drape",
     placements: { coverTop: "ribbon", divider: "candle" },
   },
-  motion: { profileId: "still", intensity: 0 },
+  motion: { profileId: "solemn", intensity: 0.3 },
   spacing: { pagePadding: "grand", blockGap: "regular", radius: 10, shadow: "soft" },
+};
+
+/** Akan black / red mourning cloth — registered for catalogue themeId `black-red-cloth`. */
+const blackRedCloth: InvitationThemeTokens = {
+  id: "black-red-cloth",
+  name: "Black Red Cloth",
+  color: {
+    primary: "#f2ebe3",
+    secondary: "#8b1515",
+    accent: "#c9a227",
+    surface: "#0a0a0a",
+    surfaceAlt: "#1a1010",
+    ink: "#f0e8dc",
+    inkMuted: "#a89888",
+    overlay: "rgba(8, 4, 4, 0.6)",
+  },
+  typography: {
+    displayFont: "cinzel",
+    bodyFont: "cormorant",
+    scriptFont: "cormorant",
+    scale: 1,
+    letterSpacing: "wide",
+  },
+  texture: {
+    backgroundTexture: "velvet-vignette",
+    dividerStyle: "double-rule",
+    frameStyle: "hairline",
+    foilEffect: "none",
+  },
+  motif: {
+    packId: "memorial-drape",
+    placements: { coverTop: "ribbon", divider: "candle" },
+  },
+  motion: { profileId: "solemn", intensity: 0.35 },
+  spacing: { pagePadding: "grand", blockGap: "regular", radius: 8, shadow: "soft" },
+};
+
+/** Christian thanksgiving / celebration of life — ivory cloth. */
+const whiteClothHomegoing: InvitationThemeTokens = {
+  id: "white-cloth-homegoing",
+  name: "White Cloth Homegoing",
+  color: {
+    primary: "#2c3038",
+    secondary: "#6b7280",
+    accent: "#a8894e",
+    surface: "#faf8f4",
+    surfaceAlt: "#f0ece4",
+    ink: "#1f2329",
+    inkMuted: "#6b7280",
+    overlay: "rgba(44, 48, 56, 0.35)",
+  },
+  typography: {
+    displayFont: "cormorant",
+    bodyFont: "cormorant",
+    scriptFont: "great-vibes",
+    scale: 1,
+    letterSpacing: "normal",
+  },
+  texture: {
+    backgroundTexture: "paper",
+    dividerStyle: "hairline",
+    frameStyle: "hairline",
+    foilEffect: "none",
+  },
+  motif: {
+    packId: "white-lily",
+    placements: { coverTop: "lily", divider: "lily" },
+  },
+  motion: { profileId: "solemn", intensity: 0.25 },
+  spacing: { pagePadding: "regular", blockGap: "airy", radius: 12, shadow: "none" },
+};
+
+/** Heritage kente border funeral banner. */
+const kenteBorderFarewell: InvitationThemeTokens = {
+  id: "kente-border-farewell",
+  name: "Kente Border Farewell",
+  color: {
+    primary: "#f6e3b4",
+    secondary: "#a3541b",
+    accent: "#e0a422",
+    surface: "#1a0e0a",
+    surfaceAlt: "#2a1810",
+    ink: "#f8ecd4",
+    inkMuted: "#cfa878",
+    overlay: "rgba(20, 8, 4, 0.55)",
+  },
+  typography: {
+    displayFont: "cinzel",
+    bodyFont: "cormorant",
+    scriptFont: "cormorant",
+    scale: 1,
+    letterSpacing: "grand",
+  },
+  texture: {
+    backgroundTexture: "linen",
+    dividerStyle: "double-rule",
+    frameStyle: "gilded",
+    foilEffect: "gold",
+  },
+  motif: {
+    packId: "kente-royal",
+    placements: { coverTop: "flourish", coverBottom: "vine", divider: "ribbon" },
+  },
+  motion: { profileId: "solemn", intensity: 0.4 },
+  spacing: { pagePadding: "regular", blockGap: "regular", radius: 10, shadow: "lifted" },
+};
+
+/** One-week vigil / wake-keeping notice. */
+const oneWeekVigil: InvitationThemeTokens = {
+  id: "one-week-vigil",
+  name: "One Week Vigil",
+  color: {
+    primary: "#faf6f0",
+    secondary: "#b45309",
+    accent: "#d4a63a",
+    surface: "#12100e",
+    surfaceAlt: "#1c1814",
+    ink: "#f5f0e8",
+    inkMuted: "#a89d90",
+    overlay: "rgba(12, 10, 8, 0.55)",
+  },
+  typography: {
+    displayFont: "cinzel",
+    bodyFont: "cormorant",
+    scriptFont: "cormorant",
+    scale: 1,
+    letterSpacing: "wide",
+  },
+  texture: {
+    backgroundTexture: "velvet-vignette",
+    dividerStyle: "hairline",
+    frameStyle: "hairline",
+    foilEffect: "none",
+  },
+  motif: {
+    packId: "memorial-candle",
+    placements: { coverTop: "candle", divider: "ribbon" },
+  },
+  motion: { profileId: "solemn", intensity: 0.3 },
+  spacing: { pagePadding: "regular", blockGap: "regular", radius: 12, shadow: "soft" },
 };
 
 export const INVITATION_THEMES: Record<string, InvitationThemeTokens> = {
@@ -220,10 +360,22 @@ export const INVITATION_THEMES: Record<string, InvitationThemeTokens> = {
   [candlelightElegy.id]: candlelightElegy,
   [whiteLilyMemorial.id]: whiteLilyMemorial,
   [royalMourning.id]: royalMourning,
+  [blackRedCloth.id]: blackRedCloth,
+  [whiteClothHomegoing.id]: whiteClothHomegoing,
+  [kenteBorderFarewell.id]: kenteBorderFarewell,
+  [oneWeekVigil.id]: oneWeekVigil,
 };
 
 export const WEDDING_THEME_IDS = [gildedSerif.id, emeraldArch.id, kenteRoyale.id];
-export const FUNERAL_THEME_IDS = [candlelightElegy.id, whiteLilyMemorial.id, royalMourning.id];
+export const FUNERAL_THEME_IDS = [
+  candlelightElegy.id,
+  whiteLilyMemorial.id,
+  royalMourning.id,
+  blackRedCloth.id,
+  whiteClothHomegoing.id,
+  kenteBorderFarewell.id,
+  oneWeekVigil.id,
+];
 
 export function getInvitationTheme(id: string | undefined | null): InvitationThemeTokens | undefined {
   if (!id) return undefined;

@@ -66,7 +66,7 @@
     "test:uploads": "tsx --test src/app/api/uploads/__tests__/*.test.ts",
     "test:experience-engine": "tsx --test src/lib/experience-engine/__tests__/*.test.ts",
     "test:opening-preview": "tsx --test src/lib/experience/__tests__/*.test.ts",
-    "test:live-editability": "tsx --test src/lib/invitation/__tests__/*.test.ts",
+    "test:live-editability": "tsx --test src/lib/invitation/__tests__/*.test.ts src/lib/invitation-mvp/__tests__/catalog-demo-boards.test.ts",
     "test:currency": "tsx --test src/services/commerce/__tests__/*.test.ts",
     "test:social": "tsx --test src/lib/social/__tests__/*.test.ts",
     "test:app-url": "tsx --test src/lib/__tests__/app-url.test.ts",

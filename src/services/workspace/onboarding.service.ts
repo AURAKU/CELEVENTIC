@@ -35,9 +35,16 @@ export class OnboardingService {
   getPostSignupRedirect(
     accountType: AccountType,
     onboardingCompletedAt?: Date | null,
-    joinIntent?: boolean
+    joinIntent?: boolean,
+    options?: { vendorCategory?: string }
   ) {
-    if (accountType === "VENDOR") return "/vendor/onboarding";
+    if (accountType === "VENDOR") {
+      const category = options?.vendorCategory?.trim();
+      if (category) {
+        return `/vendor/onboarding?category=${encodeURIComponent(category)}`;
+      }
+      return "/vendor/onboarding";
+    }
     if (!onboardingCompletedAt) {
       const base = "/dashboard/getting-started";
       if (joinIntent) return `${base}?intent=join`;
@@ -141,7 +148,8 @@ export class OnboardingService {
       redirect: this.getPostSignupRedirect(
         input.accountType,
         user.onboardingCompletedAt,
-        input.joinIntent
+        input.joinIntent,
+        { vendorCategory: input.vendorCategory }
       ),
     };
   }

@@ -29,6 +29,7 @@ import { eventMemoryUploadService } from "@/services/memory/event-memory-upload.
 import type { VideoCategory } from "@/lib/video/constants";
 import { buildRawVideoKey } from "@/lib/video/key-builder";
 import type { VideoOwnerType } from "@prisma/client";
+import { videoAssetOwnerWrite } from "@/lib/video/owner";
 
 /**
  * Which engine transcodes queued videos for the universal (S3-backed) upload pipeline.
@@ -224,7 +225,16 @@ export async function queueLocalVideoUpload(assetId: string, buffer: Buffer): Pr
 export interface CreateAndQueueLocalVideoAssetInput {
   category: VideoCategory;
   ownerType?: VideoOwnerType;
-  ownerId: string;
+  /**
+   * Real User.id when ownerType is USER.
+   * Must be null/omitted for GUEST_TOKEN (never Event.id).
+   */
+  ownerId?: string | null;
+  /**
+   * Storage/quota namespace for S3/local keys (e.g. `user:…` or `event:…`).
+   * Required for GUEST_TOKEN; defaults to `user:${ownerId}` for USER when omitted.
+   */
+  storageKey?: string;
   eventId?: string | null;
   vendorId?: string | null;
   orderId?: string | null;
@@ -245,14 +255,26 @@ export interface CreateAndQueueLocalVideoAssetInput {
 export async function createAndQueueLocalVideoAsset(
   input: CreateAndQueueLocalVideoAssetInput
 ): Promise<VideoAsset> {
-  const { key, id } = buildRawVideoKey(input.category, input.ownerId, input.originalExtension);
+  const ownerType = input.ownerType ?? "USER";
+  const owner = videoAssetOwnerWrite({ ownerType, ownerId: input.ownerId });
+  const storageKey =
+    input.storageKey ??
+    (owner.ownerType === "USER" ? `user:${owner.ownerId}` : null);
+  if (!storageKey) {
+    throw new Error("GUEST_TOKEN local video assets require an explicit storageKey (e.g. event:…).");
+  }
+  if (owner.ownerType === "GUEST_TOKEN" && !input.eventId) {
+    throw new Error("GUEST_TOKEN local video assets require eventId.");
+  }
+
+  const { key, id } = buildRawVideoKey(input.category, storageKey, input.originalExtension);
   const asset = await prisma.videoAsset.create({
     data: {
       id,
       category: input.category,
       status: "UPLOADING",
-      ownerType: input.ownerType ?? "USER",
-      ownerId: input.ownerId,
+      ownerType: owner.ownerType,
+      ownerId: owner.ownerId,
       eventId: input.eventId ?? null,
       vendorId: input.vendorId ?? null,
       orderId: input.orderId ?? null,

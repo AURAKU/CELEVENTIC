@@ -17,6 +17,11 @@ export type OpeningExperienceId =
   | "curtain-award"
   | "curtain-birthday"
   | "curtain-corporate"
+  | "balloon-burst"
+  | "briefing-folder"
+  | "agenda-flip"
+  | "launch-pulse"
+  | "investor-pass"
   | "palace-entrance"
   | "scratch"
   | "passport"
@@ -185,7 +190,19 @@ export type IntroVariantId =
   | "chapel-glow"
   | "folio-open"
   | "foil-rise"
-  | "swan-glide";
+  | "swan-glide"
+  | "mourning-cloth"
+  | "white-veil"
+  | "kente-fold"
+  | "vigil-lantern"
+  | "balloon-rise"
+  | "sparkle-cascade"
+  | "milestone-foil"
+  | "party-strobe"
+  | "briefing-grid"
+  | "keynote-beam"
+  | "launch-orbit"
+  | "investor-ledger";
 
 export interface JourneyChapter {
   id: string;

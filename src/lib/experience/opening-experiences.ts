@@ -229,6 +229,36 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   { id: "curtain-award", label: "Award night", description: "Gold curtain gala reveal", category: "curtain" },
   { id: "curtain-birthday", label: "Birthday party", description: "Festive curtain pop", category: "curtain" },
   { id: "curtain-corporate", label: "Corporate launch", description: "Clean professional curtain", category: "curtain" },
+  {
+    id: "briefing-folder",
+    label: "Briefing folder",
+    description: "Unfold the executive briefing dossier",
+    category: "interactive",
+  },
+  {
+    id: "agenda-flip",
+    label: "Agenda flip",
+    description: "Flip into the keynote agenda chapters",
+    category: "interactive",
+  },
+  {
+    id: "launch-pulse",
+    label: "Launch pulse",
+    description: "Pulse open into the product launch invite",
+    category: "interactive",
+  },
+  {
+    id: "investor-pass",
+    label: "Investor pass",
+    description: "Open the investor night credential pass",
+    category: "interactive",
+  },
+  {
+    id: "balloon-burst",
+    label: "Balloon burst",
+    description: "Tap to burst balloons into the birthday invite",
+    category: "interactive",
+  },
   { id: "palace-entrance", label: "Palace entrance", description: "Golden hall with light beams", category: "palace" },
   { id: "scratch", label: "Scratch foil", description: "Scratch gold foil to reveal", category: "interactive" },
   { id: "passport", label: "Passport open", description: "Luxury passport booklet", category: "interactive" },
@@ -316,12 +346,13 @@ export function mapLegacyRevealMode(mode: RevealMode): OpeningExperienceId {
 export function mapOpeningToLegacyRevealMode(id: OpeningExperienceId): RevealMode {
   if (id.startsWith("curtain-")) return "curtain";
   if (id === "scratch") return "scratch";
-  if (id === "passport") return "passport";
+  if (id === "passport" || id === "investor-pass") return "passport";
   if (id === "glass" || id === "swipe-reveal" || id === "petal-fall") return "glass";
-  if (id === "scroll-unroll") return "scroll-unroll";
+  if (id === "scroll-unroll" || id === "briefing-folder" || id === "letter-unfold") return "scroll-unroll";
   if (id === "none" || id === "film-countdown") return "none";
-  if (id === "pop-reveal" || id === "confetti-burst") return "scratch";
-  if (id === "flip-reveal" || id === "zoom-reveal" || id === "magazine-page-turn" || id === "ring-box")
+  if (id === "pop-reveal" || id === "confetti-burst" || id === "balloon-burst" || id === "launch-pulse")
+    return "scratch";
+  if (id === "flip-reveal" || id === "zoom-reveal" || id === "magazine-page-turn" || id === "ring-box" || id === "agenda-flip")
     return "passport";
   if (id === "candle-light") return "curtain";
   if (
@@ -393,6 +424,71 @@ const OPENING_TAP_COPY: Partial<Record<OpeningExperienceId, PreviewTapCopy>> = {
     subtitle: "Play the opening exactly as your guests will see it",
     steps: ["Candle lights", "Invite reveals"],
   },
+  "wax-seal-black": {
+    label: "Tap to press the mourning seal",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Seal lifts", "Cloth rite opens"],
+  },
+  "envelope-kente": {
+    label: "Tap to open the kente envelope",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Envelope opens", "Farewell reveals"],
+  },
+  "letter-unfold": {
+    label: "Tap to unfold the letter",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Letter unfolds", "Homegoing opens"],
+  },
+  "envelope-royal": {
+    label: "Tap to open the white cloth envelope",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Envelope opens", "Homegoing reveals"],
+  },
+  "envelope-classic": {
+    label: "Tap to open the vigil notice",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Envelope opens", "Notice reveals"],
+  },
+  "curtain-birthday": {
+    label: "Tap to open the party curtain",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Curtain parts", "Party begins"],
+  },
+  "curtain-concert": {
+    label: "Tap to drop the stage curtain",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Curtain drops", "Bash begins"],
+  },
+  "wax-seal-pink": {
+    label: "Tap to break the pink seal",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Seal lifts", "Glam invite opens"],
+  },
+  "balloon-burst": {
+    label: "Tap to burst the balloons",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Balloons burst", "Surprise reveals"],
+  },
+  "briefing-folder": {
+    label: "Tap to open the briefing folder",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Folder unfolds", "Brief begins"],
+  },
+  "agenda-flip": {
+    label: "Tap to flip the agenda",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Agenda flips", "Keynote opens"],
+  },
+  "launch-pulse": {
+    label: "Tap to pulse the launch",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Pulse hits", "Launch reveals"],
+  },
+  "investor-pass": {
+    label: "Tap to open the investor pass",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Pass opens", "Night begins"],
+  },
   "gift-box": {
     label: "Tap to open the gift box",
     subtitle: "Play the opening exactly as your guests will see it",
@@ -424,9 +520,9 @@ const OPENING_TAP_COPY: Partial<Record<OpeningExperienceId, PreviewTapCopy>> = {
     steps: ["Booklet opens", "Invite reveals"],
   },
   archway: {
-    label: "Tap to open the archway",
+    label: "Tap to open the vigil gate",
     subtitle: "Play the opening exactly as your guests will see it",
-    steps: ["Gates swing open", "Invite reveals"],
+    steps: ["Gates open", "Notice reveals"],
   },
   "palace-entrance": {
     label: "Tap to enter the palace",
@@ -483,11 +579,18 @@ export function previewTapLabelForOpening(
 /**
  * Full beat list for the affordance: the mechanic's own beats with the music
  * cue spliced in where a guest would actually hear it — on the opening gesture.
+ * Pass `musicTitle` so catalogue tiles name the template's actual track.
  */
 export function previewTapStepsForOpening(
   id: OpeningExperienceId | string | undefined,
-  hasMusic: boolean
+  hasMusic: boolean,
+  musicTitle?: string | null
 ): string[] {
   const { steps } = previewTapLabelForOpening(id);
-  return hasMusic ? [steps[0], "Music begins", steps[1]] : [...steps];
+  if (!hasMusic) return [...steps];
+  const title = musicTitle?.trim();
+  const musicBeat = title
+    ? `${title.length > 28 ? `${title.slice(0, 26)}…` : title} plays`
+    : "Music begins";
+  return [steps[0], musicBeat, steps[1]];
 }

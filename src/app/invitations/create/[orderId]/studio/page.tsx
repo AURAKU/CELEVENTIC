@@ -19,6 +19,7 @@ import { useStudioHistory } from "@/hooks/use-studio-history";
 import { useStudioAutosave } from "@/hooks/use-studio-autosave";
 import { hasFullPackageAccess } from "@/lib/access/package-access";
 import { isStudioUnlocked, isLiveInvitation } from "@/lib/invitation/studio-access";
+import { displayHostNameFromOrder } from "@/lib/invitation/catalog-event-type";
 
 export default function StudioPage() {
   const router = useRouter();
@@ -136,9 +137,13 @@ export default function StudioPage() {
 
   const hostName = useMemo(() => {
     if (!order) return "Host";
-    return order.coupleName1 && order.coupleName2
-      ? `${order.coupleName1} & ${order.coupleName2}`
-      : ((order.hostName as string) ?? "Host");
+    return displayHostNameFromOrder({
+      eventType: order.eventType as string | undefined,
+      hostName: order.hostName as string | undefined,
+      coupleName1: order.coupleName1 as string | undefined,
+      coupleName2: order.coupleName2 as string | undefined,
+      deceasedName: order.deceasedName as string | undefined,
+    });
   }, [order]);
 
   const previewEvent = useMemo(() => {
@@ -276,7 +281,9 @@ export default function StudioPage() {
           design: snapshot.design,
           eventTitle: previewEvent.title,
           eventDate: previewEvent.startDateRaw ?? previewEvent.startDate,
-          hostName: previewEvent.hostName,
+          hostName: (order.hostName as string) ?? previewEvent.hostName,
+          eventType: (order.eventType as string) ?? undefined,
+          deceasedName: (order.deceasedName as string) ?? undefined,
           galleryUrls: snapshot.galleryUrls,
           musicSelection: snapshot.musicSelection,
           mapsLink: previewEvent.mapsLink,

@@ -22,6 +22,12 @@ import {
   FUNERAL_AUDIO_CATEGORIES,
   MEMORIAL_LOCALES,
 } from "@/lib/funeral/funeral-constants";
+import { FUNERAL_EXPERIENCE_THEMES } from "@/lib/funeral-experience/themes";
+import {
+  parseFamilyContactsBlob,
+  serializeFamilyContactsBlob,
+  type FuneralExperienceConfig,
+} from "@/lib/funeral-experience/experience-config";
 import { PaginatedSection } from "@/components/ui/paginated-section";
 
 const SECTION_TO_TAB: Record<string, string> = {
@@ -65,6 +71,8 @@ interface FuneralProfile {
   templateSlug: string | null;
   revealStyle: string | null;
   invitationAudioCategory: string | null;
+  theme?: string | null;
+  familyContacts?: unknown;
 }
 
 export function FuneralPortalClient() {
@@ -88,6 +96,10 @@ export function FuneralPortalClient() {
     achievements: "", education: "", career: "", faithJourney: "", legacyMessage: "",
     burialVenue: "", burialDirections: "", privacyStatus: "PUBLIC", photoUrl: "", livestreamUrl: "",
     templateSlug: "", revealStyle: "MEMORIAL_BOOK", invitationAudioCategory: "hymns",
+    theme: "golden-legacy",
+    aka: "", honorificTitle: "", relationshipLabel: "",
+    dressFriday: "All Black", dressSaturday: "Black & Red", dressSunday: "Black & White",
+    enableFlowerTribute: false, announcementMode: false,
   });
   const [programForm, setProgramForm] = useState({ title: "", startTime: "", description: "" });
   const [timelineForm, setTimelineForm] = useState({ year: "", title: "", description: "" });
@@ -108,6 +120,8 @@ export function FuneralPortalClient() {
       setTimeline(d.data.timeline);
       setLivestreams(d.data.livestreams);
       setCandleTotal(d.data.candles.total);
+      const parsed = parseFamilyContactsBlob(p.familyContacts);
+      const dress = parsed.experience.dressCode ?? [];
       setForm({
         deceasedName: p.deceasedName ?? "",
         biography: p.biography ?? "",
@@ -127,6 +141,15 @@ export function FuneralPortalClient() {
         templateSlug: p.templateSlug ?? "",
         revealStyle: p.revealStyle ?? "MEMORIAL_BOOK",
         invitationAudioCategory: p.invitationAudioCategory ?? "hymns",
+        theme: p.theme ?? "golden-legacy",
+        aka: parsed.experience.aka ?? "",
+        honorificTitle: parsed.experience.honorificTitle ?? "",
+        relationshipLabel: parsed.experience.relationshipLabel ?? "",
+        dressFriday: dress.find((x) => /fri/i.test(x.day))?.label ?? "All Black",
+        dressSaturday: dress.find((x) => /sat/i.test(x.day))?.label ?? "Black & Red",
+        dressSunday: dress.find((x) => /sun/i.test(x.day))?.label ?? "Black & White",
+        enableFlowerTribute: parsed.experience.enableFlowerTribute === true,
+        announcementMode: parsed.experience.announcementMode === true,
       });
     } else setError(d.error);
   }
@@ -167,10 +190,56 @@ export function FuneralPortalClient() {
     e.preventDefault();
     setSaving(true);
     setError("");
+    const existing = parseFamilyContactsBlob(profile?.familyContacts);
+    const experience: FuneralExperienceConfig = {
+      ...existing.experience,
+      v: 1,
+      aka: form.aka || undefined,
+      honorificTitle: form.honorificTitle || undefined,
+      relationshipLabel: form.relationshipLabel || undefined,
+      enableFlowerTribute: form.enableFlowerTribute,
+      announcementMode: form.announcementMode,
+      dressCode: [
+        {
+          day: "Friday",
+          label: form.dressFriday,
+          colors: /red/i.test(form.dressFriday) ? ["black", "red"] : ["black"],
+        },
+        {
+          day: "Saturday",
+          label: form.dressSaturday,
+          colors: /red/i.test(form.dressSaturday)
+            ? ["black", "red"]
+            : /white/i.test(form.dressSaturday)
+              ? ["black", "white"]
+              : ["black"],
+        },
+        {
+          day: "Sunday",
+          label: form.dressSunday,
+          colors: /white/i.test(form.dressSunday) ? ["black", "white"] : ["black"],
+        },
+      ],
+    };
+    const {
+      aka: _a,
+      honorificTitle: _h,
+      relationshipLabel: _r,
+      dressFriday: _df,
+      dressSaturday: _ds,
+      dressSunday: _du,
+      enableFlowerTribute: _f,
+      announcementMode: _am,
+      ...profileFields
+    } = form;
     const res = await fetch("/api/funeral", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId, ...form }),
+      body: JSON.stringify({
+        eventId,
+        ...profileFields,
+        familyContacts: serializeFamilyContactsBlob(existing.contacts, experience),
+      }),
     });
     if (res.ok) await load();
     else setError((await res.json()).error);
@@ -254,14 +323,46 @@ export function FuneralPortalClient() {
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div><Label>Deceased Name</Label><Input value={form.deceasedName} onChange={(e) => setForm({ ...form, deceasedName: e.target.value })} required /></div>
                     <div><Label>Family Name</Label><Input value={form.familyName} onChange={(e) => setForm({ ...form, familyName: e.target.value })} /></div>
+                    <div><Label>Title (optional)</Label><Input value={form.honorificTitle} onChange={(e) => setForm({ ...form, honorificTitle: e.target.value })} placeholder="Nana, Rev., Dr., Esq…" /></div>
+                    <div><Label>A.K.A. / Nickname</Label><Input value={form.aka} onChange={(e) => setForm({ ...form, aka: e.target.value })} placeholder='Auntie Akua' /></div>
+                    <div><Label>Relationship label</Label><Input value={form.relationshipLabel} onChange={(e) => setForm({ ...form, relationshipLabel: e.target.value })} placeholder="Beloved Mother" /></div>
+                    <div>
+                      <Label>Experience Theme</Label>
+                      <Select value={form.theme} onValueChange={(v) => setForm({ ...form, theme: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {FUNERAL_EXPERIENCE_THEMES.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   {[
                     ["biography", "Biography"], ["familyInformation", "Family Information"], ["lifeJourney", "Life Journey"],
                     ["education", "Education"], ["career", "Career"], ["achievements", "Achievements"],
                     ["faithJourney", "Faith Journey"], ["legacyMessage", "Legacy Message"],
-                  ].map(([key, label]) => (
-                    <div key={key}><Label>{label}</Label><Textarea value={form[key as keyof typeof form]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={2} /></div>
-                  ))}
+                  ].map(([key, label]) => {
+                    const field = key as
+                      | "biography"
+                      | "familyInformation"
+                      | "lifeJourney"
+                      | "education"
+                      | "career"
+                      | "achievements"
+                      | "faithJourney"
+                      | "legacyMessage";
+                    return (
+                      <div key={field}>
+                        <Label>{label}</Label>
+                        <Textarea
+                          value={form[field]}
+                          onChange={(e) => setForm({ ...form, [field]: e.target.value })}
+                          rows={2}
+                        />
+                      </div>
+                    );
+                  })}
                   <div><Label>Memorial Photo</Label>
                     <ImageUploadCropper defaultAspect="free" allowedAspects={CROP_PRESETS.portrait} previewUrl={form.photoUrl || null} onClear={() => setForm({ ...form, photoUrl: "" })} onUploaded={(r) => setForm({ ...form, photoUrl: r.url })} buttonLabel="Upload portrait" hint="Upload a dignified memorial portrait, free crop by default." />
                   </div>
@@ -298,6 +399,21 @@ export function FuneralPortalClient() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <div><Label>Dress — Friday</Label><Input value={form.dressFriday} onChange={(e) => setForm({ ...form, dressFriday: e.target.value })} /></div>
+                    <div><Label>Dress — Saturday</Label><Input value={form.dressSaturday} onChange={(e) => setForm({ ...form, dressSaturday: e.target.value })} /></div>
+                    <div><Label>Dress — Sunday</Label><Input value={form.dressSunday} onChange={(e) => setForm({ ...form, dressSunday: e.target.value })} /></div>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <label className="inline-flex items-center gap-2">
+                      <input type="checkbox" checked={form.enableFlowerTribute} onChange={(e) => setForm({ ...form, enableFlowerTribute: e.target.checked })} />
+                      Enable symbolic flower tribute
+                    </label>
+                    <label className="inline-flex items-center gap-2">
+                      <input type="checkbox" checked={form.announcementMode} onChange={(e) => setForm({ ...form, announcementMode: e.target.checked })} />
+                      Funeral announcement mode (arrangements later)
+                    </label>
                   </div>
                   <p className="text-xs text-slate-500">Languages: {MEMORIAL_LOCALES.map((l) => l.label).join(", ")} (configure in invitation studio)</p>
                   <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save Obituary"}</Button>

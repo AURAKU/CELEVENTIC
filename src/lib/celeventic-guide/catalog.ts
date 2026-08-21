@@ -19,7 +19,7 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     slug: "how-celeventic-works",
     title: "How Celeventic Works",
     summary: "Invite → RSVP → Admit → Guide → Celebrate → Remember — the full guest journey in one cinematic walkthrough.",
-    body: "Celeventic connects invitations, RSVPs, admission, Event Guide, celebration, and Memory Vault into one operating system for events.",
+    body: "Celeventic is the operating system for celebrations: hosts design invitations and run the floor; guests RSVP and enter with QR; scanners admit online or offline; Event Guide keeps programme, seating, and menu close; gifts and Memory Vault complete the day.",
     role: "GUEST",
     category: "PLATFORM",
     status: "PUBLISHED",
@@ -27,19 +27,19 @@ const CELEVENTIC_GUIDE_CATALOG_BASE: GuideCatalogEntry[] = [
     featured: true,
     storyboardKey: "how-celeventic-works",
     synonyms: ["see how it works", "how it works", "learn celeventic", "overview", "platform tour"],
-    relatedSlugs: ["welcome-to-celeventic", "open-your-invitation", "rsvp"],
+    relatedSlugs: ["welcome-to-celeventic", "open-your-invitation", "rsvp", "organizer-quick-start", "scan-guest"],
     posterUrl: "/guides/posters/how-celeventic-works.svg",
     captionsEnUrl: "/guides/captions/how-celeventic-works.en.vtt",
     isNew: true,
     transcript:
-      "Welcome to Celeventic. First you receive a beautiful invitation. Then you RSVP. On event day your QR pass admits you. The Event Guide helps you find programme, seating, and menu. You celebrate together. Afterward, Memory Vault keeps the moments.",
+      "Welcome to Celeventic. Guests open a cinematic invitation, RSVP, and receive a personal QR pass. On event day scanners admit guests, groups, and vendors. Event Guide shows programme, seating, and menu. Guests can send gifts and upload memories. Hosts run invitations, guests, seating, admission, gifts, tickets, marketplace, and Memory Vault from one dashboard.",
     steps: steps(
-      ["Invite", "Open a branded digital invitation built for your event."],
-      ["RSVP", "Confirm attendance for yourself and plus guests in seconds."],
-      ["Admit", "Present your QR admission pass at the door."],
-      ["Guide", "Use Event Guide for programme, seating, and menu."],
-      ["Celebrate", "Enjoy the day with clear access and less friction."],
-      ["Remember", "Revisit photos, wishes, and thank-you moments in Memory Vault."]
+      ["Invite", "Open a branded digital invitation — envelope, seal, and media — from a link. No app required."],
+      ["RSVP", "Confirm attendance for yourself and plus guests; hosts see live counts."],
+      ["Admit", "Present your personal QR. Door staff scan online or offline for secure entry."],
+      ["Guide", "Use Event Guide for programme, seating lookup, menu, venue, and day-of help."],
+      ["Celebrate", "Enjoy the day with clear access — optional gifts, wishes, and companion tools."],
+      ["Remember", "Upload photos and videos to Memory Vault; hosts moderate the shared album."]
     ),
   },
 

@@ -20,6 +20,7 @@ import {
   mergeImportOptions,
   type ImportOptions,
 } from "@/lib/guest-import/types";
+import { assertGuestQuota, assertInvitationQuota } from "@/lib/packages/package-quota";
 import { GUEST_IMPORT_QUEUE } from "./queues";
 import { queueBatchDeliveries } from "./delivery.service";
 
@@ -112,6 +113,14 @@ async function generateRow(
   // ── Non-create decisions attach to what already exists ──
   if (row.decision === "UPDATE_EXISTING" || row.decision === "MERGE_INTO_EXISTING") {
     return attachToExisting(batch, row, options, partySize);
+  }
+
+  // Free / plan caps: block new invitation + guest minting past package quotas.
+  if (!row.invitationId) {
+    await assertInvitationQuota(eventId, 1);
+  }
+  if (!row.guestId) {
+    await assertGuestQuota(eventId, 1, Math.max(0, partySize - 1));
   }
 
   // ── Resume: a previous attempt already wrote the invitation ──

@@ -69,8 +69,8 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
 
   const accountType = session?.user?.accountType as AccountType | undefined;
   const sections = useMemo(() => {
-    return getFilteredNavSections(accountWorkspace, accountType);
-  }, [accountWorkspace, accountType]);
+    return getFilteredNavSections(accountWorkspace, accountType, { isAdmin: Boolean(isAdmin) });
+  }, [accountWorkspace, accountType, isAdmin]);
 
   function isActive(href: string, exact?: boolean) {
     const [path, queryString] = href.split("?");
@@ -113,6 +113,7 @@ export function DashboardSidebar({ mobileOpen = false, onClose }: DashboardSideb
         "h-[100dvh] max-h-[100dvh] pb-[env(safe-area-inset-bottom)]",
         mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}
+      data-tour="nav-browse-desktop"
     >
       <div className="shrink-0 p-4 sm:p-5 pt-[max(1rem,env(safe-area-inset-top))] border-b border-white/10 flex items-center justify-between gap-2">
         <Link href="/dashboard" onClick={onClose} className="min-w-0 flex items-center gap-2">

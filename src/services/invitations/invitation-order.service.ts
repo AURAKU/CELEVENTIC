@@ -26,6 +26,7 @@ import { Prisma as PrismaClient } from "@prisma/client";
 import { paginatedResult } from "@/lib/pagination";
 import type { MusicSelection } from "@/lib/music/music-types";
 import { validateMusicSelection } from "@/lib/music/validate-selection";
+import { resolveOrderEventType } from "@/lib/invitation/catalog-event-type";
 
 /** Guard against legacy/dev-seeded `shareUrl` values that point at localhost. */
 function sanitizeOrderShareUrl<T extends { shareUrl?: string | null }>(order: T): T {
@@ -80,7 +81,7 @@ export interface CreateOrderInput {
   userId: string;
   templateSlug: string;
   packageSlug: string;
-  eventType: string;
+  eventType?: string;
   /** Studio 2.0: theme chosen in the live preview (registry id) */
   themeId?: string;
   /** Viral-footer attribution — referring invitation's uniqueLink */
@@ -88,6 +89,8 @@ export interface CreateOrderInput {
 }
 
 export interface UpdateOrderDetailsInput {
+  /** Healed from template category when mismatched (e.g. funeral stuck on WEDDING). */
+  eventType?: string;
   hostName?: string;
   coupleName1?: string;
   coupleName2?: string;
@@ -196,13 +199,16 @@ export class InvitationOrderService {
     }
 
     const workflowType = productionWorkflowService.inferWorkflowType(input.packageSlug);
+    const eventType = mapEventType(
+      resolveOrderEventType(template.category, input.eventType)
+    );
 
     return prisma.invitationOrder.create({
       data: {
         userId: input.userId,
         templateSlug: template.slug,
         packageSlug: input.packageSlug,
-        eventType: mapEventType(input.eventType),
+        eventType,
         status: "DRAFT",
         productionStatus: "NOT_STARTED",
         workflowType,
@@ -240,9 +246,18 @@ export class InvitationOrderService {
       data.musicPreference ??
       (data.musicSelection ? "Custom music clip" : undefined);
 
+    const catalogTemplate = getCatalogTemplate(order.templateSlug);
+    const healedEventType = mapEventType(
+      resolveOrderEventType(
+        catalogTemplate?.category,
+        data.eventType ?? order.eventType
+      )
+    );
+
     const updated = await prisma.invitationOrder.update({
       where: { id: orderId },
       data: {
+        eventType: healedEventType,
         hostName: data.hostName,
         coupleName1: data.coupleName1,
         coupleName2: data.coupleName2,

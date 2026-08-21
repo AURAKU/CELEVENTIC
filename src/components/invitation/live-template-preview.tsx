@@ -252,7 +252,11 @@ export function LiveTemplatePreview({
   const tapCopy = previewTapLabelForOpening(openingId);
 
   const hasMusic = Boolean(preview.musicSelection) && (musicEnabled ?? true);
-  const tapSteps = previewTapStepsForOpening(openingId, hasMusic);
+  const tapSteps = previewTapStepsForOpening(
+    openingId,
+    hasMusic,
+    preview.musicSelection?.title ?? null
+  );
   const portalLive = showLive;
   /**
    * Catalogue tiles are too small to read a full-bleed brand film — it lands as

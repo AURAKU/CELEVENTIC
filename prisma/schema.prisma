@@ -128,6 +128,7 @@ model User {
   offlineDevices             OfflineDevice[]
   twoFactor                  TwoFactorAuth?
   flyerDesigns               FlyerDesign[]
+  digitalBusinessCards       DigitalBusinessCard[]
   inspirationUploads         InspirationUpload[]
   eventStaff                 EventStaff[]
   vendorReviews              VendorReview[]
@@ -2147,6 +2148,39 @@ model FlyerDesign {
   @@index([eventId])
   @@index([userId])
   @@map("flyer_designs")
+}
+
+/// Shareable digital business card — one-stop profile (socials, contact, QR/NFC).
+/// Kept live via monthly subscription (trial → active → expired).
+model DigitalBusinessCard {
+  id                     String   @id @default(cuid())
+  userId                 String
+  slug                   String   @unique
+  displayName            String
+  title                  String?
+  company                String?
+  bio                    String?
+  email                  String?
+  phone                  String?
+  website                String?
+  /// { linkedin, website, instagram, x, facebook, whatsapp, youtube, tiktok, github }
+  socials                Json     @default("{}")
+  themeId                String   @default("elegant-frost")
+  avatarUrl              String?
+  isPublished            Boolean  @default(true)
+  nfcEnabled             Boolean  @default(true)
+  /// TRIAL | ACTIVE | EXPIRED | INACTIVE
+  subscriptionStatus     String   @default("TRIAL")
+  subscriptionExpiresAt  DateTime?
+  viewCount              Int      @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([subscriptionStatus])
+  @@map("digital_business_cards")
 }
 
 // ─── Inspiration Upload Engine ──────────────────────────────────

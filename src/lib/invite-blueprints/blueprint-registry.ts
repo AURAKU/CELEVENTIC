@@ -58,6 +58,11 @@ export const INVITE_BLUEPRINTS: Record<string, InviteBlueprint> = {
   [weddingFree.id]: weddingFree,
   [funeralCore.id]: funeralCore,
   [funeralFree.id]: funeralFree,
+  // Ghanaian catalogue SKUs — same narrative spine, distinct cultural DNA elsewhere
+  "funeral-akan-cloth-v1": { ...funeralCore, id: "funeral-akan-cloth-v1" },
+  "funeral-homegoing-v1": { ...funeralCore, id: "funeral-homegoing-v1" },
+  "funeral-kente-banner-v1": { ...funeralCore, id: "funeral-kente-banner-v1" },
+  "funeral-vigil-notice-v1": { ...funeralFree, id: "funeral-vigil-notice-v1" },
 };
 
 const DEFAULT_BY_CATEGORY: Record<InviteCategory, InviteBlueprint> = {

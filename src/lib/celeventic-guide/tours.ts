@@ -14,6 +14,54 @@ export interface MiniTour {
 
 export const MINI_TOURS: MiniTour[] = [
   {
+    id: "welcome-navigation",
+    title: "Celeventic quick tour",
+    guideSlug: "getting-started",
+    steps: [
+      {
+        id: "welcome",
+        title: "You're in — here's the map",
+        body: "This 30-second tour shows where everything lives. No pressure — you can skip anytime and reopen Help later.",
+      },
+      {
+        id: "search",
+        title: "Find anything fast",
+        body: "Search events, guests, and more from the top bar — like the search box on Instagram or X.",
+        targetSelector: "[data-tour='nav-search']",
+      },
+      {
+        id: "create",
+        title: "Create is your main action",
+        body: "Tap Create when you're ready to start an event. That's the golden path for most hosts.",
+        targetSelector: "[data-tour='nav-create']",
+      },
+      {
+        id: "alerts",
+        title: "Stay updated",
+        body: "Notifications appear here — invites, RSVPs, messages, and important event updates.",
+        targetSelector: "[data-tour='nav-notifications']",
+      },
+      {
+        id: "account",
+        title: "Your account & settings",
+        body: "Open your profile for settings, Help & Guides, and sign out — always in the same place.",
+        targetSelector: "[data-tour='nav-account']",
+      },
+      {
+        id: "browse",
+        title: "Move around the app",
+        body: "On phones, use the bottom bar for Home, Events, Marketplace, Messages, and Profile. On desktop, use the left sidebar.",
+        targetSelector: "[data-tour='nav-browse-mobile'], [data-tour='nav-browse-desktop']",
+      },
+      {
+        id: "ready",
+        title: "You're ready",
+        body: "Next up: create your first event (or open an invite). Need a refresher anytime? Tap Help in the top bar.",
+        targetSelector: "[data-tour='nav-create']",
+      },
+    ],
+  },
+  {
     id: "guest-list",
     title: "Guest List walkthrough",
     guideSlug: "add-guests",

@@ -124,6 +124,46 @@ export function filterOpeningsForEventType<T extends { id: OpeningExperienceId }
 
 export function hubTabsForEventType(eventType?: string | null): HubTabId[] {
   if (isWeddingEventType(eventType)) return [...WEDDING_HUB_TABS];
+  const n = (eventType ?? "").toUpperCase();
+  if (n === "FUNERAL") {
+    return [
+      "invitation",
+      "story",
+      "venue",
+      "timeline",
+      "gallery",
+      "memory",
+      "gifts",
+      "rsvp",
+      "livestream",
+    ];
+  }
+  if (n === "BIRTHDAY" || n === "PRIVATE_EVENT") {
+    return [
+      "invitation",
+      "countdown",
+      "venue",
+      "gallery",
+      "rsvp",
+      "gifts",
+      "memory",
+    ];
+  }
+  if (
+    n === "CORPORATE_EVENT" ||
+    n === "CONFERENCE" ||
+    n === "PRODUCT_LAUNCH" ||
+    n === "SCHOOL_EVENT"
+  ) {
+    return [
+      "invitation",
+      "countdown",
+      "venue",
+      "timeline",
+      "rsvp",
+      "livestream",
+    ];
+  }
   return [
     "invitation",
     "rsvp",

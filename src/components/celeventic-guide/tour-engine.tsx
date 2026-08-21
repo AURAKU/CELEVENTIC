@@ -12,6 +12,25 @@ import { trackGuideEvent } from "@/lib/celeventic-guide/analytics";
 
 type HighlightRect = { top: number; left: number; width: number; height: number };
 
+function resolveTourTarget(selector?: string): HTMLElement | null {
+  if (!selector) return null;
+  const parts = selector
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const candidates: HTMLElement[] = [];
+  for (const part of parts) {
+    document.querySelectorAll(part).forEach((node) => {
+      if (node instanceof HTMLElement) candidates.push(node);
+    });
+  }
+  const visible = candidates.find((el) => {
+    const r = el.getBoundingClientRect();
+    return r.width > 8 && r.height > 8 && r.bottom > 0 && r.top < window.innerHeight;
+  });
+  return visible ?? candidates[0] ?? null;
+}
+
 export function TourEngine({ tourId, onClose }: { tourId: string; onClose: () => void }) {
   const tour = getMiniTour(tourId);
   const [step, setStep] = useState(0);
@@ -43,7 +62,7 @@ export function TourEngine({ tourId, onClose }: { tourId: string; onClose: () =>
       setHighlight(null);
       return;
     }
-    const el = document.querySelector(selector) as HTMLElement | null;
+    const el = resolveTourTarget(selector);
     if (!el) {
       setHighlight(null);
       return;
@@ -82,12 +101,12 @@ export function TourEngine({ tourId, onClose }: { tourId: string; onClose: () =>
   };
 
   return (
-    <div className="fixed inset-0 z-[60]" role="presentation">
+    <div className="fixed inset-0 z-[80]" role="presentation">
       <div className="absolute inset-0 bg-slate-900/55" aria-hidden />
       {highlight && (
         <div
           aria-hidden
-          className="pointer-events-none absolute z-[61] rounded-xl ring-2 ring-brand-400 ring-offset-2 ring-offset-transparent shadow-[0_0_0_9999px_rgba(15,23,42,0.55)] transition-all duration-300"
+          className="pointer-events-none absolute z-[81] rounded-xl ring-2 ring-brand-400 ring-offset-2 ring-offset-transparent shadow-[0_0_0_9999px_rgba(15,23,42,0.55)] transition-all duration-300"
           style={{
             top: highlight.top,
             left: highlight.left,
@@ -97,7 +116,7 @@ export function TourEngine({ tourId, onClose }: { tourId: string; onClose: () =>
         />
       )}
 
-      <div className="absolute inset-0 z-[62] flex items-end sm:items-center justify-center p-4 pointer-events-none">
+      <div className="absolute inset-0 z-[82] flex items-end sm:items-center justify-center p-4 pointer-events-none">
         <div
           role="dialog"
           aria-modal="true"

@@ -5,7 +5,7 @@ export const TEMPLATE_CATEGORIES = [
 
 export const TEMPLATE_STYLES = [
   "Luxury", "Classic", "Modern", "Minimal", "Royal", "Futuristic",
-  "Traditional Ghanaian", "Kente-inspired", "Adinkra-inspired", "Floral",
+  "Traditional Ghanaian", "Kente inspired", "Adinkra inspired", "Floral",
   "Corporate", "Dark premium", "Clean white",
 ] as const;
 

@@ -5,10 +5,16 @@ import { RAW_VIDEO_KEY_PREFIX, PROCESSED_VIDEO_KEY_PREFIX } from "@/lib/video/co
 /**
  * Server-only S3 key generation. Callers NEVER supply a key or bucket —
  * this is the single choke point that prevents path traversal / key injection.
+ *
+ * `storageKey` is a quota/storage namespace (e.g. `user:…` / `event:…`), NOT necessarily User.id.
  */
-export function buildRawVideoKey(category: VideoCategory, ownerId: string, extension: string): { key: string; id: string } {
+export function buildRawVideoKey(
+  category: VideoCategory,
+  storageKey: string,
+  extension: string
+): { key: string; id: string } {
   const id = randomUUID();
-  const safeOwner = sanitizeSegment(ownerId);
+  const safeOwner = sanitizeSegment(storageKey);
   const safeExt = sanitizeSegment(extension).toLowerCase();
   const key = `${RAW_VIDEO_KEY_PREFIX}/${category.toLowerCase()}/${safeOwner}/${id}.${safeExt}`;
   return { key, id };

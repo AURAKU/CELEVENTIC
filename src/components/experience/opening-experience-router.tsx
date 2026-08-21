@@ -47,6 +47,8 @@ interface OpeningExperienceRouterProps {
   enableSounds?: boolean;
   /** Wax-seal initials (envelope reveals). */
   sealInitials?: string;
+  /** Memorial emblem for funeral wax seals. */
+  sealEmblem?: string;
   /** Designed seal (color/material) + font/size/color overrides. */
   sealStyle?: ResolvedSealStyle;
   /** Editable opening copy for ceremonies that render template-authored text. */
@@ -79,6 +81,7 @@ export function OpeningExperienceRouter({
   musicEnabled,
   enableSounds,
   sealInitials,
+  sealEmblem,
   sealStyle,
   openingCopy,
   onComplete,
@@ -126,6 +129,7 @@ export function OpeningExperienceRouter({
         musicEnabled={musicEnabled}
         enableSounds={enableSounds}
         sealInitials={sealInitials}
+        sealEmblem={sealEmblem}
         sealStyle={sealStyle}
         onBegin={onBegin}
         onComplete={complete}
@@ -225,6 +229,7 @@ export function OpeningExperienceRouter({
         </>
       );
     case "passport":
+    case "investor-pass":
       return <PassportReveal guestName={guestName} eventTitle={eventTitle} hostName={hostName} onComplete={complete} />;
     case "glass":
       return (
@@ -245,6 +250,7 @@ export function OpeningExperienceRouter({
         </>
       );
     case "pop-reveal":
+    case "launch-pulse":
       return <PopReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "gift-box":
       return <GiftBoxReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
@@ -253,12 +259,15 @@ export function OpeningExperienceRouter({
     case "film-countdown":
       return <FilmCountdownReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "letter-unfold":
+    case "briefing-folder":
       return <LetterUnfoldReveal guestName={guestName} eventTitle={eventTitle} hostName={hostName} onComplete={complete} />;
     case "flower-bloom":
       return <FlowerBloomReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "confetti-burst":
+    case "balloon-burst":
       return <ConfettiBurstReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "flip-reveal":
+    case "agenda-flip":
       return <FlipReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "zoom-reveal":
       return <ZoomReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;

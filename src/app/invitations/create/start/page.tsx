@@ -23,7 +23,8 @@ function CreateStartPageInner() {
 
   const template = searchParams.get("template");
   const packageSlug = searchParams.get("package");
-  const eventType = searchParams.get("eventType") ?? "WEDDING";
+  // Server createDraft resolves the real type from catalogue category; keep query if present.
+  const eventType = searchParams.get("eventType") ?? "";
   const themeId = searchParams.get("theme");
 
   useEffect(() => {
@@ -53,7 +54,7 @@ function CreateStartPageInner() {
       body: JSON.stringify({
         templateSlug: template,
         packageSlug,
-        eventType,
+        ...(eventType ? { eventType } : {}),
         themeId: themeId ?? undefined,
         attributionRef,
       }),

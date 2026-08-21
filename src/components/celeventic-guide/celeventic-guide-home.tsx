@@ -5,8 +5,14 @@ import { GuideHomeClient } from "@/components/celeventic-guide/guide-home-client
 import { JourneyPreviewStrip } from "@/components/celeventic-guide/journey-preview-strip";
 import { StartHereJourneys } from "@/components/celeventic-guide/start-here-journeys";
 import { GuideFaqAccordion } from "@/components/celeventic-guide/guide-faq-accordion";
+import { GuideAssistantChat } from "@/components/celeventic-guide/guide-assistant-chat";
 import { listPublicGuides, seedCeleventicGuides } from "@/services/celeventic-guide/guide.service";
 import { roleFromUserRole } from "@/lib/celeventic-guide/visibility";
+import {
+  GUIDE_SUPPORT_CONTACT,
+  guideSupportCallHref,
+  guideSupportWhatsAppUrl,
+} from "@/lib/celeventic-guide/support-contact";
 import type { GuideCategory, GuideRole } from "@/lib/celeventic-guide/types";
 
 /**
@@ -40,7 +46,7 @@ export async function CeleventicGuideHome({
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
             Motion tutorials, Start Here journeys, quick actions, and answers for guests, organizers,
-            vendors, and scanners — all in one place.
+            vendors, and scanners — all in one place. Open Customer Service anytime for platform help.
           </p>
           <Link
             href="/guide/how-celeventic-works"
@@ -66,17 +72,29 @@ export async function CeleventicGuideHome({
         {showClassicFaq && <GuideFaqAccordion />}
 
         <p className="text-center text-sm text-slate-500 pb-4">
-          Still need help?{" "}
+          Still need help? Use{" "}
+          <span className="font-medium text-slate-700">Customer Service</span>, email{" "}
           <a href="mailto:support@celeventic.com" className="text-brand-700 hover:underline">
             support@celeventic.com
-          </a>{" "}
-          or{" "}
-          <Link href="/legal/contact" className="text-brand-700 hover:underline">
-            contact us
-          </Link>
+          </a>
+          , WhatsApp or call{" "}
+          <a href={guideSupportCallHref()} className="text-brand-700 hover:underline font-medium">
+            {GUIDE_SUPPORT_CONTACT.displayPhone}
+          </a>
+          , or{" "}
+          <a
+            href={guideSupportWhatsAppUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-700 hover:underline"
+          >
+            chat on WhatsApp
+          </a>
           .
         </p>
       </div>
+
+      <GuideAssistantChat />
     </div>
   );
 }

@@ -19,7 +19,12 @@ const updateSchema = z.object({
       return cleaned.length === 0 ? null : cleaned;
     }),
   avatarUrl: z
-    .union([z.string().url(), z.literal(""), z.null()])
+    .union([
+      z.string().url(),
+      z.string().regex(/^\/(avatars|uploads|api\/uploads)\//, "Invalid avatar path"),
+      z.literal(""),
+      z.null(),
+    ])
     .optional()
     .transform((value) => {
       if (value === undefined) return undefined;

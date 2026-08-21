@@ -10,6 +10,7 @@ import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact"
 import { assertNoActiveGuestDuplicate } from "@/lib/guest-search/duplicate-guests";
 import { computeGuestCrmPeopleStats } from "@/lib/seating/people-stats";
 import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
+import { assertGuestQuota, assertInvitationQuota } from "@/lib/packages/package-quota";
 
 export interface CreateInvitationInput {
   eventId: string;
@@ -46,6 +47,8 @@ export class InvitationService {
   async createInvitation(input: CreateInvitationInput) {
     const event = await prisma.event.findUnique({ where: { id: input.eventId } });
     if (!event) throw new Error("Event not found. Please select a valid event from the list.");
+
+    await assertInvitationQuota(input.eventId, 1);
 
     const displayName = cleanName(input.name);
     if (displayName.length < 2) {
@@ -207,6 +210,7 @@ export class InvitationService {
     if (displayName.length < 2) {
       throw new Error("Enter the guest name.");
     }
+    await assertGuestQuota(input.eventId, 1, input.plusOnes ?? 0);
     const email = normalizeEmail(input.email).value;
     const phone = normalizeGhanaPhone(input.phone).value;
     if (!input.acknowledgeDuplicates) {

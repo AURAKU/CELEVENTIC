@@ -50,6 +50,8 @@ export interface NavItem {
   labelKey: string;
   icon: LucideIcon;
   exact?: boolean;
+  /** Platform admin only — hidden from organizer/staff/vendor UIs */
+  adminOnly?: boolean;
 }
 
 export interface NavSection {
@@ -94,6 +96,7 @@ export const ORGANIZER_NAV: NavSection[] = [
     labelKey: "dashboard.nav_section_design",
     items: [
       { href: "/dashboard/design-studio", labelKey: "dashboard.nav_design_studio", icon: Palette },
+      { href: "/dashboard/business-card", labelKey: "dashboard.nav_business_card", icon: CreditCard },
       { href: "/dashboard/invitations?tab=studio", labelKey: "dashboard.nav_invitation_studio", icon: Mail },
       { href: "/dashboard/flyers", labelKey: "dashboard.nav_flyer_studio", icon: Image },
       { href: "/dashboard/design-studio/assets", labelKey: "dashboard.nav_asset_library", icon: Layers },
@@ -165,7 +168,12 @@ export const ORGANIZER_NAV: NavSection[] = [
       { href: "/dashboard/settings?tab=team", labelKey: "dashboard.nav_team", icon: Users },
       { href: "/dashboard/settings?tab=permissions", labelKey: "dashboard.nav_permissions", icon: Shield },
       { href: "/dashboard/settings?tab=branding", labelKey: "dashboard.nav_branding", icon: Palette },
-      { href: "/dashboard/settings?tab=integrations", labelKey: "dashboard.nav_integrations", icon: Plug },
+      {
+        href: "/dashboard/settings?tab=integrations",
+        labelKey: "dashboard.nav_integrations",
+        icon: Plug,
+        adminOnly: true,
+      },
       { href: "/dashboard/privacy-center", labelKey: "dashboard.nav_privacy", icon: Lock },
       { href: "/dashboard/settings?tab=security", labelKey: "dashboard.nav_security", icon: Shield },
       { href: "/dashboard/settings?tab=billing", labelKey: "dashboard.nav_billing", icon: CreditCard },

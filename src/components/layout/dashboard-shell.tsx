@@ -6,6 +6,7 @@ import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { TermsAcceptanceGate } from "@/components/legal/terms-acceptance-gate";
 import { ContextualHelpTrigger } from "@/components/celeventic-guide/contextual-help";
+import { FirstRunTourHost } from "@/components/celeventic-guide/first-run-tour-host";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -37,6 +38,9 @@ export function DashboardShell({ children, adminBanner }: DashboardShellProps) {
         </main>
         <MobileBottomNav />
         <ContextualHelpTrigger />
+        <Suspense fallback={null}>
+          <FirstRunTourHost />
+        </Suspense>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertAssetAccess, UploadAuthError } from "@/lib/video/principal";
 import { checkUploadRateLimit } from "@/lib/video/quota";
+import { rateLimitKeyForAsset } from "@/lib/video/owner";
 import { finalizeVideoUpload } from "@/lib/video/processing";
 import { serializeVideoAsset } from "@/lib/video/serialize";
 
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, data: serializeVideoAsset(asset), alreadyFinalized: true });
   }
 
-  const rate = await checkUploadRateLimit("complete", asset.ownerId ?? asset.id);
+  const rate = await checkUploadRateLimit("complete", rateLimitKeyForAsset(asset));
   if (!rate.allowed) {
     return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   }

@@ -122,7 +122,7 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
   "floral-garden-romance": {
     slug: "floral-garden-romance",
     name: "Petal Promise",
-    category: "Engagement",
+    category: "Wedding",
     tagline: "Logo bloom into flower petal reveal — floating frames",
     previewGradient: "from-rose-100 via-pink-50 to-emerald-50",
     background: "linear-gradient(180deg, #fff1f2 0%, #ecfdf5 100%)",
@@ -233,6 +233,12 @@ export const CINEMATIC_THEMES: Record<CinematicLayoutSlug, CinematicTheme> = {
       animation: "fade",
       introText: "In loving memory",
       studio: { revealMode: "curtain", buttonStyle: "solemn", fullScreen: true },
+      experience: {
+        openingExperience: "candle-light",
+        outroExperience: "candle-legacy",
+        introVariant: "candlelight",
+        slideshowStyle: "timeline-gallery",
+      },
     },
   },
   "neon-celebration-party": {

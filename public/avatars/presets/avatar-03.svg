@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Rose Bloom">
+  <defs>
+    <linearGradient id="g03" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#BE123C"/>
+      <stop offset="100%" stop-color="#FECDD3"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#g03)"/>
+  <g opacity="0.95"><rect x="28" y="28" width="72" height="72" rx="18" fill="#FECDD3"/><path d="M44 80 L64 40 L84 80 Z" fill="#BE123C"/></g>
+</svg>
