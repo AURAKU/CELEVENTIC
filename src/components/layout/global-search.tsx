@@ -78,7 +78,7 @@ export function GlobalSearch({ className }: { className?: string }) {
   const totalHits = orderedGroups.reduce((sum, g) => sum + g.items.length, 0);
 
   return (
-    <div className={cn("relative flex-1 max-w-md", className)}>
+    <div className={cn("relative w-full", className)}>
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
       <input
         type="search"
@@ -90,7 +90,7 @@ export function GlobalSearch({ className }: { className?: string }) {
         onFocus={() => setOpen(true)}
         placeholder={t("dashboard.search_placeholder")}
         aria-label={t("dashboard.search_placeholder")}
-        className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200/80 bg-slate-50/80 text-sm placeholder:text-slate-400 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-500/15 transition-all"
+        className="w-full h-10 pl-10 pr-3 sm:pr-4 rounded-full border border-slate-200/80 bg-slate-100/80 text-sm placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-500/15 transition-all"
       />
       {open && query.length >= 2 && (
         <>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, ImagePlus, Loader2, X } from "lucide-react";
+import { Upload, ImagePlus, Loader2, X, Camera, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ImageCropDialog } from "@/components/media/image-crop-dialog";
@@ -42,6 +42,11 @@ interface ImageUploadCropperProps {
   maxFileBytes?: number;
   /** Footer text under the drop zone. Defaults to the generic 10MB wording. */
   dropzoneNote?: string;
+  /**
+   * Social-style sources: gallery/photos + live camera.
+   * Uses separate file inputs (`capture`) so mobile OSes open Photos vs Camera cleanly.
+   */
+  enableCamera?: boolean;
 }
 
 export function ImageUploadCropper({
@@ -61,8 +66,10 @@ export function ImageUploadCropper({
   buttonLabel = "Upload image",
   maxFileBytes,
   dropzoneNote = "or drag & drop · JPEG, PNG, WebP · max 10MB",
+  enableCamera = false,
 }: ImageUploadCropperProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [pendingName, setPendingName] = useState("image.jpg");
   const [uploading, setUploading] = useState(false);
@@ -77,7 +84,7 @@ export function ImageUploadCropper({
     }
     try {
       const { url } = await readImageDimensions(file);
-      setPendingName(file.name);
+      setPendingName(file.name || "photo.jpg");
       setCropSrc(url);
     } catch {
       onError?.("Could not read image.");
@@ -134,6 +141,48 @@ export function ImageUploadCropper({
     return { url: data.url, name: data.name ?? name };
   }
 
+  function onFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) void pickFile(f);
+    e.target.value = "";
+  }
+
+  const actionButtons = (
+    <div className={cn("flex flex-col sm:flex-row gap-2", enableCamera ? "sm:justify-center" : "")}>
+      <Button
+        type="button"
+        variant="outline"
+        className="gap-2 min-h-[44px] touch-manipulation"
+        disabled={disabled || uploading}
+        onClick={() => galleryRef.current?.click()}
+      >
+        {uploading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : enableCamera ? (
+          <Images className="h-4 w-4" />
+        ) : (
+          <Upload className="h-4 w-4" />
+        )}
+        {uploading
+          ? `Uploading ${progress}%`
+          : enableCamera
+            ? "Choose from gallery"
+            : buttonLabel}
+      </Button>
+      {enableCamera && (
+        <Button
+          type="button"
+          className="gap-2 min-h-[44px] touch-manipulation bg-[#0B8A83] hover:bg-[#097a74]"
+          disabled={disabled || uploading}
+          onClick={() => cameraRef.current?.click()}
+        >
+          <Camera className="h-4 w-4" />
+          Take photo
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <div className={cn("space-y-3", className)}>
       {label && <p className="text-sm font-medium text-slate-900">{label}</p>}
@@ -141,10 +190,18 @@ export function ImageUploadCropper({
       {previewUrl ? (
         <div className="space-y-2">
           <div className="flex items-center gap-3 rounded-xl border bg-white p-3">
-            <UploadedMedia src={previewUrl} alt="" className="h-16 w-16 rounded-lg object-cover border" width={64} height={64} />
+            <UploadedMedia
+              src={previewUrl}
+              alt=""
+              className="h-16 w-16 rounded-lg object-cover border"
+              width={64}
+              height={64}
+            />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-800 truncate">Image ready</p>
-              <p className="text-xs text-slate-500">Cropped and saved</p>
+              <p className="text-sm font-medium text-slate-800 truncate">Logo ready</p>
+              <p className="text-xs text-slate-500">
+                {enableCamera ? "Replace from gallery or camera" : "Cropped and uploaded"}
+              </p>
             </div>
             {onClear && (
               <Button type="button" size="icon" variant="ghost" onClick={onClear}>
@@ -152,17 +209,21 @@ export function ImageUploadCropper({
               </Button>
             )}
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="w-full gap-2"
-            disabled={disabled || uploading}
-            onClick={() => inputRef.current?.click()}
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            Replace image
-          </Button>
+          {enableCamera ? (
+            actionButtons
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              disabled={disabled || uploading}
+              onClick={() => galleryRef.current?.click()}
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              Replace image
+            </Button>
+          )}
         </div>
       ) : (
         <div
@@ -185,17 +246,12 @@ export function ImageUploadCropper({
         >
           <ImagePlus className="h-8 w-8 mx-auto text-slate-400 mb-2" />
           <p className="text-sm text-slate-600 mb-3">{hint}</p>
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2 min-h-[44px] touch-manipulation"
-            disabled={disabled || uploading}
-            onClick={() => inputRef.current?.click()}
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            {uploading ? `Uploading ${progress}%` : buttonLabel}
-          </Button>
-          <p className="text-[11px] text-slate-400 mt-2">{dropzoneNote}</p>
+          {actionButtons}
+          <p className="text-[11px] text-slate-400 mt-2">
+            {enableCamera
+              ? "Gallery or live camera · then crop · JPEG, PNG, WebP"
+              : dropzoneNote}
+          </p>
           {uploading && (
             <div className="mt-3 h-1.5 bg-slate-200 rounded-full overflow-hidden">
               <div className="h-full bg-brand-600 transition-all" style={{ width: `${progress}%` }} />
@@ -204,17 +260,26 @@ export function ImageUploadCropper({
         </div>
       )}
 
+      {/* Photos / files — no capture attribute so OS opens the media library */}
       <input
-        ref={inputRef}
+        ref={galleryRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif,.jfif"
+        accept="image/jpeg,image/png,image/webp,image/gif,.jfif,image/*"
         className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) void pickFile(f);
-          e.target.value = "";
-        }}
+        onChange={onFileInputChange}
       />
+
+      {/* Live camera — capture hints mobile browsers to open the camera app */}
+      {enableCamera && (
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={onFileInputChange}
+        />
+      )}
 
       {cropSrc && (
         <ImageCropDialog

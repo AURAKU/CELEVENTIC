@@ -115,11 +115,17 @@ function MotionGlyph({ motionKey }: { motionKey: string }) {
   const kind =
     key.includes("qr") || key.includes("admit") || key.includes("scan")
       ? "qr"
-      : key.includes("phone") || key.includes("invite") || key.includes("rsvp") || key.includes("open")
-        ? "phone"
-        : key.includes("seat") || key.includes("table") || key.includes("guide")
-          ? "guide"
-          : "pulse";
+      : key.includes("remember") || key.includes("memory") || key.includes("photo")
+        ? "memory"
+        : key.includes("phone") ||
+            key.includes("invite") ||
+            key.includes("rsvp") ||
+            key.includes("open") ||
+            key.includes("celebrate")
+          ? "phone"
+          : key.includes("seat") || key.includes("table") || key.includes("guide")
+            ? "guide"
+            : "pulse";
 
   return (
     <div className="relative h-36 w-36 flex items-center justify-center" aria-hidden>
@@ -174,6 +180,19 @@ function MotionGlyph({ motionKey }: { motionKey: string }) {
             <div className="h-1.5 w-3/5 rounded bg-white/20" />
           </div>
         </motion.div>
+      )}
+      {kind === "memory" && (
+        <div className="relative flex h-28 w-40 items-end justify-center gap-2">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="rounded-lg border border-white/30 bg-gradient-to-br from-white/25 to-white/5"
+              style={{ width: 36 + i * 4, height: 48 + i * 8 }}
+              animate={reduce ? undefined : { y: [0, -6, 0] }}
+              transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.18 }}
+            />
+          ))}
+        </div>
       )}
       {kind === "pulse" && (
         <div className="relative h-28 w-28 rounded-full border border-white/25 bg-white/10 backdrop-blur-sm flex items-center justify-center">

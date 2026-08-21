@@ -21,7 +21,7 @@ const LAYOUT_THEME: Record<string, EventThemeCategory> = {
   "memorial-candle-tribute": "Funeral",
   "neon-celebration-party": "Birthday",
   "corporate-prestige-summit": "Corporate",
-  "floral-garden-romance": "Engagement",
+  "floral-garden-romance": "Wedding",
 };
 
 /** Solemn — candles, lilies, stone, stained glass. No wedding or party imagery. */
@@ -29,10 +29,10 @@ const FUNERAL_HERO =
   "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=900&q=80&auto=format&fit=crop";
 const FUNERAL_GALLERY = [
   "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1490753840271-33f5eda53cce?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1438230683412-84cbd1ebd3d6?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1504052434569-70ad58380627?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1518176259837-2cce73d5c2b4?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&q=80&auto=format&fit=crop",
 ];
 const FUNERAL_BG =
   "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1600&q=60&auto=format&fit=crop&blur=8";
@@ -42,39 +42,39 @@ const WEDDING_HERO =
   "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=900&q=80&auto=format&fit=crop";
 const WEDDING_GALLERY = [
   "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1465496636074-5fa5b4d39ca0?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=800&q=80&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1522413452208-996ff3f3e740?w=800&q=80&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80&auto=format&fit=crop",
 ];
 const WEDDING_BG =
   "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1600&q=60&auto=format&fit=crop&blur=6";
 
 const ENGAGEMENT_GALLERY = [
-  "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1465496636074-5fa5b4d39ca0?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1520854221256-17451cc791c8?w=800&q=80&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1522413452208-996ff3f3e740?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&q=80&auto=format&fit=crop",
 ];
 
 const BIRTHDAY_GALLERY = [
-  "https://images.unsplash.com/photo-1530103862676-67c8c5645227?w=800&q=80&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1558636508-e0db3814bd1d?w=800&q=80&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1467810563316-b5476525c0f9?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80&auto=format&fit=crop",
 ];
 const BIRTHDAY_BG =
-  "https://images.unsplash.com/photo-1530103862676-67c8c5645227?w=1600&q=60&auto=format&fit=crop&blur=6";
+  "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1600&q=60&auto=format&fit=crop&blur=6";
 
 const CORPORATE_GALLERY = [
   "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&q=80&auto=format&fit=crop",
   "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800&q=80&auto=format&fit=crop",
 ];
 const CORPORATE_BG =
   "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1600&q=60&auto=format&fit=crop&blur=8";
@@ -125,19 +125,17 @@ const THEME_DEMO_VIDEOS: Partial<Record<EventThemeCategory, string[]>> = {
   ],
 };
 
-const KENTE_GALLERY = [
-  "https://images.unsplash.com/photo-1594736797933-d0cbc0b043bd?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1583391734527-9a47b0f01fb8?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1465496636074-5fa5b4d39ca0?w=800&q=80&auto=format&fit=crop",
-];
-
 const LAYOUT_GALLERY_OVERRIDES: Record<string, string[]> = {
-  "kente-heritage-union": KENTE_GALLERY,
-  "golden-islamic-nikkah": [
-    "https://images.unsplash.com/photo-1564769662533-4f00a747b575?w=800&q=80&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1591604126109-d63b8cfc0e78?w=800&q=80&auto=format&fit=crop",
+  "kente-heritage-union": [
+    "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?w=800&q=80&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80&auto=format&fit=crop",
+  ],
+  "golden-islamic-nikkah": [
+    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&q=80&auto=format&fit=crop",
   ],
   "passport-luxe": [
     "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800&q=80&auto=format&fit=crop",
@@ -152,11 +150,11 @@ const LAYOUT_GALLERY_OVERRIDES: Record<string, string[]> = {
   "rustic-lace": [
     "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?w=800&q=80&auto=format&fit=crop",
   ],
   "arch-green": [
     "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80&auto=format&fit=crop",
   ],
 };
@@ -197,15 +195,20 @@ export function resolveEventTheme(layout: string, category?: string): EventTheme
   return "Wedding";
 }
 
-export function getThemeHeroUrl(layout: string, category?: string): string {
-  const pack = getLayoutMediaPack(layout);
+export function getThemeHeroUrl(layout: string, category?: string, catalogSlug?: string | null): string {
+  const pack = getLayoutMediaPack(layout, catalogSlug);
   if (pack) return pack.hero;
   const theme = resolveEventTheme(layout, category);
   return LAYOUT_GALLERY_OVERRIDES[layout]?.[0] ?? THEME_PACKS[theme].hero;
 }
 
-export function getThemeGalleryUrls(layout: string, category?: string, count = 6): string[] {
-  const pack = getLayoutMediaPack(layout);
+export function getThemeGalleryUrls(
+  layout: string,
+  category?: string,
+  count = 6,
+  catalogSlug?: string | null
+): string[] {
+  const pack = getLayoutMediaPack(layout, catalogSlug);
   if (pack) {
     if (pack.video) {
       const slots = Math.max(1, count - 1);
@@ -227,8 +230,12 @@ export function getThemeGalleryUrls(layout: string, category?: string, count = 6
   return [...images.slice(0, imageSlots), ...videos].slice(0, count);
 }
 
-export function getThemeBackgroundUrl(layout: string, category?: string): string {
-  const pack = getLayoutMediaPack(layout);
+export function getThemeBackgroundUrl(
+  layout: string,
+  category?: string,
+  catalogSlug?: string | null
+): string {
+  const pack = getLayoutMediaPack(layout, catalogSlug);
   if (pack) return pack.background;
   const theme = resolveEventTheme(layout, category);
   return THEME_PACKS[theme].background;

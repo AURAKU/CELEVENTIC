@@ -4,13 +4,32 @@ import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PaginationLinks } from "@/components/ui/pagination";
 import { getBrowseCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
-import { LiveCatalogTemplateGrid } from "@/components/invitation/live-template-catalog-grid";
+import { PublicTemplatesCatalog } from "@/components/invitation/public-templates-catalog";
+import {
+  PublicDesignStudioCollection,
+  type PublicDesignStudioItem,
+} from "@/components/invitation/public-design-studio-collection";
+import { PublicDigitalCardsShowcase } from "@/components/digital-business-card/public-digital-cards-showcase";
 import { prisma } from "@/lib/prisma";
 import { PUBLIC_GRID_LIMIT } from "@/lib/pagination";
+import type { TemplateBlock, TemplateCanvas } from "@/types/template-engine";
 
 export const revalidate = 300;
+
+function asCanvas(value: unknown): TemplateCanvas {
+  const raw = (value ?? {}) as Partial<TemplateCanvas>;
+  return {
+    width: typeof raw.width === "number" ? raw.width : 1080,
+    height: typeof raw.height === "number" ? raw.height : 1350,
+    background: typeof raw.background === "string" ? raw.background : "#0B8A83",
+    backgroundImage: typeof raw.backgroundImage === "string" ? raw.backgroundImage : undefined,
+  };
+}
+
+function asBlocks(value: unknown): TemplateBlock[] {
+  return Array.isArray(value) ? (value as TemplateBlock[]) : [];
+}
 
 export default async function PublicTemplatesPage({
   searchParams,
@@ -25,10 +44,10 @@ export default async function PublicTemplatesPage({
 
   const where = { approvalStatus: "APPROVED" as const, isActive: true };
 
-  const [designTemplates, total] = await Promise.all([
+  const [designRows, total] = await Promise.all([
     prisma.designTemplate.findMany({
       where,
-      orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
+      orderBy: [{ isFeatured: "desc" }, { popularity: "desc" }, { createdAt: "desc" }],
       skip,
       take: limit,
       select: {
@@ -37,13 +56,34 @@ export default async function PublicTemplatesPage({
         slug: true,
         category: true,
         style: true,
+        description: true,
+        productType: true,
         isPremium: true,
         isFeatured: true,
         thumbnailUrl: true,
+        previewUrl: true,
+        canvas: true,
+        blocks: true,
       },
     }),
     prisma.designTemplate.count({ where }),
   ]);
+
+  const designTemplates: PublicDesignStudioItem[] = designRows.map((t) => ({
+    id: t.id,
+    name: t.name,
+    slug: t.slug,
+    category: t.category === "Engagement" ? "Wedding" : t.category,
+    style: t.style,
+    description: t.description,
+    productType: t.productType,
+    isPremium: t.isPremium,
+    isFeatured: t.isFeatured,
+    thumbnailUrl: t.thumbnailUrl,
+    previewUrl: t.previewUrl,
+    canvas: asCanvas(t.canvas),
+    blocks: asBlocks(t.blocks),
+  }));
 
   const pages = Math.max(1, Math.ceil(total / limit));
 
@@ -52,7 +92,7 @@ export default async function PublicTemplatesPage({
       <HeaderShell />
       <main className="min-h-app-viewport bg-mesh">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-14">
+          <div className="text-center max-w-2xl mx-auto mb-10">
             <Badge variant="secondary" className="mb-4">
               <Sparkles className="h-3.5 w-3.5 mr-1" />
               Celeventic Catalogue
@@ -66,42 +106,17 @@ export default async function PublicTemplatesPage({
             </p>
           </div>
 
-          <LiveCatalogTemplateGrid templates={browseTemplates} />
+          <PublicTemplatesCatalog templates={browseTemplates} />
 
-          {total > 0 && (
-            <div className="mt-16">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Design Studio Collection</h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {designTemplates.map((t) => (
-                  <div key={t.id} className="rounded-2xl border border-slate-200/70 overflow-hidden bg-white">
-                    <div className="h-36 bg-gradient-to-br from-brand-50 to-gold-50 flex items-center justify-center text-sm text-slate-500">
-                      {t.thumbnailUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={t.thumbnailUrl} alt={t.name} className="w-full h-full object-cover" />
-                      ) : (
-                        t.style
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-sm text-slate-900">{t.name}</p>
-                        {t.isFeatured && <Badge variant="secondary">Featured</Badge>}
-                        {t.isPremium && <Badge>Premium</Badge>}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-1">{t.category}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <PaginationLinks
-                page={page}
-                pages={pages}
-                total={total}
-                limit={limit}
-                basePath="/templates"
-              />
-            </div>
-          )}
+          <PublicDigitalCardsShowcase />
+
+          <PublicDesignStudioCollection
+            templates={designTemplates}
+            page={page}
+            pages={pages}
+            total={total}
+            limit={limit}
+          />
 
           <div className="mt-14 text-center">
             <Button size="lg" asChild>

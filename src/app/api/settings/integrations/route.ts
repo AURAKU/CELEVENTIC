@@ -11,6 +11,10 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  if (!isAdminRole(session.user.role as UserRole)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const catalogStatus = await Promise.all(
     INTEGRATION_CATALOG.map(async (entry) => ({
       provider: entry.provider,
@@ -40,13 +44,11 @@ export async function GET() {
     }))
   );
 
-  const isAdmin = isAdminRole(session.user.role as UserRole);
-
   return NextResponse.json({
     success: true,
     data: {
       integrations: [...catalogStatus, ...customStatus],
-      canManage: isAdmin,
+      canManage: true,
       manageUrl: "/admin/integrations",
     },
   });

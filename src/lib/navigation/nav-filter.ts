@@ -17,8 +17,11 @@ const ORGANIZATION_EXTRA = new Set([
 /** Progressive disclosure: show only sections relevant to account type and workspace. */
 export function getFilteredNavSections(
   workspace: WorkspaceId,
-  accountType?: AccountType | null
+  accountType?: AccountType | null,
+  options?: { isAdmin?: boolean }
 ): NavSection[] {
+  const isAdmin = Boolean(options?.isAdmin);
+
   if (workspace === "vendor" || accountType === "VENDOR") return VENDOR_NAV;
   if (workspace === "funeral") return FUNERAL_NAV;
 
@@ -41,6 +44,15 @@ export function getFilteredNavSections(
         items: section.items.filter((item) => !ORGANIZATION_EXTRA.has(item.labelKey)),
       };
     });
+  }
+
+  if (!isAdmin) {
+    sections = sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => !item.adminOnly),
+      }))
+      .filter((section) => section.items.length > 0);
   }
 
   return sections;

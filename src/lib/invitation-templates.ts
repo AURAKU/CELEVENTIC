@@ -27,7 +27,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
   {
     slug: "classic-gold",
     name: "Gilded Opulence",
-    description: "Ivory card with hand-finished gold frame and serif vows",
+    description: "Ivory card with hand finished gold frame and serif vows",
     category: "wedding",
     preview: { gradient: "from-stone-100 to-white", accent: "#B89E67" },
     config: {
@@ -57,7 +57,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
   {
     slug: "rustic-lace",
     name: "Timber & Lace",
-    description: "Full-bleed photo under ornate lace with warm wood tones",
+    description: "Full bleed photo under ornate lace with warm wood tones",
     category: "wedding",
     preview: { gradient: "from-amber-900 to-amber-950", accent: "#FFFFFF" },
     config: {
@@ -87,7 +87,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
   {
     slug: "luxury-rings",
     name: "Onyx & Gold Vows",
-    description: "High-contrast black stage with interlocking rings spotlight",
+    description: "High contrast black stage with interlocking rings spotlight",
     category: "wedding",
     preview: { gradient: "from-neutral-900 to-black", accent: "#D4AF37" },
     config: {
@@ -102,7 +102,7 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
   {
     slug: "custom-media",
     name: "Your Canvas",
-    description: "Upload your image, PDF, or video — framed cinematically",
+    description: "Upload your image, PDF, or video. Framed cinematically",
     category: "custom",
     preview: { gradient: "from-teal-600 to-teal-800", accent: "#FFFFFF" },
     config: {
@@ -165,8 +165,8 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
   },
   {
     slug: "traditional-marriage-ceremony",
-    name: "Traditional Marriage Ceremony",
-    description: "Peach floral vision-board invite with live QR, RSVP, seating, and ceremony music",
+    name: "Peach Silk Ribbon",
+    description: "Peach floral vision board invite with ribbon art, live QR, RSVP, seating and ceremony music",
     category: "wedding",
     preview: { gradient: "from-rose-100 via-orange-50 to-amber-100", accent: "#8B6914" },
     config: {
@@ -187,13 +187,13 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
           url: "/templates/traditional-marriage-ceremony.png",
           type: "image",
           role: "background",
-          name: "Traditional Marriage Ceremony art",
+          name: "Peach Silk Ribbon art",
         },
         {
           url: "/templates/traditional-marriage-ceremony.png",
           type: "image",
           role: "hero",
-          name: "Traditional Marriage Ceremony art",
+          name: "Peach Silk Ribbon art",
         },
       ],
       studio: {
@@ -235,9 +235,9 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
   },
   {
     slug: "forever-afaris-wedding",
-    name: "The Forever Afaris",
+    name: "The Aurora",
     description:
-      "Luxury cinematic wedding invite — blush floral envelope, champagne wax seal, golden gate reveal, live countdown, RSVP & maps",
+      "Luxury cinematic wedding invite. Blush floral envelope, champagne wax seal, golden gate reveal, live countdown, RSVP & maps",
     category: "wedding",
     preview: { gradient: "from-rose-100 via-orange-50 to-amber-50", accent: "#C7A35A" },
     config: {

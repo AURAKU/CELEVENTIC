@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { ChevronDown, LogOut, Settings, User, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { performLogout } from "@/lib/auth/logout";
@@ -42,11 +42,12 @@ export function UserAccountMenu({ compact, variant = "light", className }: UserA
         type="button"
         onClick={() => setOpen(!open)}
         className={cn(
-          "inline-flex items-center gap-2 rounded-xl border text-sm font-medium transition-colors touch-manipulation min-h-[44px]",
-          compact ? "px-2 sm:px-2.5" : "px-3",
+          "inline-flex items-center gap-1.5 rounded-full text-sm font-medium transition-colors touch-manipulation",
+          "h-10 min-w-10 justify-center",
+          compact ? "px-1.5 sm:px-2" : "px-3",
           isDark
-            ? "border-white/15 bg-white/10 text-white hover:bg-white/15"
-            : "border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50"
+            ? "border border-white/15 bg-white/10 text-white hover:bg-white/15"
+            : "hover:bg-slate-100 text-slate-700"
         )}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -54,7 +55,7 @@ export function UserAccountMenu({ compact, variant = "light", className }: UserA
       >
         <span
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold shrink-0",
+            "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold shrink-0",
             isDark
               ? "bg-gradient-to-br from-brand-400 to-brand-600 text-white"
               : "bg-gradient-to-br from-brand-500 to-brand-700 text-white"
@@ -63,9 +64,16 @@ export function UserAccountMenu({ compact, variant = "light", className }: UserA
           {initials}
         </span>
         {!compact && (
-          <span className="hidden md:inline max-w-[120px] truncate">{session?.user?.name ?? "Account"}</span>
+          <span className="hidden md:inline max-w-[120px] truncate">
+            {session?.user?.name ?? "Account"}
+          </span>
         )}
-        <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", isDark ? "text-slate-300" : "text-slate-400")} />
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 hidden sm:block",
+            isDark ? "text-slate-300" : "text-slate-400"
+          )}
+        />
       </button>
 
       {open && (
@@ -87,6 +95,15 @@ export function UserAccountMenu({ compact, variant = "light", className }: UserA
             >
               <Settings className="h-4 w-4 text-slate-400" />
               {t("dashboard.nav_settings")}
+            </Link>
+            <Link
+              href="/legal/faq"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 touch-manipulation"
+            >
+              <BookOpen className="h-4 w-4 text-slate-400" />
+              {t("dashboard.nav_help")}
             </Link>
             <Link
               href="/dashboard"

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Navy Pulse">
+  <defs>
+    <linearGradient id="g08" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1E3A5F"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#g08)"/>
+  <g opacity="0.95"><path d="M64 20 L78 54 L114 54 L86 76 L96 110 L64 90 L32 110 L42 76 L14 54 L50 54 Z" fill="#38BDF8"/><circle cx="64" cy="64" r="8" fill="#1E3A5F"/></g>
+</svg>

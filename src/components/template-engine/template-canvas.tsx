@@ -151,7 +151,25 @@ export function TemplateCanvas({
           );
         }
 
-        if (block.type === "frame" || block.type === "pattern_overlay") {
+        if (block.type === "pattern_overlay") {
+          return (
+            <div
+              key={block.id}
+              onMouseDown={(e) => { onSelectBlock?.(block.id); handleMouseDown(e, block); }}
+              style={{
+                ...baseStyle,
+                width: (block.width ?? 100) * scale,
+                height: (block.height ?? 100) * scale,
+                background: block.color ?? "#FBBF24",
+                borderRadius: 0,
+                opacity: 0.95,
+                pointerEvents: interactive ? "auto" : "none",
+              }}
+            />
+          );
+        }
+
+        if (block.type === "frame") {
           return (
             <div
               key={block.id}
@@ -161,8 +179,8 @@ export function TemplateCanvas({
                 width: (block.width ?? 100) * scale,
                 height: (block.height ?? 100) * scale,
                 border: `2px solid ${block.color ?? "#FBBF24"}`,
-                borderRadius: block.type === "frame" ? 4 : 0,
-                opacity: 0.6,
+                borderRadius: 8,
+                boxSizing: "border-box",
                 pointerEvents: interactive ? "auto" : "none",
               }}
             />

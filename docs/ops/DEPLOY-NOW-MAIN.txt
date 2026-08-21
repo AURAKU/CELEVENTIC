@@ -1,0 +1,33 @@
+You are on the Celeventic Hostinger VPS. Deploy latest main to live NOW.
+
+Safety:
+- App dir: /var/www/CELEVENTIC
+- PM2 app: celeventic only (port 3001)
+- NEVER: pm2 restart all, prisma migrate reset, touch sparkdrive
+
+Run exactly:
+
+cd /var/www/CELEVENTIC && bash scripts/deploy-vps.sh
+
+If deploy-vps.sh is missing after pull, use:
+
+cd /var/www/CELEVENTIC
+git fetch origin main
+git checkout main
+git pull --ff-only origin main
+npm ci --include=dev
+npx prisma generate
+npx prisma migrate deploy
+npm run build
+pm2 restart celeventic --update-env
+pm2 save
+
+Verify:
+curl -sS https://www.celeventic.com/api/health
+# build.commit must be 28602cc (or later main tip)
+curl -sS -o /dev/null -w "%{http_code}\n" https://www.celeventic.com/
+curl -sS -o /dev/null -w "%{http_code}\n" https://www.celeventic.com/guide
+curl -sS -o /dev/null -w "%{http_code}\n" https://www.celeventic.com/legal/faq
+curl -sS -o /dev/null -w "%{http_code}\n" https://www.celeventic.com/invitations/templates/forever-afaris-wedding
+
+Report: git HEAD, BUILD_ID, health JSON, pm2 status for celeventic only, any migrate errors.

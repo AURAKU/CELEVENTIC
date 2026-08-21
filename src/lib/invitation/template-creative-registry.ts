@@ -56,7 +56,19 @@ export type CreativeUniverseId =
   | "custom-media"
   | "lily-serenity"
   | "royal-mourning"
-  | "blush-gate-romance";
+  | "blush-gate-romance"
+  | "ghana-black-red-cloth"
+  | "ghana-white-homegoing"
+  | "ghana-kente-farewell"
+  | "ghana-one-week-vigil"
+  | "birthday-balloon-garden"
+  | "birthday-gold-glam"
+  | "birthday-concert-bash"
+  | "birthday-surprise-soiree"
+  | "corporate-boardroom-brief"
+  | "corporate-product-launch"
+  | "corporate-investor-night"
+  | "corporate-keynote-agenda";
 
 /** Canonical invitation section ids used by hub / sequence builders. */
 export type CreativeSectionId =

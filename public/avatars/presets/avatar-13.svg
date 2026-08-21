@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Cyan Drift">
+  <defs>
+    <linearGradient id="g13" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#155E75"/>
+      <stop offset="100%" stop-color="#67E8F9"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#g13)"/>
+  <g opacity="0.95"><path d="M32 88 L64 28 L96 88 Z" fill="#67E8F9"/><rect x="52" y="70" width="24" height="24" fill="#155E75"/></g>
+</svg>

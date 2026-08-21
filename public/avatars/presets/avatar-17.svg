@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Honey Crest">
+  <defs>
+    <linearGradient id="g17" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#B45309"/>
+      <stop offset="100%" stop-color="#FCD34D"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#g17)"/>
+  <g opacity="0.95"><path d="M64 22 C90 22 106 48 106 64 C106 90 64 110 64 110 C64 110 22 90 22 64 C22 48 38 22 64 22 Z" fill="#FCD34D"/><circle cx="64" cy="58" r="14" fill="#B45309"/></g>
+</svg>

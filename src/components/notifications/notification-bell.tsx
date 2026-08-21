@@ -175,7 +175,7 @@ export function NotificationBell({ className }: { className?: string }) {
       <Button
         variant="ghost"
         size="icon"
-        className="relative rounded-xl"
+        className="relative h-10 w-10 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-brand-700"
         onClick={() => {
           setOpen((o) => {
             if (o) setSelectedId(null);
@@ -186,7 +186,7 @@ export function NotificationBell({ className }: { className?: string }) {
         aria-label="Notifications"
         aria-expanded={open}
       >
-        <Bell className="h-4 w-4" />
+        <Bell className="h-5 w-5" />
         {unread > 0 && (
           <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-gold-500 px-1 text-[10px] font-bold text-slate-900 ring-2 ring-white">
             {unread > 9 ? "9+" : unread}

@@ -60,7 +60,12 @@ const FAQ = [
     q: "Something is not working — where do I go?",
     a: (
       <>
-        Search guides above for your topic, or email{" "}
+        Search guides above, use <span className="font-medium text-slate-700">Ask Guide AI</span>, or
+        WhatsApp / call{" "}
+        <a href="tel:+233595968686" className="text-brand-700 hover:underline font-medium">
+          0595968686
+        </a>{" "}
+        to speak with Customer Care. You can also email{" "}
         <a href="mailto:support@celeventic.com" className="text-brand-700 hover:underline">
           support@celeventic.com
         </a>

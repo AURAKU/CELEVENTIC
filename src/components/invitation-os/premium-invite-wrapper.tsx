@@ -38,6 +38,7 @@ import {
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
 import { resolveSealStyle } from "@/lib/invitation/seal-design";
+import { resolveFuneralEnvelopeSeal } from "@/lib/invitation/funeral-envelope-seal";
 import {
   mergeWeddingBoard,
   resolveAfarisCoupleNames,
@@ -591,6 +592,12 @@ export function PremiumInviteWrapper({
   }
 
   if (phase === "reveal") {
+    const isFuneralExperience =
+      experience?.collectionId === "funeral" ||
+      enrichedDesign.layout === "memorial-candle-tribute" ||
+      /funeral|memorial|homegoing|in loving memory|rites for|one week/i.test(
+        `${props.event.title} ${props.event.description ?? ""}`
+      );
     const sealInitials = resolveSealInitials(
       visionBoard?.sealInitials ?? weddingBoard?.sealMonogram,
       {
@@ -598,9 +605,28 @@ export function PremiumInviteWrapper({
         coupleName1: visionBoard?.coupleName1 ?? weddingBoard?.coupleName1,
         coupleName2: visionBoard?.coupleName2 ?? weddingBoard?.coupleName2,
         hostName: props.event.hostName,
+        eventCategory: isFuneralExperience ? "Funeral" : undefined,
+        eventTitle: props.event.title,
+        invitationName: props.event.title,
       }
     );
-    const sealStyle = resolveSealStyle(visionBoard);
+    const funeralSeal = isFuneralExperience
+      ? resolveFuneralEnvelopeSeal(enrichedDesign.layout)
+      : null;
+    const sealEmblem = isFuneralExperience
+      ? visionBoard?.sealEmblem?.trim() || funeralSeal?.emblem || "✝"
+      : visionBoard?.sealEmblem?.trim() || undefined;
+    const sealStyle = resolveSealStyle(
+      isFuneralExperience
+        ? {
+            ...visionBoard,
+            sealDesign:
+              visionBoard?.sealDesign && visionBoard.sealDesign !== "classic-peach-pearl"
+                ? visionBoard.sealDesign
+                : funeralSeal?.design ?? "charcoal",
+          }
+        : visionBoard
+    );
     const openingCopy = weddingBoard
       ? {
           monogram: weddingBoard.sealMonogram,
@@ -641,8 +667,9 @@ export function PremiumInviteWrapper({
             eventTitle={props.event.title}
             hostName={props.event.hostName}
             musicEnabled={Boolean(hasMusic)}
-            enableSounds={experience?.enableRevealSounds}
+            enableSounds={isFuneralExperience ? false : experience?.enableRevealSounds}
             sealInitials={sealInitials}
+            sealEmblem={sealEmblem}
             sealStyle={sealStyle}
             openingCopy={openingCopy}
             embedded={Boolean(embedded)}

@@ -5,10 +5,24 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 
+const logoUrlSchema = z
+  .union([
+    z.string().url(),
+    z.string().regex(/^\/(uploads|api\/uploads)\//, "Invalid logo path"),
+    z.literal(""),
+    z.null(),
+  ])
+  .optional()
+  .transform((value) => {
+    if (value === undefined) return undefined;
+    if (value === null || value === "") return null;
+    return value;
+  });
+
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
   country: z.string().min(2).optional(),
-  logoUrl: z.string().url().nullable().optional(),
+  logoUrl: logoUrlSchema,
 });
 
 export async function GET() {

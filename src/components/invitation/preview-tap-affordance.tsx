@@ -92,7 +92,9 @@ export function PreviewTapAffordance({
             {beats.map((beat, i) => (
               <span key={beat} className="flex items-center gap-1">
                 {i > 0 && <span className="text-white/40">·</span>}
-                {beat === "Music begins" && <Music2 className="h-2.5 w-2.5" />}
+                {(beat === "Music begins" || /\bplays$/i.test(beat)) && (
+                  <Music2 className="h-2.5 w-2.5" />
+                )}
                 {beat}
               </span>
             ))}

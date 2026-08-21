@@ -9,6 +9,8 @@ import { normalizeSealInitials } from "@/lib/invitation/vision-board";
 import { EmbroideredEnvelopeFace } from "@/components/experience/embroidered-envelope-face";
 import {
   DEFAULT_RESOLVED_SEAL_STYLE,
+  getSealDesignPreset,
+  sealFaceCssBackground,
   sealInkStyle,
   SEAL_FONT_STACKS,
   SEAL_SIZE_SCALE,
@@ -24,6 +26,8 @@ interface EnvelopeCollectionRevealProps {
   enableSounds?: boolean;
   /** Couple initials on the wax seal (e.g. "C | J"). Falls back to theme.sealIcon / ✦. */
   sealInitials?: string;
+  /** Memorial emblem for funeral wax seals (e.g. ✝) — preferred over couple initials. */
+  sealEmblem?: string;
   /** Designed seal (color/material) + font/size/color overrides for the wax seal text. */
   sealStyle?: ResolvedSealStyle;
   /** Fires on the open gesture, preferred music unlock path. */
@@ -76,7 +80,13 @@ const DEFAULT_STAGE =
 const DEFAULT_FRAME = "rgba(56, 189, 248, 0.88)";
 const DEFAULT_OUTER = "rgba(212, 166, 58, 0.42)";
 
-function resolveSealLabel(sealInitials: string | undefined, theme: EnvelopeVisualTheme): string {
+function resolveSealLabel(
+  sealInitials: string | undefined,
+  sealEmblem: string | undefined,
+  theme: EnvelopeVisualTheme
+): string {
+  const emblem = sealEmblem?.trim();
+  if (emblem) return emblem;
   const normalized = normalizeSealInitials(sealInitials);
   if (normalized) return normalized;
   return theme.sealIcon ?? "✦";
@@ -103,6 +113,7 @@ export function EnvelopeCollectionReveal({
   eventTitle,
   enableSounds,
   sealInitials,
+  sealEmblem,
   sealStyle,
   onBegin,
   onComplete,
@@ -156,19 +167,29 @@ export function EnvelopeCollectionReveal({
   const isUnsealing = phase === "unsealing";
   const isEnvelopeOpening = phase === "opening";
   const isOpening = isUnsealing || isEnvelopeOpening;
-  const sealLabel = resolveSealLabel(sealInitials, theme);
-  const useInitialsGlyph = Boolean(normalizeSealInitials(sealInitials));
+  const sealLabel = resolveSealLabel(sealInitials, sealEmblem, theme);
+  const useMemorialEmblem = Boolean(sealEmblem?.trim());
+  const useInitialsGlyph = !useMemorialEmblem && Boolean(normalizeSealInitials(sealInitials));
 
   const stageBg = theme.stageBg ?? theme.bodyBg ?? DEFAULT_STAGE;
   const frameColor = theme.frameColor ?? (theme.royal ? DEFAULT_FRAME : `${theme.accent}`);
   const outerEdge = theme.outerEdgeColor ?? theme.borderColor ?? DEFAULT_OUTER;
   const resolvedSealStyle = sealStyle ?? DEFAULT_RESOLVED_SEAL_STYLE;
-  const defaultSealTextColor = theme.accent === "#757575" ? "#fff" : "#F5E6B8";
+  const sealPreset = getSealDesignPreset(resolvedSealStyle.design);
+  const defaultSealTextColor = useMemorialEmblem
+    ? sealPreset.wordColor
+    : theme.accent === "#757575"
+      ? "#fff"
+      : "#F5E6B8";
   const sealTextColor = resolvedSealStyle.textColor || defaultSealTextColor;
   const sealSizeScale = SEAL_SIZE_SCALE[resolvedSealStyle.size];
   const sealFontFamily =
     resolvedSealStyle.fontFamily !== "auto" ? SEAL_FONT_STACKS[resolvedSealStyle.fontFamily] : undefined;
-  const sealInk = sealInkStyle(sealTextColor, false, useInitialsGlyph);
+  const sealInk = sealInkStyle(sealTextColor, Boolean(sealPreset.dark), useInitialsGlyph);
+  const sealBackground =
+    resolvedSealStyle.design && resolvedSealStyle.design !== "classic-peach-pearl"
+      ? sealFaceCssBackground(resolvedSealStyle.design)
+      : theme.sealGradient;
   const stageBase = photoreal ? "#ebe2d6" : "#050a12";
 
   const clearOpenTimers = useCallback(() => {
@@ -544,7 +565,7 @@ export function EnvelopeCollectionReveal({
                 height: "min(26vw, 5.75rem)",
                 minWidth: "4.5rem",
                 minHeight: "4.5rem",
-                background: theme.sealGradient,
+                background: sealBackground,
                 borderColor: theme.borderColor,
                 boxShadow: `0 10px 36px rgba(0,0,0,0.4), 0 0 0 1px ${theme.borderColor}, inset 0 2px 10px rgba(255,255,255,0.35), 0 0 28px rgba(212,166,58,0.35)`,
               }}

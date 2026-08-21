@@ -42,6 +42,8 @@ const nextConfig: NextConfig = {
       { source: "/faq", destination: "/legal/faq", permanent: false },
       { source: "/privacy", destination: "/legal/privacy", permanent: false },
       { source: "/terms", destination: "/legal/terms", permanent: false },
+      // Settings Billing used a non-existent dashboard path; keep bookmarks working
+      { source: "/dashboard/marketplace", destination: "/marketplace", permanent: false },
     ];
   },
 };

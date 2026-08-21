@@ -17,6 +17,8 @@ interface InteractiveRevealProps {
   enableSounds?: boolean;
   /** Wax-seal initials for envelope reveals. */
   sealInitials?: string;
+  /** Memorial emblem for funeral wax seals. */
+  sealEmblem?: string;
   /** Designed seal (color/material) + font/size/color overrides. */
   sealStyle?: ResolvedSealStyle;
   /** Editable opening copy for template-authored ceremonies (e.g. Blush Gate). */
@@ -49,6 +51,7 @@ export function InteractiveReveal({
   musicEnabled,
   enableSounds = true,
   sealInitials,
+  sealEmblem,
   sealStyle,
   openingCopy,
   onComplete,
@@ -86,6 +89,7 @@ export function InteractiveReveal({
         musicEnabled={musicEnabled}
         enableSounds={enableSounds}
         sealInitials={sealInitials}
+        sealEmblem={sealEmblem}
         sealStyle={sealStyle}
         openingCopy={openingCopy}
         onComplete={onComplete}
