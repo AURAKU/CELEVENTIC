@@ -32,6 +32,15 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/** Catalogue / framed poster — fills the parent tile instead of the viewport. */
+.rootEmbedded {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  cursor: default;
+  pointer-events: none;
+}
+
 .root:focus-visible {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tap-gold) 55%, transparent);
 }
@@ -219,6 +228,66 @@
   animation: tap-line-in 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
 }
 
+.memorialNameCard {
+  margin: 1.35rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  width: min(100%, 22.5rem);
+  padding: 1.2rem 1.45rem 1.3rem;
+  border-radius: 1.05rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tap-ivory) 9%, transparent) 0%,
+    color-mix(in srgb, var(--tap-ivory) 4%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--tap-gold) 54%, transparent);
+  box-shadow:
+    0 14px 44px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 color-mix(in srgb, var(--tap-ivory) 16%, transparent);
+  backdrop-filter: blur(12px) saturate(1.08);
+  -webkit-backdrop-filter: blur(12px) saturate(1.08);
+  animation: tap-line-in 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.48s both;
+}
+
+.memorialNameCardRule {
+  display: block;
+  width: 3.75rem;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--tap-gold) 78%, transparent),
+    transparent
+  );
+}
+
+.memorialName {
+  margin: 0;
+  max-width: 19rem;
+  font-family: var(--tap-font-family, var(--font-cormorant), "Cormorant Garamond", serif);
+  font-size: calc(clamp(1.7rem, 5.8vw, 2.45rem) * var(--tap-scale, 1));
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.05em;
+  line-height: 1.18;
+  text-wrap: balance;
+  color: color-mix(in srgb, var(--tap-gold) 92%, var(--tap-ivory) 8%);
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.38);
+}
+
+.memorialSubtitle {
+  margin: 0;
+  font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
+  font-size: calc(clamp(0.68rem, 2.3vw, 0.8rem) * var(--tap-scale, 1));
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--tap-ivory) 68%, var(--tap-gold) 32%);
+}
+
 .cta {
   margin: 2.35rem 0 0;
   display: inline-flex;
@@ -301,6 +370,7 @@
 .static .scriptBeat,
 .static .names,
 .static .hostLine,
+.static .memorialNameCard,
 .static .cta,
 .static .ctaChip {
   animation: none;
@@ -410,6 +480,7 @@
   .scriptBeat,
   .names,
   .hostLine,
+  .memorialNameCard,
   .cta,
   .ctaChip,
   .exiting,

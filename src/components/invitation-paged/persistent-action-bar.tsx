@@ -57,7 +57,7 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
     <div className="inv-action-bar inv-paged-chrome" data-visible={visible ? "true" : "false"}>
       {hasRsvpPage && (
         <button type="button" className="inv-btn inv-btn-primary" onClick={handleRsvp}>
-          RSVP
+          {context.category === "funeral" ? "Confirm attendance" : "RSVP"}
         </button>
       )}
       <button type="button" className="inv-btn inv-btn-secondary" onClick={handleShare} aria-label="Share invitation">

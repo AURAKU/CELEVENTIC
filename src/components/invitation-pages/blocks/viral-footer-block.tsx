@@ -5,12 +5,13 @@ import { trackInviteEvent } from "@/lib/analytics/invite-events";
 import type { PageRenderContext } from "@/lib/invite-blueprints/blueprint-types";
 
 /**
- * The growth engine: every invitation ends with a conversion surface.
- * The CTA pre-selects the template the guest just experienced and carries
- * referral attribution back to the catalogue → create funnel.
+ * Closing attribution + optional growth CTA.
+ * Funeral invitations omit the create CTA — a solemn closing should not
+ * prompt guests to start their own invite.
  */
 export function ViralFooterBlock({ context }: { context: PageRenderContext }) {
-  const { templateSlug, invitation } = context;
+  const { templateSlug, invitation, category } = context;
+  const showCreateCta = category !== "funeral";
 
   const params = new URLSearchParams({
     utm_source: "invite",
@@ -32,10 +33,12 @@ export function ViralFooterBlock({ context }: { context: PageRenderContext }) {
 
   return (
     <div className="flex flex-col items-center gap-2" style={{ marginTop: "var(--inv-space-block-gap)" }}>
-      <a href={href} className="inv-btn inv-btn-primary" onClick={handleClick}>
-        <Sparkles size={17} aria-hidden />
-        Create your own invitation
-      </a>
+      {showCreateCta && (
+        <a href={href} className="inv-btn inv-btn-primary" onClick={handleClick}>
+          <Sparkles size={17} aria-hidden />
+          Create your own invitation
+        </a>
+      )}
       <p className="inv-eyebrow">Made with Celeventic</p>
     </div>
   );

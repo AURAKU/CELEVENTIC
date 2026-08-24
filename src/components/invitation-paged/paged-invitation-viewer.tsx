@@ -63,6 +63,7 @@ export function PagedInvitationViewer({ context }: PagedInvitationViewerProps) {
       className="inv-paged-root"
       style={themeToCssVars(theme)}
       {...themeToDataAttrs(theme)}
+      data-inv-category={context.category}
       data-hydrated={hydrated ? "true" : "false"}
       data-tier={tier}
     >
@@ -79,7 +80,7 @@ export function PagedInvitationViewer({ context }: PagedInvitationViewerProps) {
         </div>
         <PageDotRail pages={pages} activeIndex={activeIndex} />
         <PersistentActionBar context={context} visible={activeIndex >= 1} hasRsvpPage={hasRsvpPage} />
-        {activeIndex === 0 && pages.length > 1 && <SwipeHint />}
+        {activeIndex === 0 && pages.length > 1 && <SwipeHint category={context.category} />}
       </MotionProfileProvider>
     </div>
   );

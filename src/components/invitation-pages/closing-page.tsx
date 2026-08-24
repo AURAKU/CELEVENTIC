@@ -23,27 +23,56 @@ export function ClosingPage({ context, page }: InvitePageProps) {
 
   return (
     <PageFrame pageId={page.id} label={page.label} altSurface>
-      <EntranceReveal>
-        <MotifGlyph glyphId={theme.motif.placements.coverTop} size={48} />
-        <p className="inv-script">{isFuneral ? "With gratitude" : "Thank you"}</p>
-      </EntranceReveal>
-      <EntranceReveal delay={0.08}>
-        <p
-          className="inv-body whitespace-pre-line"
-          style={{ fontFamily: thankYouFont }}
-        >
-          {thankYou}
-        </p>
-      </EntranceReveal>
-      <EntranceReveal delay={0.14} className="w-full">
-        <CountdownBlock context={context} />
-      </EntranceReveal>
-      <div className="inv-divider">
-        <MotifGlyph glyphId={theme.motif.placements.divider} size={36} />
-      </div>
-      <EntranceReveal delay={0.2}>
-        <ViralFooterBlock context={context} />
-      </EntranceReveal>
+      {isFuneral ? (
+        <div className="inv-memorial-panel w-full">
+          <EntranceReveal>
+            <MotifGlyph glyphId={theme.motif.placements.coverTop} size={48} />
+            <p className="inv-script">With gratitude</p>
+            <h2 className="inv-heading">Thank you for being present</h2>
+          </EntranceReveal>
+          <EntranceReveal delay={0.08}>
+            <p
+              className="inv-body whitespace-pre-line inv-memorial-tribute"
+              style={{ fontFamily: thankYouFont, borderLeft: "none", textAlign: "center" }}
+            >
+              {thankYou}
+            </p>
+          </EntranceReveal>
+          <EntranceReveal delay={0.14} className="w-full">
+            <CountdownBlock context={context} />
+          </EntranceReveal>
+          <div className="inv-divider">
+            <MotifGlyph glyphId={theme.motif.placements.divider} size={36} />
+          </div>
+          <EntranceReveal delay={0.2}>
+            <ViralFooterBlock context={context} />
+          </EntranceReveal>
+        </div>
+      ) : (
+        <>
+          <EntranceReveal>
+            <MotifGlyph glyphId={theme.motif.placements.coverTop} size={48} />
+            <p className="inv-script">Thank you</p>
+          </EntranceReveal>
+          <EntranceReveal delay={0.08}>
+            <p
+              className="inv-body whitespace-pre-line"
+              style={{ fontFamily: thankYouFont }}
+            >
+              {thankYou}
+            </p>
+          </EntranceReveal>
+          <EntranceReveal delay={0.14} className="w-full">
+            <CountdownBlock context={context} />
+          </EntranceReveal>
+          <div className="inv-divider">
+            <MotifGlyph glyphId={theme.motif.placements.divider} size={36} />
+          </div>
+          <EntranceReveal delay={0.2}>
+            <ViralFooterBlock context={context} />
+          </EntranceReveal>
+        </>
+      )}
     </PageFrame>
   );
 }

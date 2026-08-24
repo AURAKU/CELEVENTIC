@@ -266,6 +266,221 @@
   border-bottom: none;
 }
 
+/* ——— Funeral memorial experience ——— */
+
+.inv-paged-root[data-inv-category="funeral"] .inv-page::before {
+  background:
+    radial-gradient(
+      ellipse 80% 55% at 50% 0%,
+      color-mix(in srgb, var(--inv-color-accent) 8%, transparent),
+      transparent 62%
+    );
+}
+
+.inv-memorial-panel {
+  width: 100%;
+  max-width: 38rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--inv-space-block-gap) * 1.1);
+  padding: calc(var(--inv-space-block-gap) * 1.35);
+  border-radius: calc(var(--inv-radius) * 1.25);
+  background: color-mix(in srgb, var(--inv-color-surface-alt) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 38%, transparent);
+  box-shadow:
+    var(--inv-shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--inv-color-ink) 8%, transparent);
+}
+
+.inv-memorial-panel-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+  width: 100%;
+}
+
+.inv-memorial-lead {
+  max-width: 28rem;
+  line-height: 1.55;
+}
+
+.inv-memorial-name {
+  color: var(--inv-color-accent);
+  font-family: var(--inv-font-display);
+  letter-spacing: 0.04em;
+}
+
+.inv-memorial-quote,
+.inv-memorial-tribute {
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border-radius: calc(var(--inv-radius) * 0.9);
+  border-left: 3px solid color-mix(in srgb, var(--inv-color-accent) 65%, transparent);
+  background: color-mix(in srgb, var(--inv-color-ink) 5%, transparent);
+  font-family: var(--inv-font-body);
+  font-size: calc(0.98rem * var(--inv-type-scale));
+  line-height: 1.65;
+  color: var(--inv-color-ink);
+  text-align: left;
+  white-space: pre-line;
+}
+
+.inv-memorial-contact {
+  text-align: center;
+}
+
+.inv-link {
+  color: var(--inv-color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Programme timeline */
+.inv-programme-section-label {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 0.35rem;
+}
+
+.inv-programme-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.inv-programme-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: 0.85rem;
+  padding: 0.85rem 0;
+  align-items: start;
+}
+
+.inv-programme-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 999px;
+  font-family: var(--inv-font-display);
+  font-size: calc(0.72rem * var(--inv-type-scale));
+  letter-spacing: 0.06em;
+  color: var(--inv-color-accent);
+  background: color-mix(in srgb, var(--inv-color-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 42%, transparent);
+}
+
+.inv-programme-body {
+  text-align: left;
+  padding-top: 0.15rem;
+}
+
+.inv-programme-title {
+  margin: 0;
+  font-family: var(--inv-font-display);
+  font-size: calc(1.05rem * var(--inv-type-scale));
+  color: var(--inv-color-primary);
+  letter-spacing: 0.03em;
+}
+
+.inv-programme-detail {
+  margin: 0.3rem 0 0;
+  font-family: var(--inv-font-body);
+  font-size: calc(0.9rem * var(--inv-type-scale));
+  line-height: 1.55;
+  color: var(--inv-color-ink-muted);
+}
+
+.inv-programme-connector {
+  position: absolute;
+  left: 1.15rem;
+  top: 3.1rem;
+  bottom: -0.2rem;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--inv-color-accent) 45%, transparent),
+    color-mix(in srgb, var(--inv-color-accent) 12%, transparent)
+  );
+}
+
+/* Detail cards grid */
+.inv-detail-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .inv-detail-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.inv-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: calc(var(--inv-radius) * 0.85);
+  background: color-mix(in srgb, var(--inv-color-ink) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 24%, transparent);
+  text-align: left;
+}
+
+.inv-detail-card-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: calc(0.62rem * var(--inv-type-scale));
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--inv-color-accent);
+}
+
+.inv-detail-card-value {
+  margin: 0;
+  font-family: var(--inv-font-body);
+  font-size: calc(0.95rem * var(--inv-type-scale));
+  line-height: 1.45;
+  color: var(--inv-color-ink);
+}
+
+/* Memorial portrait on tribute page */
+.inv-memorial-portrait {
+  position: relative;
+  margin: 0;
+  padding: 0.45rem;
+  border-radius: calc(var(--inv-radius) * 1.1);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--inv-color-accent) 8%, transparent);
+  box-shadow: var(--inv-shadow);
+}
+
+.inv-memorial-portrait img {
+  display: block;
+  width: min(15rem, 62vw);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: calc(var(--inv-radius) * 0.85);
+}
+
+.inv-memorial-portrait figcaption {
+  margin-top: 0.55rem;
+  text-align: center;
+}
+
 /* ——— Countdown ——— */
 
 .inv-countdown {
@@ -317,18 +532,135 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--inv-color-overlay);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #000 58%, transparent) 0%,
+      color-mix(in srgb, #000 18%, transparent) 38%,
+      color-mix(in srgb, #000 72%, transparent) 100%
+    ),
+    radial-gradient(
+      ellipse 90% 70% at 50% 100%,
+      color-mix(in srgb, #000 55%, transparent),
+      transparent 68%
+    ),
+    var(--inv-color-overlay);
 }
 
+/* Readable text on hero photos — always use ink (light on dark themes, dark on light) */
 .inv-page[data-has-media="true"] .inv-display,
 .inv-page[data-has-media="true"] .inv-heading {
-  color: var(--inv-color-surface);
+  color: var(--inv-color-on-media, var(--inv-color-ink));
+  text-shadow: 0 2px 24px color-mix(in srgb, #000 65%, transparent);
 }
 
 .inv-page[data-has-media="true"] .inv-body,
 .inv-page[data-has-media="true"] .inv-eyebrow,
-.inv-page[data-has-media="true"] .inv-muted {
-  color: color-mix(in srgb, var(--inv-color-surface) 88%, transparent);
+.inv-page[data-has-media="true"] .inv-muted,
+.inv-page[data-has-media="true"] .inv-script {
+  color: color-mix(in srgb, var(--inv-color-on-media, var(--inv-color-ink)) 92%, transparent);
+  text-shadow: 0 1px 14px color-mix(in srgb, #000 55%, transparent);
+}
+
+.inv-page[data-has-media="true"] .inv-foil-text {
+  text-shadow:
+    0 2px 20px color-mix(in srgb, #000 70%, transparent),
+    0 0 32px color-mix(in srgb, var(--inv-color-accent) 35%, transparent);
+}
+
+/* Glass memorial / hero panel — lifts copy off any background photo */
+.inv-cover-hero-panel {
+  width: 100%;
+  max-width: 36rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--inv-space-block-gap);
+  padding: calc(var(--inv-space-block-gap) * 1.45);
+  border-radius: calc(var(--inv-radius) * 1.35);
+  background: color-mix(in srgb, var(--inv-color-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 32%, transparent);
+  box-shadow: var(--inv-shadow);
+}
+
+.inv-page[data-has-media="true"] .inv-cover-hero-panel {
+  background: color-mix(in srgb, #080808 68%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 42%, transparent);
+  box-shadow:
+    0 28px 72px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 color-mix(in srgb, var(--inv-color-on-media, var(--inv-color-ink)) 14%, transparent);
+}
+
+.inv-cover-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.inv-cover-meta-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: calc(var(--inv-radius) * 0.85);
+  background: color-mix(in srgb, var(--inv-color-ink) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 28%, transparent);
+  text-align: center;
+}
+
+.inv-page[data-has-media="true"] .inv-cover-meta-chip {
+  background: color-mix(in srgb, #000 28%, transparent);
+  border-color: color-mix(in srgb, var(--inv-color-accent) 38%, transparent);
+}
+
+.inv-cover-meta-chip dt {
+  font-size: calc(0.62rem * var(--inv-type-scale));
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--inv-color-accent);
+}
+
+.inv-cover-meta-chip dd {
+  margin: 0;
+  font-family: var(--inv-font-body);
+  font-size: calc(0.95rem * var(--inv-type-scale));
+  line-height: 1.45;
+  color: var(--inv-color-ink);
+}
+
+.inv-page[data-has-media="true"] .inv-cover-meta-chip dd {
+  color: var(--inv-color-on-media, var(--inv-color-ink));
+}
+
+.inv-cover-quick-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.inv-cover-quick-nav .inv-btn {
+  flex: 1 1 auto;
+  min-width: 9.5rem;
+  font-size: calc(0.78rem * var(--inv-type-scale));
+  padding: 0.55rem 1rem;
+  min-height: 42px;
+}
+
+.inv-cover-subtitle {
+  font-family: var(--inv-font-script);
+  font-size: calc(clamp(1rem, 3.2vw, 1.35rem) * var(--inv-type-scale));
+  color: var(--inv-color-accent);
+  letter-spacing: 0.04em;
+}
+
+.inv-page[data-has-media="true"] .inv-cover-subtitle {
+  color: color-mix(in srgb, var(--inv-color-accent) 92%, var(--inv-color-on-media));
 }
 
 /* ——— Dot rail ——— */
@@ -360,8 +692,9 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--inv-color-ink) 35%, transparent);
+  background: color-mix(in srgb, var(--inv-color-on-media, var(--inv-color-ink)) 40%, transparent);
   transition: transform 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #000 25%, transparent);
 }
 
 .inv-dot[data-active="true"]::after {
