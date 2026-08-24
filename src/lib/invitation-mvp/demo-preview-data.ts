@@ -274,13 +274,21 @@ export function buildLivePreviewProps(
 
   const design: InvitationDesignConfig = {
     ...enriched,
+    introText:
+      needsMemorialDemo && catalogVisionBoard?.eyebrow
+        ? catalogVisionBoard.eyebrow
+        : enriched.introText,
     experience: {
       ...enriched.experience,
       introEnabled: options?.skipIntro ? false : enriched.experience?.introEnabled ?? true,
       hubMode: enriched.experience?.hubMode ?? "scroll",
       enabledTabs: layoutTabs ?? enriched.experience?.enabledTabs ?? DEFAULT_HUB_TABS,
       ...(theme === "Funeral"
-        ? { environment: "none" as const, environmentIntensity: "none" as const }
+        ? {
+            collectionId: "funeral" as const,
+            environment: "none" as const,
+            environmentIntensity: "none" as const,
+          }
         : {
             environment: enriched.experience?.environment ?? visual.environment,
             environmentIntensity:

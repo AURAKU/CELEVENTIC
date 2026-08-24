@@ -266,6 +266,7 @@ export function LiveTemplatePreview({
    * Hero / detail stages keep the complete guest pipeline.
    */
   const compactStage = variant === "picker" || variant === "card";
+  const isFuneralCategory = category?.toLowerCase() === "funeral";
   /**
    * Live preview must run the same opening guests get, never skip into a
    * static portal when the template has a theatrical reveal.
@@ -274,9 +275,13 @@ export function LiveTemplatePreview({
    * choreography (seal lifts → flap opens → invite reveals), never confine
    * that ceremony to a catalogue tile's tiny scaled mini-portal, even on
    * compact card/picker tiles.
+   *
+   * Funeral tiles keep the tap-to-begin gate after open so the deceased name
+   * card matches the live domain, even inside a compact catalogue frame.
    */
-  const isFullLayout = portalLive && (cfg.interactive || hasTheatricalOpen);
+  const isFullLayout = portalLive && (cfg.interactive || hasTheatricalOpen || isFuneralCategory);
   const skipRevealForLive = hasTheatricalOpen ? false : !isFullLayout;
+  const skipTapGateForLive = compactStage && !isFuneralCategory;
 
   const frameWidth = device === "mobile" ? MOBILE_FRAME_WIDTH : DESKTOP_FRAME_WIDTH;
 
@@ -494,7 +499,7 @@ export function LiveTemplatePreview({
                  */
                 skipIntro
                 skipSoftIntro={compactStage}
-                skipTapGate={compactStage}
+                skipTapGate={skipTapGateForLive}
                 autoOpenReveal={false}
                 musicEnabled={hasMusic && inView}
                 musicAutoplay={hasMusic && inView}

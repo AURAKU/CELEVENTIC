@@ -21,7 +21,7 @@ export function AddToCalendarBlock({ context }: { context: PageRenderContext }) 
       metadata: { action: "add_to_calendar" },
     });
     const result = await setSmartCalendarReminder({
-      title: event.title,
+      title: context.category === "funeral" ? `Funeral service — ${event.title}` : event.title,
       startDateRaw: event.startDateRaw!,
       venue: event.venueName ?? undefined,
       description: event.description ?? undefined,
@@ -29,11 +29,13 @@ export function AddToCalendarBlock({ context }: { context: PageRenderContext }) 
     setMessage(result.message);
   }
 
+  const label = context.category === "funeral" ? "Save service date" : "Add to calendar";
+
   return (
     <div className="flex flex-col items-center gap-2">
       <button type="button" className="inv-btn inv-btn-secondary" onClick={handleClick}>
         <CalendarPlus size={17} aria-hidden />
-        Add to calendar
+        {label}
       </button>
       {message && <p className="inv-body inv-muted text-sm">{message}</p>}
     </div>

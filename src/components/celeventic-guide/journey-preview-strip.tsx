@@ -110,7 +110,12 @@ function StageMotion({ motionKey }: { motionKey: string }) {
  * Auto-plays the guest journey, then lets people explore host / door / vendor
  * lanes and the full capability map.
  */
-export function JourneyPreviewStrip() {
+export function JourneyPreviewStrip({
+  showWalkthroughLink = true,
+}: {
+  /** Hide when already on /guide/how-celeventic-works */
+  showWalkthroughLink?: boolean;
+}) {
   const reduce = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -150,21 +155,31 @@ export function JourneyPreviewStrip() {
               gifts, vendors, and Memory Vault — explained in motion for guests, hosts, door staff,
               and vendors.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/guide/how-celeventic-works"
-                className="inline-flex items-center gap-2 rounded-xl bg-white text-brand-900 px-4 py-2.5 text-sm font-semibold hover:bg-brand-50 transition"
-              >
-                Full walkthrough
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
+            {showWalkthroughLink ? (
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/guide/how-celeventic-works"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white text-brand-900 px-4 py-2.5 text-sm font-semibold hover:bg-brand-50 transition"
+                >
+                  Full walkthrough
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+                <Link
+                  href="/guide"
+                  className="inline-flex items-center rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15 transition"
+                >
+                  Browse all guides
+                </Link>
+              </div>
+            ) : (
               <Link
                 href="/guide"
-                className="inline-flex items-center rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15 transition"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15 transition"
               >
                 Browse all guides
+                <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-            </div>
+            )}
           </div>
 
           <div className="flex-1 min-w-0 space-y-4">

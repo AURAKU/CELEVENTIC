@@ -12,6 +12,11 @@ import {
   sampleImageContrastMode,
   type ImageContrastMode,
 } from "@/lib/media/image-contrast";
+import {
+  resolveDeceasedName,
+  resolveFuneralCoverCopy,
+} from "@/lib/invite-blueprints/funeral-invitation-copy";
+import type { InvitationEventData } from "@/types/invitation-design";
 import styles from "./tap-to-begin-experience.module.css";
 
 const EXIT_MS = 480;
@@ -48,6 +53,8 @@ export interface TapToBeginExperienceProps {
    * "on"/"off" let the studio override that per invitation.
    */
   scrim?: "auto" | "on" | "off";
+  /** Catalogue tile poster — absolute fill, no interaction, no motion. */
+  staticPreview?: boolean;
 }
 
 const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale"]>, number> = {
@@ -56,6 +63,17 @@ const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale
   spacious: 1.2,
   bold: 1.4,
 };
+
+function isFuneralExperience(layoutSlug?: string, category?: string): boolean {
+  const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
+  return (
+    category === "funeral" ||
+    hay.includes("memorial") ||
+    hay.includes("funeral") ||
+    hay.includes("candle") ||
+    hay.includes("tribute")
+  );
+}
 
 /** Templates whose welcome art is a busy, multi-color pattern (kente/Ankara, etc.), legibility plate defaults on. */
 function isPatternedWelcomeLayout(layoutSlug?: string, category?: string): boolean {
@@ -66,6 +84,10 @@ function isPatternedWelcomeLayout(layoutSlug?: string, category?: string): boole
     hay.includes("ankara") ||
     hay.includes("kitenge")
   );
+}
+
+function shouldAutoScrim(layoutSlug?: string, category?: string): boolean {
+  return isPatternedWelcomeLayout(layoutSlug, category) || isFuneralExperience(layoutSlug, category);
 }
 
 type EventBeat = {
@@ -97,7 +119,7 @@ function resolveEventBeat(input: {
   if (hay.includes("traditional-marriage")) {
     return { eyebrow: "TRADITIONAL", script: "Marriage Ceremony" };
   }
-  if (hay.includes("memorial") || hay.includes("funeral") || hay.includes("candle") || hay.includes("tribute")) {
+  if (isFuneralExperience(input.layoutSlug, input.category)) {
     return { plain: "In Loving Memory" };
   }
   if (input.eventTitle?.trim()) return { plain: input.eventTitle.trim() };
@@ -115,10 +137,7 @@ function titleCase(s: string): string {
 function resolveBeginVerb(layoutSlug?: string, category?: string): string {
   const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
   if (
-    hay.includes("memorial") ||
-    hay.includes("funeral") ||
-    hay.includes("tribute") ||
-    hay.includes("candle") ||
+    isFuneralExperience(layoutSlug, category) ||
     hay.includes("concert") ||
     hay.includes("neon") ||
     hay.includes("party") ||
@@ -201,8 +220,9 @@ export function TapToBeginExperience({
   textColorOverride,
   accentColorOverride,
   scrim = "auto",
+  staticPreview = false,
 }: TapToBeginExperienceProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() || staticPreview;
   const [exiting, setExiting] = useState(false);
   const completed = useRef(false);
   const exitingRef = useRef(false);
@@ -256,6 +276,33 @@ export function TapToBeginExperience({
     [name1, name2, eventTitle, hostName, layoutSlug, category]
   );
 
+  const isFuneral = useMemo(
+    () => isFuneralExperience(layoutSlug, category),
+    [layoutSlug, category]
+  );
+
+  const funeralMemorial = useMemo(() => {
+    if (!isFuneral) return null;
+    const eventStub: InvitationEventData = {
+      title: eventTitle ?? "",
+      hostName: hostName ?? "",
+      description: null,
+      startDate: "",
+      venueName: null,
+      landmark: null,
+      mapsLink: null,
+      contactPhone: null,
+      dressCode: null,
+    };
+    const copy = resolveFuneralCoverCopy(eventStub, ceremonyLabel);
+    const name = resolveDeceasedName(eventStub);
+    const subtitle =
+      copy.subtitle && copy.subtitle !== name && copy.subtitle !== copy.eyebrow
+        ? copy.subtitle
+        : null;
+    return { name, subtitle };
+  }, [isFuneral, eventTitle, hostName, ceremonyLabel]);
+
   // When the couple is the hero signal, don't also print a ceremony title above
   // them — that was duplicating shortened first names with full legal names.
   const showEventBeat = Boolean(
@@ -265,10 +312,13 @@ export function TapToBeginExperience({
   // A lone "BEGIN" floating over a photo reads as decorative type, not a control, // guests need the verb ("tap") spelled out so the gesture is obvious on first look.
   const beginVerb = resolveBeginVerb(layoutSlug, category);
   const ctaText = `Tap to ${beginVerb}`;
-  const scrimActive = scrim === "on" || (scrim === "auto" && isPatternedWelcomeLayout(layoutSlug, category));
+  const scrimActive = scrim === "on" || (scrim === "auto" && shouldAutoScrim(layoutSlug, category));
   const stageClass = [styles.stage, scrimActive ? styles.plate : ""].filter(Boolean).join(" ");
   const showHostFallback =
-    !couple && Boolean(hostName?.trim()) && hostName!.trim() !== eventTitle?.trim();
+    !couple &&
+    !funeralMemorial &&
+    Boolean(hostName?.trim()) &&
+    hostName!.trim() !== eventTitle?.trim();
 
   const finish = useCallback(() => {
     if (completed.current) return;
@@ -292,6 +342,7 @@ export function TapToBeginExperience({
   }, []);
 
   useEffect(() => {
+    if (staticPreview) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
@@ -300,55 +351,56 @@ export function TapToBeginExperience({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [beginExit]);
+  }, [beginExit, staticPreview]);
+
+  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation${
+    couple
+      ? `, ${couple.name1} and ${couple.name2}`
+      : funeralMemorial
+        ? `, in loving memory of ${funeralMemorial.name}`
+        : beat.plain || [beat.eyebrow, beat.script].filter(Boolean).join(" ")
+          ? `, ${beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")}`
+          : ""
+  }`;
 
   const rootClass = [
     styles.root,
+    staticPreview ? styles.rootEmbedded : "",
     invitationFontVars,
     "invite-viewport-live",
-    "safe-area-pt",
-    "safe-area-pb",
-    "safe-area-pl",
-    "safe-area-pr",
+    staticPreview ? "" : "safe-area-pt safe-area-pb safe-area-pl safe-area-pr",
     reduceMotion ? styles.static : "",
     exiting ? styles.exiting : "",
   ]
     .filter(Boolean)
     .join(" ");
 
-  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation${
-    couple
-      ? `, ${couple.name1} and ${couple.name2}`
-      : beat.plain || [beat.eyebrow, beat.script].filter(Boolean).join(" ")
-        ? `, ${beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")}`
-        : ""
-  }`;
+  const shellProps = {
+    className: rootClass,
+    onClick: staticPreview ? undefined : beginExit,
+    "aria-label": staticPreview ? undefined : ariaLabel,
+    "data-contrast": contrastMode,
+    style: {
+      ["--tap-accent" as string]: accent,
+      ["--tap-gold" as string]: gold,
+      ["--tap-scale" as string]: scaleValue,
+      ...(textColorOverride?.trim() ? { ["--tap-ivory" as string]: textColorOverride.trim() } : null),
+      ...(fontFamily?.trim() ? { ["--tap-font-family" as string]: fontFamily.trim() } : null),
+      ...(exiting && backgroundColor
+        ? {
+            background: `linear-gradient(180deg, #061018 0%, ${backgroundColor} 120%)`,
+          }
+        : null),
+    } as CSSProperties,
+  };
 
-  return (
-    <button
-      type="button"
-      className={rootClass}
-      onClick={beginExit}
-      aria-label={ariaLabel}
-      data-contrast={contrastMode}
-      style={
-        {
-          ["--tap-accent" as string]: accent,
-          ["--tap-gold" as string]: gold,
-          ["--tap-scale" as string]: scaleValue,
-          ...(textColorOverride?.trim() ? { ["--tap-ivory" as string]: textColorOverride.trim() } : null),
-          ...(fontFamily?.trim() ? { ["--tap-font-family" as string]: fontFamily.trim() } : null),
-          ...(exiting && backgroundColor
-            ? {
-                background: `linear-gradient(180deg, #061018 0%, ${backgroundColor} 120%)`,
-              }
-            : null),
-        } as CSSProperties
-      }
-    >
-      <p className={styles.srStatus} aria-live="polite">
-        {ariaLabel}
-      </p>
+  const stageContent = (
+    <>
+      {!staticPreview ? (
+        <p className={styles.srStatus} aria-live="polite">
+          {ariaLabel}
+        </p>
+      ) : null}
 
       <div className={styles.hero} aria-hidden>
         {hero ? (
@@ -411,6 +463,15 @@ export function TapToBeginExperience({
               <span className={styles.coupleName}>{couple.name2}</span>
             </p>
           </div>
+        ) : funeralMemorial ? (
+          <div className={styles.memorialNameCard}>
+            <span className={styles.memorialNameCardRule} aria-hidden />
+            <p className={styles.memorialName}>{funeralMemorial.name}</p>
+            {funeralMemorial.subtitle ? (
+              <p className={styles.memorialSubtitle}>{funeralMemorial.subtitle}</p>
+            ) : null}
+            <span className={styles.memorialNameCardRule} aria-hidden />
+          </div>
         ) : showHostFallback ? (
           <p className={styles.hostLine}>{hostName}</p>
         ) : null}
@@ -422,11 +483,27 @@ export function TapToBeginExperience({
             </span>
             <span className={styles.ctaWord}>{ctaText}</span>
           </span>
-          <span className={styles.ctaHint} aria-hidden>
-            or press Enter
-          </span>
+          {!staticPreview ? (
+            <span className={styles.ctaHint} aria-hidden>
+              or press Enter
+            </span>
+          ) : null}
         </div>
       </div>
+    </>
+  );
+
+  if (staticPreview) {
+    return (
+      <div {...shellProps} role="img" aria-hidden>
+        {stageContent}
+      </div>
+    );
+  }
+
+  return (
+    <button type="button" {...shellProps}>
+      {stageContent}
     </button>
   );
 }

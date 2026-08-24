@@ -216,6 +216,21 @@ const FUNERAL_BOARD_COPY_BY_SLUG: Record<
     scriptTitle: "Candlelight Memorial",
     sentiment: "Your presence brings comfort as we remember a faithful life.",
   },
+  "candlelight-farewell": {
+    eyebrow: "IN LOVING MEMORY",
+    scriptTitle: "Candlelight Farewell",
+    sentiment: "Gather with us as we light a candle for a life of grace.",
+  },
+  "candlelight-elegy-pages": {
+    eyebrow: "IN LOVING MEMORY",
+    scriptTitle: "Chapters of Light",
+    sentiment: "Chapters of light for a life of service.",
+  },
+  "white-lily-memorial-pages": {
+    eyebrow: "IN LOVING MEMORY",
+    scriptTitle: "White Lily Memorial",
+    sentiment: "In quiet remembrance, you are invited to honour a beloved life.",
+  },
   "black-red-cloth-rite": {
     eyebrow: "FUNERAL RITES",
     scriptTitle: "Black Red Cloth Honour",
@@ -253,7 +268,7 @@ export function buildCatalogDemoMemorialVisionBoard(
   const copy =
     (catalogSlug && FUNERAL_BOARD_COPY_BY_SLUG[catalogSlug]) ||
     {
-      eyebrow: "IN MEMORIAM",
+      eyebrow: "IN LOVING MEMORY",
       scriptTitle: "Funeral Invitation",
       sentiment: demo.message.trim() || "You are invited to gather in remembrance.",
     };

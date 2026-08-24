@@ -4,7 +4,7 @@ import { useReducedMotion } from "framer-motion";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { JourneyPreviewStrip } from "@/components/celeventic-guide/journey-preview-strip";
+import { JourneyWalkthroughTeaser } from "@/components/celeventic-guide/journey-walkthrough-teaser";
 import { GUEST_JOURNEY_STAGES } from "@/lib/celeventic-guide/platform-journey";
 
 export function HowItWorks() {
@@ -23,8 +23,8 @@ export function HowItWorks() {
           </h2>
           <p className="section-subheading mx-auto">
             From the first invitation tap to Memory Vault — guests, hosts, door staff, and vendors
-            each have a clear path. Watch the journey below, then open any guide for step-by-step
-            detail.
+            each have a clear path. Open the full walkthrough for the interactive journey, or browse
+            guides for step-by-step detail.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
@@ -66,7 +66,7 @@ export function HowItWorks() {
           ))}
         </ol>
 
-        <JourneyPreviewStrip />
+        <JourneyWalkthroughTeaser />
       </div>
     </section>
   );

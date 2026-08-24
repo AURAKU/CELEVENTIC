@@ -1055,7 +1055,22 @@
 
 @keyframes inv-envelope-breathe {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-3px) scale(1.006); }
+  50% { transform: translateY(-4px) scale(1.008); }
+}
+
+@keyframes inv-seal-glow {
+  0%, 100% {
+    filter:
+      drop-shadow(0 14px 18px rgba(0, 0, 0, 0.32))
+      drop-shadow(0 0 14px rgba(212, 166, 58, 0.22));
+    transform: scale(1);
+  }
+  50% {
+    filter:
+      drop-shadow(0 18px 24px rgba(0, 0, 0, 0.38))
+      drop-shadow(0 0 28px rgba(212, 166, 58, 0.48));
+    transform: scale(1.04);
+  }
 }
 
 @keyframes inv-seal-pulse {
@@ -1102,6 +1117,10 @@
   animation: inv-seal-pulse-peach 2.8s ease-in-out infinite;
 }
 
+.inv-seal-glow {
+  animation: inv-seal-glow 2.9s ease-in-out infinite;
+}
+
 /** Guided "tap here" chip on envelope/seal openings — gentle breathing, never a hard blink. */
 @keyframes inv-tap-hint-pulse {
   0%, 100% { opacity: 0.82; transform: translateY(0); }
@@ -1120,6 +1139,7 @@
   .inv-envelope-breathe,
   .inv-seal-pulse,
   .inv-seal-pulse-peach,
+  .inv-seal-glow,
   .inv-tap-hint-pulse {
     animation: none !important;
   }

@@ -254,9 +254,19 @@ export function PremiumInviteWrapper({
   const tapCoupleName1 = tapCoupleNames.coupleName1;
   const tapCoupleName2 = tapCoupleNames.coupleName2;
   const hasTapCoupleNames = Boolean(tapCoupleName1 && tapCoupleName2);
+  const isFuneralCollection =
+    experience?.collectionId === "funeral" ||
+    enrichedDesign.layout === "memorial-candle-tribute" ||
+    /funeral|memorial|homegoing|tribute/i.test(
+      `${props.event.title} ${enrichedDesign.layout ?? ""} ${experience?.collectionId ?? ""}`
+    );
   const tapCeremonyLabel = hasTapCoupleNames
     ? null
-    : enrichedDesign.introText?.trim() || props.event.title?.trim() || undefined;
+    : isFuneralCollection
+      ? visionBoard?.eyebrow?.trim() ||
+        enrichedDesign.introText?.trim() ||
+        "IN LOVING MEMORY"
+      : enrichedDesign.introText?.trim() || props.event.title?.trim() || undefined;
 
   const softAccent =
     themeColors?.accent ??

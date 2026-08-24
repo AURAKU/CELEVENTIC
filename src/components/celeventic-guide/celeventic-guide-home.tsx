@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { GuideHomeClient } from "@/components/celeventic-guide/guide-home-client";
-import { JourneyPreviewStrip } from "@/components/celeventic-guide/journey-preview-strip";
+import { JourneyWalkthroughTeaser } from "@/components/celeventic-guide/journey-walkthrough-teaser";
 import { StartHereJourneys } from "@/components/celeventic-guide/start-here-journeys";
 import { GuideFaqAccordion } from "@/components/celeventic-guide/guide-faq-accordion";
 import { GuideAssistantChat } from "@/components/celeventic-guide/guide-assistant-chat";
@@ -56,7 +56,7 @@ export async function CeleventicGuideHome({
           </Link>
         </header>
 
-        <JourneyPreviewStrip />
+        <JourneyWalkthroughTeaser />
 
         <StartHereJourneys preferredRole={preferredRole} />
 
