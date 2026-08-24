@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useSyncExternalStore } from "framer-motion";
+import { useSyncExternalStore } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { EnvelopeVisualTheme } from "@/lib/experience/opening-experiences";
 import { PremiumWaxSeal } from "@/components/experience/premium-wax-seal";
 import { invitationFontVars } from "@/lib/invitation-fonts";
