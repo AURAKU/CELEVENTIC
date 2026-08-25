@@ -10,6 +10,8 @@ interface Props {
    * `componentDidCatch`, so the host owns the phase transition.
    */
   onFallthrough: () => void;
+  /** Optional safe diagnostic hook — never receives guest PII. */
+  onError?: (error: Error, beat: Props["beat"]) => void;
   children: ReactNode;
 }
 
@@ -42,6 +44,7 @@ export class CeremonyErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error) {
     console.error(`[invite-ceremony:${this.props.beat}]`, error);
+    this.props.onError?.(error, this.props.beat);
     // Commit phase, so asking the host to change phase here is safe. The host
     // renders a different branch, which unmounts this boundary.
     this.props.onFallthrough();

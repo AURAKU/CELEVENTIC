@@ -9,6 +9,11 @@
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import { SKU_CREATIVE_OVERRIDES } from "@/lib/invitation/template-creative-sku-overrides";
 import { mapLegacyRevealMode } from "@/lib/experience/opening-experiences";
+import {
+  MEMORIAL_ENVELOPE_LAYOUT,
+  resolveEffectiveCatalogSlug,
+  shouldUseMandatoryMemorialEnvelope,
+} from "@/lib/experience/memorial-envelope-family";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 
@@ -77,7 +82,6 @@ export function resolveShowReveal(input: ShowRevealInput): boolean {
   if (input.revealMode === "none") return false;
 
   if (input.isFuneralCollection) {
-    // Memorial guests keep the envelope even when legacy DNA set revealEnabled=false.
     return true;
   }
 
@@ -89,15 +93,13 @@ export function resolvePhaseAfterTapBegin(showReveal: boolean): "reveal" | "port
   return showReveal ? "reveal" : "portal";
 }
 
-const MEMORIAL_ENVELOPE_FLAGSHIP_SKU = "memorial-candle-tribute";
-
 /**
  * Catalog SKUs whose creative contract mandates the memorial envelope ceremony.
  * Uses explicit memorial-envelope markers — not generic wedding envelope SKUs.
  */
 export function isCanonicalMemorialEnvelopeSku(catalogSlug: string | null | undefined): boolean {
   if (!catalogSlug) return false;
-  if (catalogSlug === MEMORIAL_ENVELOPE_FLAGSHIP_SKU) return true;
+  if (catalogSlug === MEMORIAL_ENVELOPE_LAYOUT) return true;
   const override = SKU_CREATIVE_OVERRIDES[catalogSlug];
   if (!override) return false;
   const sequence = String(override.openingSequence ?? "");
@@ -110,11 +112,7 @@ export function resolveCatalogSlugForLiveReveal(input: {
   catalogSlug?: string | null;
   layout?: string | null;
 }): string | null {
-  const slug = input.catalogSlug?.trim();
-  if (slug) return slug;
-  const layout = input.layout?.trim();
-  if (layout === MEMORIAL_ENVELOPE_FLAGSHIP_SKU) return MEMORIAL_ENVELOPE_FLAGSHIP_SKU;
-  return null;
+  return resolveEffectiveCatalogSlug(input);
 }
 
 export function resolveIsFuneralCollection(input: {
@@ -124,7 +122,7 @@ export function resolveIsFuneralCollection(input: {
 }): boolean {
   return (
     input.collectionId === "funeral" ||
-    input.layout === MEMORIAL_ENVELOPE_FLAGSHIP_SKU ||
+    input.layout === MEMORIAL_ENVELOPE_LAYOUT ||
     /funeral|memorial|homegoing|tribute/i.test(
       `${input.eventTitle ?? ""} ${input.layout ?? ""} ${input.collectionId ?? ""}`
     )
@@ -149,15 +147,64 @@ export interface LiveRevealConfigurationInput {
 export interface LiveRevealConfiguration {
   layout: string | null;
   catalogSlug: string | null;
+  effectiveCatalogSlug: string | null;
   rawRevealMode: RevealMode | string | null;
   resolvedRevealMode: RevealMode;
   rawOpeningExperience: OpeningExperienceId;
   resolvedOpeningExperience: OpeningExperienceId;
   isFuneralCollection: boolean;
   isMemorialEnvelopeSku: boolean;
+  mandatoryMemorialEnvelope: boolean;
   revealEnabled: boolean;
   showReveal: boolean;
   curtainOwnsTap: boolean;
+}
+
+function isMemorialEnvelopeInvariantEnabled(): boolean {
+  return (
+    process.env.NODE_ENV === "development" ||
+    process.env.CELEVENTIC_MEMORIAL_ENVELOPE_INVARIANT === "1"
+  );
+}
+
+/**
+ * Hard runtime guard: mandatory memorial envelope live invites must never
+ * silently bypass the sealed envelope ceremony.
+ */
+export function assertMandatoryMemorialEnvelopeInvariant(input: {
+  mandatoryMemorialEnvelope: boolean;
+  isLiveGuest?: boolean;
+  config: LiveRevealConfiguration;
+  envelopeAutoOpen?: boolean;
+  needsTapGate?: boolean;
+}): void {
+  if (!isMemorialEnvelopeInvariantEnabled()) return;
+  if (!input.mandatoryMemorialEnvelope) return;
+  if (input.isLiveGuest === false) return;
+
+  const { config } = input;
+  if (config.resolvedRevealMode !== "envelope") {
+    throw new Error(
+      `[memorial-envelope-invariant] resolvedRevealMode=${config.resolvedRevealMode}`
+    );
+  }
+  if (config.resolvedOpeningExperience !== "wax-seal-black") {
+    throw new Error(
+      `[memorial-envelope-invariant] resolvedOpeningExperience=${config.resolvedOpeningExperience}`
+    );
+  }
+  if (!config.showReveal) {
+    throw new Error("[memorial-envelope-invariant] showReveal must be true");
+  }
+  if (config.curtainOwnsTap) {
+    throw new Error("[memorial-envelope-invariant] curtainOwnsTap must be false");
+  }
+  if (input.envelopeAutoOpen) {
+    throw new Error("[memorial-envelope-invariant] envelopeAutoOpen must be false on live");
+  }
+  if (input.needsTapGate === false) {
+    throw new Error("[memorial-envelope-invariant] needsTapGate must be true");
+  }
 }
 
 /**
@@ -169,11 +216,8 @@ export function resolveLiveRevealConfiguration(
   input: LiveRevealConfigurationInput
 ): LiveRevealConfiguration {
   const layout = input.layout?.trim() ?? null;
-  const catalogSlug = resolveCatalogSlugForLiveReveal({
-    catalogSlug: input.catalogSlug,
-    layout,
-  });
-  const isMemorialEnvelopeSku = isCanonicalMemorialEnvelopeSku(catalogSlug);
+  const catalogSlug = input.catalogSlug?.trim() ?? null;
+  const effectiveCatalogSlug = resolveEffectiveCatalogSlug({ catalogSlug, layout });
 
   const rawRevealMode =
     input.revealModeProp ?? input.studio?.revealMode ?? ("envelope" as RevealMode);
@@ -183,10 +227,24 @@ export function resolveLiveRevealConfiguration(
     (input.experience?.openingExperience as OpeningExperienceId | undefined) ??
     mapLegacyRevealMode(rawRevealMode as RevealMode);
 
+  const mandatoryMemorialEnvelope = shouldUseMandatoryMemorialEnvelope({
+    catalogSlug,
+    layout,
+    collectionId: input.experience?.collectionId,
+    rawOpeningExperience,
+    rawRevealMode,
+  });
+
+  const isMemorialEnvelopeSku =
+    mandatoryMemorialEnvelope || isCanonicalMemorialEnvelopeSku(effectiveCatalogSlug);
+
   let resolvedRevealMode = rawRevealMode as RevealMode;
   let resolvedOpeningExperience = rawOpeningExperience;
 
-  if (isMemorialEnvelopeSku) {
+  if (mandatoryMemorialEnvelope) {
+    resolvedRevealMode = "envelope";
+    resolvedOpeningExperience = "wax-seal-black";
+  } else if (isMemorialEnvelopeSku) {
     resolvedRevealMode = "envelope";
     resolvedOpeningExperience = "wax-seal-black";
   }
@@ -197,28 +255,35 @@ export function resolveLiveRevealConfiguration(
     eventTitle: input.eventTitle,
   });
 
-  const revealEnabled =
-    input.revealEnabledProp ?? resolvedRevealMode !== "none";
+  const revealEnabled = mandatoryMemorialEnvelope
+    ? true
+    : (input.revealEnabledProp ?? resolvedRevealMode !== "none");
 
-  const showReveal = resolveShowReveal({
-    isFuneralCollection: isMemorialEnvelopeSku || isFuneralCollection,
-    skipReveal: input.skipReveal,
-    revealEnabled,
-    openingExperience: resolvedOpeningExperience,
-    revealMode: resolvedRevealMode,
-  });
+  const showReveal = mandatoryMemorialEnvelope
+    ? !input.skipReveal
+    : resolveShowReveal({
+        isFuneralCollection: isMemorialEnvelopeSku || isFuneralCollection,
+        skipReveal: input.skipReveal,
+        revealEnabled,
+        openingExperience: resolvedOpeningExperience,
+        revealMode: resolvedRevealMode,
+      });
 
-  const curtainOwnsTap = resolvedOpeningExperience.startsWith("curtain-");
+  const curtainOwnsTap = mandatoryMemorialEnvelope
+    ? false
+    : resolvedOpeningExperience.startsWith("curtain-");
 
   return {
     layout,
     catalogSlug,
+    effectiveCatalogSlug,
     rawRevealMode,
     resolvedRevealMode,
     rawOpeningExperience,
     resolvedOpeningExperience,
     isFuneralCollection,
     isMemorialEnvelopeSku,
+    mandatoryMemorialEnvelope,
     revealEnabled,
     showReveal,
     curtainOwnsTap,
@@ -241,12 +306,14 @@ export function logLiveRevealDiagnostic(
   console.info("[live-reveal]", {
     layout: config.layout,
     catalogSlug: config.catalogSlug,
+    effectiveCatalogSlug: config.effectiveCatalogSlug,
     rawRevealMode: config.rawRevealMode,
     resolvedRevealMode: config.resolvedRevealMode,
     rawOpeningExperience: config.rawOpeningExperience,
     resolvedOpeningExperience: config.resolvedOpeningExperience,
     isFuneralCollection: config.isFuneralCollection,
     isMemorialEnvelopeSku: config.isMemorialEnvelopeSku,
+    mandatoryMemorialEnvelope: config.mandatoryMemorialEnvelope,
     showReveal: config.showReveal,
     needsTapGate: extras?.needsTapGate,
     envelopeAutoOpen: extras?.envelopeAutoOpen,
