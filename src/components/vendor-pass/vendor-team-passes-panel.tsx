@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { buildVendorTeamPassUrl } from "@/lib/vendor-pass/token-format";
 import { VendorEntryLog } from "@/components/vendor-pass/vendor-entry-log";
+import { ensureSingleShareUrl, openWhatsAppShare } from "@/lib/invitation/whatsapp-share";
 
 type VendorPassRow = {
   id: string;
@@ -474,6 +475,7 @@ export function VendorTeamPassesPanel({
       setError(json.error ?? "Revoke failed");
       return;
     }
+    setNotice("Pass revoked. Scanners will reject it.");
     await load(page);
   }
 
@@ -1081,16 +1083,22 @@ export function VendorTeamPassesPanel({
                   >
                     <Copy className="h-4 w-4" /> Copy link
                   </Button>
-                  <Button type="button" size="sm" variant="ghost" asChild>
-                    <a
-                      href={`https://wa.me/?text=${encodeURIComponent(
-                        `${row.title} — ${row.vendorName}\nAccess code ${row.admissionCode}\n${resolvePassHref(row)}`
-                      )}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      WhatsApp
-                    </a>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      const href = resolvePassHref(row);
+                      openWhatsAppShare(
+                        ensureSingleShareUrl(
+                          `${row.title} — ${row.vendorName}\nAccess code ${row.admissionCode}`,
+                          href
+                        )
+                      );
+                    }}
+                  >
+                    WhatsApp
                   </Button>
                   <Button
                     type="button"

@@ -27,6 +27,11 @@ import type { SearchResultCard } from "@/lib/guest-search/types";
 import { getClientAppUrl, isLocalHost, sanitizePublicUrl } from "@/lib/app-url";
 import { copyText } from "@/lib/clipboard";
 import { tableDisplayName } from "@/lib/seating/seating-types";
+import {
+  buildInviteWhatsAppText,
+  collapseDuplicateAbsoluteUrl,
+  openWhatsAppShare,
+} from "@/lib/invitation/whatsapp-share";
 
 /** Official-style WhatsApp glyph so share actions are instantly recognizable. */
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -44,8 +49,11 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 function publicInviteUrl(url: string): string {
   const base = getClientAppUrl();
-  if (isLocalHost(url) && !isLocalHost(base)) return sanitizePublicUrl(url, base);
-  return url;
+  const cleaned = collapseDuplicateAbsoluteUrl(url);
+  if (isLocalHost(cleaned) && !isLocalHost(base)) {
+    return collapseDuplicateAbsoluteUrl(sanitizePublicUrl(cleaned, base));
+  }
+  return cleaned;
 }
 
 /**
@@ -90,10 +98,12 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
   }, [menuOpen]);
 
   const shareUrl = publicInviteUrl(card.inviteUrl);
-  const whatsAppText = `Dear ${card.name},\n\nYou are personally invited. Open your invitation:\n${shareUrl}`;
-  const emailBody = card.admissionCode
-    ? `${whatsAppText}\n\nYour admission code: ${card.admissionCode}`
-    : whatsAppText;
+  const whatsAppText = buildInviteWhatsAppText({
+    guestName: card.name,
+    inviteUrl: shareUrl,
+    admissionCode: card.admissionCode,
+  });
+  const emailBody = whatsAppText;
 
   async function copyLink() {
     const ok = await copyText(shareUrl);
@@ -317,20 +327,20 @@ export function GuestResultCard({ eventId, card, highlight, onChanged }: GuestRe
           </Button>
           <Button
             size="sm"
+            type="button"
             variant="outline"
             className="border-[#25D366]/40 bg-[#25D366]/10 text-[#128C7E] hover:border-[#25D366]/70 hover:bg-[#25D366]/20 hover:text-[#075E54]"
-            asChild
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              openWhatsAppShare(whatsAppText, card.phone);
+            }}
+            disabled={busy}
+            aria-label={`Share invitation with ${card.name} on WhatsApp`}
+            title="Share on WhatsApp"
           >
-            <a
-              href={`https://wa.me/${(card.phone ?? "").replace(/\D+/g, "")}?text=${encodeURIComponent(whatsAppText)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Share invitation with ${card.name} on WhatsApp`}
-              title="Share on WhatsApp"
-            >
-              <WhatsAppIcon className="h-4 w-4" />
-              <span className="sr-only">WhatsApp</span>
-            </a>
+            <WhatsAppIcon className="h-4 w-4" />
+            <span className="sr-only">WhatsApp</span>
           </Button>
 
           <div className="relative" ref={menuRef}>

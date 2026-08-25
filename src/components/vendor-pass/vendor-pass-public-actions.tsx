@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Download, Link2, Mail, Printer } from "lucide-react";
+import { ensureSingleShareUrl, openWhatsAppShare } from "@/lib/invitation/whatsapp-share";
 
 /** Official-style WhatsApp glyph so share actions are instantly recognizable. */
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -36,7 +37,10 @@ export function VendorPassPublicActions({
     typeof window !== "undefined"
       ? window.location.href
       : `/vendor-pass/${encodeURIComponent(publicToken)}`;
-  const shareText = `${title}\n${vendorName}\nOpen your pass: ${pageUrl}`;
+  const shareText = ensureSingleShareUrl(
+    `${title}\n${vendorName}\nOpen your pass:`,
+    pageUrl
+  );
   const mailBody = `Your Celeventic vendor access pass for ${eventTitle ?? "the event"}.\n\nPass: ${title}\nVendor: ${vendorName}\n\nOpen your pass: ${pageUrl}`;
 
   const cardDownloadHref = `/api/vendor-pass/qr-image?${new URLSearchParams({
@@ -87,15 +91,17 @@ export function VendorPassPublicActions({
         <Mail className="h-4 w-4" aria-hidden />
         Email
       </a>
-      <a
+      <button
+        type="button"
         className={btn}
-        href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-        target="_blank"
-        rel="noreferrer"
+        onClick={(event) => {
+          event.preventDefault();
+          openWhatsAppShare(shareText);
+        }}
       >
         <WhatsAppIcon className="h-4 w-4" />
         WhatsApp
-      </a>
+      </button>
       <button type="button" className={btn} onClick={() => void copyLink()}>
         <Link2 className="h-4 w-4" aria-hidden />
         {copied ? "Copied" : "Copy link"}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PaginationBar } from "@/components/ui/pagination";
 import { Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,8 +34,9 @@ export interface VendorEntryLogSummary {
   accessLabel: string;
   firstEntryAt: string | null;
   lastEntryAt: string | null;
-  truncated: boolean;
 }
+
+const PAGE_LIMIT = 20;
 
 const CHANNEL_LABELS: Record<string, string> = {
   qr: "QR scan",
@@ -65,31 +67,46 @@ export function VendorEntryLog({
   reloadToken?: number;
   className?: string;
 }) {
+  const [page, setPage] = useState(1);
   const [rows, setRows] = useState<VendorEntryLogRow[]>([]);
   const [summary, setSummary] = useState<VendorEntryLogSummary | null>(null);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setPage(1);
+  }, [passId, reloadToken]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/vendor-passes/${encodeURIComponent(passId)}/history?limit=100`, {
-        cache: "no-store",
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(PAGE_LIMIT),
       });
+      const res = await fetch(
+        `/api/vendor-passes/${encodeURIComponent(passId)}/history?${params.toString()}`,
+        { cache: "no-store" }
+      );
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(json.error ?? "Could not load the entry log");
         return;
       }
-      setRows(json.data?.history ?? []);
+      const history = json.data?.history;
+      setRows(history?.items ?? []);
       setSummary(json.data?.summary ?? null);
+      setPages(history?.pages ?? 1);
+      setTotal(history?.total ?? 0);
     } catch {
       setError("Could not reach the server.");
     } finally {
       setLoading(false);
     }
-  }, [passId]);
+  }, [passId, page]);
 
   useEffect(() => {
     void load();
@@ -179,11 +196,14 @@ export function VendorEntryLog({
               ))}
             </tbody>
           </table>
-          {summary?.truncated && (
-            <p className="mt-2 text-xs text-slate-500">
-              Showing the 100 most recent scans.
-            </p>
-          )}
+          <PaginationBar
+            page={page}
+            pages={pages}
+            total={total}
+            limit={PAGE_LIMIT}
+            onPageChange={setPage}
+            className="mt-2"
+          />
         </div>
       )}
     </div>

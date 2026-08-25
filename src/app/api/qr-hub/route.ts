@@ -19,7 +19,12 @@ export async function GET(req: Request) {
     page: url.searchParams.get("passPage"),
     limit: url.searchParams.get("passLimit") ?? "20",
   });
-  const [guestPasses, guestPassTotal, recentScans] = await Promise.all([
+  const scanPage = parsePaginationInput({
+    page: url.searchParams.get("scanPage"),
+    limit: url.searchParams.get("scanLimit") ?? "20",
+  });
+  const scanWhere = { eventId: guard.eventId };
+  const [guestPasses, guestPassTotal, vendorScans, vendorScanTotal] = await Promise.all([
     prisma.guestPass.findMany({
       where: { eventId: guard.eventId },
       orderBy: { updatedAt: "desc" },
@@ -39,9 +44,10 @@ export async function GET(req: Request) {
     prisma.guestPass.count({ where: { eventId: guard.eventId } }),
     guard.canViewScans
       ? prisma.sharedAccessPassScan.findMany({
-          where: { eventId: guard.eventId },
+          where: scanWhere,
           orderBy: { createdAt: "desc" },
-          take: 25,
+          skip: scanPage.skip,
+          take: scanPage.limit,
           select: {
             id: true,
             result: true,
@@ -53,6 +59,9 @@ export async function GET(req: Request) {
           },
         })
       : Promise.resolve([]),
+    guard.canViewScans
+      ? prisma.sharedAccessPassScan.count({ where: scanWhere })
+      : Promise.resolve(0),
   ]);
 
   return NextResponse.json({
@@ -65,7 +74,12 @@ export async function GET(req: Request) {
         guestPassPage.page,
         guestPassPage.limit
       ),
-      vendorScans: recentScans,
+      vendorScans: paginatedResult(
+        vendorScans,
+        vendorScanTotal,
+        scanPage.page,
+        scanPage.limit
+      ),
       permissions: {
         canManage: guard.canManage,
         canDownload: guard.canDownload,

@@ -4,6 +4,7 @@ import { dispatchJob } from "@/lib/queue";
 import { createAuditLog } from "@/lib/audit";
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 import { getAppUrlFromEnv } from "@/lib/app-url";
+import { collapseDuplicateAbsoluteUrl, ensureSingleShareUrl } from "@/lib/invitation/whatsapp-share";
 import { communicationService } from "@/services/communications/communication.service";
 import { GUEST_IMPORT_DELIVERY_QUEUE } from "./queues";
 
@@ -23,8 +24,26 @@ const MAX_DELIVERY_ATTEMPTS = 3;
 export type SendableChannel = Extract<GuestImportDeliveryChannel, "EMAIL" | "SMS" | "WHATSAPP">;
 
 function personalLink(appUrl: string, uniqueLink: string, qrToken?: string | null): string {
-  const base = `${appUrl}/invite/${uniqueLink}`;
-  return qrToken ? `${base}?guest=${qrToken}` : base;
+  const cleaned = uniqueLink.trim();
+  let base: string;
+  if (/^https?:\/\//i.test(cleaned)) {
+    base = collapseDuplicateAbsoluteUrl(cleaned);
+  } else {
+    const path = cleaned.startsWith("/invite/")
+      ? cleaned
+      : cleaned.startsWith("/")
+        ? cleaned
+        : `/invite/${cleaned}`;
+    base = collapseDuplicateAbsoluteUrl(`${appUrl}${path}`);
+  }
+  if (!qrToken) return base;
+  try {
+    const url = new URL(base);
+    url.searchParams.set("guest", qrToken);
+    return url.toString();
+  } catch {
+    return `${base}${base.includes("?") ? "&" : "?"}guest=${encodeURIComponent(qrToken)}`;
+  }
 }
 
 function defaultBody(params: {
@@ -33,18 +52,20 @@ function defaultBody(params: {
   link: string;
   admissionCode?: string | null;
 }): string {
+  const link = collapseDuplicateAbsoluteUrl(params.link);
   const lines = [
     `Dear ${params.guestName},`,
     "",
     `You are personally invited to ${params.eventTitle}.`,
     "",
-    `Open your invitation: ${params.link}`,
+    "Open your invitation:",
   ];
+  let body = ensureSingleShareUrl(lines.join("\n"), link);
   if (params.admissionCode) {
-    lines.push("", `Your admission code: ${params.admissionCode}`);
+    body += `\n\nYour admission code: ${params.admissionCode}`;
   }
-  lines.push("", "Please keep this link private, it is your entry pass.");
-  return lines.join("\n");
+  body += "\n\nPlease keep this link private, it is your entry pass.";
+  return body;
 }
 
 /**
@@ -153,6 +174,7 @@ export async function queueBatchDeliveries(
     }
 
     if (pending.length > 0) {
+      // Unique (batchId, rowId, channel) is the hard guard; we also skip known rows above.
       await prisma.guestImportDelivery.createMany({ data: pending });
     }
   }
@@ -186,10 +208,18 @@ export async function processDeliveryChunk(
       continue;
     }
 
-    await prisma.guestImportDelivery.update({
-      where: { id: delivery.id },
+    // Atomic claim: concurrent workers must not both send the same WhatsApp.
+    const claimed = await prisma.guestImportDelivery.updateMany({
+      where: {
+        id: delivery.id,
+        status: "QUEUED",
+        attempts: { lt: MAX_DELIVERY_ATTEMPTS },
+      },
       data: { status: "SENDING", attempts: { increment: 1 } },
     });
+    if (claimed.count !== 1) continue;
+
+    const attemptNumber = delivery.attempts + 1;
 
     try {
       if (delivery.channel === "EMAIL") {
@@ -217,16 +247,15 @@ export async function processDeliveryChunk(
       sent++;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      const attempts = delivery.attempts + 1;
       await prisma.guestImportDelivery.update({
         where: { id: delivery.id },
         data: {
-          status: attempts >= MAX_DELIVERY_ATTEMPTS ? "FAILED" : "QUEUED",
+          status: attemptNumber >= MAX_DELIVERY_ATTEMPTS ? "FAILED" : "QUEUED",
           lastError: message.slice(0, 500),
-          failedAt: attempts >= MAX_DELIVERY_ATTEMPTS ? new Date() : null,
+          failedAt: attemptNumber >= MAX_DELIVERY_ATTEMPTS ? new Date() : null,
         },
       });
-      if (attempts >= MAX_DELIVERY_ATTEMPTS) failed++;
+      if (attemptNumber >= MAX_DELIVERY_ATTEMPTS) failed++;
     }
   }
 
