@@ -63,6 +63,7 @@ export function PagedInvitationViewer({ context }: PagedInvitationViewerProps) {
       className="inv-paged-root"
       style={themeToCssVars(theme)}
       {...themeToDataAttrs(theme)}
+      data-inv-category={context.category}
       data-hydrated={hydrated ? "true" : "false"}
       data-tier={tier}
     >
@@ -71,7 +72,7 @@ export function PagedInvitationViewer({ context }: PagedInvitationViewerProps) {
         intensity={theme.motion.intensity}
         scrollContainerRef={containerRef}
       >
-        <div className="inv-paged-scroll" ref={containerRef}>
+        <div className="inv-paged-scroll" ref={containerRef} data-inv-scroller="">
           {pages.map((page, index) => {
             const PageComponent = PAGE_COMPONENTS[page.type];
             return <PageComponent key={page.id} context={context} page={page} index={index} />;
@@ -79,7 +80,7 @@ export function PagedInvitationViewer({ context }: PagedInvitationViewerProps) {
         </div>
         <PageDotRail pages={pages} activeIndex={activeIndex} />
         <PersistentActionBar context={context} visible={activeIndex >= 1} hasRsvpPage={hasRsvpPage} />
-        {activeIndex === 0 && pages.length > 1 && <SwipeHint />}
+        {activeIndex === 0 && pages.length > 1 && <SwipeHint category={context.category} />}
       </MotionProfileProvider>
     </div>
   );

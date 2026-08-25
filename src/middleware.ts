@@ -16,13 +16,16 @@ export default withAuth(
       }
       const isVendorIncomplete =
         (token.accountType === "VENDOR" || role === "VENDOR") && !token.onboardingCompletedAt;
-      const dest = isVendorIncomplete
-        ? "/vendor/onboarding"
-        : !token.onboardingCompletedAt && role !== "VENDOR" && token.accountType !== "VENDOR"
-          ? "/dashboard/getting-started"
-          : role && canAccessAdminPanel(role) && adminViewMode !== "user"
-            ? "/admin"
-            : "/dashboard";
+      const needsAccountIntent = !token.accountType && role !== "VENDOR";
+      const dest = needsAccountIntent
+        ? "/auth/onboarding/intent"
+        : isVendorIncomplete
+          ? "/vendor/onboarding"
+          : !token.onboardingCompletedAt && role !== "VENDOR" && token.accountType !== "VENDOR"
+            ? "/dashboard/getting-started"
+            : role && canAccessAdminPanel(role) && adminViewMode !== "user"
+              ? "/admin"
+              : "/dashboard";
       return NextResponse.redirect(new URL(dest, req.url));
     }
 
@@ -39,6 +42,15 @@ export default withAuth(
     }
 
     const isVendor = token?.accountType === "VENDOR" || role === "VENDOR";
+    const needsAccountIntent = Boolean(token && !token.accountType && !isVendor);
+
+    if (
+      needsAccountIntent &&
+      (path.startsWith("/dashboard") || path.startsWith("/vendor/onboarding"))
+    ) {
+      return NextResponse.redirect(new URL("/auth/onboarding/intent", req.url));
+    }
+
     const vendorOnboardingIncomplete = isVendor && !token?.onboardingCompletedAt;
 
     if (vendorOnboardingIncomplete && path.startsWith("/dashboard") && !path.startsWith("/dashboard/vendor-portal/signup")) {
@@ -49,12 +61,16 @@ export default withAuth(
       token &&
       !token.onboardingCompletedAt &&
       !isVendor &&
+      Boolean(token.accountType) &&
       path.startsWith("/dashboard") &&
       !path.startsWith("/dashboard/getting-started") &&
       !path.startsWith("/dashboard/help");
 
     if (generalOnboardingIncomplete) {
-      return NextResponse.redirect(new URL("/dashboard/getting-started", req.url));
+      const dest = new URL("/dashboard/getting-started", req.url);
+      const intent = req.nextUrl.searchParams.get("intent");
+      if (intent === "join") dest.searchParams.set("intent", "join");
+      return NextResponse.redirect(dest);
     }
 
     if (vendorOnboardingIncomplete && path === "/dashboard/vendor-portal") {

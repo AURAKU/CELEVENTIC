@@ -7,7 +7,7 @@ export default function CataloguePage() {
   return (
     <>
       <HeaderShell />
-      <main className="min-h-screen bg-[#FAF8F4] py-12">
+      <main className="min-h-app-viewport bg-[#FAF8F4] py-12">
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center mb-10">
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#0F172A]">Invitation Catalogue</h1>

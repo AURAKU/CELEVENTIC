@@ -126,12 +126,12 @@ export default function SeatLookupPage() {
     (Boolean(data?.ceremonyAssignment) || Boolean(data?.assignment));
 
   if (!data && !error) {
-    return <PageLoader label="Finding your seat…" className="min-h-screen" />;
+    return <PageLoader label="Finding your seat…" className="min-h-app-viewport" />;
   }
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0F172A] p-6 text-white">
+      <div className="flex min-h-app-viewport items-center justify-center bg-[#0F172A] p-6 text-white">
         <p className="text-center">{error || "Guest not found"}</p>
       </div>
     );
@@ -140,7 +140,7 @@ export default function SeatLookupPage() {
   const { guest, event, assignment } = data;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#0F172A] via-[#0B3D3A] to-[#0F172A] p-6 text-white">
+    <div className="flex min-h-app-viewport flex-col items-center justify-center bg-gradient-to-b from-[#0F172A] via-[#0B3D3A] to-[#0F172A] p-6 text-white">
       <div className="w-full max-w-md space-y-6 text-center">
         <div className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-[#D4A63A]">
           <Sparkles className="h-4 w-4" /> Celeventic Seating

@@ -114,7 +114,11 @@ export function InvitationStudioPreview({
           hasMusic={hasMusic}
           label={tapCopy.label}
           subtitle={tapCopy.subtitle ?? "Full guest experience with reveal and gallery"}
-          steps={previewTapStepsForOpening(openingId, hasMusic)}
+          steps={previewTapStepsForOpening(
+            openingId,
+            hasMusic,
+            musicSelection?.title ?? null
+          )}
           onOpen={(e) => {
             e.preventDefault();
             e.stopPropagation();

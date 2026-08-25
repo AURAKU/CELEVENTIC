@@ -146,6 +146,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "dashboard", key: "nav_events", enValue: "Events", frValue: "Événements" },
   { namespace: "dashboard", key: "nav_ai_planner", enValue: "Event Intelligence", frValue: "Intelligence événementielle" },
   { namespace: "dashboard", key: "nav_design_studio", enValue: "Design Studio", frValue: "Studio de design" },
+  { namespace: "dashboard", key: "nav_business_card", enValue: "Business Card", frValue: "Carte de visite" },
   { namespace: "dashboard", key: "nav_asset_library", enValue: "Asset Library", frValue: "Bibliothèque d'actifs" },
   { namespace: "dashboard", key: "nav_invitations", enValue: "Invitations", frValue: "Invitations" },
   { namespace: "dashboard", key: "nav_my_invitations", enValue: "My Invitations", frValue: "Mes invitations" },
@@ -242,7 +243,7 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "dashboard", key: "nav_collaborations", enValue: "Collaborations", frValue: "Collaborations" },
   { namespace: "dashboard", key: "nav_tasks", enValue: "Tasks", frValue: "Tâches" },
   { namespace: "dashboard", key: "nav_calendar", enValue: "Calendar", frValue: "Calendrier" },
-  { namespace: "dashboard", key: "nav_help", enValue: "Help & Support", frValue: "Aide et support" },
+  { namespace: "dashboard", key: "nav_help", enValue: "Help & Guides", frValue: "Aide et guides" },
   { namespace: "dashboard", key: "mobile_nav_home", enValue: "Home", frValue: "Accueil" },
   { namespace: "dashboard", key: "mobile_nav_events", enValue: "Events", frValue: "Événements" },
   { namespace: "dashboard", key: "mobile_nav_marketplace", enValue: "Marketplace", frValue: "Marketplace" },
@@ -370,7 +371,8 @@ export const EXTRA_TRANSLATIONS: TranslationSeed[] = [
 
   // ── CMS pages (about, faq, contact) ──
   { namespace: "legal", key: "about_desc", enValue: "The Intelligent Event Operating System.", frValue: "Le système d'exploitation événementiel intelligent." },
-  { namespace: "legal", key: "faq_desc", enValue: "Common questions about invitations, tickets, and payments.", frValue: "Questions fréquentes sur invitations, billets et paiements." },
+  { namespace: "legal", key: "faq_desc", enValue: "Celeventic Guide tutorials, Start Here journeys, and common questions.", frValue: "Tutoriels Celeventic Guide, parcours Start Here et questions fréquentes." },
+  { namespace: "legal", key: "faq_title", enValue: "FAQ & Guides", frValue: "FAQ et guides" },
   { namespace: "legal", key: "contact_desc", enValue: "Reach the Celeventic team.", frValue: "Contactez l'équipe Celeventic." },
 
   // ── Loaders & auth layout ──

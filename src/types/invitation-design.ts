@@ -102,6 +102,8 @@ export interface InvitationEventData {
   contactPhone: string | null;
   dressCode: string | null;
   coverImageUrl?: string | null;
+  /** Funeral order field — preferred memorial headline when set. */
+  deceasedName?: string | null;
 }
 
 /**
@@ -169,6 +171,13 @@ export interface InvitationRenderProps {
    * controls even when the place-card feature is off.
    */
   partyAllowance?: number;
+  /**
+   * Existing RSVP for this personalized guest — keeps Kindly Respond on thank-you
+   * across refresh / reopen instead of re-opening Accept.
+   */
+  initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
+  /** Confirmed attending heads when `initialRsvpStatus` is ACCEPTED. */
+  initialAttendingCount?: number | null;
   /**
    * Partial admission → Event Access CTA above the entry-pass QR.
    */

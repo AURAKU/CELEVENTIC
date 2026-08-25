@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import type { VideoCategory } from "@/lib/video/constants";
+import type { VideoOwnerType } from "@prisma/client";
 
 /** Presign/complete/part endpoints are rate-limited per principal to blunt abuse and cost spikes. */
 export async function checkUploadRateLimit(
   action: "presign" | "part" | "complete",
-  ownerKey: string
+  quotaKey: string
 ): Promise<{ allowed: boolean; retryAfterSeconds?: number }> {
   const limits: Record<typeof action, { limit: number; windowSeconds: number }> = {
     presign: { limit: 20, windowSeconds: 60 * 10 },
@@ -13,7 +14,7 @@ export async function checkUploadRateLimit(
     complete: { limit: 30, windowSeconds: 60 * 10 },
   } as const;
   const cfg = limits[action];
-  const result = await rateLimit(`video-upload:${action}:${ownerKey}`, cfg.limit, cfg.windowSeconds);
+  const result = await rateLimit(`video-upload:${action}:${quotaKey}`, cfg.limit, cfg.windowSeconds);
   if (!result.success) {
     return { allowed: false, retryAfterSeconds: Math.max(1, Math.round((result.resetAt - Date.now()) / 1000)) };
   }
@@ -28,15 +29,50 @@ export interface QuotaCheckResult {
   reason?: string;
 }
 
-/** Per-owner daily quota across all categories — prevents a single account from monopolizing MediaConvert spend. */
-export async function checkDailyUploadQuota(ownerId: string, sizeBytes: number): Promise<QuotaCheckResult> {
+export type UploadQuotaScope = {
+  ownerType: VideoOwnerType;
+  /** Real User.id when ownerType is USER. */
+  ownerId: string | null;
+  /** Required when ownerType is GUEST_TOKEN — guest quota is per event. */
+  eventId: string | null;
+};
+
+/**
+ * Daily quota by deliberate scope:
+ * - USER → VideoAsset.ownerId (User FK)
+ * - GUEST_TOKEN → ownerType + eventId (never a fake User.id)
+ */
+export async function checkDailyUploadQuota(
+  scope: UploadQuotaScope,
+  sizeBytes: number
+): Promise<QuotaCheckResult> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const where =
+    scope.ownerType === "GUEST_TOKEN"
+      ? {
+          ownerType: "GUEST_TOKEN" as const,
+          eventId: scope.eventId ?? undefined,
+          createdAt: { gte: since },
+          status: { not: "CANCELLED" as const },
+        }
+      : {
+          ownerId: scope.ownerId ?? undefined,
+          createdAt: { gte: since },
+          status: { not: "CANCELLED" as const },
+        };
+
+  if (scope.ownerType === "GUEST_TOKEN" && !scope.eventId) {
+    return { allowed: false, reason: "Guest upload event is required for quota." };
+  }
+  if (scope.ownerType === "USER" && !scope.ownerId) {
+    return { allowed: false, reason: "Signed-in upload owner is required for quota." };
+  }
+
   const [count, agg] = await Promise.all([
-    prisma.videoAsset.count({
-      where: { ownerId, createdAt: { gte: since }, status: { not: "CANCELLED" } },
-    }),
+    prisma.videoAsset.count({ where }),
     prisma.videoAsset.aggregate({
-      where: { ownerId, createdAt: { gte: since }, status: { not: "CANCELLED" } },
+      where,
       _sum: { sizeBytes: true },
     }),
   ]);
@@ -51,6 +87,6 @@ export async function checkDailyUploadQuota(ownerId: string, sizeBytes: number):
   return { allowed: true };
 }
 
-export function categoryQuotaKey(category: VideoCategory, ownerId: string): string {
-  return `${category}:${ownerId}`;
+export function categoryQuotaKey(category: VideoCategory, quotaKey: string): string {
+  return `${category}:${quotaKey}`;
 }

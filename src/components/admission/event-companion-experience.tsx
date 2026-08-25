@@ -155,7 +155,7 @@ export function EventCompanionExperience({
 
   return (
     <div
-      className={cn(invitationFontVars, "relative min-h-[100dvh] overflow-hidden")}
+      className={cn(invitationFontVars, "relative min-h-app-viewport overflow-x-hidden safe-area-pb")}
       style={{
         ...cssVars,
         color: colors.text,
@@ -184,7 +184,7 @@ export function EventCompanionExperience({
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[540px] flex-col px-5 pb-20 pt-14 sm:px-7 sm:pt-20">
+      <div className="relative z-10 mx-auto flex w-full max-w-[540px] md:max-w-2xl flex-col px-5 pb-[max(5rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))] sm:px-7 sm:pt-20">
         <header className="text-center">
           <p
             className="text-xs uppercase tracking-[0.38em] sm:text-sm"

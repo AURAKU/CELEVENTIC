@@ -1,6 +1,6 @@
 import type { EventGuide, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getServerAppUrl } from "@/lib/app-url";
+import { getAppUrlFromEnv, getServerAppUrl, sanitizePublicUrl } from "@/lib/app-url";
 import { createAuditLog } from "@/lib/audit";
 import { generatePublicLinkToken } from "@/lib/qr-hub/vendor-token";
 import { validateCustomQrDestination } from "@/lib/qr-hub/types";
@@ -484,7 +484,35 @@ export class EventGuideService {
 
   async guideUrl(publicToken: string): Promise<string> {
     const base = await getServerAppUrl();
-    return `${base}/event-guide/${publicToken}`;
+    // Always encode a live HTTPS URL — never localhost — so printed/on-screen
+    // QRs open the production Event Guide on any guest phone camera.
+    const path = `/event-guide/${encodeURIComponent(publicToken)}`;
+    return sanitizePublicUrl(`${base}${path}`, getAppUrlFromEnv());
+  }
+
+  /**
+   * Guest-facing Event Guide path for an event, when a published guide + active
+   * online link exist. Relative path for in-app navigation from invitations.
+   */
+  async publishedGuestPath(eventId: string): Promise<string | null> {
+    const [guide, link] = await Promise.all([
+      prisma.eventGuide.findUnique({
+        where: { eventId },
+        select: { publishedAt: true, publishedVersion: true, publishedPayload: true },
+      }),
+      prisma.eventQrLink.findFirst({
+        where: { eventId, type: "EVENT_GUIDE", status: "ACTIVE" },
+        select: { publicToken: true, expiresAt: true },
+      }),
+    ]);
+
+    if (!guide?.publishedAt || !guide.publishedVersion || !link?.publicToken) return null;
+    if (link.expiresAt && link.expiresAt.getTime() < Date.now()) return null;
+
+    const payload = guide.publishedPayload as unknown as EventGuidePayload | null;
+    if (!payload || payload.format !== EVENT_GUIDE_PAYLOAD_FORMAT) return null;
+
+    return `/event-guide/${encodeURIComponent(link.publicToken)}`;
   }
 
   /** Aggregate counters only — never a per-visitor row. */

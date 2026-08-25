@@ -3,7 +3,8 @@
 import Image from "next/image";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import type { CinematicLayoutSlug } from "@/lib/invitation/cinematic-themes";
-import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
+import { formatInvitationDateParts } from "@/lib/invitation-templates";
+import { resolveHeadlineNames } from "@/lib/invitation/catalog-event-type";
 import { getCinematicTheme } from "@/lib/invitation/cinematic-themes";
 import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
@@ -21,9 +22,16 @@ function InviteBody({
   guestName,
   qrDataUrl,
   entryPass,
+  partyAllowance,
+  initialRsvpStatus,
+  initialAttendingCount,
   variant = "default",
 }: InvitationRenderProps & { variant?: "default" | "dark" | "light" | "neon" | "corporate" }) {
-  const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
+  const { name1, name2 } = resolveHeadlineNames({
+    layout: design.layout,
+    title: event.title,
+    hostName: event.hostName,
+  });
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors } = design;
   const theme = getCinematicTheme(design.layout);
@@ -77,6 +85,9 @@ function InviteBody({
         invitationId={invitation.id}
         guestId={guestId}
         guestName={guestName}
+        partyAllowance={partyAllowance}
+        initialRsvpStatus={initialRsvpStatus}
+        initialAttendingCount={initialAttendingCount}
         accentColor={colors.secondary}
         textColor={colors.text}
         variant={dark ? "dark" : "light"}
@@ -189,11 +200,42 @@ function GoldenIslamicShell(props: ShellProps) {
 
 function MemorialCandleShell(props: ShellProps) {
   const theme = getCinematicTheme(props.slug)!;
+  const hasPortrait = Boolean(
+    props.event.coverImageUrl ||
+      props.design.media?.some((m) => m.role === "hero" || m.role === "background")
+  );
+
   return (
-    <div className="min-h-[100dvh] w-full flex items-center justify-center p-4" style={{ background: theme.background }}>
-      <div className="w-full max-w-md text-center space-y-8 px-8 py-12 border border-stone-700/50 rounded-lg bg-black/40 inv-text-on-dark">
-        <div className="mx-auto w-2 h-12 bg-gradient-to-t from-amber-700 to-amber-200 rounded-full shadow-[0_0_24px_rgba(251,191,36,0.35)]" />
-        <InviteBody {...props} variant="dark" />
+    <div
+      className="relative min-h-[100dvh] w-full flex items-center justify-center p-4 overflow-hidden"
+      style={{ background: theme.background }}
+    >
+      {/* Soft ambient candle glow — solemn depth, not wedding drift */}
+      <div
+        className="pointer-events-none absolute inset-0 animate-pulse opacity-50"
+        aria-hidden
+        style={{
+          background: `radial-gradient(ellipse 70% 50% at 50% 18%, ${theme.accentGlow}, transparent 70%)`,
+        }}
+      />
+      <div className="relative w-full max-w-md overflow-hidden rounded-lg border border-stone-700/50 bg-black/50 shadow-[0_0_60px_rgba(0,0,0,0.45)] inv-text-on-dark">
+        {hasPortrait && (
+          <HeroMedia
+            coverImageUrl={props.event.coverImageUrl}
+            media={props.design.media}
+            animation="fade"
+            layout={props.slug}
+            className="h-48"
+            overlay
+          />
+        )}
+        <div className="px-8 py-12 text-center space-y-8">
+          <div className="relative mx-auto flex h-16 w-8 flex-col items-center justify-end" aria-hidden>
+            <div className="absolute -top-1 h-5 w-3 rounded-full bg-gradient-to-t from-amber-600 via-amber-300 to-yellow-100 blur-[1px] animate-pulse" />
+            <div className="h-12 w-2 rounded-full bg-gradient-to-t from-amber-900 via-amber-700 to-amber-200 shadow-[0_0_28px_rgba(251,191,36,0.45)]" />
+          </div>
+          <InviteBody {...props} variant="dark" />
+        </div>
       </div>
     </div>
   );

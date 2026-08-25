@@ -20,6 +20,7 @@ import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
+import { eventGuideService } from "@/services/event-guide/event-guide.service";
 import { resolveShareOgImage } from "@/lib/social/share-image";
 import { buildShareDescription } from "@/lib/social/share-description";
 import { APP_NAME } from "@/lib/constants";
@@ -42,6 +43,10 @@ import {
 } from "@/lib/invitation/guest-event-details";
 import { isOpenHostInvitation } from "@/services/guest-search/rsvp-self-registration.service";
 import { resolvePostAdmissionEnabled } from "@/lib/admission/canonical-companion";
+import {
+  confirmedAttendingFromParty,
+  rsvpChoiceFromGuest,
+} from "@/lib/invitation/rsvp-persisted-state";
 
 function resolveDesign(invitation: {
   designConfig: unknown;
@@ -325,6 +330,7 @@ export default async function InvitePage({
   const seatingPlan = productionOrder
     ? addonFulfillmentService.hasFeature(productionOrder, "seating_plan")
     : false;
+  const eventGuideUrl = await eventGuideService.publishedGuestPath(event.id).catch(() => null);
   const { musicSelection, hasMusic } = resolveInvitationMusic({
     orderSelection: productionOrder?.musicSelection,
     legacyMusicUrl: productionOrder?.musicPreference,
@@ -429,6 +435,19 @@ export default async function InvitePage({
     entryPass?.partySize ?? placeCard?.party.allowance
   );
 
+  // Keep Kindly Respond on thank-you when this guest already replied.
+  const initialRsvpStatus = personalizedGuest
+    ? rsvpChoiceFromGuest(personalizedGuest)
+    : null;
+  const initialAttendingCount = initialRsvpStatus
+    ? Math.min(
+        partyAllowance,
+        confirmedAttendingFromParty(
+          (invitation.guests ?? []).filter((g) => !("archivedAt" in g && g.archivedAt))
+        )
+      )
+    : null;
+
   const catalogTemplate = productionOrder?.template;
   const revealMode = design.studio?.revealMode;
   const rawBackground = resolveBackgroundMedia(design, catalogTemplate);
@@ -471,6 +490,8 @@ export default async function InvitePage({
         contactPhone: event.contactPhone,
         dressCode: event.dressCode,
         coverImageUrl,
+        deceasedName:
+          (productionOrder as { deceasedName?: string | null } | null)?.deceasedName ?? null,
       }}
       design={design}
       guestId={personalizedGuest?.id}
@@ -483,6 +504,8 @@ export default async function InvitePage({
       entryPass={entryPass}
       placeCard={placeCard}
       partyAllowance={partyAllowance}
+      initialRsvpStatus={initialRsvpStatus}
+      initialAttendingCount={initialAttendingCount}
       guestQrToken={guestQrToken || null}
       seatLookupUrl={seatQrDataUrl ? seatLookupUrl : null}
       companionUrl={companionUrl}
@@ -514,6 +537,7 @@ export default async function InvitePage({
       seatTable={seatTable}
       seatLabel={seatLabel}
       templateSlug={productionOrder?.templateSlug}
+      eventGuideUrl={eventGuideUrl}
     />
   );
 }

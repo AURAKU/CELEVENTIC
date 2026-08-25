@@ -10,6 +10,7 @@ import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { getDefaultDesignConfig } from "@/lib/invitation-templates";
 import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
+import { displayHostNameFromOrder } from "@/lib/invitation/catalog-event-type";
 
 export default function PreviewPage() {
   const router = useRouter();
@@ -40,10 +41,13 @@ export default function PreviewPage() {
     design,
     catalogSlug: (order.templateSlug as string) ?? template?.slug ?? null,
   });
-  const hostName =
-    order.coupleName1 && order.coupleName2
-      ? `${order.coupleName1} & ${order.coupleName2}`
-      : ((order.hostName as string) ?? "Host");
+  const hostName = displayHostNameFromOrder({
+    eventType: order.eventType as string | undefined,
+    hostName: order.hostName as string | undefined,
+    coupleName1: order.coupleName1 as string | undefined,
+    coupleName2: order.coupleName2 as string | undefined,
+    deceasedName: order.deceasedName as string | undefined,
+  });
 
   const previewEvent = {
     title: (order.eventTitle as string) ?? "Your Event",

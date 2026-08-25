@@ -60,6 +60,11 @@ export function PricingDisplay({ plans }: { plans: PricingPlan[] }) {
                 <p className="text-sm text-slate-500">
                   {t("landing.pricing_guests", { n: plan.guests.toLocaleString() })}
                 </p>
+                <p className="text-sm text-slate-500">
+                  {plan.priceGhs === 0
+                    ? `Up to ${plan.invitations.toLocaleString()} invitations`
+                    : `${plan.invitations.toLocaleString()} invitation sends`}
+                </p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-8">
@@ -78,8 +83,26 @@ export function PricingDisplay({ plans }: { plans: PricingPlan[] }) {
                   ))}
                 </ul>
                 <Button className="w-full" variant={plan.popular ? "default" : "outline"} asChild>
-                  <Link href="/auth/register">{t("common.get_started")}</Link>
+                  <Link href={plan.priceGhs === 0 ? "/auth/register" : "/auth/register?plan=" + plan.slug}>
+                    {plan.priceGhs === 0 ? "Start free" : t("common.get_started")}
+                  </Link>
                 </Button>
+                {plan.priceGhs === 0 ? (
+                  <p className="mt-3 text-center text-xs text-slate-500 leading-relaxed">
+                    Enjoy Celeventic with 5 guests and 5 invitations.{" "}
+                    <Link
+                      href="/auth/register?plan=growth"
+                      className="font-semibold text-brand-700 hover:underline"
+                    >
+                      Upgrade anytime
+                    </Link>{" "}
+                    for more capacity.
+                  </p>
+                ) : (
+                  <p className="mt-3 text-center text-xs text-slate-500">
+                    Paid upgrade from Free — more guests, invitations, and features.
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Bronze Star">
+  <defs>
+    <linearGradient id="g24" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#78350F"/>
+      <stop offset="100%" stop-color="#FBBF24"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#g24)"/>
+  <g opacity="0.95"><path d="M64 20 L108 64 L64 108 L20 64 Z" fill="#FBBF24"/><path d="M64 40 L88 64 L64 88 L40 64 Z" fill="#78350F"/></g>
+</svg>

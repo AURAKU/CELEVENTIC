@@ -76,6 +76,19 @@ export const INSPIRATION_IMAGE_COMPRESSION: SmartCompressOptions = {
   minEdge: 1280,
 };
 
+/**
+ * Memory Vault guest photos.
+ * Keep lightbox-grade detail (~2000px matches server large/optimised) while
+ * shrinking multi‑MB phone dumps so uploads stay fast on mobile data.
+ */
+export const MEMORY_VAULT_IMAGE_COMPRESSION: SmartCompressOptions = {
+  maxEdge: 2400,
+  targetBytes: 2_800_000,
+  minQuality: 0.78,
+  startQuality: 0.92,
+  minEdge: 1200,
+};
+
 let webpSupport: boolean | null = null;
 
 /** Whether this browser can *encode* WebP (Safari <16 can decode but not encode). */

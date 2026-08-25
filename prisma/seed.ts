@@ -3,6 +3,7 @@ import { ensurePlatformAccounts } from "../src/lib/auth/ensure-platform-accounts
 import { seedCommerceEngine } from "../src/services/commerce/commerce-seed.service";
 import { translationService } from "../src/services/i18n/translation.service";
 import { invitationBlockService } from "../src/services/invitations/invitation-block.service";
+import { seedCeleventicGuides } from "../src/services/celeventic-guide/guide.service";
 import { seedVendorOs } from "../src/services/vendor-os/vendor-os-seed.service";
 import { slugify } from "../src/lib/utils";
 import { normalizePackageFeatureKeys } from "../src/lib/packages/feature-catalog";
@@ -24,15 +25,15 @@ async function main() {
 
   const packages = [
     {
-      name: "Starter",
+      name: "Free",
       slug: "starter",
-      description: "Perfect for intimate gatherings",
+      description: "Try Celeventic with up to 5 guests and 5 invitations — upgrade anytime",
       price: 0,
-      guestLimit: 50,
-      invitationLimit: 25,
-      ticketLimit: 100,
-      smsCredits: 10,
-      emailCredits: 50,
+      guestLimit: 5,
+      invitationLimit: 5,
+      ticketLimit: 5,
+      smsCredits: 0,
+      emailCredits: 10,
       whatsappCredits: 0,
       sortOrder: 1,
       features: [
@@ -49,9 +50,9 @@ async function main() {
       name: "Growth",
       slug: "growth",
       description: "For growing events and celebrations",
-      price: 199,
-      guestLimit: 200,
-      invitationLimit: 150,
+      price: 299,
+      guestLimit: 100,
+      invitationLimit: 100,
       ticketLimit: 500,
       smsCredits: 100,
       emailCredits: 500,
@@ -77,8 +78,8 @@ async function main() {
       slug: "premium",
       description: "Full-featured event operating system",
       price: 499,
-      guestLimit: 1000,
-      invitationLimit: 1000,
+      guestLimit: 300,
+      invitationLimit: 300,
       ticketLimit: 5000,
       smsCredits: 500,
       emailCredits: 2000,
@@ -93,7 +94,7 @@ async function main() {
       price: 1499,
       guestLimit: 5000,
       invitationLimit: 5000,
-      ticketLimit: 50000,
+      ticketLimit: 5000,
       smsCredits: 5000,
       emailCredits: 10000,
       whatsappCredits: 2000,
@@ -214,8 +215,20 @@ async function main() {
     { slug: "luxury-wedding-invite", schema: { name: "Luxury Wedding Invitation", category: "Wedding", style: "Luxury", productType: "INVITATION", isPremium: false, isFeatured: true, themePreset: "luxury-teal-gold" } },
     { slug: "funeral-memorial", schema: { name: "Funeral Classic Memorial", category: "Funeral", style: "Classic", productType: "INVITATION", isPremium: false, themePreset: "funeral-classic" } },
     { slug: "corporate-conference-flyer", schema: { name: "Corporate Conference Flyer", category: "Corporate", style: "Corporate", productType: "FLYER", isPremium: false, themePreset: "corporate-navy" } },
-    { slug: "premium-event-ticket", schema: { name: "Premium Event Ticket", category: "Ticket", style: "Modern", productType: "TICKET", isPremium: true, price: 29, themePreset: "luxury-teal-gold" } },
+    { slug: "premium-event-ticket", schema: { name: "Premium Event Ticket", category: "Ticket", style: "Modern", productType: "TICKET", isPremium: true, price: 29, themePreset: "luxury-teal-gold", isFeatured: true } },
+    { slug: "concert-night-ticket", schema: { name: "Concert Night Ticket", category: "Ticket", style: "Concert", productType: "TICKET", isPremium: false, themePreset: "concert-violet" } },
+    { slug: "sports-match-ticket", schema: { name: "Sports Match Ticket", category: "Ticket", style: "Sports", productType: "TICKET", isPremium: false, themePreset: "sports-green" } },
+    { slug: "product-launch-ticket", schema: { name: "Product Launch Ticket", category: "Ticket", style: "Launch", productType: "TICKET", isPremium: true, price: 19, themePreset: "launch-slate" } },
+    { slug: "festival-weekend-pass", schema: { name: "Festival Weekend Pass", category: "Ticket", style: "Festival", productType: "TICKET", isPremium: true, price: 19, themePreset: "festival-amber" } },
+    { slug: "comedy-night-ticket", schema: { name: "Comedy Night Ticket", category: "Ticket", style: "Comedy", productType: "TICKET", isPremium: false, themePreset: "comedy-amber" } },
+    { slug: "conference-badge-pass", schema: { name: "Conference Badge Pass", category: "Ticket", style: "Conference", productType: "TICKET", isPremium: false, themePreset: "corporate-navy" } },
+    { slug: "church-program-ticket", schema: { name: "Church Program Ticket", category: "Ticket", style: "Church", productType: "TICKET", isPremium: false, themePreset: "church-purple" } },
     { slug: "elegant-business-card", schema: { name: "Elegant Business Card", category: "Business Card", style: "Minimal", productType: "BUSINESS_CARD", isPremium: false, themePreset: "clean-white-gold" } },
+    { slug: "midnight-executive-card", schema: { name: "Midnight Executive Card", category: "Business Card", style: "Executive", productType: "BUSINESS_CARD", isPremium: true, price: 19, themePreset: "midnight-executive" } },
+    { slug: "gold-folio-card", schema: { name: "Gold Folio Card", category: "Business Card", style: "Luxury", productType: "BUSINESS_CARD", isPremium: true, price: 19, themePreset: "gold-folio" } },
+    { slug: "teal-pulse-card", schema: { name: "Teal Pulse Card", category: "Business Card", style: "Modern", productType: "BUSINESS_CARD", isPremium: false, themePreset: "teal-pulse", isFeatured: true } },
+    { slug: "charcoal-minimal-card", schema: { name: "Charcoal Minimal Card", category: "Business Card", style: "Minimal", productType: "BUSINESS_CARD", isPremium: false, themePreset: "charcoal-minimal" } },
+    { slug: "savannah-warm-card", schema: { name: "Savannah Warm Card", category: "Business Card", style: "Warm", productType: "BUSINESS_CARD", isPremium: false, themePreset: "savannah-warm" } },
     { slug: "kente-wedding-royal", schema: { name: "Traditional Kente Wedding", category: "Wedding", style: "Traditional Ghanaian", productType: "INVITATION", isPremium: true, price: 49, isFeatured: true, themePreset: "traditional-kente" } },
     { slug: "birthday-color-pop", schema: { name: "Birthday Celebration", category: "Birthday", style: "Modern", productType: "FLYER", isPremium: false, themePreset: "birthday-pop" } },
     { slug: "church-purple-gold", schema: { name: "Church Event Invitation", category: "Church", style: "Royal", productType: "INVITATION", isPremium: false, themePreset: "church-purple" } },
@@ -225,9 +238,30 @@ async function main() {
 
   for (const item of designTemplateSchemas) {
     const existing = await prisma.designTemplate.findUnique({ where: { slug: item.slug } });
-    if (existing) continue;
     const baseSchema = SCHEMA_BY_NAME[item.schema.name];
     if (!baseSchema) continue;
+    if (existing) {
+      // Keep ticket (and other studio) layouts in sync with schema upgrades.
+      if (item.schema.productType === "TICKET" || item.schema.productType === "BUSINESS_CARD") {
+        await prisma.designTemplate.update({
+          where: { slug: item.slug },
+          data: {
+            style: item.schema.style,
+            themePreset: item.schema.themePreset,
+            colorPalette: (baseSchema.colorPalette ?? {}) as Prisma.InputJsonValue,
+            fontPairing: (baseSchema.fontPairing ?? {}) as Prisma.InputJsonValue,
+            canvas: baseSchema.canvas as unknown as Prisma.InputJsonValue,
+            blocks: baseSchema.blocks as unknown as Prisma.InputJsonValue,
+            variables: (baseSchema.variables ?? []) as Prisma.InputJsonValue,
+            isPremium: item.schema.isPremium ?? existing.isPremium,
+            price: item.schema.price ?? existing.price,
+            isFeatured: item.schema.isFeatured ?? existing.isFeatured,
+            description: `${item.schema.style} ${item.schema.category} template`,
+          },
+        });
+      }
+      continue;
+    }
     await prisma.designTemplate.create({
       data: {
         slug: item.slug,
@@ -247,7 +281,7 @@ async function main() {
         price: item.schema.price ?? 0,
         isFeatured: item.schema.isFeatured ?? false,
         supportsQr: true,
-        supportsRsvp: true,
+        supportsRsvp: item.schema.productType !== "TICKET" && item.schema.productType !== "BUSINESS_CARD",
         supportsPersonalization: true,
         createdById: superAdminUser.id,
         approvalStatus: "APPROVED",
@@ -317,6 +351,9 @@ async function main() {
 
   await invitationBlockService.seedTemplates();
   console.log("  Block builder: invitation block templates seeded");
+
+  const guideSeed = await seedCeleventicGuides();
+  console.log(`  Celeventic Guide: ${guideSeed.created} created, ${guideSeed.updated} updated (${guideSeed.total} catalog)`);
 }
 
 main()

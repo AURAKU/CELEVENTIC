@@ -8,8 +8,19 @@ import { syncDesignPageBackground } from "@/lib/invitation/studio-media-utils";
 import { getLayoutVisualProfile } from "@/lib/experience/layout-visual-profiles";
 import { getLayoutEnabledTabs } from "@/lib/invitation/layout-template-signatures";
 import { EVENT_TIME_ZONE } from "@/lib/constants";
+import {
+  buildCatalogDemoMemorialVisionBoard,
+  buildCatalogDemoVisionBoard,
+  buildCatalogDemoWeddingBoard,
+} from "@/lib/invitation-mvp/catalog-demo-boards";
+import {
+  CATALOG_DEMO_IDENTITIES,
+  withoutCatalogDashes,
+} from "@/lib/invitation-mvp/catalog-public-copy";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { InvitationDesignConfig, InvitationEventData } from "@/types/invitation-design";
+import type { WeddingBoardContent } from "@/lib/invitation/wedding-board";
+import type { VisionBoardContent } from "@/lib/invitation/vision-board";
 
 /**
  * Demo previews render on the server and hydrate on the client, so this date has to
@@ -41,6 +52,7 @@ type DemoContent = {
   venueName: string;
   landmark: string;
   dressCode?: string;
+  sealInitials?: string;
 };
 
 const CATEGORY_DEMOS: Record<string, DemoContent> = {
@@ -54,7 +66,7 @@ const CATEGORY_DEMOS: Record<string, DemoContent> = {
     dressCode: "Formal · Earth tones welcome",
   },
   Engagement: {
-    title: "Engagement Celebration — Zara & Michael",
+    title: "Engagement Celebration of Zara & Michael",
     hostName: "Zara Ibrahim & Michael Chen",
     message: "Join us as we celebrate our engagement and the journey ahead.",
     invitationName: "Zara & Michael Engagement",
@@ -105,7 +117,7 @@ const CATEGORY_DEMOS: Record<string, DemoContent> = {
     landmark: "Accra",
   },
   Concert: {
-    title: "Live in Accra — Aurora Night",
+    title: "Live in Accra: Aurora Night",
     hostName: "Pulse Live Events",
     message: "An unforgettable evening of live music under the stars.",
     invitationName: "Aurora Night Concert",
@@ -123,128 +135,6 @@ const CATEGORY_DEMOS: Record<string, DemoContent> = {
 };
 
 const DEFAULT_DEMO = CATEGORY_DEMOS.Wedding;
-
-/** Per-layout demo copy so catalogue previews feel distinct */
-const LAYOUT_DEMO_OVERRIDES: Partial<Record<string, Partial<DemoContent>>> = {
-  "classic-gold": {
-    title: "The Union of Adwoa & Kofi",
-    hostName: "Adwoa Serwaa & Kofi Mensah",
-    message: "With golden hearts we invite you to our ivory-and-gold ceremony.",
-    venueName: "Labadi Beach Hotel Ballroom",
-  },
-  "luxury-rings": {
-    title: "Onyx Night — Diana & Samuel",
-    hostName: "Diana Ofori & Samuel Asante",
-    message: "A black-tie evening where two rings become one story.",
-    venueName: "The Octagon, Cantonments",
-    dressCode: "Black tie · Gold accents welcome",
-  },
-  "arch-green": {
-    title: "Beneath the Vine Arch — Efua & Yaw",
-    hostName: "Efua Agyeman & Yaw Boateng",
-    message: "Walk with us through the forest arch into forever.",
-    venueName: "Aburi Botanical Gardens",
-  },
-  "rustic-lace": {
-    title: "Timber & Lace — Abena & Malik",
-    hostName: "Abena Owusu & Malik Ibrahim",
-    message: "Lace, timber, and laughter under open skies.",
-    venueName: "Lake Bosomtwe Retreat",
-  },
-  "boho-hexagon": {
-    title: "Hexagon Reverie — Lena & Jordan",
-    hostName: "Lena Park & Jordan Blake",
-    message: "Soft florals, golden geometry, and barefoot joy.",
-    venueName: "The Wildflower Barn",
-  },
-  "floral-garden": {
-    title: "Secret Garden Vows — Priya & Thomas",
-    hostName: "Priya Sharma & Thomas Reid",
-    message: "Petals fall as we say yes in the hidden garden.",
-    venueName: "Rosewood Conservatory",
-  },
-  "passport-luxe": {
-    title: "Stamped Romance — Ama & Luca",
-    hostName: "Ama Darko & Luca Romano",
-    message: "Your passport to our destination celebration.",
-    venueName: "Santorini Cliff Terrace",
-  },
-  "glass-acrylic": {
-    title: "Frostlight Dreamscape — Noelle & Andre",
-    hostName: "Noelle Chen & Andre Silva",
-    message: "Step through frosted glass into a luminous evening.",
-    venueName: "Skyglass Pavilion",
-  },
-  "royal-emerald-wedding": {
-    title: "Palace Emerald Reign — Queenie & Edmund",
-    hostName: "Queenie Ampofo & Edmund Hastings",
-    message: "Palace gates open for an emerald-and-gold coronation of love.",
-    venueName: "Royal Palm Grand Hall",
-  },
-  "midnight-velvet-reception": {
-    title: "Velvet Midnight Soirée — Isabel & Marcus",
-    hostName: "Isabel Laurent & Marcus Webb",
-    message: "Curtain rises on navy velvet and silver champagne.",
-    venueName: "The Velvet Room, Labone",
-    dressCode: "Cocktail · Midnight palette",
-  },
-  "kente-heritage-union": {
-    title: "Kente Covenant — Akosua & Kwabena",
-    hostName: "Akosua Frimpong & Kwabena Anane",
-    message: "Cloth unfolds, drums pulse — witness our heritage union.",
-    venueName: "Manhyia Palace Gardens",
-  },
-  "floral-garden-romance": {
-    title: "Petal Promise — Hannah & David",
-    hostName: "Hannah Cole & David Mensah",
-    message: "Engagement blooms in a cinematic garden of roses.",
-    venueName: "Petal Grove Estate",
-  },
-  "passport-destination-wedding": {
-    title: "Horizon Boarding Pass — Zuri & Ethan",
-    hostName: "Zuri Adeyemi & Ethan Moore",
-    message: "Boarding now — destination wedding at golden hour.",
-    venueName: "Zanzibar Sunset Deck",
-  },
-  "crystal-acrylic-luxury": {
-    title: "Champagne Crystal — Vivian & Oliver",
-    hostName: "Vivian Steele & Oliver Grant",
-    message: "Glass shimmer, champagne gold, and crystal vows.",
-    venueName: "The Prism Gallery",
-  },
-  "golden-islamic-nikkah": {
-    title: "Nikkah Gold Geometry — Fatima & Hassan",
-    hostName: "Fatima Al-Rashid & Hassan Mensah",
-    message: "With blessings we invite you to our ornamental nikkah.",
-    venueName: "Accra Central Mosque Hall",
-  },
-  "memorial-candle-tribute": {
-    title: "Candlelight Elegy — Rev. Joseph Mensah",
-    hostName: "The Mensah Family",
-    message: "Gather with us in candlelight to honour a faithful life.",
-    venueName: "Holy Trinity Cathedral",
-  },
-  "neon-celebration-party": {
-    title: "Electric Pulse — DJ Nia Live",
-    hostName: "Nia 'Voltage' Adom",
-    message: "Neon lights, bass drops, and birthday energy all night.",
-    venueName: "Pulse Nightclub",
-    dressCode: "Neon · Street luxe",
-  },
-  "corporate-prestige-summit": {
-    title: "Platinum Summit 2026",
-    hostName: "West Africa Business Council",
-    message: "Executive briefing, keynote, and platinum networking.",
-    venueName: "Kempinski Gold Coast City",
-    dressCode: "Business formal",
-  },
-  "custom-media": {
-    title: "Your Canvas — Private Premiere",
-    hostName: "The Owusu Family",
-    message: "Your artwork, your video, our cinematic frame.",
-    venueName: "Private Residence",
-  },
-};
 
 /** Bundled local clips for catalogue previews. */
 const CATEGORY_DEMO_MUSIC: Record<string, { url: string; title: string }> = {
@@ -291,10 +181,25 @@ export function buildDemoMusicSelection(category?: string): MusicSelection {
   };
 }
 
-export function getDemoContentForCategory(category?: string, layoutSlug?: string): DemoContent {
+export function getDemoContentForCategory(category?: string, layoutOrCatalogSlug?: string): DemoContent {
   const base = !category ? DEFAULT_DEMO : CATEGORY_DEMOS[category] ?? DEFAULT_DEMO;
-  const override = layoutSlug ? LAYOUT_DEMO_OVERRIDES[layoutSlug] : undefined;
-  return override ? { ...base, ...override } : base;
+  const override = layoutOrCatalogSlug
+    ? CATALOG_DEMO_IDENTITIES[layoutOrCatalogSlug]
+    : undefined;
+  const merged = override ? { ...base, ...override } : base;
+  return {
+    ...merged,
+    title: withoutCatalogDashes(merged.title),
+    hostName: withoutCatalogDashes(merged.hostName),
+    message: withoutCatalogDashes(merged.message),
+    invitationName: withoutCatalogDashes(merged.invitationName),
+    venueName: withoutCatalogDashes(merged.venueName),
+    landmark: withoutCatalogDashes(merged.landmark),
+    dressCode: merged.dressCode ? withoutCatalogDashes(merged.dressCode) : undefined,
+    sealInitials: merged.sealInitials
+      ? withoutCatalogDashes(merged.sealInitials)
+      : undefined,
+  };
 }
 
 /** Sample guest shown only in catalog / studio live previews — never used on `/invite/{link}`. */
@@ -317,20 +222,73 @@ export function buildLivePreviewProps(
   const preset = getTemplatePreset(layoutSlug);
   const identitySlug = options?.catalogSlug || layoutSlug;
   const baseDesign: InvitationDesignConfig = getDefaultDesignConfig(identitySlug) ?? preset?.config ?? getDefaultDesignConfig(layoutSlug);
-  const demo = getDemoContentForCategory(theme, layoutSlug);
+  const demo = getDemoContentForCategory(theme, identitySlug);
   const enriched = enrichDesignWithExperienceDNA(baseDesign);
   const visual = getLayoutVisualProfile(layoutSlug);
   const layoutTabs = getLayoutEnabledTabs(layoutSlug);
 
+  const eventInstantIso = FUTURE_DATE.toISOString();
+  const contactPhone = "+233 25 766 0734";
+  const demoIdentity = {
+    title: demo.title,
+    hostName: demo.hostName,
+    message: demo.message,
+    venueName: demo.venueName,
+    landmark: demo.landmark,
+    dressCode: demo.dressCode,
+    contactPhone,
+    invitationName: demo.invitationName,
+    sealInitials: demo.sealInitials,
+  };
+
+  const studioBase = enriched.studio ?? {};
+  const existingWeddingBoard = (studioBase as { weddingBoard?: WeddingBoardContent }).weddingBoard;
+  const existingVisionBoard = (studioBase as { visionBoard?: VisionBoardContent }).visionBoard;
+  const needsWeddingDemo =
+    Boolean(existingWeddingBoard) ||
+    layoutSlug === "forever-afaris-wedding" ||
+    identitySlug === "forever-afaris-wedding";
+  const needsVisionDemo =
+    Boolean(existingVisionBoard) ||
+    layoutSlug === "traditional-marriage-ceremony" ||
+    identitySlug === "traditional-marriage-ceremony";
+  const needsMemorialDemo = theme === "Funeral";
+  // Replace client ceremony identity on browse previews; keep envelope/gate/seal chrome.
+  const catalogWeddingBoard = needsWeddingDemo
+    ? {
+        ...(existingWeddingBoard ?? {}),
+        ...buildCatalogDemoWeddingBoard(demoIdentity, eventInstantIso),
+      }
+    : undefined;
+  const catalogVisionBoard = needsMemorialDemo
+    ? {
+        ...(existingVisionBoard ?? {}),
+        ...buildCatalogDemoMemorialVisionBoard(demoIdentity, eventInstantIso, identitySlug),
+      }
+    : needsVisionDemo
+      ? {
+          ...(existingVisionBoard ?? {}),
+          ...buildCatalogDemoVisionBoard(demoIdentity, eventInstantIso),
+        }
+      : undefined;
+
   const design: InvitationDesignConfig = {
     ...enriched,
+    introText:
+      needsMemorialDemo && catalogVisionBoard?.eyebrow
+        ? catalogVisionBoard.eyebrow
+        : enriched.introText,
     experience: {
       ...enriched.experience,
       introEnabled: options?.skipIntro ? false : enriched.experience?.introEnabled ?? true,
       hubMode: enriched.experience?.hubMode ?? "scroll",
       enabledTabs: layoutTabs ?? enriched.experience?.enabledTabs ?? DEFAULT_HUB_TABS,
       ...(theme === "Funeral"
-        ? { environment: "none" as const, environmentIntensity: "none" as const }
+        ? {
+            collectionId: "funeral" as const,
+            environment: "none" as const,
+            environmentIntensity: "none" as const,
+          }
         : {
             environment: enriched.experience?.environment ?? visual.environment,
             environmentIntensity:
@@ -340,8 +298,10 @@ export function buildLivePreviewProps(
           }),
     },
     studio: {
-      ...enriched.studio,
-      fullScreen: enriched.studio?.fullScreen ?? true,
+      ...studioBase,
+      fullScreen: studioBase.fullScreen ?? true,
+      ...(catalogWeddingBoard ? { weddingBoard: catalogWeddingBoard } : {}),
+      ...(catalogVisionBoard ? { visionBoard: catalogVisionBoard } : {}),
     },
   };
 
@@ -350,17 +310,17 @@ export function buildLivePreviewProps(
     hostName: demo.hostName,
     description: demo.message,
     startDate: formatDemoDate(FUTURE_DATE),
-    startDateRaw: FUTURE_DATE.toISOString(),
+    startDateRaw: eventInstantIso,
     venueName: demo.venueName,
     landmark: demo.landmark,
     mapsLink: "https://maps.google.com",
-    contactPhone: "+233 25 766 0734",
+    contactPhone,
     dressCode: demo.dressCode ?? null,
-    coverImageUrl: getDemoHeroUrl(layoutSlug, theme),
+    coverImageUrl: getDemoHeroUrl(layoutSlug, theme, identitySlug),
   };
 
-  const demoGallery = getDemoGalleryUrls(layoutSlug, theme, 6);
-  const themeBg = getDemoBackgroundUrl(layoutSlug, theme);
+  const demoGallery = getDemoGalleryUrls(layoutSlug, theme, 6, identitySlug);
+  const themeBg = getDemoBackgroundUrl(layoutSlug, theme, identitySlug);
 
   const designWithMedia = syncDesignPageBackground(design, themeBg, "image");
 

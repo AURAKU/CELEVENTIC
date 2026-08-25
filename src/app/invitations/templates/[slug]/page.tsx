@@ -11,6 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { catalogService } from "@/services/commerce/catalog.service";
 import { EVENT_TYPES } from "@/lib/constants";
+import {
+  eventTypesForCatalogCategory,
+  resolveOrderEventType,
+} from "@/lib/invitation/catalog-event-type";
 
 export default async function TemplateDetailPage({
   params,
@@ -24,13 +28,15 @@ export default async function TemplateDetailPage({
   const template = getCatalogTemplate(slug);
   if (!template) notFound();
 
-  const eventType = eventTypeParam ?? "WEDDING";
+  const eventType = resolveOrderEventType(template.category, eventTypeParam);
+  const allowedEventTypes = new Set(eventTypesForCatalogCategory(template.category));
+  const eventTypeChoices = EVENT_TYPES.filter((et) => allowedEventTypes.has(et.value));
   const packages = await catalogService.getActivePackages(eventType);
 
   return (
     <>
       <HeaderShell />
-      <main className="min-h-screen bg-[#FAF8F4] py-12">
+      <main className="min-h-app-viewport bg-[#FAF8F4] py-12">
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid lg:grid-cols-2 gap-10 mb-16">
             <div>
@@ -48,21 +54,23 @@ export default async function TemplateDetailPage({
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {EVENT_TYPES.slice(0, 6).map((et) => (
-                  <Link
-                    key={et.value}
-                    href={`/invitations/templates/${slug}?eventType=${et.value}`}
-                    className={`rounded-full px-3 py-1 text-xs font-medium border ${
-                      eventType === et.value
-                        ? "bg-[#0B8A83] text-white border-[#0B8A83]"
-                        : "border-slate-200 text-slate-600 hover:border-[#0B8A83]"
-                    }`}
-                  >
-                    {et.label}
-                  </Link>
-                ))}
-              </div>
+              {eventTypeChoices.length > 1 && (
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {eventTypeChoices.map((et) => (
+                    <Link
+                      key={et.value}
+                      href={`/invitations/templates/${slug}?eventType=${et.value}`}
+                      className={`rounded-full px-3 py-1 text-xs font-medium border ${
+                        eventType === et.value
+                          ? "bg-[#0B8A83] text-white border-[#0B8A83]"
+                          : "border-slate-200 text-slate-600 hover:border-[#0B8A83]"
+                      }`}
+                    >
+                      {et.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
               <Button className="mt-8 bg-[#0B8A83] hover:bg-[#097068]" size="lg" asChild>
                 <Link href={`/invitations/create/start?template=${slug}&package=celebration&eventType=${eventType}`}>
                   Start My Invitation

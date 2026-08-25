@@ -103,9 +103,8 @@ async function main() {
     for (const finding of targets) {
       planned++;
       const action = {
-        eventId: event.id,
-        eventTitle: event.title,
         ...finding,
+        eventTitle: event.title,
       };
 
       if (!apply) {

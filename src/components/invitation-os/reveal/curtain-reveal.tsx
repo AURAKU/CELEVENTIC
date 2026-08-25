@@ -65,13 +65,14 @@ const CURTAIN_THEMES: Record<
     label: "Reveal invitation",
   },
   birthday: {
-    velvet: "#6d28d9",
-    velvetDeep: "#3b0764",
-    fold: "rgba(251, 191, 36, 0.12)",
-    trim: "#fbbf24",
-    hem: "rgba(253, 230, 138, 0.35)",
-    stage: "#1a0a2e",
-    label: "Reveal invitation",
+    // Soft pastel garden curtains — not nightclub purple
+    velvet: "#f9a8d4",
+    velvetDeep: "#f472b6",
+    fold: "rgba(255, 255, 255, 0.28)",
+    trim: "#7dd3fc",
+    hem: "rgba(254, 249, 195, 0.55)",
+    stage: "#fff7ed",
+    label: "Open the party",
   },
   corporate: {
     velvet: "#1e3a5f",

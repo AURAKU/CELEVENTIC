@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/components/commerce/currency-provider";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { FunnelSummaryBar } from "@/components/invitation-mvp/funnel-summary-bar";
+import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
+import { resolveOrderEventType } from "@/lib/invitation/catalog-event-type";
 
 interface AddonRow {
   slug: string;
@@ -39,7 +41,10 @@ export default function AddonsPage() {
         if (Array.isArray(orderRes.data.addonSlugs)) setSelected(orderRes.data.addonSlugs);
         const pkg = orderRes.data.packageSlug as string;
         setPackageSlug(pkg);
-        setEventType(orderRes.data.eventType ?? "WEDDING");
+        const catalog = getCatalogTemplate(orderRes.data.templateSlug as string);
+        setEventType(
+          resolveOrderEventType(catalog?.category, orderRes.data.eventType as string | undefined)
+        );
         setGuestCount(orderRes.data.guestCount ?? undefined);
         const addonRes = await fetch(`/api/commerce/addons?package=${encodeURIComponent(pkg)}`).then((r) => r.json());
         if (addonRes.success) setAddons(addonRes.data);

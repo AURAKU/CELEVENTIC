@@ -35,8 +35,13 @@ export interface VisionBoardContent {
   /**
    * Wax-seal initials / short monogram on the envelope reveal (e.g. "C | J" or "Love").
    * Traditional Marriage Ceremony defaults to "C | J".
+   * Funeral envelopes leave this empty and use `sealEmblem` instead.
    */
   sealInitials?: string;
+  /**
+   * Memorial emblem on funeral wax seals (e.g. ✝, ✿) — never a wedding-style monogram.
+   */
+  sealEmblem?: string;
   /** Designed wax-seal visual style (color/material). Defaults to `classic-peach-pearl`. */
   sealDesign?: SealDesignId;
   /** Seal text font — "auto" keeps the smart monogram/word default. */
@@ -117,7 +122,9 @@ export function normalizeSealInitials(raw?: string | null): string {
 
 /**
  * Resolve wax-seal initials for the envelope reveal.
- * Priority: explicit seal text → couple/host-derived monogram → TM default C | J → fallback.
+ * Priority: explicit seal text → couple/host-derived monogram → memorial honouree →
+ * TM default C | J (traditional marriage only) → fallback.
+ * Funeral events never receive wedding couple monograms or the TM default.
  */
 export function resolveSealInitials(
   raw?: string | null,
@@ -127,10 +134,30 @@ export function resolveSealInitials(
     coupleName1?: string | null;
     coupleName2?: string | null;
     hostName?: string | null;
+    eventCategory?: string | null;
+    eventTitle?: string | null;
+    invitationName?: string | null;
   }
 ): string {
   const normalized = normalizeSealInitials(raw);
-  if (normalized) return normalized;
+  const isFuneral = (opts?.eventCategory ?? "").toLowerCase() === "funeral";
+
+  if (normalized) {
+    // Guard: wedding TM default must never stick on funeral envelopes.
+    if (isFuneral && normalized === TRADITIONAL_MARRIAGE_DEFAULT_SEAL) {
+      return "";
+    }
+    // Funeral envelopes never use wedding-style pipe monograms (A | B).
+    if (isFuneral && /^[A-ZÀ-ÿ]\s*\|\s*[A-ZÀ-ÿ]$/i.test(normalized)) {
+      return "";
+    }
+    return normalized;
+  }
+
+  if (isFuneral) {
+    // Wax seal + emblem path — no couple/honouree letter monogram on the envelope.
+    return "";
+  }
 
   const derived = deriveCoupleSealInitials(
     opts?.coupleName1,
@@ -151,9 +178,113 @@ function firstNameLetter(name?: string | null): string {
   const cleaned = name.replace(/[^a-zA-ZÀ-ÿ\s'-]/g, " ").trim();
   if (!cleaned) return "";
   const parts = cleaned.split(/\s+/).filter(Boolean);
-  const skip = new Set(["and", "the", "&", "mr", "mrs", "ms", "dr", "sir", "lady"]);
+  const skip = new Set([
+    "and",
+    "the",
+    "&",
+    "mr",
+    "mrs",
+    "ms",
+    "miss",
+    "dr",
+    "prof",
+    "professor",
+    "rev",
+    "reverend",
+    "nana",
+    "deacon",
+    "deaconess",
+    "sir",
+    "lady",
+    "chief",
+    "obeahene",
+    "ohemaa",
+  ]);
   const word = parts.find((p) => !skip.has(p.toLowerCase().replace(/\./g, "")));
   return word ? word.charAt(0).toUpperCase() : "";
+}
+
+/**
+ * Significant name tokens for memorial seals (skips honorifics and filler).
+ */
+function memorialNameTokens(name?: string | null): string[] {
+  if (!name) return [];
+  const cleaned = name.replace(/[^a-zA-ZÀ-ÿ\s'-]/g, " ").trim();
+  if (!cleaned) return [];
+  const skip = new Set([
+    "and",
+    "the",
+    "&",
+    "of",
+    "for",
+    "mr",
+    "mrs",
+    "ms",
+    "miss",
+    "dr",
+    "prof",
+    "professor",
+    "rev",
+    "reverend",
+    "nana",
+    "deacon",
+    "deaconess",
+    "sir",
+    "lady",
+    "chief",
+  ]);
+  return cleaned
+    .split(/\s+/)
+    .map((p) => p.replace(/\./g, ""))
+    .filter((p) => p && !skip.has(p.toLowerCase()));
+}
+
+/**
+ * Pull the honouree / deceased name from funeral invitation titles.
+ * Never treats family-host strings as a wedding couple.
+ */
+export function extractHonoureeName(title?: string | null, invitationName?: string | null): string {
+  const raw = (title || invitationName || "").trim();
+  if (!raw) return "";
+  const patterns = [
+    /in\s+loving\s+memory\s+of\s+(.+)$/i,
+    /homegoing\s+celebration\s+for\s+(.+)$/i,
+    /final\s+funeral\s+rites\s+for\s+(.+)$/i,
+    /final\s+rites\s+for\s+(.+)$/i,
+    /funeral\s+rites\s+for\s+(.+)$/i,
+    /one\s+week\s+(?:observance|vigil)\s+for\s+(.+)$/i,
+    /tribute\s+for\s+(.+)$/i,
+    /memorial\s+for\s+(.+)$/i,
+  ];
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    if (match?.[1]) return match[1].trim();
+  }
+  return raw
+    .replace(/^(in\s+memory\s+of|memorial|tribute)\s+/i, "")
+    .trim();
+}
+
+/**
+ * Memorial wax-seal initials from the honouree (given + surname), never a wedding couple.
+ * Example: "Nana Kwaku Agyeman" → "K | A".
+ */
+export function deriveMemorialSealInitials(
+  title?: string | null,
+  invitationName?: string | null,
+  fallbackWord = "Rest"
+): string {
+  const honouree = extractHonoureeName(title, invitationName);
+  const tokens = memorialNameTokens(honouree);
+  if (tokens.length >= 2) {
+    return formatPipeMonogram(`${tokens[0].charAt(0)}${tokens[tokens.length - 1].charAt(0)}`);
+  }
+  if (tokens.length === 1) {
+    const word = tokens[0];
+    if (word.length >= 2) return formatPipeMonogram(word.slice(0, 2));
+    return word.charAt(0).toUpperCase();
+  }
+  return normalizeSealInitials(fallbackWord) || "Rest";
 }
 
 /**
@@ -204,6 +335,7 @@ export const DEFAULT_VISION_BOARD: Required<
   coupleName1: "JEFFERY OWURAKU AFARI",
   coupleName2: "FRANCISCA CHELSY SERWAAH OPOKU",
   sealInitials: TRADITIONAL_MARRIAGE_DEFAULT_SEAL,
+  sealEmblem: "",
   sealDesign: DEFAULT_SEAL_DESIGN,
   sealFontFamily: "auto",
   sealSize: "md",

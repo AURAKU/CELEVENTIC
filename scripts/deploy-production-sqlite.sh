@@ -153,8 +153,12 @@ fk="$(sqlite3 "$DB_PATH" 'PRAGMA foreign_key_check;')"
 [[ -z "$fk" ]] || die "post-migrate foreign_key_check failed"
 
 rm -rf .next
+export CELEVENTIC_BUILD_COMMIT="$NEW_COMMIT"
+export CELEVENTIC_BUILD_BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+node scripts/write-build-meta.mjs
 npm run build
 [[ -f .next/BUILD_ID ]] || die ".next/BUILD_ID missing after build"
+[[ -f .next/celeventic-build-meta.json ]] || die ".next/celeventic-build-meta.json missing after build"
 
 # TransformStream race probe (nodejs/node#62036). Warn on vulnerable Node; do not block deploy
 # unless CELEVENTIC_REQUIRE_SAFE_NODE=1. Permanent fix: bash scripts/upgrade-node-transformstream-fix.sh
@@ -177,7 +181,12 @@ systemctl reload nginx
 
 sleep 2
 curl -fsS "$HEALTH_LOCAL" >/dev/null
+bash scripts/verify-build-commit.sh "$NEW_COMMIT" "$HEALTH_LOCAL" || die "Local build integrity check failed"
 curl -fsS "$HEALTH_PUBLIC" >/dev/null || log "Public health check failed (DNS/firewall?) — local health passed"
+if curl -fsS "$HEALTH_PUBLIC" >/dev/null 2>&1; then
+  bash scripts/verify-build-commit.sh "$NEW_COMMIT" "$HEALTH_PUBLIC" \
+    || die "Public health commit mismatch — deployed process is stale or wrong host"
+fi
 
 trap - ERR
 log "Deploy succeeded"

@@ -12,6 +12,12 @@ import {
   sampleImageContrastMode,
   type ImageContrastMode,
 } from "@/lib/media/image-contrast";
+import {
+  parseMemorialNameCard,
+  resolveDeceasedName,
+  resolveFuneralCoverCopy,
+} from "@/lib/invite-blueprints/funeral-invitation-copy";
+import type { InvitationEventData } from "@/types/invitation-design";
 import styles from "./tap-to-begin-experience.module.css";
 
 const EXIT_MS = 480;
@@ -29,6 +35,8 @@ export interface TapToBeginExperienceProps {
   atmosphereUrl?: string | null;
   /** design.introText or ceremony label */
   ceremonyLabel?: string | null;
+  /** Invitation display name — used as funeral honouree when title is generic. */
+  invitationName?: string | null;
   name1?: string | null;
   name2?: string | null;
   layoutSlug?: string;
@@ -48,6 +56,8 @@ export interface TapToBeginExperienceProps {
    * "on"/"off" let the studio override that per invitation.
    */
   scrim?: "auto" | "on" | "off";
+  /** Catalogue tile poster — absolute fill, no interaction, no motion. */
+  staticPreview?: boolean;
 }
 
 const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale"]>, number> = {
@@ -56,6 +66,17 @@ const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale
   spacious: 1.2,
   bold: 1.4,
 };
+
+function isFuneralExperience(layoutSlug?: string, category?: string): boolean {
+  const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
+  return (
+    category === "funeral" ||
+    hay.includes("memorial") ||
+    hay.includes("funeral") ||
+    hay.includes("candle") ||
+    hay.includes("tribute")
+  );
+}
 
 /** Templates whose welcome art is a busy, multi-color pattern (kente/Ankara, etc.), legibility plate defaults on. */
 function isPatternedWelcomeLayout(layoutSlug?: string, category?: string): boolean {
@@ -66,6 +87,10 @@ function isPatternedWelcomeLayout(layoutSlug?: string, category?: string): boole
     hay.includes("ankara") ||
     hay.includes("kitenge")
   );
+}
+
+function shouldAutoScrim(layoutSlug?: string, category?: string): boolean {
+  return isPatternedWelcomeLayout(layoutSlug, category) || isFuneralExperience(layoutSlug, category);
 }
 
 type EventBeat = {
@@ -97,7 +122,7 @@ function resolveEventBeat(input: {
   if (hay.includes("traditional-marriage")) {
     return { eyebrow: "TRADITIONAL", script: "Marriage Ceremony" };
   }
-  if (hay.includes("memorial") || hay.includes("funeral") || hay.includes("candle") || hay.includes("tribute")) {
+  if (isFuneralExperience(input.layoutSlug, input.category)) {
     return { plain: "In Loving Memory" };
   }
   if (input.eventTitle?.trim()) return { plain: input.eventTitle.trim() };
@@ -115,10 +140,7 @@ function titleCase(s: string): string {
 function resolveBeginVerb(layoutSlug?: string, category?: string): string {
   const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
   if (
-    hay.includes("memorial") ||
-    hay.includes("funeral") ||
-    hay.includes("tribute") ||
-    hay.includes("candle") ||
+    isFuneralExperience(layoutSlug, category) ||
     hay.includes("concert") ||
     hay.includes("neon") ||
     hay.includes("party") ||
@@ -168,17 +190,6 @@ function TapGlyph() {
   );
 }
 
-const ORBS = [
-  { left: "12%", top: "18%", size: 7, color: "gold", delay: "0s" },
-  { left: "78%", top: "22%", size: 5, color: "accent", delay: "0.4s" },
-  { left: "22%", top: "72%", size: 6, color: "gold", delay: "0.9s" },
-  { left: "68%", top: "68%", size: 4, color: "accent", delay: "1.2s" },
-  { left: "48%", top: "14%", size: 3, color: "ivory", delay: "0.2s" },
-  { left: "88%", top: "48%", size: 5, color: "gold", delay: "1.6s" },
-  { left: "8%", top: "48%", size: 4, color: "ivory", delay: "0.7s" },
-  { left: "55%", top: "80%", size: 6, color: "accent", delay: "1.1s" },
-];
-
 /**
  * Music-unlock gate, cinematic, content-aware, single begin action.
  * One brand beat · one event beat · one CTA. No “touch anywhere” stack.
@@ -192,6 +203,7 @@ export function TapToBeginExperience({
   backgroundColor,
   atmosphereUrl,
   ceremonyLabel,
+  invitationName,
   name1,
   name2,
   layoutSlug,
@@ -201,8 +213,9 @@ export function TapToBeginExperience({
   textColorOverride,
   accentColorOverride,
   scrim = "auto",
+  staticPreview = false,
 }: TapToBeginExperienceProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() || staticPreview;
   const [exiting, setExiting] = useState(false);
   const completed = useRef(false);
   const exitingRef = useRef(false);
@@ -256,6 +269,39 @@ export function TapToBeginExperience({
     [name1, name2, eventTitle, hostName, layoutSlug, category]
   );
 
+  const isFuneral = useMemo(
+    () => isFuneralExperience(layoutSlug, category),
+    [layoutSlug, category]
+  );
+
+  const funeralMemorial = useMemo(() => {
+    if (!isFuneral) return null;
+    const preferred =
+      name1?.trim() ||
+      invitationName?.trim() ||
+      null;
+    const eventStub: InvitationEventData = {
+      title: eventTitle ?? "",
+      hostName: hostName ?? "",
+      description: null,
+      startDate: "",
+      venueName: null,
+      landmark: null,
+      mapsLink: null,
+      contactPhone: null,
+      dressCode: null,
+      deceasedName: preferred,
+    };
+    const copy = resolveFuneralCoverCopy(eventStub, ceremonyLabel, invitationName, preferred);
+    const name = resolveDeceasedName(eventStub, invitationName, preferred);
+    const lines = parseMemorialNameCard(name);
+    const subtitle =
+      copy.subtitle && copy.subtitle !== name && copy.subtitle !== copy.eyebrow
+        ? copy.subtitle
+        : null;
+    return { name, subtitle, lines };
+  }, [isFuneral, eventTitle, hostName, ceremonyLabel, name1, invitationName]);
+
   // When the couple is the hero signal, don't also print a ceremony title above
   // them — that was duplicating shortened first names with full legal names.
   const showEventBeat = Boolean(
@@ -265,10 +311,13 @@ export function TapToBeginExperience({
   // A lone "BEGIN" floating over a photo reads as decorative type, not a control, // guests need the verb ("tap") spelled out so the gesture is obvious on first look.
   const beginVerb = resolveBeginVerb(layoutSlug, category);
   const ctaText = `Tap to ${beginVerb}`;
-  const scrimActive = scrim === "on" || (scrim === "auto" && isPatternedWelcomeLayout(layoutSlug, category));
+  const scrimActive = scrim === "on" || (scrim === "auto" && shouldAutoScrim(layoutSlug, category));
   const stageClass = [styles.stage, scrimActive ? styles.plate : ""].filter(Boolean).join(" ");
   const showHostFallback =
-    !couple && Boolean(hostName?.trim()) && hostName!.trim() !== eventTitle?.trim();
+    !couple &&
+    !funeralMemorial &&
+    Boolean(hostName?.trim()) &&
+    hostName!.trim() !== eventTitle?.trim();
 
   const finish = useCallback(() => {
     if (completed.current) return;
@@ -292,6 +341,7 @@ export function TapToBeginExperience({
   }, []);
 
   useEffect(() => {
+    if (staticPreview) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
@@ -300,55 +350,56 @@ export function TapToBeginExperience({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [beginExit]);
+  }, [beginExit, staticPreview]);
+
+  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation${
+    couple
+      ? `, ${couple.name1} and ${couple.name2}`
+      : funeralMemorial
+        ? `, in loving memory of ${funeralMemorial.name}`
+        : beat.plain || [beat.eyebrow, beat.script].filter(Boolean).join(" ")
+          ? `, ${beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")}`
+          : ""
+  }`;
 
   const rootClass = [
     styles.root,
+    staticPreview ? styles.rootEmbedded : "",
     invitationFontVars,
     "invite-viewport-live",
-    "safe-area-pt",
-    "safe-area-pb",
-    "safe-area-pl",
-    "safe-area-pr",
+    staticPreview ? "" : "safe-area-pt safe-area-pb safe-area-pl safe-area-pr",
     reduceMotion ? styles.static : "",
     exiting ? styles.exiting : "",
   ]
     .filter(Boolean)
     .join(" ");
 
-  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation${
-    couple
-      ? `, ${couple.name1} and ${couple.name2}`
-      : beat.plain || [beat.eyebrow, beat.script].filter(Boolean).join(" ")
-        ? `, ${beat.plain ?? [beat.eyebrow, beat.script].filter(Boolean).join(" ")}`
-        : ""
-  }`;
+  const shellProps = {
+    className: rootClass,
+    onClick: staticPreview ? undefined : beginExit,
+    "aria-label": staticPreview ? undefined : ariaLabel,
+    "data-contrast": contrastMode,
+    style: {
+      ["--tap-accent" as string]: accent,
+      ["--tap-gold" as string]: gold,
+      ["--tap-scale" as string]: scaleValue,
+      ...(textColorOverride?.trim() ? { ["--tap-ivory" as string]: textColorOverride.trim() } : null),
+      ...(fontFamily?.trim() ? { ["--tap-font-family" as string]: fontFamily.trim() } : null),
+      ...(exiting && backgroundColor
+        ? {
+            background: `linear-gradient(180deg, #061018 0%, ${backgroundColor} 120%)`,
+          }
+        : null),
+    } as CSSProperties,
+  };
 
-  return (
-    <button
-      type="button"
-      className={rootClass}
-      onClick={beginExit}
-      aria-label={ariaLabel}
-      data-contrast={contrastMode}
-      style={
-        {
-          ["--tap-accent" as string]: accent,
-          ["--tap-gold" as string]: gold,
-          ["--tap-scale" as string]: scaleValue,
-          ...(textColorOverride?.trim() ? { ["--tap-ivory" as string]: textColorOverride.trim() } : null),
-          ...(fontFamily?.trim() ? { ["--tap-font-family" as string]: fontFamily.trim() } : null),
-          ...(exiting && backgroundColor
-            ? {
-                background: `linear-gradient(180deg, #061018 0%, ${backgroundColor} 120%)`,
-              }
-            : null),
-        } as CSSProperties
-      }
-    >
-      <p className={styles.srStatus} aria-live="polite">
-        {ariaLabel}
-      </p>
+  const stageContent = (
+    <>
+      {!staticPreview ? (
+        <p className={styles.srStatus} aria-live="polite">
+          {ariaLabel}
+        </p>
+      ) : null}
 
       <div className={styles.hero} aria-hidden>
         {hero ? (
@@ -366,30 +417,6 @@ export function TapToBeginExperience({
         )}
       </div>
       <div className={styles.grade} aria-hidden />
-
-      {!reduceMotion ? (
-        <div className={styles.bokeh} aria-hidden>
-          {ORBS.map((orb, i) => (
-            <span
-              key={i}
-              className={styles.orb}
-              style={{
-                left: orb.left,
-                top: orb.top,
-                width: orb.size,
-                height: orb.size,
-                animationDelay: orb.delay,
-                background:
-                  orb.color === "gold"
-                    ? gold
-                    : orb.color === "accent"
-                      ? accent
-                      : "rgba(250, 248, 244, 0.7)",
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
 
       <div className={stageClass}>
         {showEventBeat ? (
@@ -411,6 +438,36 @@ export function TapToBeginExperience({
               <span className={styles.coupleName}>{couple.name2}</span>
             </p>
           </div>
+        ) : funeralMemorial ? (
+          <div className={styles.memorialNameCard}>
+            <span className={styles.memorialNameCardRule} aria-hidden />
+            <div className={styles.memorialNameStack}>
+              {funeralMemorial.lines.honorific ? (
+                <p className={styles.memorialHonorific}>{funeralMemorial.lines.honorific}</p>
+              ) : null}
+              <p className={styles.memorialName}>{funeralMemorial.lines.primary}</p>
+              {funeralMemorial.lines.aka || funeralMemorial.lines.years ? (
+                <p className={styles.memorialAka}>
+                  {funeralMemorial.lines.aka ? (
+                    <span className={styles.memorialAkaLabel}>
+                      A.K.A {funeralMemorial.lines.aka}
+                    </span>
+                  ) : null}
+                  {funeralMemorial.lines.aka && funeralMemorial.lines.years ? (
+                    <span className={styles.memorialAkaDot} aria-hidden>
+                      ·
+                    </span>
+                  ) : null}
+                  {funeralMemorial.lines.years ? (
+                    <span className={styles.memorialYears}>{funeralMemorial.lines.years}</span>
+                  ) : null}
+                </p>
+              ) : funeralMemorial.subtitle ? (
+                <p className={styles.memorialSubtitle}>{funeralMemorial.subtitle}</p>
+              ) : null}
+            </div>
+            <span className={styles.memorialNameCardRule} aria-hidden />
+          </div>
         ) : showHostFallback ? (
           <p className={styles.hostLine}>{hostName}</p>
         ) : null}
@@ -422,11 +479,27 @@ export function TapToBeginExperience({
             </span>
             <span className={styles.ctaWord}>{ctaText}</span>
           </span>
-          <span className={styles.ctaHint} aria-hidden>
-            or press Enter
-          </span>
+          {!staticPreview ? (
+            <span className={styles.ctaHint} aria-hidden>
+              or press Enter
+            </span>
+          ) : null}
         </div>
       </div>
+    </>
+  );
+
+  if (staticPreview) {
+    return (
+      <div {...shellProps} role="img" aria-hidden>
+        {stageContent}
+      </div>
+    );
+  }
+
+  return (
+    <button type="button" {...shellProps}>
+      {stageContent}
     </button>
   );
 }

@@ -40,7 +40,7 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
   if (!page) notFound();
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-5 py-12">
+    <main className="mx-auto flex min-h-app-viewport w-full max-w-lg flex-col justify-center px-5 py-12">
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_10px_40px_rgba(15,23,42,0.08)]">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{APP_NAME}</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">{page.event.title}</h1>

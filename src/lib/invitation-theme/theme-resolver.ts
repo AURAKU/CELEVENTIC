@@ -63,6 +63,7 @@ export function themeToCssVars(theme: InvitationThemeTokens): InvitationThemeCss
     "--inv-color-ink": theme.color.ink,
     "--inv-color-ink-muted": theme.color.inkMuted,
     "--inv-color-overlay": theme.color.overlay,
+    "--inv-color-on-media": theme.color.ink,
     "--inv-font-display": FONT_STACKS[theme.typography.displayFont],
     "--inv-font-body": FONT_STACKS[theme.typography.bodyFont],
     "--inv-font-script": FONT_STACKS[theme.typography.scriptFont],

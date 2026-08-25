@@ -124,7 +124,7 @@ async function resolveStudioInvitation(eventId: string) {
 
   const preferred =
     invitations.find((row) => row.postAdmissionEnabled) ??
-    invitations.find((row) => row.status === "PUBLISHED" || row.status === "ACTIVE") ??
+    invitations.find((row) => row.status === "ACTIVE") ??
     invitations[0];
 
   return { invitation: preferred!, productionOrder: null };
@@ -414,7 +414,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   });
 
   if (designChanged && productionOrder) {
-    const orderDesign = (productionOrder.designConfig ?? {}) as InvitationDesignConfig;
+    const orderDesign = (productionOrder.designConfig ?? {}) as unknown as InvitationDesignConfig;
     const orderStudio = {
       ...((orderDesign.studio as Record<string, unknown> | undefined) ?? {}),
       weddingBoard: (nextDesign.studio as { weddingBoard?: unknown } | undefined)?.weddingBoard,

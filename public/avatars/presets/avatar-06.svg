@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Lagoon Glow">
+  <defs>
+    <linearGradient id="g06" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#99F6E4"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#g06)"/>
+  <g opacity="0.95"><path d="M32 72 Q64 20 96 72 Q64 104 32 72" fill="#99F6E4"/><circle cx="64" cy="64" r="10" fill="#0F766E"/></g>
+</svg>

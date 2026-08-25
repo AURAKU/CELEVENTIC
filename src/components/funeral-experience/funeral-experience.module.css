@@ -1,0 +1,619 @@
+/**
+ * Funeral Experience shell + ceremonial motion.
+ * Dignity over spectacle. Reduced-motion collapses to fades.
+ */
+
+.shell {
+  --funeral-motion-speed: 1;
+  min-height: 100dvh;
+  background: var(--funeral-bg);
+  color: var(--funeral-text);
+  font-family: var(--funeral-body-font);
+}
+
+.shell[data-motion="none"] {
+  --funeral-motion-speed: 0;
+}
+
+.shell[data-motion="minimal"] {
+  --funeral-motion-speed: 0.35;
+}
+
+.shell[data-motion="gentle"] {
+  --funeral-motion-speed: 0.7;
+}
+
+.shell[data-motion="ceremonial"] {
+  --funeral-motion-speed: 1;
+}
+
+.shell[data-motion="cinematic"] {
+  --funeral-motion-speed: 1.15;
+}
+
+.heading {
+  font-family: var(--funeral-heading-font);
+  color: var(--funeral-primary);
+  letter-spacing: -0.02em;
+}
+
+.script {
+  font-family: var(--funeral-script-font);
+  color: var(--funeral-secondary);
+  font-weight: 400;
+}
+
+.gold {
+  color: var(--funeral-gold);
+}
+
+.muted {
+  color: var(--funeral-muted);
+}
+
+.surface {
+  background: var(--funeral-surface);
+  border: 1px solid var(--funeral-border);
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--funeral-gold);
+  background: var(--funeral-primary);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.btnPrimary:hover {
+  opacity: 0.92;
+}
+
+.btnPrimary:active {
+  transform: scale(0.98);
+}
+
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--funeral-border);
+  background: transparent;
+  color: var(--funeral-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.divider {
+  height: 1px;
+  width: min(12rem, 40%);
+  margin: 1rem auto;
+  background: linear-gradient(90deg, transparent, var(--funeral-gold), transparent);
+}
+
+/* —— Intro overlay —— */
+.introRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: #050505;
+  color: #f5f0e8;
+  text-align: center;
+}
+
+.introFlame {
+  width: 3px;
+  height: 48px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 20%, #fff7ed, #fbbf24 40%, #b45309 80%);
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.55);
+  animation: funeral-flame calc(2.4s / var(--funeral-motion-speed, 1)) ease-in-out infinite;
+}
+
+@keyframes funeral-flame {
+  0%,
+  100% {
+    transform: scaleY(1) translateY(0);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scaleY(1.12) translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.introClouds {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.18), transparent 50%),
+    radial-gradient(ellipse at 70% 40%, rgba(255, 248, 230, 0.12), transparent 45%),
+    linear-gradient(180deg, #1a1a1a 0%, #2a241c 100%);
+  pointer-events: none;
+}
+
+.introTextile {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 12px,
+      rgba(212, 175, 55, 0.15) 12px,
+      rgba(212, 175, 55, 0.15) 14px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 18px,
+      rgba(185, 28, 28, 0.12) 18px,
+      rgba(185, 28, 28, 0.12) 20px
+    );
+  pointer-events: none;
+}
+
+.introControls {
+  position: absolute;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 0 1rem;
+}
+
+/* —— Hero —— */
+.hero {
+  position: relative;
+  padding: 2.5rem 1.25rem 2rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.portraitFrame {
+  width: min(220px, 58vw);
+  aspect-ratio: 3 / 4;
+  margin: 0 auto 1.25rem;
+  border-radius: 999px 999px 48% 48%;
+  border: 3px solid var(--funeral-frame);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  background: var(--funeral-surface);
+}
+
+.portraitFrame[data-shape="oval"] {
+  border-radius: 50% / 42%;
+}
+
+.portraitFrame[data-shape="circle"] {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.portraitFrame[data-shape="rect"] {
+  border-radius: 1rem;
+  aspect-ratio: 3 / 4;
+}
+
+.portraitImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ageBadge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0.75rem auto 0;
+  border-radius: 50%;
+  border: 2px solid var(--funeral-gold);
+  color: var(--funeral-primary);
+  font-family: var(--funeral-heading-font);
+  line-height: 1.05;
+}
+
+.ageBadge small {
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--funeral-muted);
+}
+
+.ageBadge strong {
+  font-size: 1.25rem;
+}
+
+/* —— Programme —— */
+.programmeList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.programmeItem {
+  position: relative;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--funeral-border);
+  background: var(--funeral-surface);
+}
+
+.programmeItem::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--funeral-gold);
+}
+
+.programmeDay {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--funeral-gold);
+  font-weight: 700;
+}
+
+.programmeTitle {
+  margin-top: 0.25rem;
+  font-family: var(--funeral-heading-font);
+  font-size: 1.05rem;
+  color: var(--funeral-primary);
+}
+
+/* —— Dress code —— */
+.dressGrid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .dressGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.dressCard {
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--funeral-border);
+  background: var(--funeral-surface);
+  text-align: center;
+}
+
+.swatches {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.65rem 0 0.35rem;
+}
+
+.swatch {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* —— Intro variants —— */
+.introCandleBg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 70%, rgba(180, 83, 9, 0.18), transparent 55%), #050505;
+  pointer-events: none;
+}
+
+.introMinimalBg {
+  position: absolute;
+  inset: 0;
+  background: #f7f3ec;
+  pointer-events: none;
+}
+
+.introRoot[data-intro="minimal-memorial"] {
+  color: #2c1810;
+  background: #f7f3ec;
+}
+
+.introJourneyBg {
+  position: absolute;
+  inset: 0;
+  background: #0c0a09;
+  pointer-events: none;
+}
+
+.introFloral {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(201, 123, 132, 0.22), transparent 28%),
+    radial-gradient(circle at 92% 88%, rgba(122, 31, 61, 0.18), transparent 30%),
+    linear-gradient(180deg, #1a1214 0%, #0c0809 100%);
+  pointer-events: none;
+}
+
+.introPetals {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 230, 230, 0.35) 1px, transparent 1.5px);
+  background-size: 48px 64px;
+  opacity: 0.35;
+  animation: funeral-drift calc(18s / var(--funeral-motion-speed, 1)) linear infinite;
+  pointer-events: none;
+}
+
+.introRays {
+  position: absolute;
+  inset: -20%;
+  background: conic-gradient(from 200deg at 50% 30%, transparent 0deg, rgba(255, 248, 220, 0.08) 20deg, transparent 40deg);
+  animation: funeral-soft-spin calc(40s / var(--funeral-motion-speed, 1)) linear infinite;
+  pointer-events: none;
+}
+
+.introDove {
+  position: absolute;
+  top: 18%;
+  right: 18%;
+  width: 18px;
+  height: 10px;
+  border-radius: 50% 50% 40% 40%;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: -28px 24px 0 -4px rgba(255, 255, 255, 0.2);
+  animation: funeral-float calc(7s / var(--funeral-motion-speed, 1)) ease-in-out infinite;
+  pointer-events: none;
+}
+
+.introGoldLine {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--funeral-gold, #d4af37), transparent);
+  transform: translateX(-50%);
+  animation: funeral-draw-line calc(1.6s / var(--funeral-motion-speed, 1)) ease forwards;
+  pointer-events: none;
+}
+
+.introContent {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: funeral-fade-up calc(1.1s / var(--funeral-motion-speed, 1)) ease forwards;
+  animation-delay: 0.25s;
+}
+
+.introRoot[data-motion="none"] .introContent,
+.introRoot[data-phase="3"] .introContent {
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
+
+.introEyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #d4af37;
+}
+
+.introFamily {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #d6d3d1;
+}
+
+.introInvite {
+  font-size: 0.8rem;
+  color: #a8a29e;
+  letter-spacing: 0.04em;
+}
+
+.introName {
+  font-family: var(--funeral-heading-font, Georgia, serif);
+  font-size: clamp(1.75rem, 5vw, 2.35rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #f5f0e8;
+}
+
+.introRoot[data-intro="minimal-memorial"] .introName {
+  color: #2c1810;
+}
+
+.introDates {
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  color: #d4af37;
+}
+
+.introHint {
+  font-size: 0.75rem;
+  color: #a8a29e;
+}
+
+.introPortrait {
+  width: min(160px, 42vw);
+  aspect-ratio: 3 / 4;
+  margin: 0 auto;
+  border-radius: 50% / 42%;
+  border: 2px solid #d4af37;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.9s ease, transform 1.1s ease;
+}
+
+.introPortrait[data-visible="1"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.introPortrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shareBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 0.5rem 1rem 1rem;
+}
+
+.vaultCard {
+  padding: 1.35rem 1.15rem;
+  border-radius: 1.1rem;
+  border: 1px solid var(--funeral-border);
+  background: var(--funeral-surface);
+  text-align: center;
+}
+
+.audioDock {
+  position: fixed;
+  right: 0.75rem;
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--funeral-border);
+  background: color-mix(in srgb, var(--funeral-surface) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.ornament {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0;
+}
+
+.shell[data-funeral-theme="eternal-rose"] .hero::before,
+.shell[data-funeral-theme="peaceful-garden"] .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(201, 123, 132, 0.14), transparent 35%),
+    radial-gradient(circle at 90% 10%, rgba(201, 162, 39, 0.1), transparent 30%);
+}
+
+.shell[data-funeral-theme="ghana-heritage"] .hero::before,
+.shell[data-funeral-theme="black-red-tradition"] .hero::before,
+.shell[data-funeral-theme="golden-legacy"] .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(212, 175, 55, 0.2) 10px,
+      rgba(212, 175, 55, 0.2) 12px
+    );
+}
+
+.shell[data-funeral-theme="heavenly-peace"] .hero::before,
+.shell[data-funeral-theme="pure-white-farewell"] .hero::before,
+.shell[data-funeral-theme="church-memorial"] .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.55), transparent 50%),
+    radial-gradient(ellipse at 70% 20%, rgba(201, 162, 39, 0.08), transparent 40%);
+}
+
+@keyframes funeral-fade-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes funeral-draw-line {
+  to {
+    width: min(16rem, 70%);
+  }
+}
+
+@keyframes funeral-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes funeral-soft-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes funeral-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 48px 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .introFlame,
+  .introPetals,
+  .introRays,
+  .introDove,
+  .introGoldLine,
+  .introContent {
+    animation: none !important;
+  }
+
+  .introContent {
+    opacity: 1;
+    transform: none;
+  }
+
+  .introPortrait {
+    opacity: 1;
+    transform: none;
+  }
+}

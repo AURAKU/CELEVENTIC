@@ -449,13 +449,14 @@ export function CeleventicSoftIntro({
       data-video-failed={videoFailed ? "true" : "false"}
       data-play-calls={String(playCallCountRef.current)}
     >
-      <p className={styles.srStatus} aria-live="polite">
-        {showOpenGate
-          ? playError
+      {/* Screen-reader only — never announce marketing copy during playback */}
+      {showOpenGate ? (
+        <p className={styles.srStatus} aria-live="polite">
+          {playError
             ? playError
-            : "Your invitation is ready. Press Open Invitation to begin with sound."
-          : "Playing your Celeventic invitation intro."}
-      </p>
+            : "Your invitation is ready. Press Open Invitation to begin with sound."}
+        </p>
+      ) : null}
 
       <div className={styles.atmosphere} aria-hidden={showOpenGate ? true : undefined}>
         {showVideo ? (

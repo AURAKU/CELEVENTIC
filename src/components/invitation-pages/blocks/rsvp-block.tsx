@@ -9,18 +9,38 @@ import type { PageRenderContext } from "@/lib/invite-blueprints/blueprint-types"
  * Preview invitations short-circuit inside the panel (isPreviewInvitationId).
  */
 export function RsvpBlock({ context }: { context: PageRenderContext }) {
-  const { theme, invitation, guestId, guestName, design } = context;
+  const {
+    theme,
+    invitation,
+    guestId,
+    guestName,
+    design,
+    partyAllowance,
+    initialRsvpStatus,
+    initialAttendingCount,
+  } = context;
   const variant = isDarkColor(theme.color.surface) ? "dark" : "light";
 
   return (
-    <div className="w-full max-w-sm mx-auto text-left">
+    <div
+      className={
+        context.category === "funeral"
+          ? "w-full max-w-md mx-auto text-left"
+          : "w-full max-w-sm mx-auto text-left"
+      }
+    >
       <InvitationRsvpPanel
         invitationId={invitation.id}
         guestId={guestId}
         guestName={guestName}
+        partyAllowance={partyAllowance}
+        initialRsvpStatus={initialRsvpStatus}
+        initialAttendingCount={initialAttendingCount}
         accentColor={theme.color.accent}
         variant={variant}
         buttonStyle={design.studio?.buttonStyle}
+        showEmail={context.category !== "funeral"}
+        tone={context.category === "funeral" ? "memorial" : "celebration"}
       />
     </div>
   );

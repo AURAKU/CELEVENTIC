@@ -34,6 +34,7 @@ import type { SlideshowStyleId as GallerySlideshowStyleId } from "@/lib/invitati
 import type { ResolvedGuestAction, InvitationActionKey } from "@/lib/invitation/guest-portal-actions";
 import { GuestPortalQuickActions } from "@/components/guest-portal/guest-portal-action-button";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
+import { GuestHelpChip } from "@/components/celeventic-guide/guest-contextual-help";
 
 interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -325,9 +326,13 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
         durationMs: slideMs + 3000,
         content: (
           <div className="w-full max-w-md mx-auto px-6">
-            <p className="text-center text-xs uppercase tracking-[0.35em] mb-6" style={{ color: accent }}>
+            <p className="text-center text-xs uppercase tracking-[0.35em] mb-3" style={{ color: accent }}>
               {t("rsvp.title")}
             </p>
+            <div className="flex flex-wrap justify-center gap-2 mb-4">
+              <GuestHelpChip topicId="rsvp" tone="dark" />
+              <GuestHelpChip topicId="party" tone="dark" />
+            </div>
             <div className="rounded-2xl border border-white/15 bg-black/30 backdrop-blur-xl p-6">
               <InvitationRsvpPanel
                 invitationId={props.invitation.id}
@@ -339,6 +344,8 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
                   props.placeCard?.recipient.partySize ??
                   1
                 }
+                initialRsvpStatus={props.initialRsvpStatus}
+                initialAttendingCount={props.initialAttendingCount}
                 accentColor={accent}
                 variant="dark"
                 buttonStyle={props.design.studio?.buttonStyle}
@@ -363,6 +370,10 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
             <p className="text-xs uppercase tracking-[0.35em]" style={{ color: accent }}>
               Your Pass
             </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <GuestHelpChip topicId="qr" tone="dark" />
+              <GuestHelpChip topicId="seating" tone="dark" />
+            </div>
             {hasEntryPass && props.entryPass && (
               <GuestEntryPass
                 token={props.entryPass.token}

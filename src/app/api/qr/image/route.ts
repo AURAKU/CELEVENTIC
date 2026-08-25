@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { buildVerifyUrl, parseQrToken } from "@/lib/qr/parse-qr-payload";
 import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
-import { QR_EXPORT_SIZES, QR_DEFAULT_SIZE, type QrDisplayMode, type QrExportSize } from "@/lib/qr/qr-constants";
+import {
+  QR_EXPORT_SIZES,
+  QR_DEFAULT_SIZE,
+  parseQrDisplayMode,
+  type QrExportSize,
+} from "@/lib/qr/qr-constants";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -22,7 +27,7 @@ export async function GET(req: Request) {
   const download = searchParams.get("download") === "1";
   const format = searchParams.get("format") ?? "png";
   const size = parseSize(searchParams.get("size"));
-  const mode = (searchParams.get("mode") === "pass" ? "pass" : "brand") as QrDisplayMode;
+  const mode = parseQrDisplayMode(searchParams.get("mode"));
 
   try {
     let filename = "celeventic-qr.png";
@@ -54,9 +59,13 @@ export async function GET(req: Request) {
 
     if (rawData) {
       const url = rawData.startsWith("http") ? rawData : buildVerifyUrl(rawData);
-      const center = eventId
-        ? await qrBrandingService.resolveCenterImageUrl(eventId)
-        : await qrBrandingService.getAdminDefaultLogoUrl();
+      // Guide mode: no center logo — guest phone cameras need every module intact.
+      const center =
+        mode === "guide"
+          ? null
+          : eventId
+            ? await qrBrandingService.resolveCenterImageUrl(eventId)
+            : await qrBrandingService.getAdminDefaultLogoUrl();
       const logoSize = eventId
         ? await qrBrandingService.resolveLogoSize(eventId)
         : await qrBrandingService.getAdminDefaultLogoSize();

@@ -23,6 +23,10 @@ export const BUNDLED_MUSIC_FILES = [
   "ambient-cinematic",
   "travel-wanderlust",
   "soundhelix-ambient-1",
+  "memorial-piano",
+  "memorial-violin",
+  "islamic-soft-instrumental",
+  "nature-forest",
 ] as const;
 
 export type BundledMusicFile = (typeof BUNDLED_MUSIC_FILES)[number];
@@ -42,9 +46,8 @@ export interface LayoutMusicProfile {
 
 /**
  * One unique audible identity per template layout — genre-fit file + dedicated trackId.
- * Two pairs intentionally share a file with non-overlapping windows:
- * passport-luxe / passport-destination-wedding → travel-wanderlust
- * golden-islamic-nikkah / memorial-candle-tribute → piano-elegance
+ * passport-luxe / passport-destination-wedding intentionally share travel-wanderlust
+ * with non-overlapping windows. Funeral layouts use memorial-piano / memorial-violin.
  */
 export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProfile> = {
   "classic-gold": {
@@ -249,10 +252,10 @@ export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProf
     trackId: "layout-memorial-candle-tribute",
     title: "Memorial Light",
     category: "funeral",
-    bundledFile: "piano-elegance",
-    startSec: 90,
-    endSec: 165,
-    volume: 0.3,
+    bundledFile: "memorial-piano",
+    startSec: 0,
+    endSec: 75,
+    volume: 0.28,
     fadeInSec: 3.5,
     fadeOutSec: 2.5,
   },

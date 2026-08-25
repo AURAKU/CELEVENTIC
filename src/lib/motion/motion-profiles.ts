@@ -65,7 +65,7 @@ export const MOTION_PROFILES: Record<MotionProfileId, MotionProfileDef> = {
     drift: { y: 14, durationSec: 6 },
     parallax: { background: 0.35, midground: 0.6 },
   },
-  // Very slow fades, no float — motion that feels respectful, never playful.
+  // Very slow fades + soft ambient depth — respectful, never playful float.
   solemn: {
     id: "solemn",
     entrance: {
@@ -73,7 +73,7 @@ export const MOTION_PROFILES: Record<MotionProfileId, MotionProfileDef> = {
       animate: { opacity: 1, transition: { duration: 0.9, ease: "easeInOut" } },
     },
     drift: null,
-    parallax: null,
+    parallax: { background: 0.06, midground: 0.1 },
   },
 };
 

@@ -11,6 +11,7 @@ import { EXTENSION_MIME_MAP } from "@/lib/video/constants";
 import { presignPutObject, isVideoStorageReady, VideoStorageNotConfiguredError } from "@/lib/video/s3-video";
 import { resolveVideoStorageStrategy, isLocalFallbackEnabled } from "@/lib/video/storage-strategy";
 import { vendorPlanService } from "@/services/vendor-os/vendor-plan.service";
+import { videoAssetOwnerWrite } from "@/lib/video/owner";
 
 interface PresignRequestBody {
   category?: string;
@@ -23,6 +24,7 @@ interface PresignRequestBody {
   guestToken?: string;
   guestName?: string;
   guestPhone?: string;
+  guestKey?: string;
   context?: { role?: string; mute?: boolean };
 }
 
@@ -66,6 +68,7 @@ export async function POST(req: Request) {
       guestToken: body.guestToken,
       guestName: body.guestName,
       guestPhone: body.guestPhone,
+      guestKey: body.guestKey,
     });
   } catch (error) {
     if (error instanceof UploadAuthError) {
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
     throw error;
   }
 
-  const rate = await checkUploadRateLimit("presign", principal.ownerId);
+  const rate = await checkUploadRateLimit("presign", principal.quotaKey);
   if (!rate.allowed) {
     return NextResponse.json(
       { error: "Too many upload requests. Please slow down and try again shortly." },
@@ -93,7 +96,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: descriptorCheck.reason }, { status: 400 });
   }
 
-  const quotaCheck = await checkDailyUploadQuota(principal.ownerId, body.sizeBytes);
+  const quotaCheck = await checkDailyUploadQuota(
+    {
+      ownerType: principal.ownerType,
+      ownerId: principal.ownerId,
+      eventId: principal.eventId,
+    },
+    body.sizeBytes
+  );
   if (!quotaCheck.allowed) {
     return NextResponse.json({ error: quotaCheck.reason }, { status: 429 });
   }
@@ -106,7 +116,7 @@ export async function POST(req: Request) {
   }
 
   const extension = descriptorCheck.extension!;
-  const { key, id } = buildRawVideoKey(body.category, principal.ownerId, extension);
+  const { key, id } = buildRawVideoKey(body.category, principal.storageKey, extension);
   const contentType = EXTENSION_MIME_MAP[extension] ?? "application/octet-stream";
   const safeFilename = sanitizeDisplayFilename(body.filename);
 
@@ -114,13 +124,14 @@ export async function POST(req: Request) {
   if (body.context?.role) context.role = String(body.context.role).slice(0, 40);
   if (body.category === "INVITATION_BACKGROUND" && body.context?.mute) context.mute = true;
 
+  const owner = videoAssetOwnerWrite(principal);
   const asset = await prisma.videoAsset.create({
     data: {
       id,
       category: body.category,
       status: "UPLOADING",
-      ownerType: principal.ownerType,
-      ownerId: principal.ownerId,
+      ownerType: owner.ownerType,
+      ownerId: owner.ownerId,
       eventId: principal.eventId,
       vendorId: principal.vendorId,
       orderId: body.orderId ?? null,

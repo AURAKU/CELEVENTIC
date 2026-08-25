@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Download, Maximize2, Printer, Sun, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, Download, Maximize2, Printer, Sun, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatAdmissionCode } from "@/lib/admission/pass-code";
 import {
@@ -76,8 +76,11 @@ export function GuestEntryPass({
   const [fullscreen, setFullscreen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement | null>(null);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const theme = entryPassTheme(preset ?? resolveEntryPassPreset(layout));
   const formattedCode = useMemo(() => formatAdmissionCode(code), [code]);
+
+  const closeFullscreen = useCallback(() => setFullscreen(false), []);
 
   const imageUrl = useCallback(
     (size: number, opts: { format?: "png" | "svg"; download?: boolean } = {}) => {
@@ -92,7 +95,7 @@ export function GuestEntryPass({
   useEffect(() => {
     if (!fullscreen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFullscreen(false);
+      if (e.key === "Escape") closeFullscreen();
     };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -100,7 +103,7 @@ export function GuestEntryPass({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [fullscreen]);
+  }, [fullscreen, closeFullscreen]);
 
   useEffect(() => {
     if (!shareOpen) return;
@@ -314,20 +317,54 @@ export function GuestEntryPass({
 
       {fullscreen && (
         <div
-          className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-white p-6 print:hidden"
+          className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-white p-6 touch-pan-y print:hidden"
           role="dialog"
           aria-modal="true"
           aria-label={`Entry pass for ${displayName}`}
+          onTouchStart={(e) => {
+            const t = e.changedTouches[0];
+            if (!t) return;
+            swipeStart.current = { x: t.clientX, y: t.clientY };
+          }}
+          onTouchEnd={(e) => {
+            const start = swipeStart.current;
+            swipeStart.current = null;
+            const t = e.changedTouches[0];
+            if (!start || !t) return;
+            const dx = t.clientX - start.x;
+            const dy = t.clientY - start.y;
+            const absX = Math.abs(dx);
+            const absY = Math.abs(dy);
+            // Swipe right or down to go back (ignore small noise / taps).
+            if (dx > 72 && absX > absY * 1.1) {
+              closeFullscreen();
+              return;
+            }
+            if (dy > 90 && absY > absX * 1.1) {
+              closeFullscreen();
+            }
+          }}
         >
-          <button
-            type="button"
-            onClick={() => setFullscreen(false)}
-            className="absolute right-4 top-4 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-slate-100"
-            aria-label="Close full screen pass"
-            autoFocus
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
+          <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
+            <button
+              type="button"
+              onClick={closeFullscreen}
+              autoFocus
+              className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              aria-label="Go back to invitation"
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden />
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={closeFullscreen}
+              className="flex min-h-[48px] min-w-[48px] items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              aria-label="Close full screen pass"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
 
           <p className="text-lg font-semibold text-slate-900">{displayName}</p>
           <p className="mb-5 text-sm text-slate-500">{eventName}</p>
@@ -338,6 +375,7 @@ export function GuestEntryPass({
             alt={`Entry pass QR code for ${displayName}`}
             className="h-[min(82vw,420px)] w-[min(82vw,420px)] bg-white object-contain p-3"
             style={QR_IMAGE_RENDERING}
+            draggable={false}
           />
 
           <p className="mt-5 font-mono text-3xl font-bold tabular-nums tracking-[0.3em] text-slate-900">
@@ -347,6 +385,7 @@ export function GuestEntryPass({
             <Sun className="h-3.5 w-3.5 text-amber-500" aria-hidden />
             Set brightness to maximum and avoid glare
           </p>
+          <p className="mt-3 text-[11px] text-slate-400">Swipe right or down to go back</p>
         </div>
       )}
     </section>

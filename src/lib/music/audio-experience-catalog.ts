@@ -25,8 +25,8 @@ export const BUNDLED_MUSIC_IDS = new Set<string>([
 
 /** Legacy semantic ids → bundled file (for backwards-compatible order selections) */
 const LEGACY_TRACK_FILE: Record<string, BundledMusicFile> = {
-  "memorial-piano": "piano-elegance",
-  "memorial-violin": "violin-elegance",
+  "memorial-piano": "memorial-piano",
+  "memorial-violin": "memorial-violin",
   "wedding-romantic": "luxury-piano-romance",
   "luxury-piano-romance": "luxury-piano-romance",
   "piano-garden": "piano-garden",
@@ -44,8 +44,8 @@ const LEGACY_TRACK_FILE: Record<string, BundledMusicFile> = {
   "corporate-summit": "corporate-summit",
   "ambient-cinematic": "ambient-cinematic",
   "travel-wanderlust": "travel-wanderlust",
-  "islamic-soft-instrumental": "piano-elegance",
-  "nature-forest": "strings-crystal",
+  "islamic-soft-instrumental": "islamic-soft-instrumental",
+  "nature-forest": "nature-forest",
   "nature-ocean": "orchestra-royal",
   "soundhelix-ambient-1": "soundhelix-ambient-1",
 };
@@ -207,14 +207,19 @@ export function resolveDefaultMusicForLayout(
   category?: string,
   catalogSlug?: string | null
 ): MusicSelection | null {
+  const layoutProfile = getLayoutMusicProfile(layout);
+
   if (catalogSlug) {
     const catalogMusic = buildMusicSelectionForCatalog(catalogSlug);
-    if (catalogMusic && (!trackId || trackId === catalogMusic.libraryTrackId)) {
-      return catalogMusic;
+    if (catalogMusic) {
+      // Catalog SKU audio wins over shared-layout DNA. Only a deliberate non-layout
+      // trackId (host override) should beat the catalog identity.
+      const isLayoutDnaTrack = !trackId || trackId === layoutProfile.trackId;
+      if (isLayoutDnaTrack || trackId === catalogMusic.libraryTrackId) {
+        return catalogMusic;
+      }
     }
   }
-
-  const layoutProfile = getLayoutMusicProfile(layout);
 
   if (trackId && trackId !== layoutProfile.trackId) {
     const userTrack = buildMusicSelectionFromTrack(trackId);

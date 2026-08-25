@@ -27,8 +27,16 @@ import {
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
 import { resolveSealStyle } from "@/lib/invitation/seal-design";
+import { TapToBeginExperience } from "@/components/invitations/tap-to-begin-experience";
+import { introAtmosphereUrlFromDesign } from "@/lib/invitation/studio-media-utils";
+import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
+import { CELEVENTIC_PALETTE } from "@/lib/experience/celeventic-palette";
 
 const FRAME_WIDTH = 390;
+
+function isFuneralCategory(category?: string): boolean {
+  return category?.toLowerCase() === "funeral";
+}
 
 const CURTAIN_THEME_MAP: Record<string, "wedding" | "concert" | "award" | "birthday" | "corporate"> = {
   "curtain-wedding": "wedding",
@@ -91,6 +99,9 @@ export function TemplatePreviewGlimpse({
     coupleName1: visionBoard.coupleName1,
     coupleName2: visionBoard.coupleName2,
     hostName: preview.event.hostName,
+    eventCategory: category,
+    eventTitle: preview.event.title,
+    invitationName: preview.event.title,
   });
   const sealStyle = resolveSealStyle(visionBoard);
 
@@ -99,6 +110,51 @@ export function TemplatePreviewGlimpse({
   const visibleHeight = compact ? 108 : 200;
 
   const noop = () => undefined;
+  const funeral = isFuneralCategory(category);
+  const atmosphereUrl =
+    introAtmosphereUrlFromDesign(preview.design) ??
+    preview.event.coverImageUrl ??
+    getDemoHeroUrl(layoutSlug, category, catalogSlug ?? layoutSlug);
+  const experience = preview.design.experience;
+  const funeralCeremonyLabel =
+    visionBoard.eyebrow?.trim() ||
+    preview.design.introText?.trim() ||
+    "IN LOVING MEMORY";
+
+  // Funeral: show the exact live tap-to-begin poster (eyebrow + deceased name card).
+  if (funeral) {
+    return (
+      <div
+        className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}
+        style={{ background: visual.background }}
+        aria-hidden
+      >
+        <TapToBeginExperience
+          staticPreview
+          onBegin={noop}
+          eventTitle={preview.event.title}
+          hostName={preview.event.hostName}
+          invitationName={preview.event.title}
+          name1={visionBoard.coupleName1?.trim() || null}
+          accentColor={experience?.welcomeAccentColor ?? CELEVENTIC_PALETTE.teal}
+          primaryColor={CELEVENTIC_PALETTE.gold}
+          atmosphereUrl={atmosphereUrl}
+          ceremonyLabel={funeralCeremonyLabel}
+          layoutSlug={preview.design.layout ?? layoutSlug}
+          category="funeral"
+          fontFamily={
+            experience?.welcomeFontFamily
+              ? resolveThankYouFontStack(experience.welcomeFontFamily)
+              : undefined
+          }
+          fontScale={experience?.welcomeFontScale ?? "compact"}
+          textColorOverride={experience?.welcomeTextColor}
+          accentColorOverride={experience?.welcomeAccentColor}
+          scrim={experience?.welcomeScrim ?? "on"}
+        />
+      </div>
+    );
+  }
 
   // Forever Afaris blush-gate: sealed champagne envelope (embedded absolute shell).
   if (openingId === "blush-gate") {

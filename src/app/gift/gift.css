@@ -8,7 +8,10 @@
  */
 
 .gift-shell {
+  min-height: 100vh;
+  min-height: 100svh;
   min-height: 100dvh;
+  min-height: var(--app-viewport-min-height, 100dvh);
   background:
     radial-gradient(120% 80% at 50% 0%, var(--gift-color-surface-alt) 0%, transparent 60%),
     var(--gift-color-surface);

@@ -6,14 +6,26 @@ import { eventMemoryTokenService } from "@/services/memory/event-memory-token.se
 import { canAccessAdminPanel } from "@/lib/rbac";
 import type { VideoCategory } from "@/lib/video/constants";
 import type { VideoAsset, VideoOwnerType } from "@prisma/client";
+import { eventQuotaKey, userQuotaKey } from "@/lib/video/owner";
 
+/**
+ * Who may upload — and how we identify them for DB vs quota/storage.
+ *
+ * Critical invariant:
+ * - USER → ownerId is a real User.id (VideoAsset FK)
+ * - GUEST_TOKEN → ownerId is null (never Event.id / token / guest key)
+ */
 export interface UploadPrincipal {
   ownerType: VideoOwnerType;
-  /** Signed-in user id, or the eventId for guest-token uploads (used for quota grouping). */
-  ownerId: string;
+  /** Actual User.id only. null for GUEST_TOKEN. */
+  ownerId: string | null;
+  /** Rate limits, daily quota grouping, S3/local key namespace. */
+  quotaKey: string;
+  /** Alias of quotaKey for storage path segments (never a bearer token). */
+  storageKey: string;
   eventId: string | null;
   vendorId: string | null;
-  /** Extra context persisted on the VideoAsset (guest name, upload token, role, etc). */
+  /** Extra context persisted on the VideoAsset (non-sensitive identifiers only). */
   context: Record<string, unknown>;
 }
 
@@ -35,6 +47,24 @@ export interface ResolvePrincipalInput {
   guestToken?: string | null;
   guestName?: string | null;
   guestPhone?: string | null;
+  /** Raw client guest key — hashed before persistence on EventMemoryUpload. */
+  guestKey?: string | null;
+}
+
+function userPrincipal(
+  userId: string,
+  extras: { eventId?: string | null; vendorId?: string | null; context?: Record<string, unknown> } = {}
+): UploadPrincipal {
+  const key = userQuotaKey(userId);
+  return {
+    ownerType: "USER",
+    ownerId: userId,
+    quotaKey: key,
+    storageKey: key,
+    eventId: extras.eventId ?? null,
+    vendorId: extras.vendorId ?? null,
+    context: extras.context ?? {},
+  };
 }
 
 /**
@@ -50,15 +80,20 @@ export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Prom
       if (!record || record.type !== "UPLOAD") {
         throw new UploadAuthError("Invalid or expired upload token.", 403);
       }
+      const key = eventQuotaKey(record.eventId);
       return {
         ownerType: "GUEST_TOKEN",
-        ownerId: record.eventId,
+        ownerId: null,
+        quotaKey: key,
+        storageKey: key,
         eventId: record.eventId,
         vendorId: null,
         context: {
-          guestToken: input.guestToken,
+          // Persist token row id only — never the raw bearer credential.
+          uploadTokenId: record.id,
           guestName: input.guestName ?? null,
           guestPhone: input.guestPhone ?? null,
+          guestKey: input.guestKey ?? null,
         },
       };
     }
@@ -68,13 +103,7 @@ export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Prom
       if (!session?.user?.id) throw new UploadAuthError("Sign in required.");
       const vendor = await vendorProfileService.getByUserId(session.user.id);
       if (!vendor) throw new UploadAuthError("A vendor profile is required to upload portfolio videos.", 403);
-      return {
-        ownerType: "USER",
-        ownerId: session.user.id,
-        eventId: null,
-        vendorId: vendor.id,
-        context: {},
-      };
+      return userPrincipal(session.user.id, { vendorId: vendor.id });
     }
 
     case "EVENT_SHORT": {
@@ -82,13 +111,7 @@ export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Prom
       if (!session?.user?.id) throw new UploadAuthError("Sign in required.");
       if (!input.eventId) throw new UploadAuthError("eventId is required for event videos.", 400);
       await verifyEventAccess(input.eventId, session.user.id, session.user.role);
-      return {
-        ownerType: "USER",
-        ownerId: session.user.id,
-        eventId: input.eventId,
-        vendorId: null,
-        context: {},
-      };
+      return userPrincipal(session.user.id, { eventId: input.eventId });
     }
 
     case "ADMIN": {
@@ -96,13 +119,7 @@ export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Prom
       if (!session?.user?.id || !canAccessAdminPanel(session.user.role)) {
         throw new UploadAuthError("Admin access required.", 403);
       }
-      return {
-        ownerType: "USER",
-        ownerId: session.user.id,
-        eventId: input.eventId ?? null,
-        vendorId: null,
-        context: {},
-      };
+      return userPrincipal(session.user.id, { eventId: input.eventId ?? null });
     }
 
     case "INVITATION_BACKGROUND":
@@ -119,13 +136,10 @@ export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Prom
           throw new UploadAuthError("You do not have access to this invitation order.", 403);
         }
       }
-      return {
-        ownerType: "USER",
-        ownerId: session.user.id,
+      return userPrincipal(session.user.id, {
         eventId: input.eventId ?? null,
-        vendorId: null,
         context: input.orderId ? { orderId: input.orderId } : {},
-      };
+      });
     }
   }
 }
@@ -150,7 +164,7 @@ export async function assertAssetAccess(
   }
 
   const session = await getSession();
-  if (!session?.user?.id || session.user.id !== asset.ownerId) {
+  if (!session?.user?.id || !asset.ownerId || session.user.id !== asset.ownerId) {
     throw new UploadAuthError("You do not have access to this upload.", 403);
   }
 }

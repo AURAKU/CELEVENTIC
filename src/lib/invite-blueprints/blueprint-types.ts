@@ -17,6 +17,7 @@ export type InvitePageType =
   | "details"
   | "venue-map"
   | "rsvp"
+  | "guest-wishes"
   | "closing";
 
 export interface InvitePageDef {
@@ -42,10 +43,18 @@ export interface PageRenderContext {
   category: InviteCategory;
   guestId?: string;
   guestName?: string;
+  partyAllowance?: number;
+  initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
+  initialAttendingCount?: number | null;
   /** Catalog slug, for viral-footer attribution */
   templateSlug?: string;
+  /** Published Event Guide path (`/event-guide/…`), when available for this event */
+  eventGuideUrl?: string | null;
   rsvpRequired?: boolean;
   previewMode?: boolean;
+  /** Required for live guest-wishes / condolences API calls */
+  eventId?: string;
+  memoryVaultEnabled?: boolean;
 }
 
 export interface InvitePageProps {

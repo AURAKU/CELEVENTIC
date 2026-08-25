@@ -1,21 +1,25 @@
-/** Funeral invitation template collections — each maps to a unique layout */
+/** Funeral invitation template collections — maps to live catalogue SKUs + Funeral Experience themes */
 export const FUNERAL_TEMPLATE_COLLECTIONS = [
-  { slug: "memorial-candle-tribute", name: "Candlelight Elegy", layoutSlug: "memorial-candle-tribute", revealStyle: "CANDLELIGHT" },
-  { slug: "arch-green", name: "Forest Vigil", layoutSlug: "arch-green", revealStyle: "MEMORIAL_BOOK" },
-  { slug: "classic-gold", name: "Ivory Remembrance", layoutSlug: "classic-gold", revealStyle: "MEMORIAL_BOOK" },
-  { slug: "rustic-lace", name: "Heritage Timber Tribute", layoutSlug: "rustic-lace", revealStyle: "LEGACY_TIMELINE" },
-  { slug: "golden-islamic-nikkah", name: "Janazah Ornamental", layoutSlug: "golden-islamic-nikkah", revealStyle: "INSTANT" },
-  { slug: "corporate-prestige-summit", name: "Statesman Legacy", layoutSlug: "corporate-prestige-summit", revealStyle: "LEGACY_TIMELINE" },
+  { slug: "memorial-candle-tribute", name: "Candlelight Elegy", layoutSlug: "memorial-candle-tribute", revealStyle: "CANDLELIGHT", experienceTheme: "burgundy-honour" },
+  { slug: "candlelight-farewell", name: "Candlelight Farewell", layoutSlug: "memorial-candle-tribute", revealStyle: "CANDLELIGHT", experienceTheme: "burgundy-honour" },
+  { slug: "white-lily-rest", name: "White Lily Rest", layoutSlug: "memorial-candle-tribute", revealStyle: "FLORAL", experienceTheme: "heavenly-peace" },
+  { slug: "royal-mourning-lite", name: "Royal Mourning", layoutSlug: "memorial-candle-tribute", revealStyle: "MEMORIAL_BOOK", experienceTheme: "golden-legacy" },
+  { slug: "black-red-cloth-rite", name: "Black & Red Cloth Rite", layoutSlug: "memorial-candle-tribute", revealStyle: "MEMORIAL_BOOK", experienceTheme: "ghana-heritage" },
+  { slug: "white-cloth-homegoing", name: "White Cloth Homegoing", layoutSlug: "memorial-candle-tribute", revealStyle: "DOVE_RELEASE", experienceTheme: "heavenly-peace" },
+  { slug: "kente-border-farewell", name: "Kente Border Farewell", layoutSlug: "memorial-candle-tribute", revealStyle: "MEMORIAL_BOOK", experienceTheme: "ghana-heritage" },
+  { slug: "one-week-vigil-notice", name: "One Week Vigil Notice", layoutSlug: "memorial-candle-tribute", revealStyle: "LEGACY_TIMELINE", experienceTheme: "midnight-memorial" },
+  { slug: "eternal-rose", name: "Eternal Rose", layoutSlug: "memorial-candle-tribute", revealStyle: "FLORAL", experienceTheme: "eternal-rose" },
+  { slug: "peaceful-garden", name: "Peaceful Garden", layoutSlug: "memorial-candle-tribute", revealStyle: "FLORAL", experienceTheme: "peaceful-garden" },
 ] as const;
 
 export const FUNERAL_REVEAL_STYLES = [
-  { id: "MEMORIAL_BOOK", label: "Memorial Book Opening" },
-  { id: "CANDLELIGHT", label: "Candlelight Reveal" },
-  { id: "PHOTO_FRAME", label: "Photo Frame Reveal" },
-  { id: "DOVE_RELEASE", label: "Dove Release Animation" },
-  { id: "FLORAL", label: "Floral Reveal" },
-  { id: "LEGACY_TIMELINE", label: "Legacy Timeline Reveal" },
-  { id: "INSTANT", label: "Instant View" },
+  { id: "MEMORIAL_BOOK", label: "Memorial Book Opening", introId: "ghanaian-regal" },
+  { id: "CANDLELIGHT", label: "Candlelight Reveal", introId: "candle-remembrance" },
+  { id: "PHOTO_FRAME", label: "Photo Frame Reveal", introId: "floral-reveal" },
+  { id: "DOVE_RELEASE", label: "Heavenly Dove Reveal", introId: "heavenly-reveal" },
+  { id: "FLORAL", label: "Floral Reveal", introId: "floral-reveal" },
+  { id: "LEGACY_TIMELINE", label: "Legacy Timeline Reveal", introId: "memory-journey" },
+  { id: "INSTANT", label: "Instant View", introId: "instant" },
 ] as const;
 
 export const FUNERAL_AUDIO_CATEGORIES = [

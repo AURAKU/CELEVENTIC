@@ -128,6 +128,7 @@ model User {
   offlineDevices             OfflineDevice[]
   twoFactor                  TwoFactorAuth?
   flyerDesigns               FlyerDesign[]
+  digitalBusinessCards       DigitalBusinessCard[]
   inspirationUploads         InspirationUpload[]
   eventStaff                 EventStaff[]
   vendorReviews              VendorReview[]
@@ -347,6 +348,9 @@ model Event {
   memorySettings       EventMemorySettings?
   memoryUploads        EventMemoryUpload[]
   memoryTokens         EventMemoryToken[]
+  memoryLikes          EventMemoryLike[]
+  memoryComments       EventMemoryComment[]
+  memoryConsents       EventMemoryConsent[]
   collaborators        EventCollaborator[]
   workspaceInvitations WorkspaceInvitation[]
   activityLogs         EventActivityLog[]
@@ -2146,6 +2150,171 @@ model FlyerDesign {
   @@map("flyer_designs")
 }
 
+/// Shareable digital business card — Celeventic SmartCard / Identity OS root.
+/// One identity can grow variants, NFC devices, connections, and campaigns.
+/// Kept live via monthly subscription (trial → active → expired).
+model DigitalBusinessCard {
+  id                     String   @id @default(cuid())
+  userId                 String
+  slug                   String   @unique
+  /// Unguessable Smart QR redirect token for /c/{token}
+  publicToken            String   @unique @default(cuid())
+  displayName            String
+  title                  String?
+  company                String?
+  bio                    String?
+  email                  String?
+  phone                  String?
+  website                String?
+  /// { linkedin, website, instagram, x, facebook, whatsapp, youtube, tiktok, github }
+  socials                Json     @default("{}")
+  themeId                String   @default("elegant-frost")
+  avatarUrl              String?
+  isPublished            Boolean  @default(true)
+  nfcEnabled             Boolean  @default(true)
+  /// Allow anonymous Connect Back lead capture on the public card
+  connectBackEnabled     Boolean  @default(true)
+  /// Default Share As mode (professional, personal, …)
+  defaultMode            String   @default("professional")
+  /// TRIAL | ACTIVE | EXPIRED | INACTIVE
+  subscriptionStatus     String   @default("TRIAL")
+  subscriptionExpiresAt  DateTime?
+  viewCount              Int      @default(0)
+  offlineSnapshotVersion Int      @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variants     SmartCardVariant[]
+  nfcDevices   SmartCardNfcDevice[]
+  connections  SmartCardConnection[]
+  campaigns    SmartCardCampaign[]
+  interactions SmartCardInteraction[]
+
+  @@index([userId])
+  @@index([subscriptionStatus])
+  @@index([publicToken])
+  @@map("digital_business_cards")
+}
+
+/// Contextual face of one SmartCard (Share As: Professional, Creator, …).
+model SmartCardVariant {
+  id          String   @id @default(cuid())
+  cardId      String
+  mode        String
+  label       String
+  isDefault   Boolean  @default(false)
+  /// Presentational overrides merged over the root card for this mode
+  overrides   Json     @default("{}")
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  card DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, mode])
+  @@index([cardId])
+  @@map("smartcard_variants")
+}
+
+/// Physical NFC tag paired to a SmartCard (redirect only — never private data on tag).
+model SmartCardNfcDevice {
+  id              String    @id @default(cuid())
+  cardId          String
+  /// Public tap token for /n/{token}
+  publicToken     String    @unique @default(cuid())
+  /// One-time activation secret — never expose on public URLs
+  claimSecretHash String?
+  name            String
+  /// card | sticker | wristband | keychain | badge | other
+  deviceType      String    @default("card")
+  /// ACTIVE | DISABLED | LOST | REPLACED
+  status          String    @default("ACTIVE")
+  assignedMode    String?
+  campaignId      String?
+  tapCount        Int       @default(0)
+  lastTapAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  card     DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  campaign SmartCardCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([cardId])
+  @@index([status])
+  @@map("smartcard_nfc_devices")
+}
+
+/// Mutual contact exchange / lead captured via Connect Back.
+model SmartCardConnection {
+  id            String   @id @default(cuid())
+  cardId        String
+  /// NEW | CONTACTED | QUALIFIED | FOLLOW_UP | WON | ARCHIVED
+  status        String   @default("NEW")
+  visitorName   String
+  visitorEmail  String?
+  visitorPhone  String?
+  visitorCompany String?
+  visitorTitle  String?
+  note          String?
+  /// Instant | Business | Sales | Event | Custom
+  formMode      String   @default("Instant")
+  source        String   @default("connect_back")
+  campaignId    String?
+  eventId       String?
+  tags          Json     @default("[]")
+  consentAt     DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  card     DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  campaign SmartCardCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([cardId, createdAt])
+  @@index([status])
+  @@map("smartcard_connections")
+}
+
+/// Attribution layer for QR / NFC / link campaigns pointing at one SmartCard.
+model SmartCardCampaign {
+  id          String   @id @default(cuid())
+  cardId      String
+  name        String
+  publicToken String   @unique @default(cuid())
+  mode        String?
+  isActive    Boolean  @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  card         DigitalBusinessCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  nfcDevices   SmartCardNfcDevice[]
+  connections  SmartCardConnection[]
+  interactions SmartCardInteraction[]
+
+  @@index([cardId])
+  @@map("smartcard_campaigns")
+}
+
+/// Privacy-minimized engagement events (no raw IPs in dashboards).
+model SmartCardInteraction {
+  id         String   @id @default(cuid())
+  cardId     String
+  campaignId String?
+  /// view | qr_scan | nfc_tap | vcard_save | connect | cta | share
+  kind       String
+  meta       Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  card     DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  campaign SmartCardCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([cardId, createdAt])
+  @@index([kind])
+  @@map("smartcard_interactions")
+}
+
 // ─── Inspiration Upload Engine ──────────────────────────────────
 
 enum InspirationType {
@@ -3259,6 +3428,8 @@ model EventMemoryUpload {
   rejectionReason String?
   isFeatured      Boolean                 @default(false)
   consentGiven    Boolean                 @default(false)
+  /** Privacy-safe hash of guest device key — enables delete-own for uploads. */
+  uploaderGuestKey String?
   approvedById    String?
   approvedAt      DateTime?
   createdAt       DateTime                @default(now())
@@ -3269,9 +3440,12 @@ model EventMemoryUpload {
   guest      Guest?      @relation(fields: [guestId], references: [id], onDelete: SetNull)
   approvedBy User?       @relation("MemoryApprovals", fields: [approvedById], references: [id])
   videoAsset VideoAsset? @relation(fields: [videoAssetId], references: [id], onDelete: SetNull)
+  likes      EventMemoryLike[]
+  comments   EventMemoryComment[]
 
   @@index([eventId, status])
   @@index([eventId, createdAt])
+  @@index([eventId, uploaderGuestKey])
   @@map("event_memory_uploads")
 }
 
@@ -3288,6 +3462,69 @@ model EventMemoryToken {
 
   @@index([eventId, type])
   @@map("event_memory_tokens")
+}
+
+/**
+ * Guest like on an approved memory. guestKey is a privacy-safe hash of a
+ * stable client identifier (never store the raw device/guest token here).
+ */
+model EventMemoryLike {
+  id        String   @id @default(cuid())
+  eventId   String
+  memoryId  String
+  guestKey  String
+  createdAt DateTime @default(now())
+
+  event  Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memory EventMemoryUpload @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@unique([memoryId, guestKey])
+  @@index([eventId, memoryId])
+  @@map("event_memory_likes")
+}
+
+/**
+ * Guest comment on an approved memory. authorTokenHash enables delete-own,
+ * matching Guest Wishes authorship.
+ */
+model EventMemoryComment {
+  id              String   @id @default(cuid())
+  eventId         String
+  memoryId        String
+  guestId         String?
+  authorName      String
+  message         String
+  authorTokenHash String?
+  guestKey        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  event  Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memory EventMemoryUpload @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@index([memoryId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([authorTokenHash])
+  @@map("event_memory_comments")
+}
+
+/**
+ * One-time upload consent per guest for a vault. After the first successful
+ * consent, guests are not prompted again for the same event.
+ */
+model EventMemoryConsent {
+  id          String   @id @default(cuid())
+  eventId     String
+  guestKey    String
+  guestId     String?
+  consentedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, guestKey])
+  @@index([eventId])
+  @@map("event_memory_consents")
 }
 
 // ─── Invitation MVP Product ─────────────────────────────────────
@@ -6023,4 +6260,170 @@ model EventGuideViewStat {
   @@unique([guideId, day, tab, channel])
   @@index([guideId, day])
   @@map("event_guide_view_stats")
+}
+
+// ─── Celeventic Guide (Learn Celeventic) ─────────────────────────
+// Product help platform — distinct from Event Guide (guest companion).
+
+enum HelpGuideStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum HelpGuideRole {
+  GUEST
+  ORGANIZER
+  VENDOR
+  SCANNER
+  ADMIN
+}
+
+enum HelpGuideCategory {
+  GETTING_STARTED
+  INVITATIONS
+  RSVP
+  GUESTS
+  SEATING
+  EVENT_GUIDE
+  ADMISSION
+  MEMORY
+  VENDOR
+  SCANNING
+  CELEBRATE
+  PLATFORM
+  TICKETS
+  PAYMENTS
+  GIFTS
+  MARKETPLACE
+  WALLET
+  CONTRIBUTIONS
+  COMMUNICATIONS
+  PRIVACY
+  COLLABORATION
+  TROUBLESHOOTING
+}
+
+enum HelpGuideReviewStatus {
+  CURRENT
+  REVIEW_REQUIRED
+  OUTDATED
+}
+
+model HelpGuide {
+  id              String            @id @default(cuid())
+  slug            String            @unique
+  title           String
+  summary         String
+  body            String            @default("")
+  role            HelpGuideRole
+  category        HelpGuideCategory
+  status          HelpGuideStatus   @default(DRAFT)
+  sortOrder       Int               @default(0)
+  featured        Boolean           @default(false)
+  /// Admin-only guides must never appear on public /guide.
+  adminOnly       Boolean           @default(false)
+  posterUrl       String?
+  thumbnailUrl    String?
+  /// Legacy/primary playback URL (prefer mobile/desktop/mp4/webm when set).
+  videoUrl        String?
+  mp4Url          String?
+  webmUrl         String?
+  mobileVideoUrl  String?
+  desktopVideoUrl String?
+  durationSec     Int?
+  captionsEnUrl   String?
+  captionsFrUrl   String?
+  /// Separable voiceover track (EN). Distinct from video audio when recorded.
+  voiceoverEnUrl  String?
+  /// Separable voiceover track (FR). Localization hook.
+  voiceoverFrUrl  String?
+  storyboardKey   String?
+  transcript      String            @default("")
+  narrationScript String            @default("")
+  a11yDescription String            @default("")
+  /// True when no real MP4/WebM has been uploaded yet.
+  videoProductionRequired Boolean   @default(true)
+  /// Product feature key used for freshness flagging (never auto-deletes guides).
+  featureKey      String?
+  lastVerifiedAt  DateTime?
+  verifiedAgainstBuild String?
+  verifiedAgainstFeatureVersion String?
+  reviewStatus    HelpGuideReviewStatus @default(CURRENT)
+  synonyms        String            @default("[]") // JSON string array
+  contextRoutes   String            @default("[]") // JSON string array of route prefixes
+  ogTitle         String?
+  ogDescription   String?
+  relatedSlugs    String            @default("[]") // JSON string array
+  analyticsEvents String            @default("[]") // JSON string array of event names
+  /// Admin-controlled "New" badge (also shown while newUntil is in the future).
+  isNew           Boolean           @default(false)
+  newUntil        DateTime?
+  /// When set and status is DRAFT, guide auto-publishes once this time is reached.
+  scheduledPublishAt DateTime?
+  viewCount       Int               @default(0)
+  helpfulYes      Int               @default(0)
+  helpfulNo       Int               @default(0)
+  publishedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  steps           GuideStep[]
+  feedback        HelpGuideFeedback[]
+  versions        HelpGuideVersion[]
+
+  @@index([status, role, sortOrder])
+  @@index([category, status])
+  @@index([featured, status])
+  @@index([featureKey])
+  @@index([reviewStatus])
+  @@index([scheduledPublishAt])
+  @@map("help_guides")
+}
+
+model HelpGuideFeedback {
+  id        String    @id @default(cuid())
+  guideId   String
+  helpful   Boolean
+  reason    String    @default("")
+  createdAt DateTime  @default(now())
+  guide     HelpGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([guideId, createdAt])
+  @@map("help_guide_feedback")
+}
+
+/// Immutable snapshot retained on each admin edit — supports rollback without changing slug/analytics.
+model HelpGuideVersion {
+  id          String    @id @default(cuid())
+  guideId     String
+  version     Int
+  snapshot    String // JSON: guide fields + steps
+  editorId    String?
+  editorLabel String?
+  note        String    @default("")
+  createdAt   DateTime  @default(now())
+  guide       HelpGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, version])
+  @@index([guideId, createdAt])
+  @@map("help_guide_versions")
+}
+
+model GuideStep {
+  id          String    @id @default(cuid())
+  guideId     String
+  sortOrder   Int       @default(0)
+  title       String
+  body        String    @default("")
+  /// motion | tip | warning | checklist
+  stepType    String    @default("motion")
+  mediaUrl    String?
+  motionKey   String?
+  durationMs  Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  guide       HelpGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([guideId, sortOrder])
+  @@map("guide_steps")
 }

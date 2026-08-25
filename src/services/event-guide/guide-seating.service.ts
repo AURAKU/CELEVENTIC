@@ -121,6 +121,7 @@ export class GuideSeatingService {
     const party: CandidateParty = {
       invitationId: pass.invitationId,
       partyName: pass.invitation.name?.trim() || pass.displayName?.trim() || "Guest",
+      admissionCode: digits,
       guests: pass.invitation.guests.map((guest) => ({
         id: guest.id,
         name: guest.name,
@@ -164,12 +165,19 @@ export class GuideSeatingService {
         id: true,
         name: true,
         guests: { where: { archivedAt: null }, select: GUEST_SELECT },
+        guestPasses: {
+          where: { status: { notIn: ["REVOKED", "REISSUED"] } },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { code: true },
+        },
       },
     });
 
     const parties: CandidateParty[] = invitations.map((invitation) => ({
       invitationId: invitation.id,
       partyName: invitation.name,
+      admissionCode: invitation.guestPasses[0]?.code ?? null,
       guests: invitation.guests.map((guest) => ({
         id: guest.id,
         name: guest.name,
@@ -273,6 +281,7 @@ export class GuideSeatingService {
       const party: CandidateParty = {
         invitationId: invitation.id,
         partyName: invitation.name,
+        admissionCode: invitation.guestPasses[0]?.code ?? null,
         guests: invitation.guests.map((guest) => ({
           id: guest.id,
           name: guest.name,

@@ -72,7 +72,7 @@ export default function InviteError({
     return (
       <main
         aria-busy="true"
-        className="flex min-h-[100dvh] items-center justify-center bg-[#041A22] px-6 text-center"
+        className="flex min-h-app-viewport items-center justify-center bg-[#041A22] px-6 text-center"
       >
         <p className="text-sm tracking-[0.2em] text-[#E8C56A] uppercase">
           Refreshing your invitation…
@@ -82,7 +82,7 @@ export default function InviteError({
   }
 
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#041A22] px-6 py-16 text-center">
+    <main className="flex min-h-app-viewport flex-col items-center justify-center bg-[#041A22] px-6 py-16 text-center">
       <p className="text-[0.7rem] font-medium uppercase tracking-[0.42em] text-[#E8C56A]">
         Celeventic
       </p>

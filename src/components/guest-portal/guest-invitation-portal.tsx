@@ -46,6 +46,8 @@ import { resolveEventLifecycle } from "@/lib/experience/lifecycle";
 import { EventDayBanner } from "@/components/experience/event-day-banner";
 import { PostEventExperience } from "@/components/experience/post-event-experience";
 import { CinematicInvitationSpotlight } from "@/components/guest-portal/cinematic-invitation-spotlight";
+import { GuestHelpChip } from "@/components/celeventic-guide/guest-contextual-help";
+import { InviteGuestHelpFab } from "@/components/celeventic-guide/guest-quick-actions";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import { formatEventDetailsTime } from "@/lib/invitation-blocks/event-details";
@@ -207,6 +209,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     guestId: props.guestId,
     guestName: props.guestName,
     partyAllowance: props.partyAllowance,
+    initialRsvpStatus: props.initialRsvpStatus,
+    initialAttendingCount: props.initialAttendingCount,
     qrDataUrl: props.qrDataUrl,
     admissionManualCode: props.admissionManualCode,
     memoryVaultEnabled: props.memoryVaultEnabled,
@@ -268,9 +272,16 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             category: categoryForBlueprint(props.design?.blueprintId),
             guestId: props.guestId,
             guestName: props.guestName,
+            partyAllowance: props.partyAllowance,
+            initialRsvpStatus: props.initialRsvpStatus,
+            initialAttendingCount: props.initialAttendingCount,
             templateSlug: props.templateSlug,
+            eventGuideUrl: props.eventGuideUrl,
             rsvpRequired: props.rsvpRequired,
             previewMode: isPreviewInvitationId(props.invitation.id),
+            eventId: props.eventId,
+            memoryVaultEnabled:
+              props.memoryVaultEnabled || Boolean(props.memoryUploadUrl),
           }}
         />
       </InviteViewportShell>
@@ -294,6 +305,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
   if (cinematicMode) {
     return (
+      <div className="relative">
+        {!props.embedded && <InviteGuestHelpFab />}
       <CinematicInvitationSpotlight
         {...props}
         embedded={props.embedded}
@@ -314,6 +327,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         onShare={share}
         shareCopied={shareState === "copied"}
       />
+      </div>
     );
   }
 
@@ -408,6 +422,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           entryPass={props.entryPass}
           placeCard={props.placeCard}
           partyAllowance={props.partyAllowance}
+          initialRsvpStatus={props.initialRsvpStatus}
+          initialAttendingCount={props.initialAttendingCount}
           partyAdmission={props.partyAdmission}
           seatTable={props.seatTable}
           seatLabel={props.seatLabel}
@@ -445,6 +461,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         )}
 
         <div className="mx-auto max-w-2xl px-4 py-6 invite-content-pad space-y-8">
+          {!props.embedded && <InviteGuestHelpFab />}
           {lifecyclePhase === "event-day" && (
             <PortalSection id="event-day">
               <EventDayBanner
@@ -631,7 +648,13 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           {showRsvp && !useBlocks && !templateOwnsJourney && (
             <PortalSection delay={300} id="rsvp">
               <div className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur p-6 shadow-sm">
-                <h2 className="font-display text-lg font-bold text-[#0F172A] mb-4">{t("rsvp.title")}</h2>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                  <h2 className="font-display text-lg font-bold text-[#0F172A]">{t("rsvp.title")}</h2>
+                  <div className="flex flex-wrap gap-2">
+                    <GuestHelpChip topicId="rsvp" />
+                    <GuestHelpChip topicId="party" />
+                  </div>
+                </div>
                 <InvitationRsvpPanel
                   invitationId={props.invitation.id}
                   guestId={props.guestId}
@@ -642,6 +665,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                     props.placeCard?.recipient.partySize ??
                     1
                   }
+                  initialRsvpStatus={props.initialRsvpStatus}
+                  initialAttendingCount={props.initialAttendingCount}
                   accentColor={props.design.colors?.accent ?? "#0B8A83"}
                 />
               </div>
@@ -697,7 +722,11 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             return (
             <PortalSection delay={400} id="pass">
               <div className="rounded-2xl border border-[#D4A63A]/30 bg-white p-6 text-center shadow-sm">
-                <h2 className="font-display text-lg font-bold text-[#0F172A] mb-4">Your Pass</h2>
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+                  <h2 className="font-display text-lg font-bold text-[#0F172A]">Your Pass</h2>
+                  <GuestHelpChip topicId="qr" />
+                  <GuestHelpChip topicId="seating" />
+                </div>
                 {showSeatPass && props.seatQrDataUrl && props.seatLookupUrl && (
                   <div className="mb-6 rounded-xl bg-[#0B8A83]/5 border border-[#0B8A83]/20 p-4">
                     <p className="text-xs text-slate-600 mb-2 flex items-center justify-center gap-1">
@@ -783,6 +812,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           {!templateOwnsJourney &&
             (hubTabs.includes("memory") || props.memoryUploadUrl || props.memoryVaultEnabled) && (
           <PortalSection delay={430} id="memory">
+            <div className="mb-2">
+              <GuestHelpChip topicId="memory" />
+            </div>
             <InvitationMemoryAlbumCard
               eventTitle={props.memoryAlbumTitle?.trim() || displayEvent.title}
               uploadUrl={props.memoryUploadUrl}

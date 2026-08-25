@@ -23,11 +23,17 @@ function bumpHintCount(): void {
   }
 }
 
+import type { PageRenderContext } from "@/lib/invite-blueprints/blueprint-types";
+
+interface SwipeHintProps {
+  category?: PageRenderContext["category"];
+}
+
 /**
  * First-visit "swipe up" affordance on the cover. CSS delays it 1.2s and bobs
  * the chevron (transform-only); shown max twice per guest.
  */
-export function SwipeHint() {
+export function SwipeHint({ category = "wedding" }: SwipeHintProps) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -40,7 +46,7 @@ export function SwipeHint() {
   return (
     <div className="inv-swipe-hint inv-paged-chrome" aria-hidden>
       <ChevronUp size={20} className="inv-swipe-hint-chevron" />
-      Swipe up
+      {category === "funeral" ? "Scroll for arrangements" : "Swipe up"}
     </div>
   );
 }

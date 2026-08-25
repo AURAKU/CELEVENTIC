@@ -12,19 +12,19 @@ import {
   seatingPartyService,
 } from "@/services/seating/seating-party.service";
 import { seatingService } from "@/services/seating/seating.service";
-import type { SeatingPlanType, UserRole } from "@prisma/client";
+import { Prisma, type GuestPassStatus, type SeatingPlanType, type UserRole } from "@prisma/client";
 import { z } from "zod";
 
-const LIVE_PASS_STATUSES = [
+const LIVE_PASS_STATUSES: GuestPassStatus[] = [
   "ACTIVE",
   "PARTIALLY_ADMITTED",
   "ADMITTED",
   "PENDING_SYNC",
   "CONFLICT",
   "MANUAL_REVIEW",
-] as const;
+];
 
-const seatingGuestSelect = {
+const seatingGuestSelect = Prisma.validator<Prisma.GuestSelect>()({
   id: true,
   name: true,
   email: true,
@@ -39,7 +39,7 @@ const seatingGuestSelect = {
       admissionAllowance: true,
       admissionState: true,
       guestPasses: {
-        where: { status: { in: [...LIVE_PASS_STATUSES] } },
+        where: { status: { in: LIVE_PASS_STATUSES } },
         orderBy: { tokenVersion: "desc" as const },
         take: 1,
         select: {
@@ -54,13 +54,11 @@ const seatingGuestSelect = {
     orderBy: { tag: { sortOrder: "asc" as const } },
     select: { tag: { select: { id: true, label: true } } },
   },
-} as const;
+});
 
-function mapGuestToStudio(
-  guest: Awaited<
-    ReturnType<typeof prisma.guest.findMany<{ select: typeof seatingGuestSelect }>>
-  >[number]
-): StudioGuest {
+type SeatingGuestRow = Prisma.GuestGetPayload<{ select: typeof seatingGuestSelect }>;
+
+function mapGuestToStudio(guest: SeatingGuestRow): StudioGuest {
   const pass = guest.invitation?.guestPasses[0];
   const allowance = guest.invitation
     ? Math.max(
@@ -84,7 +82,7 @@ function mapGuestToStudio(
     name: guest.name,
     email: guest.email,
     phone: guest.phone,
-    qrToken: guest.qrToken,
+    qrToken: guest.qrToken ?? undefined,
     status: guest.status,
     plusOnes: guest.plusOnes,
     invitationId: guest.invitationId,

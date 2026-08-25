@@ -6,8 +6,9 @@ import {
   tableCaptionValue,
   tableDisplayName,
 } from "@/lib/seating/seating-types";
+import { formatAdmissionCode, normalizeAdmissionCode } from "@/lib/admission/pass-code";
 import type { GuideSeatingConfig, GuideSeatingMatch } from "@/lib/event-guide/types";
-import { ChairGlyph, PAPER_WASH, RoundTable, SprigDivider } from "./guide-motifs";
+import { ChairGlyph, RoundTable, SprigDivider } from "./guide-motifs";
 
 type Fonts = { heading: string; body: string; eyebrow: string; script: string };
 
@@ -238,7 +239,7 @@ export function GuideSeating({
             {byCode ? "Your admission code" : "Your name"}
           </label>
 
-          <div className="relative">
+          <div>
             <input
               id="guide-seat-query"
               value={query}
@@ -294,21 +295,28 @@ export function GuideSeating({
               }}
             />
 
+            {/*
+              In-flow suggestions (not absolute). An overlay sat on top of
+              “Find my table”, short-query hints, and the privacy line — guests
+              reading those phrases while typing. Expanding here pushes the
+              button down instead of covering anything.
+            */}
             {open ? (
               <ul
                 id={listId}
                 role="listbox"
                 data-testid="event-guide-seating-suggestions"
                 aria-label="Matching names"
-                className="absolute inset-x-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border shadow-lg"
+                className="mt-2 max-h-[9.5rem] overflow-y-auto overscroll-contain rounded-xl border divide-y scroll-smooth"
                 style={{
                   borderColor: "var(--guide-hairline)",
                   background: "var(--guide-paper)",
-                  backgroundImage: PAPER_WASH,
+                  // Soft enough not to compete with the seat card copy.
+                  boxShadow: "0 1px 0 color-mix(in srgb, var(--guide-hairline) 70%, transparent)",
                 }}
               >
                 {suggestions.map((name, index) => (
-                  <li key={name} role="none">
+                  <li key={name} role="none" style={{ borderColor: "var(--guide-hairline)" }}>
                     <button
                       type="button"
                       id={`${listId}-option-${index}`}
@@ -318,15 +326,17 @@ export function GuideSeating({
                       onMouseDown={(event) => event.preventDefault()}
                       onMouseEnter={() => setActive(index)}
                       onClick={() => choose(name)}
-                      className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[0.95rem] transition-colors"
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[0.9rem] leading-snug transition-colors"
                       style={{
                         background:
-                          index === active ? "var(--guide-hairline)" : "transparent",
+                          index === active
+                            ? "color-mix(in srgb, var(--guide-hairline) 55%, transparent)"
+                            : "transparent",
                         color: "var(--guide-text)",
                       }}
                     >
                       <ChairGlyph
-                        className="h-4 w-4 shrink-0 opacity-60"
+                        className="h-3.5 w-3.5 shrink-0 opacity-45"
                         style={{ color: "var(--guide-secondary)" }}
                       />
                       <span className="truncate">{name}</span>
@@ -384,9 +394,9 @@ export function GuideSeating({
 /**
  * The answer, as a card a guest could have found waiting on their plate.
  *
- * The table is drawn once, large, with the number set inside it — that is the
- * one thing they came for and it should be readable across a hall. The seat,
- * the zone and the people they are seated with are the small print under it.
+ * Shows, in this order: their name, the seat they were assigned, then their
+ * admission QR with the code digits underneath so a door steward can scan or
+ * read the number aloud without opening another app.
  */
 function SeatCard({
   match,
@@ -406,6 +416,13 @@ function SeatCard({
       : seal.length <= 4
         ? "text-[1.6rem]"
         : "text-[1.05rem]";
+
+  const seatLine = [
+    match.seatLabel ? seatDisplayName(match.seatLabel) : null,
+    match.zone,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
 
   return (
     <div data-testid="event-guide-seating-result">
@@ -428,9 +445,13 @@ function SeatCard({
               color: "var(--guide-label, var(--guide-secondary))",
             }}
           >
-            Reserved for
+            Your name
           </p>
-          <p className="mt-1.5 text-[1.45rem] leading-tight" style={{ fontFamily: fonts.script }}>
+          <p
+            className="mt-1.5 text-[1.45rem] leading-tight"
+            style={{ fontFamily: fonts.script }}
+            data-testid="event-guide-seating-name"
+          >
             {match.partyName}
           </p>
 
@@ -466,13 +487,17 @@ function SeatCard({
                 >
                   {tableDisplayName(match.tableNumber)}
                 </p>
-                {match.seatLabel || match.zone ? (
-                  <p className="mt-1 text-[0.88rem] opacity-80">
-                    {[match.seatLabel ? seatDisplayName(match.seatLabel) : null, match.zone]
-                      .filter(Boolean)
-                      .join("  ·  ")}
+                {seatLine ? (
+                  <p
+                    className="mt-1.5 text-[1.05rem] font-semibold"
+                    style={{ color: "var(--guide-primary)" }}
+                    data-testid="event-guide-seating-seat"
+                  >
+                    {seatLine}
                   </p>
-                ) : null}
+                ) : (
+                  <p className="mt-1 text-[0.88rem] opacity-80">Your seat at this table</p>
+                )}
               </figcaption>
             </figure>
           ) : null}
@@ -493,7 +518,7 @@ function SeatCard({
                 {match.ceremonyRowLabel}
               </p>
               {match.ceremonySeatLabel ? (
-                <p className="mt-1 text-[0.88rem] opacity-80">
+                <p className="mt-1 text-[0.95rem] font-semibold opacity-90">
                   {seatDisplayName(match.ceremonySeatLabel)}
                 </p>
               ) : null}
@@ -510,6 +535,10 @@ function SeatCard({
                 Your seat has not been assigned yet. Please ask a member of the host team.
               </p>
             </div>
+          ) : null}
+
+          {match.admissionCode ? (
+            <AdmissionPassMark code={match.admissionCode} fonts={fonts} />
           ) : null}
 
           {match.partyMembers.length > 0 ? (
@@ -544,6 +573,80 @@ function SeatCard({
       <p className="mt-3 px-2 text-center text-[0.72rem] leading-relaxed opacity-60">
         Only your own party is ever shown, and nothing is stored on your phone.
       </p>
+    </div>
+  );
+}
+
+/** QR of this party's admission code, with the digits printed under it. */
+function AdmissionPassMark({ code, fonts }: { code: string; fonts: Fonts }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const digits = normalizeAdmissionCode(code);
+  const display = formatAdmissionCode(digits);
+
+  useEffect(() => {
+    if (!digits) {
+      setSrc(null);
+      return;
+    }
+    let cancelled = false;
+    void import("qrcode")
+      .then((QRCode) =>
+        QRCode.toDataURL(digits, {
+          errorCorrectionLevel: "H",
+          margin: 4,
+          width: 200,
+          color: { dark: "#000000", light: "#ffffff" },
+        })
+      )
+      .then((url) => {
+        if (!cancelled) setSrc(url);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [digits]);
+
+  if (!digits) return null;
+
+  return (
+    <div
+      className="mt-7 border-t pt-5"
+      style={{ borderColor: "var(--guide-hairline)" }}
+      data-testid="event-guide-seating-admission"
+    >
+      <p
+        className="text-[0.66rem] font-semibold uppercase tracking-[0.22em] opacity-75"
+        style={{ fontFamily: fonts.eyebrow }}
+      >
+        Your admission pass
+      </p>
+      <div className="mx-auto mt-3 w-fit rounded-2xl border bg-white p-3 shadow-sm" style={{ borderColor: "var(--guide-hairline)" }}>
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element -- data URL from qrcode
+          <img
+            src={src}
+            alt={`Admission QR for code ${display}`}
+            width={200}
+            height={200}
+            className="h-44 w-44"
+          />
+        ) : (
+          <div className="flex h-44 w-44 items-center justify-center text-[0.75rem] opacity-50">
+            Preparing pass…
+          </div>
+        )}
+      </div>
+      <p
+        className="mt-3 font-mono text-[1.35rem] font-semibold tracking-[0.18em] tabular-nums"
+        style={{ color: "var(--guide-primary)", fontFamily: fonts.heading }}
+        data-testid="event-guide-seating-admission-code"
+      >
+        {display}
+      </p>
+      <p className="mt-1 text-[0.78rem] opacity-65">Show this code at the door</p>
     </div>
   );
 }

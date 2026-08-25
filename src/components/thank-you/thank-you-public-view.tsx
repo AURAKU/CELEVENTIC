@@ -5,7 +5,7 @@ import { Download, Music2, Pause, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CeleventicImage, CeleventicVideo } from "@/components/media/celeventic-media";
 import { cn } from "@/lib/utils";
-import type { ThankYouTemplate } from "@/lib/thank-you/templates";
+import { getThankYouTemplate, type ThankYouTemplate } from "@/lib/thank-you/templates";
 import type { ResolvedThankYouDesign } from "@/lib/thank-you/types";
 import {
   DEFAULT_SECTION_CONFIG,
@@ -45,7 +45,7 @@ export interface ThankYouPublicViewProps {
   heroImageUrl?: string | null;
   signatureImageUrl?: string | null;
   audioUrl?: string | null;
-  template: ThankYouTemplate;
+  template?: ThankYouTemplate | null;
   design?: ResolvedThankYouDesign | null;
   sectionConfig?: ThankYouSectionConfig | null;
   guestbookConfig?: ThankYouGuestbookConfig | null;
@@ -109,10 +109,11 @@ export function ThankYouPublicView(props: ThankYouPublicViewProps) {
   const [flyerOpen, setFlyerOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const reduceMotion = usePrefersReducedMotion();
+  const safeTemplate = template?.id ? template : getThankYouTemplate("eternal-ivory");
 
   const resolved = design ?? {
     themeSource: "PRESET" as const,
-    templateId: template.id,
+    templateId: safeTemplate.id,
     fontPairingId: "cormorant-inter",
     displayFontStack: "Georgia, serif",
     bodyFontStack: "system-ui, sans-serif",
@@ -122,7 +123,7 @@ export function ThankYouPublicView(props: ThankYouPublicViewProps) {
     surfaceColor: "#FFFFFF",
     textColor: "#27211E",
     mutedTextColor: "#746A64",
-    accentColor: template.accentColor,
+    accentColor: safeTemplate.accentColor,
     secondaryAccentColor: "#EADCC8",
     backgroundImageUrl: null,
     backgroundVideoUrl: null,
@@ -132,13 +133,15 @@ export function ThankYouPublicView(props: ThankYouPublicViewProps) {
     motionStyle: reduceMotion ? ("none" as const) : ("gentle" as const),
     contentWidth: "comfortable" as const,
     isLight: true,
-    background: template.background,
-    name: template.name,
-    description: template.description,
+    background: safeTemplate.background,
+    name: safeTemplate.name,
+    description: safeTemplate.description,
   };
 
   const sections = orderedEnabledSections(
-    sectionConfig ?? parseSectionConfig(DEFAULT_SECTION_CONFIG)
+    sectionConfig?.sections?.length
+      ? sectionConfig
+      : parseSectionConfig(DEFAULT_SECTION_CONFIG)
   );
   const share = {
     allowNativeShare: true,
@@ -214,7 +217,7 @@ export function ThankYouPublicView(props: ThankYouPublicViewProps) {
 
   return (
     <div
-      className={cn("relative min-h-screen overflow-x-hidden", motionClass)}
+      className={cn("relative min-h-app-viewport overflow-x-hidden", motionClass)}
       style={{
         ...cssVars,
         backgroundColor: resolved.backgroundColor,

@@ -150,7 +150,9 @@ async function handleVideoUpload(
   // for callers of this legacy endpoint is unchanged from before this refactor.
   const asset = await createAndQueueLocalVideoAsset({
     category: "PREMIUM",
+    ownerType: "USER",
     ownerId: userId,
+    storageKey: `user:${userId}`,
     context: { role, source: "invitations-upload" },
     originalFilename: file.name,
     originalMimeType: file.type || "application/octet-stream",

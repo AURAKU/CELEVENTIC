@@ -12,6 +12,8 @@ interface PreferencesMenuProps {
   className?: string;
   /** Icon-only on small screens */
   compact?: boolean;
+  /** Topbar social pattern: globe icon only, no currency chip */
+  iconOnly?: boolean;
 }
 
 const CURRENCIES: DisplayCurrency[] = ["GHS", "USD", "GBP"];
@@ -95,7 +97,7 @@ function GlobeMark({ className }: { className?: string }) {
 }
 
 /** Single control, tap to open language & currency picker (avoids crowded header). */
-export function PreferencesMenu({ className, compact = false }: PreferencesMenuProps) {
+export function PreferencesMenu({ className, compact = false, iconOnly = false }: PreferencesMenuProps) {
   const { locale, setLocale, labels, availableLocales } = useLocale();
   const { currency, setCurrency, loading: ratesLoading } = useCurrency();
   const [open, setOpen] = useState(false);
@@ -128,50 +130,64 @@ export function PreferencesMenu({ className, compact = false }: PreferencesMenuP
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "group/pref relative inline-flex items-center justify-center touch-manipulation",
-          "rounded-[1.15rem] p-[1px]",
-          "bg-gradient-to-br from-teal-400/35 via-white/45 to-orange-400/30",
-          "shadow-[0_0_0_1px_rgba(15,118,110,0.06)]",
-          "transition-[transform,box-shadow] duration-300 ease-out",
-          "hover:scale-[1.02] hover:shadow-[0_0_0_1px_rgba(20,184,166,0.16),0_6px_18px_rgba(15,118,110,0.1)]",
+          "rounded-xl",
+          iconOnly
+            ? "min-h-10 min-w-10 text-slate-600 hover:bg-slate-100 hover:text-brand-700"
+            : cn(
+                "rounded-[1.15rem] p-[1px]",
+                "bg-gradient-to-br from-teal-400/35 via-white/45 to-orange-400/30",
+                "shadow-[0_0_0_1px_rgba(15,118,110,0.06)]",
+                "transition-[transform,box-shadow] duration-300 ease-out",
+                "hover:scale-[1.02] hover:shadow-[0_0_0_1px_rgba(20,184,166,0.16),0_6px_18px_rgba(15,118,110,0.1)]"
+              ),
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
-          open && "shadow-[0_0_0_1px_rgba(20,184,166,0.22),0_6px_18px_rgba(15,118,110,0.12)]"
+          open &&
+            !iconOnly &&
+            "shadow-[0_0_0_1px_rgba(20,184,166,0.22),0_6px_18px_rgba(15,118,110,0.12)]",
+          open && iconOnly && "bg-slate-100 text-brand-700"
         )}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="Language and currency"
       >
-        <span
-          className={cn(
-            "inline-flex items-center justify-center gap-1.5 rounded-[1.08rem]",
-            "bg-white/45 backdrop-blur-md supports-[backdrop-filter]:bg-white/30",
-            "shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]",
-            "text-xs font-semibold tracking-wide text-slate-700",
-            compact
-              ? "min-h-[44px] min-w-[44px] px-2.5 sm:min-h-9 sm:min-w-0 sm:px-3"
-              : "h-9 px-3"
-          )}
-        >
-          <GlobeMark className="h-[1.125rem] w-[1.125rem] shrink-0 text-[#0B8A83]" />
+        {iconOnly ? (
+          <GlobeMark className="h-5 w-5 text-[#0B8A83]" />
+        ) : (
           <span
             className={cn(
-              "inline-flex items-center gap-1.5 tabular-nums",
-              compact && "hidden sm:inline-flex"
+              "inline-flex items-center justify-center gap-1.5 rounded-[1.08rem]",
+              "bg-white/45 backdrop-blur-md supports-[backdrop-filter]:bg-white/30",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]",
+              "text-xs font-semibold tracking-wide text-slate-700",
+              compact
+                ? "min-h-[44px] min-w-[44px] px-2.5 sm:min-h-9 sm:min-w-0 sm:px-3"
+                : "h-9 px-3"
             )}
           >
-            {showLanguage && (
-              <span className="text-[0.95rem] leading-none" aria-hidden>
-                {LOCALE_FLAGS[locale]}
+            <GlobeMark className="h-[1.125rem] w-[1.125rem] shrink-0 text-[#0B8A83]" />
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 tabular-nums",
+                compact && "hidden sm:inline-flex"
+              )}
+            >
+              {showLanguage && (
+                <span className="text-[0.95rem] leading-none" aria-hidden>
+                  {LOCALE_FLAGS[locale]}
+                </span>
+              )}
+              {showLanguage && (
+                <span
+                  className="h-1 w-1 rounded-full bg-gradient-to-br from-teal-500/70 to-orange-400/80"
+                  aria-hidden
+                />
+              )}
+              <span className="text-[11px] font-bold tracking-[0.06em] text-slate-800">
+                {currency}
               </span>
-            )}
-            {showLanguage && (
-              <span
-                className="h-1 w-1 rounded-full bg-gradient-to-br from-teal-500/70 to-orange-400/80"
-                aria-hidden
-              />
-            )}
-            <span className="text-[11px] font-bold tracking-[0.06em] text-slate-800">{currency}</span>
+            </span>
           </span>
-        </span>
+        )}
       </button>
 
       {open && (

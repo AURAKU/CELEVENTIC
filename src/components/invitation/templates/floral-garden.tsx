@@ -7,13 +7,13 @@ import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 import { StudioButton } from "../shared/studio-button";
 
-export function FloralGardenTemplate({ invitation, event, design, guestId, guestName }: InvitationRenderProps) {
+export function FloralGardenTemplate({ invitation, event, design, guestId, guestName, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const { colors, studio } = design;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#fdf8f3" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4" style={{ background: "#fdf8f3" }}>
       <div className="relative w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden inv-fade-in border border-rose-100">
         <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-rose-100/80 to-transparent pointer-events-none" />
         <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-rose-200/40 blur-2xl" />
@@ -33,7 +33,7 @@ export function FloralGardenTemplate({ invitation, event, design, guestId, guest
           {(event.venueName || event.landmark) && (
             <p className="text-sm text-rose-950">{event.venueName}{event.landmark ? ` · ${event.landmark}` : ""}</p>
           )}
-          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor={colors.secondary} label={studio?.rsvpLabel} />
+          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor={colors.secondary} label={studio?.rsvpLabel} />
           <StudioButton studio={studio} accent={colors.secondary}>
             <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} />
           </StudioButton>

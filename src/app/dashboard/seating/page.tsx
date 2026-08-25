@@ -12,7 +12,7 @@ export default function SeatingDashboardPage() {
   if (eventsLoading) return <PageLoader label="Loading events…" className="min-h-[40vh]" />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="seating-plan">
       <EventPicker events={events} value={eventId} onChange={setEventId} />
 
       {!eventId ? (
@@ -22,7 +22,12 @@ export default function SeatingDashboardPage() {
           </CardContent>
         </Card>
       ) : (
-        <SeatingStudioClient eventId={eventId} />
+        <div data-tour="seating-assign">
+          <div data-tour="seating-publish" className="sr-only" aria-hidden>
+            Publish seating
+          </div>
+          <SeatingStudioClient eventId={eventId} />
+        </div>
       )}
     </div>
   );

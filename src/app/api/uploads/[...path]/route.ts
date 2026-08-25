@@ -149,7 +149,7 @@ export async function GET(
   try {
     if (range) {
       const chunk = assertBinaryBody(await readSlice(filePath, range.start, range.end));
-      return new NextResponse(chunk, {
+      return new NextResponse(Buffer.from(chunk), {
         status: 206,
         headers: {
           ...headers,
@@ -174,7 +174,7 @@ export async function GET(
     }
 
     const body = assertBinaryBody(await readSlice(filePath, 0, size - 1));
-    return new NextResponse(body, {
+    return new NextResponse(Buffer.from(body), {
       status: 200,
       headers: {
         ...headers,

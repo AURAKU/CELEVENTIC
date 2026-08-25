@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Golden Seed">
+  <defs>
+    <linearGradient id="g07" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A16207"/>
+      <stop offset="100%" stop-color="#FEF08A"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#g07)"/>
+  <g opacity="0.95"><rect x="34" y="34" width="60" height="60" transform="rotate(45 64 64)" fill="#FEF08A"/><circle cx="64" cy="64" r="14" fill="#A16207"/></g>
+</svg>

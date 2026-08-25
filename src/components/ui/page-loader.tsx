@@ -33,7 +33,7 @@ export function DashboardLoader() {
 
 export function AuthLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-mesh">
+    <div className="min-h-app-viewport flex items-center justify-center bg-mesh">
       <PageLoader label="Loading sign in..." />
     </div>
   );

@@ -69,6 +69,7 @@ import {
   isWeddingEventType,
   WEDDING_ALLOWED_OUTROS,
 } from "@/lib/invitation/wedding-experience-filters";
+import { introLinePlaceholderForEventType } from "@/lib/invitation/catalog-event-type";
 import {
   OPENING_EXPERIENCES,
   mapLegacyRevealMode,
@@ -312,8 +313,8 @@ export const InvitationStudioHub = forwardRef<
   const studio = design.studio ?? DEFAULT_STUDIO_CONFIG;
   const experience = design.experience ?? {};
   const scenes = useMemo(
-    () => mergeScenesWithTabs(experience.scenes, experience.enabledTabs ?? DEFAULT_HUB_TABS),
-    [experience.scenes, experience.enabledTabs]
+    () => mergeScenesWithTabs(experience.scenes, experience.enabledTabs ?? DEFAULT_HUB_TABS, eventType),
+    [experience.scenes, experience.enabledTabs, eventType]
   );
   const activeScene =
     scenes.find((s) => s.id === selectedSceneId) ?? scenes[0] ?? null;
@@ -1685,7 +1686,7 @@ export const InvitationStudioHub = forwardRef<
                   <Input
                     value={design.introText ?? ""}
                     onChange={(e) => patchDesign({ introText: e.target.value })}
-                    placeholder="Together with their families"
+                    placeholder={introLinePlaceholderForEventType(eventType)}
                   />
                 </div>
                 <div className="space-y-1">

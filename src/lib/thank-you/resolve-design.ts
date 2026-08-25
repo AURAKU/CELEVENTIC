@@ -94,6 +94,27 @@ function fontStack(fontId?: string | null): string | undefined {
   return resolveThankYouFontStack(fontId);
 }
 
+/** Safe luminance for invitation/theme colours that may not be hex. */
+function hexLuminance(color: string | null | undefined): number {
+  if (!color || typeof color !== "string") return 0.5;
+  const cleaned = color.trim().replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(cleaned) && !/^[0-9a-fA-F]{3}$/.test(cleaned)) {
+    return 0.5;
+  }
+  const full =
+    cleaned.length === 3
+      ? cleaned
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : cleaned;
+  const r = Number.parseInt(full.slice(0, 2), 16) / 255;
+  const g = Number.parseInt(full.slice(2, 4), 16) / 255;
+  const b = Number.parseInt(full.slice(4, 6), 16) / 255;
+  if (![r, g, b].every(Number.isFinite)) return 0.5;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 export function resolveThankYouDesign(input: {
   templateId?: string | null;
   themeSource?: string | null;
@@ -141,16 +162,7 @@ export function resolveThankYouDesign(input: {
     }
     base.themeSource = "INVITATION";
     base.isLight =
-      0.2126 *
-        Number.parseInt(base.backgroundColor.replace("#", "").slice(0, 2) || "80", 16) /
-        255 +
-        0.7152 *
-          Number.parseInt(base.backgroundColor.replace("#", "").slice(2, 4) || "80", 16) /
-          255 +
-        0.0722 *
-          Number.parseInt(base.backgroundColor.replace("#", "").slice(4, 6) || "80", 16) /
-          255 >
-      0.55;
+      hexLuminance(base.backgroundColor) > 0.55;
   }
 
   if (themeSource === "CUSTOM" || themeSource === "PRESET") {
@@ -160,8 +172,12 @@ export function resolveThankYouDesign(input: {
   return base;
 }
 
-export function orderedEnabledSections(config: ThankYouSectionConfig) {
-  return config.sections.filter((section) => section.enabled).sort((a, b) => a.order - b.order);
+export function orderedEnabledSections(config?: ThankYouSectionConfig | null) {
+  const sections = config?.sections;
+  if (!Array.isArray(sections) || !sections.length) {
+    return DEFAULT_SECTION_CONFIG.sections.filter((section) => section.enabled);
+  }
+  return sections.filter((section) => section.enabled).sort((a, b) => a.order - b.order);
 }
 
 export function isGuestbookOpen(config: ThankYouGuestbookConfig): boolean {

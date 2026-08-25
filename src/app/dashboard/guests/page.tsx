@@ -123,7 +123,7 @@ function GuestsPageInner() {
   }
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-full space-y-5 sm:space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-full space-y-5 sm:space-y-6" data-tour="guest-list">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold sm:text-2xl">Guest CRM</h1>
@@ -131,7 +131,7 @@ function GuestsPageInner() {
             Select an event to manage only that celebration&apos;s guests — never mixed with another list.
           </p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end" data-tour="guest-invite">
           {eventId && (
             <Button
               type="button"
@@ -228,7 +228,7 @@ function GuestsPageInner() {
         <VendorTeamPassesPanel eventId={eventId} openCreateDefault={vendorCreateOpen} />
       ) : (
         <>
-          <div className="min-w-0">
+          <div className="min-w-0" data-tour="guest-add">
             <QuickCreateCard
               eventId={eventId}
               onCreated={(card) => {

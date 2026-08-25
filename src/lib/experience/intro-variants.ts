@@ -215,6 +215,78 @@ export const INTRO_VARIANTS: Record<IntroVariantId, IntroVariantMeta> = {
     tagline: "Two swans, one gate, one forever…",
     showHud: false,
   },
+  "mourning-cloth": {
+    id: "mourning-cloth",
+    label: "Mourning Cloth",
+    tagline: "Black and red cloth gathers in honour…",
+    showHud: false,
+  },
+  "white-veil": {
+    id: "white-veil",
+    label: "White Veil",
+    tagline: "A quiet white cloth for thanksgiving…",
+    showHud: false,
+  },
+  "kente-fold": {
+    id: "kente-fold",
+    label: "Kente Fold",
+    tagline: "Heritage weave folds into farewell…",
+    showHud: false,
+  },
+  "vigil-lantern": {
+    id: "vigil-lantern",
+    label: "Vigil Lantern",
+    tagline: "Lantern light for the one week vigil…",
+    showHud: false,
+  },
+  "balloon-rise": {
+    id: "balloon-rise",
+    label: "Balloon Rise",
+    tagline: "Pastel balloons lifting into the party…",
+    showHud: false,
+  },
+  "sparkle-cascade": {
+    id: "sparkle-cascade",
+    label: "Sparkle Cascade",
+    tagline: "Gold sparkles for a glamorous night…",
+    showHud: false,
+  },
+  "milestone-foil": {
+    id: "milestone-foil",
+    label: "Milestone Foil",
+    tagline: "A milestone year, foil and champagne…",
+    showHud: false,
+  },
+  "party-strobe": {
+    id: "party-strobe",
+    label: "Party Strobe",
+    tagline: "Lights up for the birthday bash…",
+    showHud: false,
+  },
+  "briefing-grid": {
+    id: "briefing-grid",
+    label: "Briefing Grid",
+    tagline: "Executive grid locks into the boardroom brief…",
+    showHud: false,
+  },
+  "keynote-beam": {
+    id: "keynote-beam",
+    label: "Keynote Beam",
+    tagline: "A focused beam for the keynote agenda…",
+    showHud: false,
+  },
+  "launch-orbit": {
+    id: "launch-orbit",
+    label: "Launch Orbit",
+    tagline: "Product orbit spinning into launch night…",
+    showHud: false,
+  },
+  "investor-ledger": {
+    id: "investor-ledger",
+    label: "Investor Ledger",
+    tagline: "Ledger lines open into investor night…",
+    showHud: false,
+  },
 };
 
 export const INTRO_VARIANT_OPTIONS = Object.values(INTRO_VARIANTS);

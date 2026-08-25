@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 import type { CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
+import { withoutCatalogDashes } from "@/lib/invitation-mvp/catalog-public-copy";
 import { getLayoutSignatureFeatures } from "@/lib/invitation/layout-template-signatures";
+import { resolveOrderEventType } from "@/lib/invitation/catalog-event-type";
 
 interface TemplateCardProps {
   template: CatalogTemplate;
@@ -29,9 +31,13 @@ export function TemplateCard({ template, showActions = true }: TemplateCardProps
     getLayoutSignatureFeatures(template.layoutSlug) ?? template.features;
   // Studio 2.0 paged templates open the real viewer in preview mode.
   const isPaged = Boolean(template.themeId && template.blueprintId);
+  const eventType = resolveOrderEventType(template.category);
   const detailHref = isPaged
     ? `/invitations/preview/${template.slug}`
-    : `/invitations/templates/${template.slug}`;
+    : `/invitations/templates/${template.slug}?eventType=${encodeURIComponent(eventType)}`;
+  const name = withoutCatalogDashes(template.name);
+  const description = withoutCatalogDashes(template.description);
+  const style = withoutCatalogDashes(template.style);
 
   return (
     <div className="group inv-3d-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden hover:shadow-[0_16px_48px_rgba(11,138,131,0.12)] transition-all">
@@ -62,12 +68,12 @@ export function TemplateCard({ template, showActions = true }: TemplateCardProps
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#0B8A83]">{template.category}</p>
           {template.mood && (
-            <span className="text-[10px] uppercase tracking-wider text-slate-400">{template.mood}</span>
+            <span className="text-[10px] uppercase tracking-wider text-slate-400">{withoutCatalogDashes(template.mood)}</span>
           )}
         </div>
-        <p className="font-semibold text-[#0F172A] mt-1">{template.name}</p>
-        <p className="text-sm text-slate-500 mt-1 line-clamp-2">{template.description}</p>
-        <p className="text-xs text-slate-400 mt-2">{template.style} style</p>
+        <p className="font-semibold text-[#0F172A] mt-1">{name}</p>
+        <p className="text-sm text-slate-500 mt-1 line-clamp-2">{description}</p>
+        <p className="text-xs text-slate-400 mt-2">{style} style</p>
         {signatureFeatures.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {signatureFeatures.slice(0, 6).map((f) => (

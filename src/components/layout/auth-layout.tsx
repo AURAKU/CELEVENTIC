@@ -16,7 +16,7 @@ const highlights = [
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-app-viewport flex">
       <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] auth-panel relative flex-col justify-between p-10 xl:p-14 text-white overflow-hidden">
         <div className="absolute inset-0 grid-pattern opacity-30" />
         <div className="absolute top-20 right-10 w-72 h-72 bg-brand-500/20 rounded-full blur-3xl" />

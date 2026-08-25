@@ -17,6 +17,8 @@ interface InteractiveRevealProps {
   enableSounds?: boolean;
   /** Wax-seal initials for envelope reveals. */
   sealInitials?: string;
+  /** Memorial emblem for funeral wax seals. */
+  sealEmblem?: string;
   /** Designed seal (color/material) + font/size/color overrides. */
   sealStyle?: ResolvedSealStyle;
   /** Editable opening copy for template-authored ceremonies (e.g. Blush Gate). */
@@ -33,7 +35,9 @@ interface InteractiveRevealProps {
    * opt-in way to move along faster. Never skips anything on its own.
    */
   allowSkip?: boolean;
-  children: ReactNode;
+  /** Funeral / memorial: white doves unseal the wax, gold CTA, slower open. */
+  ceremonialDoves?: boolean;
+  children?: ReactNode;
 }
 
 /**
@@ -49,6 +53,7 @@ export function InteractiveReveal({
   musicEnabled,
   enableSounds = true,
   sealInitials,
+  sealEmblem,
   sealStyle,
   openingCopy,
   onComplete,
@@ -56,7 +61,8 @@ export function InteractiveReveal({
   embedded = false,
   autoOpen = false,
   allowSkip = false,
-  children,
+  ceremonialDoves = false,
+  children = null,
 }: InteractiveRevealProps) {
   const contract = getRevealContractForOpening(openingExperience);
 
@@ -86,6 +92,7 @@ export function InteractiveReveal({
         musicEnabled={musicEnabled}
         enableSounds={enableSounds}
         sealInitials={sealInitials}
+        sealEmblem={sealEmblem}
         sealStyle={sealStyle}
         openingCopy={openingCopy}
         onComplete={onComplete}
@@ -93,6 +100,7 @@ export function InteractiveReveal({
         embedded={embedded}
         autoOpen={autoOpen}
         allowSkip={allowSkip}
+        ceremonialDoves={ceremonialDoves}
       >
         {children}
       </OpeningExperienceRouter>

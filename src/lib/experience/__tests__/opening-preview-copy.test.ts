@@ -25,6 +25,11 @@ test("music cue is spliced onto the opening gesture, not the arrival", () => {
     "Music begins",
     "Invite opens",
   ]);
+  assert.deepEqual(previewTapStepsForOpening("satin-bow", true, "Pastel Garden Cheer"), [
+    "Bow unties",
+    "Pastel Garden Cheer plays",
+    "Invite opens",
+  ]);
   assert.deepEqual(previewTapStepsForOpening("satin-bow", false), [
     "Bow unties",
     "Invite opens",

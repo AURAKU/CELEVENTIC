@@ -47,6 +47,8 @@ interface OpeningExperienceRouterProps {
   enableSounds?: boolean;
   /** Wax-seal initials (envelope reveals). */
   sealInitials?: string;
+  /** Memorial emblem for funeral wax seals. */
+  sealEmblem?: string;
   /** Designed seal (color/material) + font/size/color overrides. */
   sealStyle?: ResolvedSealStyle;
   /** Editable opening copy for ceremonies that render template-authored text. */
@@ -60,7 +62,9 @@ interface OpeningExperienceRouterProps {
   autoOpen?: boolean;
   /** Returning guest, reveals may offer a visible, opt-in skip control. */
   allowSkip?: boolean;
-  children: React.ReactNode;
+  /** Funeral / memorial dove unseal ceremony. */
+  ceremonialDoves?: boolean;
+  children?: React.ReactNode;
 }
 
 const CURTAIN_THEME_MAP: Record<string, "wedding" | "concert" | "award" | "birthday" | "corporate"> = {
@@ -79,6 +83,7 @@ export function OpeningExperienceRouter({
   musicEnabled,
   enableSounds,
   sealInitials,
+  sealEmblem,
   sealStyle,
   openingCopy,
   onComplete,
@@ -86,21 +91,27 @@ export function OpeningExperienceRouter({
   embedded = false,
   autoOpen = false,
   allowSkip = false,
+  ceremonialDoves = false,
   children,
 }: OpeningExperienceRouterProps) {
   const [revealed, setRevealed] = useState(false);
   const reducedMotion = useReducedMotion();
-  const isCurtain = experienceId.startsWith("curtain-");
-  const isEnvelope = isEnvelopeExperience(experienceId);
+  /** Memorial dove ceremony always plays through an envelope mechanic. */
+  const resolvedExperienceId: OpeningExperienceId =
+    ceremonialDoves && !isEnvelopeExperience(experienceId)
+      ? "wax-seal-black"
+      : experienceId;
+  const isCurtain = resolvedExperienceId.startsWith("curtain-");
+  const isEnvelope = isEnvelopeExperience(resolvedExperienceId);
   /** Owns a reduced-motion path internally (short, dignified open). */
-  const isBlushGate = experienceId === "blush-gate";
+  const isBlushGate = resolvedExperienceId === "blush-gate";
 
   function complete() {
     setRevealed(true);
     onComplete();
   }
 
-  if (experienceId === "none" || revealed) {
+  if (resolvedExperienceId === "none" || revealed) {
     return <div className="inv-portal-enter">{children}</div>;
   }
 
@@ -111,11 +122,38 @@ export function OpeningExperienceRouter({
   }
 
   if (isEnvelope) {
-    const meta = getOpeningExperience(experienceId);
-    const theme = meta?.envelopeTheme;
+    const meta = getOpeningExperience(resolvedExperienceId);
+    const theme =
+      meta?.envelopeTheme ?? getOpeningExperience("wax-seal-black")?.envelopeTheme;
     if (!theme) {
-      // Unknown envelope variant, open directly rather than blank-screening.
-      return <div className="inv-portal-enter">{children}</div>;
+      // Last-resort: still mount a sealed envelope rather than silently skipping.
+      return (
+        <EnvelopeCollectionReveal
+          theme={{
+            bodyBg: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 100%)",
+            flapGradient: "linear-gradient(180deg, #3d3d3d 0%, #1a1a1a 100%)",
+            sealGradient: "linear-gradient(145deg, #D4A63A 0%, #8B6914 100%)",
+            borderColor: "rgba(212,166,58,0.35)",
+            accent: "#D4A63A",
+            label: "Tap the seal to open",
+          }}
+          guestName={guestName}
+          eventTitle={eventTitle}
+          hostName={hostName}
+          musicEnabled={musicEnabled}
+          enableSounds={enableSounds}
+          sealInitials={sealInitials}
+          sealEmblem={sealEmblem}
+          sealStyle={sealStyle}
+          onBegin={onBegin}
+          onComplete={complete}
+          embedded={embedded}
+          autoOpen={autoOpen}
+          ceremonialDoves={ceremonialDoves}
+        >
+          {children}
+        </EnvelopeCollectionReveal>
+      );
     }
     return (
       <EnvelopeCollectionReveal
@@ -126,18 +164,20 @@ export function OpeningExperienceRouter({
         musicEnabled={musicEnabled}
         enableSounds={enableSounds}
         sealInitials={sealInitials}
+        sealEmblem={sealEmblem}
         sealStyle={sealStyle}
         onBegin={onBegin}
         onComplete={complete}
         embedded={embedded}
         autoOpen={autoOpen}
+        ceremonialDoves={ceremonialDoves}
       >
         {children}
       </EnvelopeCollectionReveal>
     );
   }
 
-  if (experienceId === "palace-entrance") {
+  if (resolvedExperienceId === "palace-entrance") {
     return (
       <PalaceEntranceReveal
         guestName={guestName}
@@ -148,7 +188,7 @@ export function OpeningExperienceRouter({
     );
   }
 
-  if (experienceId === "blush-gate") {
+  if (resolvedExperienceId === "blush-gate") {
     // Blush Gate owns its own seal keyboard path — do NOT mount RevealKeyboardFallback
     // here. That "Open invitation" control called onComplete and skipped the entire
     // envelope → golden gate ceremony on live Forever Afaris invites.
@@ -184,7 +224,7 @@ export function OpeningExperienceRouter({
     );
   }
 
-  if (experienceId === "archway") {
+  if (resolvedExperienceId === "archway") {
     return (
       <>
         <ArchwayReveal
@@ -203,7 +243,7 @@ export function OpeningExperienceRouter({
       <CurtainReveal
         eventTitle={eventTitle}
         guestName={guestName}
-        theme={CURTAIN_THEME_MAP[experienceId] ?? "wedding"}
+        theme={CURTAIN_THEME_MAP[resolvedExperienceId] ?? "wedding"}
         onBegin={onBegin}
         onComplete={complete}
         embedded={embedded}
@@ -214,7 +254,7 @@ export function OpeningExperienceRouter({
     );
   }
 
-  switch (experienceId) {
+  switch (resolvedExperienceId) {
     case "scratch":
       return (
         <>
@@ -225,6 +265,7 @@ export function OpeningExperienceRouter({
         </>
       );
     case "passport":
+    case "investor-pass":
       return <PassportReveal guestName={guestName} eventTitle={eventTitle} hostName={hostName} onComplete={complete} />;
     case "glass":
       return (
@@ -245,6 +286,7 @@ export function OpeningExperienceRouter({
         </>
       );
     case "pop-reveal":
+    case "launch-pulse":
       return <PopReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "gift-box":
       return <GiftBoxReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
@@ -253,12 +295,15 @@ export function OpeningExperienceRouter({
     case "film-countdown":
       return <FilmCountdownReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "letter-unfold":
+    case "briefing-folder":
       return <LetterUnfoldReveal guestName={guestName} eventTitle={eventTitle} hostName={hostName} onComplete={complete} />;
     case "flower-bloom":
       return <FlowerBloomReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "confetti-burst":
+    case "balloon-burst":
       return <ConfettiBurstReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "flip-reveal":
+    case "agenda-flip":
       return <FlipReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
     case "zoom-reveal":
       return <ZoomReveal guestName={guestName} eventTitle={eventTitle} onComplete={complete} />;
@@ -313,7 +358,35 @@ export function OpeningExperienceRouter({
         </>
       );
     default:
-      // Unknown/future experience id: never blank-screen the guest, // degrade to opening the invitation directly.
-      return <div className="inv-portal-enter">{children}</div>;
+      // Unknown/future experience id: never blank-screen — play a sealed envelope.
+      return (
+        <EnvelopeCollectionReveal
+          theme={
+            getOpeningExperience("wax-seal-black")?.envelopeTheme ?? {
+              bodyBg: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 100%)",
+              flapGradient: "linear-gradient(180deg, #3d3d3d 0%, #1a1a1a 100%)",
+              sealGradient: "linear-gradient(145deg, #D4A63A 0%, #8B6914 100%)",
+              borderColor: "rgba(212,166,58,0.35)",
+              accent: "#D4A63A",
+              label: "Tap the seal to open",
+            }
+          }
+          guestName={guestName}
+          eventTitle={eventTitle}
+          hostName={hostName}
+          musicEnabled={musicEnabled}
+          enableSounds={enableSounds}
+          sealInitials={sealInitials}
+          sealEmblem={sealEmblem}
+          sealStyle={sealStyle}
+          onBegin={onBegin}
+          onComplete={complete}
+          embedded={embedded}
+          autoOpen={autoOpen}
+          ceremonialDoves={ceremonialDoves}
+        >
+          {children}
+        </EnvelopeCollectionReveal>
+      );
   }
 }

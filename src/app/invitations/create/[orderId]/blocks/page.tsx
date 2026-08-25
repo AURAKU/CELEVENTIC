@@ -9,6 +9,7 @@ import { BlockEditor } from "@/components/invitation-blocks/block-editor";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { FunnelSummaryBar } from "@/components/invitation-mvp/funnel-summary-bar";
 import type { InvitationBlockDto, BlockRenderContext } from "@/lib/invitation-blocks/block-types";
+import { displayHostNameFromOrder } from "@/lib/invitation/catalog-event-type";
 
 export default function BlocksEditorPage() {
   const router = useRouter();
@@ -41,10 +42,13 @@ export default function BlocksEditorPage() {
 
   const context = useMemo<BlockRenderContext>(() => {
     if (!order) return { eventTitle: "", hostName: "" };
-    const hostName =
-      order.coupleName1 && order.coupleName2
-        ? `${order.coupleName1} & ${order.coupleName2}`
-        : (order.hostName as string) ?? "Host";
+    const hostName = displayHostNameFromOrder({
+      eventType: order.eventType as string | undefined,
+      hostName: order.hostName as string | undefined,
+      coupleName1: order.coupleName1 as string | undefined,
+      coupleName2: order.coupleName2 as string | undefined,
+      deceasedName: order.deceasedName as string | undefined,
+    });
     return {
       eventTitle: (order.eventTitle as string) ?? "Your Event",
       hostName,

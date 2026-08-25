@@ -13,13 +13,17 @@ import { InteractiveReveal } from "@/components/experience-engine/interactive-re
 import { SceneErrorBoundary } from "@/components/experience-engine/scene-error-boundary";
 import { CeremonyErrorBoundary } from "@/components/invitation-os/ceremony-error-boundary";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
+import { resetInviteScrollToCover } from "@/components/invitation-paged/use-active-page";
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
-import { mapLegacyRevealMode } from "@/lib/experience/opening-experiences";
+import {
+  isEnvelopeExperience,
+  mapLegacyRevealMode,
+} from "@/lib/experience/opening-experiences";
 import { createInvitationAudioManager, pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
 import {
   phaseAfterSoftIntro,
@@ -38,6 +42,7 @@ import {
   type VisionBoardContent,
 } from "@/lib/invitation/vision-board";
 import { resolveSealStyle } from "@/lib/invitation/seal-design";
+import { resolveFuneralEnvelopeSeal } from "@/lib/invitation/funeral-envelope-seal";
 import {
   mergeWeddingBoard,
   resolveAfarisCoupleNames,
@@ -158,10 +163,27 @@ export function PremiumInviteWrapper({
   const enabledTabs = experience?.enabledTabs ?? DEFAULT_HUB_TABS;
   const themeColors = enrichedDesign.colors;
 
-  const openingExperience: OpeningExperienceId =
+  const openingExperienceRaw: OpeningExperienceId =
     openingExperienceProp ??
     experience?.openingExperience ??
     mapLegacyRevealMode(revealMode ?? enrichedDesign.studio?.revealMode ?? "envelope");
+
+  /**
+   * Funeral / memorial guests always get the photoreal envelope + dove unseal.
+   * Older DNA still pointed at candle-light / curtain ids, which looked like the
+   * envelope ceremony was “skipped” after Tap to Enter.
+   */
+  const isFuneralCollection =
+    experience?.collectionId === "funeral" ||
+    enrichedDesign.layout === "memorial-candle-tribute" ||
+    /funeral|memorial|homegoing|tribute/i.test(
+      `${props.event.title} ${enrichedDesign.layout ?? ""} ${experience?.collectionId ?? ""}`
+    );
+
+  const openingExperience: OpeningExperienceId =
+    isFuneralCollection && !isEnvelopeExperience(openingExperienceRaw)
+      ? "wax-seal-black"
+      : openingExperienceRaw;
 
   const showReveal =
     !skipReveal &&
@@ -253,9 +275,20 @@ export function PremiumInviteWrapper({
   const tapCoupleName1 = tapCoupleNames.coupleName1;
   const tapCoupleName2 = tapCoupleNames.coupleName2;
   const hasTapCoupleNames = Boolean(tapCoupleName1 && tapCoupleName2);
+  const tapFuneralHonouree =
+    isFuneralCollection
+      ? props.event.deceasedName?.trim() ||
+        tapCoupleName1 ||
+        props.invitation.name?.trim() ||
+        null
+      : null;
   const tapCeremonyLabel = hasTapCoupleNames
     ? null
-    : enrichedDesign.introText?.trim() || props.event.title?.trim() || undefined;
+    : isFuneralCollection
+      ? visionBoard?.eyebrow?.trim() ||
+        enrichedDesign.introText?.trim() ||
+        "IN LOVING MEMORY"
+      : enrichedDesign.introText?.trim() || props.event.title?.trim() || undefined;
 
   const softAccent =
     themeColors?.accent ??
@@ -381,6 +414,8 @@ export function PremiumInviteWrapper({
   // its own timers off that identity. Keeping them stable means a re-render
   // from anywhere above (i18n bootstrap, session refresh, consent banner)
   // cannot disturb a ceremony that is already mid-flight.
+  const [portalEntrance, setPortalEntrance] = useState<"none" | "from-top" | "fade">("none");
+
   const afterSoftIntro = useCallback(() => {
     // Tap to Begin and the envelope/curtain reveal are never silently
     // skipped, not on first visit, not on a return visit. A returning
@@ -391,12 +426,29 @@ export function PremiumInviteWrapper({
 
   const afterReveal = useCallback(() => {
     void startAudio();
+    // Soft settle from the top onto the framed cover — never leave guests mid/bottom.
+    setPortalEntrance("from-top");
     setPhase("portal");
+    // Pin cover immediately, then again after layout/animation frames.
+    resetInviteScrollToCover({ smooth: false });
+    requestAnimationFrame(() => {
+      resetInviteScrollToCover({ smooth: false });
+      window.setTimeout(() => resetInviteScrollToCover({ smooth: true }), 120);
+    });
   }, [startAudio]);
 
   const handleTapBegin = useCallback(() => {
     void startAudio();
-    setPhase(showReveal ? "reveal" : "portal");
+    if (showReveal) {
+      // Keep underlay pinned to cover while the envelope opens over it.
+      resetInviteScrollToCover({ smooth: false });
+      setPhase("reveal");
+      return;
+    }
+    // No envelope ceremony — soft open is appropriate.
+    setPortalEntrance("fade");
+    setPhase("portal");
+    resetInviteScrollToCover({ smooth: false });
   }, [showReveal, startAudio]);
 
   useEffect(() => {
@@ -404,6 +456,33 @@ export function PremiumInviteWrapper({
       void startAudio();
     }
   }, [phase, hasMusic, wantsAutoplay, startAudio]);
+
+  // Guarantee mobile page scroll after ceremony — never leave reveal lock stuck.
+  useEffect(() => {
+    if (phase !== "portal" || typeof document === "undefined") return;
+    document.documentElement.classList.remove("reveal-scroll-locked");
+    document.body.style.overflow = "";
+    document.body.style.touchAction = "";
+  }, [phase]);
+
+  // While the envelope is on top, freeze the underlay on the cover so peek never
+  // shows / snaps a lower page.
+  useEffect(() => {
+    if (phase !== "reveal" || typeof document === "undefined") return;
+    resetInviteScrollToCover({ smooth: false });
+    const scroller = document.querySelector<HTMLElement>(".inv-paged-scroll");
+    if (!scroller) return;
+    const freeze = () => {
+      if (scroller.scrollTop !== 0) scroller.scrollTop = 0;
+    };
+    freeze();
+    scroller.addEventListener("scroll", freeze, { passive: true });
+    const id = window.setInterval(freeze, 200);
+    return () => {
+      scroller.removeEventListener("scroll", freeze);
+      window.clearInterval(id);
+    };
+  }, [phase]);
 
   const restartOpeningCeremony = useCallback(() => {
     // Full pipeline again: brand video → tap gate / reveal → portal.
@@ -425,6 +504,7 @@ export function PremiumInviteWrapper({
       /* ignore */
     }
     setCeremonyGeneration((n) => n + 1);
+    setPortalEntrance("none");
     setPhase(resolveInitialInvitePhase(pipelineFlags));
   }, [audioManager, ceremonyMemoryKey, musicSelection?.startSec, pipelineFlags, props.invitation.id, props.invitation.uniqueLink]);
 
@@ -474,6 +554,15 @@ export function PremiumInviteWrapper({
       />
     </SceneErrorBoundary>
   );
+
+  const portalWithEntrance =
+    portalEntrance === "from-top" ? (
+      <div className="inv-portal-open-from-top">{portal}</div>
+    ) : portalEntrance === "fade" ? (
+      <div className="inv-portal-enter">{portal}</div>
+    ) : (
+      portal
+    );
 
   // DNA intro variants are retired; recover safely if an old phase value appears.
   useEffect(() => {
@@ -571,7 +660,8 @@ export function PremiumInviteWrapper({
             backgroundColor={themeColors?.background}
             atmosphereUrl={softAtmosphereUrl}
             ceremonyLabel={tapCeremonyLabel}
-            name1={hasTapCoupleNames ? tapCoupleName1 : null}
+            invitationName={props.invitation.name}
+            name1={hasTapCoupleNames ? tapCoupleName1 : tapFuneralHonouree}
             name2={hasTapCoupleNames ? tapCoupleName2 : null}
             layoutSlug={enrichedDesign.layout}
             category={experience?.collectionId}
@@ -590,7 +680,14 @@ export function PremiumInviteWrapper({
     );
   }
 
-  if (phase === "reveal") {
+  if (phase === "reveal" || phase === "portal") {
+    const isFuneralExperience =
+      experience?.collectionId === "funeral" ||
+      enrichedDesign.layout === "memorial-candle-tribute" ||
+      Boolean(visionBoard?.sealEmblem?.trim()) ||
+      /funeral|memorial|homegoing|in loving memory|rites for|one week|tribute/i.test(
+        `${props.event.title} ${props.event.description ?? ""} ${enrichedDesign.layout ?? ""}`
+      );
     const sealInitials = resolveSealInitials(
       visionBoard?.sealInitials ?? weddingBoard?.sealMonogram,
       {
@@ -598,9 +695,28 @@ export function PremiumInviteWrapper({
         coupleName1: visionBoard?.coupleName1 ?? weddingBoard?.coupleName1,
         coupleName2: visionBoard?.coupleName2 ?? weddingBoard?.coupleName2,
         hostName: props.event.hostName,
+        eventCategory: isFuneralExperience ? "Funeral" : undefined,
+        eventTitle: props.event.title,
+        invitationName: props.event.title,
       }
     );
-    const sealStyle = resolveSealStyle(visionBoard);
+    const funeralSeal = isFuneralExperience
+      ? resolveFuneralEnvelopeSeal(enrichedDesign.layout)
+      : null;
+    const sealEmblem = isFuneralExperience
+      ? visionBoard?.sealEmblem?.trim() || funeralSeal?.emblem || "✝"
+      : visionBoard?.sealEmblem?.trim() || undefined;
+    const sealStyle = resolveSealStyle(
+      isFuneralExperience
+        ? {
+            ...visionBoard,
+            sealDesign:
+              visionBoard?.sealDesign && visionBoard.sealDesign !== "classic-peach-pearl"
+                ? visionBoard.sealDesign
+                : funeralSeal?.design ?? "charcoal",
+          }
+        : visionBoard
+    );
     const openingCopy = weddingBoard
       ? {
           monogram: weddingBoard.sealMonogram,
@@ -624,40 +740,65 @@ export function PremiumInviteWrapper({
           ),
         }
       : undefined;
+
+    /**
+     * Portal stays mounted across reveal → portal so EntranceReveal / media
+     * never remount into a stuck opacity-0 blank page. The envelope overlays
+     * on top and fades clear; underlay peek replaces nested children.
+     */
+    const portalLive = (
+      <div
+        className={
+          phase === "portal" && portalEntrance === "from-top"
+            ? "inv-portal-open-from-top"
+            : phase === "portal" && portalEntrance === "fade"
+              ? "inv-portal-enter"
+              : phase === "reveal"
+                ? "pointer-events-none"
+                : undefined
+        }
+        aria-hidden={phase === "reveal" ? true : undefined}
+      >
+        {portal}
+      </div>
+    );
+
     return (
       <>
         {admissionHandoff}
         {partyAdmissionBanner}
-        {/*
-          The reveal owns the portal as its child, so a throw inside the
-          ceremony would take the invitation with it. Falling through lands the
-          guest on that same portal, rendered directly.
-        */}
-        <CeremonyErrorBoundary beat="reveal" onFallthrough={afterReveal}>
-          <InteractiveReveal
-            key={`reveal-${ceremonyGeneration}`}
-            openingExperience={openingExperience}
-            guestName={props.guestName}
-            eventTitle={props.event.title}
-            hostName={props.event.hostName}
-            musicEnabled={Boolean(hasMusic)}
-            enableSounds={experience?.enableRevealSounds}
-            sealInitials={sealInitials}
-            sealStyle={sealStyle}
-            openingCopy={openingCopy}
-            embedded={Boolean(embedded)}
-            autoOpen={Boolean(autoOpenReveal)}
-            allowSkip={false}
-            onBegin={() => {
-              void startAudio();
-            }}
-            onComplete={afterReveal}
-          >
-            {portal}
-          </InteractiveReveal>
-        </CeremonyErrorBoundary>
+        {portalLive}
+        {phase === "reveal" ? (
+          <CeremonyErrorBoundary beat="reveal" onFallthrough={afterReveal}>
+            <InteractiveReveal
+              key={`reveal-${ceremonyGeneration}`}
+              openingExperience={openingExperience}
+              guestName={props.guestName}
+              eventTitle={props.event.title}
+              hostName={props.event.hostName}
+              musicEnabled={Boolean(hasMusic)}
+              enableSounds={isFuneralExperience ? false : experience?.enableRevealSounds}
+              sealInitials={sealInitials}
+              sealEmblem={sealEmblem}
+              sealStyle={sealStyle}
+              openingCopy={openingCopy}
+              embedded={Boolean(embedded)}
+              autoOpen={Boolean(autoOpenReveal)}
+              allowSkip={false}
+              ceremonialDoves={isFuneralExperience}
+              onBegin={() => {
+                void startAudio();
+              }}
+              onComplete={afterReveal}
+            />
+          </CeremonyErrorBoundary>
+        ) : null}
         {showAudioControls && audioManager && (
-          <InvitationAudioControls manager={audioManager} embedded={embedded} {...audioControlProps} />
+          <InvitationAudioControls
+            manager={audioManager}
+            embedded={embedded}
+            {...audioControlProps}
+          />
         )}
       </>
     );
@@ -667,7 +808,7 @@ export function PremiumInviteWrapper({
     <>
       {admissionHandoff}
       {partyAdmissionBanner}
-      {portal}
+      {portalWithEntrance}
       {showAudioControls && audioManager && (
         <InvitationAudioControls manager={audioManager} embedded={embedded} />
       )}

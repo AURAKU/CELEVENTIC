@@ -29,6 +29,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import { useEventContext } from "@/hooks/use-event-context";
+import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
+import { CountrySelect } from "@/components/ui/country-select";
+import { AvatarPicker } from "@/components/settings/avatar-picker";
+import { CROP_PRESETS } from "@/lib/image/crop-utils";
 import { isAdminRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@prisma/client";
@@ -157,11 +161,16 @@ function QuickLink({
 
 function SettingsHubContent() {
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
+  const isAdmin = Boolean(session?.user?.role && isAdminRole(session.user.role as UserRole));
   const upgradeParam = searchParams.get("upgrade");
   const rawTab = searchParams.get("tab") ?? (upgradeParam ? "billing" : "account");
-  const tab: SettingsTab = VALID_TABS.includes(rawTab as SettingsTab)
+  const requested: SettingsTab = VALID_TABS.includes(rawTab as SettingsTab)
     ? (rawTab as SettingsTab)
     : "account";
+  // Integrations is admin-only — deep links from non-admins fall back to Account
+  const tab: SettingsTab =
+    requested === "integrations" && status !== "loading" && !isAdmin ? "account" : requested;
 
   return (
     <DashboardPageShell
@@ -169,14 +178,14 @@ function SettingsHubContent() {
       description="Manage your Celeventic account, workspace, security, and the services that power invitations, guests, and the gate."
       className="max-w-5xl"
     >
-      <SettingsTabs active={tab} />
+      <SettingsTabs active={tab} isAdmin={isAdmin} />
       <div className="mt-6 space-y-6">
         {tab === "account" && <AccountSection />}
         {tab === "organization" && <OrganizationSection />}
         {tab === "team" && <TeamSection />}
         {tab === "permissions" && <PermissionsSection />}
         {tab === "branding" && <BrandingSection />}
-        {tab === "integrations" && <IntegrationsSection />}
+        {tab === "integrations" && isAdmin && <IntegrationsSection />}
         {tab === "privacy" && <PrivacySection />}
         {tab === "security" && <SecuritySection />}
         {tab === "billing" && <BillingSection upgradeHighlight={upgradeParam} />}
@@ -438,22 +447,76 @@ function OrganizationSection() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Country code</Label>
-              <Input
-                value={org.country}
-                onChange={(e) => setOrg({ ...org, country: e.target.value.toUpperCase() })}
-                maxLength={2}
-                placeholder="GH"
+              <Label htmlFor="org-country">Country</Label>
+              <CountrySelect
+                id="org-country"
+                value={org.country || "GH"}
+                onChange={(code) => setOrg({ ...org, country: code })}
               />
-              <p className="text-xs text-slate-500">Used for currency defaults and regional tooling.</p>
+              <p className="text-xs text-slate-500">
+                Used for currency defaults and regional tooling.
+              </p>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Logo URL (optional)</Label>
-            <Input
-              value={org.logoUrl ?? ""}
-              onChange={(e) => setOrg({ ...org, logoUrl: e.target.value })}
-              placeholder="https://…"
+          <div className="space-y-2">
+            <Label>Organization logo</Label>
+            <p className="text-xs text-slate-500">
+              Upload a square logo from your phone or computer — no hosting link needed.
+            </p>
+            <ImageUploadCropper
+              hint="Choose from your photos or open the camera, then crop to a clean square for your brand."
+              buttonLabel="Upload logo"
+              enableCamera
+              defaultAspect="1:1"
+              allowedAspects={CROP_PRESETS.logo}
+              previewUrl={org.logoUrl}
+              onUploaded={(result) => {
+                void (async () => {
+                  setOrg({ ...org, logoUrl: result.url });
+                  setSaving(true);
+                  setMessage(null);
+                  try {
+                    const res = await fetch("/api/settings/organization", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ logoUrl: result.url }),
+                    });
+                    const d = await res.json();
+                    if (!res.ok) {
+                      setMessage({ tone: "error", text: d.error ?? "Could not save logo" });
+                      return;
+                    }
+                    setOrg(d.data);
+                    setMessage({ tone: "success", text: "Logo saved." });
+                  } finally {
+                    setSaving(false);
+                  }
+                })();
+              }}
+              onClear={() => {
+                void (async () => {
+                  setOrg({ ...org, logoUrl: null });
+                  setSaving(true);
+                  setMessage(null);
+                  try {
+                    const res = await fetch("/api/settings/organization", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ logoUrl: null }),
+                    });
+                    const d = await res.json();
+                    if (!res.ok) {
+                      setMessage({ tone: "error", text: d.error ?? "Could not remove logo" });
+                      return;
+                    }
+                    setOrg(d.data);
+                    setMessage({ tone: "success", text: "Logo removed." });
+                  } finally {
+                    setSaving(false);
+                  }
+                })();
+              }}
+              onError={(text) => setMessage({ tone: "error", text })}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -709,43 +772,30 @@ function BrandingSection() {
               Organization: <strong>{orgName}</strong>
             </p>
           )}
-          <div className="grid sm:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <Label>Avatar URL</Label>
-              <Input
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://…"
-              />
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarUrl}
-                  alt="Avatar preview"
-                  className="h-16 w-16 rounded-full object-cover border border-slate-200"
-                />
-              ) : (
-                <div className="h-16 w-16 rounded-full bg-slate-100 border border-dashed border-slate-200" />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Organization logo URL</Label>
-              <Input
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://…"
-              />
-              {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={logoUrl}
-                  alt="Logo preview"
-                  className="h-16 w-auto max-w-[140px] object-contain rounded-lg border border-slate-200 bg-white p-1"
-                />
-              ) : (
-                <div className="h-16 w-28 rounded-lg bg-slate-100 border border-dashed border-slate-200" />
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label>Profile avatar</Label>
+            <p className="text-xs text-slate-500">
+              Pick a style that stands out — every design uses a unique look and color pair.
+            </p>
+            <AvatarPicker value={avatarUrl} onChange={setAvatarUrl} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Organization logo</Label>
+            <p className="text-xs text-slate-500">
+              Add a logo from your photo gallery or take a new picture — no URL needed.
+            </p>
+            <ImageUploadCropper
+              hint="Choose from your photos or open the camera, then crop to a clean square."
+              buttonLabel="Upload logo"
+              enableCamera
+              defaultAspect="1:1"
+              allowedAspects={CROP_PRESETS.logo}
+              previewUrl={logoUrl || null}
+              onUploaded={(result) => setLogoUrl(result.url)}
+              onClear={() => setLogoUrl("")}
+              onError={(text) => setMessage({ tone: "error", text })}
+            />
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => void save()} disabled={saving} className="bg-[#0B8A83]">
@@ -766,8 +816,6 @@ function BrandingSection() {
 }
 
 function IntegrationsSection() {
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.role && isAdminRole(session.user.role as UserRole);
   const [items, setItems] = useState<
     Array<{
       provider: string;
@@ -781,11 +829,20 @@ function IntegrationsSection() {
   >([]);
   const [manageUrl, setManageUrl] = useState("/admin/integrations");
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings/integrations")
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (r.status === 403) {
+          setForbidden(true);
+          setLoading(false);
+          return null;
+        }
+        return r.json();
+      })
       .then((d) => {
+        if (!d) return;
         if (d.success) {
           setItems(d.data.integrations ?? d.data);
           if (d.data.manageUrl) setManageUrl(d.data.manageUrl);
@@ -799,6 +856,7 @@ function IntegrationsSection() {
   const pending = useMemo(() => items.filter((i) => !i.configured), [items]);
 
   if (loading) return <PageLoader />;
+  if (forbidden) return null;
 
   return (
     <Card className="border-slate-200/80 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
@@ -812,11 +870,9 @@ function IntegrationsSection() {
             Payments, messaging, storage, and AI services used across invitations and the gate.
           </CardDescription>
         </div>
-        {isAdmin && (
-          <Button asChild size="sm" className="shrink-0 bg-[#0B8A83]">
-            <Link href={manageUrl}>Manage APIs</Link>
-          </Button>
-        )}
+        <Button asChild size="sm" className="shrink-0 bg-[#0B8A83]">
+          <Link href={manageUrl}>Manage APIs</Link>
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2 text-xs">
@@ -857,9 +913,8 @@ function IntegrationsSection() {
           ))}
         </div>
         <p className="text-xs text-slate-500">
-          {isAdmin
-            ? "Configure Paystack, Resend, SMS, WhatsApp, AWS S3, OpenAI, or custom APIs in Admin → Integrations. Secrets are encrypted."
-            : "Only platform admins can change API keys. Ask your Celeventic admin if a service shows “Not configured”."}
+          Configure Paystack, Resend, SMS, WhatsApp, AWS S3, OpenAI, or custom APIs in Admin →
+          Integrations. Secrets are encrypted.
         </p>
       </CardContent>
     </Card>

@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Users, CreditCard, Settings, Shield,
   BarChart3, Palette, Globe, Key, ScrollText, Eye, Calendar, X,
-  Mail, Layers, Star, FileText, Phone, RefreshCw, Store, Music, Sparkles, LogOut,
+  Mail, Layers, Star, FileText, Phone, RefreshCw, Store, Music, Sparkles, LogOut, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
@@ -41,6 +41,8 @@ const adminSections: NavSection[] = [
       { href: "/admin/templates", label: "Event Templates", icon: Layers },
       { href: "/admin/inspiration", label: "Inspiration Engine", icon: Sparkles },
       { href: "/admin/pages", label: "CMS Pages", icon: Eye },
+      { href: "/admin/guides", label: "Celeventic Guide", icon: BookOpen },
+      { href: "/admin/guides/coverage", label: "Guide Coverage", icon: BarChart3 },
       { href: "/admin/translations", label: "Languages", icon: Globe },
       { href: "/admin/legal", label: "Legal Center", icon: FileText },
     ],

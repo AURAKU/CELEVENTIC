@@ -33,6 +33,7 @@ export function MobileBottomNav() {
     <nav
       className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-slate-200/80 bg-white/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
       aria-label="Main navigation"
+      data-tour="nav-browse-mobile"
     >
       <div className="flex items-stretch justify-around">
         {NAV_ITEMS.map((item) => {

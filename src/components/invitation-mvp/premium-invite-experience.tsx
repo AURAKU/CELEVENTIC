@@ -36,6 +36,7 @@ export interface PremiumInviteExperienceProps {
     contactPhone: string | null;
     dressCode: string | null;
     coverImageUrl?: string | null;
+    deceasedName?: string | null;
   };
   design: InvitationDesignConfig;
   guestId?: string;
@@ -73,6 +74,8 @@ export interface PremiumInviteExperienceProps {
   eventId?: string;
   /** Catalog template slug (Studio 2.0 viral-footer attribution) */
   templateSlug?: string;
+  /** Published Event Guide path for this event, when available */
+  eventGuideUrl?: string | null;
   /**
    * Guest Entry Pass. Present only when the event has QR admission enabled and
    * the invite was opened with a guest token, absent means the invitation
@@ -95,6 +98,12 @@ export interface PremiumInviteExperienceProps {
   placeCard?: PlaceCardViewData | null;
   /** Heads this invitation admits — drives RSVP companion-slot controls. */
   partyAllowance?: number;
+  /**
+   * Existing RSVP for this personalized guest — thank-you persists on refresh.
+   */
+  initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
+  /** Confirmed attending heads when `initialRsvpStatus` is ACCEPTED. */
+  initialAttendingCount?: number | null;
 }
 
 function Countdown({ target, begunLabel, label }: { target: string; begunLabel: string; label: string }) {
@@ -190,7 +199,7 @@ export function PremiumInviteExperience(props: PremiumInviteExperienceProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4]">
+    <div className="min-h-app-viewport bg-[#FAF8F4]">
       {useBlocks && welcomeBlocks.length > 0 && (
         <section className="mx-auto max-w-2xl px-4 pb-2 pt-10">
           <BlockRenderer blocks={welcomeBlocks} context={blockContext} />

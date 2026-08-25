@@ -30,26 +30,35 @@ const TABS: {
   label: string;
   icon: typeof User;
   hint: string;
+  adminOnly?: boolean;
 }[] = [
   { id: "account", label: "Account", icon: User, hint: "Profile & contact" },
   { id: "organization", label: "Organization", icon: Building2, hint: "Workspace" },
   { id: "team", label: "Team", icon: Users, hint: "Collaborators" },
   { id: "permissions", label: "Permissions", icon: KeyRound, hint: "Role access" },
   { id: "branding", label: "Branding", icon: Palette, hint: "Avatar & logo" },
-  { id: "integrations", label: "Integrations", icon: Plug, hint: "APIs & services" },
+  { id: "integrations", label: "Integrations", icon: Plug, hint: "APIs & services", adminOnly: true },
   { id: "privacy", label: "Privacy", icon: Shield, hint: "Data & consent" },
   { id: "security", label: "Security", icon: ShieldCheck, hint: "2FA & sessions" },
   { id: "billing", label: "Billing", icon: CreditCard, hint: "Plan & wallet" },
 ];
 
-export function SettingsTabs({ active }: { active: SettingsTab }) {
+export function SettingsTabs({
+  active,
+  isAdmin = false,
+}: {
+  active: SettingsTab;
+  isAdmin?: boolean;
+}) {
+  const visibleTabs = TABS.filter((tab) => isAdmin || !tab.adminOnly);
+
   return (
     <nav
       aria-label="Settings sections"
       className="rounded-2xl border border-slate-200/80 bg-white/90 p-1.5 shadow-[0_4px_24px_rgba(15,23,42,0.04)]"
     >
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const href =
             tab.id === "account"

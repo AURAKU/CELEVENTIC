@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import type { Prisma, ThankYouPageStatus } from "@prisma/client";
+import { Prisma, type ThankYouPageStatus } from "@prisma/client";
 import { getThankYouTemplate } from "@/lib/thank-you/templates";
 import {
   parseDesignConfig,
@@ -153,31 +153,39 @@ export class ThankYouService {
       seoConfig,
       featuredMemoryIds,
       updatedById,
+      themeSource,
       ...scalars
     } = data;
 
     const updateData: Prisma.ThankYouPageUpdateInput = {
       ...scalars,
       version: { increment: 1 },
+      ...(themeSource != null ? { themeSource } : {}),
     };
     if (designConfig !== undefined) {
-      updateData.designConfig = designConfig === null ? Prisma.DbNull : designConfig;
+      updateData.designConfig =
+        designConfig === null ? Prisma.DbNull : (designConfig as Prisma.InputJsonValue);
     }
     if (sectionConfig !== undefined) {
-      updateData.sectionConfig = sectionConfig === null ? Prisma.DbNull : sectionConfig;
+      updateData.sectionConfig =
+        sectionConfig === null ? Prisma.DbNull : (sectionConfig as Prisma.InputJsonValue);
     }
     if (guestbookConfig !== undefined) {
-      updateData.guestbookConfig = guestbookConfig === null ? Prisma.DbNull : guestbookConfig;
+      updateData.guestbookConfig =
+        guestbookConfig === null ? Prisma.DbNull : (guestbookConfig as Prisma.InputJsonValue);
     }
     if (sharingConfig !== undefined) {
-      updateData.sharingConfig = sharingConfig === null ? Prisma.DbNull : sharingConfig;
+      updateData.sharingConfig =
+        sharingConfig === null ? Prisma.DbNull : (sharingConfig as Prisma.InputJsonValue);
     }
     if (seoConfig !== undefined) {
-      updateData.seoConfig = seoConfig === null ? Prisma.DbNull : seoConfig;
+      updateData.seoConfig = seoConfig === null ? Prisma.DbNull : (seoConfig as Prisma.InputJsonValue);
     }
     if (featuredMemoryIds !== undefined) {
       updateData.featuredMemoryIds =
-        featuredMemoryIds === null ? Prisma.DbNull : featuredMemoryIds;
+        featuredMemoryIds === null
+          ? Prisma.DbNull
+          : (featuredMemoryIds as Prisma.InputJsonValue);
     }
     if (updatedById) updateData.updatedById = updatedById;
 

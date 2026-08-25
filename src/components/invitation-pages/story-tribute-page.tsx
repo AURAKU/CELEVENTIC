@@ -3,6 +3,7 @@
 import { PageFrame } from "./page-frame";
 import { MotifGlyph } from "./motif-glyph";
 import { EntranceReveal } from "@/components/motion/entrance-reveal";
+import { resolveDeceasedName } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
 
 /** Couple story (wedding) or obituary/biography (funeral). */
@@ -11,45 +12,80 @@ export function StoryTributePage({ context, page }: InvitePageProps) {
   const isFuneral = category === "funeral";
   if (!event.description) return null;
 
+  const deceasedName = isFuneral ? resolveDeceasedName(event) : null;
+
   return (
     <PageFrame pageId={page.id} label={page.label}>
-      <EntranceReveal>
-        <p className="inv-eyebrow">{isFuneral ? "In loving memory" : "Our story"}</p>
-        <h2 className="inv-heading">
-          {isFuneral ? "A life beautifully lived" : "How it began"}
-        </h2>
-      </EntranceReveal>
-      {event.coverImageUrl && (
-        <EntranceReveal delay={0.08}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={event.coverImageUrl}
-            alt={isFuneral ? "Portrait" : "Photo"}
-            loading="lazy"
-            decoding="async"
-            style={{
-              width: "min(14rem, 55vw)",
-              aspectRatio: "1",
-              objectFit: "cover",
-              borderRadius: "var(--inv-radius)",
-              boxShadow: "var(--inv-shadow)",
-            }}
-          />
-        </EntranceReveal>
+      {isFuneral ? (
+        <div className="inv-memorial-panel w-full">
+          <EntranceReveal>
+            <div className="inv-memorial-panel-header">
+              <MotifGlyph glyphId={theme.motif.placements.coverTop} size={44} />
+              <p className="inv-eyebrow">In loving memory</p>
+              <h2 className="inv-heading">A life beautifully lived</h2>
+              {deceasedName && (
+                <p className="inv-memorial-honour">
+                  <span className="inv-memorial-honour-lead">Remembering</span>
+                  <span className="inv-memorial-name inv-memorial-name--hero">{deceasedName}</span>
+                </p>
+              )}
+            </div>
+          </EntranceReveal>
+          {event.coverImageUrl && (
+            <EntranceReveal delay={0.08}>
+              <figure className="inv-memorial-portrait">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={event.coverImageUrl}
+                  alt={`Portrait of ${deceasedName ?? "the deceased"}`}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <figcaption className="inv-eyebrow">Forever in our hearts</figcaption>
+              </figure>
+            </EntranceReveal>
+          )}
+          <EntranceReveal delay={0.14}>
+            <blockquote className="inv-memorial-tribute">{event.description}</blockquote>
+          </EntranceReveal>
+          <div className="inv-divider">
+            <MotifGlyph glyphId={theme.motif.placements.divider} size={36} />
+          </div>
+        </div>
+      ) : (
+        <>
+          <EntranceReveal>
+            <p className="inv-eyebrow">Our story</p>
+            <h2 className="inv-heading">How it began</h2>
+          </EntranceReveal>
+          {event.coverImageUrl && (
+            <EntranceReveal delay={0.08}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={event.coverImageUrl}
+                alt="Photo"
+                loading="lazy"
+                decoding="async"
+                style={{
+                  width: "min(14rem, 55vw)",
+                  aspectRatio: "1",
+                  objectFit: "cover",
+                  borderRadius: "var(--inv-radius)",
+                  boxShadow: "var(--inv-shadow)",
+                }}
+              />
+            </EntranceReveal>
+          )}
+          <EntranceReveal delay={0.14}>
+            <p className="inv-body" style={{ whiteSpace: "pre-line" }}>
+              {event.description}
+            </p>
+          </EntranceReveal>
+          <div className="inv-divider">
+            <MotifGlyph glyphId={theme.motif.placements.divider} size={36} />
+          </div>
+        </>
       )}
-      <EntranceReveal delay={0.14}>
-        <p className="inv-body" style={{ whiteSpace: "pre-line" }}>
-          {event.description}
-        </p>
-      </EntranceReveal>
-      {isFuneral && (
-        <EntranceReveal delay={0.2}>
-          <p className="inv-script">Forever in our hearts</p>
-        </EntranceReveal>
-      )}
-      <div className="inv-divider">
-        <MotifGlyph glyphId={theme.motif.placements.divider} size={36} />
-      </div>
     </PageFrame>
   );
 }

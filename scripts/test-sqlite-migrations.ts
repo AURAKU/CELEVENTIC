@@ -31,7 +31,7 @@ function dbUrl(dbPath: string): string {
   return `file:${path.resolve(dbPath)}`;
 }
 
-function sh(cmd: string, args: string[], env?: NodeJS.ProcessEnv) {
+function sh(cmd: string, args: string[], env?: Partial<NodeJS.ProcessEnv>) {
   execFileSync(cmd, args, {
     cwd: ROOT,
     env: { ...process.env, ...env },

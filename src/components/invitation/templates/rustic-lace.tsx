@@ -8,14 +8,14 @@ import { HeroMedia } from "../shared/hero-media";
 import { InvitationRsvpPanel } from "../shared/invitation-rsvp-panel";
 import { InvitationActions } from "../shared/invitation-actions";
 
-export function RusticLaceTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass }: InvitationRenderProps) {
+export function RusticLaceTemplate({ invitation, event, design, guestId, guestName, qrDataUrl, entryPass, partyAllowance, initialRsvpStatus, initialAttendingCount }: InvitationRenderProps) {
   const { name1, name2 } = parseCoupleNames(event.title, event.hostName);
   const date = formatInvitationDateParts(event.startDateRaw ?? event.startDate);
   const hero = design.media?.find((m) => m.role === "hero");
   const showCardQr = Boolean(qrDataUrl) && !entryPass;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: "#2a1810" }}>
+    <div className="min-h-app-viewport flex items-center justify-center p-4" style={{ backgroundColor: "#2a1810" }}>
       <div
         className="relative w-full max-w-md shadow-2xl inv-fade-in overflow-hidden"
         style={{
@@ -72,7 +72,7 @@ export function RusticLaceTemplate({ invitation, event, design, guestId, guestNa
           {showCardQr && qrDataUrl && (
             <Image src={qrDataUrl} alt="QR" width={100} height={100} className="mx-auto rounded"  unoptimized />
           )}
-          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} accentColor="#C9A227" variant="dark" />
+          <InvitationRsvpPanel invitationId={invitation.id} guestId={guestId} guestName={guestName} partyAllowance={partyAllowance} initialRsvpStatus={initialRsvpStatus} initialAttendingCount={initialAttendingCount} accentColor="#C9A227" variant="dark" />
           <InvitationActions event={event} pdfUrl={design.media?.find((m) => m.type === "pdf")?.url} variant="dark" />
         </div>
       </div>

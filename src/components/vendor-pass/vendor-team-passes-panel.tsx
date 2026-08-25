@@ -19,6 +19,7 @@ import {
   Copy,
   Loader2,
   LogIn,
+  Pencil,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -48,6 +49,13 @@ type VendorPassRow = {
   passUrl: string;
   publicToken: string;
   contactName: string | null;
+  phone: string | null;
+  email: string | null;
+  companyName: string | null;
+  notes: string | null;
+  vehicleRegistration: string | null;
+  validFrom: string | null;
+  validUntil: string | null;
   lastAdmittedAt: string | null;
   reentryPolicy: string;
   reentryLimit: number | null;
@@ -58,6 +66,72 @@ type VendorPassRow = {
   totalEntries: number;
   totalAdmitted: number;
 };
+
+type VendorPassEditForm = {
+  title: string;
+  vendorName: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  companyName: string;
+  passType: string;
+  entryMode: string;
+  teamCapacity: number;
+  reentryPolicy: string;
+  reentryLimit: number;
+  accessZones: string;
+  vehicleRegistration: string;
+  notes: string;
+  validUntil: string;
+};
+
+function toDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function emptyEditForm(passType = "MUSICAL_BAND"): VendorPassEditForm {
+  return {
+    title: "",
+    vendorName: "",
+    contactName: "",
+    phone: "",
+    email: "",
+    companyName: "",
+    passType,
+    entryMode: "INDIVIDUAL_ENTRY",
+    teamCapacity: 8,
+    reentryPolicy: "UNLIMITED",
+    reentryLimit: 2,
+    accessZones: DEFAULT_ACCESS_ZONES.join(", "),
+    vehicleRegistration: "",
+    notes: "",
+    validUntil: "",
+  };
+}
+
+function editFormFromRow(row: VendorPassRow): VendorPassEditForm {
+  return {
+    title: row.title ?? "",
+    vendorName: row.vendorName ?? "",
+    contactName: row.contactName ?? "",
+    phone: row.phone ?? "",
+    email: row.email ?? "",
+    companyName: row.companyName ?? "",
+    passType: row.passType ?? "MUSICAL_BAND",
+    entryMode: row.entryMode ?? "INDIVIDUAL_ENTRY",
+    teamCapacity: row.teamCapacity || 1,
+    reentryPolicy: row.reentryPolicy || "UNLIMITED",
+    reentryLimit: row.reentryLimit ?? 2,
+    accessZones: (row.accessZones?.length ? row.accessZones : [...DEFAULT_ACCESS_ZONES]).join(", "),
+    vehicleRegistration: row.vehicleRegistration ?? "",
+    notes: row.notes ?? "",
+    validUntil: toDatetimeLocal(row.validUntil),
+  };
+}
 
 /** Always resolve against the current origin so local passes don’t open on live (and vice versa). */
 function resolvePassHref(row: Pick<VendorPassRow, "publicToken" | "passUrl">): string {
@@ -101,6 +175,11 @@ export function VendorTeamPassesPanel({
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(openCreateDefault);
   const [busy, setBusy] = useState(false);
+  /** Pass currently open in the inline editor (null = closed). */
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<VendorPassEditForm>(() => emptyEditForm());
+  const [editBusy, setEditBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   /** Pass ids whose entry log is expanded, and a per-pass refetch counter. */
   const [openLogs, setOpenLogs] = useState<Record<string, boolean>>({});
   const [logReload, setLogReload] = useState<Record<string, number>>({});
@@ -400,63 +479,157 @@ export function VendorTeamPassesPanel({
     await load(page);
   }
 
-  /**
-   * Organiser/admin remove: hard-delete when unused; archive when admission
-   * history exists so audit trails stay intact.
-   */
-  async function removePass(row: VendorPassRow) {
-    const hasHistory = row.totalEntries > 0 || row.totalAdmitted > 0 || row.admittedCount > 0;
-    const message = hasHistory
-      ? `“${row.title}” has entry history. Archive it so scanners reject the pass while keeping the log?`
-      : `Permanently delete “${row.title}”? This cannot be undone.`;
-    if (!window.confirm(message)) return;
-
-    setBusy(true);
+  async function startEdit(row: VendorPassRow) {
+    setCreating(false);
+    setEditingId(row.id);
+    setEditForm(editFormFromRow(row));
     setError("");
+    setNotice("");
+    // Refresh from GET so notes / contact / expiry match the database, not a stale list row.
     try {
-      const attempt = async (archive: boolean) => {
-        const res = await fetch(`/api/vendor-passes/${row.id}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ confirm: true, archive }),
-        });
-        const json = await res.json().catch(() => ({}));
-        return { res, json };
-      };
-
-      let { res, json } = await attempt(hasHistory);
-      // Race: UI thought unused but server has admission rows — archive instead.
-      if (
-        !hasHistory &&
-        !res.ok &&
-        typeof json?.error === "string" &&
-        /admission history/i.test(json.error)
-      ) {
-        if (
-          !window.confirm(
-            `“${row.title}” has entry history on the server. Archive it instead of deleting?`
-          )
-        ) {
-          return;
-        }
-        ({ res, json } = await attempt(true));
+      const res = await fetch(`/api/vendor-passes/${encodeURIComponent(row.id)}`, {
+        cache: "no-store",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json?.data) {
+        setEditForm(editFormFromRow(json.data as VendorPassRow));
       }
+    } catch {
+      // List row values are already in the form — editing can still proceed.
+    }
+  }
 
-      if (!res.ok || json?.success === false) {
-        setError(vendorPassErrorMessage(json?.error, "Could not delete this vendor pass"));
+  function cancelEdit() {
+    setEditingId(null);
+    setEditForm(emptyEditForm(passTypes[0]?.value ?? "MUSICAL_BAND"));
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    const title = editForm.title.trim();
+    const vendorName = editForm.vendorName.trim();
+    if (title.length < 2 || vendorName.length < 2) {
+      setError("Pass title and vendor name need at least 2 characters.");
+      return;
+    }
+
+    const row = rows.find((r) => r.id === editingId);
+    const capacity = Math.max(1, Math.trunc(editForm.teamCapacity) || 1);
+    const confirmCapacityChange =
+      Boolean(row && row.admittedCount > 0 && capacity !== row.teamCapacity);
+
+    if (confirmCapacityChange) {
+      const ok = window.confirm(
+        `Capacity change after admissions (${row!.admittedCount} already in this entry). Continue?`
+      );
+      if (!ok) return;
+    }
+
+    setEditBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const zones = editForm.accessZones
+        .split(/[·|,]/)
+        .map((z) => z.trim())
+        .filter(Boolean);
+      const res = await fetch(`/api/vendor-passes/${encodeURIComponent(editingId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          vendorName,
+          contactName: editForm.contactName.trim() || null,
+          phone: editForm.phone.trim() || null,
+          email: editForm.email.trim() || null,
+          companyName: editForm.companyName.trim() || null,
+          passType: editForm.passType,
+          entryMode: editForm.entryMode,
+          teamCapacity: capacity,
+          confirmCapacityChange,
+          reentryPolicy: editForm.reentryPolicy,
+          reentryLimit: editForm.reentryPolicy === "CUSTOM" ? editForm.reentryLimit : null,
+          accessZones: zones.length ? zones : [...DEFAULT_ACCESS_ZONES],
+          vehicleRegistration: editForm.vehicleRegistration.trim() || null,
+          notes: editForm.notes.trim() || null,
+          validUntil: editForm.validUntil.trim()
+            ? new Date(editForm.validUntil).toISOString()
+            : null,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(vendorPassErrorMessage(json.error, "Could not save vendor pass"));
         return;
       }
-      const archived = hasHistory || Boolean(json?.data?.archivedAt) || json?.data?.status === "ARCHIVED";
-      setNotice(
-        archived
-          ? `“${row.title}” archived. It no longer appears in the active list.`
-          : `“${row.title}” deleted.`
-      );
+      setNotice(`Updated “${title}”.`);
+      cancelEdit();
       await load(page);
     } catch {
       setError("Could not reach the server.");
     } finally {
-      setBusy(false);
+      setEditBusy(false);
+    }
+  }
+
+  /**
+   * Hard-delete when there is no admission history. Passes with scan history
+   * must be archived instead so the entry log stays intact — QR still becomes
+   * invalid and the pass leaves this list.
+   */
+  async function deletePass(row: VendorPassRow) {
+    const hardMsg =
+      `Permanently delete “${row.title}”?\n\n` +
+      `The pass QR and access code will stop working immediately.\n` +
+      `This cannot be undone.`;
+    if (!window.confirm(hardMsg)) return;
+
+    setDeletingId(row.id);
+    setError("");
+    setNotice("");
+    try {
+      let res = await fetch(`/api/vendor-passes/${encodeURIComponent(row.id)}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: true }),
+      });
+      let json = await res.json().catch(() => ({}));
+
+      if (!res.ok && (json?.code === "HAS_ADMISSION_HISTORY" || /admission history/i.test(String(json.error ?? "")))) {
+        const archiveOk = window.confirm(
+          `“${row.title}” has admission history, so it cannot be permanently deleted.\n\n` +
+            `Archive it instead?\n` +
+            `The QR and access code will stop working, and the pass will leave this list.\n` +
+            `Entry history is kept for your records.`
+        );
+        if (!archiveOk) return;
+        res = await fetch(`/api/vendor-passes/${encodeURIComponent(row.id)}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ confirm: true, archive: true }),
+        });
+        json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(vendorPassErrorMessage(json.error, "Could not archive vendor pass"));
+          return;
+        }
+        if (editingId === row.id) cancelEdit();
+        setNotice(`Archived “${row.title}”. The QR no longer works.`);
+        await load(page);
+        return;
+      }
+
+      if (!res.ok) {
+        setError(vendorPassErrorMessage(json.error, "Could not delete vendor pass"));
+        return;
+      }
+      if (editingId === row.id) cancelEdit();
+      setNotice(`Deleted “${row.title}”. The QR no longer works.`);
+      await load(page);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -469,7 +642,13 @@ export function VendorTeamPassesPanel({
             Separate from guest invitations. Shared team QR admits up to the configured capacity.
           </p>
         </div>
-        <Button type="button" onClick={() => setCreating(true)}>
+        <Button
+          type="button"
+          onClick={() => {
+            cancelEdit();
+            setCreating(true);
+          }}
+        >
           <Plus className="h-4 w-4" /> Generate Vendor Pass
         </Button>
       </div>
@@ -820,6 +999,35 @@ export function VendorTeamPassesPanel({
                     type="button"
                     size="sm"
                     variant="outline"
+                    disabled={editBusy || deletingId === row.id}
+                    onClick={() => {
+                      if (editingId === row.id) cancelEdit();
+                      else void startEdit(row);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    {editingId === row.id ? "Close edit" : "Edit"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-red-200 text-red-700 hover:bg-red-50"
+                    disabled={deletingId === row.id || editBusy}
+                    onClick={() => void deletePass(row)}
+                    title="Permanently delete this vendor pass (or archive if it has entry history)"
+                  >
+                    {deletingId === row.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    Delete
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
                     disabled={admittingId === row.id || row.status === "REVOKED"}
                     onClick={() => void admitOne(row)}
                   >
@@ -897,44 +1105,6 @@ export function VendorTeamPassesPanel({
                     size="sm"
                     variant="ghost"
                     onClick={() => {
-                      const next = window.prompt(
-                        "New team capacity (cannot go below admitted count):",
-                        String(row.teamCapacity)
-                      );
-                      if (!next) return;
-                      const capacity = Number(next);
-                      if (!Number.isFinite(capacity)) return;
-                      const confirmChange =
-                        row.admittedCount > 0
-                          ? window.confirm(
-                              `Capacity change after admissions (${row.admittedCount} already in). Continue?`
-                            )
-                          : true;
-                      if (!confirmChange) return;
-                      void fetch(`/api/vendor-passes/${row.id}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          teamCapacity: capacity,
-                          confirmCapacityChange: row.admittedCount > 0,
-                        }),
-                      }).then(async (res) => {
-                        if (!res.ok) {
-                          const json = await res.json().catch(() => ({}));
-                          setError(json.error ?? "Capacity update failed");
-                          return;
-                        }
-                        await load(page);
-                      });
-                    }}
-                  >
-                    Capacity
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
                       if (
                         !window.confirm(
                           "Regenerate QR and access code? Old printed passes will stop working."
@@ -967,25 +1137,197 @@ export function VendorTeamPassesPanel({
                       Revoke
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                    disabled={busy}
-                    onClick={() => void removePass(row)}
-                    aria-label={`Delete ${row.title}`}
-                    title={
-                      row.totalEntries > 0 || row.totalAdmitted > 0 || row.admittedCount > 0
-                        ? "Archive this pass (keeps entry history)"
-                        : "Delete this pass permanently"
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </Button>
                 </div>
               </div>
+
+              {editingId === row.id && (
+                <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/40 p-4">
+                  <h4 className="font-bold text-slate-900">Edit vendor / team pass</h4>
+                  <p className="mt-0.5 text-xs text-slate-600">
+                    Changes apply immediately. The same QR keeps working unless you regenerate it.
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Pass title</span>
+                      <Input
+                        value={editForm.title}
+                        onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Vendor / team name</span>
+                      <Input
+                        value={editForm.vendorName}
+                        onChange={(e) => setEditForm((f) => ({ ...f, vendorName: e.target.value }))}
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Contact person name</span>
+                      <Input
+                        value={editForm.contactName}
+                        onChange={(e) => setEditForm((f) => ({ ...f, contactName: e.target.value }))}
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Pass type</span>
+                      <select
+                        className="h-10 w-full rounded-md border border-slate-200 bg-white px-3"
+                        value={editForm.passType}
+                        onChange={(e) => setEditForm((f) => ({ ...f, passType: e.target.value }))}
+                      >
+                        {passTypes.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                        {!passTypes.some((opt) => opt.value === editForm.passType) && (
+                          <option value={editForm.passType}>
+                            {vendorPassTypeLabel(editForm.passType, row.categoryLabel)}
+                          </option>
+                        )}
+                      </select>
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Phone (optional)</span>
+                      <Input
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Email (optional)</span>
+                      <Input
+                        value={editForm.email}
+                        onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Company (optional)</span>
+                      <Input
+                        value={editForm.companyName}
+                        onChange={(e) => setEditForm((f) => ({ ...f, companyName: e.target.value }))}
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Capacity (people)</span>
+                      <Input
+                        type="number"
+                        min={Math.max(1, row.admittedCount)}
+                        max={500}
+                        value={editForm.teamCapacity}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            teamCapacity: Number(e.target.value) || 1,
+                          }))
+                        }
+                      />
+                      {row.admittedCount > 0 && (
+                        <span className="mt-1 block text-xs text-slate-500">
+                          Cannot go below {row.admittedCount} already admitted in this entry.
+                        </span>
+                      )}
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Entry mode</span>
+                      <select
+                        className="h-10 w-full rounded-md border border-slate-200 bg-white px-3"
+                        value={editForm.entryMode}
+                        onChange={(e) => setEditForm((f) => ({ ...f, entryMode: e.target.value }))}
+                      >
+                        <option value="INDIVIDUAL_ENTRY">Individual team entry (1 per scan)</option>
+                        <option value="SELECT_QUANTITY">Select quantity at gate</option>
+                        <option value="ADMIT_FULL_TEAM">Admit full team (confirm)</option>
+                      </select>
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Access mode</span>
+                      <select
+                        className="h-10 w-full rounded-md border border-slate-200 bg-white px-3"
+                        value={editForm.reentryPolicy}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, reentryPolicy: e.target.value }))
+                        }
+                      >
+                        {VENDOR_ACCESS_MODE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {editForm.reentryPolicy === "CUSTOM" && (
+                      <label className="text-sm">
+                        <span className="mb-1 block font-medium">Re-entries allowed</span>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={editForm.reentryLimit}
+                          onChange={(e) =>
+                            setEditForm((f) => ({
+                              ...f,
+                              reentryLimit: Number(e.target.value) || 1,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Expires (optional)</span>
+                      <Input
+                        type="datetime-local"
+                        value={editForm.validUntil}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, validUntil: e.target.value }))
+                        }
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="mb-1 block font-medium">Vehicle registration (optional)</span>
+                      <Input
+                        value={editForm.vehicleRegistration}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, vehicleRegistration: e.target.value }))
+                        }
+                      />
+                    </label>
+                    <label className="text-sm sm:col-span-2">
+                      <span className="mb-1 block font-medium">Access zones</span>
+                      <Input
+                        value={editForm.accessZones}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, accessZones: e.target.value }))
+                        }
+                        placeholder="Main Entrance, General Event Area"
+                      />
+                      <span className="mt-1 block text-xs text-slate-500">
+                        Comma-separated zones shown on the pass and at the gate.
+                      </span>
+                    </label>
+                    <label className="text-sm sm:col-span-2">
+                      <span className="mb-1 block font-medium">Notes for security</span>
+                      <Input
+                        value={editForm.notes}
+                        onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button type="button" disabled={editBusy} onClick={() => void saveEdit()}>
+                      {editBusy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Shield className="h-4 w-4" />
+                      )}
+                      Save changes
+                    </Button>
+                    <Button type="button" variant="outline" disabled={editBusy} onClick={cancelEdit}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {openLogs[row.id] && (
                 <VendorEntryLog

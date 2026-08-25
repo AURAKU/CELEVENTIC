@@ -22,6 +22,7 @@ export interface MultiVideoUploaderProps {
   guestToken?: string;
   guestName?: string;
   guestPhone?: string;
+  guestKey?: string;
   mute?: boolean;
   role?: string;
   hint?: string;
@@ -56,6 +57,7 @@ export function MultiVideoUploader({
   guestToken,
   guestName,
   guestPhone,
+  guestKey,
   mute,
   role,
   hint,
@@ -173,6 +175,7 @@ export function MultiVideoUploader({
                 guestToken={guestToken}
                 guestName={guestName}
                 guestPhone={guestPhone}
+                guestKey={guestKey}
                 mute={mute}
                 role={role}
                 initialFile={file}

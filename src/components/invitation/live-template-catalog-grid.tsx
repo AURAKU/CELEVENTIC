@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 import type { CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
+import { withoutCatalogDashes } from "@/lib/invitation-mvp/catalog-public-copy";
 import { getLayoutSignatureFeatures } from "@/lib/invitation/layout-template-signatures";
 import type { InvitationTemplatePreset } from "@/lib/invitation-templates";
 
@@ -14,6 +15,9 @@ export function LiveCatalogTemplateGrid({ templates }: { templates: CatalogTempl
       {templates.map((template) => {
         const features =
           getLayoutSignatureFeatures(template.layoutSlug) ?? template.features;
+        const name = withoutCatalogDashes(template.name);
+        const description = withoutCatalogDashes(template.description);
+        const style = withoutCatalogDashes(template.style);
         return (
           <div
             key={template.slug}
@@ -31,9 +35,9 @@ export function LiveCatalogTemplateGrid({ templates }: { templates: CatalogTempl
                 <Badge className="absolute -top-3 right-4 bg-[#D4A63A] text-[#0F172A]">Premium</Badge>
               )}
               <p className="text-xs font-semibold uppercase tracking-wider text-[#0B8A83]">{template.category}</p>
-              <p className="font-semibold text-[#0F172A] mt-1">{template.name}</p>
-              <p className="text-sm text-slate-500 mt-1 line-clamp-2">{template.description}</p>
-              <p className="text-xs text-slate-400 mt-2">{template.style} style</p>
+              <p className="font-semibold text-[#0F172A] mt-1">{name}</p>
+              <p className="text-sm text-slate-500 mt-1 line-clamp-2">{description}</p>
+              <p className="text-xs text-slate-400 mt-2">{style} style</p>
               <div className="mt-4 flex gap-2">
                 <Button variant="outline" size="sm" className="flex-1" asChild>
                   <Link href={`/invitations/templates/${template.slug}`}>Preview</Link>
