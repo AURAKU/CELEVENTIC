@@ -64,7 +64,7 @@ interface OpeningExperienceRouterProps {
   allowSkip?: boolean;
   /** Funeral / memorial dove unseal ceremony. */
   ceremonialDoves?: boolean;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const CURTAIN_THEME_MAP: Record<string, "wedding" | "concert" | "award" | "birthday" | "corporate"> = {

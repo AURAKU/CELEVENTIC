@@ -14,6 +14,9 @@ import {
 import { invitationFontVars } from "@/lib/invitation-fonts";
 
 const EASE_SILK = [0.22, 1, 0.36, 1] as const;
+/** Unhurried seal peel — slow motion, memorial pacing. */
+const EASE_SEAL_LIFT = [0.33, 0.08, 0.18, 1] as const;
+const EASE_SEAL_SOAR = [0.22, 0.7, 0.2, 1] as const;
 
 /**
  * Photoreal memorial envelope — full art plate + interactive portrait wax seal.
@@ -43,15 +46,16 @@ export function MemorialEnvelopeFace({
   const sealLiftSec = Math.max(0.45, sealDurationMs / 1000);
   const flapOpenSec = reduceMotion
     ? 0.35
-    : Math.max(1.2, ((durationMs - sealDurationMs) / 1000) * 0.72);
+    : Math.max(2.4, ((durationMs - sealDurationMs) / 1000) * 0.88);
 
   const envelopeWidth = fitContainer
     ? "100%"
-    : `min(96vw, calc((100dvh - 2.6rem) * ${MEMORIAL_ENVELOPE_ASPECT}), 52rem)`;
+    : // Height-first immersive fill: allow gentle side crop on tall phones.
+      `min(118vw, calc((100dvh - 4rem) * ${MEMORIAL_ENVELOPE_ASPECT}))`;
 
-  const shellFadeDelay = isOpening ? Math.round(flapOpenSec * 1000 * 0.4) : 0;
+  const shellFadeDelay = isOpening ? Math.round(flapOpenSec * 1000 * 0.28) : 0;
   const shellFadeMs = isOpening
-    ? Math.round(flapOpenSec * 1000 * 0.6)
+    ? Math.round(flapOpenSec * 1000 * 0.78)
     : Math.round(durationMs * 0.18);
 
   /** Swap to seal-cleared art once the interactive seal starts lifting. */
@@ -59,14 +63,14 @@ export function MemorialEnvelopeFace({
 
   return (
     <motion.div
-      className={`absolute inset-0 z-10 flex items-center justify-center ${invitationFontVars}`}
+      className={`absolute inset-0 z-10 flex items-center justify-center overflow-hidden ${invitationFontVars}`}
       style={{
         background:
-          "radial-gradient(ellipse 70% 55% at 50% 42%, #1a1612 0%, #0a0908 55%, #050505 100%)",
+          "radial-gradient(ellipse 82% 62% at 50% 44%, #1a1612 0%, #0a0908 52%, #050505 100%)",
         pointerEvents: "none",
         padding: fitContainer
           ? "0"
-          : "max(0.2rem, env(safe-area-inset-top, 0px)) max(0.4rem, env(safe-area-inset-right, 0px)) max(0.2rem, env(safe-area-inset-bottom, 0px)) max(0.4rem, env(safe-area-inset-left, 0px))",
+          : "max(0.1rem, env(safe-area-inset-top, 0px)) 0 max(3.6rem, calc(env(safe-area-inset-bottom, 0px) + 3rem)) 0",
         perspective: reduceMotion ? undefined : "1600px",
         perspectiveOrigin: "50% 35%",
       }}
@@ -75,21 +79,25 @@ export function MemorialEnvelopeFace({
         isOpening
           ? {
               opacity: 0,
-              y: reduceMotion ? "-2%" : "-6%",
-              scale: reduceMotion ? 1.01 : 1.05,
+              y: reduceMotion ? "-2%" : "-5%",
+              scale: reduceMotion ? 1.01 : 1.04,
             }
           : isUnsealing
-            ? { opacity: 1, y: 0, scale: 1.02 }
+            ? { opacity: 1, y: 0, scale: 1.015 }
             : { opacity: 1, y: 0, scale: 1 }
       }
       transition={
         isOpening
           ? {
-              opacity: { duration: shellFadeMs / 1000, delay: shellFadeDelay / 1000, ease: EASE_SILK },
+              opacity: {
+                duration: shellFadeMs / 1000,
+                delay: shellFadeDelay / 1000,
+                ease: EASE_SILK,
+              },
               y: { duration: flapOpenSec, ease: EASE_SILK },
               scale: { duration: flapOpenSec, ease: EASE_SILK },
             }
-          : { duration: 0.85, ease: EASE_SILK }
+          : { duration: 1.15, ease: EASE_SILK }
       }
     >
       <motion.div
@@ -97,7 +105,9 @@ export function MemorialEnvelopeFace({
         style={{
           width: envelopeWidth,
           aspectRatio: `${MEMORIAL_ENVELOPE_ASPECT} / 1`,
-          maxHeight: fitContainer ? "100%" : "calc(100dvh - 3.2rem)",
+          maxWidth: fitContainer ? "100%" : "118vw",
+          maxHeight: fitContainer ? "100%" : "calc(100dvh - 4rem)",
+          height: "auto",
           transformStyle: "preserve-3d",
           filter:
             "drop-shadow(0 28px 64px rgba(0,0,0,0.65)) drop-shadow(0 0 0 1px rgba(224,184,74,0.12))",
@@ -107,15 +117,15 @@ export function MemorialEnvelopeFace({
         animate={
           isOpening
             ? {
-                rotateX: reduceMotion ? -8 : -28,
-                y: reduceMotion ? "-4%" : "-12%",
+                rotateX: reduceMotion ? -8 : -24,
+                y: reduceMotion ? "-4%" : "-10%",
               }
             : isUnsealing
-              ? { rotateX: -6, y: "-2%" }
+              ? { rotateX: -4, y: "-1.5%" }
               : { rotateX: 0, y: 0 }
         }
         transition={{
-          duration: isOpening ? flapOpenSec : sealLiftSec * 0.55,
+          duration: isOpening ? flapOpenSec : Math.max(1.8, sealLiftSec * 0.85),
           ease: EASE_SILK,
         }}
       >
@@ -126,7 +136,7 @@ export function MemorialEnvelopeFace({
             alt=""
             fill
             priority
-            sizes="(max-width: 768px) 96vw, 52rem"
+            sizes="(max-width: 768px) 100vw, 100vw"
             className="object-contain select-none pointer-events-none"
             draggable={false}
           />
@@ -181,21 +191,21 @@ export function MemorialEnvelopeFace({
                   : { y: "0%", scale: 1, opacity: 1, rotateX: 0, rotateZ: 0 }
                 : isOpening
                   ? {
-                      y: "-420%",
-                      x: "8%",
-                      scale: 0.5,
+                      y: "-480%",
+                      x: "6%",
+                      scale: 0.46,
                       opacity: 0,
-                      rotateX: -72,
-                      rotateZ: 18,
+                      rotateX: -68,
+                      rotateZ: 14,
                     }
                   : isUnsealing
                     ? {
-                        y: "-160%",
-                        x: "-4%",
-                        scale: 1.08,
+                        y: "-175%",
+                        x: "-3%",
+                        scale: 1.1,
                         opacity: 1,
-                        rotateX: -36,
-                        rotateZ: 8,
+                        rotateX: -32,
+                        rotateZ: 6,
                       }
                     : {
                         y: "0%",
@@ -210,9 +220,9 @@ export function MemorialEnvelopeFace({
               lifting
                 ? {
                     duration: isOpening
-                      ? Math.min(1.65, flapOpenSec)
-                      : sealLiftSec,
-                    ease: EASE_SILK,
+                      ? Math.max(2.8, flapOpenSec * 0.92)
+                      : Math.max(2.6, sealLiftSec * 0.95),
+                    ease: isOpening ? EASE_SEAL_SOAR : EASE_SEAL_LIFT,
                   }
                 : { duration: 0.01 }
             }

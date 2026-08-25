@@ -5,22 +5,18 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 /**
  * Photoreal white doves (transparent WebP only — no scenic backdrop).
- * They gather at the wax seal, lift with it, then soar clear of the envelope.
+ * Cinematic slow-motion: drift in → rest at the seal → lift with it → soar clear.
  */
 
 type DoveSpec = {
   id: string;
   src: string;
-  /** Enter from off-stage */
   fromX: string;
   fromY: string;
-  /** Beak near seal center */
   gripX: string;
   gripY: string;
-  /** Climb while gripping */
   liftX: string;
   liftY: string;
-  /** Exit clear of frame */
   exitX: string;
   exitY: string;
   delay: number;
@@ -29,7 +25,6 @@ type DoveSpec = {
   rotGrip: number;
   rotLift: number;
   rotExit: number;
-  /** Slight depth: front dove sits above the seal. */
   z: number;
 };
 
@@ -37,50 +32,52 @@ const DOVES: DoveSpec[] = [
   {
     id: "dove-left",
     src: "/experience/memorial/dove-left.webp",
-    fromX: "-52vw",
-    fromY: "18%",
-    gripX: "-11%",
-    gripY: "-6%",
-    liftX: "-4%",
-    liftY: "-42%",
-    exitX: "56vw",
-    exitY: "-78%",
+    fromX: "-48vw",
+    fromY: "16%",
+    gripX: "-10%",
+    gripY: "-5%",
+    liftX: "-6%",
+    liftY: "-38%",
+    exitX: "52vw",
+    exitY: "-72%",
     delay: 0,
-    scale: 1.18,
-    rotFrom: -14,
+    scale: 1.22,
+    rotFrom: -12,
     rotGrip: -2,
-    rotLift: 6,
-    rotExit: 18,
+    rotLift: 5,
+    rotExit: 16,
     z: 34,
   },
   {
     id: "dove-right",
     src: "/experience/memorial/dove-right.webp",
-    fromX: "54vw",
-    fromY: "14%",
-    gripX: "12%",
-    gripY: "-4%",
-    liftX: "8%",
-    liftY: "-40%",
-    exitX: "-58vw",
-    exitY: "-74%",
-    delay: 0.18,
-    scale: 1.08,
-    rotFrom: 12,
-    rotGrip: 3,
-    rotLift: -5,
-    rotExit: -16,
+    fromX: "50vw",
+    fromY: "12%",
+    gripX: "11%",
+    gripY: "-3%",
+    liftX: "7%",
+    liftY: "-36%",
+    exitX: "-54vw",
+    exitY: "-70%",
+    delay: 0.32,
+    scale: 1.12,
+    rotFrom: 11,
+    rotGrip: 2,
+    rotLift: -4,
+    rotExit: -14,
     z: 32,
   },
 ];
 
-const EASE_ARRIVE = [0.22, 0.82, 0.2, 1] as const;
-const EASE_LIFT = [0.33, 0.05, 0.2, 1] as const;
-const EASE_SOAR = [0.16, 0.9, 0.24, 1] as const;
+/** Slow ease-in-out — funeral ceremony pacing, never snappy. */
+const EASE_DRIFT = [0.33, 0.12, 0.2, 1] as const;
+const EASE_HOLD = [0.4, 0, 0.2, 1] as const;
+const EASE_RISE = [0.22, 0.61, 0.18, 1] as const;
+const EASE_SOAR = [0.16, 0.84, 0.28, 1] as const;
 
 export function MemorialDoveUnseal({
   active,
-  durationSec = 4.4,
+  durationSec = 7.8,
 }: {
   active: boolean;
   durationSec?: number;
@@ -88,9 +85,10 @@ export function MemorialDoveUnseal({
   const reduceMotion = useReducedMotion();
   if (reduceMotion) return null;
 
-  const arriveAt = Math.min(1.05, durationSec * 0.24);
-  const gripAt = Math.min(1.55, durationSec * 0.35);
-  const liftAt = Math.min(2.55, durationSec * 0.58);
+  // Slow-motion beats as fractions of the full dove lifespan
+  const arriveAt = durationSec * 0.3;
+  const gripAt = durationSec * 0.44;
+  const liftAt = durationSec * 0.7;
 
   return (
     <AnimatePresence>
@@ -99,19 +97,18 @@ export function MemorialDoveUnseal({
           className="pointer-events-none absolute inset-0 z-[32] overflow-hidden"
           aria-hidden
         >
-          {/* Soft memorial wash only — never a photo backdrop */}
           <motion.div
             className="absolute inset-0"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.28, 0.2, 0.1, 0] }}
+            animate={{ opacity: [0, 0.32, 0.24, 0.12, 0] }}
             transition={{
               duration: durationSec,
-              times: [0, 0.2, 0.45, 0.72, 1],
-              ease: EASE_ARRIVE,
+              times: [0, 0.22, 0.48, 0.78, 1],
+              ease: EASE_DRIFT,
             }}
             style={{
               background:
-                "radial-gradient(ellipse 38% 28% at 50% 46%, rgba(255,250,236,0.32) 0%, rgba(224,184,74,0.07) 42%, transparent 72%)",
+                "radial-gradient(ellipse 42% 30% at 50% 46%, rgba(255,250,236,0.34) 0%, rgba(224,184,74,0.08) 44%, transparent 74%)",
             }}
           />
 
@@ -121,10 +118,10 @@ export function MemorialDoveUnseal({
               className="absolute left-1/2 top-[47%]"
               style={{
                 zIndex: dove.z,
-                width: `calc(${8.4 * dove.scale}rem)`,
-                height: `calc(${6.2 * dove.scale}rem)`,
-                marginLeft: `calc(${-4.2 * dove.scale}rem)`,
-                marginTop: `calc(${-3.1 * dove.scale}rem)`,
+                width: `calc(${8.8 * dove.scale}rem)`,
+                height: `calc(${6.5 * dove.scale}rem)`,
+                marginLeft: `calc(${-4.4 * dove.scale}rem)`,
+                marginTop: `calc(${-3.25 * dove.scale}rem)`,
                 filter:
                   "drop-shadow(0 18px 26px rgba(0,0,0,0.48)) drop-shadow(0 0 18px rgba(255,246,220,0.22))",
                 willChange: "transform, opacity",
@@ -133,26 +130,14 @@ export function MemorialDoveUnseal({
                 x: dove.fromX,
                 y: dove.fromY,
                 opacity: 0,
-                scale: 0.62,
+                scale: 0.58,
                 rotate: dove.rotFrom,
               }}
               animate={{
-                x: [
-                  dove.fromX,
-                  dove.gripX,
-                  dove.gripX,
-                  dove.liftX,
-                  dove.exitX,
-                ],
-                y: [
-                  dove.fromY,
-                  dove.gripY,
-                  dove.gripY,
-                  dove.liftY,
-                  dove.exitY,
-                ],
+                x: [dove.fromX, dove.gripX, dove.gripX, dove.liftX, dove.exitX],
+                y: [dove.fromY, dove.gripY, dove.gripY, dove.liftY, dove.exitY],
                 opacity: [0, 1, 1, 1, 0],
-                scale: [0.62, 1, 1.02, 1.08, 0.86],
+                scale: [0.58, 1, 1.03, 1.1, 0.88],
                 rotate: [
                   dove.rotFrom,
                   dove.rotGrip,
@@ -171,20 +156,18 @@ export function MemorialDoveUnseal({
                   liftAt / durationSec,
                   1,
                 ],
-                // One ease per segment between the five keyframes
-                ease: [EASE_ARRIVE, "easeInOut", EASE_LIFT, EASE_SOAR],
+                ease: [EASE_DRIFT, EASE_HOLD, EASE_RISE, EASE_SOAR],
               }}
             >
-              {/* Wing-breath — photoreal plate already mid-flap; subtle bob sells flight */}
               <motion.div
                 className="relative h-full w-full"
                 animate={{
-                  y: [0, -7, -1, -8, 0],
-                  rotate: [0, -1.6, 0.4, 1.2, 0],
-                  scaleY: [1, 0.97, 1.02, 0.98, 1],
+                  y: [0, -5, -1, -6, 0],
+                  rotate: [0, -1.1, 0.3, 0.9, 0],
+                  scaleY: [1, 0.985, 1.015, 0.99, 1],
                 }}
                 transition={{
-                  duration: 0.92,
+                  duration: 1.35,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
@@ -193,7 +176,7 @@ export function MemorialDoveUnseal({
                   src={dove.src}
                   alt=""
                   fill
-                  sizes="(max-width: 768px) 70vw, 32rem"
+                  sizes="(max-width: 768px) 75vw, 36rem"
                   className="object-contain select-none"
                   priority
                   draggable={false}

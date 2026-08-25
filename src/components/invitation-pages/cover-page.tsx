@@ -33,6 +33,11 @@ function CoverAmbientMedia({ url }: { url: string }) {
   );
 }
 
+/** Dark memorial atmosphere when no guest cover photo is set — keeps the seal blending. */
+function CoverMemorialAtmosphere() {
+  return <div className="inv-cover-media inv-cover-media--memorial-atmosphere" aria-hidden />;
+}
+
 /** Full-bleed hero (non-funeral covers). */
 function CoverParallaxMedia({ url }: { url: string }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -186,18 +191,19 @@ export function CoverPage({ context, page }: InvitePageProps) {
     </>
   );
 
-  if (isFuneral && heroUrl) {
+  if (isFuneral) {
     return (
       <PageFrame
         pageId={page.id}
         label={page.label}
         frameless
         hasMedia
-        media={<CoverAmbientMedia url={heroUrl} />}
+        media={heroUrl ? <CoverAmbientMedia url={heroUrl} /> : <CoverMemorialAtmosphere />}
       >
         <div className="inv-funeral-cover-stack">
           <EntranceReveal className="inv-funeral-cover-portrait-wrap">
             <div className="inv-funeral-cover-portrait-stage">
+              <span className="inv-funeral-cover-portrait-glow" aria-hidden />
               <MemorialSealPortrait
                 alt={`Memorial seal portrait of ${typeof names === "string" ? names : "the deceased"}`}
               />

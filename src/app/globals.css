@@ -960,21 +960,15 @@
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/** After envelope unseal — invitation opens downward from the top. */
+/** Soft open when there was no envelope unveil (tap-to-begin → portal). */
 @keyframes inv-portal-open-from-top {
   from {
-    opacity: 0.55;
-    transform: translateY(-14%);
-    clip-path: inset(0 0 100% 0);
-  }
-  45% {
-    opacity: 1;
-    clip-path: inset(0 0 28% 0);
+    opacity: 0.72;
+    transform: translateY(-6%);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    clip-path: inset(0 0 0 0);
   }
 }
 
@@ -983,13 +977,21 @@
   50% { box-shadow: 0 0 60px rgba(212, 166, 58, 0.55); }
 }
 
+.inv-portal-enter,
+.inv-portal-open-from-top {
+  width: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
 .inv-portal-enter {
   animation: inv-portal-enter 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .inv-portal-open-from-top {
-  animation: inv-portal-open-from-top 1.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity, clip-path;
+  /* No clip-path — clipping the remounted portal left invitation copy stuck blank. */
+  animation: inv-portal-open-from-top 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
   transform-origin: 50% 0%;
 }
 
@@ -1315,6 +1317,13 @@
   .inv-portal-open-from-top,
   .inv-journey-step {
     animation: none !important;
+  }
+
+  .inv-portal-enter,
+  .inv-portal-open-from-top {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
   }
 }
 
