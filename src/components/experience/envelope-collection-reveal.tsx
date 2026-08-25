@@ -14,6 +14,7 @@ import {
   DEFAULT_RESOLVED_SEAL_STYLE,
   type ResolvedSealStyle,
 } from "@/lib/invitation/seal-design";
+import { MEMORIAL_INVITATION_BG_SRC } from "@/components/experience/memorial-envelope-layout";
 
 interface EnvelopeCollectionRevealProps {
   theme: EnvelopeVisualTheme;
@@ -316,15 +317,29 @@ export function EnvelopeCollectionReveal({
       ? "absolute inset-0 z-[100] overflow-hidden"
       : "fixed inset-0 z-[100] invite-viewport-live overflow-hidden";
 
+  const memorialStagePaint =
+    memorial && !isEnvelopeOpening
+      ? {
+          backgroundColor: "#050505",
+          backgroundImage: [
+            "radial-gradient(ellipse 80% 55% at 50% 18%, rgba(224,184,74,0.14), transparent 62%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.22) 42%, rgba(0,0,0,0.62) 100%)",
+            `url(${MEMORIAL_INVITATION_BG_SRC})`,
+          ].join(", "),
+          backgroundSize: "auto, auto, cover",
+          backgroundPosition: "center, center, center",
+          backgroundRepeat: "no-repeat",
+        }
+      : {
+          background: isEnvelopeOpening ? "transparent" : stageBase,
+        };
+
   return (
     <div
       className={shellClass}
       style={{
-        background:
-          isEnvelopeOpening
-            ? "transparent"
-            : stageBase,
-        transition: "background 700ms cubic-bezier(0.22, 1, 0.36, 1)",
+        ...memorialStagePaint,
+        transition: "background 700ms cubic-bezier(0.22, 1, 0.36, 1), background-image 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         perspective: reduceMotion ? undefined : "1600px",
         perspectiveOrigin: "50% 18%",
         /* Ensure absolute/fixed children have a real box in framed previews. */

@@ -12,6 +12,7 @@ import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-te
 import { resolveFuneralCoverCopy, parseMemorialNameCard, resolveMemorialAgeYears } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import {
   MEMORIAL_COVER_PORTRAIT_SRC,
+  MEMORIAL_INVITATION_BG_SRC,
   MEMORIAL_SEAL_LIFESPAN,
 } from "@/components/experience/memorial-envelope-layout";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
@@ -26,9 +27,21 @@ function CoverAmbientMedia({ url }: { url: string }) {
   );
 }
 
-/** Dark memorial atmosphere when no guest cover photo is set — keeps the seal blending. */
+/** Embossed damask paper when no guest cover photo is set. */
 function CoverMemorialAtmosphere() {
-  return <div className="inv-cover-media inv-cover-media--memorial-atmosphere" aria-hidden />;
+  return (
+    <div className="inv-cover-media inv-cover-media--memorial-atmosphere" aria-hidden>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={MEMORIAL_INVITATION_BG_SRC}
+        alt=""
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
+        draggable={false}
+      />
+    </div>
+  );
 }
 
 /** Full-bleed hero (non-funeral covers). */
@@ -211,6 +224,16 @@ export function CoverPage({ context, page }: InvitePageProps) {
         <div className="inv-funeral-cover-stack">
           <EntranceReveal className="inv-funeral-cover-portrait-wrap">
             <div className="inv-funeral-cover-portrait-stage">
+              <div className="inv-funeral-cover-damask-plate" aria-hidden>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={MEMORIAL_INVITATION_BG_SRC}
+                  alt=""
+                  loading="eager"
+                  decoding="async"
+                  draggable={false}
+                />
+              </div>
               <span className="inv-funeral-cover-portrait-glow" aria-hidden />
               <MemorialCoverPortrait
                 alt={`Memorial portrait of ${typeof names === "string" ? names : "the deceased"}`}

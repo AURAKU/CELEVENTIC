@@ -13,4 +13,6 @@ export const MEMORIAL_SEAL_LIFESPAN = "1953 – 2026";
 export const MEMORIAL_SEAL_PORTRAIT_SRC = "/experience/memorial/wax-seal-portrait.webp";
 /** Funeral cover hero — ornate oval framed portrait (not the wax seal). */
 export const MEMORIAL_COVER_PORTRAIT_SRC = "/experience/memorial/framed-memorial-portrait.webp";
+/** Embossed damask paper — default invitation + memorial stage background. */
+export const MEMORIAL_INVITATION_BG_SRC = "/experience/memorial/invitation-damask-bg.webp";
 

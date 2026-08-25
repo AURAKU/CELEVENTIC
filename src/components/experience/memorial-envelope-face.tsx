@@ -7,6 +7,7 @@ import {
   MEMORIAL_ENVELOPE_ART,
   MEMORIAL_ENVELOPE_OPEN_ART,
   MEMORIAL_ENVELOPE_ASPECT,
+  MEMORIAL_INVITATION_BG_SRC,
   MEMORIAL_SEAL_CX_PCT,
   MEMORIAL_SEAL_CY_PCT,
   MEMORIAL_SEAL_WIDTH_FRAC,
@@ -65,8 +66,14 @@ export function MemorialEnvelopeFace({
     <motion.div
       className={`absolute inset-0 z-10 flex items-center justify-center overflow-hidden ${invitationFontVars}`}
       style={{
-        background:
-          "radial-gradient(ellipse 82% 62% at 50% 44%, #1a1612 0%, #0a0908 52%, #050505 100%)",
+        backgroundColor: "#050505",
+        backgroundImage: [
+          "radial-gradient(ellipse 82% 62% at 50% 44%, rgba(26,22,18,0.55) 0%, rgba(10,9,8,0.72) 52%, rgba(5,5,5,0.88) 100%)",
+          `url(${MEMORIAL_INVITATION_BG_SRC})`,
+        ].join(", "),
+        backgroundSize: "auto, cover",
+        backgroundPosition: "center, center",
+        backgroundRepeat: "no-repeat",
         pointerEvents: "none",
         padding: fitContainer
           ? "0"

@@ -55,6 +55,7 @@ import {
   openingMemoryKey,
   rememberOpeningSeen,
 } from "@/lib/experience/opening-visit-memory";
+import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 
 /**
  * Full opening pipeline (platform → ceremony → invite):
@@ -185,11 +186,16 @@ export function PremiumInviteWrapper({
       ? "wax-seal-black"
       : openingExperienceRaw;
 
-  const showReveal =
-    !skipReveal &&
-    revealEnabled &&
-    openingExperience !== "none" &&
-    enrichedDesign.studio?.revealMode !== "none";
+  /**
+   * Funeral / memorial always runs the envelope ceremony into the invitation,
+   * unless this mount explicitly opted out (studio thumbnails / skipReveal).
+   */
+  const showReveal = isFuneralCollection
+    ? !skipReveal && enrichedDesign.studio?.revealMode !== "none"
+    : !skipReveal &&
+      revealEnabled &&
+      openingExperience !== "none" &&
+      enrichedDesign.studio?.revealMode !== "none";
 
   const hasMusic =
     (musicEnabled || musicSelection?.url || musicUrl) &&
@@ -460,9 +466,28 @@ export function PremiumInviteWrapper({
   // Guarantee mobile page scroll after ceremony — never leave reveal lock stuck.
   useEffect(() => {
     if (phase !== "portal" || typeof document === "undefined") return;
+    forceUnlockRevealScroll();
     document.documentElement.classList.remove("reveal-scroll-locked");
     document.body.style.overflow = "";
     document.body.style.touchAction = "";
+
+    const scroller = document.querySelector<HTMLElement>(".inv-paged-scroll");
+    if (!scroller) return;
+
+    scroller.classList.add("inv-paged-scroll--settle");
+    scroller.style.pointerEvents = "auto";
+    scroller.style.overflowY = "auto";
+    resetInviteScrollToCover({ smooth: false });
+
+    const settleMs = window.setTimeout(() => {
+      scroller.classList.remove("inv-paged-scroll--settle");
+      resetInviteScrollToCover({ smooth: false });
+    }, 420);
+
+    return () => {
+      window.clearTimeout(settleMs);
+      scroller.classList.remove("inv-paged-scroll--settle");
+    };
   }, [phase]);
 
   // While the envelope is on top, freeze the underlay on the cover so peek never

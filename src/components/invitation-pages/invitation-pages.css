@@ -65,6 +65,8 @@
   padding: var(--inv-space-page-padding);
   background: var(--inv-color-surface);
   box-sizing: border-box;
+  /* Let vertical pans drive the parent scroller on mobile */
+  touch-action: pan-y;
 }
 
 @supports not (height: 1cqh) {
@@ -421,20 +423,8 @@
 
 /* ——— Funeral memorial experience ——— */
 
-.inv-paged-root[data-inv-category="funeral"] .inv-page::before {
-  background:
-    radial-gradient(
-      ellipse 80% 55% at 50% 0%,
-      color-mix(in srgb, var(--inv-color-accent) 12%, transparent),
-      transparent 62%
-    );
-}
-
-/**
- * Funeral type system — artistic display hierarchy, readable body.
- * Fluid clamp() + breakpoint bumps so mobile / tablet / desktop each feel intentional.
- */
 .inv-paged-root[data-inv-category="funeral"] {
+  --inv-memorial-damask: url("/experience/memorial/invitation-damask-bg.webp");
   --inv-funeral-eyebrow: clamp(0.7rem, 0.62rem + 0.28vw, 0.84rem);
   --inv-funeral-heading: clamp(1.65rem, 1.15rem + 2.1vw, 2.55rem);
   --inv-funeral-display: clamp(2.15rem, 1.35rem + 3.2vw, 3.55rem);
@@ -450,6 +440,41 @@
   --inv-funeral-name: clamp(1.2rem, 1.05rem + 0.85vw, 1.75rem);
   --inv-funeral-btn: clamp(0.95rem, 0.9rem + 0.28vw, 1.08rem);
 }
+
+/* Funeral: proximity snap + normal stop — mandatory/always felt “stuck” after envelope open. */
+.inv-paged-root[data-inv-category="funeral"] .inv-paged-scroll {
+  scroll-snap-type: y proximity;
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-page {
+  scroll-snap-stop: normal;
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-paged-scroll.inv-paged-scroll--settle {
+  scroll-snap-type: none !important;
+  scroll-behavior: auto !important;
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-page::before {
+  background:
+    radial-gradient(
+      ellipse 80% 55% at 50% 0%,
+      color-mix(in srgb, var(--inv-color-accent) 12%, transparent),
+      transparent 62%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #000 42%, transparent) 0%,
+      color-mix(in srgb, #000 28%, transparent) 45%,
+      color-mix(in srgb, #000 58%, transparent) 100%
+    ),
+    var(--inv-memorial-damask) center / cover no-repeat;
+}
+
+/**
+ * Funeral type system — artistic display hierarchy, readable body.
+ * Fluid clamp() + breakpoint bumps so mobile / tablet / desktop each feel intentional.
+ */
 
 @media (min-width: 640px) {
   .inv-paged-root[data-inv-category="funeral"] {
@@ -1931,14 +1956,35 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  background: #050505;
+}
+
+.inv-cover-media--memorial-atmosphere img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  transform: none;
+  filter: brightness(0.92) contrast(1.08);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.inv-cover-media--memorial-atmosphere::after {
   background:
     radial-gradient(
       ellipse 70% 55% at 50% 28%,
-      color-mix(in srgb, var(--inv-color-accent) 22%, transparent),
+      color-mix(in srgb, var(--inv-color-accent) 20%, transparent),
       transparent 62%
     ),
-    radial-gradient(ellipse 90% 70% at 50% 80%, #0a0908 0%, #050505 100%),
-    linear-gradient(180deg, #12100e 0%, #070706 55%, #050505 100%);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #000 48%, transparent) 0%,
+      color-mix(in srgb, #000 18%, transparent) 36%,
+      color-mix(in srgb, #000 72%, transparent) 100%
+    ),
+    radial-gradient(ellipse 90% 70% at 50% 80%, color-mix(in srgb, #000 35%, transparent), #050505);
 }
 
 .inv-funeral-cover-stack {
@@ -1968,14 +2014,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(100%, 46rem);
+  width: min(100%, 52rem);
   max-width: 100%;
 }
 
-/** Soft theme-tinted halo so the black plate melts into the cover. */
+/** Damask paper behind the framed portrait — replaces the pitch-black art plate. */
+.inv-funeral-cover-damask-plate {
+  position: absolute;
+  inset: -2% -1% -4% -1%;
+  z-index: 0;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  pointer-events: none;
+  background: #050505;
+}
+
+.inv-funeral-cover-damask-plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  filter: brightness(0.94) contrast(1.06);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/** Soft theme-tinted halo so the oval melts into the damask. */
 .inv-funeral-cover-portrait-glow {
   position: absolute;
-  inset: 6% 8% 10% 8%;
+  inset: 4% 6% 8% 6%;
   border-radius: 50%;
   background:
     radial-gradient(
@@ -1986,24 +2054,24 @@
     );
   filter: blur(22px);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 /**
  * Ornate oval framed memorial portrait — cover hero.
- * Square art plate with black field; black blends into the funeral atmosphere.
+ * Aggressive oval mask drops the square black plate so damask shows around the frame.
  */
 .inv-memorial-cover-portrait {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   margin: 0;
   width: 100%;
-  max-width: min(100%, 46rem);
+  max-width: min(100%, 52rem);
   aspect-ratio: 1 / 1;
-  max-height: min(72cqh, 42rem);
+  max-height: min(86cqh, 48rem);
   filter:
-    drop-shadow(0 32px 64px rgba(0, 0, 0, 0.78))
-    drop-shadow(0 0 48px color-mix(in srgb, var(--inv-color-accent) 32%, transparent));
+    drop-shadow(0 28px 56px rgba(0, 0, 0, 0.72))
+    drop-shadow(0 0 42px color-mix(in srgb, var(--inv-color-accent) 28%, transparent));
 }
 
 .inv-memorial-cover-portrait img {
@@ -2012,20 +2080,20 @@
   height: 100%;
   object-fit: contain;
   object-position: center center;
-  /* Fade only the hard black corners so the oval gold frame sits in the theme */
+  /* Keep the gold oval + plaque; punch out the square black field. */
   -webkit-mask-image: radial-gradient(
-    ellipse 92% 90% at 50% 48%,
-    #000 58%,
-    rgba(0, 0, 0, 0.96) 72%,
-    rgba(0, 0, 0, 0.7) 84%,
-    transparent 98%
+    ellipse 74% 80% at 50% 47%,
+    #000 54%,
+    rgba(0, 0, 0, 0.92) 62%,
+    rgba(0, 0, 0, 0.35) 72%,
+    transparent 82%
   );
   mask-image: radial-gradient(
-    ellipse 92% 90% at 50% 48%,
-    #000 58%,
-    rgba(0, 0, 0, 0.96) 72%,
-    rgba(0, 0, 0, 0.7) 84%,
-    transparent 98%
+    ellipse 74% 80% at 50% 47%,
+    #000 54%,
+    rgba(0, 0, 0, 0.92) 62%,
+    rgba(0, 0, 0, 0.35) 72%,
+    transparent 82%
   );
   user-select: none;
   -webkit-user-drag: none;
@@ -2107,12 +2175,12 @@
 
 @media (min-width: 1024px) {
   .inv-funeral-cover-portrait-stage {
-    width: min(100%, 50rem);
+    width: min(100%, 56rem);
   }
 
   .inv-memorial-cover-portrait {
-    max-width: min(100%, 50rem);
-    max-height: min(74cqh, 48rem);
+    max-width: min(100%, 56rem);
+    max-height: min(88cqh, 52rem);
   }
 
   .inv-memorial-age-seal {
@@ -2133,7 +2201,7 @@
 
 @media (max-height: 720px) {
   .inv-memorial-cover-portrait {
-    max-height: min(58cqh, 30rem);
+    max-height: min(72cqh, 34rem);
   }
 
   .inv-memorial-age-seal {
@@ -2150,7 +2218,7 @@
 
 @media (max-height: 640px) {
   .inv-memorial-cover-portrait {
-    max-height: min(52cqh, 24rem);
+    max-height: min(68cqh, 28rem);
   }
 }
 
