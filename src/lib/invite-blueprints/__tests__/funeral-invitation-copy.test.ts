@@ -83,8 +83,12 @@ describe("funeral invitation copy", () => {
     assert.equal(steps[0]!.title, "Laying in state");
     assert.match(steps[0]!.detail, /Presbyterian Church Sunyani Chiraa/);
     assert.match(steps[0]!.detail, /4:30am/);
+    assert.equal(steps[0]!.place, "Presbyterian Church Sunyani Chiraa");
+    assert.equal(steps[0]!.time, "4:30am – 9:00am");
     assert.equal(steps[1]!.title, "Interment");
     assert.match(steps[1]!.detail, /Sunyani Chiraa Cemetery/);
+    assert.equal(steps[1]!.place, "Sunyani Chiraa Cemetery");
+    assert.equal(steps[1]!.time, undefined);
     assert.equal(steps[2]!.title, "Final funeral rites");
     assert.match(steps[2]!.detail, /1:00pm/);
     assert.equal(steps[3]!.title, "Thanksgiving service");

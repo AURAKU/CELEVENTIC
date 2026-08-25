@@ -185,7 +185,14 @@ export interface FuneralProgrammeStep {
   id: string;
   step: string;
   title: string;
+  /** Full line for accessibility / plain-text consumers. */
   detail: string;
+  /** Highlighted date phrase shown in the timeline. */
+  date: string;
+  /** Highlighted venue / place phrase. */
+  place: string;
+  /** Optional highlighted time window (e.g. "4:30am – 9:00am"). */
+  time?: string;
 }
 
 function dayWithOrdinal(day: number): string {
@@ -232,6 +239,10 @@ function thanksgivingDateLine(
   return formatFuneralProgrammeDate(parts);
 }
 
+function programmeDetailLine(date: string, place: string, time?: string): string {
+  return time ? `${date} at ${place} from ${time}` : `${date} at ${place}`;
+}
+
 /**
  * Ghanaian funeral arrangements programme (laying in state → interment →
  * final rites → thanksgiving), filled from the invitation’s venue and dates.
@@ -245,30 +256,45 @@ export function buildFuneralProgramme(
   const intermentPlace = resolveIntermentPlace(event);
   const thanksgiving = thanksgivingDateLine(event.startDateRaw, serviceDate);
 
+  const layingTime = "4:30am – 9:00am";
+  const ritesTime = "1:00pm – 6:00pm";
+  const thanksTime = "9:00am";
+
   return [
     {
       id: "laying-in-state",
       step: "01",
       title: "Laying in state",
-      detail: `${serviceDate} at ${venue} from 4:30am – 9:00am`,
+      date: serviceDate,
+      place: venue,
+      time: layingTime,
+      detail: programmeDetailLine(serviceDate, venue, layingTime),
     },
     {
       id: "interment",
       step: "02",
       title: "Interment",
-      detail: `${serviceDate} at ${intermentPlace}`,
+      date: serviceDate,
+      place: intermentPlace,
+      detail: programmeDetailLine(serviceDate, intermentPlace),
     },
     {
       id: "final-rites",
       step: "03",
       title: "Final funeral rites",
-      detail: `${serviceDate} at ${venue} from 1:00pm – 6:00pm`,
+      date: serviceDate,
+      place: venue,
+      time: ritesTime,
+      detail: programmeDetailLine(serviceDate, venue, ritesTime),
     },
     {
       id: "thanksgiving",
       step: "04",
       title: "Thanksgiving service",
-      detail: `${thanksgiving} at ${venue} from 9:00am`,
+      date: thanksgiving,
+      place: venue,
+      time: thanksTime,
+      detail: programmeDetailLine(thanksgiving, venue, thanksTime),
     },
   ];
 }

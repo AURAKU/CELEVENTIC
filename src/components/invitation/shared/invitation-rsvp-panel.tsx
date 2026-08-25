@@ -36,6 +36,8 @@ interface InvitationRsvpPanelProps {
   initialAttendingCount?: number | null;
   /** When false, the optional email field is omitted (e.g. funeral attendance). Default true. */
   showEmail?: boolean;
+  /** Celebration vs memorial reply chrome (button language & styling). */
+  tone?: "celebration" | "memorial";
 }
 
 export function InvitationRsvpPanel({
@@ -50,8 +52,10 @@ export function InvitationRsvpPanel({
   initialRsvpStatus = null,
   initialAttendingCount = null,
   showEmail = true,
+  tone = "celebration",
 }: InvitationRsvpPanelProps) {
   const { t } = useLocale();
+  const memorial = tone === "memorial";
   const allowance = Math.max(1, Math.trunc(partyAllowance || 1));
   const seededStatus = normalizeRsvpChoice(initialRsvpStatus);
   const seededAttending = clampAttendingCount(
@@ -141,20 +145,31 @@ export function InvitationRsvpPanel({
     : variant === "dark"
       ? "border-white/30 text-white hover:bg-white/10"
       : "";
-  const fieldClass =
-    variant === "dark" ? "bg-white/10 border-white/20 text-white placeholder:text-white/50" : "";
+  const fieldClass = memorial
+    ? "inv-rsvp-field"
+    : variant === "dark"
+      ? "bg-white/10 border-white/20 text-white placeholder:text-white/50"
+      : "";
 
   if (rsvpStatus) {
     return (
       <div
-        className="text-center p-4 rounded-lg font-medium inv-fade-in space-y-1"
-        style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
+        className={
+          memorial
+            ? "inv-rsvp-confirmed text-center"
+            : "text-center p-4 rounded-lg font-medium inv-fade-in space-y-1"
+        }
+        style={
+          memorial
+            ? undefined
+            : { backgroundColor: `${accentColor}18`, color: accentColor }
+        }
       >
-        <p>
+        <p className={memorial ? "inv-rsvp-confirmed-title" : undefined}>
           {t("rsvp.title")}: {rsvpStatus.replace(/_/g, " ")}, {t("rsvp.thank_you")}
         </p>
         {rsvpStatus === "ACCEPTED" && allowance > 1 ? (
-          <p className="text-sm font-normal opacity-90">
+          <p className={memorial ? "inv-rsvp-confirmed-detail" : "text-sm font-normal opacity-90"}>
             {rsvpAcceptedThankYou(confirmedAttending, allowance)}
           </p>
         ) : null}
@@ -162,15 +177,53 @@ export function InvitationRsvpPanel({
     );
   }
 
+  const choices: Array<{
+    id: "ACCEPTED" | "DECLINED" | "MAYBE";
+    label: string;
+    whisper: string;
+    icon: typeof Check;
+    tone: "accept" | "decline" | "maybe";
+  }> = [
+    {
+      id: "ACCEPTED",
+      label: t("rsvp.accept"),
+      whisper: memorial ? "With the family" : "",
+      icon: Check,
+      tone: "accept",
+    },
+    {
+      id: "DECLINED",
+      label: t("rsvp.decline"),
+      whisper: memorial ? "With deep regret" : "",
+      icon: X,
+      tone: "decline",
+    },
+    {
+      id: "MAYBE",
+      label: t("rsvp.maybe"),
+      whisper: memorial ? "Still hoping" : "",
+      icon: HelpCircle,
+      tone: "maybe",
+    },
+  ];
+
   return (
-    <div className="space-y-3">
+    <div className={memorial ? "inv-rsvp-panel space-y-4" : "space-y-3"}>
       {label ? (
         <p className="text-sm font-medium" style={{ color: accentColor }}>
           {label}
         </p>
       ) : null}
       {capacityCopy ? (
-        <p className="text-xs font-semibold tracking-wide" style={{ color: accentColor }} data-testid="rsvp-capacity">
+        <p
+          className={
+            memorial
+              ? "inv-rsvp-capacity"
+              : "text-xs font-semibold tracking-wide"
+          }
+          style={memorial ? undefined : { color: accentColor }}
+          data-testid="rsvp-capacity"
+        >
           {capacityCopy}
         </p>
       ) : null}
@@ -207,12 +260,25 @@ export function InvitationRsvpPanel({
         />
         {allowance > 1 ? (
           <div
-            className={`rounded-lg border px-3 py-3 space-y-2 ${
-              variant === "dark" ? "border-white/20 bg-white/5" : "border-slate-200 bg-slate-50/80"
-            }`}
+            className={
+              memorial
+                ? "inv-rsvp-party"
+                : `rounded-lg border px-3 py-3 space-y-2 ${
+                    variant === "dark"
+                      ? "border-white/20 bg-white/5"
+                      : "border-slate-200 bg-slate-50/80"
+                  }`
+            }
             data-testid="rsvp-party-slots"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: accentColor }}>
+            <p
+              className={
+                memorial
+                  ? "inv-rsvp-party-label"
+                  : "text-xs font-semibold uppercase tracking-wide"
+              }
+              style={memorial ? undefined : { color: accentColor }}
+            >
               Party seats
             </p>
             <div className="flex items-center gap-3">
@@ -220,7 +286,7 @@ export function InvitationRsvpPanel({
                 type="button"
                 size="icon"
                 variant="outline"
-                className={btnClass}
+                className={memorial ? "inv-rsvp-party-stepper" : btnClass}
                 disabled={loading || attendingCount <= 1}
                 aria-label="Fewer attending"
                 onClick={() => setAttendingCount((n) => clampAttendingCount(n - 1, allowance))}
@@ -228,16 +294,25 @@ export function InvitationRsvpPanel({
                 <Minus className="h-4 w-4" />
               </Button>
               <div className="flex-1 text-center">
-                <p className="text-lg font-semibold tabular-nums" data-testid="rsvp-attending-count">
+                <p
+                  className={
+                    memorial
+                      ? "inv-rsvp-party-count"
+                      : "text-lg font-semibold tabular-nums"
+                  }
+                  data-testid="rsvp-attending-count"
+                >
                   {slotGuidance.confirmed} / {allowance}
                 </p>
-                <p className="text-xs opacity-80">{slotGuidance.summary}</p>
+                <p className={memorial ? "inv-rsvp-party-summary" : "text-xs opacity-80"}>
+                  {slotGuidance.summary}
+                </p>
               </div>
               <Button
                 type="button"
                 size="icon"
                 variant="outline"
-                className={btnClass}
+                className={memorial ? "inv-rsvp-party-stepper" : btnClass}
                 disabled={loading || attendingCount >= allowance}
                 aria-label="More attending"
                 onClick={() => setAttendingCount((n) => clampAttendingCount(n + 1, allowance))}
@@ -245,24 +320,80 @@ export function InvitationRsvpPanel({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-xs text-center opacity-80" data-testid="rsvp-remaining-slots">
+            <p
+              className={
+                memorial ? "inv-rsvp-party-detail" : "text-xs text-center opacity-80"
+              }
+              data-testid="rsvp-remaining-slots"
+            >
               {slotGuidance.detail}
             </p>
           </div>
         ) : null}
       </div>
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" className={btnClass} onClick={() => handleRsvp("ACCEPTED")} disabled={loading}>
-          <Check className="h-4 w-4 mr-1" /> {t("rsvp.accept")}
-        </Button>
-        <Button size="sm" variant="outline" className={btnClass} onClick={() => handleRsvp("DECLINED")} disabled={loading}>
-          <X className="h-4 w-4 mr-1" /> {t("rsvp.decline")}
-        </Button>
-        <Button size="sm" variant="outline" className={btnClass} onClick={() => handleRsvp("MAYBE")} disabled={loading}>
-          <HelpCircle className="h-4 w-4 mr-1" /> {t("rsvp.maybe")}
-        </Button>
-      </div>
+      {error && (
+        <p className={memorial ? "inv-rsvp-error" : "text-sm text-red-500"}>{error}</p>
+      )}
+      {memorial ? (
+        <div
+          className="inv-rsvp-choices"
+          role="group"
+          aria-label="Attendance reply"
+        >
+          {choices.map((choice) => {
+            const Icon = choice.icon;
+            return (
+              <button
+                key={choice.id}
+                type="button"
+                className={`inv-rsvp-choice inv-rsvp-choice--${choice.tone}`}
+                onClick={() => void handleRsvp(choice.id)}
+                disabled={loading}
+              >
+                <span className="inv-rsvp-choice-icon" aria-hidden>
+                  <Icon strokeWidth={2} />
+                </span>
+                <span className="inv-rsvp-choice-copy">
+                  <span className="inv-rsvp-choice-label">{choice.label}</span>
+                  {choice.whisper ? (
+                    <span className="inv-rsvp-choice-whisper">{choice.whisper}</span>
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className={btnClass}
+            onClick={() => handleRsvp("ACCEPTED")}
+            disabled={loading}
+          >
+            <Check className="h-4 w-4 mr-1" /> {t("rsvp.accept")}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className={btnClass}
+            onClick={() => handleRsvp("DECLINED")}
+            disabled={loading}
+          >
+            <X className="h-4 w-4 mr-1" /> {t("rsvp.decline")}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className={btnClass}
+            onClick={() => handleRsvp("MAYBE")}
+            disabled={loading}
+          >
+            <HelpCircle className="h-4 w-4 mr-1" /> {t("rsvp.maybe")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

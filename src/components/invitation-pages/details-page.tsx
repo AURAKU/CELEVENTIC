@@ -5,6 +5,7 @@ import { PageFrame } from "./page-frame";
 import { MotifGlyph } from "./motif-glyph";
 import { EntranceReveal } from "@/components/motion/entrance-reveal";
 import { AddToCalendarBlock } from "./blocks/add-to-calendar-block";
+import { MemorialMapPreview } from "./memorial-map-preview";
 import { scrollToInvitePage } from "@/components/invitation-paged/use-active-page";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
 import {
@@ -28,6 +29,7 @@ function resolveFuneralKeyTime(
   programme: ReturnType<typeof buildFuneralProgramme>
 ): string | null {
   const rites = programme.find((s) => s.id === "final-rites");
+  if (rites?.time?.trim()) return rites.time.trim();
   const fromRites = rites?.detail.match(/from\s+(.+)$/i)?.[1]?.trim();
   if (fromRites) return fromRites;
 
@@ -144,7 +146,19 @@ export function DetailsPage({ context, page }: InvitePageProps) {
                   </span>
                   <div className="inv-programme-body">
                     <p className="inv-programme-title">{step.title}</p>
-                    <p className="inv-programme-detail">{step.detail}</p>
+                    <p className="inv-programme-detail">
+                      <span className="inv-programme-phrase inv-programme-phrase--date">
+                        {step.date}
+                      </span>
+                      <span className="inv-programme-phrase inv-programme-phrase--place">
+                        {step.place}
+                      </span>
+                      {step.time ? (
+                        <span className="inv-programme-phrase inv-programme-phrase--time">
+                          {step.time}
+                        </span>
+                      ) : null}
+                    </p>
                   </div>
                   {index < programme.length - 1 && (
                     <span className="inv-programme-connector" aria-hidden />
@@ -195,7 +209,7 @@ export function DetailsPage({ context, page }: InvitePageProps) {
           </EntranceReveal>
 
           <EntranceReveal delay={0.24} className="w-full">
-            <div className="inv-cover-quick-nav">
+            <div className="inv-details-venue-stack">
               <button
                 type="button"
                 className="inv-btn inv-btn-secondary"
@@ -203,6 +217,11 @@ export function DetailsPage({ context, page }: InvitePageProps) {
               >
                 View venue & map
               </button>
+              <MemorialMapPreview
+                mapsLink={event.mapsLink}
+                venueName={event.venueName}
+                landmark={event.landmark}
+              />
               <button
                 type="button"
                 className="inv-btn inv-btn-primary"
