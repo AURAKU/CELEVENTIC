@@ -45,7 +45,9 @@ export function isDigitalCardLive(card: {
 }
 
 export function toPublicPayload(card: {
+  id: string;
   slug: string;
+  publicToken: string;
   displayName: string;
   title: string | null;
   company: string | null;
@@ -57,13 +59,17 @@ export function toPublicPayload(card: {
   themeId: string;
   avatarUrl: string | null;
   nfcEnabled: boolean;
+  connectBackEnabled?: boolean;
+  defaultMode?: string;
   isPublished: boolean;
   subscriptionStatus: string;
   subscriptionExpiresAt: Date | null;
 }): DigitalCardPublicPayload {
   const theme = resolveDigitalCardTheme(card.themeId);
   return {
+    id: card.id,
     slug: card.slug,
+    publicToken: card.publicToken,
     displayName: card.displayName,
     title: card.title,
     company: card.company,
@@ -75,6 +81,8 @@ export function toPublicPayload(card: {
     themeId: theme.id,
     avatarUrl: card.avatarUrl,
     nfcEnabled: card.nfcEnabled,
+    connectBackEnabled: card.connectBackEnabled !== false,
+    defaultMode: card.defaultMode || "professional",
     isLive: isDigitalCardLive(card),
   };
 }
@@ -110,6 +118,83 @@ export async function listDigitalCardsForUser(userId: string) {
 
 export async function getDigitalCardBySlug(slug: string) {
   return prisma.digitalBusinessCard.findUnique({ where: { slug } });
+}
+
+export async function getDigitalCardByPublicToken(publicToken: string) {
+  return prisma.digitalBusinessCard.findUnique({ where: { publicToken } });
+}
+
+export async function resolveNfcDeviceTap(publicToken: string) {
+  const device = await prisma.smartCardNfcDevice.findUnique({
+    where: { publicToken },
+    include: { card: true },
+  });
+  if (!device || device.status !== "ACTIVE") return null;
+  await prisma.smartCardNfcDevice.update({
+    where: { id: device.id },
+    data: { tapCount: { increment: 1 }, lastTapAt: new Date() },
+  });
+  await prisma.smartCardInteraction
+    .create({
+      data: {
+        cardId: device.cardId,
+        campaignId: device.campaignId,
+        kind: "nfc_tap",
+        meta: { deviceId: device.id, deviceType: device.deviceType },
+      },
+    })
+    .catch(() => undefined);
+  return device.card;
+}
+
+export async function createSmartCardConnection(input: {
+  cardId: string;
+  visitorName: string;
+  visitorEmail?: string | null;
+  visitorPhone?: string | null;
+  visitorCompany?: string | null;
+  visitorTitle?: string | null;
+  note?: string | null;
+  formMode?: string;
+  campaignId?: string | null;
+  eventId?: string | null;
+}) {
+  const name = input.visitorName.trim();
+  if (name.length < 2) throw new Error("Name is required");
+  const email = input.visitorEmail?.trim() || null;
+  const phone = input.visitorPhone?.trim() || null;
+  if (!email && !phone) throw new Error("Email or phone is required");
+
+  const connection = await prisma.smartCardConnection.create({
+    data: {
+      cardId: input.cardId,
+      visitorName: name,
+      visitorEmail: email,
+      visitorPhone: phone,
+      visitorCompany: input.visitorCompany?.trim() || null,
+      visitorTitle: input.visitorTitle?.trim() || null,
+      note: input.note?.trim() || null,
+      formMode: input.formMode || "Instant",
+      campaignId: input.campaignId || null,
+      eventId: input.eventId || null,
+      status: "NEW",
+      source: "connect_back",
+      consentAt: new Date(),
+    },
+  });
+
+  await prisma.smartCardInteraction
+    .create({
+      data: {
+        cardId: input.cardId,
+        campaignId: input.campaignId || null,
+        kind: "connect",
+        meta: { connectionId: connection.id, formMode: connection.formMode },
+      },
+    })
+    .catch(() => undefined);
+
+  return connection;
 }
 
 export async function getDigitalCardForUser(userId: string, id: string) {
