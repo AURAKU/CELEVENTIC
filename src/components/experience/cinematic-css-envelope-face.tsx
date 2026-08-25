@@ -16,9 +16,9 @@ const FLAP_PCT = 52;
 const SEAL_WIDTH = "38%";
 
 const DEFAULT_STAGE =
-  "linear-gradient(180deg, #071428 0%, #0c3f3c 40%, #0a2a36 70%, #050d16 100%)";
-const DEFAULT_FRAME = "rgba(56, 189, 248, 0.88)";
-const DEFAULT_OUTER = "rgba(212, 166, 58, 0.42)";
+  "linear-gradient(180deg, #0a0a0a 0%, #141210 42%, #1a1612 72%, #0c0b09 100%)";
+const DEFAULT_FRAME = "rgba(224, 184, 74, 0.72)";
+const DEFAULT_OUTER = "rgba(201, 162, 39, 0.42)";
 
 function subscribeMq(mq: MediaQueryList, onChange: () => void) {
   mq.addEventListener("change", onChange);
@@ -40,13 +40,30 @@ function useEnvelopeAspect(fitContainer: boolean): number {
   return isDesktop ? ENVELOPE_ASPECT_DESKTOP : ENVELOPE_ASPECT_MOBILE;
 }
 
-function PaperGrain() {
+function PaperGrain({ intensity = 0.22 }: { intensity?: number }) {
   return (
     <div
-      className="absolute inset-0 pointer-events-none opacity-[0.16] mix-blend-multiply"
+      className="absolute inset-0 pointer-events-none mix-blend-multiply"
       style={{
+        opacity: intensity,
         backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E\")",
+          "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.65'/%3E%3C/svg%3E\")",
+      }}
+      aria-hidden
+    />
+  );
+}
+
+function PaperFibers({ dark }: { dark?: boolean }) {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        opacity: dark ? 0.14 : 0.1,
+        backgroundImage: dark
+          ? "repeating-linear-gradient(92deg, transparent 0 7px, rgba(224,184,74,0.06) 7px 8px), repeating-linear-gradient(0deg, transparent 0 11px, rgba(0,0,0,0.08) 11px 12px)"
+          : "repeating-linear-gradient(92deg, transparent 0 7px, rgba(90,70,50,0.05) 7px 8px), repeating-linear-gradient(0deg, transparent 0 11px, rgba(40,30,20,0.04) 11px 12px)",
+        mixBlendMode: dark ? "soft-light" : "multiply",
       }}
       aria-hidden
     />
@@ -64,6 +81,8 @@ export interface CinematicCssEnvelopeFaceProps {
   sealDurationMs: number;
   sealStyle?: ResolvedSealStyle;
   fitContainer?: boolean;
+  /** Memorial: seal flies clear of the frame with the dove unseal. */
+  ceremonialFlyaway?: boolean;
 }
 
 /**
@@ -81,6 +100,7 @@ export function CinematicCssEnvelopeFace({
   sealDurationMs,
   sealStyle,
   fitContainer = false,
+  ceremonialFlyaway = false,
 }: CinematicCssEnvelopeFaceProps) {
   const envelopeAspect = useEnvelopeAspect(fitContainer);
   const lifting = isUnsealing || isOpening;
@@ -92,6 +112,7 @@ export function CinematicCssEnvelopeFace({
   const stageBg = theme.stageBg ?? theme.bodyBg ?? DEFAULT_STAGE;
   const frameColor = theme.frameColor ?? (theme.royal ? DEFAULT_FRAME : theme.accent);
   const outerEdge = theme.outerEdgeColor ?? theme.borderColor ?? DEFAULT_OUTER;
+  const memorialStage = Boolean(ceremonialFlyaway);
 
   const envelopeWidth = fitContainer
     ? "100%"
@@ -138,13 +159,14 @@ export function CinematicCssEnvelopeFace({
       <div
         className="absolute inset-0"
         style={{
-          background:
-            "radial-gradient(ellipse 72% 58% at 50% 34%, rgba(255,248,240,0.14), transparent 62%), radial-gradient(ellipse 90% 55% at 50% 100%, rgba(11,138,131,0.2), transparent 58%), radial-gradient(ellipse 55% 40% at 50% 28%, rgba(212,166,58,0.1), transparent 55%)",
+          background: memorialStage
+            ? "radial-gradient(ellipse 72% 58% at 50% 34%, rgba(224,184,74,0.12), transparent 62%), radial-gradient(ellipse 90% 55% at 50% 100%, rgba(0,0,0,0.55), transparent 58%), radial-gradient(ellipse 55% 40% at 50% 28%, rgba(255,248,230,0.06), transparent 55%)"
+            : "radial-gradient(ellipse 72% 58% at 50% 34%, rgba(255,248,240,0.1), transparent 62%), radial-gradient(ellipse 90% 55% at 50% 100%, rgba(0,0,0,0.35), transparent 58%), radial-gradient(ellipse 55% 40% at 50% 28%, rgba(212,166,58,0.12), transparent 55%)",
         }}
         aria-hidden
       />
 
-      {/* Gold outer edge + cyan inner frame */}
+      {/* Gold outer edge + inner frame */}
       <div
         className="absolute pointer-events-none"
         style={{
@@ -163,7 +185,9 @@ export function CinematicCssEnvelopeFace({
             ? "4%"
             : "max(0.85rem, env(safe-area-inset-top, 0px)) max(0.9rem, env(safe-area-inset-right, 0px)) max(0.85rem, env(safe-area-inset-bottom, 0px)) max(0.9rem, env(safe-area-inset-left, 0px))",
           border: `1.5px solid ${frameColor}`,
-          boxShadow: `inset 0 0 0 1px rgba(56,189,248,0.12), 0 0 28px rgba(56,189,248,0.1)`,
+          boxShadow: memorialStage
+            ? `inset 0 0 0 1px rgba(224,184,74,0.14), 0 0 28px rgba(224,184,74,0.12)`
+            : `inset 0 0 0 1px rgba(224,184,74,0.1), 0 0 24px rgba(212,166,58,0.08)`,
           borderRadius: "4px",
         }}
         aria-hidden
@@ -199,9 +223,10 @@ export function CinematicCssEnvelopeFace({
           aspectRatio: `${envelopeAspect} / 1`,
           maxHeight: fitContainer ? "100%" : "calc(100dvh - 2.8rem)",
           transformStyle: "preserve-3d",
-          borderRadius: "0.2rem",
-          boxShadow:
-            "0 28px 80px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.08)",
+          borderRadius: "0.15rem",
+          boxShadow: memorialStage
+            ? "0 32px 90px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(224,184,74,0.18), inset 0 1px 0 rgba(255,245,220,0.06)"
+            : "0 28px 80px rgba(0,0,0,0.42), 0 10px 28px rgba(0,0,0,0.22), 0 0 0 1px rgba(40,30,20,0.12), inset 0 1px 0 rgba(255,255,255,0.22)",
           overflow: lifting ? "visible" : "hidden",
         }}
         animate={
@@ -217,44 +242,142 @@ export function CinematicCssEnvelopeFace({
       >
         {/* Envelope body */}
         <div
-          className="absolute inset-0 overflow-hidden rounded-[0.2rem]"
+          className="absolute inset-0 overflow-hidden rounded-[0.15rem]"
           style={{ background: theme.bodyBg }}
         >
-          <PaperGrain />
+          <PaperGrain intensity={memorialStage ? 0.28 : 0.2} />
+          <PaperFibers dark={memorialStage} />
           <div
-            className="absolute inset-0 opacity-[0.28]"
+            className="absolute inset-0"
             style={{
-              backgroundImage:
-                "radial-gradient(ellipse 85% 55% at 50% 18%, rgba(255,255,255,0.14), transparent 55%), linear-gradient(165deg, transparent 35%, rgba(0,0,0,0.22) 100%)",
+              opacity: memorialStage ? 0.45 : 0.32,
+              backgroundImage: memorialStage
+                ? "radial-gradient(ellipse 80% 50% at 50% 12%, rgba(224,184,74,0.1), transparent 55%), linear-gradient(165deg, transparent 28%, rgba(0,0,0,0.45) 100%), linear-gradient(90deg, rgba(0,0,0,0.18) 0%, transparent 18%, transparent 82%, rgba(0,0,0,0.18) 100%)"
+                : "radial-gradient(ellipse 85% 55% at 50% 18%, rgba(255,255,255,0.22), transparent 55%), linear-gradient(165deg, transparent 30%, rgba(0,0,0,0.18) 100%), linear-gradient(90deg, rgba(60,45,30,0.08) 0%, transparent 16%, transparent 84%, rgba(60,45,30,0.08) 100%)",
             }}
             aria-hidden
           />
 
-          {/* Side pocket folds */}
+          {/* Left / right side pockets — deeper fold AO */}
           <div
-            className="absolute inset-y-[16%] left-0 w-[15%] opacity-35"
+            className="absolute inset-y-[12%] left-0 w-[18%]"
             style={{
-              background: "linear-gradient(90deg, rgba(0,0,0,0.32), transparent)",
-              clipPath: "polygon(0 0, 100% 12%, 100% 88%, 0 100%)",
+              background: memorialStage
+                ? "linear-gradient(90deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.18) 55%, transparent 100%)"
+                : "linear-gradient(90deg, rgba(40,30,20,0.28) 0%, rgba(40,30,20,0.1) 55%, transparent 100%)",
+              clipPath: "polygon(0 0, 100% 14%, 100% 86%, 0 100%)",
+              boxShadow: "inset 4px 0 12px rgba(0,0,0,0.12)",
             }}
             aria-hidden
           />
           <div
-            className="absolute inset-y-[16%] right-0 w-[15%] opacity-35"
+            className="absolute inset-y-[12%] right-0 w-[18%]"
             style={{
-              background: "linear-gradient(270deg, rgba(0,0,0,0.32), transparent)",
-              clipPath: "polygon(0 12%, 100% 0, 100% 100%, 0 88%)",
+              background: memorialStage
+                ? "linear-gradient(270deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.18) 55%, transparent 100%)"
+                : "linear-gradient(270deg, rgba(40,30,20,0.28) 0%, rgba(40,30,20,0.1) 55%, transparent 100%)",
+              clipPath: "polygon(0 14%, 100% 0, 100% 100%, 0 86%)",
+              boxShadow: "inset -4px 0 12px rgba(0,0,0,0.12)",
             }}
             aria-hidden
           />
 
-          {/* Bottom flap hint — classic envelope geometry */}
+          {/* Diagonal crease lines where flaps meet */}
+          <svg
+            className="absolute inset-0 h-full w-full pointer-events-none"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden
+          >
+            <line
+              x1="0"
+              y1="0"
+              x2="50"
+              y2={FLAP_PCT}
+              stroke={memorialStage ? "rgba(0,0,0,0.35)" : "rgba(60,45,30,0.18)"}
+              strokeWidth="0.35"
+              vectorEffect="non-scaling-stroke"
+            />
+            <line
+              x1="100"
+              y1="0"
+              x2="50"
+              y2={FLAP_PCT}
+              stroke={memorialStage ? "rgba(0,0,0,0.35)" : "rgba(60,45,30,0.18)"}
+              strokeWidth="0.35"
+              vectorEffect="non-scaling-stroke"
+            />
+            <line
+              x1="0"
+              y1="100"
+              x2="50"
+              y2={FLAP_PCT}
+              stroke={memorialStage ? "rgba(0,0,0,0.28)" : "rgba(60,45,30,0.14)"}
+              strokeWidth="0.3"
+              vectorEffect="non-scaling-stroke"
+            />
+            <line
+              x1="100"
+              y1="100"
+              x2="50"
+              y2={FLAP_PCT}
+              stroke={memorialStage ? "rgba(0,0,0,0.28)" : "rgba(60,45,30,0.14)"}
+              strokeWidth="0.3"
+              vectorEffect="non-scaling-stroke"
+            />
+            <line
+              x1="0"
+              y1="0"
+              x2="50"
+              y2={FLAP_PCT}
+              stroke={memorialStage ? "rgba(224,184,74,0.12)" : "rgba(255,252,248,0.35)"}
+              strokeWidth="0.2"
+              vectorEffect="non-scaling-stroke"
+              transform="translate(0.4 0.4)"
+            />
+            <line
+              x1="100"
+              y1="0"
+              x2="50"
+              y2={FLAP_PCT}
+              stroke={memorialStage ? "rgba(224,184,74,0.12)" : "rgba(255,252,248,0.35)"}
+              strokeWidth="0.2"
+              vectorEffect="non-scaling-stroke"
+              transform="translate(-0.4 0.4)"
+            />
+          </svg>
+
+          {/* Bottom flap — richer fold depth */}
           <div
-            className="absolute inset-x-0 bottom-0 h-[38%] opacity-90"
+            className="absolute inset-x-0 bottom-0 h-[40%]"
             style={{
               background: theme.flapGradient,
-              clipPath: "polygon(0 100%, 50% 28%, 100% 100%)",
-              filter: "brightness(0.92)",
+              clipPath: "polygon(0 100%, 50% 26%, 100% 100%)",
+              filter: "brightness(0.9)",
+              boxShadow: memorialStage
+                ? "inset 0 18px 28px rgba(0,0,0,0.35)"
+                : "inset 0 14px 22px rgba(40,30,20,0.12)",
+            }}
+            aria-hidden
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 h-[40%] pointer-events-none"
+            style={{
+              clipPath: "polygon(0 100%, 50% 26%, 100% 100%)",
+              background: memorialStage
+                ? "linear-gradient(180deg, rgba(224,184,74,0.08) 0%, transparent 40%)"
+                : "linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 42%)",
+            }}
+            aria-hidden
+          />
+
+          {/* Paper edge bevel */}
+          <div
+            className="absolute inset-0 pointer-events-none rounded-[0.15rem]"
+            style={{
+              boxShadow: memorialStage
+                ? "inset 0 0 0 1px rgba(224,184,74,0.22), inset 0 0 0 2px rgba(0,0,0,0.25)"
+                : "inset 0 0 0 1px rgba(255,255,255,0.45), inset 0 0 0 2px rgba(40,30,20,0.08)",
             }}
             aria-hidden
           />
@@ -266,7 +389,7 @@ export function CinematicCssEnvelopeFace({
                   key={i}
                   className="flex-1 h-full"
                   style={{
-                    background: i % 3 === 0 ? "#D4A63A" : i % 3 === 1 ? "#0B8A83" : "#c0392b",
+                    background: i % 3 === 0 ? "#D4A63A" : i % 3 === 1 ? "#1a5c4a" : "#c0392b",
                   }}
                 />
               ))}
@@ -328,11 +451,14 @@ export function CinematicCssEnvelopeFace({
             className="absolute inset-0"
             style={{
               clipPath: "polygon(0 0, 100% 0, 50% 100%)",
-              background:
-                "linear-gradient(180deg, rgba(255,252,248,0.95) 0%, rgba(240,235,228,0.92) 100%)",
+              background: memorialStage
+                ? "linear-gradient(180deg, rgba(42,36,26,0.98) 0%, rgba(22,18,12,0.96) 100%)"
+                : "linear-gradient(180deg, rgba(255,252,248,0.95) 0%, rgba(240,235,228,0.92) 100%)",
               transform: "rotateX(180deg)",
               backfaceVisibility: "hidden",
-              boxShadow: "inset 0 10px 28px rgba(0,0,0,0.1)",
+              boxShadow: memorialStage
+                ? "inset 0 10px 28px rgba(0,0,0,0.35)"
+                : "inset 0 10px 28px rgba(0,0,0,0.1)",
             }}
           />
 
@@ -346,12 +472,14 @@ export function CinematicCssEnvelopeFace({
               transform: "translateZ(0.5px)",
             }}
           >
-            <PaperGrain />
+            <PaperGrain intensity={memorialStage ? 0.26 : 0.18} />
+            <PaperFibers dark={memorialStage} />
             <div
               className="absolute inset-0 opacity-40"
               style={{
-                background:
-                  "linear-gradient(135deg, rgba(255,245,220,0.45) 0%, transparent 42%, rgba(0,0,0,0.12) 100%)",
+                background: memorialStage
+                  ? "linear-gradient(135deg, rgba(224,184,74,0.14) 0%, transparent 42%, rgba(0,0,0,0.28) 100%)"
+                  : "linear-gradient(135deg, rgba(255,245,220,0.45) 0%, transparent 42%, rgba(0,0,0,0.12) 100%)",
                 clipPath: "polygon(0 0, 100% 0, 50% 100%)",
               }}
             />
@@ -435,28 +563,31 @@ export function CinematicCssEnvelopeFace({
           animate={
             reduceMotion
               ? isOpening
-                ? { y: "-120%", scale: 0.9, opacity: 0, rotateX: 0, rotateZ: 0 }
+                ? { y: "-160%", scale: 0.88, opacity: 0, rotateX: 0, rotateZ: 0 }
                 : { y: "-50%", scale: 1, opacity: 1, rotateX: 0, rotateZ: 0 }
               : isOpening
                 ? {
-                    y: "-360%",
-                    scale: 0.74,
+                    y: ceremonialFlyaway ? "-520%" : "-360%",
+                    x: ceremonialFlyaway ? "18%" : "-50%",
+                    scale: ceremonialFlyaway ? 0.55 : 0.74,
                     opacity: 0,
-                    rotateX: -58,
-                    rotateZ: -12,
+                    rotateX: ceremonialFlyaway ? -72 : -58,
+                    rotateZ: ceremonialFlyaway ? 18 : -12,
                     filter: "drop-shadow(0 32px 28px rgba(0,0,0,0.35))",
                   }
                 : isUnsealing
                   ? {
-                      y: "-185%",
-                      scale: 1.08,
+                      y: ceremonialFlyaway ? "-240%" : "-185%",
+                      x: "-50%",
+                      scale: ceremonialFlyaway ? 1.14 : 1.08,
                       opacity: 1,
-                      rotateX: -34,
-                      rotateZ: -5,
+                      rotateX: ceremonialFlyaway ? -42 : -34,
+                      rotateZ: ceremonialFlyaway ? 8 : -5,
                       filter: "drop-shadow(0 24px 22px rgba(0,0,0,0.38))",
                     }
                   : {
                       y: "-50%",
+                      x: "-50%",
                       scale: 1,
                       opacity: 1,
                       rotateX: 0,
@@ -467,7 +598,9 @@ export function CinematicCssEnvelopeFace({
           transition={
             lifting
               ? {
-                  duration: isOpening ? Math.min(1.25, flapOpenSec) : sealLiftSec,
+                  duration: isOpening
+                    ? Math.min(ceremonialFlyaway ? 1.65 : 1.25, flapOpenSec)
+                    : sealLiftSec,
                   ease: EASE_SILK,
                 }
               : { duration: 0.01 }

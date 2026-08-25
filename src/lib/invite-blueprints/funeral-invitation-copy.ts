@@ -69,38 +69,87 @@ export interface FuneralProgrammeStep {
   detail: string;
 }
 
-/** Default dignified order-of-day when hosts have not supplied a custom programme. */
+function dayWithOrdinal(day: number): string {
+  const j = day % 10;
+  const k = day % 100;
+  if (j === 1 && k !== 11) return `${day}st`;
+  if (j === 2 && k !== 12) return `${day}nd`;
+  if (j === 3 && k !== 13) return `${day}rd`;
+  return `${day}th`;
+}
+
+function formatFuneralProgrammeDate(
+  dateParts: ReturnType<typeof formatInvitationDateParts> | null
+): string {
+  if (!dateParts) return "Date to be announced";
+  return `${dateParts.weekday} ${dayWithOrdinal(dateParts.day)} ${dateParts.month}, ${dateParts.year}`;
+}
+
+function resolveIntermentPlace(event: InvitationEventData): string {
+  const landmark = event.landmark?.trim();
+  if (landmark && /cemetery|burial|grave|interment/i.test(landmark)) return landmark;
+  const venue = event.venueName?.trim() ?? "";
+  const place = venue
+    .replace(/^.*?\bchurch\b\s+/i, "")
+    .replace(/^the\s+/i, "")
+    .trim();
+  if (place) return `${place} Cemetery`;
+  return landmark || "Burial ground as announced by the family";
+}
+
+function thanksgivingDateLine(
+  startRaw: string | undefined,
+  serviceDateLine: string
+): string {
+  if (!startRaw) return "Sunday following the funeral rites";
+  const start = new Date(startRaw);
+  if (Number.isNaN(start.getTime())) return serviceDateLine;
+  const thanks = new Date(start.getTime());
+  // Typical Ghanaian programme: thanksgiving on the Sunday after Friday rites.
+  const day = thanks.getUTCDay(); // 0 Sun … 5 Fri
+  const daysUntilSunday = day === 0 ? 0 : 7 - day;
+  thanks.setUTCDate(thanks.getUTCDate() + daysUntilSunday);
+  const parts = formatInvitationDateParts(thanks.toISOString());
+  return formatFuneralProgrammeDate(parts);
+}
+
+/**
+ * Ghanaian funeral arrangements programme (laying in state → interment →
+ * final rites → thanksgiving), filled from the invitation’s venue and dates.
+ */
 export function buildFuneralProgramme(
   event: InvitationEventData,
   dateParts: ReturnType<typeof formatInvitationDateParts> | null
 ): FuneralProgrammeStep[] {
-  const serviceTime = dateParts?.time?.trim() || "Time to be confirmed";
   const venue = event.venueName?.trim() || "Service venue";
+  const serviceDate = formatFuneralProgrammeDate(dateParts);
+  const intermentPlace = resolveIntermentPlace(event);
+  const thanksgiving = thanksgivingDateLine(event.startDateRaw, serviceDate);
 
   return [
     {
-      id: "gathering",
+      id: "laying-in-state",
       step: "01",
-      title: "Gathering",
-      detail: "Arrive early to greet the family and find your seat in quiet reflection.",
+      title: "Laying in state",
+      detail: `${serviceDate} at ${venue} from 4:30am – 9:00am`,
     },
     {
-      id: "service",
+      id: "interment",
       step: "02",
-      title: "Funeral service",
-      detail: `${venue} · ${serviceTime}`,
+      title: "Interment",
+      detail: `${serviceDate} at ${intermentPlace}`,
     },
     {
-      id: "committal",
+      id: "final-rites",
       step: "03",
-      title: "Final committal",
-      detail: "Burial or interment as announced by the family following the service.",
+      title: "Final funeral rites",
+      detail: `${serviceDate} at ${venue} from 1:00pm – 6:00pm`,
     },
     {
-      id: "repast",
+      id: "thanksgiving",
       step: "04",
-      title: "Repast & thanksgiving",
-      detail: "Refreshments and fellowship with the family to give thanks for a life well lived.",
+      title: "Thanksgiving service",
+      detail: `${thanksgiving} at ${venue} from 9:00am`,
     },
   ];
 }

@@ -1131,6 +1131,45 @@
   animation: inv-tap-hint-pulse 2.2s ease-in-out infinite;
 }
 
+/** Memorial gold CTA — soft gold breath, never a hard blink. */
+@keyframes inv-memorial-tap-glow {
+  0%, 100% {
+    opacity: 0.9;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #E0B84A 22%, transparent),
+      0 12px 40px rgba(0, 0, 0, 0.4);
+  }
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #E0B84A 48%, transparent),
+      0 0 22px color-mix(in srgb, #E0B84A 28%, transparent),
+      0 14px 44px rgba(0, 0, 0, 0.45);
+  }
+}
+
+.inv-memorial-tap-glow {
+  animation: inv-memorial-tap-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes inv-dove-wing-up {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(22deg); }
+}
+
+@keyframes inv-dove-wing-down {
+  0%, 100% { transform: rotate(6deg); }
+  50% { transform: rotate(-14deg); }
+}
+
+.inv-dove-wing-up {
+  animation: inv-dove-wing-up 0.42s ease-in-out infinite;
+}
+
+.inv-dove-wing-down {
+  animation: inv-dove-wing-down 0.42s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .inv-envelope-glow {
     animation: none;
@@ -1140,7 +1179,10 @@
   .inv-seal-pulse,
   .inv-seal-pulse-peach,
   .inv-seal-glow,
-  .inv-tap-hint-pulse {
+  .inv-tap-hint-pulse,
+  .inv-memorial-tap-glow,
+  .inv-dove-wing-up,
+  .inv-dove-wing-down {
     animation: none !important;
   }
 }
