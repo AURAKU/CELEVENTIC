@@ -411,9 +411,10 @@ export function PremiumInviteWrapper({
 
   const afterReveal = useCallback(() => {
     void startAudio();
-    setPortalEntrance(isFuneralCollection ? "from-top" : "fade");
+    // Envelope already unveiled the invite — no second entrance remount.
+    setPortalEntrance("none");
     setPhase("portal");
-  }, [startAudio, isFuneralCollection]);
+  }, [startAudio]);
 
   const handleTapBegin = useCallback(() => {
     void startAudio();
@@ -421,9 +422,10 @@ export function PremiumInviteWrapper({
       setPhase("reveal");
       return;
     }
-    setPortalEntrance(isFuneralCollection ? "from-top" : "fade");
+    // No envelope ceremony — soft open is appropriate.
+    setPortalEntrance("fade");
     setPhase("portal");
-  }, [showReveal, startAudio, isFuneralCollection]);
+  }, [showReveal, startAudio]);
 
   useEffect(() => {
     if (phase === "portal" && hasMusic && wantsAutoplay && !audioStarted.current) {
@@ -627,7 +629,7 @@ export function PremiumInviteWrapper({
     );
   }
 
-  if (phase === "reveal") {
+  if (phase === "reveal" || phase === "portal") {
     const isFuneralExperience =
       experience?.collectionId === "funeral" ||
       enrichedDesign.layout === "memorial-candle-tribute" ||
@@ -687,42 +689,65 @@ export function PremiumInviteWrapper({
           ),
         }
       : undefined;
+
+    /**
+     * Portal stays mounted across reveal → portal so EntranceReveal / media
+     * never remount into a stuck opacity-0 blank page. The envelope overlays
+     * on top and fades clear; underlay peek replaces nested children.
+     */
+    const portalLive = (
+      <div
+        className={
+          phase === "portal" && portalEntrance === "from-top"
+            ? "inv-portal-open-from-top"
+            : phase === "portal" && portalEntrance === "fade"
+              ? "inv-portal-enter"
+              : phase === "reveal"
+                ? "pointer-events-none"
+                : undefined
+        }
+        aria-hidden={phase === "reveal" ? true : undefined}
+      >
+        {portal}
+      </div>
+    );
+
     return (
       <>
         {admissionHandoff}
         {partyAdmissionBanner}
-        {/*
-          The reveal owns the portal as its child, so a throw inside the
-          ceremony would take the invitation with it. Falling through lands the
-          guest on that same portal, rendered directly.
-        */}
-        <CeremonyErrorBoundary beat="reveal" onFallthrough={afterReveal}>
-          <InteractiveReveal
-            key={`reveal-${ceremonyGeneration}`}
-            openingExperience={openingExperience}
-            guestName={props.guestName}
-            eventTitle={props.event.title}
-            hostName={props.event.hostName}
-            musicEnabled={Boolean(hasMusic)}
-            enableSounds={isFuneralExperience ? false : experience?.enableRevealSounds}
-            sealInitials={sealInitials}
-            sealEmblem={sealEmblem}
-            sealStyle={sealStyle}
-            openingCopy={openingCopy}
-            embedded={Boolean(embedded)}
-            autoOpen={Boolean(autoOpenReveal)}
-            allowSkip={false}
-            ceremonialDoves={isFuneralExperience}
-            onBegin={() => {
-              void startAudio();
-            }}
-            onComplete={afterReveal}
-          >
-            {portal}
-          </InteractiveReveal>
-        </CeremonyErrorBoundary>
+        {portalLive}
+        {phase === "reveal" ? (
+          <CeremonyErrorBoundary beat="reveal" onFallthrough={afterReveal}>
+            <InteractiveReveal
+              key={`reveal-${ceremonyGeneration}`}
+              openingExperience={openingExperience}
+              guestName={props.guestName}
+              eventTitle={props.event.title}
+              hostName={props.event.hostName}
+              musicEnabled={Boolean(hasMusic)}
+              enableSounds={isFuneralExperience ? false : experience?.enableRevealSounds}
+              sealInitials={sealInitials}
+              sealEmblem={sealEmblem}
+              sealStyle={sealStyle}
+              openingCopy={openingCopy}
+              embedded={Boolean(embedded)}
+              autoOpen={Boolean(autoOpenReveal)}
+              allowSkip={false}
+              ceremonialDoves={isFuneralExperience}
+              onBegin={() => {
+                void startAudio();
+              }}
+              onComplete={afterReveal}
+            />
+          </CeremonyErrorBoundary>
+        ) : null}
         {showAudioControls && audioManager && (
-          <InvitationAudioControls manager={audioManager} embedded={embedded} {...audioControlProps} />
+          <InvitationAudioControls
+            manager={audioManager}
+            embedded={embedded}
+            {...audioControlProps}
+          />
         )}
       </>
     );

@@ -67,9 +67,10 @@ export const ENVELOPE_OPEN_MS = 4800;
 export const ENVELOPE_OPEN_REDUCED_MS = 750;
 /** Seal-clear beat before the flap commits on CSS envelopes. */
 export const ENVELOPE_CSS_UNSEAL_MS = 1700;
-/** Memorial dove unseal — slow cinematic pair at the seal, then fly clear. */
-export const ENVELOPE_MEMORIAL_UNSEAL_MS = 3600;
-export const ENVELOPE_MEMORIAL_OPEN_MS = 7200;
+/** Memorial dove unseal — slow-motion gather → grip → lift → soar. */
+export const ENVELOPE_MEMORIAL_UNSEAL_MS = 5800;
+/** Full memorial open: seal + doves + envelope peel into the invitation. */
+export const ENVELOPE_MEMORIAL_OPEN_MS = 11200;
 /**
  * Photoreal TM cinematic open (Forever Afaris timing DNA):
  * tap → seal lifts (~1.9s) → flap unfolds dramatically → invite unveils → settle.
@@ -228,6 +229,12 @@ export function EnvelopeCollectionReveal({
     onComplete();
   }, [clearOpenTimers, onComplete]);
 
+  /**
+   * Opening window after the seal clears — peek transitions must finish inside
+   * this budget so the portal handoff never remounts mid-clip.
+   */
+  const openPhaseMs = Math.max(900, durationMs - (reduceMotion ? 0 : unsealMs));
+
   /** Staged open: seal lifts clear → flap unfolds → invite unveils. */
   const runOpenSequence = useCallback(() => {
     clearOpenTimers();
@@ -236,12 +243,13 @@ export function EnvelopeCollectionReveal({
       unsealTimer.current = setTimeout(() => {
         setPhase("opening");
       }, unsealMs);
-      completeTimer.current = setTimeout(finish, durationMs + 80);
+      // Slight settle after peek transitions complete, then hand off cleanly.
+      completeTimer.current = setTimeout(finish, durationMs + (memorial ? 280 : 80));
       return;
     }
     setPhase("opening");
     completeTimer.current = setTimeout(finish, durationMs + 80);
-  }, [clearOpenTimers, durationMs, finish, reduceMotion, unsealMs]);
+  }, [clearOpenTimers, durationMs, finish, memorial, reduceMotion, unsealMs]);
 
   const beginOpen = useCallback(() => {
     if (staticPreview || started.current || phase !== "idle") return;
@@ -312,7 +320,11 @@ export function EnvelopeCollectionReveal({
     <div
       className={shellClass}
       style={{
-        background: stageBase,
+        background:
+          isEnvelopeOpening
+            ? "transparent"
+            : stageBase,
+        transition: "background 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         perspective: reduceMotion ? undefined : "1600px",
         perspectiveOrigin: "50% 18%",
         /* Ensure absolute/fixed children have a real box in framed previews. */
@@ -328,7 +340,10 @@ export function EnvelopeCollectionReveal({
           : `Sealed envelope. Open invitation for ${eventTitle}`
       }
     >
-      {/* Invitation peeks underneath as the envelope opens */}
+      {/* Invitation peeks underneath as the envelope opens.
+          Prefer children when provided; otherwise the parent mounts the
+          portal as a sibling underlay (avoids remount blank on handoff). */}
+      {children ? (
       <div
         className="absolute inset-0 z-0"
         style={{
@@ -338,7 +353,7 @@ export function EnvelopeCollectionReveal({
             : reduceMotion
               ? "translateY(0) scale(1)"
               : memorial
-                ? "translateY(-16%) scale(0.985)"
+                ? "translateY(-10%) scale(0.99)"
                 : "translateY(6%) scale(0.965)",
           clipPath: reduceMotion
             ? undefined
@@ -347,13 +362,15 @@ export function EnvelopeCollectionReveal({
               : memorial
                 ? "inset(0 0 100% 0)"
                 : undefined,
+          // Memorial peek transitions MUST finish inside openPhaseMs so the
+          // portal remount never inherits a half-open clip (blank handoff).
           transition: memorial
-            ? `opacity ${Math.min(durationMs, 2600)}ms ${openEase} ${Math.round(
-                (durationMs - cssUnsealMs) * 0.12
-              )}ms, transform ${Math.round(durationMs - cssUnsealMs)}ms ${openEase} ${Math.round(
-                (durationMs - cssUnsealMs) * 0.1
-              )}ms, clip-path ${Math.round(durationMs - cssUnsealMs)}ms ${openEase} ${Math.round(
-                (durationMs - cssUnsealMs) * 0.1
+            ? `opacity ${Math.round(openPhaseMs * 0.5)}ms cubic-bezier(0.22, 1, 0.36, 1) ${Math.round(
+                openPhaseMs * 0.06
+              )}ms, transform ${Math.round(openPhaseMs * 0.72)}ms cubic-bezier(0.22, 1, 0.36, 1) ${Math.round(
+                openPhaseMs * 0.05
+              )}ms, clip-path ${Math.round(openPhaseMs * 0.7)}ms cubic-bezier(0.22, 1, 0.36, 1) ${Math.round(
+                openPhaseMs * 0.06
               )}ms`
             : `opacity ${Math.min(
                 durationMs,
@@ -375,7 +392,7 @@ export function EnvelopeCollectionReveal({
       >
         {children}
       </div>
-
+      ) : null}
       {memorial ? (
         <MemorialEnvelopeFace
           eventTitle={eventTitle}
@@ -421,7 +438,7 @@ export function EnvelopeCollectionReveal({
 
       <MemorialDoveUnseal
         active={memorial && isOpening && !reduceMotion}
-        durationSec={ENVELOPE_MEMORIAL_UNSEAL_MS / 1000 + 1.05}
+        durationSec={ENVELOPE_MEMORIAL_UNSEAL_MS / 1000 + 2.2}
       />
 
       {/*
@@ -435,7 +452,9 @@ export function EnvelopeCollectionReveal({
         <div
           className="absolute inset-x-0 z-30 flex justify-center pointer-events-none px-6"
           style={{
-            bottom: "max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 2rem))",
+            bottom: memorial
+              ? "max(1.15rem, calc(env(safe-area-inset-bottom, 0px) + 0.85rem))"
+              : "max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 2rem))",
             opacity: isOpening ? 0 : 1,
             transform: isOpening ? "translateY(10px)" : "translateY(0)",
             transition: "opacity 320ms ease, transform 320ms ease",
