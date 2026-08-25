@@ -8,6 +8,7 @@ import type { EnvelopeVisualTheme } from "@/lib/experience/opening-experiences";
 import { normalizeSealInitials } from "@/lib/invitation/vision-board";
 import { EmbroideredEnvelopeFace } from "@/components/experience/embroidered-envelope-face";
 import { CinematicCssEnvelopeFace } from "@/components/experience/cinematic-css-envelope-face";
+import { MemorialDoveUnseal } from "@/components/experience/memorial-dove-unseal";
 import {
   DEFAULT_RESOLVED_SEAL_STYLE,
   type ResolvedSealStyle,
@@ -46,6 +47,11 @@ interface EnvelopeCollectionRevealProps {
    * the user gesture, do not require a second tap on a sealed face).
    */
   autoOpen?: boolean;
+  /**
+   * Funeral / memorial ceremony: white doves unseal the wax, gold CTA,
+   * slower theatrical open into the invitation.
+   */
+  ceremonialDoves?: boolean;
 }
 
 /**
@@ -60,6 +66,9 @@ export const ENVELOPE_OPEN_MS = 4800;
 export const ENVELOPE_OPEN_REDUCED_MS = 750;
 /** Seal-clear beat before the flap commits on CSS envelopes. */
 export const ENVELOPE_CSS_UNSEAL_MS = 1700;
+/** Memorial dove unseal — longer gather → lift → fly clear. */
+export const ENVELOPE_MEMORIAL_UNSEAL_MS = 2600;
+export const ENVELOPE_MEMORIAL_OPEN_MS = 6200;
 /**
  * Photoreal TM cinematic open (Forever Afaris timing DNA):
  * tap → seal lifts (~1.9s) → flap unfolds dramatically → invite unveils → settle.
@@ -114,6 +123,7 @@ export function EnvelopeCollectionReveal({
   staticPreview = false,
   embedded = false,
   autoOpen = false,
+  ceremonialDoves = false,
 }: EnvelopeCollectionRevealProps) {
   const reduceMotion = useReducedMotion();
   const shouldAutoOpen = Boolean(autoOpen) && !staticPreview;
@@ -126,30 +136,79 @@ export function EnvelopeCollectionReveal({
 
   /** Cream embroidered face, photoreal art fill + interactive seal when themed. */
   const photoreal = Boolean(theme.photoreal);
+  const sealLabel = resolveSealLabel(sealInitials, sealEmblem, theme);
+  const resolvedSealStyle = sealStyle ?? DEFAULT_RESOLVED_SEAL_STYLE;
+  /** Cross / memorial glyph on the wax → always gold/black ceremony. */
+  const memorialGlyph = /[✝✞✟✠❦]/.test(sealLabel);
+  const memorial =
+    Boolean(ceremonialDoves) ||
+    Boolean(sealEmblem?.trim()) ||
+    memorialGlyph ||
+    /funeral|memorial|homegoing|loving memory|rites for|one week/i.test(eventTitle);
   const openEase = photoreal ? PHOTO_OPEN_EASE : OPEN_EASE;
-  const cssUnsealMs = ENVELOPE_CSS_UNSEAL_MS;
+  const cssUnsealMs = memorial ? ENVELOPE_MEMORIAL_UNSEAL_MS : ENVELOPE_CSS_UNSEAL_MS;
   const durationMs = reduceMotion
     ? photoreal
       ? ENVELOPE_PHOTO_OPEN_REDUCED_MS
       : ENVELOPE_OPEN_REDUCED_MS
-    : photoreal
-      ? ENVELOPE_PHOTO_OPEN_MS
-      : ENVELOPE_OPEN_MS;
+    : memorial
+      ? ENVELOPE_MEMORIAL_OPEN_MS
+      : photoreal
+        ? ENVELOPE_PHOTO_OPEN_MS
+        : ENVELOPE_OPEN_MS;
   /** Slow whole-stamp lift; photoreal + CSS both use a dedicated unseal beat. */
   const sealDurationMs = reduceMotion
     ? photoreal
       ? 420
       : 280
+    : memorial
+      ? ENVELOPE_MEMORIAL_UNSEAL_MS
+      : photoreal
+        ? ENVELOPE_PHOTO_UNSEAL_MS
+        : cssUnsealMs;
+  const unsealMs = memorial
+    ? ENVELOPE_MEMORIAL_UNSEAL_MS
     : photoreal
       ? ENVELOPE_PHOTO_UNSEAL_MS
       : cssUnsealMs;
-  const unsealMs = photoreal ? ENVELOPE_PHOTO_UNSEAL_MS : cssUnsealMs;
+  /**
+   * Photoreal: flap peels softly during unseal, then commits after the seal clears.
+   * CSS envelopes: flap follows after the seal float.
+   */
+  const flapDelayMs = reduceMotion
+    ? 0
+    : photoreal
+      ? 0
+      : Math.round(sealDurationMs * 0.55);
   const isUnsealing = phase === "unsealing";
   const isEnvelopeOpening = phase === "opening";
   const isOpening = isUnsealing || isEnvelopeOpening;
-  const sealLabel = resolveSealLabel(sealInitials, sealEmblem, theme);
-  const resolvedSealStyle = sealStyle ?? DEFAULT_RESOLVED_SEAL_STYLE;
-  const stageBase = photoreal ? "#ebe2d6" : "#050a12";
+  const ctaAccent = memorial ? "#E0B84A" : theme.accent;
+  const stageBase = memorial
+    ? "linear-gradient(180deg, #050505 0%, #0c0b09 42%, #16130e 100%)"
+    : photoreal
+      ? "#ebe2d6"
+      : theme.stageBg ?? "#050a12";
+  /** Memorial: charcoal paper + gold — no teal CTA, no white envelope stage. */
+  const visualTheme = memorial
+    ? {
+        ...theme,
+        accent: ctaAccent,
+        bodyBg:
+          "linear-gradient(145deg, #1c1914 0%, #100e0c 48%, #1a1712 100%)",
+        flapGradient:
+          "linear-gradient(180deg, #2c261c 0%, #1a1610 52%, #12100c 100%)",
+        borderColor: "rgba(224, 184, 74, 0.38)",
+        stageBg: stageBase,
+        frameColor: "rgba(224, 184, 74, 0.62)",
+        outerEdgeColor: "rgba(201, 162, 39, 0.4)",
+        sealGradient:
+          theme.sealGradient ??
+          "linear-gradient(145deg, #E8C56A 0%, #A67C1F 42%, #6B4E12 100%)",
+        label: "Tap the seal to open",
+        kente: false,
+      }
+    : theme;
 
   const clearOpenTimers = useCallback(() => {
     if (completeTimer.current) {
@@ -301,7 +360,7 @@ export function EnvelopeCollectionReveal({
 
       {photoreal ? (
         <EmbroideredEnvelopeFace
-          theme={theme}
+          theme={visualTheme}
           sealLabel={sealLabel}
           eventTitle={eventTitle}
           isUnsealing={isUnsealing}
@@ -313,10 +372,11 @@ export function EnvelopeCollectionReveal({
           openEase={openEase}
           fitContainer={staticPreview}
           sealStyle={resolvedSealStyle}
+          ceremonialFlyaway={memorial}
         />
       ) : (
         <CinematicCssEnvelopeFace
-          theme={theme}
+          theme={visualTheme}
           sealLabel={sealLabel}
           eventTitle={eventTitle}
           isUnsealing={isUnsealing}
@@ -326,8 +386,14 @@ export function EnvelopeCollectionReveal({
           sealDurationMs={sealDurationMs}
           sealStyle={resolvedSealStyle}
           fitContainer={staticPreview}
+          ceremonialFlyaway={memorial}
         />
       )}
+
+      <MemorialDoveUnseal
+        active={memorial && isOpening && !reduceMotion}
+        durationSec={ENVELOPE_MEMORIAL_UNSEAL_MS / 1000}
+      />
 
       {/*
         Guided tap affordance, the envelope/seal itself IS the control, but a
@@ -342,28 +408,47 @@ export function EnvelopeCollectionReveal({
           style={{
             bottom: "max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 2rem))",
             opacity: isOpening ? 0 : 1,
-            transition: "opacity 260ms ease",
+            transform: isOpening ? "translateY(10px)" : "translateY(0)",
+            transition: "opacity 320ms ease, transform 320ms ease",
           }}
           aria-hidden
         >
           <span
-            className={`inline-flex items-center gap-2 rounded-full border backdrop-blur-sm px-4 py-2 ${
-              reduceMotion ? "" : "inv-tap-hint-pulse"
+            className={`inline-flex items-center gap-2.5 rounded-full border px-5 py-2.5 shadow-[0_10px_36px_rgba(0,0,0,0.35)] ${
+              reduceMotion ? "" : memorial ? "inv-memorial-tap-glow" : "inv-tap-hint-pulse"
             }`}
-            style={{
-              borderColor: `color-mix(in srgb, ${theme.accent} 55%, transparent)`,
-              background: "rgba(4, 10, 16, 0.4)",
-              color: theme.accent,
-              fontFamily: "var(--font-cinzel), 'Cinzel', serif",
-              fontSize: "0.62rem",
-              fontWeight: 600,
-              letterSpacing: "0.26em",
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-            }}
+            style={
+              memorial
+                ? {
+                    borderColor: "color-mix(in srgb, #E0B84A 70%, transparent)",
+                    background:
+                      "linear-gradient(135deg, rgba(10,10,10,0.92) 0%, rgba(28,22,14,0.88) 100%)",
+                    color: "#F7EFD8",
+                    fontFamily: "var(--font-cinzel), 'Cinzel', serif",
+                    fontSize: "0.72rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.22em",
+                    textTransform: "uppercase",
+                    whiteSpace: "nowrap",
+                    boxShadow:
+                      "0 0 0 1px color-mix(in srgb, #E0B84A 25%, transparent), 0 12px 40px rgba(0,0,0,0.4)",
+                  }
+                : {
+                    borderColor: `color-mix(in srgb, ${ctaAccent} 55%, transparent)`,
+                    background: "rgba(4, 10, 16, 0.4)",
+                    color: ctaAccent,
+                    fontFamily: "var(--font-cinzel), 'Cinzel', serif",
+                    fontSize: "0.62rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.26em",
+                    textTransform: "uppercase",
+                    whiteSpace: "nowrap",
+                    backdropFilter: "blur(8px)",
+                  }
+            }
           >
             <EnvelopeTapGlyph />
-            {theme.label || "Tap to open"}
+            {visualTheme.label || "Tap to open"}
           </span>
         </div>
       )}
@@ -373,8 +458,16 @@ export function EnvelopeCollectionReveal({
         <button
           type="button"
           onClick={beginOpen}
-          className="absolute inset-0 z-40 touch-manipulation bg-transparent border-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-12px] focus-visible:outline-[#D4A63A]/85"
-          aria-label={theme.label ? `${theme.label}, open invitation` : "Tap to open invitation"}
+          className={`absolute inset-0 z-40 touch-manipulation bg-transparent border-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-12px] ${
+            memorial
+              ? "focus-visible:outline-[#E0B84A]/85"
+              : "focus-visible:outline-[#D4A63A]/85"
+          }`}
+          aria-label={
+            visualTheme.label
+              ? `${visualTheme.label}, open invitation`
+              : "Tap to open invitation"
+          }
         />
       )}
     </div>

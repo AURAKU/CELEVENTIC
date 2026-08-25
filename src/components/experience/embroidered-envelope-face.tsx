@@ -35,6 +35,8 @@ interface EmbroideredEnvelopeFaceProps {
   fitContainer?: boolean;
   /** Designed seal (color/material) + font/size/color overrides. Defaults to classic peach pearl. */
   sealStyle?: ResolvedSealStyle;
+  /** Memorial dove ceremony — accepted for API parity with CSS envelope face. */
+  ceremonialFlyaway?: boolean;
 }
 
 /**
@@ -133,6 +135,7 @@ export function EmbroideredEnvelopeFace({
   openEase: _openEase,
   fitContainer = false,
   sealStyle,
+  ceremonialFlyaway = false,
 }: EmbroideredEnvelopeFaceProps) {
   const faceArtUrl = theme.faceArtUrl ?? TRADITIONAL_MARRIAGE_ENVELOPE_ART_URL;
   const envelopeAspect = useEnvelopeAspect(fitContainer);
@@ -484,24 +487,31 @@ export function EmbroideredEnvelopeFace({
                 : { y: "-50%", scale: 1, opacity: 1, rotateX: 0, rotateZ: 0 }
               : isOpening
                 ? {
-                    y: "-340%",
-                    scale: 0.76,
+                    y: ceremonialFlyaway ? "-520%" : "-340%",
+                    x: ceremonialFlyaway ? "16%" : "-50%",
+                    scale: ceremonialFlyaway ? 0.55 : 0.76,
                     opacity: 0,
-                    rotateX: -52,
-                    rotateZ: -9,
-                    filter: "drop-shadow(0 28px 24px rgba(120, 70, 50, 0.22))",
+                    rotateX: ceremonialFlyaway ? -68 : -52,
+                    rotateZ: ceremonialFlyaway ? 16 : -9,
+                    filter: ceremonialFlyaway
+                      ? "drop-shadow(0 32px 28px rgba(0,0,0,0.35))"
+                      : "drop-shadow(0 28px 24px rgba(120, 70, 50, 0.22))",
                   }
                 : isUnsealing
                   ? {
-                      y: "-175%",
-                      scale: 1.07,
+                      y: ceremonialFlyaway ? "-230%" : "-175%",
+                      x: "-50%",
+                      scale: ceremonialFlyaway ? 1.12 : 1.07,
                       opacity: 1,
-                      rotateX: -30,
-                      rotateZ: -4,
-                      filter: "drop-shadow(0 22px 20px rgba(120, 70, 50, 0.34))",
+                      rotateX: ceremonialFlyaway ? -40 : -30,
+                      rotateZ: ceremonialFlyaway ? 7 : -4,
+                      filter: ceremonialFlyaway
+                        ? "drop-shadow(0 24px 22px rgba(0,0,0,0.38))"
+                        : "drop-shadow(0 22px 20px rgba(120, 70, 50, 0.34))",
                     }
                   : {
                       y: "-50%",
+                      x: "-50%",
                       scale: 1,
                       opacity: 1,
                       rotateX: 0,
@@ -512,7 +522,9 @@ export function EmbroideredEnvelopeFace({
           transition={
             lifting
               ? {
-                  duration: isOpening ? Math.min(1.2, flapOpenSec) : sealLiftSec,
+                  duration: isOpening
+                    ? Math.min(ceremonialFlyaway ? 1.65 : 1.2, flapOpenSec)
+                    : sealLiftSec,
                   ease: EASE_SILK,
                 }
               : { duration: 0.01 }

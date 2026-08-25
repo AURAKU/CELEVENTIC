@@ -605,8 +605,9 @@ export function PremiumInviteWrapper({
     const isFuneralExperience =
       experience?.collectionId === "funeral" ||
       enrichedDesign.layout === "memorial-candle-tribute" ||
-      /funeral|memorial|homegoing|in loving memory|rites for|one week/i.test(
-        `${props.event.title} ${props.event.description ?? ""}`
+      Boolean(visionBoard?.sealEmblem?.trim()) ||
+      /funeral|memorial|homegoing|in loving memory|rites for|one week|tribute/i.test(
+        `${props.event.title} ${props.event.description ?? ""} ${enrichedDesign.layout ?? ""}`
       );
     const sealInitials = resolveSealInitials(
       visionBoard?.sealInitials ?? weddingBoard?.sealMonogram,
@@ -685,6 +686,7 @@ export function PremiumInviteWrapper({
             embedded={Boolean(embedded)}
             autoOpen={Boolean(autoOpenReveal)}
             allowSkip={false}
+            ceremonialDoves={isFuneralExperience}
             onBegin={() => {
               void startAudio();
             }}

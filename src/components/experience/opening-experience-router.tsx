@@ -62,6 +62,8 @@ interface OpeningExperienceRouterProps {
   autoOpen?: boolean;
   /** Returning guest, reveals may offer a visible, opt-in skip control. */
   allowSkip?: boolean;
+  /** Funeral / memorial dove unseal ceremony. */
+  ceremonialDoves?: boolean;
   children: React.ReactNode;
 }
 
@@ -89,6 +91,7 @@ export function OpeningExperienceRouter({
   embedded = false,
   autoOpen = false,
   allowSkip = false,
+  ceremonialDoves = false,
   children,
 }: OpeningExperienceRouterProps) {
   const [revealed, setRevealed] = useState(false);
@@ -135,6 +138,7 @@ export function OpeningExperienceRouter({
         onComplete={complete}
         embedded={embedded}
         autoOpen={autoOpen}
+        ceremonialDoves={ceremonialDoves}
       >
         {children}
       </EnvelopeCollectionReveal>

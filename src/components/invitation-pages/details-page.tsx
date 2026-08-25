@@ -21,6 +21,22 @@ type DetailCard = {
   icon: typeof Calendar;
 };
 
+/** Prefer the main rites window over a midnight placeholder on the event start. */
+function resolveFuneralKeyTime(
+  dateParts: ReturnType<typeof formatInvitationDateParts> | null,
+  programme: ReturnType<typeof buildFuneralProgramme>
+): string | null {
+  const rites = programme.find((s) => s.id === "final-rites");
+  const fromRites = rites?.detail.match(/from\s+(.+)$/i)?.[1]?.trim();
+  if (fromRites) return fromRites;
+
+  const raw = dateParts?.time?.trim();
+  if (!raw) return null;
+  // Midnight UTC placeholders are not useful for guests.
+  if (/^12:00\s*AM$/i.test(raw) || /^00:00/.test(raw)) return null;
+  return raw;
+}
+
 export function DetailsPage({ context, page }: InvitePageProps) {
   const { event, theme, category, invitation } = context;
   const isFuneral = category === "funeral";
@@ -54,21 +70,59 @@ export function DetailsPage({ context, page }: InvitePageProps) {
   }
 
   if (isFuneral) {
+    const keyTime = resolveFuneralKeyTime(dateParts, programme);
+    const keyFacts: DetailCard[] = [];
+    if (dateLine) {
+      keyFacts.push({ id: "date", label: "When", value: dateLine, icon: Calendar });
+    }
+    if (keyTime) {
+      keyFacts.push({ id: "time", label: "Time", value: keyTime, icon: Clock });
+    }
+    if (event.venueName) {
+      keyFacts.push({ id: "venue", label: "Where", value: event.venueName, icon: MapPin });
+    }
+    const secondaryCards = cards.filter(
+      (c) => c.id === "dress" || c.id === "family" || c.id === "host"
+    );
+
     return (
       <PageFrame pageId={page.id} label={page.label} altSurface>
         <div className="inv-memorial-panel w-full">
           <EntranceReveal>
             <div className="inv-memorial-panel-header">
               <MotifGlyph glyphId={theme.motif.placements.coverTop} size={44} />
-              <p className="inv-eyebrow">Arrangements</p>
-              <h2 className="inv-heading">Order of the day</h2>
+              <p className="inv-eyebrow">Funeral arrangements</p>
+              <h2 className="inv-heading">Programme</h2>
               <p className="inv-body inv-muted inv-memorial-lead">
                 In honour of <span className="inv-memorial-name">{deceasedName}</span>
               </p>
             </div>
           </EntranceReveal>
 
-          <EntranceReveal delay={0.06} className="w-full">
+          {keyFacts.length > 0 && (
+            <EntranceReveal delay={0.05} className="w-full">
+              <div className="inv-key-facts" role="group" aria-label="Date, time and venue">
+                <p className="inv-key-facts-kicker">At a glance</p>
+                <dl className="inv-key-facts-list">
+                  {keyFacts.map((fact) => {
+                    const Icon = fact.icon;
+                    return (
+                      <div key={fact.id} className="inv-key-fact" data-fact={fact.id}>
+                        <dt className="inv-key-fact-label">
+                          <Icon size={18} strokeWidth={2.25} aria-hidden />
+                          {fact.label}
+                        </dt>
+                        <dd className="inv-key-fact-value">{fact.value}</dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              </div>
+            </EntranceReveal>
+          )}
+
+          <EntranceReveal delay={0.1} className="w-full">
+            <p className="inv-eyebrow inv-programme-section-label">Order of service</p>
             <ol className="inv-programme-timeline" aria-label="Funeral programme">
               {programme.map((step, index) => (
                 <li key={step.id} className="inv-programme-step">
@@ -87,11 +141,10 @@ export function DetailsPage({ context, page }: InvitePageProps) {
             </ol>
           </EntranceReveal>
 
-          {cards.length > 0 && (
-            <EntranceReveal delay={0.12} className="w-full">
-              <p className="inv-eyebrow inv-programme-section-label">Service details</p>
+          {secondaryCards.length > 0 && (
+            <EntranceReveal delay={0.14} className="w-full">
               <dl className="inv-detail-cards">
-                {cards.map((card) => {
+                {secondaryCards.map((card) => {
                   const Icon = card.icon;
                   return (
                     <div key={card.id} className="inv-detail-card">
