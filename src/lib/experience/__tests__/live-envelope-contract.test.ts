@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   isLiveGuestInviteMount,
+  isCanonicalMemorialEnvelopeSku,
   resolveEnvelopeAutoOpen,
+  resolveLiveRevealConfiguration,
+  resolvePhaseAfterTapBegin,
   resolveShowReveal,
   shouldEnvelopeAutoOpen,
 } from "@/lib/experience/live-envelope-contract";
@@ -131,6 +134,131 @@ test("non-funeral still respects revealEnabled=false", () => {
     }),
     false
   );
+});
+
+test("TEST 1: legacy memorial-candle-tribute normalizes curtain + candle-light → envelope + wax-seal-black", () => {
+  const live = resolveLiveRevealConfiguration({
+    catalogSlug: "memorial-candle-tribute",
+    layout: "memorial-candle-tribute",
+    eventTitle: "In Loving Memory",
+    studio: { revealMode: "curtain" },
+    experience: { openingExperience: "candle-light", collectionId: "funeral" },
+  });
+  assert.equal(live.resolvedRevealMode, "envelope");
+  assert.equal(live.resolvedOpeningExperience, "wax-seal-black");
+  assert.equal(live.rawRevealMode, "curtain");
+  assert.equal(live.rawOpeningExperience, "candle-light");
+  assert.equal(live.isMemorialEnvelopeSku, true);
+});
+
+test("TEST 2: correct memorial configuration remains envelope + wax-seal-black", () => {
+  const live = resolveLiveRevealConfiguration({
+    catalogSlug: "memorial-candle-tribute",
+    layout: "memorial-candle-tribute",
+    studio: { revealMode: "envelope" },
+    experience: { openingExperience: "wax-seal-black", collectionId: "funeral" },
+  });
+  assert.equal(live.resolvedRevealMode, "envelope");
+  assert.equal(live.resolvedOpeningExperience, "wax-seal-black");
+});
+
+test("TEST 3: live memorial invitation showReveal === true", () => {
+  const live = resolveLiveRevealConfiguration({
+    catalogSlug: "memorial-candle-tribute",
+    layout: "memorial-candle-tribute",
+    studio: { revealMode: "curtain" },
+    experience: { openingExperience: "candle-light", collectionId: "funeral" },
+  });
+  assert.equal(live.showReveal, true);
+});
+
+test("TEST 4: Tap to Begin → reveal phase, not portal", () => {
+  const live = resolveLiveRevealConfiguration({
+    catalogSlug: "memorial-candle-tribute",
+    layout: "memorial-candle-tribute",
+    studio: { revealMode: "curtain" },
+    experience: { openingExperience: "candle-light", collectionId: "funeral" },
+  });
+  assert.equal(resolvePhaseAfterTapBegin(live.showReveal), "reveal");
+  assert.notEqual(resolvePhaseAfterTapBegin(live.showReveal), "portal");
+});
+
+test("TEST 5: LIVE envelope autoOpen === false", () => {
+  assert.equal(
+    resolveEnvelopeAutoOpen({
+      isLiveGuest: true,
+      autoOpenReveal: true,
+    }),
+    false
+  );
+});
+
+test("TEST 7: wedding templates retain their opening experiences", () => {
+  const live = resolveLiveRevealConfiguration({
+    catalogSlug: "royal-emerald-wedding",
+    layout: "royal-emerald-wedding",
+    studio: { revealMode: "envelope" },
+    experience: { openingExperience: "wax-seal-emerald", collectionId: "wedding" },
+  });
+  assert.equal(live.resolvedOpeningExperience, "wax-seal-emerald");
+  assert.equal(live.isMemorialEnvelopeSku, false);
+});
+
+test("TEST 8: other funeral templates keep deliberately configured ceremonies", () => {
+  const farewell = resolveLiveRevealConfiguration({
+    catalogSlug: "candlelight-farewell",
+    layout: "candlelight-farewell",
+    studio: { revealMode: "curtain" },
+    experience: { openingExperience: "curtain-award", collectionId: "funeral" },
+  });
+  assert.equal(farewell.resolvedOpeningExperience, "curtain-award");
+  assert.equal(farewell.resolvedRevealMode, "curtain");
+  assert.equal(farewell.isMemorialEnvelopeSku, false);
+
+  const elegy = resolveLiveRevealConfiguration({
+    catalogSlug: "candlelight-elegy-pages",
+    layout: "candlelight-elegy-pages",
+    studio: { revealMode: "envelope" },
+    experience: { openingExperience: "light-beam", collectionId: "funeral" },
+  });
+  assert.equal(elegy.resolvedOpeningExperience, "light-beam");
+  assert.equal(elegy.isMemorialEnvelopeSku, false);
+});
+
+test("TEST 9: revealMode=none stays valid on non-mandatory templates", () => {
+  const wedding = resolveLiveRevealConfiguration({
+    catalogSlug: "floral-garden-romance",
+    layout: "floral-garden-romance",
+    studio: { revealMode: "none" },
+    experience: { openingExperience: "flower-bloom", collectionId: "wedding" },
+  });
+  assert.equal(wedding.showReveal, false);
+  assert.equal(wedding.resolvedRevealMode, "none");
+
+  const genericFuneral = resolveLiveRevealConfiguration({
+    catalogSlug: "candlelight-farewell",
+    layout: "candlelight-farewell",
+    studio: { revealMode: "none" },
+    experience: { openingExperience: "curtain-award", collectionId: "funeral" },
+  });
+  assert.equal(genericFuneral.showReveal, false);
+});
+
+test("memorial envelope SKU overrides legacy revealMode=none for mandatory ceremony", () => {
+  const live = resolveLiveRevealConfiguration({
+    catalogSlug: "memorial-candle-tribute",
+    layout: "memorial-candle-tribute",
+    studio: { revealMode: "none" },
+    experience: { openingExperience: "candle-light", collectionId: "funeral" },
+  });
+  assert.equal(live.resolvedRevealMode, "envelope");
+  assert.equal(live.showReveal, true);
+});
+
+test("isCanonicalMemorialEnvelopeSku detects envelope contract from SKU overrides", () => {
+  assert.equal(isCanonicalMemorialEnvelopeSku("memorial-candle-tribute"), true);
+  assert.equal(isCanonicalMemorialEnvelopeSku("candlelight-farewell"), false);
+  assert.equal(isCanonicalMemorialEnvelopeSku("royal-emerald-wedding"), false);
 });
 
 test("MANDATORY: LIVE envelope waits — idle has no completion path without BEGIN", () => {

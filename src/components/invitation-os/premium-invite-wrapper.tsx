@@ -20,10 +20,6 @@ import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
-import {
-  isEnvelopeExperience,
-  mapLegacyRevealMode,
-} from "@/lib/experience/opening-experiences";
 import { createInvitationAudioManager, pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
 import {
   phaseAfterSoftIntro,
@@ -58,8 +54,10 @@ import {
 import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import {
   isLiveGuestInviteMount,
+  logLiveRevealDiagnostic,
   resolveEnvelopeAutoOpen,
-  resolveShowReveal,
+  resolveLiveRevealConfiguration,
+  resolvePhaseAfterTapBegin,
 } from "@/lib/experience/live-envelope-contract";
 
 /**
@@ -77,6 +75,8 @@ interface PremiumInviteWrapperProps extends PremiumInviteExperienceProps {
   revealEnabled?: boolean;
   revealMode?: RevealMode;
   openingExperience?: OpeningExperienceId;
+  /** Catalog SKU slug — enables live memorial-envelope normalization. */
+  catalogSlug?: string | null;
   musicEnabled?: boolean;
   /** When false, music only loads after tap-to-begin (catalog thumbnails). */
   musicAutoplay?: boolean;
@@ -145,6 +145,7 @@ export function PremiumInviteWrapper({
   revealEnabled = true,
   revealMode,
   openingExperience: openingExperienceProp,
+  catalogSlug: catalogSlugProp,
   musicEnabled,
   musicUrl,
   musicSelection,
@@ -169,39 +170,38 @@ export function PremiumInviteWrapper({
   const enabledTabs = experience?.enabledTabs ?? DEFAULT_HUB_TABS;
   const themeColors = enrichedDesign.colors;
 
-  const openingExperienceRaw: OpeningExperienceId =
-    openingExperienceProp ??
-    experience?.openingExperience ??
-    mapLegacyRevealMode(revealMode ?? enrichedDesign.studio?.revealMode ?? "envelope");
+  const liveReveal = useMemo(
+    () =>
+      resolveLiveRevealConfiguration({
+        catalogSlug: catalogSlugProp,
+        layout: enrichedDesign.layout,
+        eventTitle: props.event.title,
+        studio: enrichedDesign.studio,
+        experience: enrichedDesign.experience,
+        revealModeProp: revealMode,
+        openingExperienceProp: openingExperienceProp,
+        revealEnabledProp: revealEnabled,
+        skipReveal,
+      }),
+    [
+      catalogSlugProp,
+      enrichedDesign.layout,
+      enrichedDesign.studio,
+      enrichedDesign.experience,
+      props.event.title,
+      revealMode,
+      openingExperienceProp,
+      revealEnabled,
+      skipReveal,
+    ]
+  );
 
-  /**
-   * Funeral / memorial guests always get the photoreal envelope + dove unseal.
-   * Older DNA still pointed at candle-light / curtain ids, which looked like the
-   * envelope ceremony was “skipped” after Tap to Enter.
-   */
-  const isFuneralCollection =
-    experience?.collectionId === "funeral" ||
-    enrichedDesign.layout === "memorial-candle-tribute" ||
-    /funeral|memorial|homegoing|tribute/i.test(
-      `${props.event.title} ${enrichedDesign.layout ?? ""} ${experience?.collectionId ?? ""}`
-    );
-
-  const openingExperience: OpeningExperienceId =
-    isFuneralCollection && !isEnvelopeExperience(openingExperienceRaw)
-      ? "wax-seal-black"
-      : openingExperienceRaw;
-
-  /**
-   * Funeral / memorial always runs the envelope ceremony into the invitation,
-   * unless this mount explicitly opted out (studio thumbnails / skipReveal).
-   */
-  const showReveal = resolveShowReveal({
+  const {
+    resolvedOpeningExperience: openingExperience,
     isFuneralCollection,
-    skipReveal,
-    revealEnabled,
-    openingExperience,
-    revealMode: enrichedDesign.studio?.revealMode,
-  });
+    showReveal,
+    curtainOwnsTap,
+  } = liveReveal;
 
   /**
    * LIVE guest mounts must never auto-open the sealed envelope — even if a
@@ -219,6 +219,16 @@ export function PremiumInviteWrapper({
     autoOpenReveal,
   });
 
+  const wantsAutoplay = musicAutoplay ?? musicSelection?.autoPlay ?? true;
+  // Curtain ceremonies own "touch to begin" after the brand video intro:
+  // soft-intro (celeventic.mp4) → closed curtain (await tap) → slow open → portal.
+  // DNA intro variants are retired, the brand video is the only intro.
+  const needsTapGate = Boolean(!skipTapGate && !curtainOwnsTap);
+
+  useEffect(() => {
+    logLiveRevealDiagnostic(liveReveal, { needsTapGate, envelopeAutoOpen });
+  }, [liveReveal, needsTapGate, envelopeAutoOpen]);
+
   const hasMusic =
     (musicEnabled || musicSelection?.url || musicUrl) &&
     (musicSelection?.url || musicUrl?.startsWith("http") || musicUrl?.startsWith("/"));
@@ -228,12 +238,6 @@ export function PremiumInviteWrapper({
     [hasMusic, musicSelection, musicUrl]
   );
 
-  const wantsAutoplay = musicAutoplay ?? musicSelection?.autoPlay ?? true;
-  // Curtain ceremonies own "touch to begin" after the brand video intro:
-  // soft-intro (celeventic.mp4) → closed curtain (await tap) → slow open → portal.
-  // DNA intro variants are retired, the brand video is the only intro.
-  const curtainOwnsTap = openingExperience.startsWith("curtain-");
-  const needsTapGate = Boolean(!skipTapGate && !curtainOwnsTap);
   const introEnabled = false;
 
   const pipelineFlags = useMemo(
@@ -470,7 +474,7 @@ export function PremiumInviteWrapper({
     if (showReveal) {
       // Keep underlay pinned to cover while the envelope opens over it.
       resetInviteScrollToCover({ smooth: false });
-      setPhase("reveal");
+      setPhase(resolvePhaseAfterTapBegin(showReveal));
       return;
     }
     // No envelope ceremony — soft open is appropriate.
