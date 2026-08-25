@@ -3,8 +3,10 @@ import { describe, it } from "node:test";
 import {
   buildFuneralProgramme,
   isGenericFuneralTitle,
+  parseMemorialNameCard,
   resolveDeceasedName,
   resolveFuneralCoverCopy,
+  resolveMemorialAgeYears,
 } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import { formatInvitationDateParts } from "@/lib/invitation-templates";
 
@@ -44,6 +46,34 @@ describe("funeral invitation copy", () => {
     const copy = resolveFuneralCoverCopy(event, "IN LOVING MEMORY");
     assert.equal(copy.headline, "Professor Ama Darkoa");
     assert.equal(copy.subtitle, "Celebration of Life");
+  });
+
+  it("parses Ghanaian honorific, A.K.A, and lifespan for the memorial card", () => {
+    const card = parseMemorialNameCard(
+      "OBAAPANIN VIDA SERWAA A.K.A MADAM VIDA •- 1953 -2026"
+    );
+    assert.equal(card.honorific, "OBAAPANIN");
+    assert.equal(card.primary, "VIDA SERWAA");
+    assert.equal(card.aka, "MADAM VIDA");
+    assert.equal(card.years, "1953 – 2026");
+  });
+
+  it("resolves memorial age years from lifespan", () => {
+    assert.equal(resolveMemorialAgeYears("1953 – 2026"), 73);
+    assert.equal(resolveMemorialAgeYears("1953-2026"), 73);
+    assert.equal(resolveMemorialAgeYears(null), null);
+  });
+
+  it("prefers an explicit honouree over generic funeral title", () => {
+    const event = { ...baseEvent, hostName: "The Serwaa Family" };
+    assert.equal(
+      resolveDeceasedName(
+        event,
+        "THE FUNERAL",
+        "OBAAPANIN VIDA SERWAA A.K.A MADAM VIDA · 1953 – 2026"
+      ),
+      "OBAAPANIN VIDA SERWAA A.K.A MADAM VIDA · 1953 – 2026"
+    );
   });
 
   it("builds Ghanaian funeral arrangements programme", () => {

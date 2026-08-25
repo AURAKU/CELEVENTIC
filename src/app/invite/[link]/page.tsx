@@ -20,6 +20,7 @@ import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
+import { eventGuideService } from "@/services/event-guide/event-guide.service";
 import { resolveShareOgImage } from "@/lib/social/share-image";
 import { buildShareDescription } from "@/lib/social/share-description";
 import { APP_NAME } from "@/lib/constants";
@@ -329,6 +330,7 @@ export default async function InvitePage({
   const seatingPlan = productionOrder
     ? addonFulfillmentService.hasFeature(productionOrder, "seating_plan")
     : false;
+  const eventGuideUrl = await eventGuideService.publishedGuestPath(event.id).catch(() => null);
   const { musicSelection, hasMusic } = resolveInvitationMusic({
     orderSelection: productionOrder?.musicSelection,
     legacyMusicUrl: productionOrder?.musicPreference,
@@ -488,6 +490,8 @@ export default async function InvitePage({
         contactPhone: event.contactPhone,
         dressCode: event.dressCode,
         coverImageUrl,
+        deceasedName:
+          (productionOrder as { deceasedName?: string | null } | null)?.deceasedName ?? null,
       }}
       design={design}
       guestId={personalizedGuest?.id}
@@ -533,6 +537,7 @@ export default async function InvitePage({
       seatTable={seatTable}
       seatLabel={seatLabel}
       templateSlug={productionOrder?.templateSlug}
+      eventGuideUrl={eventGuideUrl}
     />
   );
 }

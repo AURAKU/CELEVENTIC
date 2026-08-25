@@ -2,8 +2,9 @@ import type { InviteBlueprint, InviteCategory } from "./blueprint-types";
 
 /**
  * Page order within a blueprint is fixed to protect narrative quality
- * (cover opens, closing always ends with the viral footer). Free-tier
- * blueprints cap at 4 pages — premium value lives in the extra pages.
+ * (cover opens, guest wishes sit above closing, closing always ends with
+ * the viral footer). Free-tier blueprints stay lean — premium value lives
+ * in story / venue / map pages.
  */
 
 const weddingCore: InviteBlueprint = {
@@ -14,6 +15,7 @@ const weddingCore: InviteBlueprint = {
     { id: "details", type: "details", label: "Details" },
     { id: "venue", type: "venue-map", label: "Venue" },
     { id: "rsvp", type: "rsvp", label: "RSVP" },
+    { id: "wishes", type: "guest-wishes", label: "Guest wishes" },
     { id: "closing", type: "closing", label: "Thank you" },
   ],
 };
@@ -25,6 +27,7 @@ const weddingFree: InviteBlueprint = {
     { id: "cover", type: "cover", label: "Invitation" },
     { id: "details", type: "details", label: "Details" },
     { id: "rsvp", type: "rsvp", label: "RSVP" },
+    { id: "wishes", type: "guest-wishes", label: "Guest wishes" },
     { id: "closing", type: "closing", label: "Thank you" },
   ],
 };
@@ -38,6 +41,7 @@ const funeralCore: InviteBlueprint = {
     { id: "details", type: "details", label: "Arrangements" },
     { id: "venue", type: "venue-map", label: "Venue" },
     { id: "rsvp", type: "rsvp", label: "Attendance" },
+    { id: "wishes", type: "guest-wishes", label: "Condolences" },
     { id: "closing", type: "closing", label: "In memory" },
   ],
 };
@@ -49,6 +53,7 @@ const funeralFree: InviteBlueprint = {
     { id: "cover", type: "cover", label: "Announcement" },
     { id: "details", type: "details", label: "Arrangements" },
     { id: "rsvp", type: "rsvp", label: "Attendance" },
+    { id: "wishes", type: "guest-wishes", label: "Condolences" },
     { id: "closing", type: "closing", label: "In memory" },
   ],
 };

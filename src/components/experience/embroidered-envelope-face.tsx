@@ -11,7 +11,7 @@ import {
   DEFAULT_RESOLVED_SEAL_STYLE,
   type ResolvedSealStyle,
 } from "@/lib/invitation/seal-design";
-import { PremiumWaxSeal } from "@/components/experience/premium-wax-seal";
+import { PremiumWaxSeal, MEMORIAL_PORTRAIT_WAX_SEAL_SRC } from "@/components/experience/premium-wax-seal";
 
 /** Matches Forever Afaris silk ease for seal / flap beats. */
 const EASE_SILK = [0.22, 1, 0.36, 1] as const;
@@ -487,24 +487,24 @@ export function EmbroideredEnvelopeFace({
                 : { y: "-50%", scale: 1, opacity: 1, rotateX: 0, rotateZ: 0 }
               : isOpening
                 ? {
-                    y: ceremonialFlyaway ? "-520%" : "-340%",
-                    x: ceremonialFlyaway ? "16%" : "-50%",
-                    scale: ceremonialFlyaway ? 0.55 : 0.76,
+                    y: ceremonialFlyaway ? "-560%" : "-340%",
+                    x: ceremonialFlyaway ? "8%" : "-50%",
+                    scale: ceremonialFlyaway ? 0.48 : 0.76,
                     opacity: 0,
-                    rotateX: ceremonialFlyaway ? -68 : -52,
-                    rotateZ: ceremonialFlyaway ? 16 : -9,
+                    rotateX: ceremonialFlyaway ? -78 : -52,
+                    rotateZ: ceremonialFlyaway ? 20 : -9,
                     filter: ceremonialFlyaway
                       ? "drop-shadow(0 32px 28px rgba(0,0,0,0.35))"
                       : "drop-shadow(0 28px 24px rgba(120, 70, 50, 0.22))",
                   }
                 : isUnsealing
                   ? {
-                      y: ceremonialFlyaway ? "-230%" : "-175%",
-                      x: "-50%",
-                      scale: ceremonialFlyaway ? 1.12 : 1.07,
+                      y: ceremonialFlyaway ? "-210%" : "-175%",
+                      x: ceremonialFlyaway ? "-42%" : "-50%",
+                      scale: ceremonialFlyaway ? 1.1 : 1.07,
                       opacity: 1,
-                      rotateX: ceremonialFlyaway ? -40 : -30,
-                      rotateZ: ceremonialFlyaway ? 7 : -4,
+                      rotateX: ceremonialFlyaway ? -36 : -30,
+                      rotateZ: ceremonialFlyaway ? 9 : -4,
                       filter: ceremonialFlyaway
                         ? "drop-shadow(0 24px 22px rgba(0,0,0,0.38))"
                         : "drop-shadow(0 22px 20px rgba(120, 70, 50, 0.34))",
@@ -537,6 +537,9 @@ export function EmbroideredEnvelopeFace({
             reduceMotion={reduceMotion}
             compact={fitContainer}
             sealStyle={sealStyle}
+            photorealSrc={
+              ceremonialFlyaway ? MEMORIAL_PORTRAIT_WAX_SEAL_SRC : null
+            }
           />
         </motion.div>
       </motion.div>

@@ -24,8 +24,9 @@ export function StoryTributePage({ context, page }: InvitePageProps) {
               <p className="inv-eyebrow">In loving memory</p>
               <h2 className="inv-heading">A life beautifully lived</h2>
               {deceasedName && (
-                <p className="inv-memorial-lead">
-                  Remembering <span className="inv-memorial-name">{deceasedName}</span>
+                <p className="inv-memorial-honour">
+                  <span className="inv-memorial-honour-lead">Remembering</span>
+                  <span className="inv-memorial-name inv-memorial-name--hero">{deceasedName}</span>
                 </p>
               )}
             </div>

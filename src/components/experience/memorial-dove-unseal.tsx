@@ -1,134 +1,86 @@
 "use client";
 
+import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 /**
- * White doves that gather at the wax seal, then fly it clear of the envelope —
- * a memorial unseal beat for funeral invitation openings.
+ * Photoreal white doves (transparent WebP only — no scenic backdrop).
+ * They gather at the wax seal, lift with it, then soar clear of the envelope.
  */
 
 type DoveSpec = {
   id: string;
+  src: string;
+  /** Enter from off-stage */
   fromX: string;
   fromY: string;
-  midX: string;
-  midY: string;
+  /** Beak near seal center */
+  gripX: string;
+  gripY: string;
+  /** Climb while gripping */
+  liftX: string;
+  liftY: string;
+  /** Exit clear of frame */
   exitX: string;
   exitY: string;
   delay: number;
   scale: number;
-  flip?: boolean;
+  rotFrom: number;
+  rotGrip: number;
+  rotLift: number;
+  rotExit: number;
+  /** Slight depth: front dove sits above the seal. */
+  z: number;
 };
 
 const DOVES: DoveSpec[] = [
   {
-    id: "d1",
-    fromX: "-42vw",
+    id: "dove-left",
+    src: "/experience/memorial/dove-left.webp",
+    fromX: "-52vw",
     fromY: "18%",
-    midX: "-6%",
-    midY: "-4%",
-    exitX: "58vw",
-    exitY: "-42%",
+    gripX: "-11%",
+    gripY: "-6%",
+    liftX: "-4%",
+    liftY: "-42%",
+    exitX: "56vw",
+    exitY: "-78%",
     delay: 0,
-    scale: 1,
+    scale: 1.18,
+    rotFrom: -14,
+    rotGrip: -2,
+    rotLift: 6,
+    rotExit: 18,
+    z: 34,
   },
   {
-    id: "d2",
-    fromX: "46vw",
-    fromY: "12%",
-    midX: "8%",
-    midY: "-2%",
-    exitX: "-52vw",
-    exitY: "-38%",
-    delay: 0.12,
-    scale: 0.92,
-    flip: true,
-  },
-  {
-    id: "d3",
-    fromX: "-28vw",
-    fromY: "42%",
-    midX: "-10%",
-    midY: "10%",
-    exitX: "62vw",
-    exitY: "-28%",
-    delay: 0.22,
-    scale: 0.86,
-  },
-  {
-    id: "d4",
-    fromX: "34vw",
-    fromY: "48%",
-    midX: "12%",
-    midY: "8%",
-    exitX: "-48vw",
-    exitY: "-34%",
+    id: "dove-right",
+    src: "/experience/memorial/dove-right.webp",
+    fromX: "54vw",
+    fromY: "14%",
+    gripX: "12%",
+    gripY: "-4%",
+    liftX: "8%",
+    liftY: "-40%",
+    exitX: "-58vw",
+    exitY: "-74%",
     delay: 0.18,
-    scale: 0.88,
-    flip: true,
-  },
-  {
-    id: "d5",
-    fromX: "0vw",
-    fromY: "-28%",
-    midX: "0%",
-    midY: "-14%",
-    exitX: "18vw",
-    exitY: "-55%",
-    delay: 0.3,
-    scale: 0.78,
+    scale: 1.08,
+    rotFrom: 12,
+    rotGrip: 3,
+    rotLift: -5,
+    rotExit: -16,
+    z: 32,
   },
 ];
 
-function DoveSilhouette({ flip }: { flip?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 72 44"
-      width="100%"
-      height="100%"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ transform: flip ? "scaleX(-1)" : undefined }}
-      aria-hidden
-    >
-      {/* Body */}
-      <ellipse cx="34" cy="24" rx="14" ry="7.5" fill="rgba(255,255,255,0.96)" />
-      {/* Head + beak */}
-      <circle cx="48" cy="20" r="5.2" fill="rgba(255,255,255,0.98)" />
-      <path d="M52.5 20.5 L58 21.2 L52.2 23" fill="rgba(232,210,160,0.85)" />
-      <circle cx="49.2" cy="19.2" r="0.9" fill="rgba(40,30,20,0.5)" />
-      {/* Upper wing — flaps via CSS transform origin */}
-      <g className="inv-dove-wing-up" style={{ transformOrigin: "30px 22px" }}>
-        <path
-          d="M28 22 C18 10 8 8 4 12 C12 14 18 18 24 24 C26 25 28 24 28 22Z"
-          fill="rgba(255,255,255,0.92)"
-        />
-        <path
-          d="M26 20 C18 12 10 10 6 12"
-          stroke="rgba(235,220,190,0.55)"
-          strokeWidth="1"
-          strokeLinecap="round"
-        />
-      </g>
-      {/* Lower wing */}
-      <g className="inv-dove-wing-down" style={{ transformOrigin: "28px 26px" }}>
-        <path
-          d="M26 26 C16 30 10 36 8 40 C14 36 20 30 28 28 C28 27 27 26 26 26Z"
-          fill="rgba(248,248,252,0.88)"
-        />
-      </g>
-      {/* Tail */}
-      <path
-        d="M20 24 C14 20 10 22 8 26 C12 26 16 27 20 26"
-        fill="rgba(255,255,255,0.9)"
-      />
-    </svg>
-  );
-}
+const EASE_ARRIVE = [0.22, 0.82, 0.2, 1] as const;
+const EASE_LIFT = [0.33, 0.05, 0.2, 1] as const;
+const EASE_SOAR = [0.16, 0.9, 0.24, 1] as const;
 
 export function MemorialDoveUnseal({
   active,
-  durationSec = 2.4,
+  durationSec = 4.4,
 }: {
   active: boolean;
   durationSec?: number;
@@ -136,65 +88,116 @@ export function MemorialDoveUnseal({
   const reduceMotion = useReducedMotion();
   if (reduceMotion) return null;
 
-  const gatherAt = Math.min(0.38, durationSec * 0.32);
-  const departAt = Math.min(0.72, durationSec * 0.55);
+  const arriveAt = Math.min(1.05, durationSec * 0.24);
+  const gripAt = Math.min(1.55, durationSec * 0.35);
+  const liftAt = Math.min(2.55, durationSec * 0.58);
 
   return (
     <AnimatePresence>
       {active ? (
         <div
-          className="pointer-events-none absolute inset-0 z-[25] overflow-hidden"
+          className="pointer-events-none absolute inset-0 z-[32] overflow-hidden"
           aria-hidden
         >
-          {/* Soft heavenly wash as doves arrive */}
+          {/* Soft memorial wash only — never a photo backdrop */}
           <motion.div
             className="absolute inset-0"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.55, 0.25, 0] }}
-            transition={{ duration: durationSec, times: [0, 0.25, 0.55, 1], ease: "easeInOut" }}
+            animate={{ opacity: [0, 0.28, 0.2, 0.1, 0] }}
+            transition={{
+              duration: durationSec,
+              times: [0, 0.2, 0.45, 0.72, 1],
+              ease: EASE_ARRIVE,
+            }}
             style={{
               background:
-                "radial-gradient(ellipse 55% 40% at 50% 42%, rgba(255,252,245,0.55) 0%, rgba(224,184,74,0.12) 42%, transparent 70%)",
+                "radial-gradient(ellipse 38% 28% at 50% 46%, rgba(255,250,236,0.32) 0%, rgba(224,184,74,0.07) 42%, transparent 72%)",
             }}
           />
 
           {DOVES.map((dove) => (
             <motion.div
               key={dove.id}
-              className="absolute left-1/2 top-[48%]"
+              className="absolute left-1/2 top-[47%]"
               style={{
-                width: `calc(${3.1 * dove.scale}rem)`,
-                height: `calc(${1.9 * dove.scale}rem)`,
-                marginLeft: `calc(${-1.55 * dove.scale}rem)`,
-                marginTop: `calc(${-0.95 * dove.scale}rem)`,
-                filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.28))",
+                zIndex: dove.z,
+                width: `calc(${8.4 * dove.scale}rem)`,
+                height: `calc(${6.2 * dove.scale}rem)`,
+                marginLeft: `calc(${-4.2 * dove.scale}rem)`,
+                marginTop: `calc(${-3.1 * dove.scale}rem)`,
+                filter:
+                  "drop-shadow(0 18px 26px rgba(0,0,0,0.48)) drop-shadow(0 0 18px rgba(255,246,220,0.22))",
+                willChange: "transform, opacity",
               }}
               initial={{
                 x: dove.fromX,
                 y: dove.fromY,
                 opacity: 0,
-                scale: 0.65,
-                rotate: dove.flip ? 12 : -12,
+                scale: 0.62,
+                rotate: dove.rotFrom,
               }}
               animate={{
-                x: [dove.fromX, dove.midX, dove.midX, dove.exitX],
-                y: [dove.fromY, dove.midY, dove.midY, dove.exitY],
-                opacity: [0, 1, 1, 0],
-                scale: [0.65, 1, 1.05, 0.9],
-                rotate: [dove.flip ? 12 : -12, 0, dove.flip ? -8 : 8, dove.flip ? -18 : 18],
+                x: [
+                  dove.fromX,
+                  dove.gripX,
+                  dove.gripX,
+                  dove.liftX,
+                  dove.exitX,
+                ],
+                y: [
+                  dove.fromY,
+                  dove.gripY,
+                  dove.gripY,
+                  dove.liftY,
+                  dove.exitY,
+                ],
+                opacity: [0, 1, 1, 1, 0],
+                scale: [0.62, 1, 1.02, 1.08, 0.86],
+                rotate: [
+                  dove.rotFrom,
+                  dove.rotGrip,
+                  dove.rotGrip,
+                  dove.rotLift,
+                  dove.rotExit,
+                ],
               }}
               transition={{
                 duration: durationSec,
                 delay: dove.delay,
-                times: [0, gatherAt / durationSec, departAt / durationSec, 1],
-                ease: ["easeOut", "easeInOut", "easeIn"],
+                times: [
+                  0,
+                  arriveAt / durationSec,
+                  gripAt / durationSec,
+                  liftAt / durationSec,
+                  1,
+                ],
+                // One ease per segment between the five keyframes
+                ease: [EASE_ARRIVE, "easeInOut", EASE_LIFT, EASE_SOAR],
               }}
             >
+              {/* Wing-breath — photoreal plate already mid-flap; subtle bob sells flight */}
               <motion.div
-                animate={{ y: [0, -3, 0, -2, 0] }}
-                transition={{ duration: 0.55, repeat: Infinity, ease: "easeInOut" }}
+                className="relative h-full w-full"
+                animate={{
+                  y: [0, -7, -1, -8, 0],
+                  rotate: [0, -1.6, 0.4, 1.2, 0],
+                  scaleY: [1, 0.97, 1.02, 0.98, 1],
+                }}
+                transition={{
+                  duration: 0.92,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               >
-                <DoveSilhouette flip={dove.flip} />
+                <Image
+                  src={dove.src}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 70vw, 32rem"
+                  className="object-contain select-none"
+                  priority
+                  draggable={false}
+                />
               </motion.div>
             </motion.div>
           ))}

@@ -13,6 +13,7 @@ import {
   type ImageContrastMode,
 } from "@/lib/media/image-contrast";
 import {
+  parseMemorialNameCard,
   resolveDeceasedName,
   resolveFuneralCoverCopy,
 } from "@/lib/invite-blueprints/funeral-invitation-copy";
@@ -34,6 +35,8 @@ export interface TapToBeginExperienceProps {
   atmosphereUrl?: string | null;
   /** design.introText or ceremony label */
   ceremonyLabel?: string | null;
+  /** Invitation display name — used as funeral honouree when title is generic. */
+  invitationName?: string | null;
   name1?: string | null;
   name2?: string | null;
   layoutSlug?: string;
@@ -187,17 +190,6 @@ function TapGlyph() {
   );
 }
 
-const ORBS = [
-  { left: "12%", top: "18%", size: 7, color: "gold", delay: "0s" },
-  { left: "78%", top: "22%", size: 5, color: "accent", delay: "0.4s" },
-  { left: "22%", top: "72%", size: 6, color: "gold", delay: "0.9s" },
-  { left: "68%", top: "68%", size: 4, color: "accent", delay: "1.2s" },
-  { left: "48%", top: "14%", size: 3, color: "ivory", delay: "0.2s" },
-  { left: "88%", top: "48%", size: 5, color: "gold", delay: "1.6s" },
-  { left: "8%", top: "48%", size: 4, color: "ivory", delay: "0.7s" },
-  { left: "55%", top: "80%", size: 6, color: "accent", delay: "1.1s" },
-];
-
 /**
  * Music-unlock gate, cinematic, content-aware, single begin action.
  * One brand beat · one event beat · one CTA. No “touch anywhere” stack.
@@ -211,6 +203,7 @@ export function TapToBeginExperience({
   backgroundColor,
   atmosphereUrl,
   ceremonyLabel,
+  invitationName,
   name1,
   name2,
   layoutSlug,
@@ -283,6 +276,10 @@ export function TapToBeginExperience({
 
   const funeralMemorial = useMemo(() => {
     if (!isFuneral) return null;
+    const preferred =
+      name1?.trim() ||
+      invitationName?.trim() ||
+      null;
     const eventStub: InvitationEventData = {
       title: eventTitle ?? "",
       hostName: hostName ?? "",
@@ -293,15 +290,17 @@ export function TapToBeginExperience({
       mapsLink: null,
       contactPhone: null,
       dressCode: null,
+      deceasedName: preferred,
     };
-    const copy = resolveFuneralCoverCopy(eventStub, ceremonyLabel);
-    const name = resolveDeceasedName(eventStub);
+    const copy = resolveFuneralCoverCopy(eventStub, ceremonyLabel, invitationName, preferred);
+    const name = resolveDeceasedName(eventStub, invitationName, preferred);
+    const lines = parseMemorialNameCard(name);
     const subtitle =
       copy.subtitle && copy.subtitle !== name && copy.subtitle !== copy.eyebrow
         ? copy.subtitle
         : null;
-    return { name, subtitle };
-  }, [isFuneral, eventTitle, hostName, ceremonyLabel]);
+    return { name, subtitle, lines };
+  }, [isFuneral, eventTitle, hostName, ceremonyLabel, name1, invitationName]);
 
   // When the couple is the hero signal, don't also print a ceremony title above
   // them — that was duplicating shortened first names with full legal names.
@@ -419,30 +418,6 @@ export function TapToBeginExperience({
       </div>
       <div className={styles.grade} aria-hidden />
 
-      {!reduceMotion ? (
-        <div className={styles.bokeh} aria-hidden>
-          {ORBS.map((orb, i) => (
-            <span
-              key={i}
-              className={styles.orb}
-              style={{
-                left: orb.left,
-                top: orb.top,
-                width: orb.size,
-                height: orb.size,
-                animationDelay: orb.delay,
-                background:
-                  orb.color === "gold"
-                    ? gold
-                    : orb.color === "accent"
-                      ? accent
-                      : "rgba(250, 248, 244, 0.7)",
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
-
       <div className={stageClass}>
         {showEventBeat ? (
           beat.eyebrow && beat.script ? (
@@ -466,10 +441,31 @@ export function TapToBeginExperience({
         ) : funeralMemorial ? (
           <div className={styles.memorialNameCard}>
             <span className={styles.memorialNameCardRule} aria-hidden />
-            <p className={styles.memorialName}>{funeralMemorial.name}</p>
-            {funeralMemorial.subtitle ? (
-              <p className={styles.memorialSubtitle}>{funeralMemorial.subtitle}</p>
-            ) : null}
+            <div className={styles.memorialNameStack}>
+              {funeralMemorial.lines.honorific ? (
+                <p className={styles.memorialHonorific}>{funeralMemorial.lines.honorific}</p>
+              ) : null}
+              <p className={styles.memorialName}>{funeralMemorial.lines.primary}</p>
+              {funeralMemorial.lines.aka || funeralMemorial.lines.years ? (
+                <p className={styles.memorialAka}>
+                  {funeralMemorial.lines.aka ? (
+                    <span className={styles.memorialAkaLabel}>
+                      A.K.A {funeralMemorial.lines.aka}
+                    </span>
+                  ) : null}
+                  {funeralMemorial.lines.aka && funeralMemorial.lines.years ? (
+                    <span className={styles.memorialAkaDot} aria-hidden>
+                      ·
+                    </span>
+                  ) : null}
+                  {funeralMemorial.lines.years ? (
+                    <span className={styles.memorialYears}>{funeralMemorial.lines.years}</span>
+                  ) : null}
+                </p>
+              ) : funeralMemorial.subtitle ? (
+                <p className={styles.memorialSubtitle}>{funeralMemorial.subtitle}</p>
+              ) : null}
+            </div>
             <span className={styles.memorialNameCardRule} aria-hidden />
           </div>
         ) : showHostFallback ? (
