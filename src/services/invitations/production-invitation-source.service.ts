@@ -24,42 +24,95 @@ export type ProductionInvitationOrder = Prisma.InvitationOrderGetPayload<{
   include: typeof productionOrderInclude;
 }>;
 
+export type ProductionOrderResolutionMethod =
+  | "direct-invitation-match"
+  | "legacy-direct-invitation-match"
+  | "event-live-production-order"
+  | "none";
+
+export interface ResolvedProductionOrderForLiveInvitation {
+  order: ProductionInvitationOrder | null;
+  method: ProductionOrderResolutionMethod;
+}
+
 type ProductionOrderReader = {
   invitationOrder: {
     findFirst(args: unknown): Promise<ProductionInvitationOrder | null>;
+    findMany?(args: unknown): Promise<ProductionInvitationOrder[]>;
   };
 };
+
+/** Prefer delivered/published production sources over in-flight studio work. */
+const PRODUCTION_STATUS_RANK: Record<string, number> = {
+  DELIVERED: 0,
+  APPROVED: 1,
+  REVISION: 2,
+  AWAITING_APPROVAL: 3,
+  AWAITING_CUSTOMER_INFO: 4,
+  DESIGNING: 5,
+  ASSIGNED: 6,
+  NOT_STARTED: 99,
+};
+
+const MVP_STATUS_RANK: Record<string, number> = {
+  PUBLISHED: 0,
+  APPROVED: 1,
+  IN_PRODUCTION: 2,
+  REVISION_REQUESTED: 3,
+  PAID: 4,
+};
+
+export function rankLiveProductionOrders(
+  orders: ProductionInvitationOrder[]
+): ProductionInvitationOrder[] {
+  return [...orders].sort((a, b) => {
+    const prodA = PRODUCTION_STATUS_RANK[a.productionStatus] ?? 50;
+    const prodB = PRODUCTION_STATUS_RANK[b.productionStatus] ?? 50;
+    if (prodA !== prodB) return prodA - prodB;
+
+    const statA = MVP_STATUS_RANK[a.status] ?? 50;
+    const statB = MVP_STATUS_RANK[b.status] ?? 50;
+    if (statA !== statB) return statA - statB;
+
+    const updatedA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const updatedB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+    return updatedB - updatedA;
+  });
+}
 
 /**
  * Resolve the paid/published Studio order that owns an invitation's live
  * production design.
- *
- * Personalized invitations (quick-create, imports and guest-specific links)
- * are separate Invitation rows, but they belong to the same Event as the
- * canonical invitation created when the Studio order was published. Their
- * guest pages must therefore inherit that event's production order instead of
- * falling back to the platform catalogue template — even when a catalogue
- * layout was stamped onto the secondary invitation at create time.
  */
 export async function resolveProductionInvitationOrder(
   invitationId: string,
   eventId: string
 ): Promise<ProductionInvitationOrder | null> {
-  return resolveProductionInvitationOrderWithReader(
+  const resolved = await resolveProductionOrderForLiveInvitation(invitationId, eventId);
+  return resolved.order;
+}
+
+/**
+ * Resolve the live production order for a guest invitation, including detached
+ * secondary invitations that share the same event as the canonical publish.
+ */
+export async function resolveProductionOrderForLiveInvitation(
+  invitationId: string,
+  eventId: string
+): Promise<ResolvedProductionOrderForLiveInvitation> {
+  return resolveProductionOrderForLiveInvitationWithReader(
     invitationId,
     eventId,
     prisma as unknown as ProductionOrderReader
   );
 }
 
-/** Test seam for verifying the two-stage production source lookup. */
-export async function resolveProductionInvitationOrderWithReader(
+/** Test seam for verifying production source lookup and ranking. */
+export async function resolveProductionOrderForLiveInvitationWithReader(
   invitationId: string,
   eventId: string,
   reader: ProductionOrderReader
-): Promise<ProductionInvitationOrder | null> {
-  // The canonical invitation remains the strongest match. Prefer a live
-  // production status so an older archived/draft row cannot win.
+): Promise<ResolvedProductionOrderForLiveInvitation> {
   const direct = await reader.invitationOrder.findFirst({
     where: {
       invitationId,
@@ -70,10 +123,10 @@ export async function resolveProductionInvitationOrderWithReader(
     include: productionOrderInclude,
     orderBy: { updatedAt: "desc" },
   });
-  if (direct) return direct;
+  if (direct) {
+    return { order: direct, method: "direct-invitation-match" };
+  }
 
-  // Fallback: any non-archived order still linked to this invitation
-  // (legacy rows that predate the live-status filter).
   const legacyDirect = await reader.invitationOrder.findFirst({
     where: {
       invitationId,
@@ -83,19 +136,57 @@ export async function resolveProductionInvitationOrderWithReader(
     include: productionOrderInclude,
     orderBy: { updatedAt: "desc" },
   });
-  if (legacyDirect) return legacyDirect;
+  if (legacyDirect) {
+    return { order: legacyDirect, method: "legacy-direct-invitation-match" };
+  }
 
-  // Guest-specific invitations do not own an order. Inherit the most recently
-  // updated live production source for their event — PAID / IN_PRODUCTION /
-  // APPROVED / PUBLISHED — never a draft, unpaid, or archived order.
+  const eventOrder = await resolveEventLiveProductionOrder(eventId, reader);
+  if (eventOrder) {
+    return { order: eventOrder, method: "event-live-production-order" };
+  }
+
+  return { order: null, method: "none" };
+}
+
+/** @deprecated Use resolveProductionOrderForLiveInvitationWithReader. */
+export async function resolveProductionInvitationOrderWithReader(
+  invitationId: string,
+  eventId: string,
+  reader: ProductionOrderReader
+): Promise<ProductionInvitationOrder | null> {
+  const resolved = await resolveProductionOrderForLiveInvitationWithReader(
+    invitationId,
+    eventId,
+    reader
+  );
+  return resolved.order;
+}
+
+async function resolveEventLiveProductionOrder(
+  eventId: string,
+  reader: ProductionOrderReader
+): Promise<ProductionInvitationOrder | null> {
+  const where = {
+    eventId,
+    archivedAt: null,
+    status: { in: [...LIVE_PRODUCTION_ORDER_STATUSES] },
+    invitationId: { not: null },
+    productionStatus: { not: "NOT_STARTED" as const },
+  };
+
+  if (reader.invitationOrder.findMany) {
+    const candidates = await reader.invitationOrder.findMany({
+      where,
+      include: productionOrderInclude,
+      orderBy: { updatedAt: "desc" },
+      take: 12,
+    });
+    return rankLiveProductionOrders(candidates)[0] ?? null;
+  }
+
+  // Legacy reader stub used by older tests with findFirst only.
   return reader.invitationOrder.findFirst({
-    where: {
-      eventId,
-      status: { in: [...LIVE_PRODUCTION_ORDER_STATUSES] },
-      invitationId: { not: null },
-      shareUrl: { not: null },
-      archivedAt: null,
-    },
+    where,
     include: productionOrderInclude,
     orderBy: { updatedAt: "desc" },
   });

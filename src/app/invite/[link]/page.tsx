@@ -4,7 +4,7 @@ import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
-import { resolveLiveRevealConfiguration } from "@/lib/experience/live-envelope-contract";
+import { resolveLiveRevealConfiguration, logLiveInviteRevealDiagnostic } from "@/lib/experience/live-envelope-contract";
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
 import { seatingService } from "@/services/seating/seating.service";
 import { formatDate } from "@/lib/utils";
@@ -37,7 +37,10 @@ import { resolvePlaceCard } from "@/services/invitation-features/place-card.serv
 import { resolveInvitationAllowance } from "@/lib/admission/admission-logic";
 import type { GuestEntryPassData } from "@/types/invitation-design";
 import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
-import { resolveProductionInvitationOrder } from "@/services/invitations/production-invitation-source.service";
+import {
+  resolveProductionOrderForLiveInvitation,
+  type ProductionOrderResolutionMethod,
+} from "@/services/invitations/production-invitation-source.service";
 import {
   resolveGuestFacingEventInstant,
   resolveGuestFacingVenue,
@@ -163,13 +166,13 @@ export default async function InvitePage({
   // Guest personalization, the order/design record, custom blocks, and the
   // memory-vault links are all independent reads keyed off `invitation.id` /
   // `event.id`, fetch them concurrently rather than as a serial waterfall.
-  const [admissionSummary, tokenGuest, order, invitationBlocks, memoryLinks, portalEnabled] =
+  const [admissionSummary, tokenGuest, productionResolution, invitationBlocks, memoryLinks, portalEnabled] =
     await Promise.all([
       getInvitationAdmission(invitation.id),
       guestToken
         ? invitationService.getGuestForInvitation(invitation.id, guestToken)
         : Promise.resolve(null),
-      resolveProductionInvitationOrder(invitation.id, event.id),
+      resolveProductionOrderForLiveInvitation(invitation.id, event.id),
       invitationBlockService.getBlocksForInvitation(invitation.id),
       // Always provision Album QR for published invites so guests can upload/view live.
       ensureEventMemoryLinks(event.id),
@@ -179,6 +182,9 @@ export default async function InvitePage({
         invitationEnabled: invitation.postAdmissionEnabled,
       }),
     ]);
+  const productionOrder = productionResolution.order;
+  const productionOrderResolutionMethod: ProductionOrderResolutionMethod =
+    productionResolution.method;
 
   // Ceremony always opens from the start for WhatsApp / social / browser links.
   // Shared party links stay on the invitation while anyone remains awaiting.
@@ -258,7 +264,6 @@ export default async function InvitePage({
   // Once the organizer/admin publishes Studio work for this event, every guest
   // link for the selected event must render that live production design —
   // never a catalogue snapshot stamped onto a secondary invitation at create.
-  const productionOrder = order;
   const catalogSlug =
     productionOrder?.templateSlug ??
     productionOrder?.template?.slug ??
@@ -457,6 +462,17 @@ export default async function InvitePage({
     studio: design.studio,
     experience: design.experience,
   });
+
+  logLiveInviteRevealDiagnostic({
+    invitationId: invitation.id,
+    eventId: event.id,
+    resolvedProductionOrderId: productionOrder?.id ?? null,
+    productionOrderResolutionMethod,
+    catalogSlug,
+    layout: design.layout ?? null,
+    liveReveal,
+  });
+
   const rawBackground = resolveBackgroundMedia(design, catalogTemplate);
   const resolvedBackground = {
     backgroundImageUrl: resolvePublicMediaUrl(rawBackground.backgroundImageUrl) || null,

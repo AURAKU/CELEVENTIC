@@ -2,6 +2,7 @@
  * Memorial envelope family detection — which live funeral invitations MUST
  * run the wax-seal-black envelope ceremony regardless of stale persisted DNA.
  */
+import { SKU_CREATIVE_OVERRIDES } from "@/lib/invitation/template-creative-sku-overrides";
 import {
   getCatalogTemplate,
   LEGACY_CATALOG_SLUG_MAP,
@@ -17,6 +18,36 @@ export const ALTERNATE_FUNERAL_CEREMONY_OPENINGS = new Set([
   "press-hold",
   "envelope-floral",
 ]);
+
+/** Creative-contract envelope openings that still use the memorial wax-seal live ceremony. */
+export const MEMORIAL_ENVELOPE_OPENING_EXPERIENCES = new Set([
+  "wax-seal-black",
+  "envelope-classic",
+]);
+
+export function skuCreativeContractDeclaresMemorialEnvelope(
+  catalogSlug: string | null | undefined
+): boolean {
+  if (!catalogSlug) return false;
+  const slug = catalogSlug.trim();
+  const template = getCatalogTemplate(slug);
+  const override = SKU_CREATIVE_OVERRIDES[slug];
+  if (!override) return false;
+
+  const sequence = String(override.openingSequence ?? "");
+  const mechanic = String(override.revealMechanic ?? "");
+  const opening = String(override.openingExperience ?? "");
+
+  if (/memorial envelope|classic envelope/i.test(sequence)) return true;
+  if (mechanic === "wax-seal-black" || mechanic === "envelope-classic") return true;
+  if (MEMORIAL_ENVELOPE_OPENING_EXPERIENCES.has(opening)) {
+    return template?.category === "Funeral";
+  }
+  if (template?.category === "Funeral" && template.layoutSlug === MEMORIAL_ENVELOPE_LAYOUT) {
+    return true;
+  }
+  return false;
+}
 
 export function resolveEffectiveCatalogSlug(input: {
   catalogSlug?: string | null;
@@ -50,6 +81,7 @@ export function isLegacyMemorialOpeningDNA(
 ): boolean {
   if (revealMode === "none" || revealMode === "curtain") return true;
   if (openingExperience === "candle-light" || openingExperience === "none") return true;
+  if (openingExperience === "envelope-classic") return true;
   if (openingExperience?.startsWith("curtain-")) return true;
   return false;
 }
@@ -72,6 +104,16 @@ export function shouldUseMandatoryMemorialEnvelope(
   const rawSlug = input.catalogSlug?.trim() ?? null;
   const layout = input.layout?.trim() ?? null;
   const effectiveSlug = resolveEffectiveCatalogSlug({ catalogSlug: rawSlug, layout });
+
+  if (rawSlug && skuCreativeContractDeclaresMemorialEnvelope(rawSlug)) {
+    if (catalogDeclaresAlternateFuneralCeremony(rawSlug)) return false;
+    return true;
+  }
+
+  if (effectiveSlug && skuCreativeContractDeclaresMemorialEnvelope(effectiveSlug)) {
+    if (rawSlug && catalogDeclaresAlternateFuneralCeremony(rawSlug)) return false;
+    return true;
+  }
 
   if (effectiveSlug === MEMORIAL_ENVELOPE_LAYOUT) {
     if (rawSlug && catalogDeclaresAlternateFuneralCeremony(rawSlug)) return false;
