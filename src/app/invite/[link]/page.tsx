@@ -4,6 +4,7 @@ import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
+import { resolveLiveRevealConfiguration } from "@/lib/experience/live-envelope-contract";
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
 import { seatingService } from "@/services/seating/seating.service";
 import { formatDate } from "@/lib/utils";
@@ -449,7 +450,13 @@ export default async function InvitePage({
     : null;
 
   const catalogTemplate = productionOrder?.template;
-  const revealMode = design.studio?.revealMode;
+  const liveReveal = resolveLiveRevealConfiguration({
+    catalogSlug,
+    layout: design.layout,
+    eventTitle: event.title,
+    studio: design.studio,
+    experience: design.experience,
+  });
   const rawBackground = resolveBackgroundMedia(design, catalogTemplate);
   const resolvedBackground = {
     backgroundImageUrl: resolvePublicMediaUrl(rawBackground.backgroundImageUrl) || null,
@@ -464,8 +471,10 @@ export default async function InvitePage({
 
   return (
     <PremiumInviteWrapper
-      revealEnabled={revealMode !== "none"}
-      revealMode={revealMode}
+      catalogSlug={catalogSlug}
+      revealEnabled={liveReveal.revealEnabled}
+      revealMode={liveReveal.resolvedRevealMode}
+      openingExperience={liveReveal.resolvedOpeningExperience}
       musicEnabled={musicEnabled}
       musicSelection={musicSelection}
       musicAutoplay

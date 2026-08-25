@@ -420,7 +420,7 @@ export const CATALOG_DNA_EXPERIENCE_KEYS = [
 ] as const;
 
 /** Same rule, for the `studio` half of the design config. */
-export const CATALOG_DNA_STUDIO_KEYS = ["buttonStyle"] as const;
+export const CATALOG_DNA_STUDIO_KEYS = ["buttonStyle", "revealMode"] as const;
 
 export function applyCatalogCreativeIdentity(
   design: InvitationDesignConfig,
