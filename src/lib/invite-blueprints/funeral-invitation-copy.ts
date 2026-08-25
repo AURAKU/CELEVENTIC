@@ -8,7 +8,8 @@ export function isGenericFuneralTitle(title: string): boolean {
     /^(the\s+)?funeral$/i.test(t) ||
     /^celebration of life$/i.test(t) ||
     /^memorial service$/i.test(t) ||
-    /^funeral service$/i.test(t)
+    /^funeral service$/i.test(t) ||
+    /^our beloved$/i.test(t)
   );
 }
 
@@ -17,14 +18,123 @@ function isFamilyOrganizerName(name: string): boolean {
   return /^the\s+.+\s+family$/i.test(n) || /^family\s+of\s+/i.test(n);
 }
 
+const MEMORIAL_HONORIFICS = [
+  "obaapanin",
+  "obaa panin",
+  "opanyin",
+  "nana",
+  "madam",
+  "mama",
+  "papa",
+  "chief",
+  "queenmother",
+  "queen mother",
+  "professor",
+  "prof",
+  "doctor",
+  "dr",
+  "reverend",
+  "rev",
+  "apostle",
+  "elder",
+  "deacon",
+  "deaconess",
+  "sir",
+  "lady",
+  "mr",
+  "mrs",
+  "miss",
+  "ms",
+];
+
+export type MemorialNameCardLines = {
+  /** Full resolved display string (accessibility / fallback). */
+  full: string;
+  /** Title line, e.g. OBAAPANIN */
+  honorific?: string;
+  /** Primary given + family name, e.g. VIDA SERWAA */
+  primary: string;
+  /** Popular name without A.K.A prefix, e.g. MADAM VIDA */
+  aka?: string;
+  /** Lifespan, e.g. 1953 – 2026 */
+  years?: string;
+};
+
+/** Age in whole years from a memorial lifespan string (e.g. "1953 – 2026" → 73). */
+export function resolveMemorialAgeYears(years?: string | null): number | null {
+  if (!years) return null;
+  const match = years.match(/(\d{4})\s*[–\-—]\s*(\d{4})/);
+  if (!match) return null;
+  const birth = Number(match[1]);
+  const death = Number(match[2]);
+  if (!Number.isFinite(birth) || !Number.isFinite(death)) return null;
+  const age = death - birth;
+  if (age < 1 || age > 130) return null;
+  return age;
+}
+
+/**
+ * Split a funeral honouree string into honorific / primary / A.K.A / years
+ * for the memorial name card.
+ */
+export function parseMemorialNameCard(raw: string): MemorialNameCardLines {
+  let text = raw.replace(/\s+/g, " ").trim();
+  if (!text) return { full: "", primary: "" };
+
+  let years: string | undefined;
+  const yearsMatch = text.match(
+    /(?:[•·|]\s*)?(\d{4})\s*[-–—]\s*(\d{4}|present|now)\s*$/i
+  );
+  if (yearsMatch) {
+    const end = /present|now/i.test(yearsMatch[2]!) ? yearsMatch[2]!.toUpperCase() : yearsMatch[2];
+    years = `${yearsMatch[1]} – ${end}`;
+    text = text.slice(0, yearsMatch.index).replace(/[•·|\-\s]+$/g, "").trim();
+  }
+
+  let aka: string | undefined;
+  const akaMatch = text.match(/\bA\.?\s*K\.?\s*A\.?\b\s*(.+)$/i);
+  if (akaMatch) {
+    aka = akaMatch[1]!.replace(/^[\s•·\-–—]+/, "").trim();
+    text = text.slice(0, akaMatch.index).trim();
+  }
+
+  let honorific: string | undefined;
+  const lower = text.toLowerCase();
+  const honorificHit = MEMORIAL_HONORIFICS.map((h) => ({
+    h,
+    at: lower.startsWith(h + " ") || lower === h ? 0 : -1,
+  })).find((x) => x.at === 0);
+  if (honorificHit) {
+    honorific = text.slice(0, honorificHit.h.length).trim().toUpperCase();
+    text = text.slice(honorificHit.h.length).trim();
+  }
+
+  const primary = (text || aka || raw).trim();
+  return {
+    full: raw.replace(/\s+/g, " ").trim(),
+    honorific,
+    primary: primary.toUpperCase(),
+    aka: aka ? aka.toUpperCase() : undefined,
+    years,
+  };
+}
+
 /** Primary honouree name for funeral invitations. */
 export function resolveDeceasedName(
   event: InvitationEventData,
-  invitationName?: string | null
+  invitationName?: string | null,
+  preferredName?: string | null
 ): string {
+  const fromOrder = event.deceasedName?.trim() ?? "";
+  if (fromOrder && !isGenericFuneralTitle(fromOrder)) return fromOrder;
+
+  const preferred = preferredName?.trim() ?? "";
+  if (preferred && !isGenericFuneralTitle(preferred)) return preferred;
+
   const host = event.hostName?.trim() ?? "";
   const fromTitle = extractHonoureeName(event.title, invitationName);
   const rawTitle = event.title.replace(/^celebration of life\s*[, –-]\s*/i, "").trim();
+  const fromInvite = invitationName?.trim() ?? "";
 
   if (host && isFamilyOrganizerName(host) && fromTitle && !isGenericFuneralTitle(fromTitle)) {
     return fromTitle;
@@ -34,7 +144,11 @@ export function resolveDeceasedName(
     return fromTitle;
   }
 
-  if (host && !isFamilyOrganizerName(host)) return host;
+  if (host && !isFamilyOrganizerName(host) && !isGenericFuneralTitle(host)) return host;
+
+  if (fromInvite && !isGenericFuneralTitle(fromInvite) && fromInvite !== rawTitle) {
+    return fromInvite;
+  }
 
   if (rawTitle && !isGenericFuneralTitle(rawTitle)) return rawTitle;
   return host || "Our beloved";
@@ -43,21 +157,26 @@ export function resolveDeceasedName(
 export function resolveFuneralCoverCopy(
   event: InvitationEventData,
   introText?: string | null,
-  invitationName?: string | null
+  invitationName?: string | null,
+  preferredName?: string | null
 ): { eyebrow: string; headline: string; subtitle: string } {
   const eyebrow = introText?.trim() || "In Loving Memory";
-  const headline = resolveDeceasedName(event, invitationName);
+  const headline = resolveDeceasedName(event, invitationName, preferredName);
   const rawTitle = event.title.replace(/^celebration of life\s*[, –-]\s*/i, "").trim();
   const generic = isGenericFuneralTitle(rawTitle);
   const honoureeFromTitle = extractHonoureeName(event.title, invitationName);
+  const card = parseMemorialNameCard(headline);
+  const hasLifespanMeta = Boolean(card.aka || card.years);
 
-  const subtitle = generic
-    ? "Celebration of Life"
-    : honoureeFromTitle && honoureeFromTitle !== event.title.trim()
+  const subtitle = hasLifespanMeta
+    ? ""
+    : generic
       ? "Celebration of Life"
-      : rawTitle && rawTitle !== headline
-        ? rawTitle
-        : "Celebration of Life";
+      : honoureeFromTitle && honoureeFromTitle !== event.title.trim()
+        ? "Celebration of Life"
+        : rawTitle && rawTitle !== headline
+          ? rawTitle
+          : "Celebration of Life";
 
   return { eyebrow, headline, subtitle };
 }

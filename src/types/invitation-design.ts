@@ -102,6 +102,8 @@ export interface InvitationEventData {
   contactPhone: string | null;
   dressCode: string | null;
   coverImageUrl?: string | null;
+  /** Funeral order field — preferred memorial headline when set. */
+  deceasedName?: string | null;
 }
 
 /**

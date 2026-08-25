@@ -960,6 +960,24 @@
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/** After envelope unseal — invitation opens downward from the top. */
+@keyframes inv-portal-open-from-top {
+  from {
+    opacity: 0.55;
+    transform: translateY(-14%);
+    clip-path: inset(0 0 100% 0);
+  }
+  45% {
+    opacity: 1;
+    clip-path: inset(0 0 28% 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
 @keyframes inv-envelope-glow {
   0%, 100% { box-shadow: 0 0 40px rgba(212, 166, 58, 0.3); }
   50% { box-shadow: 0 0 60px rgba(212, 166, 58, 0.55); }
@@ -967,6 +985,12 @@
 
 .inv-portal-enter {
   animation: inv-portal-enter 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.inv-portal-open-from-top {
+  animation: inv-portal-open-from-top 1.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity, clip-path;
+  transform-origin: 50% 0%;
 }
 
 /* Keyboard escape hatch on gesture reveals — fades in after the ceremony settles */
@@ -1153,21 +1177,23 @@
 }
 
 @keyframes inv-dove-wing-up {
-  0%, 100% { transform: rotate(-8deg); }
-  50% { transform: rotate(22deg); }
+  0%, 100% { transform: rotate(-6deg) translateY(0); }
+  50% { transform: rotate(18deg) translateY(-1px); }
 }
 
 @keyframes inv-dove-wing-down {
-  0%, 100% { transform: rotate(6deg); }
-  50% { transform: rotate(-14deg); }
+  0%, 100% { transform: rotate(4deg) translateY(0); }
+  50% { transform: rotate(-10deg) translateY(1px); }
 }
 
 .inv-dove-wing-up {
-  animation: inv-dove-wing-up 0.42s ease-in-out infinite;
+  animation: inv-dove-wing-up 1.05s ease-in-out infinite;
+  transform-box: fill-box;
 }
 
 .inv-dove-wing-down {
-  animation: inv-dove-wing-down 0.42s ease-in-out infinite;
+  animation: inv-dove-wing-down 1.05s ease-in-out infinite;
+  transform-box: fill-box;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1286,6 +1312,7 @@
   .cinematic-ken-burns,
   .inv-fade-in,
   .inv-portal-enter,
+  .inv-portal-open-from-top,
   .inv-journey-step {
     animation: none !important;
   }

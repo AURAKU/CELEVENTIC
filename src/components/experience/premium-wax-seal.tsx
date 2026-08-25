@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useId } from "react";
 import {
   DEFAULT_RESOLVED_SEAL_STYLE,
@@ -11,6 +12,10 @@ import {
   type ResolvedSealStyle,
   type SealFontChoice,
 } from "@/lib/invitation/seal-design";
+
+/** Memorial photoreal seal — transparent WebP, sits on the envelope paper. */
+export const MEMORIAL_PORTRAIT_WAX_SEAL_SRC =
+  "/experience/memorial/wax-seal-portrait.webp";
 
 function sealLetterCount(label: string): number {
   return label.replace(/[\s|·•.]/g, "").length;
@@ -159,6 +164,7 @@ export function PremiumWaxSeal({
   compact = false,
   sealStyle,
   pulseClass = "inv-seal-pulse-peach",
+  photorealSrc,
 }: {
   sealLabel: string;
   isOpening: boolean;
@@ -168,6 +174,8 @@ export function PremiumWaxSeal({
   sealStyle?: ResolvedSealStyle;
   /** Idle pulse animation class — defaults to peach pulse. */
   pulseClass?: string;
+  /** Transparent photoreal seal plate (memorial). Replaces SVG wax + label. */
+  photorealSrc?: string | null;
 }) {
   const uid = useId().replace(/:/g, "");
   const resolvedStyle = sealStyle ?? DEFAULT_RESOLVED_SEAL_STYLE;
@@ -190,6 +198,35 @@ export function PremiumWaxSeal({
   const waxNoise = `waxNoise-${uid}`;
   const waxDisplace = `waxDisplace-${uid}`;
   const lifting = isOpening || isUnsealing;
+
+  if (photorealSrc) {
+    return (
+      <div
+        className={`relative flex h-full w-full items-center justify-center ${
+          reduceMotion || lifting ? "" : pulseClass
+        }`}
+        style={{
+          filter: reduceMotion || lifting
+            ? isUnsealing
+              ? "drop-shadow(0 16px 18px rgba(12, 8, 4, 0.55)) drop-shadow(0 2px 4px rgba(0,0,0,0.35))"
+              : "drop-shadow(0 10px 14px rgba(12, 8, 4, 0.48)) drop-shadow(0 1px 3px rgba(0,0,0,0.28))"
+            : "drop-shadow(0 12px 16px rgba(12, 8, 4, 0.5)) drop-shadow(0 2px 5px rgba(0,0,0,0.32))",
+        }}
+      >
+        <Image
+          src={photorealSrc}
+          alt=""
+          fill
+          sizes={compact ? "(max-width: 768px) 28vw, 7.5rem" : "(max-width: 768px) 42vw, 16rem"}
+          className="object-contain select-none pointer-events-none"
+          priority
+          draggable={false}
+          aria-hidden
+        />
+        <span className="sr-only">{sealLabel}</span>
+      </div>
+    );
+  }
 
   const beads = Array.from({ length: 28 }, (_, i) => {
     const angle = (i / 28) * Math.PI * 2 - Math.PI / 2;

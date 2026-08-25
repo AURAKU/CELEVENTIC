@@ -260,6 +260,13 @@ export function PremiumInviteWrapper({
     /funeral|memorial|homegoing|tribute/i.test(
       `${props.event.title} ${enrichedDesign.layout ?? ""} ${experience?.collectionId ?? ""}`
     );
+  const tapFuneralHonouree =
+    isFuneralCollection
+      ? props.event.deceasedName?.trim() ||
+        tapCoupleName1 ||
+        props.invitation.name?.trim() ||
+        null
+      : null;
   const tapCeremonyLabel = hasTapCoupleNames
     ? null
     : isFuneralCollection
@@ -392,6 +399,8 @@ export function PremiumInviteWrapper({
   // its own timers off that identity. Keeping them stable means a re-render
   // from anywhere above (i18n bootstrap, session refresh, consent banner)
   // cannot disturb a ceremony that is already mid-flight.
+  const [portalEntrance, setPortalEntrance] = useState<"none" | "from-top" | "fade">("none");
+
   const afterSoftIntro = useCallback(() => {
     // Tap to Begin and the envelope/curtain reveal are never silently
     // skipped, not on first visit, not on a return visit. A returning
@@ -402,13 +411,19 @@ export function PremiumInviteWrapper({
 
   const afterReveal = useCallback(() => {
     void startAudio();
+    setPortalEntrance(isFuneralCollection ? "from-top" : "fade");
     setPhase("portal");
-  }, [startAudio]);
+  }, [startAudio, isFuneralCollection]);
 
   const handleTapBegin = useCallback(() => {
     void startAudio();
-    setPhase(showReveal ? "reveal" : "portal");
-  }, [showReveal, startAudio]);
+    if (showReveal) {
+      setPhase("reveal");
+      return;
+    }
+    setPortalEntrance(isFuneralCollection ? "from-top" : "fade");
+    setPhase("portal");
+  }, [showReveal, startAudio, isFuneralCollection]);
 
   useEffect(() => {
     if (phase === "portal" && hasMusic && wantsAutoplay && !audioStarted.current) {
@@ -436,6 +451,7 @@ export function PremiumInviteWrapper({
       /* ignore */
     }
     setCeremonyGeneration((n) => n + 1);
+    setPortalEntrance("none");
     setPhase(resolveInitialInvitePhase(pipelineFlags));
   }, [audioManager, ceremonyMemoryKey, musicSelection?.startSec, pipelineFlags, props.invitation.id, props.invitation.uniqueLink]);
 
@@ -485,6 +501,15 @@ export function PremiumInviteWrapper({
       />
     </SceneErrorBoundary>
   );
+
+  const portalWithEntrance =
+    portalEntrance === "from-top" ? (
+      <div className="inv-portal-open-from-top">{portal}</div>
+    ) : portalEntrance === "fade" ? (
+      <div className="inv-portal-enter">{portal}</div>
+    ) : (
+      portal
+    );
 
   // DNA intro variants are retired; recover safely if an old phase value appears.
   useEffect(() => {
@@ -582,7 +607,8 @@ export function PremiumInviteWrapper({
             backgroundColor={themeColors?.background}
             atmosphereUrl={softAtmosphereUrl}
             ceremonyLabel={tapCeremonyLabel}
-            name1={hasTapCoupleNames ? tapCoupleName1 : null}
+            invitationName={props.invitation.name}
+            name1={hasTapCoupleNames ? tapCoupleName1 : tapFuneralHonouree}
             name2={hasTapCoupleNames ? tapCoupleName2 : null}
             layoutSlug={enrichedDesign.layout}
             category={experience?.collectionId}
@@ -706,7 +732,7 @@ export function PremiumInviteWrapper({
     <>
       {admissionHandoff}
       {partyAdmissionBanner}
-      {portal}
+      {portalWithEntrance}
       {showAudioControls && audioManager && (
         <InvitationAudioControls manager={audioManager} embedded={embedded} />
       )}

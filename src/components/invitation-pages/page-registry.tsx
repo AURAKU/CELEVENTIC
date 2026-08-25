@@ -5,6 +5,7 @@ import { StoryTributePage } from "./story-tribute-page";
 import { DetailsPage } from "./details-page";
 import { VenueMapPage } from "./venue-map-page";
 import { RsvpPage } from "./rsvp-page";
+import { GuestWishesPage } from "./guest-wishes-page";
 import { ClosingPage } from "./closing-page";
 
 export const PAGE_COMPONENTS: Record<InvitePageType, ComponentType<InvitePageProps>> = {
@@ -13,5 +14,6 @@ export const PAGE_COMPONENTS: Record<InvitePageType, ComponentType<InvitePagePro
   details: DetailsPage,
   "venue-map": VenueMapPage,
   rsvp: RsvpPage,
+  "guest-wishes": GuestWishesPage,
   closing: ClosingPage,
 };

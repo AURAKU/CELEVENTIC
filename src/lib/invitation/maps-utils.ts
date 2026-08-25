@@ -5,9 +5,12 @@ export function buildDirectionsUrl(options: {
   landmark?: string | null;
 }): string | null {
   const { mapsLink, venueName, landmark } = options;
-  const label = [venueName, landmark].filter(Boolean).join(" · ").trim();
+  const label = [venueName, landmark].filter(Boolean).join(", ").trim();
   if (mapsLink?.trim()) return mapsLink.trim();
-  if (label) return `https://maps.google.com/maps?q=${encodeURIComponent(label)}`;
+  // Destination-only directions: opens Google Maps with route to the venue.
+  if (label) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(label)}`;
+  }
   return null;
 }
 

@@ -13,6 +13,7 @@ import {
   resolveDeceasedName,
 } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
+import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 
 type DetailCard = {
   id: string;
@@ -58,14 +59,7 @@ export function DetailsPage({ context, page }: InvitePageProps) {
   if (event.dressCode) {
     cards.push({ id: "dress", label: "Dress code", value: event.dressCode, icon: Shirt });
   }
-  if (isFuneral && deceasedName) {
-    cards.push({
-      id: "family",
-      label: "Arranged by",
-      value: `The family of ${deceasedName}`,
-      icon: Users,
-    });
-  } else if (event.hostName) {
+  if (!isFuneral && event.hostName) {
     cards.push({ id: "host", label: "Hosted by", value: event.hostName, icon: Users });
   }
 
@@ -81,9 +75,12 @@ export function DetailsPage({ context, page }: InvitePageProps) {
     if (event.venueName) {
       keyFacts.push({ id: "venue", label: "Where", value: event.venueName, icon: MapPin });
     }
-    const secondaryCards = cards.filter(
-      (c) => c.id === "dress" || c.id === "family" || c.id === "host"
-    );
+    const venueDirectionsUrl = buildDirectionsUrl({
+      mapsLink: event.mapsLink,
+      venueName: event.venueName,
+      landmark: event.landmark,
+    });
+    const secondaryCards = cards.filter((c) => c.id === "dress");
 
     return (
       <PageFrame pageId={page.id} label={page.label} altSurface>
@@ -92,9 +89,10 @@ export function DetailsPage({ context, page }: InvitePageProps) {
             <div className="inv-memorial-panel-header">
               <MotifGlyph glyphId={theme.motif.placements.coverTop} size={44} />
               <p className="inv-eyebrow">Funeral arrangements</p>
-              <h2 className="inv-heading">Programme</h2>
-              <p className="inv-body inv-muted inv-memorial-lead">
-                In honour of <span className="inv-memorial-name">{deceasedName}</span>
+              <h2 className="inv-display inv-memorial-title">Programme</h2>
+              <p className="inv-memorial-honour">
+                <span className="inv-memorial-honour-lead">In honour of</span>
+                <span className="inv-memorial-name inv-memorial-name--hero">{deceasedName}</span>
               </p>
             </div>
           </EntranceReveal>
@@ -102,17 +100,32 @@ export function DetailsPage({ context, page }: InvitePageProps) {
           {keyFacts.length > 0 && (
             <EntranceReveal delay={0.05} className="w-full">
               <div className="inv-key-facts" role="group" aria-label="Date, time and venue">
-                <p className="inv-key-facts-kicker">At a glance</p>
                 <dl className="inv-key-facts-list">
                   {keyFacts.map((fact) => {
                     const Icon = fact.icon;
+                    const isVenueLink = fact.id === "venue" && venueDirectionsUrl;
                     return (
-                      <div key={fact.id} className="inv-key-fact" data-fact={fact.id}>
+                      <div
+                        key={fact.id}
+                        className={
+                          isVenueLink ? "inv-key-fact inv-key-fact--maps" : "inv-key-fact"
+                        }
+                        data-fact={fact.id}
+                      >
                         <dt className="inv-key-fact-label">
                           <Icon size={18} strokeWidth={2.25} aria-hidden />
                           {fact.label}
                         </dt>
                         <dd className="inv-key-fact-value">{fact.value}</dd>
+                        {isVenueLink ? (
+                          <a
+                            className="inv-key-fact-maps-hit"
+                            href={venueDirectionsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Get directions to ${fact.value} in Google Maps`}
+                          />
+                        ) : null}
                       </div>
                     );
                   })}

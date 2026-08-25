@@ -9,7 +9,11 @@ import { DriftLayer } from "@/components/motion/drift-layer";
 import { useParallax } from "@/components/motion/use-parallax";
 import { scrollToInvitePage } from "@/components/invitation-paged/use-active-page";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
-import { resolveFuneralCoverCopy } from "@/lib/invite-blueprints/funeral-invitation-copy";
+import { resolveFuneralCoverCopy, parseMemorialNameCard, resolveMemorialAgeYears } from "@/lib/invite-blueprints/funeral-invitation-copy";
+import {
+  MEMORIAL_SEAL_LIFESPAN,
+  MEMORIAL_SEAL_PORTRAIT_SRC,
+} from "@/components/experience/memorial-envelope-layout";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
 
 /** Soft ambient backdrop (blurred), used under the framed funeral portrait. */
@@ -41,38 +45,19 @@ function CoverParallaxMedia({ url }: { url: string }) {
   );
 }
 
-/** Theme-token royal memorial frame for the honouree portrait. */
-function RoyalMemorialPortrait({ url, alt }: { url: string; alt: string }) {
+/** Large photoreal memorial wax-seal portrait — replaces the rectangular royal frame. */
+function MemorialSealPortrait({ alt }: { alt: string }) {
   return (
-    <figure className="inv-royal-portrait">
-      <div className="inv-royal-portrait__outer" aria-hidden>
-        <span className="inv-royal-portrait__corner inv-royal-portrait__corner--tl" />
-        <span className="inv-royal-portrait__corner inv-royal-portrait__corner--tr" />
-        <span className="inv-royal-portrait__corner inv-royal-portrait__corner--bl" />
-        <span className="inv-royal-portrait__corner inv-royal-portrait__corner--br" />
-        <svg className="inv-royal-portrait__crest" viewBox="0 0 80 28" fill="none" aria-hidden>
-          <path
-            d="M8 22 C18 6 28 6 40 18 C52 6 62 6 72 22"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M16 22 C24 12 32 12 40 20 C48 12 56 12 64 22"
-            stroke="currentColor"
-            strokeWidth="0.9"
-            opacity="0.65"
-            strokeLinecap="round"
-          />
-          <circle cx="40" cy="10" r="2.2" fill="currentColor" />
-        </svg>
-      </div>
-      <div className="inv-royal-portrait__mat">
-        <div className="inv-royal-portrait__window">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt={alt} loading="eager" fetchPriority="high" decoding="async" />
-        </div>
-      </div>
+    <figure className="inv-memorial-seal-portrait">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={MEMORIAL_SEAL_PORTRAIT_SRC}
+        alt={alt}
+        loading="eager"
+        fetchPriority="high"
+        decoding="async"
+        draggable={false}
+      />
     </figure>
   );
 }
@@ -83,8 +68,29 @@ export function CoverPage({ context, page }: InvitePageProps) {
     event.coverImageUrl ?? design.media?.find((m) => m.role === "hero" && m.type === "image")?.url;
   const dateParts = event.startDateRaw ? formatInvitationDateParts(event.startDateRaw) : null;
   const isFuneral = category === "funeral";
-
-  const funeralCopy = isFuneral ? resolveFuneralCoverCopy(event, design.introText) : null;
+  const funeralPreferred =
+    design.studio && "visionBoard" in design.studio
+      ? (design.studio as { visionBoard?: { coupleName1?: string } }).visionBoard?.coupleName1
+      : undefined;
+  const funeralCopy = isFuneral
+    ? resolveFuneralCoverCopy(event, design.introText, undefined, funeralPreferred)
+    : null;
+  const memorialAgeYears = (() => {
+    if (!isFuneral) return null;
+    const candidates = [
+      funeralCopy?.headline,
+      funeralPreferred,
+      event.deceasedName,
+      event.hostName,
+      event.title,
+    ];
+    for (const candidate of candidates) {
+      const age = resolveMemorialAgeYears(parseMemorialNameCard(candidate ?? "").years);
+      if (age != null) return age;
+    }
+    // Match the lifespan embossed on the memorial portrait wax-seal art.
+    return resolveMemorialAgeYears(MEMORIAL_SEAL_LIFESPAN);
+  })();
 
   const names = isFuneral
     ? funeralCopy!.headline
@@ -191,10 +197,21 @@ export function CoverPage({ context, page }: InvitePageProps) {
       >
         <div className="inv-funeral-cover-stack">
           <EntranceReveal className="inv-funeral-cover-portrait-wrap">
-            <RoyalMemorialPortrait
-              url={heroUrl}
-              alt={`Portrait of ${typeof names === "string" ? names : "the deceased"}`}
-            />
+            <div className="inv-funeral-cover-portrait-stage">
+              <MemorialSealPortrait
+                alt={`Memorial seal portrait of ${typeof names === "string" ? names : "the deceased"}`}
+              />
+              {memorialAgeYears != null ? (
+                <div
+                  className="inv-memorial-age-seal"
+                  aria-label={`Aged ${memorialAgeYears}`}
+                >
+                  <span className="inv-memorial-age-seal__ring" aria-hidden />
+                  <span className="inv-memorial-age-seal__label">Aged</span>
+                  <span className="inv-memorial-age-seal__value">{memorialAgeYears}</span>
+                </div>
+              ) : null}
+            </div>
           </EntranceReveal>
           <div className="inv-cover-hero-panel">{coverBody}</div>
         </div>

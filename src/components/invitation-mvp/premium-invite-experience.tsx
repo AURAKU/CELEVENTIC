@@ -36,6 +36,7 @@ export interface PremiumInviteExperienceProps {
     contactPhone: string | null;
     dressCode: string | null;
     coverImageUrl?: string | null;
+    deceasedName?: string | null;
   };
   design: InvitationDesignConfig;
   guestId?: string;
@@ -73,6 +74,8 @@ export interface PremiumInviteExperienceProps {
   eventId?: string;
   /** Catalog template slug (Studio 2.0 viral-footer attribution) */
   templateSlug?: string;
+  /** Published Event Guide path for this event, when available */
+  eventGuideUrl?: string | null;
   /**
    * Guest Entry Pass. Present only when the event has QR admission enabled and
    * the invite was opened with a guest token, absent means the invitation

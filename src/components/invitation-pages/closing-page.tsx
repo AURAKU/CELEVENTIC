@@ -28,7 +28,7 @@ export function ClosingPage({ context, page }: InvitePageProps) {
           <EntranceReveal>
             <MotifGlyph glyphId={theme.motif.placements.coverTop} size={48} />
             <p className="inv-script">With gratitude</p>
-            <h2 className="inv-heading">Thank you for being present</h2>
+            <h2 className="inv-heading inv-memorial-title">Thank you for being present</h2>
           </EntranceReveal>
           <EntranceReveal delay={0.08}>
             <p

@@ -276,8 +276,12 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             initialRsvpStatus: props.initialRsvpStatus,
             initialAttendingCount: props.initialAttendingCount,
             templateSlug: props.templateSlug,
+            eventGuideUrl: props.eventGuideUrl,
             rsvpRequired: props.rsvpRequired,
             previewMode: isPreviewInvitationId(props.invitation.id),
+            eventId: props.eventId,
+            memoryVaultEnabled:
+              props.memoryVaultEnabled || Boolean(props.memoryUploadUrl),
           }}
         />
       </InviteViewportShell>

@@ -30,6 +30,10 @@ interface GuestWishesCardProps {
   /** When the template already owns Memory Vault, hide the wishes teaser line. */
   suppressMemoryHint?: boolean;
   variant?: "light" | "dark";
+  /** Celebration vs memorial copy (title, placeholders, CTAs). */
+  tone?: "celebration" | "memorial";
+  /** Hide card title/lead when the parent page already provides them. */
+  hideHeader?: boolean;
 }
 
 const PAGE_SIZE = FEED_LIMIT;
@@ -58,8 +62,39 @@ export function GuestWishesCard({
   memoryVaultEnabled,
   suppressMemoryHint = false,
   variant = "light",
+  tone = "celebration",
+  hideHeader = false,
 }: GuestWishesCardProps) {
   const dark = variant === "dark";
+  const memorial = tone === "memorial";
+  const copy = memorial
+    ? {
+        title: "Condolences & Guest wishes",
+        lead: "Leave a message of comfort for the family.",
+        leadModerator: " As organizer or admin, you can edit or remove any message.",
+        leadGuest: " Approved messages are shared with every guest invited to this memorial.",
+        messageLabel: "Your message",
+        placeholder: "Share a condolence, prayer, or memory…",
+        submit: "Share message",
+        loading: "Loading messages…",
+        empty: "Be the first to share a condolence with the family.",
+        nounOne: "message",
+        nounMany: "messages",
+      }
+    : {
+        title: "Guest Wishes",
+        lead: "Leave a blessing for the hosts.",
+        leadModerator: " As organizer or admin, you can edit or remove any wish.",
+        leadGuest:
+          " Approved wishes are shared with every guest invited to this celebration.",
+        messageLabel: "Your wish",
+        placeholder: "Write your wish or blessing…",
+        submit: "Share wish",
+        loading: "Loading wishes…",
+        empty: "Be the first to leave a wish for this celebration.",
+        nounOne: "wish",
+        nounMany: "wishes",
+      };
   const [wishes, setWishes] = useState<GuestWishItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -295,45 +330,56 @@ export function GuestWishesCard({
       }`}
       style={{ ["--wish-accent" as string]: accentColor }}
     >
-      <div className="flex items-end justify-between gap-3 mb-1">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span
-            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-              dark ? "bg-white/10" : "bg-rose-100/80"
-            }`}
-            style={{ color: accentColor }}
-          >
-            <Heart className="h-4 w-4" fill="currentColor" fillOpacity={0.2} />
-          </span>
-          <h3
-            className={`font-[family-name:var(--font-cormorant)] text-2xl sm:text-[1.65rem] font-semibold tracking-tight leading-none ${
-              dark ? "text-white" : "text-slate-900"
-            }`}
-          >
-            Guest Wishes
-          </h3>
-        </div>
-        {total > 0 && (
-          <span
-            className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide font-[family-name:var(--font-sans)] ${
-              dark ? "bg-white/10 text-white/70" : "bg-rose-100/70 text-rose-800/80"
-            }`}
-          >
-            {total} {total === 1 ? "wish" : "wishes"}
-          </span>
-        )}
-      </div>
+      {!hideHeader && (
+        <>
+          <div className="flex items-end justify-between gap-3 mb-1">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span
+                className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  dark ? "bg-white/10" : "bg-rose-100/80"
+                }`}
+                style={{ color: accentColor }}
+              >
+                <Heart className="h-4 w-4" fill="currentColor" fillOpacity={0.2} />
+              </span>
+              <h3
+                className={`font-[family-name:var(--font-cormorant)] text-2xl sm:text-[1.65rem] font-semibold tracking-tight leading-none ${
+                  dark ? "text-white" : "text-slate-900"
+                }`}
+              >
+                {copy.title}
+              </h3>
+            </div>
+            {total > 0 && (
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide font-[family-name:var(--font-sans)] ${
+                  dark ? "bg-white/10 text-white/70" : "bg-rose-100/70 text-rose-800/80"
+                }`}
+              >
+                {total} {total === 1 ? copy.nounOne : copy.nounMany}
+              </span>
+            )}
+          </div>
 
-      <p
-        className={`mt-3 mb-5 text-[15px] leading-relaxed font-[family-name:var(--font-sans)] ${
-          dark ? "text-white/75" : "text-slate-600"
-        }`}
-      >
-        Leave a blessing for the hosts.
-        {canModerate
-          ? " As organizer or admin, you can edit or remove any wish."
-          : " Approved wishes are shared with every guest invited to this celebration."}
-      </p>
+          <p
+            className={`mt-3 mb-5 text-[15px] leading-relaxed font-[family-name:var(--font-sans)] ${
+              dark ? "text-white/75" : "text-slate-600"
+            }`}
+          >
+            {copy.lead}
+            {canModerate ? copy.leadModerator : copy.leadGuest}
+          </p>
+        </>
+      )}
+      {hideHeader && total > 0 && (
+        <p
+          className={`mb-4 text-right text-[11px] font-medium tracking-wide font-[family-name:var(--font-sans)] ${
+            dark ? "text-white/60" : "text-slate-500"
+          }`}
+        >
+          {total} {total === 1 ? copy.nounOne : copy.nounMany}
+        </p>
+      )}
 
       <form onSubmit={(e) => void submit(e)} className="space-y-3 mb-6">
         <div className="space-y-1.5">
@@ -362,13 +408,13 @@ export function GuestWishesCard({
               dark ? "text-white/55" : "text-slate-500"
             }`}
           >
-            Your wish
+            {copy.messageLabel}
           </label>
           <Textarea
             id="guest-wish-message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Write your wish or blessing…"
+            placeholder={copy.placeholder}
             required
             rows={3}
             maxLength={1000}
@@ -388,7 +434,7 @@ export function GuestWishesCard({
           style={{ backgroundColor: accentColor }}
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          Share wish
+          {copy.submit}
         </Button>
       </form>
 
@@ -399,7 +445,7 @@ export function GuestWishesCard({
               dark ? "text-white/50" : "text-slate-500"
             }`}
           >
-            Loading wishes…
+            {copy.loading}
           </p>
         ) : wishes.length === 0 ? (
           <p
@@ -407,7 +453,7 @@ export function GuestWishesCard({
               dark ? "text-white/45" : "text-slate-500"
             }`}
           >
-            Be the first to leave a wish for this celebration.
+            {copy.empty}
           </p>
         ) : (
           wishes.map((w) => {

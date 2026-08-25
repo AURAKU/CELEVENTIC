@@ -8,6 +8,7 @@ import type { EnvelopeVisualTheme } from "@/lib/experience/opening-experiences";
 import { normalizeSealInitials } from "@/lib/invitation/vision-board";
 import { EmbroideredEnvelopeFace } from "@/components/experience/embroidered-envelope-face";
 import { CinematicCssEnvelopeFace } from "@/components/experience/cinematic-css-envelope-face";
+import { MemorialEnvelopeFace } from "@/components/experience/memorial-envelope-face";
 import { MemorialDoveUnseal } from "@/components/experience/memorial-dove-unseal";
 import {
   DEFAULT_RESOLVED_SEAL_STYLE,
@@ -66,9 +67,9 @@ export const ENVELOPE_OPEN_MS = 4800;
 export const ENVELOPE_OPEN_REDUCED_MS = 750;
 /** Seal-clear beat before the flap commits on CSS envelopes. */
 export const ENVELOPE_CSS_UNSEAL_MS = 1700;
-/** Memorial dove unseal — longer gather → lift → fly clear. */
-export const ENVELOPE_MEMORIAL_UNSEAL_MS = 2600;
-export const ENVELOPE_MEMORIAL_OPEN_MS = 6200;
+/** Memorial dove unseal — slow cinematic pair at the seal, then fly clear. */
+export const ENVELOPE_MEMORIAL_UNSEAL_MS = 3600;
+export const ENVELOPE_MEMORIAL_OPEN_MS = 7200;
 /**
  * Photoreal TM cinematic open (Forever Afaris timing DNA):
  * tap → seal lifts (~1.9s) → flap unfolds dramatically → invite unveils → settle.
@@ -205,7 +206,7 @@ export function EnvelopeCollectionReveal({
         sealGradient:
           theme.sealGradient ??
           "linear-gradient(145deg, #E8C56A 0%, #A67C1F 42%, #6B4E12 100%)",
-        label: "Tap the seal to open",
+        label: "Tap to OPEN INVITATION",
         kente: false,
       }
     : theme;
@@ -333,24 +334,41 @@ export function EnvelopeCollectionReveal({
         style={{
           opacity: isEnvelopeOpening ? 1 : 0,
           transform: isEnvelopeOpening
-            ? "scale(1)"
+            ? "translateY(0) scale(1)"
             : reduceMotion
-              ? "scale(1)"
-              : "scale(0.965)",
-          transition: `opacity ${Math.min(
-            durationMs,
-            photoreal ? 2200 : 2000
-          )}ms ${photoreal ? PHOTO_OPEN_EASE : openEase} ${
-            photoreal
-              ? Math.round((durationMs - ENVELOPE_PHOTO_UNSEAL_MS) * 0.2)
-              : Math.round((durationMs - cssUnsealMs) * 0.18)
-          }ms, transform ${
-            photoreal ? Math.round(durationMs - ENVELOPE_PHOTO_UNSEAL_MS) : Math.round(durationMs - cssUnsealMs)
-          }ms ${openEase} ${
-            photoreal
-              ? Math.round((durationMs - ENVELOPE_PHOTO_UNSEAL_MS) * 0.15)
-              : Math.round((durationMs - cssUnsealMs) * 0.14)
-          }ms`,
+              ? "translateY(0) scale(1)"
+              : memorial
+                ? "translateY(-16%) scale(0.985)"
+                : "translateY(6%) scale(0.965)",
+          clipPath: reduceMotion
+            ? undefined
+            : isEnvelopeOpening
+              ? "inset(0 0 0 0)"
+              : memorial
+                ? "inset(0 0 100% 0)"
+                : undefined,
+          transition: memorial
+            ? `opacity ${Math.min(durationMs, 2600)}ms ${openEase} ${Math.round(
+                (durationMs - cssUnsealMs) * 0.12
+              )}ms, transform ${Math.round(durationMs - cssUnsealMs)}ms ${openEase} ${Math.round(
+                (durationMs - cssUnsealMs) * 0.1
+              )}ms, clip-path ${Math.round(durationMs - cssUnsealMs)}ms ${openEase} ${Math.round(
+                (durationMs - cssUnsealMs) * 0.1
+              )}ms`
+            : `opacity ${Math.min(
+                durationMs,
+                photoreal ? 2200 : 2000
+              )}ms ${photoreal ? PHOTO_OPEN_EASE : openEase} ${
+                photoreal
+                  ? Math.round((durationMs - ENVELOPE_PHOTO_UNSEAL_MS) * 0.2)
+                  : Math.round((durationMs - cssUnsealMs) * 0.18)
+              }ms, transform ${
+                photoreal ? Math.round(durationMs - ENVELOPE_PHOTO_UNSEAL_MS) : Math.round(durationMs - cssUnsealMs)
+              }ms ${openEase} ${
+                photoreal
+                  ? Math.round((durationMs - ENVELOPE_PHOTO_UNSEAL_MS) * 0.15)
+                  : Math.round((durationMs - cssUnsealMs) * 0.14)
+              }ms`,
           pointerEvents: "none",
         }}
         aria-hidden
@@ -358,7 +376,18 @@ export function EnvelopeCollectionReveal({
         {children}
       </div>
 
-      {photoreal ? (
+      {memorial ? (
+        <MemorialEnvelopeFace
+          eventTitle={eventTitle}
+          sealLabel={sealLabel}
+          isUnsealing={isUnsealing}
+          isOpening={isEnvelopeOpening}
+          reduceMotion={Boolean(reduceMotion)}
+          durationMs={durationMs}
+          sealDurationMs={sealDurationMs}
+          fitContainer={staticPreview}
+        />
+      ) : photoreal ? (
         <EmbroideredEnvelopeFace
           theme={visualTheme}
           sealLabel={sealLabel}
@@ -372,7 +401,7 @@ export function EnvelopeCollectionReveal({
           openEase={openEase}
           fitContainer={staticPreview}
           sealStyle={resolvedSealStyle}
-          ceremonialFlyaway={memorial}
+          ceremonialFlyaway={false}
         />
       ) : (
         <CinematicCssEnvelopeFace
@@ -386,13 +415,13 @@ export function EnvelopeCollectionReveal({
           sealDurationMs={sealDurationMs}
           sealStyle={resolvedSealStyle}
           fitContainer={staticPreview}
-          ceremonialFlyaway={memorial}
+          ceremonialFlyaway={false}
         />
       )}
 
       <MemorialDoveUnseal
         active={memorial && isOpening && !reduceMotion}
-        durationSec={ENVELOPE_MEMORIAL_UNSEAL_MS / 1000}
+        durationSec={ENVELOPE_MEMORIAL_UNSEAL_MS / 1000 + 1.05}
       />
 
       {/*

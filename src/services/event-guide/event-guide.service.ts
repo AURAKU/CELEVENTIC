@@ -490,6 +490,31 @@ export class EventGuideService {
     return sanitizePublicUrl(`${base}${path}`, getAppUrlFromEnv());
   }
 
+  /**
+   * Guest-facing Event Guide path for an event, when a published guide + active
+   * online link exist. Relative path for in-app navigation from invitations.
+   */
+  async publishedGuestPath(eventId: string): Promise<string | null> {
+    const [guide, link] = await Promise.all([
+      prisma.eventGuide.findUnique({
+        where: { eventId },
+        select: { publishedAt: true, publishedVersion: true, publishedPayload: true },
+      }),
+      prisma.eventQrLink.findFirst({
+        where: { eventId, type: "EVENT_GUIDE", status: "ACTIVE" },
+        select: { publicToken: true, expiresAt: true },
+      }),
+    ]);
+
+    if (!guide?.publishedAt || !guide.publishedVersion || !link?.publicToken) return null;
+    if (link.expiresAt && link.expiresAt.getTime() < Date.now()) return null;
+
+    const payload = guide.publishedPayload as unknown as EventGuidePayload | null;
+    if (!payload || payload.format !== EVENT_GUIDE_PAYLOAD_FORMAT) return null;
+
+    return `/event-guide/${encodeURIComponent(link.publicToken)}`;
+  }
+
   /** Aggregate counters only — never a per-visitor row. */
   async recordActivity(input: {
     guideId: string;

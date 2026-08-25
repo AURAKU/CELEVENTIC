@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { EnvelopeVisualTheme } from "@/lib/experience/opening-experiences";
-import { PremiumWaxSeal } from "@/components/experience/premium-wax-seal";
+import { PremiumWaxSeal, MEMORIAL_PORTRAIT_WAX_SEAL_SRC } from "@/components/experience/premium-wax-seal";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import { DEFAULT_RESOLVED_SEAL_STYLE, type ResolvedSealStyle } from "@/lib/invitation/seal-design";
 
@@ -550,11 +550,11 @@ export function CinematicCssEnvelopeFace({
           className="absolute left-1/2 z-30 flex items-center justify-center"
           style={{
             top: `${FLAP_PCT}%`,
-            width: SEAL_WIDTH,
-            aspectRatio: "1",
-            minWidth: fitContainer ? "4rem" : "8.5rem",
-            minHeight: fitContainer ? "4rem" : "8.5rem",
-            maxWidth: fitContainer ? "7.5rem" : "16rem",
+            width: ceremonialFlyaway ? "46%" : SEAL_WIDTH,
+            aspectRatio: ceremonialFlyaway ? "0.92" : "1",
+            minWidth: fitContainer ? "4rem" : ceremonialFlyaway ? "10rem" : "8.5rem",
+            minHeight: fitContainer ? "4rem" : ceremonialFlyaway ? "10.5rem" : "8.5rem",
+            maxWidth: fitContainer ? "7.5rem" : ceremonialFlyaway ? "18rem" : "16rem",
             x: "-50%",
             transformStyle: "preserve-3d",
             willChange: lifting ? "transform, opacity" : undefined,
@@ -567,22 +567,22 @@ export function CinematicCssEnvelopeFace({
                 : { y: "-50%", scale: 1, opacity: 1, rotateX: 0, rotateZ: 0 }
               : isOpening
                 ? {
-                    y: ceremonialFlyaway ? "-520%" : "-360%",
-                    x: ceremonialFlyaway ? "18%" : "-50%",
-                    scale: ceremonialFlyaway ? 0.55 : 0.74,
+                    y: ceremonialFlyaway ? "-560%" : "-360%",
+                    x: ceremonialFlyaway ? "8%" : "-50%",
+                    scale: ceremonialFlyaway ? 0.48 : 0.74,
                     opacity: 0,
-                    rotateX: ceremonialFlyaway ? -72 : -58,
-                    rotateZ: ceremonialFlyaway ? 18 : -12,
+                    rotateX: ceremonialFlyaway ? -78 : -58,
+                    rotateZ: ceremonialFlyaway ? 22 : -12,
                     filter: "drop-shadow(0 32px 28px rgba(0,0,0,0.35))",
                   }
                 : isUnsealing
                   ? {
-                      y: ceremonialFlyaway ? "-240%" : "-185%",
-                      x: "-50%",
-                      scale: ceremonialFlyaway ? 1.14 : 1.08,
+                      y: ceremonialFlyaway ? "-220%" : "-185%",
+                      x: ceremonialFlyaway ? "-42%" : "-50%",
+                      scale: ceremonialFlyaway ? 1.1 : 1.08,
                       opacity: 1,
-                      rotateX: ceremonialFlyaway ? -42 : -34,
-                      rotateZ: ceremonialFlyaway ? 8 : -5,
+                      rotateX: ceremonialFlyaway ? -38 : -34,
+                      rotateZ: ceremonialFlyaway ? 10 : -5,
                       filter: "drop-shadow(0 24px 22px rgba(0,0,0,0.38))",
                     }
                   : {
@@ -613,6 +613,9 @@ export function CinematicCssEnvelopeFace({
             reduceMotion={reduceMotion}
             compact={fitContainer}
             sealStyle={sealStyle}
+            photorealSrc={
+              ceremonialFlyaway ? MEMORIAL_PORTRAIT_WAX_SEAL_SRC : null
+            }
             pulseClass={
               (sealStyle ?? DEFAULT_RESOLVED_SEAL_STYLE).design === "classic-peach-pearl"
                 ? "inv-seal-pulse-peach"

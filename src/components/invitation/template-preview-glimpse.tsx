@@ -134,6 +134,8 @@ export function TemplatePreviewGlimpse({
           onBegin={noop}
           eventTitle={preview.event.title}
           hostName={preview.event.hostName}
+          invitationName={preview.event.title}
+          name1={visionBoard.coupleName1?.trim() || null}
           accentColor={experience?.welcomeAccentColor ?? CELEVENTIC_PALETTE.teal}
           primaryColor={CELEVENTIC_PALETTE.gold}
           atmosphereUrl={atmosphereUrl}
