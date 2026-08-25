@@ -15,7 +15,9 @@ export type DigitalCardSocials = {
 export type DigitalCardSubscriptionStatus = "TRIAL" | "ACTIVE" | "EXPIRED" | "INACTIVE";
 
 export type DigitalCardPublicPayload = {
+  id: string;
   slug: string;
+  publicToken: string;
   displayName: string;
   title: string | null;
   company: string | null;
@@ -27,6 +29,8 @@ export type DigitalCardPublicPayload = {
   themeId: DigitalCardThemeId;
   avatarUrl: string | null;
   nfcEnabled: boolean;
+  connectBackEnabled: boolean;
+  defaultMode: string;
   isLive: boolean;
 };
 

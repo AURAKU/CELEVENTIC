@@ -2150,12 +2150,15 @@ model FlyerDesign {
   @@map("flyer_designs")
 }
 
-/// Shareable digital business card — one-stop profile (socials, contact, QR/NFC).
+/// Shareable digital business card — Celeventic SmartCard / Identity OS root.
+/// One identity can grow variants, NFC devices, connections, and campaigns.
 /// Kept live via monthly subscription (trial → active → expired).
 model DigitalBusinessCard {
   id                     String   @id @default(cuid())
   userId                 String
   slug                   String   @unique
+  /// Unguessable Smart QR redirect token for /c/{token}
+  publicToken            String   @unique @default(cuid())
   displayName            String
   title                  String?
   company                String?
@@ -2169,18 +2172,147 @@ model DigitalBusinessCard {
   avatarUrl              String?
   isPublished            Boolean  @default(true)
   nfcEnabled             Boolean  @default(true)
+  /// Allow anonymous Connect Back lead capture on the public card
+  connectBackEnabled     Boolean  @default(true)
+  /// Default Share As mode (professional, personal, …)
+  defaultMode            String   @default("professional")
   /// TRIAL | ACTIVE | EXPIRED | INACTIVE
   subscriptionStatus     String   @default("TRIAL")
   subscriptionExpiresAt  DateTime?
   viewCount              Int      @default(0)
+  offlineSnapshotVersion Int      @default(0)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variants     SmartCardVariant[]
+  nfcDevices   SmartCardNfcDevice[]
+  connections  SmartCardConnection[]
+  campaigns    SmartCardCampaign[]
+  interactions SmartCardInteraction[]
 
   @@index([userId])
   @@index([subscriptionStatus])
+  @@index([publicToken])
   @@map("digital_business_cards")
+}
+
+/// Contextual face of one SmartCard (Share As: Professional, Creator, …).
+model SmartCardVariant {
+  id          String   @id @default(cuid())
+  cardId      String
+  mode        String
+  label       String
+  isDefault   Boolean  @default(false)
+  /// Presentational overrides merged over the root card for this mode
+  overrides   Json     @default("{}")
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  card DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, mode])
+  @@index([cardId])
+  @@map("smartcard_variants")
+}
+
+/// Physical NFC tag paired to a SmartCard (redirect only — never private data on tag).
+model SmartCardNfcDevice {
+  id              String    @id @default(cuid())
+  cardId          String
+  /// Public tap token for /n/{token}
+  publicToken     String    @unique @default(cuid())
+  /// One-time activation secret — never expose on public URLs
+  claimSecretHash String?
+  name            String
+  /// card | sticker | wristband | keychain | badge | other
+  deviceType      String    @default("card")
+  /// ACTIVE | DISABLED | LOST | REPLACED
+  status          String    @default("ACTIVE")
+  assignedMode    String?
+  campaignId      String?
+  tapCount        Int       @default(0)
+  lastTapAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  card     DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  campaign SmartCardCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([cardId])
+  @@index([status])
+  @@map("smartcard_nfc_devices")
+}
+
+/// Mutual contact exchange / lead captured via Connect Back.
+model SmartCardConnection {
+  id            String   @id @default(cuid())
+  cardId        String
+  /// NEW | CONTACTED | QUALIFIED | FOLLOW_UP | WON | ARCHIVED
+  status        String   @default("NEW")
+  visitorName   String
+  visitorEmail  String?
+  visitorPhone  String?
+  visitorCompany String?
+  visitorTitle  String?
+  note          String?
+  /// Instant | Business | Sales | Event | Custom
+  formMode      String   @default("Instant")
+  source        String   @default("connect_back")
+  campaignId    String?
+  eventId       String?
+  tags          Json     @default("[]")
+  consentAt     DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  card     DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  campaign SmartCardCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([cardId, createdAt])
+  @@index([status])
+  @@map("smartcard_connections")
+}
+
+/// Attribution layer for QR / NFC / link campaigns pointing at one SmartCard.
+model SmartCardCampaign {
+  id          String   @id @default(cuid())
+  cardId      String
+  name        String
+  publicToken String   @unique @default(cuid())
+  mode        String?
+  isActive    Boolean  @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  card         DigitalBusinessCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  nfcDevices   SmartCardNfcDevice[]
+  connections  SmartCardConnection[]
+  interactions SmartCardInteraction[]
+
+  @@index([cardId])
+  @@map("smartcard_campaigns")
+}
+
+/// Privacy-minimized engagement events (no raw IPs in dashboards).
+model SmartCardInteraction {
+  id         String   @id @default(cuid())
+  cardId     String
+  campaignId String?
+  /// view | qr_scan | nfc_tap | vcard_save | connect | cta | share
+  kind       String
+  meta       Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  card     DigitalBusinessCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  campaign SmartCardCampaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([cardId, createdAt])
+  @@index([kind])
+  @@map("smartcard_interactions")
 }
 
 // ─── Inspiration Upload Engine ──────────────────────────────────

@@ -6,9 +6,23 @@ import { isDigitalCardLive } from "@/services/digital-business-card/digital-busi
 
 describe("digital business card themes", () => {
   it("resolves known and fallback themes", () => {
-    assert.equal(DIGITAL_CARD_THEMES.length >= 8, true);
+    assert.equal(DIGITAL_CARD_THEMES.length >= 15, true);
     assert.equal(resolveDigitalCardTheme("teal-pulse").id, "teal-pulse");
+    assert.equal(resolveDigitalCardTheme("founder").id, "founder");
     assert.equal(resolveDigitalCardTheme("missing").id, "elegant-frost");
+  });
+});
+
+describe("nfc capability detection", () => {
+  it("never claims write support without Web NFC", async () => {
+    const { detectNfcWriteSupport } = await import("@/lib/digital-business-card/nfc-capability");
+    const result = detectNfcWriteSupport({
+      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X)",
+      platform: "MacIntel",
+      maxTouchPoints: 0,
+    } as Navigator);
+    assert.equal(result.canWrite, false);
+    assert.match(result.guidance, /Android|Chrome|NFC/i);
   });
 });
 
@@ -46,7 +60,9 @@ describe("digital business card live gate", () => {
 describe("vcard export", () => {
   it("builds a parseable vcard", () => {
     const vcf = buildVCard({
+      id: "card_1",
       slug: "ama",
+      publicToken: "tok_ama",
       displayName: "Ama Mensah",
       title: "Founder",
       company: "Celeventic",
@@ -58,6 +74,8 @@ describe("vcard export", () => {
       themeId: "elegant-frost",
       avatarUrl: null,
       nfcEnabled: true,
+      connectBackEnabled: true,
+      defaultMode: "professional",
       isLive: true,
     });
     assert.match(vcf, /BEGIN:VCARD/);
