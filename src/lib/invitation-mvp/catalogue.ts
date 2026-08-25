@@ -699,16 +699,17 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       "Programme",
     ],
     creativeBrief: {
-      creativeConcept: "Memorial Candle — soft light into unlit candle; tap to light; life timeline album",
+      creativeConcept:
+        "Memorial Candle — loving-memory envelope with dove unseal into the tribute cover",
       emotionalTone: "solemn",
       visualLanguage: "candle glow, restrained portrait framing, warm stone, life timeline, memory album",
-      revealMechanic: "tap unlit candle to light",
+      revealMechanic: "memorial envelope dove unseal",
       audioMood: "memorial piano and soft choir",
       outroType: "candle fade legacy",
     },
     experienceOverrides: {
       introVariant: "candlelight",
-      openingExperience: "candle-light",
+      openingExperience: "wax-seal-black",
       sceneTransition: "fade",
       outroExperience: "candle-legacy",
       typographyPackId: "funeral",

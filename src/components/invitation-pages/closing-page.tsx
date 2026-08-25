@@ -24,9 +24,9 @@ export function ClosingPage({ context, page }: InvitePageProps) {
   return (
     <PageFrame pageId={page.id} label={page.label} altSurface>
       {isFuneral ? (
-        <div className="inv-memorial-panel w-full">
+        <div className="inv-memorial-panel inv-closing-panel w-full">
           <EntranceReveal>
-            <MotifGlyph glyphId={theme.motif.placements.coverTop} size={48} />
+            <MotifGlyph glyphId={theme.motif.placements.coverTop} size={44} />
             <p className="inv-script">With gratitude</p>
             <h2 className="inv-heading inv-memorial-title">Thank you for being present</h2>
           </EntranceReveal>
@@ -38,13 +38,13 @@ export function ClosingPage({ context, page }: InvitePageProps) {
               {thankYou}
             </p>
           </EntranceReveal>
-          <EntranceReveal delay={0.14} className="w-full">
+          <EntranceReveal delay={0.14} className="w-full inv-closing-countdown">
             <CountdownBlock context={context} />
           </EntranceReveal>
           <div className="inv-divider">
-            <MotifGlyph glyphId={theme.motif.placements.divider} size={36} />
+            <MotifGlyph glyphId={theme.motif.placements.divider} size={32} />
           </div>
-          <EntranceReveal delay={0.2}>
+          <EntranceReveal delay={0.2} className="w-full">
             <ViralFooterBlock context={context} />
           </EntranceReveal>
         </div>
@@ -62,7 +62,7 @@ export function ClosingPage({ context, page }: InvitePageProps) {
               {thankYou}
             </p>
           </EntranceReveal>
-          <EntranceReveal delay={0.14} className="w-full">
+          <EntranceReveal delay={0.14} className="w-full inv-closing-countdown">
             <CountdownBlock context={context} />
           </EntranceReveal>
           <div className="inv-divider">

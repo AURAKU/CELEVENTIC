@@ -11,25 +11,18 @@ import { scrollToInvitePage } from "@/components/invitation-paged/use-active-pag
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
 import { resolveFuneralCoverCopy, parseMemorialNameCard, resolveMemorialAgeYears } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import {
+  MEMORIAL_COVER_PORTRAIT_SRC,
   MEMORIAL_SEAL_LIFESPAN,
-  MEMORIAL_SEAL_PORTRAIT_SRC,
 } from "@/components/experience/memorial-envelope-layout";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
 
 /** Soft ambient backdrop (blurred), used under the framed funeral portrait. */
 function CoverAmbientMedia({ url }: { url: string }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const { y } = useParallax(ref, "background");
   return (
-    <motion.div
-      ref={ref}
-      className="inv-cover-media inv-cover-media--ambient"
-      style={{ y }}
-      aria-hidden
-    >
+    <div className="inv-cover-media inv-cover-media--ambient" aria-hidden>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="" loading="eager" fetchPriority="high" decoding="async" />
-    </motion.div>
+    </div>
   );
 }
 
@@ -50,13 +43,13 @@ function CoverParallaxMedia({ url }: { url: string }) {
   );
 }
 
-/** Large photoreal memorial wax-seal portrait — replaces the rectangular royal frame. */
-function MemorialSealPortrait({ alt }: { alt: string }) {
+/** Ornate oval framed memorial portrait — cover hero (not the envelope wax seal). */
+function MemorialCoverPortrait({ alt }: { alt: string }) {
   return (
-    <figure className="inv-memorial-seal-portrait">
+    <figure className="inv-memorial-cover-portrait">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={MEMORIAL_SEAL_PORTRAIT_SRC}
+        src={MEMORIAL_COVER_PORTRAIT_SRC}
         alt={alt}
         loading="eager"
         fetchPriority="high"
@@ -104,6 +97,11 @@ export function CoverPage({ context, page }: InvitePageProps) {
         return name2 ? `${name1} & ${name2}` : name1;
       })();
 
+  const memorialNameCard = isFuneral ? parseMemorialNameCard(names) : null;
+  const memorialPrimaryLine = memorialNameCard
+    ? [memorialNameCard.honorific, memorialNameCard.primary].filter(Boolean).join(" ")
+    : "";
+
   const introText = isFuneral
     ? funeralCopy!.eyebrow
     : (design.introText ?? "Together with their families");
@@ -121,7 +119,17 @@ export function CoverPage({ context, page }: InvitePageProps) {
         <p className="inv-eyebrow">{introText}</p>
       </EntranceReveal>
       <EntranceReveal delay={0.08}>
-        <h1 className="inv-display inv-foil-text">{names}</h1>
+        {isFuneral && memorialNameCard?.aka ? (
+          <h1 className="inv-display inv-foil-text inv-cover-honouree" aria-label={names}>
+            <span className="inv-cover-honouree-primary">{memorialPrimaryLine}</span>
+            <span className="inv-cover-honouree-aka">
+              <span className="inv-cover-honouree-aka-label">A.K.A</span>{" "}
+              <span className="inv-cover-honouree-aka-name">{memorialNameCard.aka}</span>
+            </span>
+          </h1>
+        ) : (
+          <h1 className="inv-display inv-foil-text">{names}</h1>
+        )}
       </EntranceReveal>
       {isFuneral && subtitle && (
         <EntranceReveal delay={0.11}>
@@ -204,8 +212,8 @@ export function CoverPage({ context, page }: InvitePageProps) {
           <EntranceReveal className="inv-funeral-cover-portrait-wrap">
             <div className="inv-funeral-cover-portrait-stage">
               <span className="inv-funeral-cover-portrait-glow" aria-hidden />
-              <MemorialSealPortrait
-                alt={`Memorial seal portrait of ${typeof names === "string" ? names : "the deceased"}`}
+              <MemorialCoverPortrait
+                alt={`Memorial portrait of ${typeof names === "string" ? names : "the deceased"}`}
               />
               {memorialAgeYears != null ? (
                 <div

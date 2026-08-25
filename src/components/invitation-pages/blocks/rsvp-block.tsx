@@ -22,7 +22,13 @@ export function RsvpBlock({ context }: { context: PageRenderContext }) {
   const variant = isDarkColor(theme.color.surface) ? "dark" : "light";
 
   return (
-    <div className="w-full max-w-sm mx-auto text-left">
+    <div
+      className={
+        context.category === "funeral"
+          ? "w-full max-w-md mx-auto text-left"
+          : "w-full max-w-sm mx-auto text-left"
+      }
+    >
       <InvitationRsvpPanel
         invitationId={invitation.id}
         guestId={guestId}
@@ -34,6 +40,7 @@ export function RsvpBlock({ context }: { context: PageRenderContext }) {
         variant={variant}
         buttonStyle={design.studio?.buttonStyle}
         showEmail={context.category !== "funeral"}
+        tone={context.category === "funeral" ? "memorial" : "celebration"}
       />
     </div>
   );

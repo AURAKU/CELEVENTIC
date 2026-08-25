@@ -66,7 +66,7 @@ export function ViralFooterBlock({ context }: { context: PageRenderContext }) {
         href={guideHref}
         className="inv-brand-seal"
         onClick={trackGuideClick}
-        aria-label={`Made with Celeventic — open Event Guide`}
+        aria-label={`Powered by Celeventic — open Event Guide`}
         title="Open Event Guide"
       >
         <span className="inv-brand-seal-mark">
@@ -79,6 +79,7 @@ export function ViralFooterBlock({ context }: { context: PageRenderContext }) {
             sizes="56px"
           />
         </span>
+        <span className="inv-brand-seal-powered">— Powered By CELEVENTIC</span>
       </a>
     </div>
   );

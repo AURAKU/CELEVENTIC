@@ -105,14 +105,15 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
   },
   "memorial-candle-tribute": {
     creativeUniverse: "memorial-candle",
-    creativeConcept: "Memorial Candle — soft light into unlit candle; tap to light; life timeline album",
+    creativeConcept:
+      "Memorial Candle — loving-memory envelope with dove unseal into the tribute cover",
     emotionalTone: "solemn",
     targetAudience: "Funerals and memorial gatherings",
     visualLanguage: "candle glow, restrained portrait framing, warm stone, life timeline, memory album",
-    openingSequence: "celeventic candlelight fade → unlit candle → tap to light",
-    revealMechanic: "candle-light",
+    openingSequence: "celeventic soft intro → memorial envelope → dove unseal → tribute cover",
+    revealMechanic: "wax-seal-black",
     sceneArchitecture:
-      "Soft light → Unlit candle → Light the flame → Obituary → Life timeline album → Tribute memory → Schedule → Candle-legacy outro",
+      "Tap to begin → Memorial envelope → Dove unseal → Cover → Arrangements → Tribute → Attendance → Closing",
     motionProfile: "solemn",
     parallaxProfile: "subtle",
     typographySystem: "memorial",
@@ -124,7 +125,7 @@ export const SKU_CREATIVE_OVERRIDES: Record<string, SkuCreativeOverride> = {
     soundEffectProfile: "soft-chime",
     outroType: "candle-legacy",
     introVariant: "candlelight",
-    openingExperience: "candle-light",
+    openingExperience: "wax-seal-black",
     sceneTransition: "fade",
     outroExperience: "candle-legacy",
     slideshowStyle: "timeline-gallery",

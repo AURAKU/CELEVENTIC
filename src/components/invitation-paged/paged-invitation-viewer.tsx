@@ -72,7 +72,7 @@ export function PagedInvitationViewer({ context }: PagedInvitationViewerProps) {
         intensity={theme.motion.intensity}
         scrollContainerRef={containerRef}
       >
-        <div className="inv-paged-scroll" ref={containerRef}>
+        <div className="inv-paged-scroll" ref={containerRef} data-inv-scroller="">
           {pages.map((page, index) => {
             const PageComponent = PAGE_COMPONENTS[page.type];
             return <PageComponent key={page.id} context={context} page={page} index={index} />;

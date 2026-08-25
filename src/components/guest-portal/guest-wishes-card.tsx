@@ -10,6 +10,7 @@ import {
   viewerCanDeleteWish,
   viewerCanEditWish,
 } from "@/lib/invitation/guest-wish-permissions";
+import cb from "./condolence-book.module.css";
 
 export interface GuestWishItem {
   id: string;
@@ -67,19 +68,24 @@ export function GuestWishesCard({
 }: GuestWishesCardProps) {
   const dark = variant === "dark";
   const memorial = tone === "memorial";
+  const memorialAccent = memorial
+    ? accentColor === "#0B8A83"
+      ? "#9c3a3a"
+      : accentColor
+    : accentColor;
   const copy = memorial
     ? {
-        title: "Condolences & Guest wishes",
-        lead: "Leave a message of comfort for the family.",
-        leadModerator: " As organizer or admin, you can edit or remove any message.",
-        leadGuest: " Approved messages are shared with every guest invited to this memorial.",
-        messageLabel: "Your message",
-        placeholder: "Share a condolence, prayer, or memory…",
-        submit: "Share message",
-        loading: "Loading messages…",
-        empty: "Be the first to share a condolence with the family.",
-        nounOne: "message",
-        nounMany: "messages",
+        title: "Book of Condolences",
+        lead: "Inscribe a message of comfort for the family.",
+        leadModerator: " As organizer or admin, you can edit or remove any inscription.",
+        leadGuest: " Messages appear in this book for every guest at this memorial.",
+        messageLabel: "Your inscription",
+        placeholder: "A condolence, prayer, or cherished memory…",
+        submit: "Inscribe in the book",
+        loading: "Opening the book…",
+        empty: "Be the first to leave a word of comfort in this book.",
+        nounOne: "inscription",
+        nounMany: "inscriptions",
       }
     : {
         title: "Guest Wishes",
@@ -317,9 +323,221 @@ export function GuestWishesCard({
     }
   }
 
-  const fieldClass = dark
-    ? "bg-white/10 border-white/20 text-white placeholder:text-white/45 font-[family-name:var(--font-sans)] text-base"
-    : "bg-white/95 border-rose-200/70 text-slate-800 placeholder:text-slate-400 font-[family-name:var(--font-sans)] text-base shadow-sm";
+  const fieldClass = memorial
+    ? `h-11 ${cb.field}`
+    : dark
+      ? "bg-white/10 border-white/20 text-white placeholder:text-white/45 font-[family-name:var(--font-sans)] text-base"
+      : "bg-white/95 border-rose-200/70 text-slate-800 placeholder:text-slate-400 font-[family-name:var(--font-sans)] text-base shadow-sm";
+
+  if (memorial) {
+    return (
+      <div
+        className={cb.book}
+        style={{ ["--wish-accent" as string]: memorialAccent }}
+      >
+        <div className={cb.inner}>
+          {!hideHeader && (
+            <>
+              <div className="mb-1 flex items-end justify-between gap-3">
+                <h3 className={cb.headerTitle}>{copy.title}</h3>
+                {total > 0 && (
+                  <span className={cb.count}>
+                    {total} {total === 1 ? copy.nounOne : copy.nounMany}
+                  </span>
+                )}
+              </div>
+              <p className={cb.headerLead}>
+                {copy.lead}
+                {canModerate ? copy.leadModerator : copy.leadGuest}
+              </p>
+            </>
+          )}
+          {hideHeader && total > 0 && (
+            <p className={cb.count}>
+              {total} {total === 1 ? copy.nounOne : copy.nounMany}
+            </p>
+          )}
+
+          <form onSubmit={(e) => void submit(e)} className={cb.form}>
+            <div>
+              <label htmlFor="guest-wish-name" className={cb.label}>
+                Your name
+              </label>
+              <Input
+                id="guest-wish-name"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                placeholder="e.g. Ama Serwaa"
+                required
+                maxLength={80}
+                className={`h-11 ${cb.field}`}
+              />
+            </div>
+            <div>
+              <label htmlFor="guest-wish-message" className={cb.label}>
+                {copy.messageLabel}
+              </label>
+              <Textarea
+                id="guest-wish-message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={copy.placeholder}
+                required
+                rows={3}
+                maxLength={1000}
+                className={`min-h-[96px] resize-y ${cb.field}`}
+              />
+            </div>
+            {error && <p className={cb.error}>{error}</p>}
+            {success && <p className={cb.success}>{success}</p>}
+            <button
+              type="submit"
+              disabled={submitting || !authorName.trim() || message.trim().length < 2}
+              className={cb.submit}
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" strokeWidth={1.75} />
+              )}
+              {copy.submit}
+            </button>
+          </form>
+
+          <div className={cb.feed}>
+            {loading ? (
+              <p className={cb.status}>{copy.loading}</p>
+            ) : wishes.length === 0 ? (
+              <p className={cb.status}>{copy.empty}</p>
+            ) : (
+              wishes.map((w) => {
+                const isEditing = editingId === w.id;
+                return (
+                  <article key={w.id} className={cb.entry}>
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editAuthorName}
+                          onChange={(e) => setEditAuthorName(e.target.value)}
+                          maxLength={80}
+                          aria-label="Edit author name"
+                          className={cb.field}
+                        />
+                        <Textarea
+                          value={editMessage}
+                          onChange={(e) => setEditMessage(e.target.value)}
+                          rows={3}
+                          maxLength={1000}
+                          aria-label="Edit wish message"
+                          className={cb.field}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={
+                              savingEdit ||
+                              !editAuthorName.trim() ||
+                              editMessage.trim().length < 2
+                            }
+                            onClick={() => void saveEdit(w.id)}
+                            className={cb.saveBtn}
+                          >
+                            {savingEdit ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              "Save"
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={savingEdit}
+                            onClick={cancelEdit}
+                            className={cb.cancelBtn}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {canModerate && (
+                          <div className={cb.actions}>
+                            {canEditWish && (
+                              <button
+                                type="button"
+                                onClick={() => beginEdit(w)}
+                                disabled={deletingId === w.id}
+                                aria-label={`Edit wish from ${w.authorName}`}
+                                title="Edit"
+                                className={cb.actionBtn}
+                              >
+                                <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              </button>
+                            )}
+                            {canModerateWish && (
+                              <button
+                                type="button"
+                                onClick={() => void removeWish(w)}
+                                disabled={deletingId === w.id}
+                                aria-label={`Delete wish from ${w.authorName}`}
+                                title="Delete"
+                                className={cb.actionBtn}
+                              >
+                                {deletingId === w.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <p className={cb.entryQuote}>
+                          <span className={cb.quoteMark} aria-hidden>
+                            “
+                          </span>
+                          {w.message}
+                        </p>
+                        <div className={cb.meta}>
+                          <p className={cb.author}>{w.authorName}</p>
+                          <span className={cb.time}>{formatWishTime(w.createdAt)}</span>
+                        </div>
+                      </>
+                    )}
+                  </article>
+                );
+              })
+            )}
+            {hasMore && !loading && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cb.loadMore}
+                disabled={loadingMore}
+                onClick={() => void fetchPage(page + 1, true)}
+              >
+                {loadingMore ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Read more inscriptions"
+                )}
+              </Button>
+            )}
+          </div>
+
+          {memoryVaultEnabled && !suppressMemoryHint && (
+            <p className={cb.hint}>
+              <Sparkles className="h-3 w-3" /> Find the Album, share your experience from your lens
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

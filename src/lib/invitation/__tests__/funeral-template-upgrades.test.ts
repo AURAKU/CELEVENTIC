@@ -54,10 +54,10 @@ describe("funeral invitation template upgrades", () => {
     }
   });
 
-  it("wires candle openings on candlelight family SKUs", () => {
+  it("wires memorial envelope opening on candlelight flagship SKU", () => {
     const flagship = funerals.find((x) => x.slug === "memorial-candle-tribute");
     assert.ok(flagship);
-    assert.equal(flagship!.experienceOverrides?.openingExperience, "candle-light");
+    assert.equal(flagship!.experienceOverrides?.openingExperience, "wax-seal-black");
     assert.equal(flagship!.experienceOverrides?.outroExperience, "candle-legacy");
 
     const farewell = funerals.find((x) => x.slug === "candlelight-farewell");

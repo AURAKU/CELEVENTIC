@@ -13,13 +13,17 @@ import { InteractiveReveal } from "@/components/experience-engine/interactive-re
 import { SceneErrorBoundary } from "@/components/experience-engine/scene-error-boundary";
 import { CeremonyErrorBoundary } from "@/components/invitation-os/ceremony-error-boundary";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
+import { resetInviteScrollToCover } from "@/components/invitation-paged/use-active-page";
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
-import { mapLegacyRevealMode } from "@/lib/experience/opening-experiences";
+import {
+  isEnvelopeExperience,
+  mapLegacyRevealMode,
+} from "@/lib/experience/opening-experiences";
 import { createInvitationAudioManager, pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
 import {
   phaseAfterSoftIntro,
@@ -159,10 +163,27 @@ export function PremiumInviteWrapper({
   const enabledTabs = experience?.enabledTabs ?? DEFAULT_HUB_TABS;
   const themeColors = enrichedDesign.colors;
 
-  const openingExperience: OpeningExperienceId =
+  const openingExperienceRaw: OpeningExperienceId =
     openingExperienceProp ??
     experience?.openingExperience ??
     mapLegacyRevealMode(revealMode ?? enrichedDesign.studio?.revealMode ?? "envelope");
+
+  /**
+   * Funeral / memorial guests always get the photoreal envelope + dove unseal.
+   * Older DNA still pointed at candle-light / curtain ids, which looked like the
+   * envelope ceremony was “skipped” after Tap to Enter.
+   */
+  const isFuneralCollection =
+    experience?.collectionId === "funeral" ||
+    enrichedDesign.layout === "memorial-candle-tribute" ||
+    /funeral|memorial|homegoing|tribute/i.test(
+      `${props.event.title} ${enrichedDesign.layout ?? ""} ${experience?.collectionId ?? ""}`
+    );
+
+  const openingExperience: OpeningExperienceId =
+    isFuneralCollection && !isEnvelopeExperience(openingExperienceRaw)
+      ? "wax-seal-black"
+      : openingExperienceRaw;
 
   const showReveal =
     !skipReveal &&
@@ -254,12 +275,6 @@ export function PremiumInviteWrapper({
   const tapCoupleName1 = tapCoupleNames.coupleName1;
   const tapCoupleName2 = tapCoupleNames.coupleName2;
   const hasTapCoupleNames = Boolean(tapCoupleName1 && tapCoupleName2);
-  const isFuneralCollection =
-    experience?.collectionId === "funeral" ||
-    enrichedDesign.layout === "memorial-candle-tribute" ||
-    /funeral|memorial|homegoing|tribute/i.test(
-      `${props.event.title} ${enrichedDesign.layout ?? ""} ${experience?.collectionId ?? ""}`
-    );
   const tapFuneralHonouree =
     isFuneralCollection
       ? props.event.deceasedName?.trim() ||
@@ -411,20 +426,29 @@ export function PremiumInviteWrapper({
 
   const afterReveal = useCallback(() => {
     void startAudio();
-    // Envelope already unveiled the invite — no second entrance remount.
-    setPortalEntrance("none");
+    // Soft settle from the top onto the framed cover — never leave guests mid/bottom.
+    setPortalEntrance("from-top");
     setPhase("portal");
+    // Pin cover immediately, then again after layout/animation frames.
+    resetInviteScrollToCover({ smooth: false });
+    requestAnimationFrame(() => {
+      resetInviteScrollToCover({ smooth: false });
+      window.setTimeout(() => resetInviteScrollToCover({ smooth: true }), 120);
+    });
   }, [startAudio]);
 
   const handleTapBegin = useCallback(() => {
     void startAudio();
     if (showReveal) {
+      // Keep underlay pinned to cover while the envelope opens over it.
+      resetInviteScrollToCover({ smooth: false });
       setPhase("reveal");
       return;
     }
     // No envelope ceremony — soft open is appropriate.
     setPortalEntrance("fade");
     setPhase("portal");
+    resetInviteScrollToCover({ smooth: false });
   }, [showReveal, startAudio]);
 
   useEffect(() => {
@@ -432,6 +456,33 @@ export function PremiumInviteWrapper({
       void startAudio();
     }
   }, [phase, hasMusic, wantsAutoplay, startAudio]);
+
+  // Guarantee mobile page scroll after ceremony — never leave reveal lock stuck.
+  useEffect(() => {
+    if (phase !== "portal" || typeof document === "undefined") return;
+    document.documentElement.classList.remove("reveal-scroll-locked");
+    document.body.style.overflow = "";
+    document.body.style.touchAction = "";
+  }, [phase]);
+
+  // While the envelope is on top, freeze the underlay on the cover so peek never
+  // shows / snaps a lower page.
+  useEffect(() => {
+    if (phase !== "reveal" || typeof document === "undefined") return;
+    resetInviteScrollToCover({ smooth: false });
+    const scroller = document.querySelector<HTMLElement>(".inv-paged-scroll");
+    if (!scroller) return;
+    const freeze = () => {
+      if (scroller.scrollTop !== 0) scroller.scrollTop = 0;
+    };
+    freeze();
+    scroller.addEventListener("scroll", freeze, { passive: true });
+    const id = window.setInterval(freeze, 200);
+    return () => {
+      scroller.removeEventListener("scroll", freeze);
+      window.clearInterval(id);
+    };
+  }, [phase]);
 
   const restartOpeningCeremony = useCallback(() => {
     // Full pipeline again: brand video → tap gate / reveal → portal.
