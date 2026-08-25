@@ -4,12 +4,14 @@ import assert from "node:assert/strict";
 import {
   isLiveGuestInviteMount,
   isCanonicalMemorialEnvelopeSku,
+  assertMandatoryMemorialEnvelopeInvariant,
   resolveEnvelopeAutoOpen,
   resolveLiveRevealConfiguration,
   resolvePhaseAfterTapBegin,
   resolveShowReveal,
   shouldEnvelopeAutoOpen,
 } from "@/lib/experience/live-envelope-contract";
+import { shouldUseMandatoryMemorialEnvelope } from "@/lib/experience/memorial-envelope-family";
 import {
   createEnvelopeCeremonySnapshot,
   envelopeCeremonyTimersAfterBegin,
@@ -259,6 +261,103 @@ test("isCanonicalMemorialEnvelopeSku detects envelope contract from SKU override
   assert.equal(isCanonicalMemorialEnvelopeSku("memorial-candle-tribute"), true);
   assert.equal(isCanonicalMemorialEnvelopeSku("candlelight-farewell"), false);
   assert.equal(isCanonicalMemorialEnvelopeSku("royal-emerald-wedding"), false);
+});
+
+/** Production-shaped fixtures — legacy slug + stale persisted DNA (PR #80 gap). */
+const PRODUCTION_LEGACY_FIXTURES = [
+  {
+    name: "legacy classic-memorial slug + revealMode none + candle-light",
+    input: {
+      catalogSlug: "classic-memorial",
+      layout: "memorial-candle-tribute",
+      studio: { revealMode: "none" },
+      experience: { openingExperience: "candle-light", collectionId: "funeral" },
+    },
+  },
+  {
+    name: "legacy funeral-dignity slug + curtain reveal",
+    input: {
+      catalogSlug: "funeral-dignity",
+      layout: "memorial-candle-tribute",
+      studio: { revealMode: "curtain" },
+      experience: { openingExperience: "candle-light", collectionId: "funeral" },
+    },
+  },
+  {
+    name: "missing catalogSlug + memorial layout + funeral collection",
+    input: {
+      catalogSlug: null,
+      layout: "memorial-candle-tribute",
+      studio: { revealMode: "none" },
+      experience: { openingExperience: "candle-light", collectionId: "funeral" },
+    },
+  },
+  {
+    name: "published copy with celebration-of-life legacy slug",
+    input: {
+      catalogSlug: "celebration-of-life",
+      layout: "memorial-candle-tribute",
+      studio: { revealMode: "none" },
+      experience: { openingExperience: "none", collectionId: "funeral" },
+    },
+  },
+] as const;
+
+for (const fixture of PRODUCTION_LEGACY_FIXTURES) {
+  test(`PRODUCTION FIXTURE: ${fixture.name}`, () => {
+    assert.equal(shouldUseMandatoryMemorialEnvelope(fixture.input), true);
+    const live = resolveLiveRevealConfiguration(fixture.input);
+    assert.equal(live.mandatoryMemorialEnvelope, true);
+    assert.equal(live.resolvedRevealMode, "envelope");
+    assert.equal(live.resolvedOpeningExperience, "wax-seal-black");
+    assert.equal(live.showReveal, true);
+    assert.equal(live.curtainOwnsTap, false);
+    assert.equal(resolvePhaseAfterTapBegin(live.showReveal), "reveal");
+    assert.equal(
+      resolveEnvelopeAutoOpen({ isLiveGuest: true, autoOpenReveal: true }),
+      false
+    );
+    assertMandatoryMemorialEnvelopeInvariant({
+      mandatoryMemorialEnvelope: true,
+      isLiveGuest: true,
+      config: live,
+      envelopeAutoOpen: false,
+      needsTapGate: true,
+    });
+  });
+}
+
+test("mandatory memorial envelope invariant rejects contradictory config in dev mode", () => {
+  const prior = process.env.CELEVENTIC_MEMORIAL_ENVELOPE_INVARIANT;
+  process.env.CELEVENTIC_MEMORIAL_ENVELOPE_INVARIANT = "1";
+  try {
+    assert.throws(() =>
+      assertMandatoryMemorialEnvelopeInvariant({
+        mandatoryMemorialEnvelope: true,
+        isLiveGuest: true,
+        config: {
+          layout: "memorial-candle-tribute",
+          catalogSlug: "classic-memorial",
+          effectiveCatalogSlug: "memorial-candle-tribute",
+          rawRevealMode: "none",
+          resolvedRevealMode: "none",
+          rawOpeningExperience: "candle-light",
+          resolvedOpeningExperience: "candle-light",
+          isFuneralCollection: true,
+          isMemorialEnvelopeSku: false,
+          mandatoryMemorialEnvelope: true,
+          revealEnabled: false,
+          showReveal: false,
+          curtainOwnsTap: false,
+        },
+        envelopeAutoOpen: false,
+        needsTapGate: true,
+      })
+    );
+  } finally {
+    if (prior === undefined) delete process.env.CELEVENTIC_MEMORIAL_ENVELOPE_INVARIANT;
+    else process.env.CELEVENTIC_MEMORIAL_ENVELOPE_INVARIANT = prior;
+  }
 });
 
 test("MANDATORY: LIVE envelope waits — idle has no completion path without BEGIN", () => {

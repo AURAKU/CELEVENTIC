@@ -53,6 +53,7 @@ import {
 } from "@/lib/experience/opening-visit-memory";
 import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import {
+  assertMandatoryMemorialEnvelopeInvariant,
   isLiveGuestInviteMount,
   logLiveRevealDiagnostic,
   resolveEnvelopeAutoOpen,
@@ -199,6 +200,7 @@ export function PremiumInviteWrapper({
   const {
     resolvedOpeningExperience: openingExperience,
     isFuneralCollection,
+    mandatoryMemorialEnvelope,
     showReveal,
     curtainOwnsTap,
   } = liveReveal;
@@ -227,7 +229,14 @@ export function PremiumInviteWrapper({
 
   useEffect(() => {
     logLiveRevealDiagnostic(liveReveal, { needsTapGate, envelopeAutoOpen });
-  }, [liveReveal, needsTapGate, envelopeAutoOpen]);
+    assertMandatoryMemorialEnvelopeInvariant({
+      mandatoryMemorialEnvelope,
+      isLiveGuest,
+      config: liveReveal,
+      envelopeAutoOpen,
+      needsTapGate,
+    });
+  }, [liveReveal, needsTapGate, envelopeAutoOpen, mandatoryMemorialEnvelope, isLiveGuest]);
 
   const hasMusic =
     (musicEnabled || musicSelection?.url || musicUrl) &&
@@ -468,6 +477,27 @@ export function PremiumInviteWrapper({
       window.setTimeout(() => resetInviteScrollToCover({ smooth: true }), 120);
     });
   }, [startAudio]);
+
+  const handleRevealCeremonyError = useCallback(
+    (error: Error, beat: "soft-intro" | "tap-to-begin" | "reveal") => {
+      if (beat !== "reveal") return;
+      console.error("[invite-ceremony:reveal:diagnostic]", {
+        beat,
+        mandatoryMemorialEnvelope,
+        openingExperience,
+        layout: enrichedDesign.layout,
+        catalogSlug: catalogSlugProp ?? null,
+        message: error.message,
+        name: error.name,
+      });
+    },
+    [
+      mandatoryMemorialEnvelope,
+      openingExperience,
+      enrichedDesign.layout,
+      catalogSlugProp,
+    ]
+  );
 
   const handleTapBegin = useCallback(() => {
     void startAudio();
@@ -820,7 +850,11 @@ export function PremiumInviteWrapper({
         {partyAdmissionBanner}
         {portalLive}
         {phase === "reveal" ? (
-          <CeremonyErrorBoundary beat="reveal" onFallthrough={afterReveal}>
+          <CeremonyErrorBoundary
+            beat="reveal"
+            onFallthrough={afterReveal}
+            onError={handleRevealCeremonyError}
+          >
             <InteractiveReveal
               key={`reveal-${ceremonyGeneration}`}
               openingExperience={openingExperience}
