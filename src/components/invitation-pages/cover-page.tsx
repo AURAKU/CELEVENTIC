@@ -12,7 +12,24 @@ import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-te
 import { resolveFuneralCoverCopy } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import type { InvitePageProps } from "@/lib/invite-blueprints/blueprint-types";
 
-/** Background hero layer, the only element that parallaxes (text never does). */
+/** Soft ambient backdrop (blurred), used under the framed funeral portrait. */
+function CoverAmbientMedia({ url }: { url: string }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const { y } = useParallax(ref, "background");
+  return (
+    <motion.div
+      ref={ref}
+      className="inv-cover-media inv-cover-media--ambient"
+      style={{ y }}
+      aria-hidden
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" loading="eager" fetchPriority="high" decoding="async" />
+    </motion.div>
+  );
+}
+
+/** Full-bleed hero (non-funeral covers). */
 function CoverParallaxMedia({ url }: { url: string }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { y } = useParallax(ref, "background");
@@ -21,6 +38,42 @@ function CoverParallaxMedia({ url }: { url: string }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="" loading="eager" fetchPriority="high" decoding="async" />
     </motion.div>
+  );
+}
+
+/** Theme-token royal memorial frame for the honouree portrait. */
+function RoyalMemorialPortrait({ url, alt }: { url: string; alt: string }) {
+  return (
+    <figure className="inv-royal-portrait">
+      <div className="inv-royal-portrait__outer" aria-hidden>
+        <span className="inv-royal-portrait__corner inv-royal-portrait__corner--tl" />
+        <span className="inv-royal-portrait__corner inv-royal-portrait__corner--tr" />
+        <span className="inv-royal-portrait__corner inv-royal-portrait__corner--bl" />
+        <span className="inv-royal-portrait__corner inv-royal-portrait__corner--br" />
+        <svg className="inv-royal-portrait__crest" viewBox="0 0 80 28" fill="none" aria-hidden>
+          <path
+            d="M8 22 C18 6 28 6 40 18 C52 6 62 6 72 22"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M16 22 C24 12 32 12 40 20 C48 12 56 12 64 22"
+            stroke="currentColor"
+            strokeWidth="0.9"
+            opacity="0.65"
+            strokeLinecap="round"
+          />
+          <circle cx="40" cy="10" r="2.2" fill="currentColor" />
+        </svg>
+      </div>
+      <div className="inv-royal-portrait__mat">
+        <div className="inv-royal-portrait__window">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={alt} loading="eager" fetchPriority="high" decoding="async" />
+        </div>
+      </div>
+    </figure>
   );
 }
 
@@ -48,9 +101,11 @@ export function CoverPage({ context, page }: InvitePageProps) {
 
   const coverBody = (
     <>
-      <DriftLayer>
-        <MotifGlyph glyphId={theme.motif.placements.coverTop} size={56} />
-      </DriftLayer>
+      {!isFuneral || !heroUrl ? (
+        <DriftLayer>
+          <MotifGlyph glyphId={theme.motif.placements.coverTop} size={56} />
+        </DriftLayer>
+      ) : null}
       <EntranceReveal>
         <p className="inv-eyebrow">{introText}</p>
       </EntranceReveal>
@@ -117,11 +172,35 @@ export function CoverPage({ context, page }: InvitePageProps) {
           </div>
         </EntranceReveal>
       )}
-      <DriftLayer phase={0.8}>
-        <MotifGlyph glyphId={theme.motif.placements.coverBottom} size={56} />
-      </DriftLayer>
+      {!isFuneral || !heroUrl ? (
+        <DriftLayer phase={0.8}>
+          <MotifGlyph glyphId={theme.motif.placements.coverBottom} size={56} />
+        </DriftLayer>
+      ) : null}
     </>
   );
+
+  if (isFuneral && heroUrl) {
+    return (
+      <PageFrame
+        pageId={page.id}
+        label={page.label}
+        frameless
+        hasMedia
+        media={<CoverAmbientMedia url={heroUrl} />}
+      >
+        <div className="inv-funeral-cover-stack">
+          <EntranceReveal className="inv-funeral-cover-portrait-wrap">
+            <RoyalMemorialPortrait
+              url={heroUrl}
+              alt={`Portrait of ${typeof names === "string" ? names : "the deceased"}`}
+            />
+          </EntranceReveal>
+          <div className="inv-cover-hero-panel">{coverBody}</div>
+        </div>
+      </PageFrame>
+    );
+  }
 
   return (
     <PageFrame

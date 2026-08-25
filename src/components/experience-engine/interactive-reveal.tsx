@@ -35,6 +35,8 @@ interface InteractiveRevealProps {
    * opt-in way to move along faster. Never skips anything on its own.
    */
   allowSkip?: boolean;
+  /** Funeral / memorial: white doves unseal the wax, gold CTA, slower open. */
+  ceremonialDoves?: boolean;
   children: ReactNode;
 }
 
@@ -59,6 +61,7 @@ export function InteractiveReveal({
   embedded = false,
   autoOpen = false,
   allowSkip = false,
+  ceremonialDoves = false,
   children,
 }: InteractiveRevealProps) {
   const contract = getRevealContractForOpening(openingExperience);
@@ -97,6 +100,7 @@ export function InteractiveReveal({
         embedded={embedded}
         autoOpen={autoOpen}
         allowSkip={allowSkip}
+        ceremonialDoves={ceremonialDoves}
       >
         {children}
       </OpeningExperienceRouter>

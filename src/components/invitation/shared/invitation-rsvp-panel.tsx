@@ -34,6 +34,8 @@ interface InvitationRsvpPanelProps {
   partyAllowance?: number;
   initialRsvpStatus?: PersistedRsvpChoice | null;
   initialAttendingCount?: number | null;
+  /** When false, the optional email field is omitted (e.g. funeral attendance). Default true. */
+  showEmail?: boolean;
 }
 
 export function InvitationRsvpPanel({
@@ -47,6 +49,7 @@ export function InvitationRsvpPanel({
   partyAllowance = 1,
   initialRsvpStatus = null,
   initialAttendingCount = null,
+  showEmail = true,
 }: InvitationRsvpPanelProps) {
   const { t } = useLocale();
   const allowance = Math.max(1, Math.trunc(partyAllowance || 1));
@@ -102,7 +105,7 @@ export function InvitationRsvpPanel({
     setLoading(true);
     const cappedAttending = clampAttendingCount(attendingCount, allowance);
     const contact = {
-      email: email.trim() || undefined,
+      ...(showEmail ? { email: email.trim() || undefined } : {}),
       phone: phone.trim() || undefined,
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
@@ -184,14 +187,16 @@ export function InvitationRsvpPanel({
           className={`${fieldClass}${nameLocked ? " cursor-default opacity-90" : ""}`}
           disabled={loading}
         />
-        <Input
-          type="email"
-          placeholder={t("rsvp.your_email")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={fieldClass}
-          disabled={loading}
-        />
+        {showEmail ? (
+          <Input
+            type="email"
+            placeholder={t("rsvp.your_email")}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={fieldClass}
+            disabled={loading}
+          />
+        ) : null}
         <Input
           type="tel"
           placeholder={t("rsvp.your_phone")}

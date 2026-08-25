@@ -33,6 +33,7 @@ export function RsvpBlock({ context }: { context: PageRenderContext }) {
         accentColor={theme.color.accent}
         variant={variant}
         buttonStyle={design.studio?.buttonStyle}
+        showEmail={context.category !== "funeral"}
       />
     </div>
   );

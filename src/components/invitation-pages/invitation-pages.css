@@ -272,9 +272,48 @@
   background:
     radial-gradient(
       ellipse 80% 55% at 50% 0%,
-      color-mix(in srgb, var(--inv-color-accent) 8%, transparent),
+      color-mix(in srgb, var(--inv-color-accent) 12%, transparent),
       transparent 62%
     );
+}
+
+/* Funeral readability — larger type across the paged memorial experience */
+.inv-paged-root[data-inv-category="funeral"] .inv-eyebrow {
+  font-size: calc(0.78rem * var(--inv-type-scale));
+  letter-spacing: 0.2em;
+  font-weight: 600;
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-heading {
+  font-size: calc(clamp(1.55rem, 5.2vw, 2.15rem) * var(--inv-type-scale));
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-display {
+  font-size: calc(clamp(2.1rem, 7.5vw, 3.4rem) * var(--inv-type-scale));
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-body {
+  font-size: calc(clamp(1.08rem, 2.9vw, 1.22rem) * var(--inv-type-scale));
+  line-height: 1.7;
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-programme-title {
+  font-size: calc(clamp(1.05rem, 3.2vw, 1.22rem) * var(--inv-type-scale));
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-programme-detail {
+  font-size: calc(clamp(0.98rem, 2.7vw, 1.12rem) * var(--inv-type-scale));
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--inv-color-ink) 88%, transparent);
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-detail-card-value {
+  font-size: calc(1.08rem * var(--inv-type-scale));
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-btn {
+  font-size: calc(0.95rem * var(--inv-type-scale));
+  padding: 0.85rem 1.25rem;
 }
 
 .inv-memorial-panel {
@@ -457,6 +496,108 @@
   color: var(--inv-color-ink);
 }
 
+/**
+ * Funeral “at a glance” — date / time / venue are the first thing guests need.
+ * Large type, high contrast, stacked for scanability on every viewport.
+ */
+.inv-key-facts {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.05rem 1.05rem 1.15rem;
+  border-radius: calc(var(--inv-radius) * 1.15);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--inv-color-accent) 18%, transparent) 0%,
+      color-mix(in srgb, var(--inv-color-ink) 8%, transparent) 100%
+    );
+  border: 1.5px solid color-mix(in srgb, var(--inv-color-accent) 55%, transparent);
+  box-shadow:
+    0 14px 36px color-mix(in srgb, #000 28%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--inv-color-ink) 10%, transparent);
+}
+
+.inv-key-facts-kicker {
+  margin: 0;
+  font-family: var(--inv-font-display);
+  font-size: calc(0.68rem * var(--inv-type-scale));
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--inv-color-accent);
+}
+
+.inv-key-facts-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+}
+
+.inv-key-fact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.95rem 1rem;
+  border-radius: calc(var(--inv-radius) * 0.9);
+  background: color-mix(in srgb, var(--inv-color-surface) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 32%, transparent);
+  text-align: center;
+}
+
+.inv-key-fact[data-fact="date"] {
+  border-color: color-mix(in srgb, var(--inv-color-accent) 55%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--inv-color-accent) 12%, var(--inv-color-surface)) 0%,
+      var(--inv-color-surface) 100%
+    );
+}
+
+.inv-key-fact-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-family: var(--inv-font-display);
+  font-size: calc(0.72rem * var(--inv-type-scale));
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--inv-color-accent);
+}
+
+.inv-key-fact-value {
+  margin: 0;
+  max-width: 22rem;
+  font-family: var(--inv-font-display);
+  font-size: calc(clamp(1.2rem, 4.6vw, 1.55rem) * var(--inv-type-scale));
+  font-weight: 600;
+  line-height: 1.28;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+  color: var(--inv-color-ink);
+}
+
+.inv-key-fact[data-fact="time"] .inv-key-fact-value {
+  font-size: calc(clamp(1.35rem, 5.2vw, 1.75rem) * var(--inv-type-scale));
+  color: var(--inv-color-accent);
+  letter-spacing: 0.04em;
+}
+
+.inv-key-fact[data-fact="venue"] .inv-key-fact-value {
+  font-size: calc(clamp(1.05rem, 3.8vw, 1.28rem) * var(--inv-type-scale));
+  font-family: var(--inv-font-body);
+  font-weight: 600;
+}
+
 /* Memorial portrait on tribute page */
 .inv-memorial-portrait {
   position: relative;
@@ -591,6 +732,212 @@
   box-shadow:
     0 28px 72px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 color-mix(in srgb, var(--inv-color-on-media, var(--inv-color-ink)) 14%, transparent);
+}
+
+/**
+ * Funeral cover with portrait: ambient blurred backdrop + royal framed portrait
+ * above a docked glass info panel, so the honouree image is the hero.
+ */
+.inv-paged-root[data-inv-category="funeral"] .inv-page[data-has-media="true"][data-frameless="true"] {
+  align-items: stretch;
+  justify-content: center;
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-page[data-has-media="true"][data-frameless="true"] .inv-page-inner {
+  width: 100%;
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: 0 0.85rem;
+  height: 100%;
+  min-height: calc(100svh - 1.5rem);
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-cover-media--ambient img {
+  object-position: center 20%;
+  filter: blur(26px) saturate(0.72) brightness(0.42);
+  transform: scale(1.14);
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-cover-media--ambient::after {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--inv-color-surface) 55%, transparent) 0%,
+      color-mix(in srgb, #000 35%, transparent) 42%,
+      color-mix(in srgb, #000 78%, transparent) 100%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 50% 18%,
+      color-mix(in srgb, var(--inv-color-accent) 14%, transparent),
+      transparent 68%
+    );
+}
+
+.inv-funeral-cover-stack {
+  width: 100%;
+  min-height: calc(100svh - 1.75rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.35rem 0 0.15rem;
+}
+
+.inv-funeral-cover-portrait-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  padding-top: 0.35rem;
+}
+
+/* Royal memorial portrait frame — theme accent / foil, complimentary to funeral templates */
+.inv-royal-portrait {
+  --royal-frame: color-mix(in srgb, var(--inv-color-accent) 78%, #f2d48a 22%);
+  --royal-frame-deep: color-mix(in srgb, var(--inv-color-accent) 55%, #1a0c0c 45%);
+  position: relative;
+  margin: 0;
+  width: min(17.5rem, 68vw);
+  aspect-ratio: 4 / 5;
+  max-height: min(46svh, 22rem);
+}
+
+.inv-royal-portrait__outer {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.05rem 1.05rem 0.85rem 0.85rem;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--royal-frame) 92%, #fff 8%) 0%,
+      var(--royal-frame-deep) 38%,
+      var(--royal-frame) 62%,
+      color-mix(in srgb, var(--royal-frame-deep) 70%, #000 30%) 100%
+    );
+  box-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--royal-frame) 40%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 28%, transparent);
+  color: var(--royal-frame);
+}
+
+.inv-royal-portrait__outer::before {
+  content: "";
+  position: absolute;
+  inset: 0.28rem;
+  border-radius: 0.85rem 0.85rem 0.68rem 0.68rem;
+  border: 1px solid color-mix(in srgb, #f6e2b0 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 35%, transparent);
+  pointer-events: none;
+}
+
+.inv-royal-portrait__outer::after {
+  content: "";
+  position: absolute;
+  inset: 0.55rem;
+  border-radius: 0.72rem 0.72rem 0.55rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--royal-frame) 50%, transparent);
+  pointer-events: none;
+}
+
+.inv-royal-portrait__crest {
+  position: absolute;
+  top: -0.15rem;
+  left: 50%;
+  width: 4.25rem;
+  height: 1.45rem;
+  transform: translateX(-50%);
+  z-index: 2;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.inv-royal-portrait__corner {
+  position: absolute;
+  width: 1.15rem;
+  height: 1.15rem;
+  z-index: 2;
+  border-color: color-mix(in srgb, #f6e2b0 75%, transparent);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0.9;
+}
+
+.inv-royal-portrait__corner--tl {
+  top: 0.7rem;
+  left: 0.7rem;
+  border-top-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.inv-royal-portrait__corner--tr {
+  top: 0.7rem;
+  right: 0.7rem;
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.inv-royal-portrait__corner--bl {
+  bottom: 0.7rem;
+  left: 0.7rem;
+  border-bottom-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.inv-royal-portrait__corner--br {
+  bottom: 0.7rem;
+  right: 0.7rem;
+  border-bottom-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.inv-royal-portrait__mat {
+  position: absolute;
+  inset: 0.78rem;
+  border-radius: 0.62rem 0.62rem 0.48rem 0.48rem;
+  background: color-mix(in srgb, #0a0707 92%, var(--inv-color-accent) 8%);
+  padding: 0.28rem;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 55%, transparent);
+}
+
+.inv-royal-portrait__window {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0.42rem 0.42rem 0.32rem 0.32rem;
+  background: #111;
+}
+
+.inv-royal-portrait__window img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-page[data-has-media="true"] .inv-cover-hero-panel {
+  margin-bottom: 0.15rem;
+  flex: 0 0 auto;
+  gap: calc(var(--inv-space-block-gap) * 0.75);
+  padding: calc(var(--inv-space-block-gap) * 0.95) calc(var(--inv-space-block-gap) * 1.1);
+  background: color-mix(in srgb, #080808 78%, transparent);
+  max-width: 36rem;
+}
+
+@media (max-height: 720px) {
+  .inv-royal-portrait {
+    width: min(14.5rem, 58vw);
+    max-height: min(38svh, 17.5rem);
+  }
+
+  .inv-funeral-cover-stack {
+    gap: 0.55rem;
+  }
 }
 
 .inv-cover-meta {
