@@ -99,6 +99,7 @@ export {
 export {
   lockRevealScroll,
   unlockRevealScroll,
+  forceUnlockRevealScroll,
   createRevealSession,
   markRevealActive,
   markRevealComplete,

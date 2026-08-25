@@ -14,6 +14,7 @@ import {
   DEFAULT_RESOLVED_SEAL_STYLE,
   type ResolvedSealStyle,
 } from "@/lib/invitation/seal-design";
+import { shouldEnvelopeAutoOpen } from "@/lib/experience/live-envelope-contract";
 
 interface EnvelopeCollectionRevealProps {
   theme: EnvelopeVisualTheme;
@@ -44,8 +45,9 @@ interface EnvelopeCollectionRevealProps {
    */
   embedded?: boolean;
   /**
-   * Start opening on mount (catalogue “Tap to open envelope” already consumed
-   * the user gesture, do not require a second tap on a sealed face).
+   * Start opening on mount (catalogue / studio preview only).
+   * LIVE guest invitations must never set this — PremiumInviteWrapper forces
+   * false for live mounts so the sealed envelope waits for an explicit tap.
    */
   autoOpen?: boolean;
   /**
@@ -128,13 +130,23 @@ export function EnvelopeCollectionReveal({
   ceremonialDoves = false,
 }: EnvelopeCollectionRevealProps) {
   const reduceMotion = useReducedMotion();
-  const shouldAutoOpen = Boolean(autoOpen) && !staticPreview;
+  /**
+   * Preview/demo only. Idle has no timers — auto-open is an explicit opt-in
+   * that still enters through runOpenSequence after mount, never a silent skip.
+   */
+  const shouldAutoOpen = shouldEnvelopeAutoOpen({ autoOpen, staticPreview });
   /** Always mount sealed so the open transition has a from→to (autoOpen flips next frame). */
   const [phase, setPhase] = useState<Phase>("idle");
   const started = useRef(false);
   const completeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unsealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoOpenBootstrapped = useRef(false);
+  /**
+   * Require pointerdown on this control before click opens — blocks the
+   * Tap-to-Begin → reveal mount click-through that would otherwise fire
+   * beginOpen on the same guest gesture without a second intentional tap.
+   */
+  const pointerArmed = useRef(false);
 
   /** Cream embroidered face, photoreal art fill + interactive seal when themed. */
   const photoreal = Boolean(theme.photoreal);
@@ -263,6 +275,16 @@ export function EnvelopeCollectionReveal({
     runOpenSequence();
   }, [enableSounds, onBegin, phase, photoreal, runOpenSequence, staticPreview]);
 
+  const onSealPointerDown = useCallback(() => {
+    pointerArmed.current = true;
+  }, []);
+
+  const onSealClick = useCallback(() => {
+    if (!pointerArmed.current) return;
+    pointerArmed.current = false;
+    beginOpen();
+  }, [beginOpen]);
+
   useEffect(() => {
     return () => {
       clearOpenTimers();
@@ -319,6 +341,8 @@ export function EnvelopeCollectionReveal({
   return (
     <div
       className={shellClass}
+      data-envelope-phase={phase}
+      data-envelope-auto-open={shouldAutoOpen ? "true" : "false"}
       style={{
         background:
           isEnvelopeOpening
@@ -505,7 +529,8 @@ export function EnvelopeCollectionReveal({
       {!staticPreview && !shouldAutoOpen && phase === "idle" && (
         <button
           type="button"
-          onClick={beginOpen}
+          onPointerDown={onSealPointerDown}
+          onClick={onSealClick}
           className={`absolute inset-0 z-40 touch-manipulation bg-transparent border-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-12px] ${
             memorial
               ? "focus-visible:outline-[#E0B84A]/85"

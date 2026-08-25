@@ -31,6 +31,17 @@ export function unlockRevealScroll(): void {
   }
 }
 
+/** Hard clear after envelope → portal — never leave touchAction:none stuck. */
+export function forceUnlockRevealScroll(): void {
+  if (typeof document === "undefined") return;
+  lockCount = 0;
+  document.body.style.overflow = "";
+  document.body.style.touchAction = "";
+  document.documentElement.classList.remove("reveal-scroll-locked");
+  previousOverflow = "";
+  previousTouchAction = "";
+}
+
 export type RevealCompletionState = "idle" | "active" | "complete";
 
 export interface RevealSession {

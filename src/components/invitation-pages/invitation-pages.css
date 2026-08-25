@@ -65,6 +65,7 @@
   padding: var(--inv-space-page-padding);
   background: var(--inv-color-surface);
   box-sizing: border-box;
+  touch-action: pan-y;
 }
 
 @supports not (height: 1cqh) {
@@ -428,6 +429,20 @@
       color-mix(in srgb, var(--inv-color-accent) 12%, transparent),
       transparent 62%
     );
+}
+
+/* Funeral: proximity snap + normal stop — mandatory/always felt “stuck” after envelope open. */
+.inv-paged-root[data-inv-category="funeral"] .inv-paged-scroll {
+  scroll-snap-type: y proximity;
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-page {
+  scroll-snap-stop: normal;
+}
+
+.inv-paged-root[data-inv-category="funeral"] .inv-paged-scroll.inv-paged-scroll--settle {
+  scroll-snap-type: none !important;
+  scroll-behavior: auto !important;
 }
 
 /**
