@@ -492,7 +492,11 @@ export function EnvelopeCollectionReveal({
               ? "focus-visible:outline-[#E0B84A]/85"
               : "focus-visible:outline-[#D4A63A]/85"
           }`}
-          aria-label={visualTheme.label || "Tap to open invitation"}
+          aria-label={
+            visualTheme.label
+              ? `${visualTheme.label}, open invitation`
+              : "Tap to open invitation"
+          }
         />
       )}
     </div>
