@@ -292,7 +292,8 @@ export function resolveLiveRevealConfiguration(
 
 const LIVE_REVEAL_DIAG_ENABLED =
   process.env.NODE_ENV === "development" ||
-  process.env.NEXT_PUBLIC_CELEVENTIC_LIVE_REVEAL_DIAG === "1";
+  process.env.NEXT_PUBLIC_CELEVENTIC_LIVE_REVEAL_DIAG === "1" ||
+  process.env.CELEVENTIC_LIVE_REVEAL_DIAG === "1";
 
 /** Dev / flagged diagnostic — no guest PII. */
 export function logLiveRevealDiagnostic(
@@ -317,5 +318,40 @@ export function logLiveRevealDiagnostic(
     showReveal: config.showReveal,
     needsTapGate: extras?.needsTapGate,
     envelopeAutoOpen: extras?.envelopeAutoOpen,
+  });
+}
+
+export interface LiveInviteRevealDiagnosticInput {
+  invitationId: string;
+  eventId: string;
+  resolvedProductionOrderId: string | null;
+  productionOrderResolutionMethod: string;
+  catalogSlug: string | null;
+  layout: string | null;
+  liveReveal: LiveRevealConfiguration;
+  phase?: string;
+}
+
+/** Server-side invite route diagnostic — no guest names, tokens, or contact info. */
+export function logLiveInviteRevealDiagnostic(input: LiveInviteRevealDiagnosticInput): void {
+  if (!LIVE_REVEAL_DIAG_ENABLED) return;
+  console.info("[live-invite-reveal]", {
+    invitationId: input.invitationId,
+    eventId: input.eventId,
+    resolvedProductionOrderId: input.resolvedProductionOrderId,
+    productionOrderResolutionMethod: input.productionOrderResolutionMethod,
+    catalogSlug: input.catalogSlug,
+    effectiveCatalogSlug: input.liveReveal.effectiveCatalogSlug,
+    layout: input.layout,
+    rawRevealMode: input.liveReveal.rawRevealMode,
+    resolvedRevealMode: input.liveReveal.resolvedRevealMode,
+    rawOpeningExperience: input.liveReveal.rawOpeningExperience,
+    resolvedOpeningExperience: input.liveReveal.resolvedOpeningExperience,
+    isFuneralCollection: input.liveReveal.isFuneralCollection,
+    isMemorialEnvelopeSku: input.liveReveal.isMemorialEnvelopeSku,
+    mandatoryMemorialEnvelope: input.liveReveal.mandatoryMemorialEnvelope,
+    showReveal: input.liveReveal.showReveal,
+    curtainOwnsTap: input.liveReveal.curtainOwnsTap,
+    phase: input.phase,
   });
 }
