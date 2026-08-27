@@ -91,6 +91,7 @@ import { TemplateStudioMediaPanel } from "@/components/invitation-studio/templat
 import { MusicPreferenceEditor } from "@/components/music/music-preference-editor";
 import { WeddingBoardStudioPanel } from "@/components/invitation-studio/wedding-board-studio-panel";
 import { VisionBoardStudioPanel } from "@/components/invitation-studio/vision-board-studio-panel";
+import { FashionHouseStudioPanel } from "@/components/invitation-studio/fashion-house-studio-panel";
 import type { MusicSelection } from "@/lib/music/music-types";
 import {
   TYPOGRAPHY_PACKS,
@@ -473,6 +474,7 @@ export const InvitationStudioHub = forwardRef<
     "passport-stamp",
     "fullscreen-type",
     "magazine-stack",
+    "fashion-editorial",
   ];
 
   function applyTypographyPack(id: TypographyCategoryId) {
@@ -1736,6 +1738,14 @@ export const InvitationStudioHub = forwardRef<
                         // reinstates its own opening over the host's.
                         experience: { ...experience, experienceCustomized: true },
                       })
+                    }
+                  />
+                )}
+                {design.layout === "luxury-fashion-flagship" && (
+                  <FashionHouseStudioPanel
+                    value={experience.fashionHouse}
+                    onChange={(fashionHouse) =>
+                      patchExperience({ fashionHouse, experienceCustomized: true })
                     }
                   />
                 )}

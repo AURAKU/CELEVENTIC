@@ -10,6 +10,7 @@ import {
 } from "@/lib/invitation/template-creative-registry";
 import { DEFAULT_WEDDING_BOARD } from "@/lib/invitation/wedding-board";
 import { EVENT_TIME_ZONE } from "@/lib/constants";
+import { FEMMORA_HOUSE_DEFAULTS } from "@/lib/experience/luxury-fashion/femmora-preset";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -279,6 +280,36 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       config: t.config,
     } satisfies InvitationTemplatePreset;
   }),
+  {
+    slug: "luxury-fashion-flagship",
+    name: "Femmora Flagship Opening",
+    description:
+      "Ivory silk unveil into a boutique portal, atelier film and editorial lookbook",
+    category: "corporate",
+    preview: { gradient: "from-stone-100 via-amber-50 to-stone-200", accent: "#C4A574" },
+    config: {
+      layout: "luxury-fashion-flagship",
+      colors: {
+        primary: "#2C211C",
+        secondary: "#C4A574",
+        accent: "#9A7A48",
+        background: "#FBF7F0",
+        text: "#2C211C",
+      },
+      fonts: { heading: "Marcellus", script: "EB Garamond", body: "EB Garamond", eyebrow: "Marcellus", presetId: "editorial-vow" },
+      animation: "fade",
+      ornament: "gold-frame",
+      introText: "SOFT OPENING",
+      studio: {
+        revealMode: "envelope",
+        buttonStyle: "editorial-underline",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 15,
+        scriptSize: 22,
+      },
+    },
+  },
 ];
 
 export function getTemplatePreset(slug: string): InvitationTemplatePreset | undefined {
@@ -348,9 +379,13 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
   const identityStudio = buttonStyle
     ? { ...enriched.studio, buttonStyle }
     : enriched.studio;
+  const fashionHouse =
+    catalog?.slug === "femmora-flagship-soft-opening" || layoutSlug === "luxury-fashion-flagship"
+      ? { ...FEMMORA_HOUSE_DEFAULTS, ...identityExperience?.fashionHouse }
+      : identityExperience?.fashionHouse;
   const identified: InvitationDesignConfig = {
     ...enriched,
-    experience: identityExperience,
+    experience: fashionHouse ? { ...identityExperience, fashionHouse } : identityExperience,
     studio: identityStudio,
   };
 

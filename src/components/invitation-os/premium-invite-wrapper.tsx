@@ -867,6 +867,7 @@ export function PremiumInviteWrapper({
               sealEmblem={sealEmblem}
               sealStyle={sealStyle}
               openingCopy={openingCopy}
+              fashionHouse={experience?.fashionHouse}
               embedded={Boolean(embedded)}
               autoOpen={envelopeAutoOpen}
               allowSkip={false}

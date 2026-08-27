@@ -459,6 +459,23 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     typographyPackId: "corporate",
     backgroundPackId: "static",
   },
+  "luxury-fashion-flagship": {
+    collectionId: "editorial",
+    openingExperience: "luxury-fashion-flagship",
+    outroExperience: "credits-page",
+    defaultAudioCategory: "lounge",
+    defaultAudioTrackId: "jazz-soft-lounge",
+    buttonStyle: "editorial-underline",
+    hubMode: "scroll",
+    countdownStyle: "luxury",
+    sceneTransition: "door",
+    heroLayout: "fashion-editorial",
+    slideshowStyle: "magazine",
+    pacing: "slow",
+    slideDurationMs: 8000,
+    typographyPackId: "editorial",
+    backgroundPackId: "static",
+  },
 };
 
 export function getTemplateExperienceDNA(layout: InvitationLayoutSlug | string): TemplateExperienceDNA {

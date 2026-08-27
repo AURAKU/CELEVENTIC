@@ -21,6 +21,7 @@ const LAYOUT_THEME: Record<string, EventThemeCategory> = {
   "memorial-candle-tribute": "Funeral",
   "neon-celebration-party": "Birthday",
   "corporate-prestige-summit": "Corporate",
+  "luxury-fashion-flagship": "Corporate",
   "floral-garden-romance": "Wedding",
 };
 

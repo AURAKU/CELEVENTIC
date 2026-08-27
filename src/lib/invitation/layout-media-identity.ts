@@ -494,6 +494,28 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     ],
     video: "https://assets.mixkit.co/videos/preview/mixkit-falling-stars-9455-large.mp4",
   },
+  "luxury-fashion-flagship": {
+    hero: u("1618221195710-dd6b41faaea6", 900),
+    background: uBg("1441986300917-64674bd600d8"),
+    gallery: [
+      u("1618221195710-dd6b41faaea6"),
+      u("1441986300917-64674bd600d8"),
+      u("1515562141207-7a88fb7ce338"),
+      u("1558618666-fcd25c85cd64"),
+      u("1579546929518-9e396f3cc809"),
+    ],
+  },
+  "femmora-flagship-soft-opening": {
+    hero: u("1618221195710-dd6b41faaea6", 900),
+    background: uBg("1441986300917-64674bd600d8"),
+    gallery: [
+      u("1441986300917-64674bd600d8"),
+      u("1618221195710-dd6b41faaea6"),
+      u("1515562141207-7a88fb7ce338"),
+      u("1558618666-fcd25c85cd64"),
+      u("1579546929518-9e396f3cc809"),
+    ],
+  },
 };
 
 /** Prefer catalogue SKU pack, then layout pack. */

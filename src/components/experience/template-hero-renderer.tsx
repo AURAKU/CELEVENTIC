@@ -285,6 +285,15 @@ export function renderTemplateHero(ctx: TemplateHeroContext) {
         </HeroShell>
       );
 
+    case "luxury-fashion-flagship":
+      return (
+        <HeroShell className="max-w-xl">
+          <p className="text-[10px] uppercase tracking-[0.42em] mb-4" style={{ color: secondary }}>Soft Opening</p>
+          <h1 className="font-[family-name:var(--font-marcellus)] text-3xl sm:text-5xl tracking-[0.28em] uppercase" style={{ color: primary }}>{name1 || "Femmora"}</h1>
+          <p className="mt-6 text-sm tracking-[0.22em] uppercase" style={{ color: secondary }}>{dateLine}</p>
+        </HeroShell>
+      );
+
     default:
       return (
         <HeroShell>

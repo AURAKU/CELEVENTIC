@@ -39,6 +39,7 @@ export type RevealMechanicId =
   | "archway"
   | "petal-fall"
   | "blush-gate"
+  | "luxury-fashion-flagship"
   | "none";
 
 export interface ExperienceSceneDef {

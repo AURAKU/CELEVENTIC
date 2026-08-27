@@ -33,6 +33,9 @@ import {
   BlushGateReveal,
   type BlushGateOpeningCopy,
 } from "@/components/invitation-os/reveal/blush-gate-reveal";
+import { LuxuryFashionOpeningExperience } from "@/components/experience/luxury-fashion/luxury-fashion-opening-experience";
+import { FEMMORA_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion";
+import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 import { ReducedMotionGate, RevealKeyboardFallback } from "@/components/experience/reveal-accessibility";
 import { useReducedMotion } from "framer-motion";
 import { useState } from "react";
@@ -53,6 +56,8 @@ interface OpeningExperienceRouterProps {
   sealStyle?: ResolvedSealStyle;
   /** Editable opening copy for ceremonies that render template-authored text. */
   openingCopy?: BlushGateOpeningCopy;
+  /** Organizer fashion-house DNA for the silk flagship opening. */
+  fashionHouse?: LuxuryFashionHouseConfig;
   onComplete: () => void;
   /** Fires on the reveal start gesture (e.g. curtain tap / envelope open) for audio unlock. */
   onBegin?: () => void;
@@ -86,6 +91,7 @@ export function OpeningExperienceRouter({
   sealEmblem,
   sealStyle,
   openingCopy,
+  fashionHouse,
   onComplete,
   onBegin,
   embedded = false,
@@ -105,6 +111,7 @@ export function OpeningExperienceRouter({
   const isEnvelope = isEnvelopeExperience(resolvedExperienceId);
   /** Owns a reduced-motion path internally (short, dignified open). */
   const isBlushGate = resolvedExperienceId === "blush-gate";
+  const isFashionFlagship = resolvedExperienceId === "luxury-fashion-flagship";
 
   function complete() {
     setRevealed(true);
@@ -117,7 +124,7 @@ export function OpeningExperienceRouter({
 
   // Curtain + envelope ceremonies handle reduced-motion internally (short dignified open).
   // All other ceremonies collapse to a static keyboard-first gate.
-  if (reducedMotion && !isCurtain && !isEnvelope && !isBlushGate) {
+  if (reducedMotion && !isCurtain && !isEnvelope && !isBlushGate && !isFashionFlagship) {
     return <ReducedMotionGate eventTitle={eventTitle} guestName={guestName} onComplete={complete} />;
   }
 
@@ -221,6 +228,29 @@ export function OpeningExperienceRouter({
           />
         )}
       </>
+    );
+  }
+
+  if (resolvedExperienceId === "luxury-fashion-flagship") {
+    const house = mergeFashionHouse(FEMMORA_HOUSE_DEFAULTS, {
+      ...fashionHouse,
+      houseName: hostName?.trim() || fashionHouse?.houseName,
+      eventTitle: eventTitle || fashionHouse?.eventTitle,
+      monogram:
+        openingCopy?.monogram?.trim() ||
+        sealInitials?.trim() ||
+        fashionHouse?.monogram,
+    });
+    return (
+      <LuxuryFashionOpeningExperience
+        house={house}
+        eventTitle={eventTitle}
+        guestName={guestName}
+        embedded={embedded}
+        allowSkip={allowSkip}
+        onBegin={onBegin}
+        onComplete={complete}
+      />
     );
   }
 

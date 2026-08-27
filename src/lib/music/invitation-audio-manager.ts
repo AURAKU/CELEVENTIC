@@ -3,10 +3,26 @@ import { formatAudioTime } from "@/lib/music/trimmed-audio-playback";
 import { resolveMusicUrl } from "@/lib/music/validate-selection";
 
 let activeInvitationAudioManager: InvitationAudioManager | null = null;
+let invitationAudioDucked = false;
 
 /** Stops any invitation audio currently playing (e.g. when leaving a preview). */
 export function pauseAllInvitationAudio(): void {
   activeInvitationAudioManager?.pause();
+}
+
+/** Pause bed music while a guest-started film owns the audio stage. */
+export function duckInvitationAudio(): void {
+  const manager = activeInvitationAudioManager;
+  if (!manager) return;
+  invitationAudioDucked = manager.isPlaying();
+  manager.pause();
+}
+
+/** Resume bed music after the film yields, if it was playing before the duck. */
+export function unduckInvitationAudio(): void {
+  if (!invitationAudioDucked) return;
+  invitationAudioDucked = false;
+  void activeInvitationAudioManager?.play();
 }
 
 export interface InvitationAudioManager {

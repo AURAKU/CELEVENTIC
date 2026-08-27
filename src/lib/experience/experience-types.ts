@@ -45,6 +45,7 @@ export type OpeningExperienceId =
   | "archway"
   | "petal-fall"
   | "blush-gate"
+  | "luxury-fashion-flagship"
   | "none";
 
 export type OutroExperienceId =
@@ -141,7 +142,8 @@ export type HeroLayoutId =
   | "crystal-prism"
   | "islamic-arch"
   | "memorial-candle"
-  | "corporate-grid";
+  | "corporate-grid"
+  | "fashion-editorial";
 
 export type ExperiencePacing = "slow" | "medium" | "fast";
 
@@ -202,7 +204,8 @@ export type IntroVariantId =
   | "briefing-grid"
   | "keynote-beam"
   | "launch-orbit"
-  | "investor-ledger";
+  | "investor-ledger"
+  | "silk-whisper";
 
 export interface JourneyChapter {
   id: string;
@@ -308,6 +311,11 @@ export interface EventExperienceConfig {
   hiddenLayers?: string[];
   /** Phase 5 — active snap guide for preview alignment */
   snapGuideId?: string;
+  /**
+   * Luxury fashion flagship house DNA. Isolated from wedding/funeral
+   * ceremonies — only consumed by the fashion opening + layout.
+   */
+  fashionHouse?: import("@/lib/experience/luxury-fashion/types").LuxuryFashionHouseConfig;
 }
 
 export const DEFAULT_HUB_TABS: HubTabId[] = [

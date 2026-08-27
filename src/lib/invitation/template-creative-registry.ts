@@ -68,7 +68,8 @@ export type CreativeUniverseId =
   | "corporate-boardroom-brief"
   | "corporate-product-launch"
   | "corporate-investor-night"
-  | "corporate-keynote-agenda";
+  | "corporate-keynote-agenda"
+  | "fashion-flagship";
 
 /** Canonical invitation section ids used by hub / sequence builders. */
 export type CreativeSectionId =
@@ -241,6 +242,7 @@ const LAYOUT_UNIVERSE: Partial<Record<InvitationLayoutSlug, CreativeUniverseId>>
   "memorial-candle-tribute": "memorial-candle",
   "neon-celebration-party": "neon-celebration",
   "corporate-prestige-summit": "corporate-prestige",
+  "luxury-fashion-flagship": "fashion-flagship",
 };
 
 const CATEGORY_EVENT_TYPES: Record<string, string[]> = {

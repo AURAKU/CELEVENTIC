@@ -125,6 +125,9 @@ function resolveEventBeat(input: {
   if (isFuneralExperience(input.layoutSlug, input.category)) {
     return { plain: "In Loving Memory" };
   }
+  if (input.layoutSlug === "luxury-fashion-flagship") {
+    return { eyebrow: "FEMMORA", script: "Soft Opening" };
+  }
   if (input.eventTitle?.trim()) return { plain: input.eventTitle.trim() };
   return { plain: "Your Invitation" };
 }
@@ -139,6 +142,9 @@ function titleCase(s: string): string {
 /** The bare action verb ("Begin"/"Enter"), used to build the visible CTA and aria-label. */
 function resolveBeginVerb(layoutSlug?: string, category?: string): string {
   const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
+  if (layoutSlug === "luxury-fashion-flagship" || hay.includes("fashion-flagship")) {
+    return "Unveil";
+  }
   if (
     isFuneralExperience(layoutSlug, category) ||
     hay.includes("concert") ||

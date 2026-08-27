@@ -35,6 +35,7 @@ export const LAYOUT_ENABLED_TABS: Record<string, HubTabId[]> = {
   ],
   "neon-celebration-party": ["invitation", "countdown", "gallery", "rsvp", "memory", "livestream"],
   "corporate-prestige-summit": ["invitation", "timeline", "venue", "rsvp", "seating", "gallery"],
+  "luxury-fashion-flagship": ["invitation", "gallery", "countdown", "venue", "rsvp"],
   "custom-media": ["invitation", "gallery", "rsvp", "memory", "venue", "gifts"],
 };
 
@@ -81,6 +82,7 @@ export const LAYOUT_SIGNATURE_FEATURES: Record<string, string[]> = {
   ],
   "neon-celebration-party": ["Confetti burst reveal", "Neon grid gallery", "EDM energy", "Ticket QR", "Share"],
   "corporate-prestige-summit": ["Kinetic grid + curtain", "Agenda + speakers", "Glass parallax", "Corporate ambient", "Register + share"],
+  "luxury-fashion-flagship": ["Silk unveil", "Boutique portal", "Atelier film", "Editorial lookbook", "Visit RSVP"],
   "custom-media": ["Swipe reveal", "Your media canvas", "Cinematic frame", "Ambient score", "Upload gallery"],
 };
 

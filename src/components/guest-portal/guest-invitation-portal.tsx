@@ -295,7 +295,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
    * countdown, venue, gallery, RSVP, memory, or the closing scene.
    */
   const templateOwnsJourney =
-    isTraditionalMarriage || props.design.layout === "forever-afaris-wedding";
+    isTraditionalMarriage ||
+    props.design.layout === "forever-afaris-wedding" ||
+    props.design.layout === "luxury-fashion-flagship";
 
   const cinematicMode =
     props.cinematicMode !== false &&
