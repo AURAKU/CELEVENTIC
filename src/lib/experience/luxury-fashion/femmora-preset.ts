@@ -2,13 +2,11 @@
  * Femmora house DNA — original Celeventic fashion identity.
  * Ivory / pearl / champagne / mocha. Not a reproduction of any fashion-house font.
  *
- * Store film: organizers upload via Studio (hero video + poster).
- * Do not hardwire a local developer filepath. If a production MP4 is supplied
- * later, place it through Studio media or `public/templates/femmora/` and set
- * `filmUrl` / `filmPosterUrl` on this config.
+ * Bundled demo media lives in `public/templates/femmora/` (web H.264 + poster).
+ * Organizers replace the film via Studio hero video + poster.
  */
 
-import type { LuxuryFashionHouseConfig } from "./types";
+import type { FashionLookbookItem, LuxuryFashionHouseConfig } from "./types";
 
 /** 29 Aug 2026 09:00 Africa/Nairobi — 30 Aug 2026 20:00. */
 export const FEMMORA_START_ISO = "2026-08-29T09:00:00+03:00";
@@ -16,6 +14,34 @@ export const FEMMORA_END_ISO = "2026-08-30T20:00:00+03:00";
 
 export const FEMMORA_MAPS_URL =
   "https://www.google.com/maps/search/?api=1&query=Femmora%20GH%20Westlands";
+
+export const FEMMORA_SILK_BED = "/templates/femmora/silk-bed.jpg";
+export const FEMMORA_STORE_FILM = "/templates/femmora/store-preview.mp4";
+export const FEMMORA_STORE_POSTER = "/templates/femmora/store-poster.jpg";
+
+export const FEMMORA_DEFAULT_LOOKS: FashionLookbookItem[] = [
+  {
+    id: "femmora-look-01",
+    url: "/templates/femmora/look-01.jpg",
+    type: "image",
+    caption: "Atelier 01",
+    collectionName: "The Collection",
+  },
+  {
+    id: "femmora-look-02",
+    url: "/templates/femmora/look-02.jpg",
+    type: "image",
+    caption: "Atelier 02",
+    collectionName: "The Collection",
+  },
+  {
+    id: "femmora-look-03",
+    url: "/templates/femmora/look-03.jpg",
+    type: "image",
+    caption: "Atelier 03",
+    collectionName: "The Collection",
+  },
+];
 
 export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   houseName: "FEMMORA",
@@ -52,11 +78,13 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   countdownAfterLabel: "The doors are open",
   finaleMessage: "We'll see you inside.",
   lookbookTitle: "The Collection",
+  lookbookItems: FEMMORA_DEFAULT_LOOKS,
+  silkBedUrl: FEMMORA_SILK_BED,
   startAtIso: FEMMORA_START_ISO,
   endAtIso: FEMMORA_END_ISO,
   timeZone: "Africa/Nairobi",
-  filmUrl: null,
-  filmPosterUrl: null,
+  filmUrl: FEMMORA_STORE_FILM,
+  filmPosterUrl: FEMMORA_STORE_POSTER,
 };
 
 export const LUXURY_FASHION_LAYOUT_SLUG = "luxury-fashion-flagship" as const;

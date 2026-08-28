@@ -1,12 +1,12 @@
 /** Design tokens for luxury fashion flagship experiences. */
 
 export const FASHION_TOKEN_VALUES = {
-  ivory: "#FBF7F0",
-  cream: "#F4EDE1",
-  pearl: "#EFE7DA",
+  ivory: "#F7F1E8",
+  cream: "#F3EBE0",
+  pearl: "#EFE4D6",
   champagne: "#D9C4A0",
-  gold: "#C4A574",
-  goldDeep: "#9A7A48",
+  gold: "#B8956A",
+  goldDeep: "#A67C52",
   mocha: "#6B5344",
   espresso: "#2C211C",
   ink: "#1C1613",

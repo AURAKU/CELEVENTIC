@@ -2,10 +2,14 @@ export type { FashionInviteAction } from "./analytics";
 export { trackFashionAction } from "./analytics";
 export {
   FEMMORA_CATALOG_SLUG,
+  FEMMORA_DEFAULT_LOOKS,
   FEMMORA_END_ISO,
   FEMMORA_HOUSE_DEFAULTS,
   FEMMORA_MAPS_URL,
+  FEMMORA_SILK_BED,
   FEMMORA_START_ISO,
+  FEMMORA_STORE_FILM,
+  FEMMORA_STORE_POSTER,
   LUXURY_FASHION_LAYOUT_SLUG,
   LUXURY_FASHION_OPENING_ID,
 } from "./femmora-preset";

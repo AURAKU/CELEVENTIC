@@ -123,9 +123,13 @@ test.describe("Femmora luxury flagship opening", () => {
     await assertScrollUnlocked(page);
     await shot(page, "G-mobile-details");
 
-    await page.getByTestId("fashion-film-placeholder").scrollIntoViewIfNeeded();
-    await expect(page.getByTestId("fashion-film-placeholder")).toBeVisible();
+    await page.getByTestId("fashion-film-scene").scrollIntoViewIfNeeded();
+    await expect(page.getByTestId("fashion-film-scene")).toBeVisible();
     await shot(page, "F-mobile-store-film");
+    const film = page.getByTestId("fashion-film-scene");
+    await film.getByRole("button", { name: /step inside|play/i }).first().click();
+    await expect(film.getByRole("button", { name: /mute|unmute/i })).toBeVisible();
+    await film.getByRole("button", { name: /mute|unmute/i }).click();
     await page.getByRole("button", { name: /continue to the invitation/i }).click();
 
     const lookbook = page.getByTestId("fashion-lookbook").or(page.getByTestId("fashion-lookbook-empty"));
@@ -246,12 +250,12 @@ test.describe("Femmora luxury flagship opening", () => {
     await context.close();
   });
 
-  test("missing store film still lets the guest continue", async ({ browser }) => {
+  test("store film plays and still lets the guest continue", async ({ browser }) => {
     const context = await browser.newContext(devices["iPhone 13"]);
     const page = await context.newPage();
     await page.goto(runtime, { waitUntil: "domcontentloaded" });
     await completeOpening(page);
-    await page.getByTestId("fashion-film-placeholder").scrollIntoViewIfNeeded();
+    await page.getByTestId("fashion-film-scene").scrollIntoViewIfNeeded();
     await page.getByRole("button", { name: /continue to the invitation/i }).click();
     await expect(page.getByTestId("fashion-lookbook").or(page.getByTestId("fashion-lookbook-empty"))).toBeVisible();
     await context.close();

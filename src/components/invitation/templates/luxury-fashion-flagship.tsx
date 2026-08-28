@@ -14,6 +14,8 @@ import {
 } from "@/lib/experience/luxury-fashion";
 import { FEMMORA_CATALOG_SLUG } from "@/lib/experience/luxury-fashion/femmora-preset";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
+import { CalendarDays, Clock, MapPin } from "lucide-react";
+import { FemmoraMark } from "./luxury-fashion/femmora-mark";
 import { FashionEditorialIndex } from "./luxury-fashion/fashion-editorial-index";
 import { FashionBoutiqueExperience } from "./luxury-fashion/fashion-boutique-experience";
 import { FashionFilmScene } from "./luxury-fashion/fashion-film-scene";
@@ -35,6 +37,24 @@ const SECTION_IDS: Record<FashionNavDestination, string> = {
   rsvp: "fashion-rsvp",
   share: "fashion-share",
 };
+
+function FashionOrdinalLine({ text }: { text: string }) {
+  const parts = text.split(/(\d+(?:ST|ND|RD|TH))/i);
+  return (
+    <>
+      {parts.map((part, index) => {
+        const match = part.match(/^(\d+)(ST|ND|RD|TH)$/i);
+        if (!match) return <span key={`${part}-${index}`}>{part}</span>;
+        return (
+          <span key={`${part}-${index}`}>
+            {match[1]}
+            <sup className={styles.ord}>{match[2]}</sup>
+          </span>
+        );
+      })}
+    </>
+  );
+}
 
 export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { galleryUrls?: string[] }) {
   const house = useMemo(
@@ -90,31 +110,65 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
   );
 
   return (
-    <article className={styles.root} style={fashionTokenStyle() as CSSProperties} data-testid="luxury-fashion-flagship">
+    <article
+      className={styles.root}
+      style={
+        {
+          ...fashionTokenStyle(),
+          ...(house.silkBedUrl ? { ["--ff-silk-bed" as string]: `url("${house.silkBedUrl}")` } : null),
+        } as CSSProperties
+      }
+      data-testid="luxury-fashion-flagship"
+    >
       <header className={styles.hero} id={SECTION_IDS.experience} data-testid="fashion-details">
-        <div className={styles.monogram} aria-hidden>
-          {house.monogram}
+        <div className={styles.silkBed} aria-hidden />
+        <div className={styles.card}>
+          <FemmoraMark className={styles.mark} />
+          <h1 className={styles.house}>{house.houseName}</h1>
+          <span className={styles.ornament} aria-hidden />
+          <p className={styles.event}>{house.eventTitle}</p>
+          <span className={styles.ornament} aria-hidden />
+          <ul className={styles.cardFacts}>
+            <li>
+              <MapPin size={16} strokeWidth={1.25} aria-hidden />
+              <div>
+                <p>Location</p>
+                <strong>
+                  {house.locationName}, {house.address}
+                </strong>
+                <a
+                  href={house.mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() =>
+                    trackFashionAction("maps_clicked", {
+                      invitationId,
+                      templateSlug: FEMMORA_CATALOG_SLUG,
+                    })
+                  }
+                >
+                  on Google Maps
+                </a>
+              </div>
+            </li>
+            <li>
+              <Clock size={16} strokeWidth={1.25} aria-hidden />
+              <div>
+                <p>Time</p>
+                <strong>{house.hoursLabel}</strong>
+              </div>
+            </li>
+            <li>
+              <CalendarDays size={16} strokeWidth={1.25} aria-hidden />
+              <div>
+                <p>Date</p>
+                <strong>
+                  <FashionOrdinalLine text={house.datesLabel} />
+                </strong>
+              </div>
+            </li>
+          </ul>
         </div>
-        <h1 className={styles.house}>{house.houseName}</h1>
-        <p className={styles.event}>{house.eventTitle}</p>
-        <div className={styles.rule} />
-        <dl className={styles.heroMeta}>
-          <div>
-            <dt>Location</dt>
-            <dd>
-              {house.locationName}, {house.address}
-            </dd>
-          </div>
-          <div>
-            <dt>Time</dt>
-            <dd>{house.hoursLabel}</dd>
-          </div>
-          <div>
-            <dt>Date</dt>
-            <dd>{house.datesLabel}</dd>
-          </div>
-        </dl>
-        <p className={styles.lede}>{house.hubLede}</p>
       </header>
 
       <FashionEditorialIndex labels={house.navLabels} current={current} onSelect={go} />

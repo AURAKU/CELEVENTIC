@@ -16,6 +16,7 @@ export function mergeFashionHouse(
     ...override,
     navLabels: override.navLabels?.length ? override.navLabels : base.navLabels,
     lookbookItems: override.lookbookItems ?? base.lookbookItems,
+    silkBedUrl: override.silkBedUrl === undefined ? base.silkBedUrl : override.silkBedUrl,
     filmUrl: override.filmUrl === undefined ? base.filmUrl : override.filmUrl,
     filmPosterUrl: override.filmPosterUrl === undefined ? base.filmPosterUrl : override.filmPosterUrl,
   };

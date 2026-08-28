@@ -7,6 +7,8 @@ import {
   FASHION_WHISPER_MS,
   FEMMORA_HOUSE_DEFAULTS,
   FEMMORA_MAPS_URL,
+  FEMMORA_STORE_FILM,
+  FEMMORA_STORE_POSTER,
   mergeFashionHouse,
   resolveFashionFilm,
   resolveFashionHouse,
@@ -40,13 +42,16 @@ test("fashion house merge prefers organizer overrides without dropping nav label
   assert.equal(next.navLabels.length, FEMMORA_HOUSE_DEFAULTS.navLabels.length);
 });
 
-test("store film resolves from hero video media, never a local filepath", () => {
+test("store film resolves from bundled Femmora media, then Studio hero video, never a local filepath", () => {
   const house = resolveFashionHouse({
     layout: "luxury-fashion-flagship",
     colors: { primary: "#000", secondary: "#000", accent: "#000", background: "#fff", text: "#000" },
     experience: { fashionHouse: FEMMORA_HOUSE_DEFAULTS },
   });
-  assert.equal(resolveFashionFilm({ house, media: [] }).src, null);
+  const bundled = resolveFashionFilm({ house, media: [] });
+  assert.equal(bundled.src, FEMMORA_STORE_FILM);
+  assert.equal(bundled.poster, FEMMORA_STORE_POSTER);
+  assert.ok(!bundled.src?.startsWith("/Users/"));
   const film = resolveFashionFilm({
     house,
     media: [
@@ -62,11 +67,12 @@ test("store film resolves from hero video media, never a local filepath", () => 
   assert.ok(!film.src?.startsWith("/Users/"));
 });
 
-test("lookbook prefers organizer items then gallery, never a synchronous dump of empty media", () => {
+test("lookbook prefers organizer items then gallery, with bundled atelier stills as fallback", () => {
   const house = FEMMORA_HOUSE_DEFAULTS;
-  assert.deepEqual(resolveFashionLookbook({ house, galleryUrls: [], media: [] }), []);
+  assert.equal(resolveFashionLookbook({ house, galleryUrls: [], media: [] }).length, 3);
+  assert.match(resolveFashionLookbook({ house, galleryUrls: [], media: [] })[0]?.url ?? "", /^\/templates\/femmora\//);
   const fromGallery = resolveFashionLookbook({
-    house,
+    house: { ...house, lookbookItems: [] },
     galleryUrls: ["https://images.example.com/a.jpg", "https://images.example.com/b.jpg"],
   });
   assert.equal(fromGallery.length, 2);
@@ -138,17 +144,12 @@ test("motion tokens stay editorial and silk drag requires a new gesture", () => 
 test("store stills are a browseable subset of the lookbook, not a second media system", () => {
   const stills = resolveFashionStoreStills({
     house: FEMMORA_HOUSE_DEFAULTS,
-    galleryUrls: [
-      "https://images.example.com/a.jpg",
-      "https://images.example.com/b.jpg",
-      "https://images.example.com/c.jpg",
-      "https://images.example.com/d.jpg",
-      "https://images.example.com/e.jpg",
-    ],
+    galleryUrls: [],
   });
-  assert.equal(stills.length, 4);
+  assert.equal(stills.length, 3);
   assert.match(stills[0]?.id ?? "", /^atelier-/);
   const merged = mergeFashionHouse(FEMMORA_HOUSE_DEFAULTS, { houseName: "Atelier" });
   assert.equal(merged.whisperLine, FEMMORA_HOUSE_DEFAULTS.whisperLine);
   assert.equal(merged.hubLede, FEMMORA_HOUSE_DEFAULTS.hubLede);
+  assert.equal(merged.filmUrl, FEMMORA_STORE_FILM);
 });

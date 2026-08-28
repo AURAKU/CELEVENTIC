@@ -59,6 +59,7 @@ export interface LuxuryFashionHouseConfig {
   finaleMessage: string;
   lookbookTitle: string;
   lookbookItems?: FashionLookbookItem[];
+  silkBedUrl?: string | null;
   /** Absolute ISO-8601 with offset. Countdown/calendar source of truth. */
   startAtIso: string;
   endAtIso: string;

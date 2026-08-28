@@ -137,7 +137,7 @@ export function FashionHouseStudioPanel({
         <Textarea rows={3} value={house.finaleMessage} onChange={(e) => patch({ finaleMessage: e.target.value })} />
       </div>
       <p className="text-[11px] text-slate-500">
-        Store film and poster use Studio Media: set the hero video. Lookbook uses the gallery. Music uses the existing soundtrack picker.
+        Store film defaults to the bundled Femmora atelier clip in `public/templates/femmora/`. Replace it in Studio Media by setting the hero video and poster. Lookbook uses gallery uploads, or the bundled atelier stills. Music uses the existing soundtrack picker.
       </p>
     </div>
   );

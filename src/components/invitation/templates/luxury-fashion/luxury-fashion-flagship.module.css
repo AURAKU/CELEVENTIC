@@ -27,6 +27,110 @@
   place-items: center;
   padding: max(2.5rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(5rem, env(safe-area-inset-bottom, 0px));
   text-align: center;
+  overflow: hidden;
+}
+
+.silkBed {
+  position: absolute;
+  inset: -8%;
+  background:
+    var(--ff-silk-bed, none) center / cover no-repeat,
+    radial-gradient(90% 70% at 50% 20%, #fffdf8 0%, var(--ff-cream, #f3ebe0) 55%, #d9c4a0 100%);
+  filter: saturate(0.92) contrast(0.96);
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+.silkBed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(247, 241, 232, 0.28) 0%, rgba(247, 241, 232, 0.55) 100%);
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 26rem);
+  aspect-ratio: 1 / 1.08;
+  max-height: min(86svh, 38rem);
+  display: grid;
+  place-content: center;
+  gap: 0.35rem;
+  padding: 1.6rem 1.35rem 1.5rem;
+  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 92%, white);
+  color: var(--ff-gold-deep, #a67c52);
+  box-shadow:
+    0 28px 70px rgba(44, 33, 28, 0.16),
+    inset 0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 70%, transparent),
+    inset 0 0 0 7px color-mix(in srgb, var(--ff-ivory, #f7f1e8) 100%, transparent),
+    inset 0 0 0 8px color-mix(in srgb, var(--ff-gold, #b8956a) 55%, transparent);
+}
+
+.mark {
+  margin: 0 auto 0.55rem;
+  color: var(--ff-gold-deep, #a67c52);
+}
+
+.ornament {
+  display: block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: 0.45rem auto;
+  transform: rotate(45deg);
+  border: 1px solid var(--ff-gold, #b8956a);
+}
+
+.cardFacts {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+  text-align: center;
+}
+
+.cardFacts li {
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+  color: var(--ff-gold-deep, #a67c52);
+}
+
+.cardFacts p {
+  margin: 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.cardFacts strong {
+  display: block;
+  font-weight: 500;
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ff-espresso, #2c211c);
+}
+
+.cardFacts a {
+  display: inline-block;
+  margin-top: 0.15rem;
+  color: var(--ff-gold-deep, #a67c52);
+  font-style: italic;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.cardFacts a:focus-visible {
+  outline: 2px solid var(--ff-gold, #b8956a);
+  outline-offset: 3px;
+}
+
+.ord {
+  font-size: 0.55em;
+  letter-spacing: 0.08em;
 }
 
 .monogram {
@@ -42,18 +146,20 @@
 
 .house {
   font-family: var(--font-marcellus), Marcellus, serif;
-  font-size: clamp(2rem, 8vw, 4.2rem);
-  letter-spacing: 0.46em;
-  text-indent: 0.46em;
+  font-size: clamp(1.55rem, 6.4vw, 2.35rem);
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
   text-transform: uppercase;
+  color: var(--ff-gold-deep, #a67c52);
 }
 
 .event {
-  margin-top: 0.9rem;
-  letter-spacing: 0.38em;
+  margin: 0;
+  letter-spacing: 0.46em;
+  text-indent: 0.46em;
   text-transform: uppercase;
-  font-size: 0.78rem;
-  color: var(--ff-mocha, #6b5344);
+  font-size: clamp(1.05rem, 4.2vw, 1.45rem);
+  color: var(--ff-gold-deep, #a67c52);
 }
 
 .rule {
@@ -347,7 +453,7 @@
   position: relative;
   margin: 1.5rem auto 0;
   width: min(100%, 26rem);
-  aspect-ratio: 512 / 910;
+  aspect-ratio: 9 / 16;
   background: var(--ff-espresso, #2c211c);
   overflow: hidden;
   box-shadow: 0 30px 80px rgba(44, 33, 28, 0.18);
@@ -564,8 +670,8 @@
 }
 
 @media (min-width: 1280px) {
-  .hero .house {
-    font-size: 5rem;
+  .card {
+    width: min(100%, 30rem);
   }
 
   .index {
