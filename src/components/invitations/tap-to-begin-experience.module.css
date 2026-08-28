@@ -155,6 +155,25 @@
   letter-spacing: 0.12em;
 }
 
+.kickerStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin: 0 0 0.85rem;
+  animation: tap-line-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}
+
+.kickerBeat {
+  margin: 0;
+  font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
+  font-size: calc(0.68rem * var(--tap-scale, 1));
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--tap-gold) 82%, var(--tap-ivory) 18%);
+}
+
 .eventBeat {
   margin: 0;
   max-width: min(100%, 28rem);

@@ -217,6 +217,7 @@ export function Header({ initialSession }: HeaderProps) {
             "mx-1"
           )}
           aria-label="Primary"
+          suppressHydrationWarning
         >
           <div
             className={cn(

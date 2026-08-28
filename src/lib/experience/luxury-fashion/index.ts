@@ -42,11 +42,14 @@ export {
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
+  resolveFashionOpeningStyle,
   resolveFashionStoreStills,
+  resolveFashionTeaser,
 } from "./resolve-fashion-house";
 export {
   FASHION_DOORS_OPEN_MS,
   FASHION_EXIT_POINTER_MS,
+  FASHION_FOLIO_OPEN_MS,
   FASHION_GESTURE_ARM_MS,
   FASHION_MOTION,
   FASHION_REDUCED_OPEN_MS,
@@ -65,6 +68,7 @@ export type {
   FashionNavLabel,
   FashionNavStyle,
   FashionOpeningPhase,
+  FashionOpeningStyle,
   FashionSilkStyle,
   FashionSocialLink,
   FashionSocialPlatformId,

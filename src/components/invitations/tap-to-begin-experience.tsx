@@ -65,6 +65,8 @@ export interface TapToBeginExperienceProps {
   /** Optional brand mark image. Prefer a letter when no asset is uploaded. */
   brandMarkUrl?: string | null;
   eventBeatOverride?: { eyebrow?: string; script?: string; plain?: string } | null;
+  /** Small lines above the fashion beat (place / dates). */
+  kickerLines?: string[] | null;
 }
 
 const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale"]>, number> = {
@@ -120,7 +122,7 @@ function resolveEventBeat(input: {
     return { plain: input.eventBeatOverride.plain.trim() };
   }
   if (input.layoutSlug === "luxury-fashion-flagship") {
-    return { eyebrow: "SOMETHING BEAUTIFUL", script: "Is about to open" };
+    return { eyebrow: "THE HOUSE", script: "UNVEILED" };
   }
   const label = input.ceremonyLabel?.trim();
   if (label) {
@@ -157,7 +159,7 @@ function titleCase(s: string): string {
 function resolveBeginVerb(layoutSlug?: string, category?: string): string {
   const hay = `${layoutSlug ?? ""} ${category ?? ""}`.toLowerCase();
   if (layoutSlug === "luxury-fashion-flagship" || hay.includes("fashion-flagship")) {
-    return "Unveil";
+    return "Enter";
   }
   if (
     isFuneralExperience(layoutSlug, category) ||
@@ -238,6 +240,7 @@ export function TapToBeginExperience({
   brandMarkLetter,
   brandMarkUrl,
   eventBeatOverride,
+  kickerLines,
 }: TapToBeginExperienceProps) {
   const reduceMotion = useReducedMotion() || staticPreview;
   const [exiting, setExiting] = useState(false);
@@ -460,6 +463,17 @@ export function TapToBeginExperience({
             ) : (
               <span className={styles.brandMarkLetter}>{markLetter}</span>
             )}
+          </div>
+        ) : null}
+        {kickerLines?.filter((line) => line.trim()).length ? (
+          <div className={styles.kickerStack}>
+            {kickerLines
+              .filter((line) => line.trim())
+              .map((line) => (
+                <p key={line} className={styles.kickerBeat}>
+                  {line}
+                </p>
+              ))}
           </div>
         ) : null}
         {showEventBeat ? (

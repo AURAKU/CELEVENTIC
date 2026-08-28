@@ -10,6 +10,8 @@ import type {
 
 export type FashionSilkStyle = "ivory-champagne" | "pearl-mocha" | "espresso-gold";
 
+export type FashionOpeningStyle = "folio-silk" | "silk-only" | "portal-only";
+
 export type FashionNavStyle = "editorial-index" | "garment-tag" | "runway-chapters";
 
 export type FashionNavDestination =
@@ -61,6 +63,20 @@ export interface LuxuryFashionHouseConfig {
   address: string;
   mapsUrl: string;
   silkStyle: FashionSilkStyle;
+  /** Femmora default is folio + silk. Other houses may choose silk-only or portal-only. */
+  openingStyle?: FashionOpeningStyle;
+  folioFaceLine?: string;
+  teaserPlaceLine?: string;
+  teaserDateLine?: string;
+  teaserClipUrl?: string | null;
+  teaserPosterUrl?: string | null;
+  mapsCtaLabel?: string;
+  copyLocationLabel?: string;
+  shareLocationLabel?: string;
+  countdownEndedLabel?: string;
+  replayUnveilingLabel?: string;
+  filmChapterTitle?: string;
+  filmChapterLede?: string;
   markVariant?: "letter" | "botanical";
   logoUrl?: string | null;
   filmCta: string;
@@ -103,6 +119,9 @@ export interface LuxuryFashionHouseConfig {
 }
 
 export type FashionOpeningPhase =
+  | "arming-folio"
+  | "folio"
+  | "folio-opening"
   | "arming-silk"
   | "silk"
   | "silk-opening"
@@ -124,6 +143,7 @@ export const FASHION_NAV_DESTINATIONS: FashionNavDestination[] = [
 export {
   FASHION_DOORS_OPEN_MS,
   FASHION_EXIT_POINTER_MS,
+  FASHION_FOLIO_OPEN_MS,
   FASHION_GESTURE_ARM_MS,
   FASHION_REDUCED_OPEN_MS,
   FASHION_SILK_DRAG_PX,

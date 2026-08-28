@@ -27,6 +27,7 @@ export const FASHION_MOTION = {
 } as const;
 
 export const FASHION_GESTURE_ARM_MS = FASHION_MOTION.editorial;
+export const FASHION_FOLIO_OPEN_MS = FASHION_MOTION.ceremonial;
 export const FASHION_SILK_OPEN_MS = FASHION_MOTION.ceremonial;
 export const FASHION_DOORS_OPEN_MS = FASHION_MOTION.cinematic;
 export const FASHION_REDUCED_OPEN_MS = FASHION_MOTION.standard;

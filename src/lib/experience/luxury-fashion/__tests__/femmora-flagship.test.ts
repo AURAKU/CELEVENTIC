@@ -20,8 +20,10 @@ import {
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
+  resolveFashionOpeningStyle,
   resolveFashionSocialLinks,
   resolveFashionStoreStills,
+  resolveFashionTeaser,
   socialLinkHasDestination,
 } from "@/lib/experience/luxury-fashion";
 import { isPointerArmSafe } from "@/lib/experience/luxury-fashion/gesture-arming";
@@ -39,7 +41,11 @@ test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => 
   assert.equal(FEMMORA_HOUSE_DEFAULTS.address, "Westlands");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.hoursLabel, "9 AM TO 8 PM EACH DAY");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.datesLabel, "29TH & 30TH AUGUST");
-  assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperLine, "Something beautiful is about to open");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperLine, "A private first look");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.unveilingLabel, "ENTER THE HOUSE");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.openingStyle, "folio-silk");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.folioFaceLine, "A PRIVATE FIRST LOOK");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.teaserPlaceLine, "WESTLANDS");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.rsvpHeading, "Will we see you at Femmora?");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.navLabels[0]?.label, "Enter Experience");
   assert.match(FEMMORA_MAPS_URL, /^https:\/\/www\.google\.com\/maps\/search\//);
@@ -102,8 +108,8 @@ test("catalogue SKU and opening copy are registered", () => {
   assert.equal(template?.category, "Corporate");
   assert.equal(template?.experienceOverrides?.openingExperience, "luxury-fashion-flagship");
   const copy = previewTapLabelForOpening("luxury-fashion-flagship");
-  assert.equal(copy.label, "Enter the Unveiling");
-  assert.deepEqual(copy.steps, ["Silk parts", "House opens"]);
+  assert.equal(copy.label, "Enter the House");
+  assert.deepEqual(copy.steps, ["Folio opens", "House opens"]);
 });
 
 test("default design carries Femmora fashionHouse DNA", () => {
@@ -301,6 +307,31 @@ test("generic and Vale houses do not inherit Femmora Instagram", () => {
   });
   assert.equal(valeChapters.social, false);
   assert.equal(resolveFashionSocialLinks(MAISON_VALE_HOUSE).length, 0);
+});
+
+test("Femmora uses folio+silk while Vale can opt into silk-only without looping the store film", () => {
+  assert.equal(resolveFashionOpeningStyle(FEMMORA_HOUSE_DEFAULTS), "folio-silk");
+  assert.equal(resolveFashionOpeningStyle(MAISON_VALE_HOUSE), "silk-only");
+  assert.equal(resolveFashionOpeningStyle(LUXURY_FASHION_HOUSE_DEFAULTS), "folio-silk");
+  const teaser = resolveFashionTeaser({
+    house: FEMMORA_HOUSE_DEFAULTS,
+    filmSrc: FEMMORA_STORE_FILM,
+    filmPoster: FEMMORA_STORE_POSTER,
+  });
+  assert.equal(teaser.poster, FEMMORA_STORE_POSTER);
+  assert.equal(teaser.src, null);
+  const dedicated = resolveFashionTeaser({
+    house: { ...FEMMORA_HOUSE_DEFAULTS, teaserClipUrl: "/templates/femmora/teaser.mp4" },
+    filmSrc: FEMMORA_STORE_FILM,
+    filmPoster: FEMMORA_STORE_POSTER,
+  });
+  assert.equal(dedicated.src, "/templates/femmora/teaser.mp4");
+  const valeTeaser = resolveFashionTeaser({
+    house: MAISON_VALE_HOUSE,
+    filmSrc: null,
+    filmPoster: null,
+  });
+  assert.equal(valeTeaser.src, null);
 });
 
 test("Maison Vale can replace Instagram through house DNA without code changes", () => {

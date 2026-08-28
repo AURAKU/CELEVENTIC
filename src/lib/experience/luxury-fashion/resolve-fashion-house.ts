@@ -2,7 +2,7 @@ import type { HubTabId } from "@/lib/experience/experience-types";
 import type { InvitationDesignConfig, InvitationEventData, InvitationMediaAsset } from "@/types/invitation-design";
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "./house-defaults";
 import { resolveFashionSocialLinks } from "./social";
-import type { FashionLookbookItem, FashionNavDestination, LuxuryFashionHouseConfig } from "./types";
+import type { FashionLookbookItem, FashionNavDestination, FashionOpeningStyle, LuxuryFashionHouseConfig } from "./types";
 
 export { mergeFashionHouse };
 
@@ -133,5 +133,23 @@ export function resolveFashionChapters(input: {
       socialLinks.length > 0,
     countdown: ch?.countdown !== false && Boolean(input.house.startAtIso) && tabOn("countdown"),
     mapsCta: ch?.maps !== false && Boolean(input.house.mapsUrl),
+  };
+}
+
+export function resolveFashionOpeningStyle(house: LuxuryFashionHouseConfig): FashionOpeningStyle {
+  if (house.openingStyle === "silk-only" || house.openingStyle === "portal-only") {
+    return house.openingStyle;
+  }
+  return "folio-silk";
+}
+
+export function resolveFashionTeaser(input: {
+  house: LuxuryFashionHouseConfig;
+  filmSrc: string | null;
+  filmPoster: string | null;
+}): { src: string | null; poster: string | null } {
+  return {
+    src: input.house.teaserClipUrl?.trim() || null,
+    poster: input.house.teaserPosterUrl?.trim() || input.filmPoster,
   };
 }

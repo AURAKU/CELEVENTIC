@@ -308,7 +308,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   if (cinematicMode) {
     return (
       <div className="relative">
-        {!props.embedded && <InviteGuestHelpFab />}
+        {!props.embedded && (
+          <InviteGuestHelpFab alignEnd={props.design.layout === "luxury-fashion-flagship"} />
+        )}
       <CinematicInvitationSpotlight
         {...props}
         embedded={props.embedded}
@@ -463,7 +465,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         )}
 
         <div className="mx-auto max-w-2xl px-4 py-6 invite-content-pad space-y-8">
-          {!props.embedded && <InviteGuestHelpFab />}
+          {!props.embedded && (
+            <InviteGuestHelpFab alignEnd={props.design.layout === "luxury-fashion-flagship"} />
+          )}
           {lifecyclePhase === "event-day" && (
             <PortalSection id="event-day">
               <EventDayBanner
