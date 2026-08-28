@@ -174,13 +174,32 @@
     linear-gradient(180deg, rgba(251, 247, 240, 0.12) 0%, rgba(28, 22, 19, 0.08) 100%);
 }
 
-.fashionRoot .eventBeat,
+.fashionRoot .brandMarkLogo {
+  width: clamp(10rem, 48vw, 17.5rem);
+  height: clamp(10rem, 48vw, 17.5rem);
+  margin-bottom: 1.35rem;
+}
+
+.fashionRoot .eventBeat {
+  max-width: none;
+  color: #1c1613;
+  font-size: calc(clamp(2.4rem, 13vw, 4.8rem) * var(--tap-scale, 1));
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  line-height: 0.95;
+  white-space: normal;
+  text-shadow: none;
+}
+
 .fashionRoot .kickerBeat {
   color: #a67c52;
 }
 
 .fashionRoot .scriptBeat {
+  margin-top: 0.55rem;
   color: #8a5a12;
+  font-size: calc(clamp(1.35rem, 5.2vw, 1.85rem) * var(--tap-scale, 1));
+  text-shadow: none;
 }
 
 .fashionHint {

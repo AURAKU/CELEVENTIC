@@ -117,7 +117,6 @@ export function FashionCampaignHero({
                 ) : null}
                 {chapters.mapsCta ? (
                   <FashionMapsPreview
-                    compact
                     mapsUrl={house.mapsUrl}
                     locationName={house.locationName}
                     address={house.address}

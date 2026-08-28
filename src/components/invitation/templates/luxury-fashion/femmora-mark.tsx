@@ -14,8 +14,8 @@ export function FashionHouseMark({
         className={className}
         src={house.logoUrl}
         alt=""
-        width={96}
-        height={96}
+        width={560}
+        height={560}
         style={{ objectFit: "contain" }}
       />
     );

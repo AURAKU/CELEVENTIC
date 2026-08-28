@@ -18,10 +18,12 @@ import {
 } from "@/lib/experience/luxury-fashion";
 import { trackSocialLinkClick } from "@/lib/invitation/social-link-analytics";
 import { requestInvitationReplay } from "@/lib/experience/replay-invitation";
+import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import { FashionCampaignHero } from "./luxury-fashion/fashion-campaign-hero";
 import { FashionEditorialIndex } from "./luxury-fashion/fashion-editorial-index";
 import { FashionBoutiqueExperience } from "./luxury-fashion/fashion-boutique-experience";
+import { FashionFlyerExperience } from "./luxury-fashion/fashion-flyer-experience";
 import { FashionStoreBrowse } from "./luxury-fashion/fashion-store-browse";
 import { EditorialLookbook } from "./luxury-fashion/editorial-lookbook";
 import { LuxuryLocationScene } from "./luxury-fashion/luxury-location-scene";
@@ -312,16 +314,28 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
       />
 
       {chapters.experience ? (
-        <FashionBoutiqueExperience
-          houseName={house.houseName}
-          open={boutiqueOpen}
-          available={navLabels.map((item) => item.id)}
-          onClose={() => setBoutiqueOpen(false)}
-          onSelect={(id) => {
-            setCurrent(id);
-            scrollTo(id);
-          }}
-        />
+        house.experienceFlyerUrl?.trim() ? (
+          <FashionFlyerExperience
+            houseName={house.houseName}
+            flyerUrl={house.experienceFlyerUrl}
+            open={boutiqueOpen}
+            onClose={() => {
+              forceUnlockRevealScroll();
+              setBoutiqueOpen(false);
+            }}
+          />
+        ) : (
+          <FashionBoutiqueExperience
+            houseName={house.houseName}
+            open={boutiqueOpen}
+            available={navLabels.map((item) => item.id)}
+            onClose={() => setBoutiqueOpen(false)}
+            onSelect={(id) => {
+              setCurrent(id);
+              scrollTo(id);
+            }}
+          />
+        )
       ) : null}
     </article>
   );

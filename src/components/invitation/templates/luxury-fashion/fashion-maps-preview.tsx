@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
-import { FashionFactMark } from "./fashion-fact-marks";
 import styles from "./luxury-fashion-flagship.module.css";
 
 export function FashionMapsPreview({
@@ -68,9 +67,7 @@ export function FashionMapsPreview({
         )}
         <span className={styles.mapsPreviewVeil} aria-hidden />
         <span className={styles.mapsPreviewFoil} aria-hidden />
-        <span className={styles.mapsPreviewPin} aria-hidden>
-          <FashionFactMark kind="location" />
-        </span>
+        <span className={styles.mapsPreviewPin} aria-hidden />
         <span className={styles.mapsPreviewHint} aria-hidden>
           Tap to open directions
         </span>

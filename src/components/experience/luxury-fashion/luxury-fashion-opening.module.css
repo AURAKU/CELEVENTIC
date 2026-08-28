@@ -775,9 +775,10 @@
 }
 
 .envelopeMark {
-  width: 4.2rem;
-  height: 4.2rem;
+  width: clamp(6.5rem, 28vw, 10rem);
+  height: clamp(6.5rem, 28vw, 10rem);
   color: var(--ff-gold-deep, #a67c52);
+  object-fit: contain;
 }
 
 .envelopeHouse {

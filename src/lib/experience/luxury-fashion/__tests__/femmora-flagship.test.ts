@@ -6,6 +6,7 @@ import {
   FASHION_SILK_DRAG_PX,
   FASHION_WHISPER_MS,
   FEMMORA_HOUSE_DEFAULTS,
+  FEMMORA_INVITATION_FLYER,
   FEMMORA_LOGO_MARK,
   FEMMORA_MAPS_URL,
   FEMMORA_STORE_FILM,
@@ -18,6 +19,7 @@ import {
   fashionTokenStyleFromColors,
   mergeFashionHouse,
   resolveFashionChapters,
+  resolveFashionExperienceFlyer,
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
@@ -35,6 +37,10 @@ import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engin
 import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { buildInviteShareChannelHref, buildInviteSharePayload } from "@/lib/invitation/invite-share";
 import { buildGoogleCalendarUrl, toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
+import { getLayoutMusicProfile } from "@/lib/invitation/layout-music-identity";
+import { getCatalogMusicProfile } from "@/lib/invitation/catalog-music-identity";
+import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
+import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
 
 test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => {
   assert.equal(FEMMORA_HOUSE_DEFAULTS.houseName, "FEMMORA");
@@ -42,7 +48,9 @@ test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => 
   assert.equal(FEMMORA_HOUSE_DEFAULTS.address, "Westlands");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.hoursLabel, "9 AM TO 8 PM EACH DAY");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.datesLabel, "29TH & 30TH AUGUST");
-  assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperLine, "A private first look");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperScript, "Soft Opening");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.experienceFlyerUrl, FEMMORA_INVITATION_FLYER);
+  assert.equal(resolveFashionExperienceFlyer(FEMMORA_HOUSE_DEFAULTS), FEMMORA_INVITATION_FLYER);
   assert.equal(FEMMORA_HOUSE_DEFAULTS.unveilingLabel, "TAP TO OPEN");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.openingStyle, "card-envelope");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.envelopeFaceLine, "PRIVATE INVITATION");
@@ -207,7 +215,9 @@ test("layout engine defaults are generic, not Femmora", () => {
 
 test("Maison Vale fixture uses the same engine with zero Femmora DNA", () => {
   assert.deepEqual(assertHouseIsNotFemmora(MAISON_VALE_HOUSE), []);
-  assert.equal(MAISON_VALE_HOUSE.houseName, "MAISON VALE");
+  assert.equal(MAISON_VALE_HOUSE.whisperScript, "In darker gold");
+  assert.equal(MAISON_VALE_HOUSE.experienceFlyerUrl ?? null, null);
+  assert.equal(resolveFashionExperienceFlyer(MAISON_VALE_HOUSE), null);
   assert.equal(MAISON_VALE_HOUSE.address, "Kilimani");
   assert.equal(MAISON_VALE_HOUSE.silkStyle, "espresso-gold");
   assert.equal(MAISON_VALE_HOUSE.filmUrl, null);
@@ -367,4 +377,34 @@ test("Maison Vale can replace Instagram through house DNA without code changes",
     looksCount: 2,
   });
   assert.equal(chapters.social, true);
+});
+
+test("Femmora flagship default music is licensed cinematic ambient, not Atelier Quiet", () => {
+  const layout = getLayoutMusicProfile("luxury-fashion-flagship");
+  assert.equal(layout.bundledFile, "ambient-cinematic");
+  assert.equal(layout.title, "Flagship Cinematic");
+  assert.notEqual(layout.title, "Atelier Quiet");
+  const catalog = getCatalogMusicProfile("femmora-flagship-soft-opening");
+  assert.ok(catalog);
+  assert.equal(catalog?.bundledFile, "ambient-cinematic");
+  assert.equal(catalog?.title, "Femmora Flagship Score");
+  assert.notEqual(catalog?.title, "Femmora Atelier Quiet");
+  const design = getDefaultDesignConfig("femmora-flagship-soft-opening");
+  const resolved = resolveInvitationMusic({
+    design,
+    catalogSlug: "femmora-flagship-soft-opening",
+  });
+  assert.equal(resolved.hasMusic, true);
+  assert.equal(resolved.musicSelection?.title, "Femmora Flagship Score");
+  assert.match(resolved.musicSelection?.url ?? "", /ambient-cinematic/);
+  assert.equal(resolved.musicSelection?.autoPlay, true);
+  const preview = buildLivePreviewProps("luxury-fashion-flagship", "Lunch", {
+    catalogSlug: "femmora-flagship-soft-opening",
+    features: ["Music"],
+    musicEnabled: true,
+  });
+  assert.equal(preview.musicSelection?.title, "Femmora Flagship Score");
+  assert.match(preview.musicSelection?.url ?? "", /ambient-cinematic/);
+  const lunchJazz = buildLivePreviewProps("classic-gold", "Lunch", { musicEnabled: true });
+  assert.notEqual(lunchJazz.musicSelection?.title, "Femmora Flagship Score");
 });

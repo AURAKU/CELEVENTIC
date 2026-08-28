@@ -8,6 +8,7 @@ export {
   FEMMORA_HOUSE_DEFAULTS,
   FEMMORA_INSTAGRAM_HANDLE,
   FEMMORA_INSTAGRAM_URL,
+  FEMMORA_INVITATION_FLYER,
   FEMMORA_LOGO_MARK,
   FEMMORA_MAPS_URL,
   FEMMORA_SILK_BED,
@@ -41,6 +42,7 @@ export {
 } from "./social";
 export {
   resolveFashionChapters,
+  resolveFashionExperienceFlyer,
   resolveFashionFilm,
   resolveFashionFlyerCard,
   resolveFashionHouse,

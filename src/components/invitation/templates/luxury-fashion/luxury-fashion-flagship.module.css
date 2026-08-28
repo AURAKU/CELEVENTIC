@@ -119,8 +119,8 @@
 
 .masthead {
   display: grid;
-  justify-items: start;
-  text-align: left;
+  justify-items: center;
+  text-align: center;
   gap: 0.35rem;
 }
 
@@ -138,8 +138,9 @@
 }
 
 .campaignMark:has(img) {
-  width: 5.6rem;
-  height: 5.6rem;
+  width: clamp(10rem, 42vw, 17.5rem);
+  height: clamp(10rem, 42vw, 17.5rem);
+  margin-inline: auto;
   border: 0;
   filter: none;
 }
@@ -248,7 +249,8 @@
 .mapsPreview {
   display: block;
   margin: 0.9rem 0 0;
-  max-width: 32rem;
+  width: 100%;
+  max-width: none;
   text-decoration: none;
   color: inherit;
   isolation: isolate;
@@ -257,7 +259,7 @@
 }
 
 .mapsPreviewCompact {
-  max-width: 22rem;
+  width: 100%;
 }
 
 .mapsPreview:hover,
@@ -270,7 +272,7 @@
   overflow: hidden;
   isolation: isolate;
   aspect-ratio: 16 / 10;
-  min-height: 11rem;
+  min-height: 14.5rem;
   background: var(--ff-cream, #f3ebe0);
   border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 78%, transparent);
   box-shadow:
@@ -280,7 +282,7 @@
 }
 
 .mapsPreviewCompact .mapsPreviewFrame {
-  min-height: 9.75rem;
+  min-height: 13.75rem;
 }
 
 .mapsPreview iframe,
@@ -337,17 +339,20 @@
   display: grid;
   place-items: center;
   transform: translate(-50%, -62%);
-  color: var(--ff-espresso, #2c211c);
   background:
     radial-gradient(circle at 35% 30%, #fffdf8, var(--ff-ivory, #f7f1e8) 46%, var(--ff-champagne, #d9c4a0) 100%);
   border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 80%, transparent);
   box-shadow: 0 10px 22px rgba(28, 22, 19, 0.18);
 }
 
-.mapsPreviewPin .factMark {
-  width: 1.15rem;
-  height: 1.15rem;
-  margin: 0;
+.mapsPreviewPin::after {
+  content: "";
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #fff8ea 0%, var(--ff-gold, #c4a574) 42%, var(--ff-gold-deep, #8a6240) 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 55%, transparent);
 }
 
 .mapsPreviewHint {
@@ -1173,6 +1178,54 @@
   font-size: 0.68rem;
 }
 
+.flyerExperience {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding:
+    max(4.5rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(1.25rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+  background: var(--ff-ivory, #f7f1e8);
+}
+
+.flyerSilk {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 18%, rgba(255, 248, 230, 0.9) 0%, transparent 58%),
+    linear-gradient(168deg, #fbf7f0 0%, #f3ebe0 46%, #e6d4bc 100%);
+}
+
+.flyerPhoto {
+  position: relative;
+  z-index: 1;
+  width: min(96vw, 56rem);
+  height: min(82svh, 100%);
+  object-fit: contain;
+  box-shadow: 0 28px 64px rgba(28, 22, 19, 0.22);
+}
+
+.flyerClose {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  left: max(1rem, env(safe-area-inset-left, 0px));
+  z-index: 2;
+  min-height: 2.75rem;
+  padding: 0 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--ff-espresso, #2c211c);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 @media (min-width: 900px) {
   .filmFrame:not(.filmFrameCampaign) {
     width: min(100%, 22rem);
@@ -1194,6 +1247,11 @@
     grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
     gap: 3.5rem;
     min-height: calc(100svh - 7rem);
+  }
+
+  .mapsPreviewFrame,
+  .mapsPreviewCompact .mapsPreviewFrame {
+    min-height: 17.5rem;
   }
 
   .campaignFilm {

@@ -77,6 +77,8 @@ export interface LuxuryFashionHouseConfig {
   teaserPosterUrl?: string | null;
   /** Invitation flyer artwork used as the rising card face — never as hub wallpaper. */
   flyerCardUrl?: string | null;
+  /** Full-screen ENTER EXPERIENCE flyer. When set, replaces the 2.5D boutique. */
+  experienceFlyerUrl?: string | null;
   mapsCtaLabel?: string;
   copyLocationLabel?: string;
   shareLocationLabel?: string;

@@ -478,8 +478,9 @@ export function TapToBeginExperience({
               <Image
                 src={markUrl}
                 alt=""
-                width={96}
-                height={96}
+                width={560}
+                height={560}
+                sizes="(max-width: 768px) 48vw, 280px"
                 className={styles.brandMarkImg}
                 unoptimized={shouldUnoptimizeNextImage(markUrl)}
               />

@@ -14,9 +14,10 @@ export const FEMMORA_END_ISO = "2026-08-30T20:00:00+03:00";
 export const FEMMORA_MAPS_URL =
   "https://www.google.com/maps/search/?api=1&query=Femmora%20GH%20Westlands";
 
-/** Invitation flyer artwork — card face only, never a page wallpaper. */
+/** Invitation flyer artwork — card face and ENTER EXPERIENCE, never hub wallpaper. */
 export const FEMMORA_SILK_BED = "/templates/femmora/silk-bed.jpg";
-export const FEMMORA_FLYER_CARD = FEMMORA_SILK_BED;
+export const FEMMORA_INVITATION_FLYER = "/templates/femmora/invitation-flyer.jpg";
+export const FEMMORA_FLYER_CARD = FEMMORA_INVITATION_FLYER;
 export const FEMMORA_LOGO_MARK = "/templates/femmora/logo-mark.png";
 export const FEMMORA_STORE_FILM = "/templates/femmora/store-preview.mp4";
 export const FEMMORA_STORE_POSTER = "/templates/femmora/store-poster.jpg";
@@ -56,7 +57,7 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     unveilingLabel: "TAP TO OPEN",
     whisperLine: "A private first look",
     whisperEyebrow: "FEMMORA",
-    whisperScript: "UNVEILED",
+    whisperScript: "Soft Opening",
     hubLede: "An invitation to experience the world of Femmora.",
     portalWelcome: "STEP INSIDE FEMMORA",
     portalPrompt: "The house is waiting",
@@ -88,6 +89,7 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     lookbookItems: FEMMORA_DEFAULT_LOOKS,
     silkBedUrl: null,
     flyerCardUrl: FEMMORA_FLYER_CARD,
+    experienceFlyerUrl: FEMMORA_INVITATION_FLYER,
     startAtIso: FEMMORA_START_ISO,
     endAtIso: FEMMORA_END_ISO,
     filmUrl: FEMMORA_STORE_FILM,

@@ -151,3 +151,7 @@ export function resolveFashionTeaser(): { src: string | null; poster: string | n
 export function resolveFashionFlyerCard(house: LuxuryFashionHouseConfig): string | null {
   return house.flyerCardUrl?.trim() || null;
 }
+
+export function resolveFashionExperienceFlyer(house: LuxuryFashionHouseConfig): string | null {
+  return house.experienceFlyerUrl?.trim() || house.flyerCardUrl?.trim() || null;
+}

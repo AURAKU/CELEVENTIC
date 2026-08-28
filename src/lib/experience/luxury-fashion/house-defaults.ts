@@ -20,6 +20,8 @@ export function mergeFashionHouse(
     folioFaceLine: override.envelopeFaceLine ?? override.folioFaceLine ?? base.envelopeFaceLine ?? base.folioFaceLine,
     cardCtaLabel: override.cardCtaLabel ?? base.cardCtaLabel,
     flyerCardUrl: override.flyerCardUrl === undefined ? base.flyerCardUrl : override.flyerCardUrl,
+    experienceFlyerUrl:
+      override.experienceFlyerUrl === undefined ? base.experienceFlyerUrl : override.experienceFlyerUrl,
     visitDayOptions:
       override.visitDayOptions !== undefined ? override.visitDayOptions : base.visitDayOptions,
     socialLinks: override.socialLinks !== undefined ? override.socialLinks : base.socialLinks,
@@ -87,6 +89,7 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   lookbookItems: [] as FashionLookbookItem[],
   silkBedUrl: null,
   flyerCardUrl: null,
+  experienceFlyerUrl: null,
   startAtIso: "",
   endAtIso: "",
   timeZone: "Africa/Nairobi",
