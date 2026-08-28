@@ -1082,6 +1082,45 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     buttonStyle: "corporate-solid",
   },
   {
+    slug: "femmora-flagship-soft-opening",
+    name: "Femmora Flagship Opening",
+    description:
+      "Ivory silk unveil into a boutique portal, atelier film and editorial lookbook for a luxury flagship soft opening.",
+    category: "Corporate",
+    style: "Editorial",
+    layoutSlug: "luxury-fashion-flagship",
+    previewGradient: "from-stone-100 via-amber-50 to-stone-200",
+    isPremium: true,
+    isNew: true,
+    mood: "Luxury",
+    features: ["RSVP", "Gallery", "Countdown", "Maps", "Music", "Share", "Video"],
+    tier: "premium",
+    tags: ["fashion", "flagship", "boutique", "launch", "editorial"],
+    colorFamily: "ivory-champagne",
+    hasParallax: false,
+    themeId: "femmora-champagne",
+    motionProfileId: "gentle-drift",
+    creativeBrief: {
+      creativeConcept:
+        "Femmora Flagship Soft Opening — Celeventic intro into a silk unveil, boutique portal and atelier film",
+      emotionalTone: "quiet-luxury",
+      visualLanguage: "ivory silk, champagne light, mocha type, editorial index, portrait film frame",
+      revealMechanic: "silk unveil then boutique portal",
+      audioMood: "quiet lounge jazz",
+      outroType: "credits page",
+    },
+    experienceOverrides: {
+      introVariant: "silk-whisper",
+      openingExperience: "luxury-fashion-flagship",
+      sceneTransition: "door",
+      outroExperience: "credits-page",
+      typographyPackId: "editorial",
+      slideshowStyle: "magazine",
+      countdownStyle: "luxury",
+    },
+    buttonStyle: "editorial-underline",
+  },
+  {
     slug: "custom-media",
     name: "Your Canvas",
     description: "Upload your artwork, video, or PDF. We frame it cinematically",
@@ -1972,6 +2011,8 @@ const BROWSE_FAMILY_BY_SLUG: Record<string, string> = {
   "product-launch-pulse": "family-product-launch",
   "investor-night-pass": "family-investor-night",
   "keynote-agenda-flip": "family-keynote-agenda",
+  "femmora-flagship-soft-opening": "family-fashion-flagship",
+  "luxury-fashion-flagship": "family-fashion-flagship",
 };
 
 /** When browse ranks tie, prefer the family primary SKU. */
@@ -1995,6 +2036,7 @@ const BROWSE_FAMILY_PREFERRED_SLUG: Record<string, string> = {
   "family-product-launch": "product-launch-pulse",
   "family-investor-night": "investor-night-pass",
   "family-keynote-agenda": "keynote-agenda-flip",
+  "family-fashion-flagship": "femmora-flagship-soft-opening",
 };
 
 function browseDedupeKey(t: CatalogTemplate): string {

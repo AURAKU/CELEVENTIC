@@ -755,6 +755,30 @@ export function PremiumInviteWrapper({
             textColorOverride={experience?.welcomeTextColor}
             accentColorOverride={experience?.welcomeAccentColor}
             scrim={experience?.welcomeScrim}
+            ctaLabelOverride={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? experience?.fashionHouse?.unveilingLabel || "Enter the Unveiling"
+                : undefined
+            }
+            brandMarkLetter={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? experience?.fashionHouse?.monogram
+                : undefined
+            }
+            brandMarkUrl={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? experience?.fashionHouse?.logoUrl
+                : undefined
+            }
+            eventBeatOverride={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? {
+                    eyebrow: experience?.fashionHouse?.whisperEyebrow,
+                    script: experience?.fashionHouse?.whisperScript,
+                    plain: experience?.fashionHouse?.whisperLine,
+                  }
+                : undefined
+            }
           />
         </CeremonyErrorBoundary>
       </>
@@ -867,6 +891,7 @@ export function PremiumInviteWrapper({
               sealEmblem={sealEmblem}
               sealStyle={sealStyle}
               openingCopy={openingCopy}
+              fashionHouse={experience?.fashionHouse}
               embedded={Boolean(embedded)}
               autoOpen={envelopeAutoOpen}
               allowSkip={false}

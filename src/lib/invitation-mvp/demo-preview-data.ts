@@ -8,6 +8,7 @@ import { syncDesignPageBackground } from "@/lib/invitation/studio-media-utils";
 import { getLayoutVisualProfile } from "@/lib/experience/layout-visual-profiles";
 import { getLayoutEnabledTabs } from "@/lib/invitation/layout-template-signatures";
 import { EVENT_TIME_ZONE } from "@/lib/constants";
+import { FEMMORA_MAPS_URL, FEMMORA_START_ISO } from "@/lib/experience/luxury-fashion/femmora-preset";
 import {
   buildCatalogDemoMemorialVisionBoard,
   buildCatalogDemoVisionBoard,
@@ -227,7 +228,13 @@ export function buildLivePreviewProps(
   const visual = getLayoutVisualProfile(layoutSlug);
   const layoutTabs = getLayoutEnabledTabs(layoutSlug);
 
-  const eventInstantIso = FUTURE_DATE.toISOString();
+  const isFemmoraSku = identitySlug === "femmora-flagship-soft-opening";
+  const isFashionFlagship =
+    layoutSlug === "luxury-fashion-flagship" || isFemmoraSku;
+  const fashionHouse = baseDesign.experience?.fashionHouse;
+  const fashionStartIso = fashionHouse?.startAtIso?.trim() || (isFemmoraSku ? FEMMORA_START_ISO : "");
+  const fashionStart = fashionStartIso ? new Date(fashionStartIso) : FUTURE_DATE;
+  const eventInstantIso = isFashionFlagship && fashionStartIso ? fashionStart.toISOString() : FUTURE_DATE.toISOString();
   const contactPhone = "+233 25 766 0734";
   const demoIdentity = {
     title: demo.title,
@@ -309,11 +316,23 @@ export function buildLivePreviewProps(
     title: demo.title,
     hostName: demo.hostName,
     description: demo.message,
-    startDate: formatDemoDate(FUTURE_DATE),
+    startDate: isFashionFlagship
+      ? fashionStart.toLocaleDateString("en-US", {
+          timeZone: "Africa/Nairobi",
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : formatDemoDate(FUTURE_DATE),
     startDateRaw: eventInstantIso,
     venueName: demo.venueName,
     landmark: demo.landmark,
-    mapsLink: "https://maps.google.com",
+    mapsLink: isFashionFlagship
+      ? fashionHouse?.mapsUrl || (isFemmoraSku ? FEMMORA_MAPS_URL : "")
+      : "https://maps.google.com",
     contactPhone,
     dressCode: demo.dressCode ?? null,
     coverImageUrl: getDemoHeroUrl(layoutSlug, theme, identitySlug),

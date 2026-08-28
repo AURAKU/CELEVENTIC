@@ -281,6 +281,17 @@ export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProf
     fadeInSec: 1.5,
     fadeOutSec: 1,
   },
+  "luxury-fashion-flagship": {
+    trackId: "layout-luxury-fashion-flagship",
+    title: "Atelier Quiet",
+    category: "lounge",
+    bundledFile: "jazz-soft-lounge",
+    startSec: 0,
+    endSec: 72,
+    volume: 0.32,
+    fadeInSec: 2.2,
+    fadeOutSec: 1.4,
+  },
 };
 
 export function getLayoutMusicProfile(layout: string): LayoutMusicProfile {

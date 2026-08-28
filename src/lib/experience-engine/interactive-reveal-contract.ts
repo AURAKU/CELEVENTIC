@@ -246,6 +246,14 @@ export const REVEAL_MECHANIC_CONTRACTS: Record<RevealMechanicId, InteractiveReve
     gestureHint: "Lift the wax seal",
     keyboardLabel: "Lift the seal and open the gate",
   },
+  "luxury-fashion-flagship": {
+    mechanic: "luxury-fashion-flagship",
+    openingExperience: "luxury-fashion-flagship",
+    supportsKeyboardFallback: true,
+    supportsReducedMotion: true,
+    gestureHint: "Draw the silk, then open the house",
+    keyboardLabel: "Unveil and enter",
+  },
   none: {
     mechanic: "none",
     openingExperience: "none",
@@ -297,6 +305,7 @@ const OPENING_TO_MECHANIC: Partial<Record<OpeningExperienceId, RevealMechanicId>
   archway: "archway",
   "petal-fall": "petal-fall",
   "blush-gate": "blush-gate",
+  "luxury-fashion-flagship": "luxury-fashion-flagship",
   none: "none",
 };
 

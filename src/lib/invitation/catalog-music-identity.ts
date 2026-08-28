@@ -302,6 +302,17 @@ export const CATALOG_MUSIC_IDENTITY: Record<string, LayoutMusicProfile> = {
     fadeInSec: 1.8,
     fadeOutSec: 1.1,
   },
+  "femmora-flagship-soft-opening": {
+    trackId: "catalog-femmora-flagship-soft-opening",
+    title: "Femmora Atelier Quiet",
+    category: "lounge",
+    bundledFile: "jazz-soft-lounge",
+    startSec: 0,
+    endSec: 72,
+    volume: 0.3,
+    fadeInSec: 2.4,
+    fadeOutSec: 1.4,
+  },
 };
 
 export function getCatalogMusicProfile(catalogSlug: string | null | undefined): LayoutMusicProfile | null {

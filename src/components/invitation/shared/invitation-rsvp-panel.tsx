@@ -38,6 +38,17 @@ interface InvitationRsvpPanelProps {
   showEmail?: boolean;
   /** Celebration vs memorial reply chrome (button language & styling). */
   tone?: "celebration" | "memorial";
+  /** Optional guest-facing labels. Values posted to the API stay ACCEPTED/DECLINED/MAYBE. */
+  choiceLabels?: {
+    accepted?: string;
+    declined?: string;
+    maybe?: string;
+  };
+  onSubmitted?: (status: PersistedRsvpChoice) => void;
+  /** Optional note posted through the existing RSVP `message` field. */
+  guestMessage?: string;
+  /** Replaces the default thank-you line after a successful reply. */
+  successCopy?: string;
 }
 
 export function InvitationRsvpPanel({
@@ -53,6 +64,10 @@ export function InvitationRsvpPanel({
   initialAttendingCount = null,
   showEmail = true,
   tone = "celebration",
+  choiceLabels,
+  onSubmitted,
+  guestMessage,
+  successCopy,
 }: InvitationRsvpPanelProps) {
   const { t } = useLocale();
   const memorial = tone === "memorial";
@@ -113,9 +128,10 @@ export function InvitationRsvpPanel({
       phone: phone.trim() || undefined,
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
+    const note = guestMessage?.trim();
     const payload = guestId
-      ? { guestId, response, ...contact }
-      : { invitationId, guestName: guestName.trim(), response, ...contact };
+      ? { guestId, response, ...contact, ...(note ? { message: note } : {}) }
+      : { invitationId, guestName: guestName.trim(), response, ...contact, ...(note ? { message: note } : {}) };
 
     if (!guestId && !guestName.trim()) {
       setError(t("rsvp.name_required"));
@@ -136,6 +152,7 @@ export function InvitationRsvpPanel({
         status: response,
         attendingCount: cappedAttending,
       });
+      onSubmitted?.(response);
     } else setError(data.error || t("rsvp.submit_failed"));
     setLoading(false);
   }
@@ -166,7 +183,9 @@ export function InvitationRsvpPanel({
         }
       >
         <p className={memorial ? "inv-rsvp-confirmed-title" : undefined}>
-          {t("rsvp.title")}: {rsvpStatus.replace(/_/g, " ")}, {t("rsvp.thank_you")}
+          {successCopy?.trim()
+            ? successCopy.trim()
+            : `${t("rsvp.title")}: ${rsvpStatus.replace(/_/g, " ")}, ${t("rsvp.thank_you")}`}
         </p>
         {rsvpStatus === "ACCEPTED" && allowance > 1 ? (
           <p className={memorial ? "inv-rsvp-confirmed-detail" : "text-sm font-normal opacity-90"}>
@@ -186,21 +205,21 @@ export function InvitationRsvpPanel({
   }> = [
     {
       id: "ACCEPTED",
-      label: t("rsvp.accept"),
+      label: choiceLabels?.accepted ?? t("rsvp.accept"),
       whisper: memorial ? "With the family" : "",
       icon: Check,
       tone: "accept",
     },
     {
       id: "DECLINED",
-      label: t("rsvp.decline"),
+      label: choiceLabels?.declined ?? t("rsvp.decline"),
       whisper: memorial ? "With deep regret" : "",
       icon: X,
       tone: "decline",
     },
     {
       id: "MAYBE",
-      label: t("rsvp.maybe"),
+      label: choiceLabels?.maybe ?? t("rsvp.maybe"),
       whisper: memorial ? "Still hoping" : "",
       icon: HelpCircle,
       tone: "maybe",
@@ -372,7 +391,7 @@ export function InvitationRsvpPanel({
             onClick={() => handleRsvp("ACCEPTED")}
             disabled={loading}
           >
-            <Check className="h-4 w-4 mr-1" /> {t("rsvp.accept")}
+            <Check className="h-4 w-4 mr-1" /> {choiceLabels?.accepted ?? t("rsvp.accept")}
           </Button>
           <Button
             size="sm"
@@ -381,7 +400,7 @@ export function InvitationRsvpPanel({
             onClick={() => handleRsvp("DECLINED")}
             disabled={loading}
           >
-            <X className="h-4 w-4 mr-1" /> {t("rsvp.decline")}
+            <X className="h-4 w-4 mr-1" /> {choiceLabels?.declined ?? t("rsvp.decline")}
           </Button>
           <Button
             size="sm"
@@ -390,7 +409,7 @@ export function InvitationRsvpPanel({
             onClick={() => handleRsvp("MAYBE")}
             disabled={loading}
           >
-            <HelpCircle className="h-4 w-4 mr-1" /> {t("rsvp.maybe")}
+            <HelpCircle className="h-4 w-4 mr-1" /> {choiceLabels?.maybe ?? t("rsvp.maybe")}
           </Button>
         </div>
       )}

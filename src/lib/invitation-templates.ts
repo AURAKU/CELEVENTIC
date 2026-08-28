@@ -10,6 +10,12 @@ import {
 } from "@/lib/invitation/template-creative-registry";
 import { DEFAULT_WEDDING_BOARD } from "@/lib/invitation/wedding-board";
 import { EVENT_TIME_ZONE } from "@/lib/constants";
+import {
+  FEMMORA_CATALOG_SLUG,
+  FEMMORA_HOUSE_DEFAULTS,
+  LUXURY_FASHION_LAYOUT_SLUG,
+} from "@/lib/experience/luxury-fashion/femmora-preset";
+import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion/house-defaults";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -279,6 +285,36 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       config: t.config,
     } satisfies InvitationTemplatePreset;
   }),
+  {
+    slug: "luxury-fashion-flagship",
+    name: "Luxury Fashion Flagship",
+    description:
+      "Silk unveil into a boutique portal, store film and editorial lookbook for a retail opening",
+    category: "corporate",
+    preview: { gradient: "from-stone-100 via-amber-50 to-stone-200", accent: "#C4A574" },
+    config: {
+      layout: "luxury-fashion-flagship",
+      colors: {
+        primary: "#2C211C",
+        secondary: "#C4A574",
+        accent: "#9A7A48",
+        background: "#FBF7F0",
+        text: "#2C211C",
+      },
+      fonts: { heading: "Marcellus", script: "EB Garamond", body: "EB Garamond", eyebrow: "Marcellus", presetId: "editorial-vow" },
+      animation: "fade",
+      ornament: "gold-frame",
+      introText: "SOFT OPENING",
+      studio: {
+        revealMode: "envelope",
+        buttonStyle: "editorial-underline",
+        fullScreen: true,
+        headingSize: 28,
+        bodySize: 15,
+        scriptSize: 22,
+      },
+    },
+  },
 ];
 
 export function getTemplatePreset(slug: string): InvitationTemplatePreset | undefined {
@@ -318,7 +354,12 @@ export function getUniqueTemplatePresets(): InvitationTemplatePreset[] {
 }
 
 export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignConfig {
-  const catalog = templateSlug ? getCatalogTemplate(templateSlug) : undefined;
+  const catalogRaw = templateSlug ? getCatalogTemplate(templateSlug) : undefined;
+  /** Layout engine slug must not inherit the Femmora SKU when no catalogue id is selected. */
+  const catalog =
+    templateSlug === LUXURY_FASHION_LAYOUT_SLUG && catalogRaw?.slug !== templateSlug
+      ? undefined
+      : catalogRaw;
   const layoutSlug = catalog?.layoutSlug ?? templateSlug;
   const preset = layoutSlug ? getTemplatePreset(layoutSlug) : INVITATION_TEMPLATE_PRESETS[0];
   const base = preset?.config ?? INVITATION_TEMPLATE_PRESETS[0].config;
@@ -348,9 +389,24 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
   const identityStudio = buttonStyle
     ? { ...enriched.studio, buttonStyle }
     : enriched.studio;
+  const fashionHouse =
+    layoutSlug === LUXURY_FASHION_LAYOUT_SLUG
+      ? mergeFashionHouse(
+          catalog?.slug === FEMMORA_CATALOG_SLUG ? FEMMORA_HOUSE_DEFAULTS : LUXURY_FASHION_HOUSE_DEFAULTS,
+          identityExperience?.fashionHouse
+        )
+      : identityExperience?.fashionHouse;
   const identified: InvitationDesignConfig = {
     ...enriched,
-    experience: identityExperience,
+    experience: fashionHouse
+      ? {
+          ...identityExperience,
+          fashionHouse,
+          ...(layoutSlug === LUXURY_FASHION_LAYOUT_SLUG
+            ? { viralFooterEnabled: identityExperience?.viralFooterEnabled ?? false }
+            : {}),
+        }
+      : identityExperience,
     studio: identityStudio,
   };
 
@@ -358,6 +414,9 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
   // the paged viewer; the catalog's motion profile overrides the theme default
   // (free tier is always still).
   const theme = getInvitationTheme(catalog?.themeId);
+  if (theme && layoutSlug === LUXURY_FASHION_LAYOUT_SLUG && !catalog?.blueprintId) {
+    return applyThemeToDesign(identified, theme);
+  }
   if (theme && catalog?.blueprintId) {
     const motionProfileId = catalog.motionProfileId ?? theme.motion.profileId;
     return applyThemeToDesign(

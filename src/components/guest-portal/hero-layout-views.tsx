@@ -285,6 +285,15 @@ export function HeroLayoutView({
         </div>
       );
 
+    case "fashion-editorial":
+      return (
+        <div className={`text-center px-8 max-w-md mx-auto ${rootClass}`}>
+          <p className="text-[10px] uppercase tracking-[0.46em] mb-5" style={{ color: secondary }}>Soft Opening</p>
+          <h1 className="font-[family-name:var(--font-marcellus)] text-3xl sm:text-5xl tracking-[0.32em] uppercase" style={{ color: primary }}>{name1 || "House"}</h1>
+          <p className="mt-6 text-sm tracking-[0.22em] uppercase" style={{ color: secondary }}>{dateLine}</p>
+        </div>
+      );
+
     case "classic-centered":
     default:
       return (

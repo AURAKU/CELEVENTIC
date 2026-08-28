@@ -142,6 +142,7 @@ const SINGLE_HEADLINE_LAYOUTS = new Set([
   "memorial-candle-tribute",
   "neon-celebration-party",
   "corporate-prestige-summit",
+  "luxury-fashion-flagship",
 ]);
 
 export function resolveHeadlineNames(opts: {

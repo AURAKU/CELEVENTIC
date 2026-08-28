@@ -116,6 +116,12 @@ export const PUBLIC_CATALOG_COPY: Record<string, PublicCatalogCopy> = {
     description: "Kinetic grid into agenda chapters and split media for executive events.",
     style: "Modern",
   },
+  "luxury-fashion-flagship": {
+    name: "Luxury Fashion Flagship",
+    description:
+      "Ivory silk unveil into a boutique portal, store film and editorial lookbook for a luxury retail opening.",
+    style: "Editorial",
+  },
   "custom-media": {
     name: "Your Canvas",
     description: "Upload your artwork, video or PDF. We frame it cinematically.",
@@ -252,6 +258,12 @@ export const PUBLIC_CATALOG_COPY: Record<string, PublicCatalogCopy> = {
     description:
       "Keynote stage agenda with flip chapters, speaker lineup and calendar save.",
     style: "Boardroom",
+  },
+  "femmora-flagship-soft-opening": {
+    name: "Femmora Flagship Opening",
+    description:
+      "Ivory silk unveil into a boutique portal, atelier film and editorial lookbook for a luxury flagship soft opening.",
+    style: "Editorial",
   },
 };
 
@@ -438,6 +450,26 @@ export const CATALOG_DEMO_IDENTITIES: Record<string, DemoIdentity> = {
     venueName: "Kempinski Gold Coast City",
     landmark: "Accra",
     dressCode: "Business formal",
+  },
+  "luxury-fashion-flagship": {
+    title: "Flagship Opening",
+    hostName: "THE HOUSE",
+    message: "A quiet house. A first light. You are invited to the flagship unveiling.",
+    invitationName: "Flagship Opening",
+    venueName: "The House",
+    landmark: "",
+    dressCode: "Atelier dress",
+    sealInitials: "H",
+  },
+  "femmora-flagship-soft-opening": {
+    title: "Soft Opening",
+    hostName: "FEMMORA",
+    message: "A quiet house. A first light. You are invited to the Femmora flagship unveiling.",
+    invitationName: "Femmora Soft Opening",
+    venueName: "FEMMORA GH",
+    landmark: "Westlands",
+    dressCode: "Atelier dress",
+    sealInitials: "F",
   },
   "custom-media": {
     title: "The Owusu Family Premiere",

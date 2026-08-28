@@ -287,6 +287,12 @@ export const INTRO_VARIANTS: Record<IntroVariantId, IntroVariantMeta> = {
     tagline: "Ledger lines open into investor night…",
     showHud: false,
   },
+  "silk-whisper": {
+    id: "silk-whisper",
+    label: "Silk Whisper",
+    tagline: "A quiet house is about to unveil…",
+    showHud: false,
+  },
 };
 
 export const INTRO_VARIANT_OPTIONS = Object.values(INTRO_VARIANTS);
@@ -317,6 +323,7 @@ export function defaultIntroVariantFor(options: {
   if (match("kente", "heritage", "adinkra", "traditional")) return "ink-reveal";
   if (match("floral", "garden", "boho", "bloom", "romance")) return "logo-bloom";
   if (match("neon", "party", "concert", "celebration", "birthday")) return "particle-burst";
+  if (match("fashion", "flagship", "femmora", "boutique", "atelier")) return "silk-whisper";
   if (match("corporate", "conference", "summit", "prestige")) return "light-sweep";
   if (match("glass", "crystal", "acrylic", "frost")) return "glass-shimmer";
   if (match("velvet", "cinematic", "midnight", "film", "premiere")) return "film-title";

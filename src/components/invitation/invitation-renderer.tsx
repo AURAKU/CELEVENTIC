@@ -12,6 +12,7 @@ import { GlassAcrylicTemplate } from "./templates/glass-acrylic";
 import { FloralGardenTemplate } from "./templates/floral-garden";
 import { TraditionalMarriageCeremonyTemplate } from "./templates/traditional-marriage-ceremony";
 import { ForeverAfarisWeddingTemplate } from "./templates/forever-afaris-wedding";
+import { LuxuryFashionFlagshipTemplate } from "./templates/luxury-fashion-flagship";
 import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
 import { InvitationMediaProvider } from "./invitation-media-context";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
@@ -43,6 +44,8 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
         return <TraditionalMarriageCeremonyTemplate {...props} />;
       case "forever-afaris-wedding":
         return <ForeverAfarisWeddingTemplate {...props} />;
+      case "luxury-fashion-flagship":
+        return <LuxuryFashionFlagshipTemplate {...props} />;
       case "passport-luxe":
         return <PassportLuxeTemplate {...props} />;
       case "glass-acrylic":

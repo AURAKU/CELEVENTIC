@@ -159,6 +159,13 @@ const PROFILES: Record<InvitationLayoutSlug, LayoutVisualProfile> = {
     vignette: "soft",
     overlayGradient: "from-slate-900/50 via-teal-950/30 to-black/75",
   },
+  "luxury-fashion-flagship": {
+    background: "radial-gradient(120% 90% at 50% 0%, #fffdf8 0%, #fbf7f0 48%, #f4ede1 100%)",
+    accentGlow: "rgba(196,165,116,0.35)",
+    environment: "none",
+    vignette: "soft",
+    overlayGradient: "from-amber-50/20 via-transparent to-stone-100/40",
+  },
 };
 
 export function getLayoutVisualProfile(layout: string): LayoutVisualProfile {

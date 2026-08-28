@@ -20,6 +20,7 @@ export type InvitationLayoutSlug =
   | "memorial-candle-tribute"
   | "neon-celebration-party"
   | "corporate-prestige-summit"
+  | "luxury-fashion-flagship"
   | "traditional-marriage-ceremony"
   | "forever-afaris-wedding";
 

@@ -459,6 +459,23 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     typographyPackId: "corporate",
     backgroundPackId: "static",
   },
+  "luxury-fashion-flagship": {
+    collectionId: "editorial",
+    openingExperience: "luxury-fashion-flagship",
+    outroExperience: "credits-page",
+    defaultAudioCategory: "lounge",
+    defaultAudioTrackId: "jazz-soft-lounge",
+    buttonStyle: "editorial-underline",
+    hubMode: "scroll",
+    countdownStyle: "luxury",
+    sceneTransition: "door",
+    heroLayout: "fashion-editorial",
+    slideshowStyle: "magazine",
+    pacing: "slow",
+    slideDurationMs: 8000,
+    typographyPackId: "editorial",
+    backgroundPackId: "static",
+  },
 };
 
 export function getTemplateExperienceDNA(layout: InvitationLayoutSlug | string): TemplateExperienceDNA {
@@ -534,9 +551,10 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
           body: typographyPack.body,
         }
       : design.fonts,
-    colors: backgroundPack && !preserveUserColors
-      ? { ...design.colors, background: backgroundPack.preview }
-      : design.colors,
+    colors:
+      backgroundPack && !preserveUserColors && design.layout !== "luxury-fashion-flagship"
+        ? { ...design.colors, background: backgroundPack.preview }
+        : design.colors,
     studio,
     experience: {
       ...dnaExperience,
@@ -572,6 +590,8 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
       defaultAudioTrackId: userExp.defaultAudioTrackId ?? dnaExperience.defaultAudioTrackId,
       collectionId: userExp.collectionId ?? dnaExperience.collectionId,
       enableRevealSounds: userExp.enableRevealSounds ?? dnaExperience.enableRevealSounds,
+      fashionHouse: userExp.fashionHouse,
+      viralFooterEnabled: userExp.viralFooterEnabled,
     },
   };
 }

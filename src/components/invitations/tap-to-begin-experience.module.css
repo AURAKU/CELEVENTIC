@@ -132,6 +132,29 @@
   padding: 2.1rem 1.85rem;
 }
 
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 4.25rem;
+  height: 4.25rem;
+  margin: 0 auto 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--tap-gold) 70%, transparent);
+  color: var(--tap-gold);
+  animation: tap-line-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+.brandMarkImg {
+  width: 2.4rem;
+  height: 2.4rem;
+  object-fit: contain;
+}
+
+.brandMarkLetter {
+  font-family: var(--tap-font-family, var(--font-marcellus), Marcellus, serif);
+  font-size: calc(1.65rem * var(--tap-scale, 1));
+  letter-spacing: 0.12em;
+}
+
 .eventBeat {
   margin: 0;
   max-width: min(100%, 28rem);
