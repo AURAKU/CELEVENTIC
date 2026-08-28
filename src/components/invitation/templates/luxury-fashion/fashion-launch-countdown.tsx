@@ -15,14 +15,19 @@ function parts(ms: number) {
 
 export function FashionLaunchCountdown({
   startAtIso,
+  endAtIso,
   beforeLabel,
   afterLabel,
+  endedLabel,
 }: {
   startAtIso: string;
+  endAtIso?: string;
   beforeLabel: string;
   afterLabel: string;
+  endedLabel?: string;
 }) {
-  const target = Number.isNaN(Date.parse(startAtIso)) ? null : Date.parse(startAtIso);
+  const start = Number.isNaN(Date.parse(startAtIso)) ? null : Date.parse(startAtIso);
+  const end = endAtIso && !Number.isNaN(Date.parse(endAtIso)) ? Date.parse(endAtIso) : null;
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -31,14 +36,15 @@ export function FashionLaunchCountdown({
     return () => window.clearInterval(id);
   }, []);
 
-  const remaining = target == null || now == null ? null : target - now;
+  const remaining = start == null || now == null ? null : start - now;
+  const ended = end != null && now != null && now >= end;
   const open = remaining != null && remaining <= 0;
   const value = remaining == null ? { days: 0, hours: 0, minutes: 0, seconds: 0 } : parts(remaining);
 
   return (
     <div data-testid="fashion-countdown" suppressHydrationWarning>
-      <p className={styles.kicker}>{open ? afterLabel : beforeLabel}</p>
-      {!open ? (
+      <p className={styles.kicker}>{ended ? endedLabel || afterLabel : open ? afterLabel : beforeLabel}</p>
+      {!open && !ended ? (
         <div className={styles.countdown} aria-live="polite">
           {(
             [
@@ -55,7 +61,7 @@ export function FashionLaunchCountdown({
           ))}
         </div>
       ) : (
-        <p className={styles.lede}>The house is receiving guests.</p>
+        <p className={styles.lede}>{ended ? endedLabel || afterLabel : afterLabel}</p>
       )}
     </div>
   );

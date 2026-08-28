@@ -88,10 +88,13 @@ export function GuestQuickActions({
 export function InviteGuestHelpFab({
   className,
   guideHref = "/guide?role=GUEST",
+  alignEnd = false,
 }: {
   className?: string;
   /** Full Guest help page — offered after / beside the tour video. */
   guideHref?: string;
+  /** Fashion flagship: keep the FAB off the campaign masthead and CTAs. */
+  alignEnd?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const titleId = useId();
@@ -137,7 +140,10 @@ export function InviteGuestHelpFab({
     <>
       <div
         className={cn(
-          "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center",
+          "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex",
+          alignEnd
+            ? "justify-end pr-[max(0.75rem,env(safe-area-inset-right))] pl-3"
+            : "justify-center",
           "pb-[max(1rem,env(safe-area-inset-bottom))] pt-3",
           className
         )}
@@ -147,7 +153,7 @@ export function InviteGuestHelpFab({
           onClick={openTour}
           className={cn(
             "pointer-events-auto group inline-flex flex-col items-center gap-1.5",
-            "min-h-[3.5rem] rounded-full px-5 py-2.5",
+            alignEnd ? "min-h-11 min-w-11 rounded-full px-2.5 py-2" : "min-h-[3.5rem] rounded-full px-5 py-2.5",
             "bg-white/95 backdrop-blur-md border border-[#0B8A83]/25",
             "shadow-[0_8px_28px_rgba(11,138,131,0.22),0_2px_8px_rgba(15,23,42,0.08)]",
             "hover:border-[#0B8A83]/45 hover:shadow-[0_10px_32px_rgba(11,138,131,0.28)]",
@@ -165,13 +171,15 @@ export function InviteGuestHelpFab({
               alt={BRAND_LOGO_ALT}
               width={120}
               height={36}
-              className="h-8 w-auto object-contain sm:h-9"
+              className={alignEnd ? "h-6 w-auto object-contain" : "h-8 w-auto object-contain sm:h-9"}
               priority={false}
             />
           </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#0B8A83]">
-            Help & tour
-          </span>
+          {alignEnd ? null : (
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#0B8A83]">
+              Help & tour
+            </span>
+          )}
         </button>
       </div>
 

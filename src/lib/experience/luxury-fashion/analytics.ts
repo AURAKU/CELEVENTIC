@@ -7,10 +7,16 @@ import { trackInviteEvent } from "@/lib/analytics/invite-events";
 export type FashionInviteAction =
   | "intro_viewed"
   | "whisper_seen"
+  | "opening_started"
+  | "folio_viewed"
+  | "folio_opened"
   | "unveil_started"
   | "silk_opened"
+  | "silk_reveal_opened"
   | "doors_opened"
+  | "portal_opened"
   | "unveil_completed"
+  | "replay_unveiling"
   | "store_preview_started"
   | "store_preview_completed"
   | "collection_opened"
@@ -24,6 +30,8 @@ export type FashionInviteAction =
   | "lookbook_item_viewed"
   | "film_started"
   | "film_completed"
+  | "store_film_play"
+  | "store_film_complete"
   | "film_muted"
   | "film_fullscreen";
 

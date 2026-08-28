@@ -17,8 +17,23 @@ export function useGestureArming(enabled = true, armMs = FASHION_GESTURE_ARM_MS)
       return;
     }
     setArmed(false);
-    const id = window.setTimeout(() => setArmed(true), armMs);
-    return () => window.clearTimeout(id);
+    let timeoutId = 0;
+
+    const arm = () => {
+      window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => setArmed(true), armMs);
+    };
+
+    const onPointerSettled = () => arm();
+    window.addEventListener("pointerup", onPointerSettled, true);
+    window.addEventListener("pointercancel", onPointerSettled, true);
+    arm();
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("pointerup", onPointerSettled, true);
+      window.removeEventListener("pointercancel", onPointerSettled, true);
+    };
   }, [armMs, enabled]);
 
   return armed;

@@ -6,11 +6,14 @@ import { useReducedMotion } from "framer-motion";
 import {
   FASHION_DOORS_OPEN_MS,
   FASHION_EXIT_POINTER_MS,
+  FASHION_FOLIO_OPEN_MS,
   FASHION_REDUCED_OPEN_MS,
   FASHION_SILK_DRAG_PX,
   FASHION_SILK_OPEN_MS,
   fashionTokenStyleForSilk,
   resolveFashionFilm,
+  resolveFashionOpeningStyle,
+  resolveFashionTeaser,
   type FashionOpeningPhase,
   type LuxuryFashionHouseConfig,
 } from "@/lib/experience/luxury-fashion";
@@ -19,6 +22,7 @@ import { trackFashionAction } from "@/lib/experience/luxury-fashion/analytics";
 import { LUXURY_FASHION_LAYOUT_SLUG } from "@/lib/experience/luxury-fashion/femmora-preset";
 import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import { FashionFilmScene } from "@/components/invitation/templates/luxury-fashion/fashion-film-scene";
+import { FashionFolioScene } from "./fashion-folio-scene";
 import styles from "./luxury-fashion-opening.module.css";
 
 export interface LuxuryFashionOpeningExperienceProps {
@@ -64,6 +68,12 @@ export function LuxuryFashionOpeningExperience(props: LuxuryFashionOpeningExperi
   );
 }
 
+function initialPhase(style: ReturnType<typeof resolveFashionOpeningStyle>): FashionOpeningPhase {
+  if (style === "portal-only") return "doors-opening";
+  if (style === "silk-only") return "arming-silk";
+  return "arming-folio";
+}
+
 function LuxuryFashionOpeningStage({
   house,
   eventTitle,
@@ -73,8 +83,9 @@ function LuxuryFashionOpeningStage({
   embedded = false,
   allowSkip = false,
 }: LuxuryFashionOpeningExperienceProps) {
-  const reduceMotion = useReducedMotion();
-  const [phase, setPhase] = useState<FashionOpeningPhase>("arming-silk");
+  const reduceMotion = Boolean(useReducedMotion());
+  const openingStyle = resolveFashionOpeningStyle(house);
+  const [phase, setPhase] = useState<FashionOpeningPhase>(() => initialPhase(openingStyle));
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
   const [silkDraw, setSilkDraw] = useState(0);
   const started = useRef(false);
@@ -83,19 +94,38 @@ function LuxuryFashionOpeningStage({
   const dragOrigin = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const film = resolveFashionFilm({ house });
+  const teaser = resolveFashionTeaser({ house, filmSrc: film.src, filmPoster: film.poster });
   const filmEnabled = house.chapters?.film !== false && Boolean(film.src);
 
+  const folioSealed = phase === "arming-folio" || phase === "folio";
+  const folioOpening = phase === "folio-opening";
+  const folioArmed = useGestureArming(folioSealed);
   const silkArmed = useGestureArming(phase === "arming-silk" || phase === "silk");
-  const silkInteractive = (phase === "silk" || phase === "arming-silk") && silkArmed;
-  const sealed = phase === "arming-silk" || phase === "silk";
+  const silkInteractive =
+    openingStyle === "silk-only" && (phase === "silk" || phase === "arming-silk") && silkArmed;
+  const sealedSilk = phase === "arming-silk" || phase === "silk";
   const filming = phase === "film";
-  const ceremony =
-    phase === "silk-opening" || phase === "doors-opening" || phase === "complete";
+  const silkOpen =
+    phase === "silk-opening" ||
+    phase === "doors-opening" ||
+    phase === "film" ||
+    phase === "complete" ||
+    openingStyle === "portal-only";
+  const doorsOpen = phase === "doors-opening" || phase === "film" || phase === "complete";
+  const ceremony = silkOpen || phase === "folio-opening";
 
   useEffect(() => {
     trackFashionAction("whisper_seen", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
     trackFashionAction("intro_viewed", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
-  }, []);
+    trackFashionAction("opening_started", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+    if (openingStyle === "folio-silk") {
+      trackFashionAction("folio_viewed", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+    }
+  }, [openingStyle]);
+
+  useEffect(() => {
+    if (phase === "arming-folio" && folioArmed) setPhase("folio");
+  }, [phase, folioArmed]);
 
   useEffect(() => {
     if (phase === "arming-silk" && silkArmed) setPhase("silk");
@@ -133,29 +163,69 @@ function LuxuryFashionOpeningStage({
     finish();
   }, [filmEnabled, finish]);
 
+  const continueCeremony = useCallback(
+    (from: "silk" | "doors") => {
+      const silkMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_SILK_OPEN_MS;
+      const doorMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_DOORS_OPEN_MS;
+      if (from === "silk") {
+        setPhase("silk-opening");
+        timers.current.push(
+          window.setTimeout(() => {
+            setPhase("doors-opening");
+            trackFashionAction("doors_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+            trackFashionAction("portal_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+          }, silkMs)
+        );
+        timers.current.push(window.setTimeout(() => enterFilmOrFinish(), silkMs + doorMs));
+        return;
+      }
+      setPhase("doors-opening");
+      trackFashionAction("doors_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+      trackFashionAction("portal_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+      timers.current.push(window.setTimeout(() => enterFilmOrFinish(), doorMs));
+    },
+    [enterFilmOrFinish, reduceMotion]
+  );
+
   const openSilk = useCallback(() => {
-    if (!silkInteractive || started.current) return;
+    if (started.current) return;
+    if (openingStyle === "silk-only" && !silkInteractive) return;
     started.current = true;
     dragOrigin.current = null;
     setSilkDraw(1);
     onBegin?.();
     trackFashionAction("unveil_started", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
     trackFashionAction("silk_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
-    setPhase("silk-opening");
-    const silkMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_SILK_OPEN_MS;
-    const doorMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_DOORS_OPEN_MS;
+    trackFashionAction("silk_reveal_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+    continueCeremony("silk");
+  }, [continueCeremony, onBegin, openingStyle, silkInteractive]);
+
+  const openFolio = useCallback(() => {
+    if (!folioArmed || started.current || !folioSealed) return;
+    started.current = true;
+    onBegin?.();
+    trackFashionAction("folio_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+    setPhase("folio-opening");
+    const folioMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_FOLIO_OPEN_MS;
     timers.current.push(
       window.setTimeout(() => {
-        setPhase("doors-opening");
-        trackFashionAction("doors_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
-      }, silkMs)
+        started.current = false;
+        openSilk();
+      }, folioMs)
     );
-    timers.current.push(window.setTimeout(() => enterFilmOrFinish(), silkMs + doorMs));
-  }, [enterFilmOrFinish, onBegin, reduceMotion, silkInteractive]);
+  }, [folioArmed, folioSealed, onBegin, openSilk, reduceMotion]);
+
+  const portalOnce = useRef(false);
+  useEffect(() => {
+    if (openingStyle !== "portal-only" || portalOnce.current) return;
+    portalOnce.current = true;
+    onBegin?.();
+    continueCeremony("doors");
+  }, [continueCeremony, onBegin, openingStyle]);
 
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
-      if (reduceMotion || ceremony || filming) return;
+      if (reduceMotion || ceremony || filming || folioSealed) return;
       const rect = event.currentTarget.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
       setPointer({
@@ -169,7 +239,7 @@ function LuxuryFashionOpeningStage({
       setSilkDraw(Math.min(1, dist / 160));
       if (dist >= FASHION_SILK_DRAG_PX) openSilk();
     },
-    [ceremony, filming, openSilk, reduceMotion, silkInteractive]
+    [ceremony, filming, folioSealed, openSilk, reduceMotion, silkInteractive]
   );
 
   const onSilkPointerDown = useCallback(
@@ -183,23 +253,23 @@ function LuxuryFashionOpeningStage({
 
   const onSilkPointerUp = useCallback(() => {
     dragOrigin.current = null;
-    if (sealed) setSilkDraw(0);
-  }, [sealed]);
+    if (sealedSilk) setSilkDraw(0);
+  }, [sealedSilk]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (filming) return;
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        if (silkInteractive) openSilk();
-      }
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      if (folioSealed) openFolio();
+      else if (silkInteractive) openSilk();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filming, openSilk, silkInteractive]);
+  }, [filming, folioSealed, openFolio, openSilk, silkInteractive]);
 
-  const silkOpen = ceremony || filming;
-  const doorsOpen = phase === "doors-opening" || phase === "film" || phase === "complete";
+  const showFolio = openingStyle === "folio-silk" && !filming;
+  const showSilkHit = openingStyle === "silk-only" && !filming;
   const label = `Draw the silk to unveil ${house.houseName}`;
 
   return (
@@ -218,14 +288,15 @@ function LuxuryFashionOpeningStage({
       }
       data-testid="luxury-fashion-opening"
       data-fashion-phase={phase}
-      data-fashion-armed={String(silkInteractive)}
+      data-fashion-armed={String(folioSealed ? folioArmed : silkInteractive)}
+      data-opening-style={openingStyle}
       data-silk-style={house.silkStyle}
       onPointerMove={onPointerMove}
     >
       <div className={`${styles.light} ${silkOpen ? styles.lightCeremony : ""}`} aria-hidden />
       <div className={styles.grain} aria-hidden />
 
-      {silkOpen ? (
+      {silkOpen || openingStyle !== "folio-silk" || folioOpening ? (
         <div className={styles.doors} data-testid="fashion-boutique-portal" aria-hidden>
           <div
             className={`${styles.panel} ${styles.panelLeft} ${
@@ -246,36 +317,50 @@ function LuxuryFashionOpeningStage({
         </div>
       ) : null}
 
-      <div className={styles.silk} aria-hidden>
-        <div
-          className={`${styles.silkLeft} ${
-            silkOpen
-              ? reduceMotion
-                ? styles.reducedOpenLeft
-                : styles.openLeft
-              : !reduceMotion
-                ? styles.breatheLeft
-                : ""
-          }`}
-        >
-          <span className={styles.silkFold} />
+      {openingStyle !== "portal-only" ? (
+        <div className={styles.silk} aria-hidden>
+          <div
+            className={`${styles.silkLeft} ${
+              silkOpen
+                ? reduceMotion
+                  ? styles.reducedOpenLeft
+                  : styles.openLeft
+                : !reduceMotion
+                  ? styles.breatheLeft
+                  : ""
+            }`}
+          >
+            <span className={styles.silkFold} />
+          </div>
+          <div
+            className={`${styles.silkRight} ${
+              silkOpen
+                ? reduceMotion
+                  ? styles.reducedOpenRight
+                  : styles.openRight
+                : !reduceMotion
+                  ? styles.breatheRight
+                  : ""
+            }`}
+          >
+            <span className={styles.silkFold} />
+          </div>
         </div>
-        <div
-          className={`${styles.silkRight} ${
-            silkOpen
-              ? reduceMotion
-                ? styles.reducedOpenRight
-                : styles.openRight
-              : !reduceMotion
-                ? styles.breatheRight
-                : ""
-          }`}
-        >
-          <span className={styles.silkFold} />
-        </div>
-      </div>
+      ) : null}
 
-      {!filming ? (
+      {showFolio ? (
+        <FashionFolioScene
+          house={house}
+          teaserSrc={teaser.src}
+          teaserPoster={teaser.poster}
+          open={folioOpening || silkOpen || filming}
+          armed={folioArmed}
+          reduceMotion={reduceMotion}
+          onOpen={openFolio}
+        />
+      ) : null}
+
+      {!filming && !showFolio ? (
         <div className={styles.mark}>
           <div className={styles.monogram} aria-hidden>
             {house.monogram}
@@ -283,7 +368,13 @@ function LuxuryFashionOpeningStage({
           <p className={styles.house}>{house.houseName}</p>
           <p className={styles.whisper}>{silkOpen ? house.portalWelcome : house.whisperLine}</p>
           <p className={styles.hint}>
-            {silkOpen ? house.portalPrompt : reduceMotion ? "Reveal" : "Draw the silk"}
+            {silkOpen
+              ? house.portalPrompt
+              : reduceMotion
+                ? "Reveal"
+                : openingStyle === "silk-only"
+                  ? "Draw the silk"
+                  : house.portalPrompt}
           </p>
           {guestName ? (
             <p className={styles.whisper} style={{ marginTop: "0.4rem" }}>
@@ -294,17 +385,19 @@ function LuxuryFashionOpeningStage({
         </div>
       ) : null}
 
-      <button
-        type="button"
-        className={styles.hit}
-        data-testid="fashion-silk-stage"
-        aria-label={label}
-        disabled={!silkInteractive}
-        onPointerDown={onSilkPointerDown}
-        onPointerUp={onSilkPointerUp}
-        onPointerCancel={onSilkPointerUp}
-        onClick={openSilk}
-      />
+      {showSilkHit ? (
+        <button
+          type="button"
+          className={styles.hit}
+          data-testid="fashion-silk-stage"
+          aria-label={label}
+          disabled={!silkInteractive}
+          onPointerDown={onSilkPointerDown}
+          onPointerUp={onSilkPointerUp}
+          onPointerCancel={onSilkPointerUp}
+          onClick={openSilk}
+        />
+      ) : null}
 
       {filming ? (
         <div className={styles.filmLayer} data-testid="fashion-opening-film">
@@ -313,12 +406,14 @@ function LuxuryFashionOpeningStage({
             poster={film.poster}
             cta={house.filmCta}
             skipLabel={house.filmSkipLabel}
-            onStarted={() =>
-              trackFashionAction("film_started", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG })
-            }
-            onCompleted={() =>
-              trackFashionAction("film_completed", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG })
-            }
+            onStarted={() => {
+              trackFashionAction("film_started", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+              trackFashionAction("store_film_play", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+            }}
+            onCompleted={() => {
+              trackFashionAction("film_completed", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+              trackFashionAction("store_film_complete", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+            }}
             onMuteToggle={() =>
               trackFashionAction("film_muted", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG })
             }

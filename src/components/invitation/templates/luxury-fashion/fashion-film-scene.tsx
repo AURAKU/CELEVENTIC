@@ -14,11 +14,13 @@ export function FashionFilmScene({
   onContinue,
   onMuteToggle,
   onFullscreen,
+  variant = "default",
 }: {
   src: string | null;
   poster: string | null;
   cta: string;
   skipLabel: string;
+  variant?: "default" | "campaign";
   onStarted?: () => void;
   onCompleted?: () => void;
   onContinue: () => void;
@@ -131,7 +133,12 @@ export function FashionFilmScene({
   }
 
   return (
-    <div className={`${styles.filmFrame} ${entered ? styles.filmFrameExpanded : ""}`} data-testid="fashion-film-scene">
+    <div
+      className={`${styles.filmFrame} ${variant === "campaign" ? styles.filmFrameCampaign : ""} ${
+        entered && variant !== "campaign" ? styles.filmFrameExpanded : ""
+      }`}
+      data-testid="fashion-film-scene"
+    >
       {poster && !playing ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img className={styles.filmPoster} src={poster} alt="" />

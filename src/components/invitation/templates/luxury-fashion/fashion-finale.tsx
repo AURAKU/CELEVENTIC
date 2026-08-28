@@ -12,6 +12,8 @@ export function FashionFinale({
   onLocation,
   onShare,
   onReplayFilm,
+  replayLabel,
+  onReplayUnveiling,
   onCollection,
   socialLinks,
   onSocial,
@@ -25,6 +27,8 @@ export function FashionFinale({
   onLocation?: () => void;
   onShare?: () => void;
   onReplayFilm?: () => void;
+  replayLabel?: string;
+  onReplayUnveiling?: () => void;
   onCollection?: () => void;
   socialLinks?: ResolvedInvitationSocialLink[];
   onSocial?: (platform: ResolvedInvitationSocialLink["platform"]) => void;
@@ -53,6 +57,11 @@ export function FashionFinale({
         {onShare ? (
           <button type="button" className={styles.cta} onClick={onShare}>
             Share
+          </button>
+        ) : null}
+        {onReplayUnveiling ? (
+          <button type="button" className={styles.cta} onClick={onReplayUnveiling} data-testid="fashion-replay-unveiling">
+            {replayLabel || "Replay the unveiling"}
           </button>
         ) : null}
         {onReplayFilm ? (

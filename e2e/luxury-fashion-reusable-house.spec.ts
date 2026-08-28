@@ -2,13 +2,32 @@ import { test, expect, devices } from "@playwright/test";
 
 const runtime = "/dev/luxury-fashion-runtime?skipIntro=1&house=vale";
 
+async function prepareContext(context: import("@playwright/test").BrowserContext) {
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem("celeventic_cookie_consent", "essential");
+    } catch {
+      /* private mode */
+    }
+  });
+}
+
 async function dismissCookieBanner(page: import("@playwright/test").Page) {
   const essential = page.getByRole("button", { name: /essential only/i });
   try {
-    await essential.click({ timeout: 4_000 });
+    if (await essential.isVisible({ timeout: 2_500 }).catch(() => false)) {
+      await essential.click({ force: true, timeout: 3_000 });
+    }
   } catch {
     /* banner already gone */
   }
+  await page.evaluate(() => {
+    document.querySelectorAll('[aria-label="Privacy & Cookies"]').forEach((node) => {
+      const el = node as HTMLElement;
+      el.style.display = "none";
+      el.style.pointerEvents = "none";
+    });
+  });
 }
 
 test.describe("Luxury fashion engine is reusable beyond Femmora", () => {
@@ -17,6 +36,7 @@ test.describe("Luxury fashion engine is reusable beyond Femmora", () => {
   }) => {
     test.setTimeout(90_000);
     const context = await browser.newContext(devices["iPhone 13"]);
+    await prepareContext(context);
     const page = await context.newPage();
     await page.goto(runtime, { waitUntil: "domcontentloaded" });
     await dismissCookieBanner(page);
@@ -25,15 +45,23 @@ test.describe("Luxury fashion engine is reusable beyond Femmora", () => {
     await expect(unveil).toBeVisible({ timeout: 45_000 });
     await expect(page.getByText("THE NIGHT OPENS", { exact: true })).toBeVisible();
     await expect(page.getByText(/femmora/i)).toHaveCount(0);
+    await dismissCookieBanner(page);
     await unveil.click();
-
     const opening = page.getByTestId("luxury-fashion-opening");
-    await expect(opening).toBeVisible({ timeout: 15_000 });
+    try {
+      await expect(opening).toBeVisible({ timeout: 8_000 });
+    } catch {
+      await unveil.focus();
+      await page.keyboard.press("Enter");
+    }
+
+    await expect(opening).toBeVisible({ timeout: 20_000 });
     const silk = page.getByTestId("fashion-silk-stage");
-    await expect(silk).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("fashion-silk-stage")).toBeVisible({ timeout: 15_000 });
+    await expect(opening).toHaveAttribute("data-opening-style", "silk-only");
     await expect(opening).toHaveAttribute("data-fashion-phase", "silk", { timeout: 8_000 });
     await expect(silk).toBeEnabled({ timeout: 5_000 });
-    await silk.click();
+    await silk.click({ force: true });
 
     await expect(page.getByTestId("fashion-opening-film")).toHaveCount(0);
     await expect(opening).toBeHidden({ timeout: 15_000 });

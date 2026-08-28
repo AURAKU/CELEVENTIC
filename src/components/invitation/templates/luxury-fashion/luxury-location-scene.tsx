@@ -8,11 +8,17 @@ export function LuxuryLocationScene({
   locationName,
   address,
   mapsUrl,
+  mapsCtaLabel = "View on Google Maps",
+  copyLabel = "Copy location",
+  shareLabel = "Share location",
   onMaps,
 }: {
   locationName: string;
   address: string;
   mapsUrl: string;
+  mapsCtaLabel?: string;
+  copyLabel?: string;
+  shareLabel?: string;
   onMaps?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -51,14 +57,24 @@ export function LuxuryLocationScene({
             onClick={onMaps}
             data-testid="fashion-maps-cta"
           >
-            View on Google Maps
+            {mapsCtaLabel}
           </a>
         ) : null}
-        <button type="button" className={styles.cta} onClick={() => void copyAddress()}>
-          {copied ? "Address copied" : "Copy address"}
+        <button
+          type="button"
+          className={styles.cta}
+          onClick={() => void copyAddress()}
+          data-testid="fashion-copy-location"
+        >
+          {copied ? "Location copied" : copyLabel}
         </button>
-        <button type="button" className={styles.cta} onClick={() => void shareLocation()}>
-          Share location
+        <button
+          type="button"
+          className={styles.cta}
+          onClick={() => void shareLocation()}
+          data-testid="fashion-share-location"
+        >
+          {shareLabel}
         </button>
       </div>
     </div>

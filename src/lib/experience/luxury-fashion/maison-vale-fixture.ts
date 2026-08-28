@@ -44,6 +44,7 @@ export const MAISON_VALE_HOUSE: LuxuryFashionHouseConfig = mergeFashionHouse(
     address: "Kilimani",
     mapsUrl: MAISON_VALE_MAPS_URL,
     silkStyle: "espresso-gold",
+    openingStyle: "silk-only",
     markVariant: "letter",
     filmCta: "Watch the launch",
     filmSkipLabel: "Continue to the invitation",

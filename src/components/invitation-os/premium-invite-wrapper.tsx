@@ -757,7 +757,7 @@ export function PremiumInviteWrapper({
             scrim={experience?.welcomeScrim}
             ctaLabelOverride={
               enrichedDesign.layout === "luxury-fashion-flagship"
-                ? experience?.fashionHouse?.unveilingLabel || "Enter the Unveiling"
+                ? experience?.fashionHouse?.unveilingLabel || "ENTER THE HOUSE"
                 : undefined
             }
             brandMarkLetter={
@@ -777,6 +777,14 @@ export function PremiumInviteWrapper({
                     script: experience?.fashionHouse?.whisperScript,
                     plain: experience?.fashionHouse?.whisperLine,
                   }
+                : undefined
+            }
+            kickerLines={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? [
+                    experience?.fashionHouse?.teaserPlaceLine,
+                    experience?.fashionHouse?.teaserDateLine,
+                  ].filter((line): line is string => Boolean(line?.trim()))
                 : undefined
             }
           />
@@ -894,7 +902,7 @@ export function PremiumInviteWrapper({
               fashionHouse={experience?.fashionHouse}
               embedded={Boolean(embedded)}
               autoOpen={envelopeAutoOpen}
-              allowSkip={false}
+              allowSkip={Boolean(embedded) && openingExperience === "luxury-fashion-flagship"}
               ceremonialDoves={isFuneralExperience}
               onBegin={() => {
                 void startAudio();
