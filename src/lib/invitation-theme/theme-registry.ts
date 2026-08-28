@@ -353,6 +353,41 @@ const oneWeekVigil: InvitationThemeTokens = {
   spacing: { pagePadding: "regular", blockGap: "regular", radius: 12, shadow: "soft" },
 };
 
+/** Luxury fashion flagship — ivory silk, champagne gold, espresso ink. */
+const femmoraChampagne: InvitationThemeTokens = {
+  id: "femmora-champagne",
+  name: "Femmora Champagne",
+  color: {
+    primary: "#2C211C",
+    secondary: "#B8956A",
+    accent: "#D9C4A0",
+    surface: "#F7F1E8",
+    surfaceAlt: "#F3EBE0",
+    ink: "#1C1613",
+    inkMuted: "#6B5344",
+    overlay: "rgba(44, 33, 28, 0.28)",
+  },
+  typography: {
+    displayFont: "marcellus",
+    bodyFont: "eb-garamond",
+    scriptFont: "eb-garamond",
+    scale: 1.08,
+    letterSpacing: "wide",
+  },
+  texture: {
+    backgroundTexture: "linen",
+    dividerStyle: "hairline",
+    frameStyle: "gilded",
+    foilEffect: "gold",
+  },
+  motif: {
+    packId: "gilded-classic",
+    placements: { coverTop: "flourish", divider: "ribbon" },
+  },
+  motion: { profileId: "gentle-drift", intensity: 0.35 },
+  spacing: { pagePadding: "grand", blockGap: "airy", radius: 12, shadow: "soft" },
+};
+
 export const INVITATION_THEMES: Record<string, InvitationThemeTokens> = {
   [gildedSerif.id]: gildedSerif,
   [emeraldArch.id]: emeraldArch,
@@ -364,6 +399,7 @@ export const INVITATION_THEMES: Record<string, InvitationThemeTokens> = {
   [whiteClothHomegoing.id]: whiteClothHomegoing,
   [kenteBorderFarewell.id]: kenteBorderFarewell,
   [oneWeekVigil.id]: oneWeekVigil,
+  [femmoraChampagne.id]: femmoraChampagne,
 };
 
 export const WEDDING_THEME_IDS = [gildedSerif.id, emeraldArch.id, kenteRoyale.id];

@@ -58,6 +58,12 @@ export interface TapToBeginExperienceProps {
   scrim?: "auto" | "on" | "off";
   /** Catalogue tile poster — absolute fill, no interaction, no motion. */
   staticPreview?: boolean;
+  /** Replaces the default "Tap to …" chip when a ceremony authors its own CTA. */
+  ctaLabelOverride?: string | null;
+  /** Optional house monogram shown above the fashion whisper beat. */
+  brandMarkLetter?: string | null;
+  /** Optional brand mark image. Prefer a letter when no asset is uploaded. */
+  brandMarkUrl?: string | null;
 }
 
 const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale"]>, number> = {
@@ -220,6 +226,9 @@ export function TapToBeginExperience({
   accentColorOverride,
   scrim = "auto",
   staticPreview = false,
+  ctaLabelOverride,
+  brandMarkLetter,
+  brandMarkUrl,
 }: TapToBeginExperienceProps) {
   const reduceMotion = useReducedMotion() || staticPreview;
   const [exiting, setExiting] = useState(false);
@@ -316,7 +325,9 @@ export function TapToBeginExperience({
 
   // A lone "BEGIN" floating over a photo reads as decorative type, not a control, // guests need the verb ("tap") spelled out so the gesture is obvious on first look.
   const beginVerb = resolveBeginVerb(layoutSlug, category);
-  const ctaText = `Tap to ${beginVerb}`;
+  const ctaText = ctaLabelOverride?.trim() || `Tap to ${beginVerb}`;
+  const markUrl = brandMarkUrl?.trim() ? resolveMediaUrl(brandMarkUrl) : null;
+  const markLetter = brandMarkLetter?.trim() || null;
   const scrimActive = scrim === "on" || (scrim === "auto" && shouldAutoScrim(layoutSlug, category));
   const stageClass = [styles.stage, scrimActive ? styles.plate : ""].filter(Boolean).join(" ");
   const showHostFallback =
@@ -359,7 +370,7 @@ export function TapToBeginExperience({
     return () => window.removeEventListener("keydown", onKey);
   }, [beginExit, staticPreview]);
 
-  const ariaLabel = `Tap to ${beginVerb.toLowerCase()} the invitation${
+  const ariaLabel = `${ctaText}${
     couple
       ? `, ${couple.name1} and ${couple.name2}`
       : funeralMemorial
@@ -426,6 +437,22 @@ export function TapToBeginExperience({
       <div className={styles.grade} aria-hidden />
 
       <div className={stageClass}>
+        {markUrl || markLetter ? (
+          <div className={styles.brandMark} aria-hidden>
+            {markUrl ? (
+              <Image
+                src={markUrl}
+                alt=""
+                width={72}
+                height={72}
+                className={styles.brandMarkImg}
+                unoptimized={shouldUnoptimizeNextImage(markUrl)}
+              />
+            ) : (
+              <span className={styles.brandMarkLetter}>{markLetter}</span>
+            )}
+          </div>
+        ) : null}
         {showEventBeat ? (
           beat.eyebrow && beat.script ? (
             <>

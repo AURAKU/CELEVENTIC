@@ -385,7 +385,15 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
       : identityExperience?.fashionHouse;
   const identified: InvitationDesignConfig = {
     ...enriched,
-    experience: fashionHouse ? { ...identityExperience, fashionHouse } : identityExperience,
+    experience: fashionHouse
+      ? {
+          ...identityExperience,
+          fashionHouse,
+          ...(layoutSlug === "luxury-fashion-flagship"
+            ? { viralFooterEnabled: identityExperience?.viralFooterEnabled ?? false }
+            : {}),
+        }
+      : identityExperience,
     studio: identityStudio,
   };
 
@@ -393,6 +401,9 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
   // the paged viewer; the catalog's motion profile overrides the theme default
   // (free tier is always still).
   const theme = getInvitationTheme(catalog?.themeId);
+  if (theme && layoutSlug === "luxury-fashion-flagship" && !catalog?.blueprintId) {
+    return applyThemeToDesign(identified, theme);
+  }
   if (theme && catalog?.blueprintId) {
     const motionProfileId = catalog.motionProfileId ?? theme.motion.profileId;
     return applyThemeToDesign(

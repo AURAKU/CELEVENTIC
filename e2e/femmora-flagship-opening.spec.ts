@@ -24,23 +24,40 @@ async function waitForArmedSilk(page: import("@playwright/test").Page) {
   return { opening, silk };
 }
 
+async function continueOpeningFilm(page: import("@playwright/test").Page) {
+  const film = page.getByTestId("fashion-opening-film");
+  await expect(film).toBeVisible({ timeout: 12_000 });
+  await film.getByRole("button", { name: /continue to the invitation/i }).click();
+}
+
+async function assertHubCoveredByOpening(page: import("@playwright/test").Page) {
+  const opening = page.getByTestId("luxury-fashion-opening");
+  await expect(opening).toBeVisible();
+  const covered = await page.evaluate(() => {
+    const mid = document.elementFromPoint(
+      Math.floor(window.innerWidth / 2),
+      Math.floor(window.innerHeight / 2)
+    );
+    return Boolean(mid?.closest('[data-testid="luxury-fashion-opening"]'));
+  });
+  expect(covered).toBe(true);
+  await expect(opening).not.toHaveAttribute("data-fashion-phase", /film|complete/);
+}
+
 async function completeOpening(page: import("@playwright/test").Page) {
   await dismissCookieBanner(page);
-  const unveil = page.getByRole("button", { name: /tap to unveil|enter the unveiling/i });
+  const unveil = page.getByRole("button", { name: /enter the unveiling|tap to unveil/i });
   await expect(unveil).toBeVisible({ timeout: 45_000 });
   await unveil.click();
 
   const { silk } = await waitForArmedSilk(page);
+  await assertHubCoveredByOpening(page);
   await silk.click();
 
-  const doors = page.getByTestId("fashion-boutique-portal");
-  await expect(doors).toBeVisible({ timeout: 8_000 });
-  await page.waitForTimeout(650);
-  await expect(doors).toBeEnabled({ timeout: 5_000 });
-  await doors.click();
-
+  await continueOpeningFilm(page);
   await expect(page.getByTestId("luxury-fashion-opening")).toBeHidden({ timeout: 15_000 });
   await expect(page.getByTestId("luxury-fashion-flagship")).toBeVisible({ timeout: 15_000 });
+  await dismissCookieBanner(page);
 }
 
 async function inviteScroller(page: import("@playwright/test").Page) {
@@ -59,16 +76,22 @@ async function assertScrollUnlocked(page: import("@playwright/test").Page) {
   const freeze = await page.evaluate(() => {
     const html = getComputedStyle(document.documentElement);
     const body = getComputedStyle(document.body);
+    const mid = document.elementFromPoint(Math.floor(window.innerWidth / 2), Math.floor(window.innerHeight / 2));
     return {
       htmlOverflow: html.overflow,
       bodyOverflow: body.overflow,
       bodyTouch: body.touchAction,
       bodyPointer: body.pointerEvents,
+      openingAlive: Boolean(document.querySelector('[data-testid="luxury-fashion-opening"]')),
+      midTestId: (mid as HTMLElement | null)?.closest("[data-testid]")?.getAttribute("data-testid") ?? null,
     };
   });
   expect(freeze.bodyOverflow).not.toBe("hidden");
   expect(freeze.bodyTouch).not.toBe("none");
   expect(freeze.bodyPointer).not.toBe("none");
+  expect(freeze.openingAlive).toBe(false);
+  expect(freeze.midTestId).not.toBe("luxury-fashion-opening");
+  expect(freeze.midTestId).not.toBe("fashion-silk-stage");
 }
 
 async function shot(page: import("@playwright/test").Page, name: string, fullPage = false) {
@@ -83,40 +106,42 @@ async function shotOpening(page: import("@playwright/test").Page, name: string) 
 
 test.describe("Femmora luxury flagship opening", () => {
   test("mobile journey from whisper through invitation actions", async ({ browser }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
     const context = await browser.newContext(devices["iPhone 13"]);
     const page = await context.newPage();
     await page.goto(runtime, { waitUntil: "domcontentloaded" });
     await dismissCookieBanner(page);
     await shot(page, "A-mobile-whisper");
 
-    const unveil = page.getByRole("button", { name: /tap to unveil|enter the unveiling/i });
+    const unveil = page.getByRole("button", { name: /enter the unveiling/i });
     await expect(unveil).toBeVisible({ timeout: 45_000 });
     await shot(page, "B-mobile-tap-to-unveil");
     await unveil.click();
 
     const opening = page.getByTestId("luxury-fashion-opening");
-    await expect(opening).toHaveAttribute("data-fashion-phase", "whisper", { timeout: 15_000 });
+    await expect(opening).toBeVisible({ timeout: 15_000 });
     const silk = page.getByTestId("fashion-silk-stage");
-    await expect(silk).toBeDisabled();
+    await expect(silk).toBeVisible({ timeout: 15_000 });
+    await assertHubCoveredByOpening(page);
+    const leakPhase = await opening.getAttribute("data-fashion-phase");
+    if (leakPhase !== "silk") {
+      await silk.click({ force: true });
+      await expect(opening).not.toHaveAttribute("data-fashion-phase", /silk-opening|doors-opening|film|complete/);
+    }
+    await expect(opening).toHaveAttribute("data-fashion-phase", /arming-silk|silk/);
     await shotOpening(page, "C-mobile-closed-silk");
-    await silk.click({ force: true }).catch(() => undefined);
-    await expect(opening).toHaveAttribute("data-fashion-phase", /whisper|arming-silk|silk/);
-    await expect(opening).not.toHaveAttribute("data-fashion-phase", /doors|complete/);
 
     await expect(opening).toHaveAttribute("data-fashion-phase", "silk", { timeout: 8_000 });
     await expect(silk).toBeEnabled({ timeout: 5_000 });
     await silk.click();
-    await expect(opening).toHaveAttribute("data-fashion-phase", /silk-opening|arming-doors|doors/, { timeout: 3_000 });
+    await expect(opening).toHaveAttribute("data-fashion-phase", /silk-opening|doors-opening|film/, {
+      timeout: 3_000,
+    });
     await shotOpening(page, "D-mobile-silk-opening");
-
-    const doors = page.getByTestId("fashion-boutique-portal");
-    await expect(doors).toBeVisible({ timeout: 8_000 });
-    await page.waitForTimeout(650);
+    await expect(page.getByTestId("fashion-boutique-portal")).toBeVisible({ timeout: 8_000 });
     await shotOpening(page, "E-mobile-boutique-portal");
-    await expect(doors).toBeEnabled({ timeout: 5_000 });
-    await doors.click();
 
+    await continueOpeningFilm(page);
     await expect(page.getByTestId("luxury-fashion-opening")).toBeHidden({ timeout: 15_000 });
     await expect(page.getByTestId("luxury-fashion-flagship")).toBeVisible({ timeout: 15_000 });
     await dismissCookieBanner(page);
@@ -147,6 +172,8 @@ test.describe("Femmora luxury flagship opening", () => {
     await expect(page.getByTestId("fashion-countdown")).toBeVisible();
 
     await page.getByTestId("fashion-rsvp").scrollIntoViewIfNeeded();
+    await expect(page.getByRole("radio", { name: /29 august/i })).toBeVisible();
+    await page.getByRole("radio", { name: /both/i }).click();
     await expect(page.getByRole("button", { name: /yes — i.ll be there|i'll be there/i })).toBeVisible();
     await shot(page, "I-mobile-rsvp");
 
@@ -155,6 +182,7 @@ test.describe("Femmora luxury flagship opening", () => {
 
     await page.getByTestId("fashion-finale").scrollIntoViewIfNeeded();
     await expect(page.getByTestId("fashion-finale")).toContainText(/see you inside|new chapter/i);
+    await expect(page.getByTestId("fashion-finale-actions").getByRole("button", { name: /replay store film/i })).toBeVisible();
     await shot(page, "J-mobile-finale");
 
     const scroller = await inviteScroller(page);
@@ -171,35 +199,40 @@ test.describe("Femmora luxury flagship opening", () => {
     await context.close();
   });
 
+  test("sealed silk waits 12 seconds after Enter the Unveiling", async ({ browser }) => {
+    test.setTimeout(60_000);
+    const context = await browser.newContext(devices["iPhone 13"]);
+    const page = await context.newPage();
+    await page.goto(runtime, { waitUntil: "domcontentloaded" });
+    await dismissCookieBanner(page);
+    await page.getByRole("button", { name: /enter the unveiling/i }).click();
+    const { opening, silk } = await waitForArmedSilk(page);
+    await assertHubCoveredByOpening(page);
+    await page.waitForTimeout(12_000);
+    await expect(opening).toHaveAttribute("data-fashion-phase", "silk");
+    await expect(silk).toBeEnabled();
+    await assertHubCoveredByOpening(page);
+    await silk.click();
+    await continueOpeningFilm(page);
+    await expect(page.getByTestId("luxury-fashion-flagship")).toBeVisible({ timeout: 15_000 });
+    await context.close();
+  });
+
   test("desktop critical journey and rapid tapping does not skip silk", async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     await page.goto(runtime, { waitUntil: "domcontentloaded" });
     await dismissCookieBanner(page);
     await shot(page, "A-desktop-whisper");
-    const unveil = page.getByRole("button", { name: /tap to unveil/i });
+    const unveil = page.getByRole("button", { name: /enter the unveiling/i });
     await expect(unveil).toBeVisible({ timeout: 45_000 });
     await unveil.click({ clickCount: 3 });
-    const opening = page.getByTestId("luxury-fashion-opening");
-    await expect(opening).toBeVisible({ timeout: 15_000 });
-    const silk = page.getByTestId("fashion-silk-stage");
-    await expect(silk).toBeVisible({ timeout: 15_000 });
+    const { opening, silk } = await waitForArmedSilk(page);
+    await assertHubCoveredByOpening(page);
     await silk.click({ clickCount: 4 });
     await expect(opening).toBeVisible();
-    await expect(opening).toHaveAttribute("data-fashion-phase", /whisper|silk|arming-silk|silk-opening|arming-doors|doors/);
-    const doors = page.getByTestId("fashion-boutique-portal");
-    if (await doors.isVisible().catch(() => false)) {
-      await page.waitForTimeout(650);
-      await expect(doors).toBeEnabled({ timeout: 5_000 });
-      await doors.click();
-    } else {
-      await expect(opening).toHaveAttribute("data-fashion-phase", "silk", { timeout: 8_000 });
-      await expect(silk).toBeEnabled({ timeout: 5_000 });
-      await silk.click();
-      await expect(doors).toBeVisible({ timeout: 8_000 });
-      await page.waitForTimeout(650);
-      await doors.click();
-    }
+    await expect(opening).toHaveAttribute("data-fashion-phase", /silk|silk-opening|doors-opening|film/);
+    await continueOpeningFilm(page);
     await expect(opening).toBeHidden({ timeout: 15_000 });
     await expect(page.getByTestId("luxury-fashion-flagship")).toBeVisible({ timeout: 15_000 });
     await assertScrollUnlocked(page);
@@ -207,10 +240,11 @@ test.describe("Femmora luxury flagship opening", () => {
     await context.close();
   });
 
-  test("390 and tablet frames keep the invitation hub usable", async ({ browser }) => {
-    test.setTimeout(120_000);
+  test("390, 430 and tablet frames keep the invitation hub usable", async ({ browser }) => {
+    test.setTimeout(150_000);
     for (const [name, viewport] of [
       ["390", { width: 390, height: 844 }],
+      ["430", { width: 430, height: 932 }],
       ["tablet", { width: 768, height: 1024 }],
     ] as const) {
       const context = await browser.newContext({ viewport });
@@ -257,6 +291,21 @@ test.describe("Femmora luxury flagship opening", () => {
     await completeOpening(page);
     await page.getByTestId("fashion-film-scene").scrollIntoViewIfNeeded();
     await page.getByRole("button", { name: /continue to the invitation/i }).click();
+    await expect(page.getByTestId("fashion-lookbook").or(page.getByTestId("fashion-lookbook-empty"))).toBeVisible();
+    await context.close();
+  });
+
+  test("broken store film still lets the guest continue and scroll", async ({ browser }) => {
+    const context = await browser.newContext(devices["iPhone 13"]);
+    const page = await context.newPage();
+    await page.route("**/templates/femmora/store-preview.mp4**", (route) => route.abort());
+    await page.goto(runtime, { waitUntil: "domcontentloaded" });
+    await completeOpening(page);
+    await page.getByTestId("fashion-film-scene").scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: /retry film|step inside|play/i }).first().click();
+    await expect(page.getByText(/could not load|retry or continue/i)).toBeVisible({ timeout: 8_000 });
+    await page.getByRole("button", { name: /continue to the invitation/i }).click();
+    await assertScrollUnlocked(page);
     await expect(page.getByTestId("fashion-lookbook").or(page.getByTestId("fashion-lookbook-empty"))).toBeVisible();
     await context.close();
   });

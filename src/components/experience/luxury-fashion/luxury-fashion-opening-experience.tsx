@@ -9,8 +9,8 @@ import {
   FASHION_REDUCED_OPEN_MS,
   FASHION_SILK_DRAG_PX,
   FASHION_SILK_OPEN_MS,
-  FASHION_WHISPER_MS,
   fashionTokenStyle,
+  resolveFashionFilm,
   useGestureArming,
   type FashionOpeningPhase,
   type LuxuryFashionHouseConfig,
@@ -18,6 +18,7 @@ import {
 import { trackFashionAction } from "@/lib/experience/luxury-fashion/analytics";
 import { FEMMORA_CATALOG_SLUG } from "@/lib/experience/luxury-fashion/femmora-preset";
 import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
+import { FashionFilmScene } from "@/components/invitation/templates/luxury-fashion/fashion-film-scene";
 import styles from "./luxury-fashion-opening.module.css";
 
 export interface LuxuryFashionOpeningExperienceProps {
@@ -73,7 +74,7 @@ function LuxuryFashionOpeningStage({
   allowSkip = false,
 }: LuxuryFashionOpeningExperienceProps) {
   const reduceMotion = useReducedMotion();
-  const [phase, setPhase] = useState<FashionOpeningPhase>("whisper");
+  const [phase, setPhase] = useState<FashionOpeningPhase>("arming-silk");
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
   const [silkDraw, setSilkDraw] = useState(0);
   const started = useRef(false);
@@ -81,40 +82,29 @@ function LuxuryFashionOpeningStage({
   const timers = useRef<number[]>([]);
   const dragOrigin = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const film = resolveFashionFilm({ house });
 
   const silkArmed = useGestureArming(phase === "arming-silk" || phase === "silk");
-  const doorsArmed = useGestureArming(phase === "arming-doors" || phase === "doors");
-
   const silkInteractive = (phase === "silk" || phase === "arming-silk") && silkArmed;
-  const doorsInteractive = (phase === "doors" || phase === "arming-doors") && doorsArmed;
-  const whispering = phase === "whisper";
-  const exiting =
+  const sealed = phase === "arming-silk" || phase === "silk";
+  const filming = phase === "film";
+  const ceremony =
     phase === "silk-opening" || phase === "doors-opening" || phase === "complete";
 
   useEffect(() => {
+    trackFashionAction("whisper_seen", { templateSlug: FEMMORA_CATALOG_SLUG });
     trackFashionAction("intro_viewed", { templateSlug: FEMMORA_CATALOG_SLUG });
   }, []);
-
-  useEffect(() => {
-    if (phase !== "whisper") return;
-    const ms = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_WHISPER_MS;
-    const id = window.setTimeout(() => setPhase("arming-silk"), ms);
-    timers.current.push(id);
-    return () => window.clearTimeout(id);
-  }, [phase, reduceMotion]);
 
   useEffect(() => {
     if (phase === "arming-silk" && silkArmed) setPhase("silk");
   }, [phase, silkArmed]);
 
-  useEffect(() => {
-    if (phase === "arming-doors" && doorsArmed) setPhase("doors");
-  }, [phase, doorsArmed]);
-
   useEffect(
     () => () => {
       timers.current.forEach((id) => window.clearTimeout(id));
       timers.current = [];
+      forceUnlockRevealScroll();
     },
     []
   );
@@ -124,6 +114,7 @@ function LuxuryFashionOpeningStage({
     completed.current = true;
     trackFashionAction("unveil_completed", { templateSlug: FEMMORA_CATALOG_SLUG });
     forceUnlockRevealScroll();
+    setPhase("complete");
     timers.current.push(
       window.setTimeout(() => {
         forceUnlockRevealScroll();
@@ -133,18 +124,13 @@ function LuxuryFashionOpeningStage({
     );
   }, [onComplete, reduceMotion]);
 
-  const openDoors = useCallback(() => {
-    if (!doorsInteractive || started.current) return;
-    started.current = true;
-    setPhase("doors-opening");
-    const ms = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_DOORS_OPEN_MS;
-    timers.current.push(
-      window.setTimeout(() => {
-        setPhase("complete");
-        finish();
-      }, ms)
-    );
-  }, [doorsInteractive, finish, reduceMotion]);
+  const enterFilmOrFinish = useCallback(() => {
+    if (film.src) {
+      setPhase("film");
+      return;
+    }
+    finish();
+  }, [film.src, finish]);
 
   const openSilk = useCallback(() => {
     if (!silkInteractive || started.current) return;
@@ -153,19 +139,22 @@ function LuxuryFashionOpeningStage({
     setSilkDraw(1);
     onBegin?.();
     trackFashionAction("unveil_started", { templateSlug: FEMMORA_CATALOG_SLUG });
+    trackFashionAction("silk_opened", { templateSlug: FEMMORA_CATALOG_SLUG });
     setPhase("silk-opening");
-    const ms = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_SILK_OPEN_MS;
+    const silkMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_SILK_OPEN_MS;
+    const doorMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_DOORS_OPEN_MS;
     timers.current.push(
       window.setTimeout(() => {
-        started.current = false;
-        setPhase("arming-doors");
-      }, ms)
+        setPhase("doors-opening");
+        trackFashionAction("doors_opened", { templateSlug: FEMMORA_CATALOG_SLUG });
+      }, silkMs)
     );
-  }, [onBegin, reduceMotion, silkInteractive]);
+    timers.current.push(window.setTimeout(() => enterFilmOrFinish(), silkMs + doorMs));
+  }, [enterFilmOrFinish, onBegin, reduceMotion, silkInteractive]);
 
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
-      if (reduceMotion || exiting) return;
+      if (reduceMotion || ceremony || filming) return;
       const rect = event.currentTarget.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
       setPointer({
@@ -179,7 +168,7 @@ function LuxuryFashionOpeningStage({
       setSilkDraw(Math.min(1, dist / 160));
       if (dist >= FASHION_SILK_DRAG_PX) openSilk();
     },
-    [exiting, openSilk, reduceMotion, silkInteractive]
+    [ceremony, filming, openSilk, reduceMotion, silkInteractive]
   );
 
   const onSilkPointerDown = useCallback(
@@ -193,56 +182,50 @@ function LuxuryFashionOpeningStage({
 
   const onSilkPointerUp = useCallback(() => {
     dragOrigin.current = null;
-    if (phase === "silk" || phase === "arming-silk") setSilkDraw(0);
-  }, [phase]);
+    if (sealed) setSilkDraw(0);
+  }, [sealed]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      if (filming) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         if (silkInteractive) openSilk();
-        else if (doorsInteractive) openDoors();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [doorsInteractive, openDoors, openSilk, silkInteractive]);
+  }, [filming, openSilk, silkInteractive]);
 
-  const silkOpen =
-    phase === "silk-opening" ||
-    phase === "arming-doors" ||
-    phase === "doors" ||
-    phase === "doors-opening" ||
-    phase === "complete";
-  const doorsOpen = phase === "doors-opening" || phase === "complete";
-  const showDoors = silkOpen;
-  const label = showDoors
-    ? `Open the ${house.houseName} entrance`
-    : whispering
-      ? house.whisperLine
-      : `Draw the silk to unveil ${house.houseName}`;
+  const silkOpen = ceremony || filming;
+  const doorsOpen = phase === "doors-opening" || phase === "film" || phase === "complete";
+  const label = `Draw the silk to unveil ${house.houseName}`;
 
   return (
     <div
       ref={rootRef}
-      className={`${styles.stage} ${embedded ? styles.stageEmbedded : ""} ${exiting ? styles.stageExiting : ""} ${whispering ? styles.stageWhisper : ""}`}
-      style={{
-        ...fashionTokenStyle(),
-        ["--pointer-x" as string]: String(pointer.x),
-        ["--pointer-y" as string]: String(pointer.y),
-        ["--silk-draw" as string]: String(silkDraw),
-      } as CSSProperties}
+      className={`${styles.stage} ${embedded ? styles.stageEmbedded : ""} ${
+        phase === "complete" ? styles.stageExiting : ""
+      }`}
+      style={
+        {
+          ...fashionTokenStyle(),
+          ["--pointer-x" as string]: String(pointer.x),
+          ["--pointer-y" as string]: String(pointer.y),
+          ["--silk-draw" as string]: String(silkDraw),
+        } as CSSProperties
+      }
       data-testid="luxury-fashion-opening"
       data-fashion-phase={phase}
-      data-fashion-armed={String(silkInteractive || doorsInteractive)}
+      data-fashion-armed={String(silkInteractive)}
       data-silk-style={house.silkStyle}
       onPointerMove={onPointerMove}
     >
-      <div className={styles.light} aria-hidden />
+      <div className={`${styles.light} ${silkOpen ? styles.lightCeremony : ""}`} aria-hidden />
       <div className={styles.grain} aria-hidden />
 
-      {showDoors ? (
-        <div className={styles.doors} aria-hidden={phase === "doors" ? undefined : true}>
+      {silkOpen ? (
+        <div className={styles.doors} data-testid="fashion-boutique-portal" aria-hidden>
           <div
             className={`${styles.panel} ${styles.panelLeft} ${
               doorsOpen ? (reduceMotion ? styles.reducedDoorLeft : styles.panelOpenLeft) : ""
@@ -269,7 +252,7 @@ function LuxuryFashionOpeningStage({
               ? reduceMotion
                 ? styles.reducedOpenLeft
                 : styles.openLeft
-              : whispering && !reduceMotion
+              : !reduceMotion
                 ? styles.breatheLeft
                 : ""
           }`}
@@ -282,7 +265,7 @@ function LuxuryFashionOpeningStage({
               ? reduceMotion
                 ? styles.reducedOpenRight
                 : styles.openRight
-              : whispering && !reduceMotion
+              : !reduceMotion
                 ? styles.breatheRight
                 : ""
           }`}
@@ -291,44 +274,60 @@ function LuxuryFashionOpeningStage({
         </div>
       </div>
 
-      <div className={styles.mark}>
-        <div className={styles.monogram} aria-hidden>
-          {house.monogram}
-        </div>
-        {whispering ? (
-          <p className={styles.whisperLine}>{house.whisperLine}</p>
-        ) : showDoors ? (
-          <>
-            <p className={styles.house}>{house.houseName}</p>
-            <p className={styles.whisper}>{house.portalWelcome}</p>
-            <p className={styles.hint}>{house.portalPrompt}</p>
-          </>
-        ) : (
-          <>
-            <p className={styles.house}>{house.houseName}</p>
-            <p className={styles.whisper}>{house.unveilingLabel}</p>
-            <p className={styles.hint}>{reduceMotion ? "Reveal" : "Draw the silk"}</p>
-          </>
-        )}
-        {guestName && !whispering ? (
-          <p className={styles.whisper} style={{ marginTop: "0.4rem", letterSpacing: "0.16em" }}>
-            For {guestName}
+      {!filming ? (
+        <div className={styles.mark}>
+          <div className={styles.monogram} aria-hidden>
+            {house.monogram}
+          </div>
+          <p className={styles.house}>{house.houseName}</p>
+          <p className={styles.whisper}>{silkOpen ? house.portalWelcome : house.whisperLine}</p>
+          <p className={styles.hint}>
+            {silkOpen ? house.portalPrompt : reduceMotion ? "Reveal" : "Draw the silk"}
           </p>
-        ) : null}
-        <span className="sr-only">{eventTitle}</span>
-      </div>
+          {guestName ? (
+            <p className={styles.whisper} style={{ marginTop: "0.4rem" }}>
+              For {guestName}
+            </p>
+          ) : null}
+          <span className="sr-only">{eventTitle}</span>
+        </div>
+      ) : null}
 
       <button
         type="button"
         className={styles.hit}
-        data-testid={showDoors ? "fashion-boutique-portal" : "fashion-silk-stage"}
+        data-testid="fashion-silk-stage"
         aria-label={label}
-        disabled={exiting || whispering || !(silkInteractive || doorsInteractive)}
-        onPointerDown={showDoors ? undefined : onSilkPointerDown}
-        onPointerUp={showDoors ? undefined : onSilkPointerUp}
-        onPointerCancel={showDoors ? undefined : onSilkPointerUp}
-        onClick={showDoors ? openDoors : openSilk}
+        disabled={!silkInteractive}
+        onPointerDown={onSilkPointerDown}
+        onPointerUp={onSilkPointerUp}
+        onPointerCancel={onSilkPointerUp}
+        onClick={openSilk}
       />
+
+      {filming ? (
+        <div className={styles.filmLayer} data-testid="fashion-opening-film">
+          <FashionFilmScene
+            src={film.src}
+            poster={film.poster}
+            cta={house.filmCta}
+            skipLabel={house.filmSkipLabel}
+            onStarted={() =>
+              trackFashionAction("film_started", { templateSlug: FEMMORA_CATALOG_SLUG })
+            }
+            onCompleted={() =>
+              trackFashionAction("film_completed", { templateSlug: FEMMORA_CATALOG_SLUG })
+            }
+            onMuteToggle={() =>
+              trackFashionAction("film_muted", { templateSlug: FEMMORA_CATALOG_SLUG })
+            }
+            onFullscreen={() =>
+              trackFashionAction("film_fullscreen", { templateSlug: FEMMORA_CATALOG_SLUG })
+            }
+            onContinue={finish}
+          />
+        </div>
+      ) : null}
 
       {allowSkip ? (
         <button type="button" className={styles.skip} onClick={finish}>

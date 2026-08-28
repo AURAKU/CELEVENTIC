@@ -1744,6 +1744,10 @@ export const InvitationStudioHub = forwardRef<
                 {design.layout === "luxury-fashion-flagship" && (
                   <FashionHouseStudioPanel
                     value={experience.fashionHouse}
+                    viralFooterEnabled={experience.viralFooterEnabled === true}
+                    onViralFooterChange={(viralFooterEnabled) =>
+                      patchExperience({ viralFooterEnabled, experienceCustomized: true })
+                    }
                     onChange={(fashionHouse) =>
                       patchExperience({ fashionHouse, experienceCustomized: true })
                     }

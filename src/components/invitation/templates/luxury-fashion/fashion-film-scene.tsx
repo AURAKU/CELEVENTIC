@@ -12,6 +12,8 @@ export function FashionFilmScene({
   onStarted,
   onCompleted,
   onContinue,
+  onMuteToggle,
+  onFullscreen,
 }: {
   src: string | null;
   poster: string | null;
@@ -20,6 +22,8 @@ export function FashionFilmScene({
   onStarted?: () => void;
   onCompleted?: () => void;
   onContinue: () => void;
+  onMuteToggle?: () => void;
+  onFullscreen?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -153,10 +157,22 @@ export function FashionFilmScene({
         <button type="button" onClick={playing ? pause : () => void play()}>
           {playing ? "Pause" : "Play"}
         </button>
-        <button type="button" onClick={() => setMuted((m) => !m)}>
+        <button
+          type="button"
+          onClick={() => {
+            setMuted((m) => !m);
+            onMuteToggle?.();
+          }}
+        >
           {muted ? "Unmute" : "Mute"}
         </button>
-        <button type="button" onClick={() => void fullscreen()}>
+        <button
+          type="button"
+          onClick={() => {
+            onFullscreen?.();
+            void fullscreen();
+          }}
+        >
           Fullscreen
         </button>
         <button type="button" onClick={replay}>

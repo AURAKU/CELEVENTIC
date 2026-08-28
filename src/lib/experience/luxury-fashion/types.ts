@@ -69,13 +69,11 @@ export interface LuxuryFashionHouseConfig {
 }
 
 export type FashionOpeningPhase =
-  | "whisper"
   | "arming-silk"
   | "silk"
   | "silk-opening"
-  | "arming-doors"
-  | "doors"
   | "doors-opening"
+  | "film"
   | "complete";
 
 export const FASHION_NAV_DESTINATIONS: FashionNavDestination[] = [

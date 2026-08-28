@@ -92,7 +92,7 @@ test("catalogue SKU and opening copy are registered", () => {
   assert.equal(template?.category, "Corporate");
   assert.equal(template?.experienceOverrides?.openingExperience, "luxury-fashion-flagship");
   const copy = previewTapLabelForOpening("luxury-fashion-flagship");
-  assert.equal(copy.label, "Tap to unveil the silk");
+  assert.equal(copy.label, "Enter the Unveiling");
   assert.deepEqual(copy.steps, ["Silk parts", "House opens"]);
 });
 
@@ -101,6 +101,8 @@ test("default design carries Femmora fashionHouse DNA", () => {
   assert.equal(design.layout, "luxury-fashion-flagship");
   assert.equal(design.experience?.openingExperience, "luxury-fashion-flagship");
   assert.equal(design.experience?.fashionHouse?.houseName, "FEMMORA");
+  assert.equal(design.experience?.viralFooterEnabled, false);
+  assert.equal(design.themeId, "femmora-champagne");
 });
 
 test("share, maps and calendar CTAs produce real destinations", () => {

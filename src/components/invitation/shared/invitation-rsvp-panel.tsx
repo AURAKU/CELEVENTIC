@@ -45,6 +45,10 @@ interface InvitationRsvpPanelProps {
     maybe?: string;
   };
   onSubmitted?: (status: PersistedRsvpChoice) => void;
+  /** Optional note posted through the existing RSVP `message` field. */
+  guestMessage?: string;
+  /** Replaces the default thank-you line after a successful reply. */
+  successCopy?: string;
 }
 
 export function InvitationRsvpPanel({
@@ -62,6 +66,8 @@ export function InvitationRsvpPanel({
   tone = "celebration",
   choiceLabels,
   onSubmitted,
+  guestMessage,
+  successCopy,
 }: InvitationRsvpPanelProps) {
   const { t } = useLocale();
   const memorial = tone === "memorial";
@@ -122,9 +128,10 @@ export function InvitationRsvpPanel({
       phone: phone.trim() || undefined,
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
+    const note = guestMessage?.trim();
     const payload = guestId
-      ? { guestId, response, ...contact }
-      : { invitationId, guestName: guestName.trim(), response, ...contact };
+      ? { guestId, response, ...contact, ...(note ? { message: note } : {}) }
+      : { invitationId, guestName: guestName.trim(), response, ...contact, ...(note ? { message: note } : {}) };
 
     if (!guestId && !guestName.trim()) {
       setError(t("rsvp.name_required"));
@@ -176,7 +183,9 @@ export function InvitationRsvpPanel({
         }
       >
         <p className={memorial ? "inv-rsvp-confirmed-title" : undefined}>
-          {t("rsvp.title")}: {rsvpStatus.replace(/_/g, " ")}, {t("rsvp.thank_you")}
+          {successCopy?.trim()
+            ? successCopy.trim()
+            : `${t("rsvp.title")}: ${rsvpStatus.replace(/_/g, " ")}, ${t("rsvp.thank_you")}`}
         </p>
         {rsvpStatus === "ACCEPTED" && allowance > 1 ? (
           <p className={memorial ? "inv-rsvp-confirmed-detail" : "text-sm font-normal opacity-90"}>

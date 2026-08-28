@@ -17,8 +17,9 @@ const EVENT_GUIDE_FALLBACK_HREF = "/guide/event-guide-guest";
  * Brand mark opens the Event Guide (published for this event when available).
  */
 export function ViralFooterBlock({ context }: { context: PageRenderContext }) {
-  const { templateSlug, invitation, category, eventGuideUrl } = context;
-  const showCreateCta = category !== "funeral";
+  const { templateSlug, invitation, category, eventGuideUrl, design } = context;
+  const viralFooterEnabled = design.experience?.viralFooterEnabled;
+  const showCreateCta = category !== "funeral" && viralFooterEnabled !== false;
   const guideHref = eventGuideUrl?.trim() || EVENT_GUIDE_FALLBACK_HREF;
 
   const params = new URLSearchParams({

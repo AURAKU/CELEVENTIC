@@ -1098,6 +1098,8 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     tags: ["fashion", "flagship", "boutique", "launch", "editorial"],
     colorFamily: "ivory-champagne",
     hasParallax: false,
+    themeId: "femmora-champagne",
+    motionProfileId: "gentle-drift",
     creativeBrief: {
       creativeConcept:
         "Femmora Flagship Soft Opening — Celeventic intro into a silk unveil, boutique portal and atelier film",

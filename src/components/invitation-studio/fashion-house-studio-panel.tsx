@@ -12,10 +12,14 @@ import {
 
 export function FashionHouseStudioPanel({
   value,
+  viralFooterEnabled = false,
   onChange,
+  onViralFooterChange,
 }: {
   value?: LuxuryFashionHouseConfig;
+  viralFooterEnabled?: boolean;
   onChange: (next: LuxuryFashionHouseConfig) => void;
+  onViralFooterChange?: (enabled: boolean) => void;
 }) {
   const house = mergeFashionHouse(FEMMORA_HOUSE_DEFAULTS, value);
 
@@ -136,6 +140,20 @@ export function FashionHouseStudioPanel({
         <Label>Final message</Label>
         <Textarea rows={3} value={house.finaleMessage} onChange={(e) => patch({ finaleMessage: e.target.value })} />
       </div>
+      {onViralFooterChange ? (
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={viralFooterEnabled}
+            onChange={(e) => onViralFooterChange(e.target.checked)}
+          />
+          <span>
+            Show “Create your own invitation with Celeventic” on the closing page.
+            Off by default for Femmora so the finale stays brand-led.
+          </span>
+        </label>
+      ) : null}
       <p className="text-[11px] text-slate-500">
         Store film defaults to the bundled Femmora atelier clip in `public/templates/femmora/`. Replace it in Studio Media by setting the hero video and poster. Lookbook uses gallery uploads, or the bundled atelier stills. Music uses the existing soundtrack picker.
       </p>

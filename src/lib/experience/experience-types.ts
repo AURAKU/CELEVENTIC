@@ -316,6 +316,12 @@ export interface EventExperienceConfig {
    * ceremonies — only consumed by the fashion opening + layout.
    */
   fashionHouse?: import("@/lib/experience/luxury-fashion/types").LuxuryFashionHouseConfig;
+  /**
+   * Closing "Create your own invitation with Celeventic" growth CTA.
+   * Unset keeps current product default (on for non-funeral). Femmora
+   * flagship defaults this to false so the finale stays brand-led.
+   */
+  viralFooterEnabled?: boolean;
 }
 
 export const DEFAULT_HUB_TABS: HubTabId[] = [

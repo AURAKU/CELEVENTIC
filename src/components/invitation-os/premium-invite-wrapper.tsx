@@ -755,6 +755,16 @@ export function PremiumInviteWrapper({
             textColorOverride={experience?.welcomeTextColor}
             accentColorOverride={experience?.welcomeAccentColor}
             scrim={experience?.welcomeScrim}
+            ctaLabelOverride={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? experience?.fashionHouse?.unveilingLabel || "Enter the Unveiling"
+                : undefined
+            }
+            brandMarkLetter={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? experience?.fashionHouse?.monogram
+                : undefined
+            }
           />
         </CeremonyErrorBoundary>
       </>

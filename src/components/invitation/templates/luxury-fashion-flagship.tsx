@@ -194,6 +194,18 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
               templateSlug: FEMMORA_CATALOG_SLUG,
             })
           }
+          onMuteToggle={() =>
+            trackFashionAction("film_muted", {
+              invitationId,
+              templateSlug: FEMMORA_CATALOG_SLUG,
+            })
+          }
+          onFullscreen={() =>
+            trackFashionAction("film_fullscreen", {
+              invitationId,
+              templateSlug: FEMMORA_CATALOG_SLUG,
+            })
+          }
           onContinue={() => go("collection")}
         />
         <div className={styles.storeBrowseWrap}>
@@ -335,6 +347,11 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         houseName={house.houseName}
         datesLabel={house.datesLabel}
         address={house.address}
+        onRsvp={() => go("rsvp")}
+        onLocation={() => go("location")}
+        onShare={() => go("share")}
+        onReplayFilm={() => go("store-preview")}
+        onCollection={() => go("collection")}
       />
 
       <FashionBoutiqueExperience
