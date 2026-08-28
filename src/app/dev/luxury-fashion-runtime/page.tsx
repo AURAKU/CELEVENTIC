@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export default function LuxuryFashionRuntimePage({
   searchParams,
 }: {
-  searchParams: Promise<{ skipIntro?: string; reduced?: string }>;
+  searchParams: Promise<{ skipIntro?: string; reduced?: string; house?: string }>;
 }) {
   if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEV_RUNTIME !== "1") {
     notFound();

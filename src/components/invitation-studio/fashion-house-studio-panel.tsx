@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  FEMMORA_HOUSE_DEFAULTS,
+  LUXURY_FASHION_HOUSE_DEFAULTS,
   mergeFashionHouse,
   type FashionSilkStyle,
   type LuxuryFashionHouseConfig,
@@ -21,7 +21,7 @@ export function FashionHouseStudioPanel({
   onChange: (next: LuxuryFashionHouseConfig) => void;
   onViralFooterChange?: (enabled: boolean) => void;
 }) {
-  const house = mergeFashionHouse(FEMMORA_HOUSE_DEFAULTS, value);
+  const house = mergeFashionHouse(LUXURY_FASHION_HOUSE_DEFAULTS, value);
 
   function patch(partial: Partial<LuxuryFashionHouseConfig>) {
     onChange(mergeFashionHouse(house, partial));
@@ -51,6 +51,38 @@ export function FashionHouseStudioPanel({
       <div className="grid gap-2">
         <Label>Whisper line</Label>
         <Input value={house.whisperLine} onChange={(e) => patch({ whisperLine: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Whisper eyebrow</Label>
+        <Input
+          value={house.whisperEyebrow ?? ""}
+          onChange={(e) => patch({ whisperEyebrow: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Whisper script</Label>
+        <Input
+          value={house.whisperScript ?? ""}
+          onChange={(e) => patch({ whisperScript: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Logo URL</Label>
+        <Input
+          value={house.logoUrl ?? ""}
+          onChange={(e) => patch({ logoUrl: e.target.value || null })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Mark style</Label>
+        <select
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          value={house.markVariant ?? "letter"}
+          onChange={(e) => patch({ markVariant: e.target.value as "letter" | "botanical" })}
+        >
+          <option value="letter">Letter monogram</option>
+          <option value="botanical">Botanical mark</option>
+        </select>
       </div>
       <div className="grid gap-2">
         <Label>Invitation lede</Label>
@@ -150,12 +182,14 @@ export function FashionHouseStudioPanel({
           />
           <span>
             Show “Create your own invitation with Celeventic” on the closing page.
-            Off by default for Femmora so the finale stays brand-led.
+            Off by default for luxury fashion openings so the finale stays brand-led.
           </span>
         </label>
       ) : null}
       <p className="text-[11px] text-slate-500">
-        Store film defaults to the bundled Femmora atelier clip in `public/templates/femmora/`. Replace it in Studio Media by setting the hero video and poster. Lookbook uses gallery uploads, or the bundled atelier stills. Music uses the existing soundtrack picker.
+        Store film and lookbook use Studio Media (hero video, poster, gallery). Empty media
+        removes those chapters. Maps, RSVP and countdown follow the same invitation feature
+        flags as every other Celeventic template. Music uses the existing soundtrack picker.
       </p>
     </div>
   );

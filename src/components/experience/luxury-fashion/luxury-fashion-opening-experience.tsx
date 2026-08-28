@@ -9,14 +9,14 @@ import {
   FASHION_REDUCED_OPEN_MS,
   FASHION_SILK_DRAG_PX,
   FASHION_SILK_OPEN_MS,
-  fashionTokenStyle,
+  fashionTokenStyleForSilk,
   resolveFashionFilm,
-  useGestureArming,
   type FashionOpeningPhase,
   type LuxuryFashionHouseConfig,
 } from "@/lib/experience/luxury-fashion";
+import { useGestureArming } from "@/lib/experience/luxury-fashion/gesture-arming";
 import { trackFashionAction } from "@/lib/experience/luxury-fashion/analytics";
-import { FEMMORA_CATALOG_SLUG } from "@/lib/experience/luxury-fashion/femmora-preset";
+import { LUXURY_FASHION_LAYOUT_SLUG } from "@/lib/experience/luxury-fashion/femmora-preset";
 import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import { FashionFilmScene } from "@/components/invitation/templates/luxury-fashion/fashion-film-scene";
 import styles from "./luxury-fashion-opening.module.css";
@@ -83,6 +83,7 @@ function LuxuryFashionOpeningStage({
   const dragOrigin = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const film = resolveFashionFilm({ house });
+  const filmEnabled = house.chapters?.film !== false && Boolean(film.src);
 
   const silkArmed = useGestureArming(phase === "arming-silk" || phase === "silk");
   const silkInteractive = (phase === "silk" || phase === "arming-silk") && silkArmed;
@@ -92,8 +93,8 @@ function LuxuryFashionOpeningStage({
     phase === "silk-opening" || phase === "doors-opening" || phase === "complete";
 
   useEffect(() => {
-    trackFashionAction("whisper_seen", { templateSlug: FEMMORA_CATALOG_SLUG });
-    trackFashionAction("intro_viewed", { templateSlug: FEMMORA_CATALOG_SLUG });
+    trackFashionAction("whisper_seen", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+    trackFashionAction("intro_viewed", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
   }, []);
 
   useEffect(() => {
@@ -112,7 +113,7 @@ function LuxuryFashionOpeningStage({
   const finish = useCallback(() => {
     if (completed.current) return;
     completed.current = true;
-    trackFashionAction("unveil_completed", { templateSlug: FEMMORA_CATALOG_SLUG });
+    trackFashionAction("unveil_completed", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
     forceUnlockRevealScroll();
     setPhase("complete");
     timers.current.push(
@@ -125,12 +126,12 @@ function LuxuryFashionOpeningStage({
   }, [onComplete, reduceMotion]);
 
   const enterFilmOrFinish = useCallback(() => {
-    if (film.src) {
+    if (filmEnabled) {
       setPhase("film");
       return;
     }
     finish();
-  }, [film.src, finish]);
+  }, [filmEnabled, finish]);
 
   const openSilk = useCallback(() => {
     if (!silkInteractive || started.current) return;
@@ -138,15 +139,15 @@ function LuxuryFashionOpeningStage({
     dragOrigin.current = null;
     setSilkDraw(1);
     onBegin?.();
-    trackFashionAction("unveil_started", { templateSlug: FEMMORA_CATALOG_SLUG });
-    trackFashionAction("silk_opened", { templateSlug: FEMMORA_CATALOG_SLUG });
+    trackFashionAction("unveil_started", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
+    trackFashionAction("silk_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
     setPhase("silk-opening");
     const silkMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_SILK_OPEN_MS;
     const doorMs = reduceMotion ? FASHION_REDUCED_OPEN_MS : FASHION_DOORS_OPEN_MS;
     timers.current.push(
       window.setTimeout(() => {
         setPhase("doors-opening");
-        trackFashionAction("doors_opened", { templateSlug: FEMMORA_CATALOG_SLUG });
+        trackFashionAction("doors_opened", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG });
       }, silkMs)
     );
     timers.current.push(window.setTimeout(() => enterFilmOrFinish(), silkMs + doorMs));
@@ -209,7 +210,7 @@ function LuxuryFashionOpeningStage({
       }`}
       style={
         {
-          ...fashionTokenStyle(),
+          ...fashionTokenStyleForSilk(house.silkStyle),
           ["--pointer-x" as string]: String(pointer.x),
           ["--pointer-y" as string]: String(pointer.y),
           ["--silk-draw" as string]: String(silkDraw),
@@ -313,16 +314,16 @@ function LuxuryFashionOpeningStage({
             cta={house.filmCta}
             skipLabel={house.filmSkipLabel}
             onStarted={() =>
-              trackFashionAction("film_started", { templateSlug: FEMMORA_CATALOG_SLUG })
+              trackFashionAction("film_started", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG })
             }
             onCompleted={() =>
-              trackFashionAction("film_completed", { templateSlug: FEMMORA_CATALOG_SLUG })
+              trackFashionAction("film_completed", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG })
             }
             onMuteToggle={() =>
-              trackFashionAction("film_muted", { templateSlug: FEMMORA_CATALOG_SLUG })
+              trackFashionAction("film_muted", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG })
             }
             onFullscreen={() =>
-              trackFashionAction("film_fullscreen", { templateSlug: FEMMORA_CATALOG_SLUG })
+              trackFashionAction("film_fullscreen", { templateSlug: LUXURY_FASHION_LAYOUT_SLUG })
             }
             onContinue={finish}
           />

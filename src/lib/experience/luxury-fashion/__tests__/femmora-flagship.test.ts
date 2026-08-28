@@ -9,7 +9,12 @@ import {
   FEMMORA_MAPS_URL,
   FEMMORA_STORE_FILM,
   FEMMORA_STORE_POSTER,
+  LUXURY_FASHION_HOUSE_DEFAULTS,
+  MAISON_VALE_COLORS,
+  MAISON_VALE_HOUSE,
+  assertHouseIsNotFemmora,
   mergeFashionHouse,
+  resolveFashionChapters,
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
@@ -19,6 +24,7 @@ import { isPointerArmSafe } from "@/lib/experience/luxury-fashion/gesture-arming
 import { previewTapLabelForOpening } from "@/lib/experience/opening-experiences";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { getDefaultDesignConfig } from "@/lib/invitation-templates";
+import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { buildInviteShareChannelHref, buildInviteSharePayload } from "@/lib/invitation/invite-share";
 import { buildGoogleCalendarUrl } from "@/lib/invitation/calendar-utils";
@@ -154,4 +160,76 @@ test("store stills are a browseable subset of the lookbook, not a second media s
   assert.equal(merged.whisperLine, FEMMORA_HOUSE_DEFAULTS.whisperLine);
   assert.equal(merged.hubLede, FEMMORA_HOUSE_DEFAULTS.hubLede);
   assert.equal(merged.filmUrl, FEMMORA_STORE_FILM);
+});
+
+test("layout engine defaults are generic, not Femmora", () => {
+  const design = getDefaultDesignConfig("luxury-fashion-flagship");
+  assert.equal(design.layout, "luxury-fashion-flagship");
+  assert.equal(design.experience?.openingExperience, "luxury-fashion-flagship");
+  assert.equal(design.experience?.fashionHouse?.houseName, "THE HOUSE");
+  assert.equal(design.experience?.fashionHouse?.filmUrl, null);
+  assert.equal(design.experience?.fashionHouse?.lookbookItems?.length, 0);
+  assert.equal(design.themeId, undefined);
+  const blob = JSON.stringify(design.experience?.fashionHouse).toLowerCase();
+  assert.equal(blob.includes("femmora"), false);
+  assert.equal(blob.includes("westlands"), false);
+  assert.equal(blob.includes("/templates/femmora"), false);
+});
+
+test("Maison Vale fixture uses the same engine with zero Femmora DNA", () => {
+  assert.deepEqual(assertHouseIsNotFemmora(MAISON_VALE_HOUSE), []);
+  assert.equal(MAISON_VALE_HOUSE.houseName, "MAISON VALE");
+  assert.equal(MAISON_VALE_HOUSE.address, "Kilimani");
+  assert.equal(MAISON_VALE_HOUSE.silkStyle, "espresso-gold");
+  assert.equal(MAISON_VALE_HOUSE.filmUrl, null);
+  const house = resolveFashionHouse({
+    layout: "luxury-fashion-flagship",
+    colors: MAISON_VALE_COLORS,
+    experience: { fashionHouse: MAISON_VALE_HOUSE },
+  });
+  const film = resolveFashionFilm({ house, media: [] });
+  const looks = resolveFashionLookbook({ house, galleryUrls: [], media: [] });
+  const chapters = resolveFashionChapters({
+    house,
+    filmSrc: film.src,
+    looksCount: looks.length,
+    enabledTabs: ["invitation", "gallery", "countdown", "venue", "rsvp"],
+  });
+  assert.equal(film.src, null);
+  assert.equal(chapters["store-preview"], false);
+  assert.equal(chapters.collection, true);
+  assert.equal(looks.every((item) => !item.url.includes("/templates/femmora")), true);
+  assert.deepEqual(assertHouseIsNotFemmora(house), []);
+});
+
+test("optional chapters hide when media or RSVP is absent", () => {
+  const empty = mergeFashionHouse(LUXURY_FASHION_HOUSE_DEFAULTS, {
+    lookbookItems: [],
+    filmUrl: null,
+    mapsUrl: "",
+    chapters: { film: true, collection: true, rsvp: true, maps: true },
+  });
+  const looks = resolveFashionLookbook({ house: empty, galleryUrls: [], media: [] });
+  const film = resolveFashionFilm({ house: empty, media: [] });
+  const off = resolveFashionChapters({
+    house: empty,
+    filmSrc: film.src,
+    looksCount: looks.length,
+    enabledTabs: ["invitation", "gallery", "countdown", "venue"],
+  });
+  assert.equal(looks.length, 0);
+  assert.equal(film.src, null);
+  assert.equal(off["store-preview"], false);
+  assert.equal(off.collection, false);
+  assert.equal(off.rsvp, false);
+  assert.equal(off.mapsCta, false);
+  assert.equal(off.location, true);
+});
+
+test("experience DNA enrich keeps fashion house preset DNA", () => {
+  const design = getDefaultDesignConfig("femmora-flagship-soft-opening");
+  const enriched = enrichDesignWithExperienceDNA(design);
+  assert.equal(enriched.experience?.fashionHouse?.houseName, "FEMMORA");
+  assert.equal(enriched.experience?.fashionHouse?.filmUrl, FEMMORA_STORE_FILM);
+  assert.equal(enriched.experience?.viralFooterEnabled, false);
 });

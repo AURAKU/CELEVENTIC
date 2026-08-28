@@ -13,9 +13,21 @@ export {
   LUXURY_FASHION_LAYOUT_SLUG,
   LUXURY_FASHION_OPENING_ID,
 } from "./femmora-preset";
-export { isPointerArmSafe, useGestureArming } from "./gesture-arming";
 export {
+  LUXURY_FASHION_HOUSE_DEFAULTS,
+  LUXURY_FASHION_NAV_LABELS,
   mergeFashionHouse,
+} from "./house-defaults";
+export {
+  MAISON_VALE_COLORS,
+  MAISON_VALE_END_ISO,
+  MAISON_VALE_HOUSE,
+  MAISON_VALE_MAPS_URL,
+  MAISON_VALE_START_ISO,
+  assertHouseIsNotFemmora,
+} from "./maison-vale-fixture";
+export {
+  resolveFashionChapters,
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
@@ -32,9 +44,11 @@ export {
   FASHION_TOKEN_VALUES,
   FASHION_WHISPER_MS,
   fashionTokenStyle,
+  fashionTokenStyleForSilk,
+  fashionTokenStyleFromColors,
 } from "./tokens";
+export type { FashionChapterFlags, FashionChapterId } from "./resolve-fashion-house";
 export type {
-  FashionLookbookItem,
   FashionNavDestination,
   FashionNavLabel,
   FashionNavStyle,

@@ -4,7 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import {
-  fashionTokenStyle,
+  fashionTokenStyleFromColors,
+  resolveFashionChapters,
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
@@ -12,10 +13,10 @@ import {
   trackFashionAction,
   type FashionNavDestination,
 } from "@/lib/experience/luxury-fashion";
-import { FEMMORA_CATALOG_SLUG } from "@/lib/experience/luxury-fashion/femmora-preset";
+import { LUXURY_FASHION_LAYOUT_SLUG } from "@/lib/experience/luxury-fashion/femmora-preset";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import { CalendarDays, Clock, MapPin } from "lucide-react";
-import { FemmoraMark } from "./luxury-fashion/femmora-mark";
+import { FashionHouseMark } from "./luxury-fashion/femmora-mark";
 import { FashionEditorialIndex } from "./luxury-fashion/fashion-editorial-index";
 import { FashionBoutiqueExperience } from "./luxury-fashion/fashion-boutique-experience";
 import { FashionFilmScene } from "./luxury-fashion/fashion-film-scene";
@@ -83,9 +84,24 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
       }),
     [house, props.galleryUrls, props.design.media]
   );
+  const chapters = useMemo(
+    () =>
+      resolveFashionChapters({
+        house,
+        filmSrc: film.src,
+        looksCount: looks.length,
+        enabledTabs: props.design.experience?.enabledTabs,
+      }),
+    [film.src, house, looks.length, props.design.experience?.enabledTabs]
+  );
+  const navLabels = useMemo(
+    () => house.navLabels.filter((item) => chapters[item.id]),
+    [chapters, house.navLabels]
+  );
   const [current, setCurrent] = useState<FashionNavDestination>("experience");
   const [boutiqueOpen, setBoutiqueOpen] = useState(false);
   const invitationId = props.invitation.id;
+  const templateSlug = LUXURY_FASHION_LAYOUT_SLUG;
 
   const scrollTo = useCallback((id: FashionNavDestination) => {
     document.getElementById(SECTION_IDS[id])?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -93,20 +109,21 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
 
   const go = useCallback(
     (id: FashionNavDestination) => {
+      if (!chapters[id]) return;
       setCurrent(id);
       trackFashionAction("nav_clicked", {
         invitationId,
-        templateSlug: FEMMORA_CATALOG_SLUG,
+        templateSlug,
         extra: { dest: id },
       });
       if (id === "experience") {
-        trackFashionAction("boutique_opened", { invitationId, templateSlug: FEMMORA_CATALOG_SLUG });
+        trackFashionAction("boutique_opened", { invitationId, templateSlug });
         setBoutiqueOpen(true);
         return;
       }
       scrollTo(id);
     },
-    [invitationId, scrollTo]
+    [chapters, invitationId, scrollTo, templateSlug]
   );
 
   return (
@@ -114,16 +131,17 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
       className={styles.root}
       style={
         {
-          ...fashionTokenStyle(),
+          ...fashionTokenStyleFromColors(props.design.colors),
           ...(house.silkBedUrl ? { ["--ff-silk-bed" as string]: `url("${house.silkBedUrl}")` } : null),
         } as CSSProperties
       }
       data-testid="luxury-fashion-flagship"
+      data-fashion-house={house.houseName}
     >
       <header className={styles.hero} id={SECTION_IDS.experience} data-testid="fashion-details">
         <div className={styles.silkBed} aria-hidden />
         <div className={styles.card}>
-          <FemmoraMark className={styles.mark} />
+          <FashionHouseMark house={house} className={styles.mark} />
           <h1 className={styles.house}>{house.houseName}</h1>
           <span className={styles.ornament} aria-hidden />
           <p className={styles.event}>{house.eventTitle}</p>
@@ -134,21 +152,20 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
               <div>
                 <p>Location</p>
                 <strong>
-                  {house.locationName}, {house.address}
+                  {[house.locationName, house.address].filter(Boolean).join(", ")}
                 </strong>
-                <a
-                  href={house.mapsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() =>
-                    trackFashionAction("maps_clicked", {
-                      invitationId,
-                      templateSlug: FEMMORA_CATALOG_SLUG,
-                    })
-                  }
-                >
-                  on Google Maps
-                </a>
+                {chapters.mapsCta ? (
+                  <a
+                    href={house.mapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() =>
+                      trackFashionAction("maps_clicked", { invitationId, templateSlug })
+                    }
+                  >
+                    on Google Maps
+                  </a>
+                ) : null}
               </div>
             </li>
             <li>
@@ -171,71 +188,49 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         </div>
       </header>
 
-      <FashionEditorialIndex labels={house.navLabels} current={current} onSelect={go} />
+      <FashionEditorialIndex labels={navLabels} current={current} onSelect={go} />
       <p className={styles.swipeHint}>{house.swipeHint}</p>
 
-      <section className={`${styles.section} ${styles.sectionWide}`} id={SECTION_IDS["store-preview"]}>
-        <p className={styles.kicker}>A first look</p>
-        <h2 className={styles.heading}>Store preview</h2>
-        <FashionFilmScene
-          src={film.src}
-          poster={film.poster}
-          cta={house.filmCta}
-          skipLabel={house.filmSkipLabel}
-          onStarted={() =>
-            trackFashionAction("film_started", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-          onCompleted={() =>
-            trackFashionAction("film_completed", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-          onMuteToggle={() =>
-            trackFashionAction("film_muted", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-          onFullscreen={() =>
-            trackFashionAction("film_fullscreen", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-          onContinue={() => go("collection")}
-        />
-        <div className={styles.storeBrowseWrap}>
-          <p className={styles.kicker}>Atelier stills</p>
-          <FashionStoreBrowse
-            items={stills}
-            onOpen={() =>
-              trackFashionAction("store_preview_started", {
-                invitationId,
-                templateSlug: FEMMORA_CATALOG_SLUG,
-              })
-            }
+      {chapters["store-preview"] ? (
+        <section className={`${styles.section} ${styles.sectionWide}`} id={SECTION_IDS["store-preview"]}>
+          <p className={styles.kicker}>A first look</p>
+          <h2 className={styles.heading}>Store preview</h2>
+          <FashionFilmScene
+            src={film.src}
+            poster={film.poster}
+            cta={house.filmCta}
+            skipLabel={house.filmSkipLabel}
+            onStarted={() => trackFashionAction("film_started", { invitationId, templateSlug })}
+            onCompleted={() => trackFashionAction("film_completed", { invitationId, templateSlug })}
+            onMuteToggle={() => trackFashionAction("film_muted", { invitationId, templateSlug })}
+            onFullscreen={() => trackFashionAction("film_fullscreen", { invitationId, templateSlug })}
+            onContinue={() => go(chapters.collection ? "collection" : "event-details")}
           />
-        </div>
-      </section>
+          {stills.length ? (
+            <div className={styles.storeBrowseWrap}>
+              <p className={styles.kicker}>Atelier stills</p>
+              <FashionStoreBrowse
+                items={stills}
+                onOpen={() =>
+                  trackFashionAction("store_preview_started", { invitationId, templateSlug })
+                }
+              />
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
-      <section className={`${styles.section} ${styles.sectionWide}`} id={SECTION_IDS.collection}>
-        <p className={styles.kicker}>The collection</p>
-        <h2 className={styles.heading}>{house.lookbookTitle}</h2>
-        <EditorialLookbook
-          title={house.lookbookTitle}
-          items={looks}
-          onOpen={() =>
-            trackFashionAction("collection_opened", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-        />
-      </section>
+      {chapters.collection ? (
+        <section className={`${styles.section} ${styles.sectionWide}`} id={SECTION_IDS.collection}>
+          <p className={styles.kicker}>The collection</p>
+          <h2 className={styles.heading}>{house.lookbookTitle}</h2>
+          <EditorialLookbook
+            title={house.lookbookTitle}
+            items={looks}
+            onOpen={() => trackFashionAction("collection_opened", { invitationId, templateSlug })}
+          />
+        </section>
+      ) : null}
 
       <section className={styles.section} id={SECTION_IDS["event-details"]}>
         <p className={styles.kicker}>Event details</p>
@@ -252,94 +247,78 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
           </div>
           <div>
             <dt>Location</dt>
-            <dd>
-              {house.locationName}, {house.address}
-            </dd>
+            <dd>{[house.locationName, house.address].filter(Boolean).join(", ")}</dd>
           </div>
         </dl>
-        <div className={styles.countdownWrap}>
-          <FashionLaunchCountdown
-            startAtIso={house.startAtIso}
-            beforeLabel={house.countdownBeforeLabel}
-            afterLabel={house.countdownAfterLabel}
-          />
-        </div>
-        <div className={styles.ctaRow}>
-          <span
-            data-testid="fashion-calendar"
-            onClick={() =>
-              trackFashionAction("calendar_clicked", {
-                invitationId,
-                templateSlug: FEMMORA_CATALOG_SLUG,
-              })
-            }
-          >
-            <SetReminderButton
-              event={{
-                title: `${house.houseName} ${house.eventTitle}`,
-                startDateRaw: house.startAtIso,
-                endDateRaw: house.endAtIso,
-                venue: `${house.locationName}, ${house.address}`,
-                description: house.hubLede,
-              }}
-              accentColor="#9A7A48"
-              variant="minimal"
+        {chapters.countdown ? (
+          <div className={styles.countdownWrap}>
+            <FashionLaunchCountdown
+              startAtIso={house.startAtIso}
+              beforeLabel={house.countdownBeforeLabel}
+              afterLabel={house.countdownAfterLabel}
             />
-          </span>
-        </div>
+          </div>
+        ) : null}
+        {house.startAtIso ? (
+          <div className={styles.ctaRow}>
+            <span
+              data-testid="fashion-calendar"
+              onClick={() => trackFashionAction("calendar_clicked", { invitationId, templateSlug })}
+            >
+              <SetReminderButton
+                event={{
+                  title: `${house.houseName} ${house.eventTitle}`,
+                  startDateRaw: house.startAtIso,
+                  endDateRaw: house.endAtIso,
+                  venue: [house.locationName, house.address].filter(Boolean).join(", "),
+                  description: house.hubLede,
+                }}
+                accentColor={props.design.colors.accent}
+                variant="minimal"
+              />
+            </span>
+          </div>
+        ) : null}
       </section>
 
-      <section className={styles.section} id={SECTION_IDS.location}>
-        <LuxuryLocationScene
-          locationName={house.locationName}
-          address={house.address}
-          mapsUrl={house.mapsUrl}
-          onMaps={() =>
-            trackFashionAction("maps_clicked", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-        />
-      </section>
+      {chapters.location ? (
+        <section className={styles.section} id={SECTION_IDS.location}>
+          <LuxuryLocationScene
+            locationName={house.locationName}
+            address={house.address}
+            mapsUrl={chapters.mapsCta ? house.mapsUrl : ""}
+            onMaps={() => trackFashionAction("maps_clicked", { invitationId, templateSlug })}
+          />
+        </section>
+      ) : null}
 
-      <section className={styles.section} id={SECTION_IDS.rsvp}>
-        <FashionRsvpScene
-          invitationId={props.invitation.id}
-          guestId={props.guestId}
-          guestName={props.guestName}
-          partyAllowance={props.partyAllowance}
-          initialRsvpStatus={props.initialRsvpStatus}
-          initialAttendingCount={props.initialAttendingCount}
-          heading={house.rsvpHeading}
-          acceptedLabel={house.rsvpAcceptedLabel}
-          onStarted={() =>
-            trackFashionAction("rsvp_started", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-          onCompleted={() =>
-            trackFashionAction("rsvp_completed", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-        />
-      </section>
+      {chapters.rsvp ? (
+        <section className={styles.section} id={SECTION_IDS.rsvp}>
+          <FashionRsvpScene
+            invitationId={props.invitation.id}
+            guestId={props.guestId}
+            guestName={props.guestName}
+            partyAllowance={props.partyAllowance}
+            initialRsvpStatus={props.initialRsvpStatus}
+            initialAttendingCount={props.initialAttendingCount}
+            heading={house.rsvpHeading}
+            acceptedLabel={house.rsvpAcceptedLabel}
+            visitDayOptions={house.visitDayOptions}
+            onStarted={() => trackFashionAction("rsvp_started", { invitationId, templateSlug })}
+            onCompleted={() => trackFashionAction("rsvp_completed", { invitationId, templateSlug })}
+          />
+        </section>
+      ) : null}
 
-      <section className={styles.section} id={SECTION_IDS.share}>
-        <FashionShareScene
-          event={props.event}
-          uniqueLink={props.invitation.uniqueLink}
-          onShare={() =>
-            trackFashionAction("share_clicked", {
-              invitationId,
-              templateSlug: FEMMORA_CATALOG_SLUG,
-            })
-          }
-        />
-      </section>
+      {chapters.share ? (
+        <section className={styles.section} id={SECTION_IDS.share}>
+          <FashionShareScene
+            event={props.event}
+            uniqueLink={props.invitation.uniqueLink}
+            onShare={() => trackFashionAction("share_clicked", { invitationId, templateSlug })}
+          />
+        </section>
+      ) : null}
 
       <FashionFinale
         message={house.finaleMessage}
@@ -347,22 +326,25 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         houseName={house.houseName}
         datesLabel={house.datesLabel}
         address={house.address}
-        onRsvp={() => go("rsvp")}
-        onLocation={() => go("location")}
-        onShare={() => go("share")}
-        onReplayFilm={() => go("store-preview")}
-        onCollection={() => go("collection")}
+        onRsvp={chapters.rsvp ? () => go("rsvp") : undefined}
+        onLocation={chapters.location ? () => go("location") : undefined}
+        onShare={chapters.share ? () => go("share") : undefined}
+        onReplayFilm={chapters["store-preview"] ? () => go("store-preview") : undefined}
+        onCollection={chapters.collection ? () => go("collection") : undefined}
       />
 
-      <FashionBoutiqueExperience
-        houseName={house.houseName}
-        open={boutiqueOpen}
-        onClose={() => setBoutiqueOpen(false)}
-        onSelect={(id) => {
-          setCurrent(id);
-          scrollTo(id);
-        }}
-      />
+      {chapters.experience ? (
+        <FashionBoutiqueExperience
+          houseName={house.houseName}
+          open={boutiqueOpen}
+          available={navLabels.map((item) => item.id)}
+          onClose={() => setBoutiqueOpen(false)}
+          onSelect={(id) => {
+            setCurrent(id);
+            scrollTo(id);
+          }}
+        />
+      ) : null}
     </article>
   );
 }

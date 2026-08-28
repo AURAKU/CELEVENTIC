@@ -1,25 +1,12 @@
+import type { HubTabId } from "@/lib/experience/experience-types";
 import type { InvitationDesignConfig, InvitationEventData, InvitationMediaAsset } from "@/types/invitation-design";
-import { FEMMORA_HOUSE_DEFAULTS } from "./femmora-preset";
-import type { FashionLookbookItem, LuxuryFashionHouseConfig } from "./types";
+import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "./house-defaults";
+import type { FashionLookbookItem, FashionNavDestination, LuxuryFashionHouseConfig } from "./types";
+
+export { mergeFashionHouse };
 
 function trim(value: string | null | undefined): string {
   return value?.trim() ?? "";
-}
-
-export function mergeFashionHouse(
-  base: LuxuryFashionHouseConfig,
-  override?: Partial<LuxuryFashionHouseConfig> | null
-): LuxuryFashionHouseConfig {
-  if (!override) return base;
-  return {
-    ...base,
-    ...override,
-    navLabels: override.navLabels?.length ? override.navLabels : base.navLabels,
-    lookbookItems: override.lookbookItems ?? base.lookbookItems,
-    silkBedUrl: override.silkBedUrl === undefined ? base.silkBedUrl : override.silkBedUrl,
-    filmUrl: override.filmUrl === undefined ? base.filmUrl : override.filmUrl,
-    filmPosterUrl: override.filmPosterUrl === undefined ? base.filmPosterUrl : override.filmPosterUrl,
-  };
 }
 
 export function resolveFashionHouse(
@@ -27,7 +14,7 @@ export function resolveFashionHouse(
   event?: InvitationEventData | null
 ): LuxuryFashionHouseConfig {
   const stored = design?.experience?.fashionHouse;
-  const merged = mergeFashionHouse(FEMMORA_HOUSE_DEFAULTS, stored);
+  const merged = mergeFashionHouse(LUXURY_FASHION_HOUSE_DEFAULTS, stored);
 
   const locationName = trim(event?.venueName) || merged.locationName;
   const address = trim(event?.landmark) || merged.address;
@@ -54,22 +41,6 @@ export function resolveFashionFilm(input: {
   const src = heroVideo?.url || input.house.filmUrl || null;
   const poster = heroVideo?.posterUrl || input.house.filmPosterUrl || null;
   return { src, poster, status: heroVideo?.status };
-}
-
-export function resolveFashionStoreStills(input: {
-  house: LuxuryFashionHouseConfig;
-  galleryUrls?: string[] | null;
-  media?: InvitationMediaAsset[] | null;
-  limit?: number;
-}): FashionLookbookItem[] {
-  const all = resolveFashionLookbook(input);
-  const cap = Math.max(1, input.limit ?? 4);
-  return all.slice(0, cap).map((item, index) => ({
-    ...item,
-    id: `atelier-${item.id}`,
-    caption: item.caption || `Atelier ${String(index + 1).padStart(2, "0")}`,
-    collectionName: item.collectionName || "Store preview",
-  }));
 }
 
 export function resolveFashionLookbook(input: {
@@ -101,4 +72,53 @@ export function resolveFashionLookbook(input: {
       posterUrl: m.posterUrl,
     }));
   return fromMedia;
+}
+
+export function resolveFashionStoreStills(input: {
+  house: LuxuryFashionHouseConfig;
+  galleryUrls?: string[] | null;
+  media?: InvitationMediaAsset[] | null;
+  limit?: number;
+}): FashionLookbookItem[] {
+  const all = resolveFashionLookbook(input);
+  const cap = Math.max(1, input.limit ?? 4);
+  return all.slice(0, cap).map((item, index) => ({
+    ...item,
+    id: `atelier-${item.id}`,
+    caption: item.caption || `Atelier ${String(index + 1).padStart(2, "0")}`,
+    collectionName: item.collectionName || "Store preview",
+  }));
+}
+
+export type FashionChapterId = Extract<
+  FashionNavDestination,
+  "experience" | "store-preview" | "collection" | "event-details" | "location" | "rsvp" | "share"
+>;
+
+export type FashionChapterFlags = Record<FashionChapterId, boolean> & {
+  countdown: boolean;
+  mapsCta: boolean;
+};
+
+export function resolveFashionChapters(input: {
+  house: LuxuryFashionHouseConfig;
+  filmSrc: string | null;
+  looksCount: number;
+  enabledTabs?: HubTabId[] | null;
+}): FashionChapterFlags {
+  const tabs = new Set(input.enabledTabs ?? []);
+  const tabOn = (id: HubTabId) => tabs.size === 0 || tabs.has(id);
+  const ch = input.house.chapters;
+  const hasVenue = Boolean(input.house.locationName || input.house.address);
+  return {
+    experience: ch?.boutique !== false,
+    "store-preview": ch?.film !== false && Boolean(input.filmSrc),
+    collection: ch?.collection !== false && input.looksCount > 0,
+    "event-details": true,
+    location: hasVenue,
+    rsvp: ch?.rsvp !== false && tabOn("rsvp"),
+    share: ch?.share !== false,
+    countdown: ch?.countdown !== false && Boolean(input.house.startAtIso) && tabOn("countdown"),
+    mapsCta: ch?.maps !== false && Boolean(input.house.mapsUrl),
+  };
 }

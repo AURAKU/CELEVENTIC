@@ -56,3 +56,46 @@ export function fashionTokenStyle(
     "--ff-whisper": `${FASHION_MOTION.whisper}ms`,
   };
 }
+
+export function fashionTokenStyleFromColors(
+  colors?: { primary?: string; secondary?: string; accent?: string; background?: string; text?: string } | null
+): Record<`--${string}`, string> {
+  if (!colors) return fashionTokenStyle();
+  return fashionTokenStyle({
+    espresso: colors.primary,
+    gold: colors.secondary,
+    goldDeep: colors.accent,
+    champagne: colors.accent,
+    ivory: colors.background,
+    cream: colors.background,
+    ink: colors.text,
+  });
+}
+
+export function fashionTokenStyleForSilk(
+  style?: "ivory-champagne" | "pearl-mocha" | "espresso-gold" | null
+): Record<`--${string}`, string> {
+  if (style === "espresso-gold") {
+    return fashionTokenStyle({
+      ivory: "#1C1613",
+      cream: "#2C211C",
+      pearl: "#3A2E28",
+      champagne: "#8A6A3C",
+      gold: "#C4A574",
+      goldDeep: "#C4A574",
+      mocha: "#C4A574",
+      espresso: "#F4EFE6",
+      ink: "#F4EFE6",
+    });
+  }
+  if (style === "pearl-mocha") {
+    return fashionTokenStyle({
+      ivory: "#EFE4D6",
+      cream: "#E7D8C6",
+      champagne: "#C4A574",
+      gold: "#A67C52",
+      mocha: "#5C4638",
+    });
+  }
+  return fashionTokenStyle();
+}

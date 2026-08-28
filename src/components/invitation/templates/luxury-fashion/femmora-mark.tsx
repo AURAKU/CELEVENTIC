@@ -1,7 +1,30 @@
-/**
- * Original Femmora monogram — botanical stem, not a copy of any house mark.
- */
-export function FemmoraMark({ className }: { className?: string }) {
+import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
+
+export function FashionHouseMark({
+  house,
+  className,
+}: {
+  house: Pick<LuxuryFashionHouseConfig, "monogram" | "logoUrl" | "markVariant" | "houseName">;
+  className?: string;
+}) {
+  if (house.logoUrl?.trim()) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img className={className} src={house.logoUrl} alt="" width={56} height={56} />
+    );
+  }
+  if (house.markVariant === "botanical") {
+    return <FashionBotanicalMark className={className} />;
+  }
+  return (
+    <span className={className} aria-hidden>
+      {house.monogram || house.houseName.slice(0, 1)}
+    </span>
+  );
+}
+
+/** Original Celeventic botanical stem — reusable mark variant, not a client logo. */
+export function FashionBotanicalMark({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -25,4 +48,9 @@ export function FemmoraMark({ className }: { className?: string }) {
       />
     </svg>
   );
+}
+
+/** @deprecated Use FashionHouseMark with markVariant botanical. */
+export function FemmoraMark({ className }: { className?: string }) {
+  return <FashionBotanicalMark className={className} />;
 }

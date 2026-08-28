@@ -10,7 +10,12 @@ import {
 } from "@/lib/invitation/template-creative-registry";
 import { DEFAULT_WEDDING_BOARD } from "@/lib/invitation/wedding-board";
 import { EVENT_TIME_ZONE } from "@/lib/constants";
-import { FEMMORA_HOUSE_DEFAULTS } from "@/lib/experience/luxury-fashion/femmora-preset";
+import {
+  FEMMORA_CATALOG_SLUG,
+  FEMMORA_HOUSE_DEFAULTS,
+  LUXURY_FASHION_LAYOUT_SLUG,
+} from "@/lib/experience/luxury-fashion/femmora-preset";
+import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion/house-defaults";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -282,9 +287,9 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
   }),
   {
     slug: "luxury-fashion-flagship",
-    name: "Femmora Flagship Opening",
+    name: "Luxury Fashion Flagship",
     description:
-      "Ivory silk unveil into a boutique portal, atelier film and editorial lookbook",
+      "Silk unveil into a boutique portal, store film and editorial lookbook for a retail opening",
     category: "corporate",
     preview: { gradient: "from-stone-100 via-amber-50 to-stone-200", accent: "#C4A574" },
     config: {
@@ -349,7 +354,12 @@ export function getUniqueTemplatePresets(): InvitationTemplatePreset[] {
 }
 
 export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignConfig {
-  const catalog = templateSlug ? getCatalogTemplate(templateSlug) : undefined;
+  const catalogRaw = templateSlug ? getCatalogTemplate(templateSlug) : undefined;
+  /** Layout engine slug must not inherit the Femmora SKU when no catalogue id is selected. */
+  const catalog =
+    templateSlug === LUXURY_FASHION_LAYOUT_SLUG && catalogRaw?.slug !== templateSlug
+      ? undefined
+      : catalogRaw;
   const layoutSlug = catalog?.layoutSlug ?? templateSlug;
   const preset = layoutSlug ? getTemplatePreset(layoutSlug) : INVITATION_TEMPLATE_PRESETS[0];
   const base = preset?.config ?? INVITATION_TEMPLATE_PRESETS[0].config;
@@ -380,8 +390,11 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
     ? { ...enriched.studio, buttonStyle }
     : enriched.studio;
   const fashionHouse =
-    catalog?.slug === "femmora-flagship-soft-opening" || layoutSlug === "luxury-fashion-flagship"
-      ? { ...FEMMORA_HOUSE_DEFAULTS, ...identityExperience?.fashionHouse }
+    layoutSlug === LUXURY_FASHION_LAYOUT_SLUG
+      ? mergeFashionHouse(
+          catalog?.slug === FEMMORA_CATALOG_SLUG ? FEMMORA_HOUSE_DEFAULTS : LUXURY_FASHION_HOUSE_DEFAULTS,
+          identityExperience?.fashionHouse
+        )
       : identityExperience?.fashionHouse;
   const identified: InvitationDesignConfig = {
     ...enriched,
@@ -389,7 +402,7 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
       ? {
           ...identityExperience,
           fashionHouse,
-          ...(layoutSlug === "luxury-fashion-flagship"
+          ...(layoutSlug === LUXURY_FASHION_LAYOUT_SLUG
             ? { viralFooterEnabled: identityExperience?.viralFooterEnabled ?? false }
             : {}),
         }
@@ -401,7 +414,7 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
   // the paged viewer; the catalog's motion profile overrides the theme default
   // (free tier is always still).
   const theme = getInvitationTheme(catalog?.themeId);
-  if (theme && layoutSlug === "luxury-fashion-flagship" && !catalog?.blueprintId) {
+  if (theme && layoutSlug === LUXURY_FASHION_LAYOUT_SLUG && !catalog?.blueprintId) {
     return applyThemeToDesign(identified, theme);
   }
   if (theme && catalog?.blueprintId) {

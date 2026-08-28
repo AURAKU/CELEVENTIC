@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { FASHION_GESTURE_ARM_MS } from "./tokens";
 

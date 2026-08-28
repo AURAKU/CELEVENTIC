@@ -589,6 +589,8 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
       defaultAudioTrackId: userExp.defaultAudioTrackId ?? dnaExperience.defaultAudioTrackId,
       collectionId: userExp.collectionId ?? dnaExperience.collectionId,
       enableRevealSounds: userExp.enableRevealSounds ?? dnaExperience.enableRevealSounds,
+      fashionHouse: userExp.fashionHouse,
+      viralFooterEnabled: userExp.viralFooterEnabled,
     },
   };
 }

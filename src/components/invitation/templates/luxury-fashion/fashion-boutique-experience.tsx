@@ -20,11 +20,13 @@ const PORTALS: Array<{
 export function FashionBoutiqueExperience({
   houseName,
   open,
+  available,
   onClose,
   onSelect,
 }: {
   houseName: string;
   open: boolean;
+  available?: FashionNavDestination[];
   onClose: () => void;
   onSelect: (id: FashionNavDestination) => void;
 }) {
@@ -62,7 +64,7 @@ export function FashionBoutiqueExperience({
       <h2 className={styles.heading}>Step inside</h2>
       <p className={styles.lede}>A first corridor. Choose a room.</p>
       <div className={styles.boutiqueGrid}>
-        {PORTALS.map(({ id, label, Icon }) => (
+        {PORTALS.filter((portal) => !available || available.includes(portal.id)).map(({ id, label, Icon }) => (
           <button
             key={id}
             type="button"

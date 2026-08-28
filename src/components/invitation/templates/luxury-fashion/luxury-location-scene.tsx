@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { copyText } from "@/lib/clipboard";
 import styles from "./luxury-fashion-flagship.module.css";
 
@@ -17,7 +16,7 @@ export function LuxuryLocationScene({
   onMaps?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const href = buildDirectionsUrl({ mapsLink: mapsUrl, venueName: locationName, landmark: address });
+  const href = mapsUrl.trim() || null;
   const label = [locationName, address].filter(Boolean).join(", ");
 
   async function copyAddress() {
@@ -54,11 +53,7 @@ export function LuxuryLocationScene({
           >
             View on Google Maps
           </a>
-        ) : (
-          <button type="button" className={styles.cta} disabled>
-            Maps unavailable
-          </button>
-        )}
+        ) : null}
         <button type="button" className={styles.cta} onClick={() => void copyAddress()}>
           {copied ? "Address copied" : "Copy address"}
         </button>

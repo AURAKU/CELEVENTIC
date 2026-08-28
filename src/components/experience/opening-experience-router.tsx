@@ -34,7 +34,7 @@ import {
   type BlushGateOpeningCopy,
 } from "@/components/invitation-os/reveal/blush-gate-reveal";
 import { LuxuryFashionOpeningExperience } from "@/components/experience/luxury-fashion/luxury-fashion-opening-experience";
-import { FEMMORA_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion";
+import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion";
 import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 import { ReducedMotionGate, RevealKeyboardFallback } from "@/components/experience/reveal-accessibility";
 import { useReducedMotion } from "framer-motion";
@@ -232,7 +232,7 @@ export function OpeningExperienceRouter({
   }
 
   if (resolvedExperienceId === "luxury-fashion-flagship") {
-    const house = mergeFashionHouse(FEMMORA_HOUSE_DEFAULTS, {
+    const house = mergeFashionHouse(LUXURY_FASHION_HOUSE_DEFAULTS, {
       ...fashionHouse,
       houseName: hostName?.trim() || fashionHouse?.houseName,
       eventTitle: eventTitle || fashionHouse?.eventTitle,

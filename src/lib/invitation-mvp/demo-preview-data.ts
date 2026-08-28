@@ -228,10 +228,13 @@ export function buildLivePreviewProps(
   const visual = getLayoutVisualProfile(layoutSlug);
   const layoutTabs = getLayoutEnabledTabs(layoutSlug);
 
+  const isFemmoraSku = identitySlug === "femmora-flagship-soft-opening";
   const isFashionFlagship =
-    layoutSlug === "luxury-fashion-flagship" || identitySlug === "femmora-flagship-soft-opening";
-  const fashionStart = new Date(FEMMORA_START_ISO);
-  const eventInstantIso = isFashionFlagship ? fashionStart.toISOString() : FUTURE_DATE.toISOString();
+    layoutSlug === "luxury-fashion-flagship" || isFemmoraSku;
+  const fashionHouse = baseDesign.experience?.fashionHouse;
+  const fashionStartIso = fashionHouse?.startAtIso?.trim() || (isFemmoraSku ? FEMMORA_START_ISO : "");
+  const fashionStart = fashionStartIso ? new Date(fashionStartIso) : FUTURE_DATE;
+  const eventInstantIso = isFashionFlagship && fashionStartIso ? fashionStart.toISOString() : FUTURE_DATE.toISOString();
   const contactPhone = "+233 25 766 0734";
   const demoIdentity = {
     title: demo.title,
@@ -327,7 +330,9 @@ export function buildLivePreviewProps(
     startDateRaw: eventInstantIso,
     venueName: demo.venueName,
     landmark: demo.landmark,
-    mapsLink: isFashionFlagship ? FEMMORA_MAPS_URL : "https://maps.google.com",
+    mapsLink: isFashionFlagship
+      ? fashionHouse?.mapsUrl || (isFemmoraSku ? FEMMORA_MAPS_URL : "")
+      : "https://maps.google.com",
     contactPhone,
     dressCode: demo.dressCode ?? null,
     coverImageUrl: getDemoHeroUrl(layoutSlug, theme, identitySlug),

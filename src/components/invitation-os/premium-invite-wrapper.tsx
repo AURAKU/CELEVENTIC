@@ -765,6 +765,20 @@ export function PremiumInviteWrapper({
                 ? experience?.fashionHouse?.monogram
                 : undefined
             }
+            brandMarkUrl={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? experience?.fashionHouse?.logoUrl
+                : undefined
+            }
+            eventBeatOverride={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? {
+                    eyebrow: experience?.fashionHouse?.whisperEyebrow,
+                    script: experience?.fashionHouse?.whisperScript,
+                    plain: experience?.fashionHouse?.whisperLine,
+                  }
+                : undefined
+            }
           />
         </CeremonyErrorBoundary>
       </>

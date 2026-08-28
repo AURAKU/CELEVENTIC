@@ -117,9 +117,9 @@ export const PUBLIC_CATALOG_COPY: Record<string, PublicCatalogCopy> = {
     style: "Modern",
   },
   "luxury-fashion-flagship": {
-    name: "Femmora Flagship Opening",
+    name: "Luxury Fashion Flagship",
     description:
-      "Ivory silk unveil into a boutique portal, atelier film and editorial lookbook for a luxury flagship soft opening.",
+      "Ivory silk unveil into a boutique portal, store film and editorial lookbook for a luxury retail opening.",
     style: "Editorial",
   },
   "custom-media": {
@@ -452,14 +452,14 @@ export const CATALOG_DEMO_IDENTITIES: Record<string, DemoIdentity> = {
     dressCode: "Business formal",
   },
   "luxury-fashion-flagship": {
-    title: "Soft Opening",
-    hostName: "FEMMORA",
-    message: "A quiet house. A first light. You are invited to the Femmora flagship unveiling.",
-    invitationName: "Femmora Soft Opening",
-    venueName: "FEMMORA GH",
-    landmark: "Westlands",
+    title: "Flagship Opening",
+    hostName: "THE HOUSE",
+    message: "A quiet house. A first light. You are invited to the flagship unveiling.",
+    invitationName: "Flagship Opening",
+    venueName: "The House",
+    landmark: "",
     dressCode: "Atelier dress",
-    sealInitials: "F",
+    sealInitials: "H",
   },
   "femmora-flagship-soft-opening": {
     title: "Soft Opening",

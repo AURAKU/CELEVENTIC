@@ -37,6 +37,8 @@ export interface LuxuryFashionHouseConfig {
   unveilingLabel: string;
   teaserLine: string;
   whisperLine: string;
+  whisperEyebrow?: string;
+  whisperScript?: string;
   hubLede: string;
   swipeHint: string;
   portalWelcome: string;
@@ -50,6 +52,8 @@ export interface LuxuryFashionHouseConfig {
   address: string;
   mapsUrl: string;
   silkStyle: FashionSilkStyle;
+  markVariant?: "letter" | "botanical";
+  logoUrl?: string | null;
   filmCta: string;
   filmSkipLabel: string;
   navigationStyle: FashionNavStyle;
@@ -66,6 +70,16 @@ export interface LuxuryFashionHouseConfig {
   timeZone: string;
   filmUrl?: string | null;
   filmPosterUrl?: string | null;
+  visitDayOptions?: { id: string; label: string }[];
+  chapters?: {
+    boutique?: boolean;
+    film?: boolean;
+    collection?: boolean;
+    countdown?: boolean;
+    maps?: boolean;
+    rsvp?: boolean;
+    share?: boolean;
+  };
 }
 
 export type FashionOpeningPhase =

@@ -64,6 +64,7 @@ export interface TapToBeginExperienceProps {
   brandMarkLetter?: string | null;
   /** Optional brand mark image. Prefer a letter when no asset is uploaded. */
   brandMarkUrl?: string | null;
+  eventBeatOverride?: { eyebrow?: string; script?: string; plain?: string } | null;
 }
 
 const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale"]>, number> = {
@@ -110,7 +111,14 @@ function resolveEventBeat(input: {
   eventTitle?: string;
   layoutSlug?: string;
   category?: string;
+  eventBeatOverride?: { eyebrow?: string; script?: string; plain?: string } | null;
 }): EventBeat {
+  if (input.eventBeatOverride?.eyebrow && input.eventBeatOverride?.script) {
+    return { eyebrow: input.eventBeatOverride.eyebrow, script: input.eventBeatOverride.script };
+  }
+  if (input.eventBeatOverride?.plain?.trim()) {
+    return { plain: input.eventBeatOverride.plain.trim() };
+  }
   if (input.layoutSlug === "luxury-fashion-flagship") {
     return { eyebrow: "SOMETHING BEAUTIFUL", script: "Is about to open" };
   }
@@ -229,6 +237,7 @@ export function TapToBeginExperience({
   ctaLabelOverride,
   brandMarkLetter,
   brandMarkUrl,
+  eventBeatOverride,
 }: TapToBeginExperienceProps) {
   const reduceMotion = useReducedMotion() || staticPreview;
   const [exiting, setExiting] = useState(false);
@@ -275,8 +284,8 @@ export function TapToBeginExperience({
   const scaleValue = FONT_SCALE_VALUES[fontScale] ?? 1;
 
   const beat = useMemo(
-    () => resolveEventBeat({ ceremonyLabel, eventTitle, layoutSlug, category }),
-    [ceremonyLabel, eventTitle, layoutSlug, category]
+    () => resolveEventBeat({ ceremonyLabel, eventTitle, layoutSlug, category, eventBeatOverride }),
+    [ceremonyLabel, eventTitle, layoutSlug, category, eventBeatOverride]
   );
 
   const couple = useMemo(
