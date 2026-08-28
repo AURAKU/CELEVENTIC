@@ -684,12 +684,232 @@
 @media (prefers-reduced-motion: reduce) {
   .folioFoil,
   .folioLeak,
-  .folioWindowMedia {
+  .folioWindowMedia,
+  .envelopeFlap,
+  .invitationCard,
+  .cardFoil,
+  .envelopeLayer {
     animation: none;
+    transition-duration: var(--ff-standard, 0.28s);
   }
 
   .folioLayerOpen {
     transition-duration: var(--ff-standard, 0.28s);
     transform: none;
   }
+
+  .envelopeFlapOpen {
+    transform: rotateX(-132deg);
+  }
+
+  .envelopePresented .invitationCard {
+    transform: translate3d(0, -68%, 0);
+  }
+
+  .envelopeLayerMorph {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+.envelopeLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  padding: max(1.25rem, env(safe-area-inset-top)) 1.1rem max(1.4rem, env(safe-area-inset-bottom));
+  pointer-events: none;
+  perspective: 1200px;
+}
+
+.envelopeStage {
+  width: min(88vw, 24rem);
+  max-height: min(82svh, 40rem);
+}
+
+.envelope {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4.05;
+  max-height: min(78svh, 38rem);
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 28px 48px rgba(28, 22, 19, 0.28));
+}
+
+.envelopeLining,
+.envelopeShadow {
+  position: absolute;
+  inset: 8% 6% 6%;
+  pointer-events: none;
+}
+
+.envelopeLining {
+  background:
+    linear-gradient(165deg, #fffdf8 0%, var(--ff-ivory, #f7f1e8) 42%, var(--ff-cream, #f3ebe0) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 38%, transparent);
+}
+
+.envelopeShadow {
+  inset: auto 10% -4% 10%;
+  height: 18%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(28, 22, 19, 0.22), transparent 70%);
+}
+
+.envelopeFace {
+  position: absolute;
+  inset: 22% 8% 10%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity var(--ff-ceremonial, 1.4s) ease;
+}
+
+.envelopeUnsealing .envelopeFace {
+  opacity: 0;
+}
+
+.envelopeMark {
+  width: 4.2rem;
+  height: 4.2rem;
+  color: var(--ff-gold-deep, #a67c52);
+}
+
+.envelopeHouse {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.2rem, 4.6vw, 1.7rem);
+  letter-spacing: 0.38em;
+  text-indent: 0.38em;
+  text-transform: uppercase;
+}
+
+.envelopeLine {
+  margin: 0.35rem 0 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 45%, var(--ff-gold-deep, #8a6240));
+}
+
+.envelopeFlap {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 6%;
+  height: 28%;
+  z-index: 4;
+  transform-origin: top center;
+  background:
+    linear-gradient(180deg, #fffdf8 0%, var(--ff-cream, #f3ebe0) 62%, #e6d5bb 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  box-shadow: 0 10px 24px rgba(28, 22, 19, 0.12);
+  transition: transform 3.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.envelopeFlapOpen {
+  transform: rotateX(-158deg);
+}
+
+.envelopePocket {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 18%;
+  bottom: 9%;
+  overflow: hidden;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.envelopePresented .envelopePocket {
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.invitationCard {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18%;
+  width: 100%;
+  aspect-ratio: 3 / 4.2;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  background: var(--ff-ivory, #f7f1e8);
+  box-shadow:
+    0 18px 40px rgba(28, 22, 19, 0.2),
+    0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 55%, transparent);
+  transform: translate3d(0, 42%, 0);
+  transition: transform 3.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.invitationCard:disabled {
+  cursor: default;
+}
+
+.invitationCardReady {
+  transform: translate3d(0, -58%, 0);
+}
+
+.invitationCard:focus-visible {
+  outline: 2px solid var(--ff-gold, #b8956a);
+  outline-offset: 4px;
+}
+
+.flyerArt,
+.liveCover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.liveCover {
+  padding: 1.1rem 0.9rem;
+  overflow: hidden;
+}
+
+.cardFoil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 248, 230, 0.42) 50%, transparent 68%);
+  transform: translateX(-40%);
+  animation: sheen 8s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+}
+
+.cardCta {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  transform: translateX(-50%);
+  padding: 0.45rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 70%, transparent);
+  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 82%, transparent);
+  color: var(--ff-espresso, #2c211c);
+  font-size: 0.58rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.envelopeLayerMorph {
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.06);
+  transition: opacity var(--ff-cinematic, 1.1s) ease, transform var(--ff-cinematic, 1.1s) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.envelopeReduced .envelopeFlap,
+.envelopeReduced .invitationCard,
+.envelopeReduced .envelopeLayerMorph {
+  transition-duration: var(--ff-standard, 0.28s);
 }

@@ -15,12 +15,14 @@ export function FashionFilmScene({
   onMuteToggle,
   onFullscreen,
   variant = "default",
+  playNonce = 0,
 }: {
   src: string | null;
   poster: string | null;
   cta: string;
   skipLabel: string;
   variant?: "default" | "campaign";
+  playNonce?: number;
   onStarted?: () => void;
   onCompleted?: () => void;
   onContinue: () => void;
@@ -28,6 +30,7 @@ export function FashionFilmScene({
   onFullscreen?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const playButtonRef = useRef<HTMLButtonElement>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState(false);
@@ -48,24 +51,38 @@ export function FashionFilmScene({
     unduckInvitationAudio();
   }, []);
 
-  const play = useCallback(async () => {
+  const play = useCallback(async (opts?: { allowMutedFallback?: boolean }) => {
     const el = videoRef.current;
     if (!el || !src) return;
     setError(false);
     setLoading(true);
     duck();
     try {
+      el.muted = muted;
       await el.play();
       setPlaying(true);
       setEntered(true);
       onStarted?.();
     } catch {
-      setError(true);
+      if (opts?.allowMutedFallback) {
+        try {
+          el.muted = true;
+          setMuted(true);
+          await el.play();
+          setPlaying(true);
+          setEntered(true);
+          onStarted?.();
+          return;
+        } catch {
+          /* browser blocked autoplay */
+        }
+      }
       unduck();
+      playButtonRef.current?.focus();
     } finally {
       setLoading(false);
     }
-  }, [duck, onStarted, src, unduck]);
+  }, [duck, muted, onStarted, src, unduck]);
 
   const pause = useCallback(() => {
     videoRef.current?.pause();
@@ -106,6 +123,14 @@ export function FashionFilmScene({
   }, [onCompleted, unduck]);
 
   useEffect(() => () => unduck(), [unduck]);
+
+  useEffect(() => {
+    if (!playNonce || !src) return;
+    const timer = window.setTimeout(() => {
+      void play({ allowMutedFallback: true });
+    }, 280);
+    return () => window.clearTimeout(timer);
+  }, [play, playNonce, src]);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -155,7 +180,13 @@ export function FashionFilmScene({
       />
       {!playing ? (
         <div className={styles.filmOverlay}>
-          <button type="button" className={`${styles.cta} ${styles.ctaSolid}`} onClick={() => void play()}>
+          <button
+            ref={playButtonRef}
+            type="button"
+            className={`${styles.cta} ${styles.ctaSolid}`}
+            data-testid="fashion-film-play"
+            onClick={() => void play()}
+          >
             {error ? "Retry film" : loading ? "Loading film" : cta}
           </button>
         </div>

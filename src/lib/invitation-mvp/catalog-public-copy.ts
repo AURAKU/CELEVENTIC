@@ -262,7 +262,7 @@ export const PUBLIC_CATALOG_COPY: Record<string, PublicCatalogCopy> = {
   "femmora-flagship-soft-opening": {
     name: "Femmora Flagship Opening",
     description:
-      "Ivory silk unveil into a boutique portal, atelier film and editorial lookbook for a luxury flagship soft opening.",
+      "A luxury fashion lunch invitation with a couture envelope, invitation card rise, boutique film and editorial lookbook.",
     style: "Editorial",
   },
 };

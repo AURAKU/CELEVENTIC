@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { copyText } from "@/lib/clipboard";
+import { FashionMapsPreview } from "./fashion-maps-preview";
 import styles from "./luxury-fashion-flagship.module.css";
 
 export function LuxuryLocationScene({
@@ -47,6 +48,14 @@ export function LuxuryLocationScene({
       <p className={styles.kicker}>Location</p>
       <h2 className={styles.heading}>{locationName}</h2>
       <p className={styles.lede}>{address}</p>
+      {href ? (
+        <FashionMapsPreview
+          mapsUrl={href}
+          locationName={locationName}
+          address={address}
+          onOpen={onMaps}
+        />
+      ) : null}
       <div className={styles.ctaRow}>
         {href ? (
           <a

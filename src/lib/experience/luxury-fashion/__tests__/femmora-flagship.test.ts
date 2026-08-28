@@ -6,6 +6,7 @@ import {
   FASHION_SILK_DRAG_PX,
   FASHION_WHISPER_MS,
   FEMMORA_HOUSE_DEFAULTS,
+  FEMMORA_LOGO_MARK,
   FEMMORA_MAPS_URL,
   FEMMORA_STORE_FILM,
   FEMMORA_STORE_POSTER,
@@ -28,12 +29,12 @@ import {
 } from "@/lib/experience/luxury-fashion";
 import { isPointerArmSafe } from "@/lib/experience/luxury-fashion/gesture-arming";
 import { previewTapLabelForOpening } from "@/lib/experience/opening-experiences";
-import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
+import { getCatalogTemplate, getBrowseCatalogTemplates, filterCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
 import { getDefaultDesignConfig } from "@/lib/invitation-templates";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { buildInviteShareChannelHref, buildInviteSharePayload } from "@/lib/invitation/invite-share";
-import { buildGoogleCalendarUrl } from "@/lib/invitation/calendar-utils";
+import { buildGoogleCalendarUrl, toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
 
 test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => {
   assert.equal(FEMMORA_HOUSE_DEFAULTS.houseName, "FEMMORA");
@@ -42,14 +43,22 @@ test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => 
   assert.equal(FEMMORA_HOUSE_DEFAULTS.hoursLabel, "9 AM TO 8 PM EACH DAY");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.datesLabel, "29TH & 30TH AUGUST");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperLine, "A private first look");
-  assert.equal(FEMMORA_HOUSE_DEFAULTS.unveilingLabel, "ENTER THE HOUSE");
-  assert.equal(FEMMORA_HOUSE_DEFAULTS.openingStyle, "folio-silk");
-  assert.equal(FEMMORA_HOUSE_DEFAULTS.folioFaceLine, "A PRIVATE FIRST LOOK");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.unveilingLabel, "TAP TO OPEN");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.openingStyle, "card-envelope");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.envelopeFaceLine, "PRIVATE INVITATION");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.cardCtaLabel, "OPEN");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.logoUrl, FEMMORA_LOGO_MARK);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.silkBedUrl, null);
   assert.equal(FEMMORA_HOUSE_DEFAULTS.teaserPlaceLine, "WESTLANDS");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.rsvpHeading, "Will we see you at Femmora?");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.navLabels[0]?.label, "Enter Experience");
   assert.match(FEMMORA_MAPS_URL, /^https:\/\/www\.google\.com\/maps\/search\//);
   assert.ok(buildDirectionsUrl({ mapsLink: FEMMORA_MAPS_URL }));
+  const embed = toMapsEmbedUrl(FEMMORA_MAPS_URL, "FEMMORA GH, Westlands");
+  assert.match(embed ?? "", /maps\.google\.com\/maps\?q=/);
+  assert.match(embed ?? "", /Femmora|FEMMORA|Westlands/i);
+  assert.match(embed ?? "", /output=embed/);
+  assert.equal(toMapsEmbedUrl("", ""), null);
 });
 
 test("fashion house merge prefers organizer overrides without dropping nav labels", () => {
@@ -105,11 +114,21 @@ test("catalogue SKU and opening copy are registered", () => {
   const template = getCatalogTemplate("femmora-flagship-soft-opening");
   assert.ok(template);
   assert.equal(template?.layoutSlug, "luxury-fashion-flagship");
-  assert.equal(template?.category, "Corporate");
+  assert.equal(template?.category, "Lunch");
   assert.equal(template?.experienceOverrides?.openingExperience, "luxury-fashion-flagship");
   const copy = previewTapLabelForOpening("luxury-fashion-flagship");
-  assert.equal(copy.label, "Enter the House");
-  assert.deepEqual(copy.steps, ["Folio opens", "House opens"]);
+  assert.equal(copy.label, "Tap to open");
+  assert.deepEqual(copy.steps, ["Envelope opens", "Invitation opens"]);
+  const lunch = getCatalogTemplate("femmora-flagship-soft-opening");
+  assert.equal(lunch?.category, "Lunch");
+  assert.ok((lunch?.tags ?? []).includes("lunch"));
+});
+
+test("lunch catalogue browse lists the Femmora flagship invitation", () => {
+  const lunch = filterCatalogTemplates({ category: "Lunch" });
+  assert.ok(lunch.some((item) => item.slug === "femmora-flagship-soft-opening"));
+  const browse = getBrowseCatalogTemplates();
+  assert.ok(browse.some((item) => item.slug === "femmora-flagship-soft-opening" && item.category === "Lunch"));
 });
 
 test("default design carries Femmora fashionHouse DNA", () => {
@@ -309,29 +328,16 @@ test("generic and Vale houses do not inherit Femmora Instagram", () => {
   assert.equal(resolveFashionSocialLinks(MAISON_VALE_HOUSE).length, 0);
 });
 
-test("Femmora uses folio+silk while Vale can opt into silk-only without looping the store film", () => {
-  assert.equal(resolveFashionOpeningStyle(FEMMORA_HOUSE_DEFAULTS), "folio-silk");
+test("Femmora uses card-envelope while Vale stays silk-only without envelope teaser video", () => {
+  assert.equal(resolveFashionOpeningStyle(FEMMORA_HOUSE_DEFAULTS), "card-envelope");
   assert.equal(resolveFashionOpeningStyle(MAISON_VALE_HOUSE), "silk-only");
-  assert.equal(resolveFashionOpeningStyle(LUXURY_FASHION_HOUSE_DEFAULTS), "folio-silk");
-  const teaser = resolveFashionTeaser({
-    house: FEMMORA_HOUSE_DEFAULTS,
-    filmSrc: FEMMORA_STORE_FILM,
-    filmPoster: FEMMORA_STORE_POSTER,
-  });
-  assert.equal(teaser.poster, FEMMORA_STORE_POSTER);
+  assert.equal(resolveFashionOpeningStyle(LUXURY_FASHION_HOUSE_DEFAULTS), "card-envelope");
+  assert.equal(resolveFashionOpeningStyle({ ...FEMMORA_HOUSE_DEFAULTS, openingStyle: "folio-silk" }), "card-envelope");
+  const teaser = resolveFashionTeaser();
   assert.equal(teaser.src, null);
-  const dedicated = resolveFashionTeaser({
-    house: { ...FEMMORA_HOUSE_DEFAULTS, teaserClipUrl: "/templates/femmora/teaser.mp4" },
-    filmSrc: FEMMORA_STORE_FILM,
-    filmPoster: FEMMORA_STORE_POSTER,
-  });
-  assert.equal(dedicated.src, "/templates/femmora/teaser.mp4");
-  const valeTeaser = resolveFashionTeaser({
-    house: MAISON_VALE_HOUSE,
-    filmSrc: null,
-    filmPoster: null,
-  });
-  assert.equal(valeTeaser.src, null);
+  assert.equal(teaser.poster, null);
+  assert.ok(FEMMORA_HOUSE_DEFAULTS.flyerCardUrl);
+  assert.equal(MAISON_VALE_HOUSE.flyerCardUrl ?? null, null);
 });
 
 test("Maison Vale can replace Instagram through house DNA without code changes", () => {

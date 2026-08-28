@@ -140,16 +140,14 @@ export function resolveFashionOpeningStyle(house: LuxuryFashionHouseConfig): Fas
   if (house.openingStyle === "silk-only" || house.openingStyle === "portal-only") {
     return house.openingStyle;
   }
-  return "folio-silk";
+  return "card-envelope";
 }
 
-export function resolveFashionTeaser(input: {
-  house: LuxuryFashionHouseConfig;
-  filmSrc: string | null;
-  filmPoster: string | null;
-}): { src: string | null; poster: string | null } {
-  return {
-    src: input.house.teaserClipUrl?.trim() || null,
-    poster: input.house.teaserPosterUrl?.trim() || input.filmPoster,
-  };
+/** Envelope never plays store film. Dedicated teaser clips are unused. */
+export function resolveFashionTeaser(): { src: string | null; poster: string | null } {
+  return { src: null, poster: null };
+}
+
+export function resolveFashionFlyerCard(house: LuxuryFashionHouseConfig): string | null {
+  return house.flyerCardUrl?.trim() || null;
 }

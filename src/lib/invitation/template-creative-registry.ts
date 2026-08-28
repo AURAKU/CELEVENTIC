@@ -174,6 +174,12 @@ function sectionsForCategory(category: string): {
       optional: ["countdown", "livestream"],
     };
   }
+  if (category === "Lunch") {
+    return {
+      supported: ["invitation", "countdown", "venue-map", "gallery", "rsvp", "outro"],
+      optional: ["story", "menu", "pass", "timeline", "livestream"],
+    };
+  }
   if (category === "Corporate" || category === "Conference") {
     return {
       supported: ["invitation", "countdown", "venue-map", "rsvp", "outro"],
@@ -262,6 +268,7 @@ function motionFromCatalog(t: CatalogTemplate): MotionLanguage {
   if (t.motionProfileId === "layered-drift") return "cinematic";
   if (t.motionProfileId === "gentle-drift") return "romantic";
   if (t.category === "Funeral") return "solemn";
+  if (t.category === "Lunch") return "luxurious";
   if (t.category === "Corporate" || t.category === "Conference") return "corporate";
   if (t.style === "Luxury" || t.style === "Royal") return "luxurious";
   if (t.style === "Modern") return "energetic";

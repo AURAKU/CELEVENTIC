@@ -4,9 +4,11 @@ export {
   FEMMORA_CATALOG_SLUG,
   FEMMORA_DEFAULT_LOOKS,
   FEMMORA_END_ISO,
+  FEMMORA_FLYER_CARD,
   FEMMORA_HOUSE_DEFAULTS,
   FEMMORA_INSTAGRAM_HANDLE,
   FEMMORA_INSTAGRAM_URL,
+  FEMMORA_LOGO_MARK,
   FEMMORA_MAPS_URL,
   FEMMORA_SILK_BED,
   FEMMORA_START_ISO,
@@ -40,6 +42,7 @@ export {
 export {
   resolveFashionChapters,
   resolveFashionFilm,
+  resolveFashionFlyerCard,
   resolveFashionHouse,
   resolveFashionLookbook,
   resolveFashionOpeningStyle,
@@ -47,7 +50,9 @@ export {
   resolveFashionTeaser,
 } from "./resolve-fashion-house";
 export {
+  FASHION_CARD_MORPH_MS,
   FASHION_DOORS_OPEN_MS,
+  FASHION_ENVELOPE_OPEN_MS,
   FASHION_EXIT_POINTER_MS,
   FASHION_FOLIO_OPEN_MS,
   FASHION_GESTURE_ARM_MS,

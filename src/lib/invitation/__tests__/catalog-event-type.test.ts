@@ -16,9 +16,10 @@ describe("resolveOrderEventType", () => {
     assert.equal(resolveOrderEventType("Birthday", "WEDDING"), "BIRTHDAY");
   });
 
-  it("maps Corporate / Conference correctly", () => {
-    assert.equal(resolveOrderEventType("Corporate"), "CORPORATE_EVENT");
-    assert.equal(resolveOrderEventType("Conference", "WEDDING"), "CONFERENCE");
+  it("maps Lunch category to PRODUCT_LAUNCH", () => {
+    assert.equal(resolveOrderEventType("Lunch"), "PRODUCT_LAUNCH");
+    assert.equal(resolveOrderEventType("Lunch", "WEDDING"), "PRODUCT_LAUNCH");
+    assert.equal(resolveOrderEventType("Lunch", "CORPORATE_EVENT"), "CORPORATE_EVENT");
   });
 
   it("keeps Wedding as WEDDING", () => {

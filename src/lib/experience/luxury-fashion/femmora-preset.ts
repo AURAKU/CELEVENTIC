@@ -14,7 +14,10 @@ export const FEMMORA_END_ISO = "2026-08-30T20:00:00+03:00";
 export const FEMMORA_MAPS_URL =
   "https://www.google.com/maps/search/?api=1&query=Femmora%20GH%20Westlands";
 
+/** Invitation flyer artwork — card face only, never a page wallpaper. */
 export const FEMMORA_SILK_BED = "/templates/femmora/silk-bed.jpg";
+export const FEMMORA_FLYER_CARD = FEMMORA_SILK_BED;
+export const FEMMORA_LOGO_MARK = "/templates/femmora/logo-mark.png";
 export const FEMMORA_STORE_FILM = "/templates/femmora/store-preview.mp4";
 export const FEMMORA_STORE_POSTER = "/templates/femmora/store-poster.jpg";
 export const FEMMORA_INSTAGRAM_HANDLE = "@femmora_gh";
@@ -50,7 +53,7 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     houseName: "FEMMORA",
     monogram: "F",
     eventTitle: "Soft Opening",
-    unveilingLabel: "ENTER THE HOUSE",
+    unveilingLabel: "TAP TO OPEN",
     whisperLine: "A private first look",
     whisperEyebrow: "FEMMORA",
     whisperScript: "UNVEILED",
@@ -65,11 +68,14 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     locationName: "FEMMORA GH",
     address: "Westlands",
     mapsUrl: FEMMORA_MAPS_URL,
-    openingStyle: "folio-silk",
-    folioFaceLine: "A PRIVATE FIRST LOOK",
+    openingStyle: "card-envelope",
+    envelopeFaceLine: "PRIVATE INVITATION",
+    folioFaceLine: "PRIVATE INVITATION",
+    cardCtaLabel: "OPEN",
     teaserPlaceLine: "WESTLANDS",
     teaserDateLine: "29 — 30 AUGUST",
-    teaserPosterUrl: FEMMORA_STORE_POSTER,
+    teaserClipUrl: null,
+    teaserPosterUrl: null,
     mapsCtaLabel: "View on Google Maps",
     countdownBeforeLabel: "The doors open in",
     countdownAfterLabel: "The doors are open",
@@ -78,8 +84,10 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     filmChapterTitle: "The first look",
     filmChapterLede: "Experience Femmora",
     markVariant: "letter",
+    logoUrl: FEMMORA_LOGO_MARK,
     lookbookItems: FEMMORA_DEFAULT_LOOKS,
-    silkBedUrl: FEMMORA_SILK_BED,
+    silkBedUrl: null,
+    flyerCardUrl: FEMMORA_FLYER_CARD,
     startAtIso: FEMMORA_START_ISO,
     endAtIso: FEMMORA_END_ISO,
     filmUrl: FEMMORA_STORE_FILM,

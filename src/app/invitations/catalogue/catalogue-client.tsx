@@ -26,6 +26,7 @@ const EVENT_TYPE_TO_CATEGORY: Record<string, string> = {
   FUNERAL: "Funeral",
   BIRTHDAY: "Birthday",
   CORPORATE_EVENT: "Corporate",
+  PRODUCT_LAUNCH: "Lunch",
   CHURCH_PROGRAM: "Church",
   PRIVATE_EVENT: "Private Event",
 };
@@ -233,6 +234,7 @@ export function CatalogueClient() {
           <option value="FUNERAL">Funeral</option>
           <option value="BIRTHDAY">Birthday</option>
           <option value="CORPORATE_EVENT">Corporate</option>
+          <option value="PRODUCT_LAUNCH">Lunch</option>
           <option value="CHURCH_PROGRAM">Church</option>
           <option value="PRIVATE_EVENT">Private Celebration</option>
         </select>

@@ -152,19 +152,26 @@ export function FashionHouseStudioPanel({
         <Label>Opening style</Label>
         <select
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          value={house.openingStyle ?? "folio-silk"}
+          value={house.openingStyle === "folio-silk" ? "card-envelope" : house.openingStyle ?? "card-envelope"}
           onChange={(e) => patch({ openingStyle: e.target.value as FashionOpeningStyle })}
         >
-          <option value="folio-silk">Folio + silk</option>
+          <option value="card-envelope">Card envelope</option>
           <option value="silk-only">Silk only</option>
           <option value="portal-only">Portal only</option>
         </select>
       </div>
       <div className="grid gap-2">
-        <Label>Folio face line</Label>
+        <Label>Envelope face line</Label>
         <Input
-          value={house.folioFaceLine ?? ""}
-          onChange={(e) => patch({ folioFaceLine: e.target.value })}
+          value={house.envelopeFaceLine ?? house.folioFaceLine ?? ""}
+          onChange={(e) => patch({ envelopeFaceLine: e.target.value, folioFaceLine: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Card CTA</Label>
+        <Input
+          value={house.cardCtaLabel ?? ""}
+          onChange={(e) => patch({ cardCtaLabel: e.target.value })}
         />
       </div>
       <div className="grid gap-2">

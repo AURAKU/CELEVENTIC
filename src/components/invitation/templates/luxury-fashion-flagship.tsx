@@ -90,6 +90,7 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
   );
   const [current, setCurrent] = useState<FashionNavDestination>("experience");
   const [boutiqueOpen, setBoutiqueOpen] = useState(false);
+  const [filmPlayNonce, setFilmPlayNonce] = useState(0);
   const invitationId = props.invitation.id;
   const templateSlug = LUXURY_FASHION_LAYOUT_SLUG;
 
@@ -112,6 +113,10 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         return;
       }
       scrollTo(id);
+      if (id === "store-preview") {
+        trackFashionAction("store_preview_started", { invitationId, templateSlug });
+        window.setTimeout(() => setFilmPlayNonce((n) => n + 1), 120);
+      }
     },
     [chapters, invitationId, scrollTo, templateSlug]
   );
@@ -122,7 +127,6 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
       style={
         {
           ...fashionTokenStyleFromColors(props.design.colors),
-          ...(house.silkBedUrl ? { ["--ff-silk-bed" as string]: `url("${house.silkBedUrl}")` } : null),
         } as CSSProperties
       }
       data-testid="luxury-fashion-flagship"
@@ -146,6 +150,7 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         onFilmMute={() => trackFashionAction("film_muted", { invitationId, templateSlug })}
         onFilmFullscreen={() => trackFashionAction("film_fullscreen", { invitationId, templateSlug })}
         storePreviewId={SECTION_IDS["store-preview"]}
+        filmPlayNonce={filmPlayNonce}
       />
 
       <FashionEditorialIndex labels={navLabels} current={current} onSelect={go} />

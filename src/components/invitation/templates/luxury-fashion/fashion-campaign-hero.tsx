@@ -2,11 +2,12 @@
 
 import { useCallback, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
-import { CalendarDays, Clock, MapPin } from "lucide-react";
 import type { FashionChapterFlags, FashionNavDestination, LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 import { FashionHouseMark } from "./femmora-mark";
+import { FashionFactMark } from "./fashion-fact-marks";
 import { FashionFilmScene } from "./fashion-film-scene";
 import { FashionLaunchCountdown } from "./fashion-launch-countdown";
+import { FashionMapsPreview } from "./fashion-maps-preview";
 import styles from "./luxury-fashion-flagship.module.css";
 
 function FashionOrdinalLine({ text }: { text: string }) {
@@ -39,6 +40,7 @@ export function FashionCampaignHero({
   onFilmMute,
   onFilmFullscreen,
   storePreviewId,
+  filmPlayNonce = 0,
 }: {
   house: LuxuryFashionHouseConfig;
   chapters: FashionChapterFlags;
@@ -51,6 +53,7 @@ export function FashionCampaignHero({
   onFilmMute?: () => void;
   onFilmFullscreen?: () => void;
   storePreviewId: string;
+  filmPlayNonce?: number;
 }) {
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
 
@@ -97,26 +100,41 @@ export function FashionCampaignHero({
 
           <ul className={styles.campaignFacts}>
             <li>
-              <MapPin size={16} strokeWidth={1.25} aria-hidden />
+              <FashionFactMark kind="location" />
               <div>
                 <p>Location</p>
                 <strong>{place}</strong>
                 {chapters.mapsCta ? (
-                  <a href={house.mapsUrl} target="_blank" rel="noreferrer" onClick={onMaps}>
+                  <a
+                    className={styles.mapsCta}
+                    href={house.mapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={onMaps}
+                  >
                     {house.mapsCtaLabel || "View on Google Maps"}
                   </a>
+                ) : null}
+                {chapters.mapsCta ? (
+                  <FashionMapsPreview
+                    compact
+                    mapsUrl={house.mapsUrl}
+                    locationName={house.locationName}
+                    address={house.address}
+                    onOpen={onMaps}
+                  />
                 ) : null}
               </div>
             </li>
             <li>
-              <Clock size={16} strokeWidth={1.25} aria-hidden />
+              <FashionFactMark kind="time" />
               <div>
                 <p>Time</p>
                 <strong>{house.hoursLabel}</strong>
               </div>
             </li>
             <li>
-              <CalendarDays size={16} strokeWidth={1.25} aria-hidden />
+              <FashionFactMark kind="date" />
               <div>
                 <p>Date</p>
                 <strong>
@@ -174,6 +192,7 @@ export function FashionCampaignHero({
               cta={house.filmCta}
               skipLabel={house.filmSkipLabel}
               variant="campaign"
+              playNonce={filmPlayNonce}
               onStarted={onFilmStarted}
               onCompleted={onFilmCompleted}
               onMuteToggle={onFilmMute}

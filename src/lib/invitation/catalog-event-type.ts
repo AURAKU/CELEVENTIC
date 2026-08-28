@@ -13,6 +13,7 @@ export const CATALOG_CATEGORY_PRIMARY_EVENT_TYPE: Record<string, string> = {
   Funeral: "FUNERAL",
   Church: "CHURCH_PROGRAM",
   Corporate: "CORPORATE_EVENT",
+  Lunch: "PRODUCT_LAUNCH",
   Conference: "CONFERENCE",
   Concert: "CONCERT",
   "Private Event": "PRIVATE_EVENT",
@@ -29,6 +30,7 @@ export const CATALOG_CATEGORY_EVENT_TYPES: Record<string, readonly string[]> = {
   Funeral: ["FUNERAL"],
   Church: ["CHURCH_PROGRAM", "CUSTOM"],
   Corporate: ["CORPORATE_EVENT", "CONFERENCE", "PRODUCT_LAUNCH"],
+  Lunch: ["PRODUCT_LAUNCH", "CORPORATE_EVENT", "PRIVATE_EVENT"],
   Conference: ["CONFERENCE", "CORPORATE_EVENT"],
   Concert: ["CONCERT", "FESTIVAL"],
   "Private Event": ["PRIVATE_EVENT", "CUSTOM", "BIRTHDAY"],
@@ -39,6 +41,7 @@ const ALIAS_TO_EVENT_TYPE: Record<string, string> = {
   ENGAGEMENT: "WEDDING",
   Church: "CHURCH_PROGRAM",
   Corporate: "CORPORATE_EVENT",
+  Lunch: "PRODUCT_LAUNCH",
   "Private Event": "PRIVATE_EVENT",
   PRIVATE_PARTY: "PRIVATE_EVENT",
 };

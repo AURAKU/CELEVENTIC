@@ -67,6 +67,11 @@ export interface TapToBeginExperienceProps {
   eventBeatOverride?: { eyebrow?: string; script?: string; plain?: string } | null;
   /** Small lines above the fashion beat (place / dates). */
   kickerLines?: string[] | null;
+  /** Hide the pill CTA; the full stage remains the control. */
+  hideCtaChip?: boolean;
+  /** Fashion-film silk atmosphere — never a living-room photo. */
+  fashionAtmosphere?: boolean;
+  ariaLabelOverride?: string | null;
 }
 
 const FONT_SCALE_VALUES: Record<NonNullable<TapToBeginExperienceProps["fontScale"]>, number> = {
@@ -241,6 +246,9 @@ export function TapToBeginExperience({
   brandMarkUrl,
   eventBeatOverride,
   kickerLines,
+  hideCtaChip = false,
+  fashionAtmosphere = false,
+  ariaLabelOverride,
 }: TapToBeginExperienceProps) {
   const reduceMotion = useReducedMotion() || staticPreview;
   const [exiting, setExiting] = useState(false);
@@ -250,7 +258,12 @@ export function TapToBeginExperience({
 
   const accent = accentColor ?? CELEVENTIC_PALETTE.teal;
 
-  const hero = atmosphereUrl?.trim() ? resolveMediaUrl(atmosphereUrl) : null;
+  const hero =
+    fashionAtmosphere || layoutSlug === "luxury-fashion-flagship"
+      ? null
+      : atmosphereUrl?.trim()
+        ? resolveMediaUrl(atmosphereUrl)
+        : null;
 
   // Smart contrast, classify the uploaded photo (light vs dark) so overlay text
   // always flips to a legible scheme instead of assuming every photo is dark.
@@ -259,6 +272,10 @@ export function TapToBeginExperience({
   const [contrastMode, setContrastMode] = useState<ImageContrastMode>("dark");
   useEffect(() => {
     let cancelled = false;
+    if (fashionAtmosphere || layoutSlug === "luxury-fashion-flagship") {
+      setContrastMode("light");
+      return;
+    }
     if (!hero) {
       setContrastMode("dark");
       return;
@@ -269,7 +286,7 @@ export function TapToBeginExperience({
     return () => {
       cancelled = true;
     };
-  }, [hero]);
+  }, [fashionAtmosphere, hero, layoutSlug]);
 
   // A brand primaryColor only wins as the script/accent "gold" when it stays
   // legible against the resolved photo, a deep bronze reads fine on paper but
@@ -337,7 +354,10 @@ export function TapToBeginExperience({
 
   // A lone "BEGIN" floating over a photo reads as decorative type, not a control, // guests need the verb ("tap") spelled out so the gesture is obvious on first look.
   const beginVerb = resolveBeginVerb(layoutSlug, category);
-  const ctaText = ctaLabelOverride?.trim() || `Tap to ${beginVerb}`;
+  const ctaText =
+    layoutSlug === "luxury-fashion-flagship"
+      ? "TAP TO OPEN"
+      : ctaLabelOverride?.trim() || `Tap to ${beginVerb}`;
   const markUrl = brandMarkUrl?.trim() ? resolveMediaUrl(brandMarkUrl) : null;
   const markLetter = brandMarkLetter?.trim() || null;
   const scrimActive = scrim === "on" || (scrim === "auto" && shouldAutoScrim(layoutSlug, category));
@@ -382,7 +402,9 @@ export function TapToBeginExperience({
     return () => window.removeEventListener("keydown", onKey);
   }, [beginExit, staticPreview]);
 
-  const ariaLabel = `${ctaText}${
+  const ariaLabel =
+    ariaLabelOverride?.trim() ||
+    `${ctaText}${
     couple
       ? `, ${couple.name1} and ${couple.name2}`
       : funeralMemorial
@@ -400,6 +422,7 @@ export function TapToBeginExperience({
     staticPreview ? "" : "safe-area-pt safe-area-pb safe-area-pl safe-area-pr",
     reduceMotion ? styles.static : "",
     exiting ? styles.exiting : "",
+    fashionAtmosphere || layoutSlug === "luxury-fashion-flagship" ? styles.fashionRoot : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -449,14 +472,14 @@ export function TapToBeginExperience({
       <div className={styles.grade} aria-hidden />
 
       <div className={stageClass}>
-        {markUrl || markLetter ? (
-          <div className={styles.brandMark} aria-hidden>
+        {markUrl || (markLetter && !markUrl) ? (
+          <div className={`${styles.brandMark} ${markUrl ? styles.brandMarkLogo : ""}`} aria-hidden>
             {markUrl ? (
               <Image
                 src={markUrl}
                 alt=""
-                width={72}
-                height={72}
+                width={96}
+                height={96}
                 className={styles.brandMarkImg}
                 unoptimized={shouldUnoptimizeNextImage(markUrl)}
               />
@@ -530,12 +553,16 @@ export function TapToBeginExperience({
         ) : null}
 
         <div className={styles.cta}>
-          <span className={styles.ctaChip}>
-            <span className={styles.ctaTapMark} aria-hidden>
-              <TapGlyph />
+          {hideCtaChip || layoutSlug === "luxury-fashion-flagship" ? (
+            <span className={styles.fashionHint}>{ctaText}</span>
+          ) : (
+            <span className={styles.ctaChip}>
+              <span className={styles.ctaTapMark} aria-hidden>
+                <TapGlyph />
+              </span>
+              <span className={styles.ctaWord}>{ctaText}</span>
             </span>
-            <span className={styles.ctaWord}>{ctaText}</span>
-          </span>
+          )}
           {!staticPreview ? (
             <span className={styles.ctaHint} aria-hidden>
               or press Enter

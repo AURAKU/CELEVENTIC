@@ -1,81 +1,79 @@
 "use client";
 
 import { FashionHouseMark } from "@/components/invitation/templates/luxury-fashion/femmora-mark";
-import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
+import { FashionInvitationCover } from "@/components/invitation/templates/luxury-fashion/fashion-invitation-cover";
+import { resolveFashionFlyerCard, type LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 import styles from "./luxury-fashion-opening.module.css";
 
-export function FashionFolioScene({
+export function FashionEnvelopeScene({
   house,
-  teaserSrc,
-  teaserPoster,
-  open,
+  phase,
   armed,
   reduceMotion,
-  onOpen,
+  onOpenCard,
 }: {
   house: LuxuryFashionHouseConfig;
-  teaserSrc: string | null;
-  teaserPoster: string | null;
-  open: boolean;
+  phase: "envelope" | "envelope-opening" | "card-presented" | "card-morphing";
   armed: boolean;
   reduceMotion: boolean;
-  onOpen: () => void;
+  onOpenCard: () => void;
 }) {
-  const label = `Open the ${house.houseName} folio`;
+  const flyer = resolveFashionFlyerCard(house);
+  const faceLine = house.envelopeFaceLine || house.folioFaceLine || "";
+  const cta = house.cardCtaLabel?.trim() || "OPEN";
+  const unsealing = phase !== "envelope";
+  const presented = phase === "card-presented" || phase === "card-morphing";
+  const morphing = phase === "card-morphing";
+  const label = `Open the ${house.houseName} invitation`;
 
   return (
     <div
-      className={`${styles.folioLayer} ${open ? styles.folioLayerOpen : ""}`}
-      data-testid="fashion-folio"
-      aria-hidden={open}
+      className={`${styles.envelopeLayer} ${unsealing ? styles.envelopeUnsealing : ""} ${
+        presented ? styles.envelopePresented : ""
+      } ${morphing ? styles.envelopeLayerMorph : ""} ${reduceMotion ? styles.envelopeReduced : ""}`}
+      data-testid="fashion-envelope"
+      data-envelope-phase={phase}
     >
-      <div className={styles.folio}>
-        <span className={styles.folioGrain} aria-hidden />
-        {!reduceMotion ? <span className={styles.folioFoil} aria-hidden /> : null}
-        <span className={styles.folioSeam} aria-hidden />
-        {!reduceMotion ? <span className={styles.folioLeak} aria-hidden /> : null}
-
-        {teaserSrc || teaserPoster ? (
-          <div className={styles.folioWindow} aria-hidden data-testid="fashion-folio-teaser">
-            {teaserSrc && !reduceMotion ? (
-              <video
-                className={styles.folioWindowMedia}
-                src={teaserSrc}
-                poster={teaserPoster ?? undefined}
-                muted
-                playsInline
-                loop
-                autoPlay
-                preload="metadata"
-              />
-            ) : teaserPoster ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className={styles.folioWindowMedia} src={teaserPoster} alt="" />
-            ) : null}
+      <div className={styles.envelopeStage}>
+        <div className={`${styles.envelope} ${unsealing ? styles.envelopeOpened : ""}`}>
+          <span className={styles.envelopeLining} aria-hidden />
+          <span className={styles.envelopeShadow} aria-hidden />
+          <div className={styles.envelopeFace} aria-hidden={unsealing}>
+            <FashionHouseMark house={house} className={styles.envelopeMark} />
+            <p className={styles.envelopeHouse}>{house.houseName}</p>
+            {faceLine ? <p className={styles.envelopeLine}>{faceLine}</p> : null}
           </div>
-        ) : null}
-
-        <div className={styles.folioFace}>
-          <FashionHouseMark house={house} className={styles.folioClaspMark} />
-          <p className={styles.folioHouse}>{house.houseName}</p>
-          <p className={styles.folioEvent}>{house.eventTitle}</p>
-          <p className={styles.folioLine}>{house.folioFaceLine || "A PRIVATE FIRST LOOK"}</p>
+          <span className={`${styles.envelopeFlap} ${unsealing ? styles.envelopeFlapOpen : ""}`} aria-hidden />
+          <div className={styles.envelopePocket}>
+            <button
+              type="button"
+              className={`${styles.invitationCard} ${presented ? styles.invitationCardReady : ""}`}
+              data-testid="fashion-invitation-card"
+              aria-label={label}
+              disabled={!armed || !presented || morphing}
+              onClick={onOpenCard}
+            >
+              <span className={styles.cardFoil} aria-hidden />
+              {flyer ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className={styles.flyerArt} src={flyer} alt="" />
+              ) : (
+                <FashionInvitationCover
+                  house={house}
+                  mapsEnabled={Boolean(house.mapsUrl)}
+                  mapsInteractive={false}
+                  headingAs="p"
+                  className={styles.liveCover}
+                />
+              )}
+              {presented ? <span className={styles.cardCta}>{cta}</span> : null}
+            </button>
+          </div>
         </div>
-
-        <button
-          type="button"
-          className={styles.folioClasp}
-          data-testid="fashion-folio-clasp"
-          aria-label={label}
-          disabled={!armed || open}
-          onClick={onOpen}
-        >
-          <FashionHouseMark house={house} className={styles.folioClaspMark} />
-        </button>
-        <p className={styles.folioHint} aria-hidden>
-          {armed ? "Open folio" : "Preparing"}
-        </p>
       </div>
     </div>
   );
 }
+
+/** @deprecated Envelope scene is the current opening. */
+export const FashionFolioScene = FashionEnvelopeScene;
