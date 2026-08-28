@@ -57,18 +57,29 @@ export function fashionTokenStyle(
   };
 }
 
+const SOLID_COLOR = /^(#|rgb\(|rgba\(|hsl\(|hsla\(|oklch\(|color\()/i;
+
+function asFashionSolidColor(value: string | undefined, fallback: string): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return fallback;
+  if (trimmed.includes("gradient(") || trimmed.includes("url(")) return fallback;
+  if (SOLID_COLOR.test(trimmed)) return trimmed;
+  return fallback;
+}
+
 export function fashionTokenStyleFromColors(
   colors?: { primary?: string; secondary?: string; accent?: string; background?: string; text?: string } | null
 ): Record<`--${string}`, string> {
   if (!colors) return fashionTokenStyle();
+  const defaults = FASHION_TOKEN_VALUES;
   return fashionTokenStyle({
-    espresso: colors.primary,
-    gold: colors.secondary,
-    goldDeep: colors.accent,
-    champagne: colors.accent,
-    ivory: colors.background,
-    cream: colors.background,
-    ink: colors.text,
+    espresso: asFashionSolidColor(colors.primary, defaults.espresso),
+    gold: asFashionSolidColor(colors.secondary, defaults.gold),
+    goldDeep: asFashionSolidColor(colors.accent, defaults.goldDeep),
+    champagne: asFashionSolidColor(colors.accent, defaults.champagne),
+    ivory: asFashionSolidColor(colors.background, defaults.ivory),
+    cream: asFashionSolidColor(colors.background, defaults.cream),
+    ink: asFashionSolidColor(colors.text, defaults.ink),
   });
 }
 

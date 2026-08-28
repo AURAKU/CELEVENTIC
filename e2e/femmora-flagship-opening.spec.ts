@@ -177,12 +177,42 @@ test.describe("Femmora luxury flagship opening", () => {
     await expect(page.getByRole("button", { name: /yes — i.ll be there|i'll be there/i })).toBeVisible();
     await shot(page, "I-mobile-rsvp");
 
+    const social = page.getByTestId("fashion-social");
+    await social.scrollIntoViewIfNeeded();
+    await expect(social.getByRole("heading", { name: /follow femmora/i })).toBeVisible();
+    await expect(social.getByText(/discover new arrivals/i)).toBeVisible();
+    await expect(page.getByTestId("fashion-social-icon").locator("svg")).toBeVisible();
+    await expect(page.getByTestId("fashion-social-handle")).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/femmora_gh/"
+    );
+    await expect(page.getByTestId("fashion-social-icon")).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/femmora_gh/"
+    );
+    await expect(page.getByTestId("fashion-social-cta")).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/femmora_gh/"
+    );
+    await expect(page.getByTestId("fashion-social-cta")).toHaveAttribute("target", "_blank");
+    await expect(page.getByTestId("fashion-social-cta")).toHaveAttribute("rel", /noopener/);
+    await expect(page.getByTestId("fashion-social-handle")).toContainText("@femmora_gh");
+    await page.getByTestId("fashion-social-cta").focus();
+    await expect(page.getByTestId("fashion-social-cta")).toBeFocused();
+    await expect(page.getByRole("link", { name: /follow femmora on instagram/i }).first()).toBeVisible();
+
     await page.getByTestId("fashion-copy-link").click();
     await expect(page.getByTestId("fashion-copy-link")).toContainText(/copied|copy/i);
 
     await page.getByTestId("fashion-finale").scrollIntoViewIfNeeded();
     await expect(page.getByTestId("fashion-finale")).toContainText(/see you inside|new chapter/i);
     await expect(page.getByTestId("fashion-finale-actions").getByRole("button", { name: /replay store film/i })).toBeVisible();
+    await expect(page.getByTestId("fashion-social-finale")).toContainText(/follow/i);
+    await expect(page.getByTestId("fashion-social-finale")).toContainText("@femmora_gh");
+    await expect(page.getByTestId("fashion-social-finale-instagram")).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/femmora_gh/"
+    );
     await shot(page, "J-mobile-finale");
 
     const scroller = await inviteScroller(page);
@@ -236,25 +266,38 @@ test.describe("Femmora luxury flagship opening", () => {
     await expect(opening).toBeHidden({ timeout: 15_000 });
     await expect(page.getByTestId("luxury-fashion-flagship")).toBeVisible({ timeout: 15_000 });
     await assertScrollUnlocked(page);
+    await page.getByTestId("fashion-social").scrollIntoViewIfNeeded();
+    await expect(page.getByTestId("fashion-social-cta")).toHaveAttribute("target", "_blank");
+    await expect(page.getByTestId("fashion-social-cta")).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/femmora_gh/"
+    );
     await shot(page, "G-desktop-details");
     await context.close();
   });
 
-  test("390, 430 and tablet frames keep the invitation hub usable", async ({ browser }) => {
-    test.setTimeout(150_000);
+  test("320 to tablet frames keep the invitation hub usable", async ({ browser }) => {
+    test.setTimeout(90_000);
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    await page.goto(runtime, { waitUntil: "domcontentloaded" });
+    await completeOpening(page);
     for (const [name, viewport] of [
+      ["320", { width: 320, height: 568 }],
+      ["375", { width: 375, height: 667 }],
       ["390", { width: 390, height: 844 }],
       ["430", { width: 430, height: 932 }],
       ["tablet", { width: 768, height: 1024 }],
     ] as const) {
-      const context = await browser.newContext({ viewport });
-      const page = await context.newPage();
-      await page.goto(runtime, { waitUntil: "domcontentloaded" });
-      await completeOpening(page);
+      await page.setViewportSize(viewport);
       await shot(page, `K-${name}-hub`);
       await expect(page.getByTestId("fashion-nav").getByRole("button", { name: /view collection/i })).toBeVisible();
-      await context.close();
+      await expect(page.getByTestId("fashion-nav").getByRole("button", { name: /follow femmora/i })).toBeVisible();
+      await page.getByTestId("fashion-social").scrollIntoViewIfNeeded();
+      const ctaBox = await page.getByTestId("fashion-social-cta").boundingBox();
+      expect(ctaBox?.height ?? 0).toBeGreaterThanOrEqual(40);
     }
+    await context.close();
   });
 
   test("reduced motion still offers a premium two-gesture entrance", async ({ browser }) => {

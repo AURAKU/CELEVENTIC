@@ -47,6 +47,8 @@ test.describe("Luxury fashion engine is reusable beyond Femmora", () => {
     await expect(page.getByTestId("fashion-film-scene")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /store preview/i })).toHaveCount(0);
     await expect(page.getByTestId("fashion-lookbook")).toBeVisible();
+    await expect(page.getByTestId("fashion-social")).toHaveCount(0);
+    await expect(page.getByTestId("fashion-social-finale")).toHaveCount(0);
     await expect(page.getByText(/westlands/i)).toHaveCount(0);
     await expect(page.getByText(/femmora/i)).toHaveCount(0);
     await context.close();

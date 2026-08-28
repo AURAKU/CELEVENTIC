@@ -1,4 +1,6 @@
 import styles from "./luxury-fashion-flagship.module.css";
+import { FashionSocialFinaleStrip } from "./fashion-social-scene";
+import type { ResolvedInvitationSocialLink } from "@/lib/experience/luxury-fashion";
 
 export function FashionFinale({
   message,
@@ -11,6 +13,8 @@ export function FashionFinale({
   onShare,
   onReplayFilm,
   onCollection,
+  socialLinks,
+  onSocial,
 }: {
   message: string;
   kicker: string;
@@ -22,6 +26,8 @@ export function FashionFinale({
   onShare?: () => void;
   onReplayFilm?: () => void;
   onCollection?: () => void;
+  socialLinks?: ResolvedInvitationSocialLink[];
+  onSocial?: (platform: ResolvedInvitationSocialLink["platform"]) => void;
 }) {
   return (
     <section className={styles.finale} data-testid="fashion-finale">
@@ -60,6 +66,9 @@ export function FashionFinale({
           </button>
         ) : null}
       </div>
+      {socialLinks?.length ? (
+        <FashionSocialFinaleStrip links={socialLinks} houseName={houseName} onOpen={onSocial} />
+      ) : null}
     </section>
   );
 }

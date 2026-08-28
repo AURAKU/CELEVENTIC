@@ -15,6 +15,7 @@ export function mergeFashionHouse(
     filmPosterUrl: override.filmPosterUrl === undefined ? base.filmPosterUrl : override.filmPosterUrl,
     visitDayOptions:
       override.visitDayOptions !== undefined ? override.visitDayOptions : base.visitDayOptions,
+    socialLinks: override.socialLinks !== undefined ? override.socialLinks : base.socialLinks,
     chapters: { ...base.chapters, ...override.chapters },
   };
 }
@@ -26,6 +27,7 @@ export const LUXURY_FASHION_NAV_LABELS: FashionNavLabel[] = [
   { id: "rsvp", label: "RSVP" },
   { id: "location", label: "Location" },
   { id: "event-details", label: "Event Details" },
+  { id: "social", label: "Stay Connected" },
 ];
 
 /** Neutral fashion-flagship DNA. Presets (Femmora, later houses) overlay this. */
@@ -68,6 +70,14 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   filmUrl: null,
   filmPosterUrl: null,
   visitDayOptions: [],
+  showSocialSection: false,
+  instagramHandle: "",
+  instagramUrl: "",
+  socialIntroText: "",
+  socialTitle: "Stay Connected",
+  socialCtaLabel: "Follow on Instagram",
+  showSocialIconsInFinale: false,
+  socialLinks: [],
   chapters: {
     boutique: true,
     film: true,
@@ -76,5 +86,6 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
     maps: true,
     rsvp: true,
     share: true,
+    social: true,
   },
 };

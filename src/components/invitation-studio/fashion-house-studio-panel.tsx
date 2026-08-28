@@ -172,6 +172,102 @@ export function FashionHouseStudioPanel({
         <Label>Final message</Label>
         <Textarea rows={3} value={house.finaleMessage} onChange={(e) => patch({ finaleMessage: e.target.value })} />
       </div>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-800/80 pt-1">
+        Social
+      </p>
+      <label className="flex items-start gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={house.showSocialSection === true}
+          onChange={(e) => patch({ showSocialSection: e.target.checked })}
+        />
+        <span>Show social section</span>
+      </label>
+      <div className="grid gap-2">
+        <Label>Instagram handle</Label>
+        <Input
+          value={house.instagramHandle ?? ""}
+          placeholder="@atelier"
+          onChange={(e) => {
+            const instagramHandle = e.target.value;
+            const rest = (house.socialLinks ?? []).filter((link) => link.platform !== "instagram");
+            patch({
+              instagramHandle,
+              socialLinks: [
+                {
+                  platform: "instagram",
+                  handle: instagramHandle,
+                  url: house.instagramUrl,
+                  enabled: true,
+                  ctaLabel: house.socialCtaLabel,
+                },
+                ...rest,
+              ],
+            });
+          }}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Instagram URL</Label>
+        <Input
+          value={house.instagramUrl ?? ""}
+          placeholder="https://www.instagram.com/atelier/"
+          onChange={(e) => {
+            const instagramUrl = e.target.value;
+            const rest = (house.socialLinks ?? []).filter((link) => link.platform !== "instagram");
+            patch({
+              instagramUrl,
+              socialLinks: [
+                {
+                  platform: "instagram",
+                  handle: house.instagramHandle,
+                  url: instagramUrl,
+                  enabled: true,
+                  ctaLabel: house.socialCtaLabel,
+                },
+                ...rest,
+              ],
+            });
+          }}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Social intro text</Label>
+        <Input
+          value={house.socialIntroText ?? ""}
+          onChange={(e) => patch({ socialIntroText: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Social title</Label>
+        <Input
+          value={house.socialTitle ?? ""}
+          placeholder="Stay Connected"
+          onChange={(e) => patch({ socialTitle: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Instagram button label</Label>
+        <Input
+          value={house.socialCtaLabel ?? ""}
+          placeholder="Follow on Instagram"
+          onChange={(e) => patch({ socialCtaLabel: e.target.value })}
+        />
+      </div>
+      <label className="flex items-start gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={house.showSocialIconsInFinale === true}
+          onChange={(e) => patch({ showSocialIconsInFinale: e.target.checked })}
+        />
+        <span>Show social icons on the finale</span>
+      </label>
+      <p className="text-[11px] text-slate-500">
+        Only enabled social links appear on the invitation. Leave the URL empty to show a handle
+        without a Follow button. Additional platforms can be added later through socialLinks.
+      </p>
       {onViralFooterChange ? (
         <label className="flex items-start gap-2 text-sm text-slate-700">
           <input

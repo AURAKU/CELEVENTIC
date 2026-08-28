@@ -13,12 +13,16 @@ import {
   MAISON_VALE_COLORS,
   MAISON_VALE_HOUSE,
   assertHouseIsNotFemmora,
+  displayFashionSocialHandle,
+  fashionTokenStyleFromColors,
   mergeFashionHouse,
   resolveFashionChapters,
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
+  resolveFashionSocialLinks,
   resolveFashionStoreStills,
+  socialLinkHasDestination,
 } from "@/lib/experience/luxury-fashion";
 import { isPointerArmSafe } from "@/lib/experience/luxury-fashion/gesture-arming";
 import { previewTapLabelForOpening } from "@/lib/experience/opening-experiences";
@@ -232,4 +236,98 @@ test("experience DNA enrich keeps fashion house preset DNA", () => {
   assert.equal(enriched.experience?.fashionHouse?.houseName, "FEMMORA");
   assert.equal(enriched.experience?.fashionHouse?.filmUrl, FEMMORA_STORE_FILM);
   assert.equal(enriched.experience?.viralFooterEnabled, false);
+  assert.match(enriched.colors.background, /^#F[0-9A-Fa-f]{5}$/);
+  assert.equal(enriched.experience?.fashionHouse?.instagramHandle, "@femmora_gh");
+  assert.equal(
+    fashionTokenStyleFromColors({
+      background: "linear-gradient(135deg, #1e293b, #0f172a)",
+    })["--ff-ivory"],
+    "#F7F1E8"
+  );
+});
+
+test("Femmora social defaults to Instagram only and stays Studio-replaceable", () => {
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.showSocialSection, true);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.instagramHandle, "@femmora_gh");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.instagramUrl, "https://www.instagram.com/femmora_gh/");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.socialLinks?.[0]?.platform, "instagram");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.socialLinks?.[0]?.enabled, true);
+  assert.match(FEMMORA_HOUSE_DEFAULTS.socialIntroText ?? "", /discover new arrivals/i);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.socialTitle, "Follow Femmora");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.showSocialIconsInFinale, true);
+  const links = resolveFashionSocialLinks(FEMMORA_HOUSE_DEFAULTS);
+  assert.equal(links.length, 1);
+  assert.equal(links[0]?.platform, "instagram");
+  assert.equal(links[0]?.url, "https://www.instagram.com/femmora_gh/");
+  assert.equal(displayFashionSocialHandle(links[0]?.handle), "@femmora_gh");
+  assert.equal(socialLinkHasDestination(links[0]!), true);
+  const chapters = resolveFashionChapters({
+    house: FEMMORA_HOUSE_DEFAULTS,
+    filmSrc: FEMMORA_STORE_FILM,
+    looksCount: 3,
+    enabledTabs: ["invitation", "gallery", "countdown", "venue", "rsvp"],
+  });
+  assert.equal(chapters.social, true);
+  const hidden = resolveFashionChapters({
+    house: { ...FEMMORA_HOUSE_DEFAULTS, showSocialSection: false },
+    filmSrc: FEMMORA_STORE_FILM,
+    looksCount: 3,
+  });
+  assert.equal(hidden.social, false);
+  const handleOnly = resolveFashionSocialLinks({
+    ...FEMMORA_HOUSE_DEFAULTS,
+    socialLinks: [{ platform: "instagram", handle: "@atelier_x", enabled: true }],
+  });
+  assert.equal(handleOnly[0]?.displayHandle, "@atelier_x");
+  assert.equal(socialLinkHasDestination(handleOnly[0]!), false);
+  const withTikTok = resolveFashionSocialLinks({
+    ...FEMMORA_HOUSE_DEFAULTS,
+    socialLinks: [
+      ...(FEMMORA_HOUSE_DEFAULTS.socialLinks ?? []),
+      { platform: "tiktok", url: "https://www.tiktok.com/@atelier", enabled: true },
+    ],
+  });
+  assert.equal(withTikTok.map((link) => link.platform).join(","), "instagram,tiktok");
+});
+
+test("generic and Vale houses do not inherit Femmora Instagram", () => {
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.showSocialSection, false);
+  assert.equal(resolveFashionSocialLinks(LUXURY_FASHION_HOUSE_DEFAULTS).length, 0);
+  const valeChapters = resolveFashionChapters({
+    house: MAISON_VALE_HOUSE,
+    filmSrc: null,
+    looksCount: 2,
+    enabledTabs: ["invitation", "gallery", "countdown", "venue", "rsvp"],
+  });
+  assert.equal(valeChapters.social, false);
+  assert.equal(resolveFashionSocialLinks(MAISON_VALE_HOUSE).length, 0);
+});
+
+test("Maison Vale can replace Instagram through house DNA without code changes", () => {
+  const valeSocial = mergeFashionHouse(MAISON_VALE_HOUSE, {
+    showSocialSection: true,
+    showSocialIconsInFinale: true,
+    socialTitle: "Follow Maison Vale",
+    socialLinks: [
+      {
+        platform: "instagram",
+        handle: "@maisonvale",
+        url: "https://www.instagram.com/maisonvale/",
+        enabled: true,
+      },
+    ],
+  });
+  const leaks = assertHouseIsNotFemmora(valeSocial);
+  assert.equal(leaks.length, 0);
+  const links = resolveFashionSocialLinks(valeSocial);
+  assert.equal(links.length, 1);
+  assert.equal(links[0]?.displayHandle, "@maisonvale");
+  assert.equal(links[0]?.url, "https://www.instagram.com/maisonvale/");
+  assert.notEqual(links[0]?.url, FEMMORA_HOUSE_DEFAULTS.instagramUrl);
+  const chapters = resolveFashionChapters({
+    house: valeSocial,
+    filmSrc: null,
+    looksCount: 2,
+  });
+  assert.equal(chapters.social, true);
 });

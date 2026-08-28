@@ -5,6 +5,8 @@ export {
   FEMMORA_DEFAULT_LOOKS,
   FEMMORA_END_ISO,
   FEMMORA_HOUSE_DEFAULTS,
+  FEMMORA_INSTAGRAM_HANDLE,
+  FEMMORA_INSTAGRAM_URL,
   FEMMORA_MAPS_URL,
   FEMMORA_SILK_BED,
   FEMMORA_START_ISO,
@@ -27,6 +29,15 @@ export {
   assertHouseIsNotFemmora,
 } from "./maison-vale-fixture";
 export {
+  displayFashionSocialHandle,
+  followAriaLabel,
+  houseSocialLinkSource,
+  normalizeFashionSocialHandle,
+  resolveFashionSocialLinks,
+  resolveFashionSocialTitle,
+  socialLinkHasDestination,
+} from "./social";
+export {
   resolveFashionChapters,
   resolveFashionFilm,
   resolveFashionHouse,
@@ -48,12 +59,15 @@ export {
   fashionTokenStyleFromColors,
 } from "./tokens";
 export type { FashionChapterFlags, FashionChapterId } from "./resolve-fashion-house";
+export type { ResolvedInvitationSocialLink } from "./social";
 export type {
   FashionNavDestination,
   FashionNavLabel,
   FashionNavStyle,
   FashionOpeningPhase,
   FashionSilkStyle,
+  FashionSocialLink,
+  FashionSocialPlatformId,
   LuxuryFashionHouseConfig,
 } from "./types";
 export { FASHION_NAV_DESTINATIONS } from "./types";

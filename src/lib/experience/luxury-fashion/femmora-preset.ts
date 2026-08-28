@@ -17,6 +17,8 @@ export const FEMMORA_MAPS_URL =
 export const FEMMORA_SILK_BED = "/templates/femmora/silk-bed.jpg";
 export const FEMMORA_STORE_FILM = "/templates/femmora/store-preview.mp4";
 export const FEMMORA_STORE_POSTER = "/templates/femmora/store-poster.jpg";
+export const FEMMORA_INSTAGRAM_HANDLE = "@femmora_gh";
+export const FEMMORA_INSTAGRAM_URL = "https://www.instagram.com/femmora_gh/";
 
 export const FEMMORA_DEFAULT_LOOKS: FashionLookbookItem[] = [
   {
@@ -67,6 +69,21 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
       { id: "29", label: "29 August" },
       { id: "30", label: "30 August" },
       { id: "BOTH", label: "Both" },
+    ],
+    showSocialSection: true,
+    instagramHandle: FEMMORA_INSTAGRAM_HANDLE,
+    instagramUrl: FEMMORA_INSTAGRAM_URL,
+    socialIntroText: "Discover new arrivals, behind-the-scenes moments, and more from the world of Femmora.",
+    socialTitle: "Follow Femmora",
+    socialCtaLabel: "Follow on Instagram",
+    showSocialIconsInFinale: true,
+    socialLinks: [
+      {
+        platform: "instagram",
+        handle: FEMMORA_INSTAGRAM_HANDLE,
+        url: FEMMORA_INSTAGRAM_URL,
+        enabled: true,
+      },
     ],
   }
 );

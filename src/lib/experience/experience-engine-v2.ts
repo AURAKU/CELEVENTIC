@@ -551,9 +551,10 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
           body: typographyPack.body,
         }
       : design.fonts,
-    colors: backgroundPack && !preserveUserColors
-      ? { ...design.colors, background: backgroundPack.preview }
-      : design.colors,
+    colors:
+      backgroundPack && !preserveUserColors && design.layout !== "luxury-fashion-flagship"
+        ? { ...design.colors, background: backgroundPack.preview }
+        : design.colors,
     studio,
     experience: {
       ...dnaExperience,

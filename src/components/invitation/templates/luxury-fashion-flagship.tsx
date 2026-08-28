@@ -5,15 +5,18 @@ import type { CSSProperties } from "react";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import {
   fashionTokenStyleFromColors,
+  LUXURY_FASHION_LAYOUT_SLUG,
   resolveFashionChapters,
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
+  resolveFashionSocialLinks,
+  resolveFashionSocialTitle,
   resolveFashionStoreStills,
   trackFashionAction,
   type FashionNavDestination,
 } from "@/lib/experience/luxury-fashion";
-import { LUXURY_FASHION_LAYOUT_SLUG } from "@/lib/experience/luxury-fashion/femmora-preset";
+import { trackSocialLinkClick } from "@/lib/invitation/social-link-analytics";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import { CalendarDays, Clock, MapPin } from "lucide-react";
 import { FashionHouseMark } from "./luxury-fashion/femmora-mark";
@@ -26,6 +29,7 @@ import { FashionLaunchCountdown } from "./luxury-fashion/fashion-launch-countdow
 import { LuxuryLocationScene } from "./luxury-fashion/luxury-location-scene";
 import { FashionRsvpScene } from "./luxury-fashion/fashion-rsvp-scene";
 import { FashionShareScene } from "./luxury-fashion/fashion-share-scene";
+import { FashionSocialScene } from "./luxury-fashion/fashion-social-scene";
 import { FashionFinale } from "./luxury-fashion/fashion-finale";
 import styles from "./luxury-fashion/luxury-fashion-flagship.module.css";
 
@@ -37,6 +41,7 @@ const SECTION_IDS: Record<FashionNavDestination, string> = {
   location: "fashion-location",
   rsvp: "fashion-rsvp",
   share: "fashion-share",
+  social: "fashion-social",
 };
 
 function FashionOrdinalLine({ text }: { text: string }) {
@@ -94,9 +99,14 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
       }),
     [film.src, house, looks.length, props.design.experience?.enabledTabs]
   );
+  const socialLinks = useMemo(() => resolveFashionSocialLinks(house), [house]);
+  const socialTitle = useMemo(() => resolveFashionSocialTitle(house), [house]);
   const navLabels = useMemo(
-    () => house.navLabels.filter((item) => chapters[item.id]),
-    [chapters, house.navLabels]
+    () =>
+      house.navLabels
+        .filter((item) => chapters[item.id])
+        .map((item) => (item.id === "social" ? { ...item, label: socialTitle } : item)),
+    [chapters, house.navLabels, socialTitle]
   );
   const [current, setCurrent] = useState<FashionNavDestination>("experience");
   const [boutiqueOpen, setBoutiqueOpen] = useState(false);
@@ -310,6 +320,25 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         </section>
       ) : null}
 
+      {chapters.social ? (
+        <section className={`${styles.section} ${styles.socialSection}`} id={SECTION_IDS.social}>
+          <FashionSocialScene
+            title={socialTitle}
+            intro={house.socialIntroText}
+            houseName={house.houseName}
+            links={socialLinks}
+            onOpen={(platform) =>
+              trackSocialLinkClick({
+                invitationId,
+                templateSlug,
+                platform,
+                location: "social-page",
+              })
+            }
+          />
+        </section>
+      ) : null}
+
       {chapters.share ? (
         <section className={styles.section} id={SECTION_IDS.share}>
           <FashionShareScene
@@ -331,6 +360,15 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         onShare={chapters.share ? () => go("share") : undefined}
         onReplayFilm={chapters["store-preview"] ? () => go("store-preview") : undefined}
         onCollection={chapters.collection ? () => go("collection") : undefined}
+        socialLinks={house.showSocialIconsInFinale ? socialLinks : []}
+        onSocial={(platform) =>
+          trackSocialLinkClick({
+            invitationId,
+            templateSlug,
+            platform,
+            location: "finale",
+          })
+        }
       />
 
       {chapters.experience ? (

@@ -3,6 +3,7 @@
 import {
   CalendarDays,
   DoorOpen,
+  Instagram,
   Mail,
   MapPin,
   Shirt,
@@ -20,6 +21,7 @@ const ICONS: Record<FashionNavDestination, LucideIcon> = {
   location: MapPin,
   "event-details": CalendarDays,
   share: Mail,
+  social: Instagram,
 };
 
 export function FashionEditorialIndex({

@@ -3,6 +3,11 @@
  * Other houses later supply their own LuxuryFashionHouseConfig.
  */
 
+import type {
+  InvitationSocialLink,
+  InvitationSocialPlatformId,
+} from "@/lib/invitation/social-links";
+
 export type FashionSilkStyle = "ivory-champagne" | "pearl-mocha" | "espresso-gold";
 
 export type FashionNavStyle = "editorial-index" | "garment-tag" | "runway-chapters";
@@ -14,7 +19,11 @@ export type FashionNavDestination =
   | "event-details"
   | "location"
   | "rsvp"
-  | "share";
+  | "share"
+  | "social";
+
+export type FashionSocialPlatformId = InvitationSocialPlatformId;
+export type FashionSocialLink = InvitationSocialLink;
 
 export interface FashionNavLabel {
   id: FashionNavDestination;
@@ -71,6 +80,16 @@ export interface LuxuryFashionHouseConfig {
   filmUrl?: string | null;
   filmPosterUrl?: string | null;
   visitDayOptions?: { id: string; label: string }[];
+  /** Dedicated Stay Connected / Follow the house chapter. Off unless a preset or Studio enables it. */
+  showSocialSection?: boolean;
+  instagramHandle?: string;
+  instagramUrl?: string;
+  socialIntroText?: string;
+  socialTitle?: string;
+  socialCtaLabel?: string;
+  showSocialIconsInFinale?: boolean;
+  /** Extra platforms later. Instagram can also live here. */
+  socialLinks?: FashionSocialLink[];
   chapters?: {
     boutique?: boolean;
     film?: boolean;
@@ -79,6 +98,7 @@ export interface LuxuryFashionHouseConfig {
     maps?: boolean;
     rsvp?: boolean;
     share?: boolean;
+    social?: boolean;
   };
 }
 
@@ -97,6 +117,7 @@ export const FASHION_NAV_DESTINATIONS: FashionNavDestination[] = [
   "event-details",
   "location",
   "rsvp",
+  "social",
   "share",
 ];
 

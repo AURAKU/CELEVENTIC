@@ -1,6 +1,7 @@
 import type { HubTabId } from "@/lib/experience/experience-types";
 import type { InvitationDesignConfig, InvitationEventData, InvitationMediaAsset } from "@/types/invitation-design";
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "./house-defaults";
+import { resolveFashionSocialLinks } from "./social";
 import type { FashionLookbookItem, FashionNavDestination, LuxuryFashionHouseConfig } from "./types";
 
 export { mergeFashionHouse };
@@ -92,7 +93,14 @@ export function resolveFashionStoreStills(input: {
 
 export type FashionChapterId = Extract<
   FashionNavDestination,
-  "experience" | "store-preview" | "collection" | "event-details" | "location" | "rsvp" | "share"
+  | "experience"
+  | "store-preview"
+  | "collection"
+  | "event-details"
+  | "location"
+  | "rsvp"
+  | "share"
+  | "social"
 >;
 
 export type FashionChapterFlags = Record<FashionChapterId, boolean> & {
@@ -110,6 +118,7 @@ export function resolveFashionChapters(input: {
   const tabOn = (id: HubTabId) => tabs.size === 0 || tabs.has(id);
   const ch = input.house.chapters;
   const hasVenue = Boolean(input.house.locationName || input.house.address);
+  const socialLinks = resolveFashionSocialLinks(input.house);
   return {
     experience: ch?.boutique !== false,
     "store-preview": ch?.film !== false && Boolean(input.filmSrc),
@@ -118,6 +127,10 @@ export function resolveFashionChapters(input: {
     location: hasVenue,
     rsvp: ch?.rsvp !== false && tabOn("rsvp"),
     share: ch?.share !== false,
+    social:
+      ch?.social !== false &&
+      input.house.showSocialSection === true &&
+      socialLinks.length > 0,
     countdown: ch?.countdown !== false && Boolean(input.house.startAtIso) && tabOn("countdown"),
     mapsCta: ch?.maps !== false && Boolean(input.house.mapsUrl),
   };
