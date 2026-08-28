@@ -46,6 +46,45 @@
   pointer-events: none;
 }
 
+.stageWhisper .house,
+.stageWhisper .hint {
+  opacity: 0;
+}
+
+.whisperLine {
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-transform: uppercase;
+  color: var(--ff-mocha, #6b5344);
+  animation: whisperReveal var(--ff-whisper, 1.8s) ease forwards;
+}
+
+.fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+  text-align: center;
+  background: var(--ff-ivory, #fbf7f0);
+  color: var(--ff-espresso, #2c211c);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  padding: 2rem;
+}
+
+.fallback button {
+  border: 1px solid var(--ff-gold, #c4a574);
+  background: transparent;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.15rem;
+}
+
 .silkLeft,
 .silkRight {
   position: absolute;
@@ -54,6 +93,16 @@
   width: 62%;
   transform-origin: center;
   will-change: transform, opacity, clip-path;
+}
+
+.stage[data-fashion-phase="silk"] .silkLeft,
+.stage[data-fashion-phase="arming-silk"] .silkLeft {
+  transform: translate3d(calc(var(--silk-draw, 0) * -18%), 0, 0);
+}
+
+.stage[data-fashion-phase="silk"] .silkRight,
+.stage[data-fashion-phase="arming-silk"] .silkRight {
+  transform: translate3d(calc(var(--silk-draw, 0) * 18%), 0, 0);
 }
 
 .silkLeft {
@@ -89,19 +138,19 @@
 }
 
 .openLeft {
-  animation: silkOpenLeft 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: silkOpenLeft var(--ff-ceremonial, 1.4s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .openRight {
-  animation: silkOpenRight 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: silkOpenRight var(--ff-ceremonial, 1.4s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .reducedOpenLeft {
-  animation: silkFadeLeft 0.28s ease forwards;
+  animation: silkFadeLeft var(--ff-standard, 0.28s) ease forwards;
 }
 
 .reducedOpenRight {
-  animation: silkFadeRight 0.28s ease forwards;
+  animation: silkFadeRight var(--ff-standard, 0.28s) ease forwards;
 }
 
 .mark {
@@ -224,19 +273,19 @@
 }
 
 .panelOpenLeft {
-  animation: doorOpenLeft 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: doorOpenLeft var(--ff-cinematic, 1.1s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .panelOpenRight {
-  animation: doorOpenRight 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: doorOpenRight var(--ff-cinematic, 1.1s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .reducedDoorLeft {
-  animation: doorFade 0.28s ease forwards;
+  animation: doorFade var(--ff-standard, 0.28s) ease forwards;
 }
 
 .reducedDoorRight {
-  animation: doorFade 0.28s ease forwards;
+  animation: doorFade var(--ff-standard, 0.28s) ease forwards;
 }
 
 .edge {
@@ -268,7 +317,8 @@
   .breatheLeft,
   .breatheRight,
   .sheen,
-  .light {
+  .light,
+  .whisperLine {
     animation: none;
     transform: none;
   }
@@ -339,6 +389,17 @@
 @keyframes doorFade {
   to {
     opacity: 0;
+  }
+}
+
+@keyframes whisperReveal {
+  from {
+    opacity: 0;
+    letter-spacing: 0.62em;
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.42em;
   }
 }
 

@@ -16,7 +16,11 @@ export type FashionInviteAction =
   | "rsvp_completed"
   | "share_clicked"
   | "calendar_clicked"
-  | "nav_clicked";
+  | "nav_clicked"
+  | "boutique_opened"
+  | "lookbook_item_viewed"
+  | "film_started"
+  | "film_completed";
 
 export function trackFashionAction(
   action: FashionInviteAction,

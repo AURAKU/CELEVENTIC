@@ -10,6 +10,8 @@ export function FashionRsvpScene({
   partyAllowance,
   initialRsvpStatus,
   initialAttendingCount,
+  heading,
+  acceptedLabel,
   onStarted,
   onCompleted,
 }: {
@@ -19,15 +21,17 @@ export function FashionRsvpScene({
   partyAllowance?: number;
   initialRsvpStatus?: "ACCEPTED" | "DECLINED" | "MAYBE" | null;
   initialAttendingCount?: number | null;
+  heading: string;
+  acceptedLabel: string;
   onStarted?: () => void;
   onCompleted?: () => void;
 }) {
   return (
     <div data-testid="fashion-rsvp" onFocusCapture={onStarted}>
-      <p className={styles.kicker}>Request a visit</p>
-      <h2 className={styles.heading}>Will you attend</h2>
-      <p className={styles.lede}>Attending, maybe, or unable to attend — we will keep your place with care.</p>
-      <div style={{ marginTop: "1.25rem" }} onClick={onStarted}>
+      <p className={styles.kicker}>Your reply</p>
+      <h2 className={styles.heading}>{heading}</h2>
+      <p className={styles.lede}>Yes, maybe, or unable to attend — we will keep your place with care.</p>
+      <div className={styles.rsvpWrap} onClick={onStarted}>
         <InvitationRsvpPanel
           invitationId={invitationId}
           guestId={guestId}
@@ -39,7 +43,7 @@ export function FashionRsvpScene({
           accentColor="#9A7A48"
           label="Your reply"
           choiceLabels={{
-            accepted: "Attending",
+            accepted: acceptedLabel,
             maybe: "Maybe",
             declined: "Unable to attend",
           }}

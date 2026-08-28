@@ -242,15 +242,17 @@ export function OpeningExperienceRouter({
         fashionHouse?.monogram,
     });
     return (
-      <LuxuryFashionOpeningExperience
-        house={house}
-        eventTitle={eventTitle}
-        guestName={guestName}
-        embedded={embedded}
-        allowSkip={allowSkip}
-        onBegin={onBegin}
-        onComplete={complete}
-      />
+      <div className={embedded ? "absolute inset-0 z-20" : "pointer-events-auto fixed inset-0 z-[70]"}>
+        <LuxuryFashionOpeningExperience
+          house={house}
+          eventTitle={eventTitle}
+          guestName={guestName}
+          embedded={embedded}
+          allowSkip={allowSkip}
+          onBegin={onBegin}
+          onComplete={complete}
+        />
+      </div>
     );
   }
 

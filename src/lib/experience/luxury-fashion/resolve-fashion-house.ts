@@ -55,6 +55,22 @@ export function resolveFashionFilm(input: {
   return { src, poster, status: heroVideo?.status };
 }
 
+export function resolveFashionStoreStills(input: {
+  house: LuxuryFashionHouseConfig;
+  galleryUrls?: string[] | null;
+  media?: InvitationMediaAsset[] | null;
+  limit?: number;
+}): FashionLookbookItem[] {
+  const all = resolveFashionLookbook(input);
+  const cap = Math.max(1, input.limit ?? 4);
+  return all.slice(0, cap).map((item, index) => ({
+    ...item,
+    id: `atelier-${item.id}`,
+    caption: item.caption || `Atelier ${String(index + 1).padStart(2, "0")}`,
+    collectionName: item.collectionName || "Store preview",
+  }));
+}
+
 export function resolveFashionLookbook(input: {
   house: LuxuryFashionHouseConfig;
   galleryUrls?: string[] | null;

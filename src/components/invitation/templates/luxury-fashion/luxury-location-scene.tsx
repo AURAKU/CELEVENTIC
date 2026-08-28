@@ -52,7 +52,7 @@ export function LuxuryLocationScene({
             onClick={onMaps}
             data-testid="fashion-maps-cta"
           >
-            Google Maps
+            View on Google Maps
           </a>
         ) : (
           <button type="button" className={styles.cta} disabled>

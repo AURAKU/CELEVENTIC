@@ -105,6 +105,9 @@ function resolveEventBeat(input: {
   layoutSlug?: string;
   category?: string;
 }): EventBeat {
+  if (input.layoutSlug === "luxury-fashion-flagship") {
+    return { eyebrow: "SOMETHING BEAUTIFUL", script: "Is about to open" };
+  }
   const label = input.ceremonyLabel?.trim();
   if (label) {
     const m = label.match(/^(traditional)\s+(.+)$/i);
@@ -124,9 +127,6 @@ function resolveEventBeat(input: {
   }
   if (isFuneralExperience(input.layoutSlug, input.category)) {
     return { plain: "In Loving Memory" };
-  }
-  if (input.layoutSlug === "luxury-fashion-flagship") {
-    return { eyebrow: "FEMMORA", script: "Soft Opening" };
   }
   if (input.eventTitle?.trim()) return { plain: input.eventTitle.trim() };
   return { plain: "Your Invitation" };
@@ -322,6 +322,7 @@ export function TapToBeginExperience({
   const showHostFallback =
     !couple &&
     !funeralMemorial &&
+    layoutSlug !== "luxury-fashion-flagship" &&
     Boolean(hostName?.trim()) &&
     hostName!.trim() !== eventTitle?.trim();
 

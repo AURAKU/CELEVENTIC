@@ -2,12 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   FASHION_GESTURE_ARM_MS,
+  FASHION_MOTION,
+  FASHION_SILK_DRAG_PX,
+  FASHION_WHISPER_MS,
   FEMMORA_HOUSE_DEFAULTS,
   FEMMORA_MAPS_URL,
   mergeFashionHouse,
   resolveFashionFilm,
   resolveFashionHouse,
   resolveFashionLookbook,
+  resolveFashionStoreStills,
 } from "@/lib/experience/luxury-fashion";
 import { isPointerArmSafe } from "@/lib/experience/luxury-fashion/gesture-arming";
 import { previewTapLabelForOpening } from "@/lib/experience/opening-experiences";
@@ -23,6 +27,9 @@ test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => 
   assert.equal(FEMMORA_HOUSE_DEFAULTS.address, "Westlands");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.hoursLabel, "9 AM TO 8 PM EACH DAY");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.datesLabel, "29TH & 30TH AUGUST");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperLine, "Something beautiful is about to open");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.rsvpHeading, "Will we see you at Femmora?");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.navLabels[0]?.label, "Enter Experience");
   assert.match(FEMMORA_MAPS_URL, /^https:\/\/www\.google\.com\/maps\/search\//);
   assert.ok(buildDirectionsUrl({ mapsLink: FEMMORA_MAPS_URL }));
 });
@@ -119,4 +126,29 @@ test("share, maps and calendar CTAs produce real destinations", () => {
     venue: "FEMMORA GH, Westlands",
   });
   assert.match(cal, /^https:\/\/calendar\.google\.com\//);
+});
+
+test("motion tokens stay editorial and silk drag requires a new gesture", () => {
+  assert.equal(FASHION_MOTION.editorial, FASHION_GESTURE_ARM_MS);
+  assert.ok(FASHION_WHISPER_MS >= 1200);
+  assert.ok(FASHION_SILK_DRAG_PX >= 40);
+  assert.ok(FASHION_MOTION.ceremonial > FASHION_MOTION.cinematic);
+});
+
+test("store stills are a browseable subset of the lookbook, not a second media system", () => {
+  const stills = resolveFashionStoreStills({
+    house: FEMMORA_HOUSE_DEFAULTS,
+    galleryUrls: [
+      "https://images.example.com/a.jpg",
+      "https://images.example.com/b.jpg",
+      "https://images.example.com/c.jpg",
+      "https://images.example.com/d.jpg",
+      "https://images.example.com/e.jpg",
+    ],
+  });
+  assert.equal(stills.length, 4);
+  assert.match(stills[0]?.id ?? "", /^atelier-/);
+  const merged = mergeFashionHouse(FEMMORA_HOUSE_DEFAULTS, { houseName: "Atelier" });
+  assert.equal(merged.whisperLine, FEMMORA_HOUSE_DEFAULTS.whisperLine);
+  assert.equal(merged.hubLede, FEMMORA_HOUSE_DEFAULTS.hubLede);
 });

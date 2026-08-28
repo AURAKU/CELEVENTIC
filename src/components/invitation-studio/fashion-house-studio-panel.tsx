@@ -45,6 +45,38 @@ export function FashionHouseStudioPanel({
         <Input value={house.teaserLine} onChange={(e) => patch({ teaserLine: e.target.value })} />
       </div>
       <div className="grid gap-2">
+        <Label>Whisper line</Label>
+        <Input value={house.whisperLine} onChange={(e) => patch({ whisperLine: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Invitation lede</Label>
+        <Input value={house.hubLede} onChange={(e) => patch({ hubLede: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Unveiling CTA</Label>
+        <Input value={house.unveilingLabel} onChange={(e) => patch({ unveilingLabel: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Portal welcome</Label>
+        <Input value={house.portalWelcome} onChange={(e) => patch({ portalWelcome: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Portal prompt</Label>
+        <Input value={house.portalPrompt} onChange={(e) => patch({ portalPrompt: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Swipe hint</Label>
+        <Input value={house.swipeHint} onChange={(e) => patch({ swipeHint: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>RSVP heading</Label>
+        <Input value={house.rsvpHeading} onChange={(e) => patch({ rsvpHeading: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>RSVP yes label</Label>
+        <Input value={house.rsvpAcceptedLabel} onChange={(e) => patch({ rsvpAcceptedLabel: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
         <Label>Dates label</Label>
         <Input value={house.datesLabel} onChange={(e) => patch({ datesLabel: e.target.value })} />
       </div>
@@ -95,6 +127,10 @@ export function FashionHouseStudioPanel({
       <div className="grid gap-2">
         <Label>Lookbook title</Label>
         <Input value={house.lookbookTitle} onChange={(e) => patch({ lookbookTitle: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Finale kicker</Label>
+        <Input value={house.finaleKicker} onChange={(e) => patch({ finaleKicker: e.target.value })} />
       </div>
       <div className="grid gap-2">
         <Label>Final message</Label>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FASHION_GESTURE_ARM_MS } from "./types";
+import { FASHION_GESTURE_ARM_MS } from "./tokens";
 
 /**
  * Explicit gesture arming — Gesture #1 (Tap to Begin) must not fire the

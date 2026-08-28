@@ -36,6 +36,14 @@ export interface LuxuryFashionHouseConfig {
   eventTitle: string;
   unveilingLabel: string;
   teaserLine: string;
+  whisperLine: string;
+  hubLede: string;
+  swipeHint: string;
+  portalWelcome: string;
+  portalPrompt: string;
+  rsvpHeading: string;
+  rsvpAcceptedLabel: string;
+  finaleKicker: string;
   hoursLabel: string;
   datesLabel: string;
   locationName: string;
@@ -60,6 +68,7 @@ export interface LuxuryFashionHouseConfig {
 }
 
 export type FashionOpeningPhase =
+  | "whisper"
   | "arming-silk"
   | "silk"
   | "silk-opening"
@@ -78,8 +87,12 @@ export const FASHION_NAV_DESTINATIONS: FashionNavDestination[] = [
   "share",
 ];
 
-export const FASHION_GESTURE_ARM_MS = 520;
-export const FASHION_SILK_OPEN_MS = 1400;
-export const FASHION_DOORS_OPEN_MS = 1100;
-export const FASHION_REDUCED_OPEN_MS = 280;
-export const FASHION_EXIT_POINTER_MS = 180;
+export {
+  FASHION_DOORS_OPEN_MS,
+  FASHION_EXIT_POINTER_MS,
+  FASHION_GESTURE_ARM_MS,
+  FASHION_REDUCED_OPEN_MS,
+  FASHION_SILK_DRAG_PX,
+  FASHION_SILK_OPEN_MS,
+  FASHION_WHISPER_MS,
+} from "./tokens";
