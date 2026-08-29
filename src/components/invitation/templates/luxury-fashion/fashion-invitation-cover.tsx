@@ -1,6 +1,7 @@
 "use client";
 
 import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
+import { resolveFashionLede } from "@/lib/experience/luxury-fashion";
 import { FashionHouseMark } from "./femmora-mark";
 import { FashionFactMark } from "./fashion-fact-marks";
 import styles from "./luxury-fashion-flagship.module.css";
@@ -42,30 +43,21 @@ export function FashionInvitationCover({
 }) {
   const place = [house.locationName, house.address].filter(Boolean).join(", ");
   const Heading = headingAs;
-  const mapsLabel = house.mapsCtaLabel || "View on Google Maps";
+  const lede = resolveFashionLede(house);
 
   return (
     <div className={`${styles.masthead} ${className ?? ""}`}>
-      <FashionHouseMark house={house} className={styles.campaignMark} />
+      <FashionHouseMark house={house} className={styles.campaignMark} priority />
       <Heading className={styles.campaignHouse}>{house.houseName}</Heading>
-      <p className={styles.campaignEvent}>{house.eventTitle}</p>
-      {showLede ? <p className={styles.campaignLede}>{house.hubLede}</p> : null}
+      {house.eventTitle.trim() ? <p className={styles.campaignEvent}>{house.eventTitle}</p> : null}
+      {showLede && lede ? <p className={styles.campaignLede}>{lede}</p> : null}
 
       <ul className={styles.campaignFacts}>
         <li>
           <FashionFactMark kind="location" />
           <div>
             <p>Location</p>
-            <strong>{place}</strong>
-            {mapsEnabled && house.mapsUrl ? (
-              mapsInteractive ? (
-                <a className={styles.mapsCta} href={house.mapsUrl} target="_blank" rel="noreferrer" onClick={onMaps}>
-                  {mapsLabel}
-                </a>
-              ) : (
-                <span>{mapsLabel}</span>
-              )
-            ) : null}
+            {place ? <strong>{place}</strong> : null}
           </div>
         </li>
         <li>

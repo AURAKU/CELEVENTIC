@@ -283,14 +283,14 @@ export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProf
   },
   "luxury-fashion-flagship": {
     trackId: "layout-luxury-fashion-flagship",
-    title: "Flagship Cinematic",
-    category: "instrumentals",
-    bundledFile: "ambient-cinematic",
+    title: "Atelier Quiet",
+    category: "lounge",
+    bundledFile: "jazz-soft-lounge",
     startSec: 0,
-    endSec: 88,
-    volume: 0.36,
-    fadeInSec: 2.8,
-    fadeOutSec: 1.8,
+    endSec: 72,
+    volume: 0.32,
+    fadeInSec: 2.2,
+    fadeOutSec: 1.4,
   },
 };
 

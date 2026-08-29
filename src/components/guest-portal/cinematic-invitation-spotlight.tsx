@@ -35,6 +35,7 @@ import type { ResolvedGuestAction, InvitationActionKey } from "@/lib/invitation/
 import { GuestPortalQuickActions } from "@/components/guest-portal/guest-portal-action-button";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import { GuestHelpChip } from "@/components/celeventic-guide/guest-contextual-help";
+import { mergeFashionHouse, resolveFashionHouse } from "@/lib/experience/luxury-fashion";
 
 interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -80,6 +81,31 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
     landmark: localized?.landmark ?? props.event.landmark,
     hostName: localized?.hostName ?? props.event.hostName,
   };
+
+  const fashionHouse = useMemo(
+    () =>
+      mergeFashionHouse(
+        resolveFashionHouse(props.design, {
+          hostName: displayEvent.hostName,
+          title: displayEvent.title,
+          venueName: displayEvent.venueName,
+          landmark: displayEvent.landmark,
+          mapsLink: props.event.mapsLink,
+          startDateRaw: props.event.startDateRaw,
+        }),
+        props.experienceConfig?.fashionHouse
+      ),
+    [
+      displayEvent.hostName,
+      displayEvent.landmark,
+      displayEvent.title,
+      displayEvent.venueName,
+      props.design,
+      props.event.mapsLink,
+      props.event.startDateRaw,
+      props.experienceConfig?.fashionHouse,
+    ]
+  );
 
   const { colors, fonts } = props.design;
   const accent = colors?.accent ?? "#0B8A83";
@@ -296,6 +322,11 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
             accentColor={accent}
             memoryVaultEnabled={props.memoryVaultEnabled}
             variant="dark"
+            layout={props.design.layout}
+            colors={props.design.colors}
+            houseName={fashionHouse.houseName}
+            houseLogoUrl={fashionHouse.logoUrl}
+            fashionHouse={fashionHouse}
           />
         </div>
       ),

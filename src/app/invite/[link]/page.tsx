@@ -22,7 +22,10 @@ import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { eventGuideService } from "@/services/event-guide/event-guide.service";
-import { resolveShareOgImage } from "@/lib/social/share-image";
+import {
+  resolveInvitationShareOgImage,
+  shareOgImageToOpenGraph,
+} from "@/lib/social/share-image";
 import { buildShareDescription } from "@/lib/social/share-description";
 import { APP_NAME } from "@/lib/constants";
 import { getInvitationPassView } from "@/services/admission/guest-pass.service";
@@ -77,10 +80,10 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
- * Share-card preview defaults to the QR center logo (the mark guests see at
- * the heart of their branded QR) so the link-preview thumbnail matches what
- * they'll scan. Falls back to the Celeventic official logo when no center
- * logo has been uploaded, see `resolveShareOgImage`.
+ * Share-card preview: Femmora uses the physical invitation placecard
+ * (`shareOgImageUrl` / SKU default). Other houses keep their own image or the
+ * branded QR / Celeventic logo fallback — never the Femmora card. Guest
+ * unique links (`?guest=`) share this same metadata.
  */
 export async function generateMetadata({
   params,
@@ -99,7 +102,28 @@ export async function generateMetadata({
   // (the host's free-form "our story" text), see `buildShareDescription`.
   const description = buildShareDescription({ hostName: event.hostName, title: event.title });
   const appUrl = await getServerAppUrl();
-  const ogImage = await resolveShareOgImage(event.id, appUrl);
+  const stored = invitation.designConfig as InvitationDesignConfig | null;
+  const templateConfig = invitation.template?.config as { layout?: string } | null;
+  const productionResolution = await resolveProductionOrderForLiveInvitation(
+    invitation.id,
+    event.id
+  );
+  const productionOrder = productionResolution.order;
+  const productionDesign = productionOrder ? buildPublishedDesignConfig(productionOrder) : null;
+  const catalogSlug =
+    productionOrder?.templateSlug ??
+    productionOrder?.template?.slug ??
+    invitation.template?.slug ??
+    null;
+  const ogImage = await resolveInvitationShareOgImage({
+    eventId: event.id,
+    appUrl,
+    catalogSlug,
+    layoutSlug:
+      productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null,
+    fashionHouse:
+      productionDesign?.experience?.fashionHouse ?? stored?.experience?.fashionHouse,
+  });
 
   return {
     title,
@@ -109,13 +133,13 @@ export async function generateMetadata({
       description,
       type: "website",
       siteName: APP_NAME,
-      ...(ogImage ? { images: [{ url: ogImage, alt: event.title }] } : {}),
+      images: [shareOgImageToOpenGraph(ogImage, event.title)],
     },
     twitter: {
-      card: ogImage ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title,
       description,
-      ...(ogImage ? { images: [ogImage] } : {}),
+      images: [ogImage.url],
     },
   };
 }

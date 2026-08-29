@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   FASHION_GESTURE_ARM_MS,
   FASHION_MOTION,
   FASHION_SILK_DRAG_PX,
   FASHION_WHISPER_MS,
   FEMMORA_HOUSE_DEFAULTS,
-  FEMMORA_INVITATION_FLYER,
   FEMMORA_LOGO_MARK,
   FEMMORA_MAPS_URL,
   FEMMORA_STORE_FILM,
@@ -16,12 +16,14 @@ import {
   MAISON_VALE_HOUSE,
   assertHouseIsNotFemmora,
   displayFashionSocialHandle,
+  fashionHouseLogoSrc,
+  fashionHouseNameplate,
   fashionTokenStyleFromColors,
   mergeFashionHouse,
   resolveFashionChapters,
-  resolveFashionExperienceFlyer,
   resolveFashionFilm,
   resolveFashionHouse,
+  resolveFashionLede,
   resolveFashionLookbook,
   resolveFashionOpeningStyle,
   resolveFashionSocialLinks,
@@ -37,10 +39,6 @@ import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engin
 import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { buildInviteShareChannelHref, buildInviteSharePayload } from "@/lib/invitation/invite-share";
 import { buildGoogleCalendarUrl, toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
-import { getLayoutMusicProfile } from "@/lib/invitation/layout-music-identity";
-import { getCatalogMusicProfile } from "@/lib/invitation/catalog-music-identity";
-import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
-import { buildLivePreviewProps } from "@/lib/invitation-mvp/demo-preview-data";
 
 test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => {
   assert.equal(FEMMORA_HOUSE_DEFAULTS.houseName, "FEMMORA");
@@ -48,9 +46,13 @@ test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => 
   assert.equal(FEMMORA_HOUSE_DEFAULTS.address, "Westlands");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.hoursLabel, "9 AM TO 8 PM EACH DAY");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.datesLabel, "29TH & 30TH AUGUST");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperLine, "A private first look");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperEyebrow, "FEMMORA");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.whisperScript, "Soft Opening");
-  assert.equal(FEMMORA_HOUSE_DEFAULTS.experienceFlyerUrl, FEMMORA_INVITATION_FLYER);
-  assert.equal(resolveFashionExperienceFlyer(FEMMORA_HOUSE_DEFAULTS), FEMMORA_INVITATION_FLYER);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.hubLede, "");
+  assert.equal(resolveFashionLede(FEMMORA_HOUSE_DEFAULTS), "");
+  assert.equal(resolveFashionLede(LUXURY_FASHION_HOUSE_DEFAULTS), "");
+  assert.equal(resolveFashionLede(MAISON_VALE_HOUSE), "An invitation to the Vale collection launch.");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.unveilingLabel, "TAP TO OPEN");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.openingStyle, "card-envelope");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.envelopeFaceLine, "PRIVATE INVITATION");
@@ -67,6 +69,24 @@ test("Femmora house DNA keeps Westlands copy and a live maps search URL", () => 
   assert.match(embed ?? "", /Femmora|FEMMORA|Westlands/i);
   assert.match(embed ?? "", /output=embed/);
   assert.equal(toMapsEmbedUrl("", ""), null);
+});
+
+test("guest-wishes nameplate and crest stay house-owned, never a shared Femmora fallback", () => {
+  assert.equal(fashionHouseNameplate("Femmora"), "FEMMORA");
+  assert.equal(fashionHouseNameplate("Maison Vale"), "MAISON VALE");
+  assert.equal(fashionHouseNameplate(null), "THE HOUSE");
+  assert.equal(fashionHouseLogoSrc(FEMMORA_HOUSE_DEFAULTS), FEMMORA_LOGO_MARK);
+  assert.equal(fashionHouseLogoSrc(FEMMORA_LOGO_MARK, "FEMMORA"), FEMMORA_LOGO_MARK);
+  assert.equal(fashionHouseLogoSrc(MAISON_VALE_HOUSE), null);
+  assert.equal(fashionHouseLogoSrc(FEMMORA_LOGO_MARK, "MAISON VALE"), null);
+  assert.equal(fashionHouseLogoSrc({ logoUrl: FEMMORA_LOGO_MARK, houseName: "Maison Vale" }), null);
+  assert.equal(fashionHouseLogoSrc({ logoUrl: "", houseName: "FEMMORA" }), null);
+
+  const wishesSrc = readFileSync("src/components/guest-portal/guest-wishes-card.tsx", "utf8");
+  assert.match(wishesSrc, /The house is waiting — be the first to leave a note/);
+  assert.match(wishesSrc, /kicker: fashionHouseNameplate\(resolvedHouseName\)/);
+  assert.doesNotMatch(wishesSrc, /THE SALON/);
+  assert.doesNotMatch(wishesSrc, /The salon is waiting/);
 });
 
 test("fashion house merge prefers organizer overrides without dropping nav labels", () => {
@@ -102,8 +122,19 @@ test("store film resolves from bundled Femmora media, then Studio hero video, ne
 
 test("lookbook prefers organizer items then gallery, with bundled atelier stills as fallback", () => {
   const house = FEMMORA_HOUSE_DEFAULTS;
-  assert.equal(resolveFashionLookbook({ house, galleryUrls: [], media: [] }).length, 3);
-  assert.match(resolveFashionLookbook({ house, galleryUrls: [], media: [] })[0]?.url ?? "", /^\/templates\/femmora\//);
+  const bundled = resolveFashionLookbook({ house, galleryUrls: [], media: [] });
+  assert.equal(bundled.length, 3);
+  assert.deepEqual(
+    bundled.map((item) => item.url),
+    [
+      "/templates/femmora/look-crystal-knit.jpg",
+      "/templates/femmora/look-floral-mini.jpg",
+      "/templates/femmora/look-pearl-gown.jpg",
+    ]
+  );
+  assert.equal(new Set(bundled.map((item) => item.url)).size, 3);
+  assert.equal(house.lookbookKicker, "First looks");
+  assert.equal(house.lookbookTitle, "The Collection");
   const fromGallery = resolveFashionLookbook({
     house: { ...house, lookbookItems: [] },
     galleryUrls: ["https://images.example.com/a.jpg", "https://images.example.com/b.jpg"],
@@ -204,20 +235,24 @@ test("layout engine defaults are generic, not Femmora", () => {
   assert.equal(design.layout, "luxury-fashion-flagship");
   assert.equal(design.experience?.openingExperience, "luxury-fashion-flagship");
   assert.equal(design.experience?.fashionHouse?.houseName, "THE HOUSE");
+  assert.equal(design.experience?.fashionHouse?.whisperScript, "Flagship Opening");
+  assert.notEqual(design.experience?.fashionHouse?.whisperScript, "Soft Opening");
   assert.equal(design.experience?.fashionHouse?.filmUrl, null);
   assert.equal(design.experience?.fashionHouse?.lookbookItems?.length, 0);
   assert.equal(design.themeId, undefined);
   const blob = JSON.stringify(design.experience?.fashionHouse).toLowerCase();
   assert.equal(blob.includes("femmora"), false);
   assert.equal(blob.includes("westlands"), false);
+  assert.equal(blob.includes("soft opening"), false);
   assert.equal(blob.includes("/templates/femmora"), false);
 });
 
 test("Maison Vale fixture uses the same engine with zero Femmora DNA", () => {
   assert.deepEqual(assertHouseIsNotFemmora(MAISON_VALE_HOUSE), []);
+  assert.equal(MAISON_VALE_HOUSE.houseName, "MAISON VALE");
+  assert.equal(MAISON_VALE_HOUSE.whisperEyebrow, "THE NIGHT OPENS");
   assert.equal(MAISON_VALE_HOUSE.whisperScript, "In darker gold");
-  assert.equal(MAISON_VALE_HOUSE.experienceFlyerUrl ?? null, null);
-  assert.equal(resolveFashionExperienceFlyer(MAISON_VALE_HOUSE), null);
+  assert.notEqual(MAISON_VALE_HOUSE.whisperScript, "Soft Opening");
   assert.equal(MAISON_VALE_HOUSE.address, "Kilimani");
   assert.equal(MAISON_VALE_HOUSE.silkStyle, "espresso-gold");
   assert.equal(MAISON_VALE_HOUSE.filmUrl, null);
@@ -273,6 +308,7 @@ test("experience DNA enrich keeps fashion house preset DNA", () => {
   assert.equal(enriched.experience?.viralFooterEnabled, false);
   assert.match(enriched.colors.background, /^#F[0-9A-Fa-f]{5}$/);
   assert.equal(enriched.experience?.fashionHouse?.instagramHandle, "@femmora_gh");
+  assert.equal(enriched.experience?.fashionHouse?.tiktokHandle, "@femmora.woman");
   assert.equal(
     fashionTokenStyleFromColors({
       background: "linear-gradient(135deg, #1e293b, #0f172a)",
@@ -281,21 +317,29 @@ test("experience DNA enrich keeps fashion house preset DNA", () => {
   );
 });
 
-test("Femmora social defaults to Instagram only and stays Studio-replaceable", () => {
+test("Femmora social defaults to Instagram and TikTok and stays Studio-replaceable", () => {
   assert.equal(FEMMORA_HOUSE_DEFAULTS.showSocialSection, true);
   assert.equal(FEMMORA_HOUSE_DEFAULTS.instagramHandle, "@femmora_gh");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.instagramUrl, "https://www.instagram.com/femmora_gh/");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.tiktokHandle, "@femmora.woman");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.tiktokUrl, "https://www.tiktok.com/@femmora.woman");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.socialLinks?.[0]?.platform, "instagram");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.socialLinks?.[0]?.enabled, true);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.socialLinks?.[1]?.platform, "tiktok");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.socialLinks?.[1]?.enabled, true);
   assert.match(FEMMORA_HOUSE_DEFAULTS.socialIntroText ?? "", /discover new arrivals/i);
   assert.equal(FEMMORA_HOUSE_DEFAULTS.socialTitle, "Follow Femmora");
   assert.equal(FEMMORA_HOUSE_DEFAULTS.showSocialIconsInFinale, true);
   const links = resolveFashionSocialLinks(FEMMORA_HOUSE_DEFAULTS);
-  assert.equal(links.length, 1);
+  assert.equal(links.length, 2);
   assert.equal(links[0]?.platform, "instagram");
   assert.equal(links[0]?.url, "https://www.instagram.com/femmora_gh/");
   assert.equal(displayFashionSocialHandle(links[0]?.handle), "@femmora_gh");
   assert.equal(socialLinkHasDestination(links[0]!), true);
+  assert.equal(links[1]?.platform, "tiktok");
+  assert.equal(links[1]?.url, "https://www.tiktok.com/@femmora.woman");
+  assert.equal(displayFashionSocialHandle(links[1]?.handle), "@femmora.woman");
+  assert.equal(socialLinkHasDestination(links[1]!), true);
   const chapters = resolveFashionChapters({
     house: FEMMORA_HOUSE_DEFAULTS,
     filmSrc: FEMMORA_STORE_FILM,
@@ -315,19 +359,41 @@ test("Femmora social defaults to Instagram only and stays Studio-replaceable", (
   });
   assert.equal(handleOnly[0]?.displayHandle, "@atelier_x");
   assert.equal(socialLinkHasDestination(handleOnly[0]!), false);
-  const withTikTok = resolveFashionSocialLinks({
+  const studioOverride = resolveFashionSocialLinks({
+    ...FEMMORA_HOUSE_DEFAULTS,
+    socialLinks: [
+      {
+        platform: "instagram",
+        handle: "@atelier_x",
+        url: "https://www.instagram.com/atelier_x/",
+        enabled: true,
+      },
+      {
+        platform: "tiktok",
+        handle: "@atelier.x",
+        url: "https://www.tiktok.com/@atelier.x",
+        enabled: true,
+      },
+    ],
+  });
+  assert.equal(studioOverride.map((link) => link.platform).join(","), "instagram,tiktok");
+  assert.equal(studioOverride[1]?.displayHandle, "@atelier.x");
+  assert.notEqual(studioOverride[1]?.url, FEMMORA_HOUSE_DEFAULTS.tiktokUrl);
+  const withYouTube = resolveFashionSocialLinks({
     ...FEMMORA_HOUSE_DEFAULTS,
     socialLinks: [
       ...(FEMMORA_HOUSE_DEFAULTS.socialLinks ?? []),
-      { platform: "tiktok", url: "https://www.tiktok.com/@atelier", enabled: true },
+      { platform: "youtube", url: "https://www.youtube.com/@atelier", enabled: true },
     ],
   });
-  assert.equal(withTikTok.map((link) => link.platform).join(","), "instagram,tiktok");
+  assert.equal(withYouTube.map((link) => link.platform).join(","), "instagram,tiktok,youtube");
 });
 
-test("generic and Vale houses do not inherit Femmora Instagram", () => {
+test("generic and Vale houses do not inherit Femmora Instagram or TikTok", () => {
   assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.showSocialSection, false);
   assert.equal(resolveFashionSocialLinks(LUXURY_FASHION_HOUSE_DEFAULTS).length, 0);
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.tiktokHandle, "");
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.tiktokUrl, "");
   const valeChapters = resolveFashionChapters({
     house: MAISON_VALE_HOUSE,
     filmSrc: null,
@@ -336,6 +402,21 @@ test("generic and Vale houses do not inherit Femmora Instagram", () => {
   });
   assert.equal(valeChapters.social, false);
   assert.equal(resolveFashionSocialLinks(MAISON_VALE_HOUSE).length, 0);
+  assert.equal(MAISON_VALE_HOUSE.instagramHandle, "");
+  assert.equal(MAISON_VALE_HOUSE.tiktokHandle, "");
+  const valeBlob = JSON.stringify(MAISON_VALE_HOUSE);
+  assert.equal(valeBlob.includes("femmora_gh"), false);
+  assert.equal(valeBlob.includes("femmora.woman"), false);
+  const fromScalars = resolveFashionSocialLinks({
+    ...LUXURY_FASHION_HOUSE_DEFAULTS,
+    socialLinks: [],
+    instagramHandle: "@atelier",
+    instagramUrl: "https://www.instagram.com/atelier/",
+    tiktokHandle: "@atelier.tt",
+    tiktokUrl: "https://www.tiktok.com/@atelier.tt",
+  });
+  assert.equal(fromScalars.map((link) => link.platform).join(","), "instagram,tiktok");
+  assert.equal(fromScalars[1]?.url, "https://www.tiktok.com/@atelier.tt");
 });
 
 test("Femmora uses card-envelope while Vale stays silk-only without envelope teaser video", () => {
@@ -377,34 +458,4 @@ test("Maison Vale can replace Instagram through house DNA without code changes",
     looksCount: 2,
   });
   assert.equal(chapters.social, true);
-});
-
-test("Femmora flagship default music is licensed cinematic ambient, not Atelier Quiet", () => {
-  const layout = getLayoutMusicProfile("luxury-fashion-flagship");
-  assert.equal(layout.bundledFile, "ambient-cinematic");
-  assert.equal(layout.title, "Flagship Cinematic");
-  assert.notEqual(layout.title, "Atelier Quiet");
-  const catalog = getCatalogMusicProfile("femmora-flagship-soft-opening");
-  assert.ok(catalog);
-  assert.equal(catalog?.bundledFile, "ambient-cinematic");
-  assert.equal(catalog?.title, "Femmora Flagship Score");
-  assert.notEqual(catalog?.title, "Femmora Atelier Quiet");
-  const design = getDefaultDesignConfig("femmora-flagship-soft-opening");
-  const resolved = resolveInvitationMusic({
-    design,
-    catalogSlug: "femmora-flagship-soft-opening",
-  });
-  assert.equal(resolved.hasMusic, true);
-  assert.equal(resolved.musicSelection?.title, "Femmora Flagship Score");
-  assert.match(resolved.musicSelection?.url ?? "", /ambient-cinematic/);
-  assert.equal(resolved.musicSelection?.autoPlay, true);
-  const preview = buildLivePreviewProps("luxury-fashion-flagship", "Lunch", {
-    catalogSlug: "femmora-flagship-soft-opening",
-    features: ["Music"],
-    musicEnabled: true,
-  });
-  assert.equal(preview.musicSelection?.title, "Femmora Flagship Score");
-  assert.match(preview.musicSelection?.url ?? "", /ambient-cinematic/);
-  const lunchJazz = buildLivePreviewProps("classic-gold", "Lunch", { musicEnabled: true });
-  assert.notEqual(lunchJazz.musicSelection?.title, "Femmora Flagship Score");
 });

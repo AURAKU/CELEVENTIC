@@ -75,6 +75,14 @@ export function FashionHouseStudioPanel({
         />
       </div>
       <div className="grid gap-2">
+        <Label>Share preview image URL</Label>
+        <Input
+          value={house.shareOgImageUrl ?? ""}
+          onChange={(e) => patch({ shareOgImageUrl: e.target.value || null })}
+          placeholder="/templates/femmora/share-placecard.jpg"
+        />
+      </div>
+      <div className="grid gap-2">
         <Label>Mark style</Label>
         <select
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -302,6 +310,58 @@ export function FashionHouseStudioPanel({
         />
       </div>
       <div className="grid gap-2">
+        <Label>TikTok handle</Label>
+        <Input
+          value={house.tiktokHandle ?? ""}
+          placeholder="@atelier"
+          onChange={(e) => {
+            const tiktokHandle = e.target.value;
+            const rest = (house.socialLinks ?? []).filter((link) => link.platform !== "tiktok");
+            const hasTikTok = Boolean(tiktokHandle.trim() || house.tiktokUrl?.trim());
+            patch({
+              tiktokHandle,
+              socialLinks: hasTikTok
+                ? [
+                    ...rest,
+                    {
+                      platform: "tiktok",
+                      handle: tiktokHandle,
+                      url: house.tiktokUrl,
+                      enabled: true,
+                    },
+                  ]
+                : rest,
+            });
+          }}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>TikTok URL</Label>
+        <Input
+          value={house.tiktokUrl ?? ""}
+          placeholder="https://www.tiktok.com/@atelier"
+          onChange={(e) => {
+            const tiktokUrl = e.target.value;
+            const rest = (house.socialLinks ?? []).filter((link) => link.platform !== "tiktok");
+            const hasTikTok = Boolean(house.tiktokHandle?.trim() || tiktokUrl.trim());
+            patch({
+              tiktokUrl,
+              socialLinks: hasTikTok
+                ? [
+                    ...rest,
+                    {
+                      platform: "tiktok",
+                      handle: house.tiktokHandle,
+                      url: tiktokUrl,
+                      enabled: true,
+                    },
+                  ]
+                : rest,
+            });
+          }}
+        />
+      </div>
+      <div className="grid gap-2">
         <Label>Social intro text</Label>
         <Input
           value={house.socialIntroText ?? ""}
@@ -335,7 +395,7 @@ export function FashionHouseStudioPanel({
       </label>
       <p className="text-[11px] text-slate-500">
         Only enabled social links appear on the invitation. Leave the URL empty to show a handle
-        without a Follow button. Additional platforms can be added later through socialLinks.
+        without a Follow button. Instagram and TikTok can be replaced here without touching other platforms.
       </p>
       {onViralFooterChange ? (
         <label className="flex items-start gap-2 text-sm text-slate-700">
