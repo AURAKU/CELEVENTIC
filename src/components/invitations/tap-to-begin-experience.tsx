@@ -506,7 +506,7 @@ export function TapToBeginExperience({
                   className={
                     index === 0
                       ? `${styles.kickerBeat} ${styles.kickerBeatLocation}`
-                      : styles.kickerBeat
+                      : `${styles.kickerBeat} ${styles.kickerBeatDate}`
                   }
                 >
                   {line}

@@ -650,6 +650,21 @@ test("fashion RSVP keeps name only — optional email and phone stay off the car
   assert.match(panel, /capacityCopy && !fashion/);
 });
 
+test("fashion envelope date is a highlighted gold line, never a whisper caption", () => {
+  const cover = readFileSync(
+    "src/components/invitations/tap-to-begin-experience.tsx",
+    "utf8"
+  );
+  assert.match(cover, /kickerBeatDate/);
+  const tapCss = readFileSync(
+    "src/components/invitations/tap-to-begin-experience.module.css",
+    "utf8"
+  );
+  assert.match(tapCss, /kickerBeatDate[\s\S]*?clamp\(1\.02rem/);
+  assert.match(tapCss, /kickerBeatDate[\s\S]*?ead6a0/);
+  assert.equal(tapCss.includes("Date stays whisper-quiet"), false);
+});
+
 test("fashion cover masthead is centered for every viewport", () => {
   const css = readFileSync(
     "src/components/invitation/templates/luxury-fashion/luxury-fashion-flagship.module.css",
