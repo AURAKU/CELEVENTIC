@@ -10,19 +10,34 @@ import {
 import { prisma } from "@/lib/prisma";
 import { parsePaginationFromUrl } from "@/lib/pagination";
 import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
+import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
+import {
+  addPreviewWish,
+  listPreviewWishes,
+  previewWishWallKey,
+  previewWishesEnabled,
+} from "@/lib/invitation/preview-wish-wall";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const createSchema = z.object({
-  eventId: z.string().min(1),
-  invitationId: z.string().optional(),
-  guestId: z.string().optional(),
-  authorName: z.string().min(1).max(80),
-  message: z.string().min(2).max(1000),
-  /** Optional invite link for public verification */
-  link: z.string().optional(),
-});
+function blankToUndefined(value: unknown): unknown {
+  return typeof value === "string" && !value.trim() ? undefined : value;
+}
+
+const createSchema = z
+  .object({
+    eventId: z.preprocess(blankToUndefined, z.string().min(1).optional()),
+    invitationId: z.preprocess(blankToUndefined, z.string().min(1).optional()),
+    guestId: z.preprocess(blankToUndefined, z.string().min(1).optional()),
+    authorName: z.string().trim().min(1, "Please enter your name").max(80),
+    message: z.string().trim().min(2, "Please write a short note").max(1000),
+    /** Invite uniqueLink — enough to authorize a public guest post. */
+    link: z.preprocess(blankToUndefined, z.string().min(1).optional()),
+  })
+  .refine((value) => Boolean(value.eventId || value.invitationId || value.link), {
+    message: "Invitation link required",
+  });
 
 async function resolveInviteAccess(params: {
   eventId?: string | null;
@@ -87,13 +102,35 @@ async function resolveInviteAccess(params: {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  const link = url.searchParams.get("link");
+  const invitationId = url.searchParams.get("invitationId");
   const resolved = await resolveInviteAccess({
     eventId: url.searchParams.get("eventId"),
-    link: url.searchParams.get("link"),
-    invitationId: url.searchParams.get("invitationId"),
+    link,
+    invitationId,
   });
 
   if (!resolved) {
+    const previewKey = previewWishWallKey(link, invitationId);
+    if (previewKey) {
+      const items = previewWishesEnabled() ? listPreviewWishes(previewKey) : [];
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            items,
+            total: items.length,
+            page: 1,
+            limit: Math.max(items.length, 1),
+            pages: 1,
+            hasMore: false,
+            canModerate: false,
+            canEdit: false,
+          },
+        },
+        { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+      );
+    }
     return NextResponse.json({ error: "eventId or invite link required" }, { status: 400 });
   }
 
@@ -164,6 +201,27 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = createSchema.parse(await req.json());
+    const previewKey = previewWishWallKey(body.link, body.invitationId);
+    if (previewKey) {
+      if (!previewWishesEnabled()) {
+        return NextResponse.json(
+          { error: "Open a published guest invitation to leave a note." },
+          { status: 403 }
+        );
+      }
+      const wish = addPreviewWish(previewKey, {
+        authorName: body.authorName,
+        message: body.message,
+      });
+      return NextResponse.json(
+        { success: true, data: wish },
+        {
+          status: 201,
+          headers: { "Cache-Control": "private, no-store, max-age=0" },
+        }
+      );
+    }
+
     const resolved = await resolveInviteAccess({
       eventId: body.eventId,
       link: body.link,
@@ -177,17 +235,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invitation is no longer active" }, { status: 403 });
     }
 
+    const invitationId =
+      body.invitationId && !isPreviewInvitationId(body.invitationId)
+        ? body.invitationId
+        : resolved.invitationId;
+
     // Attribute ownership to the submitting invitation; public reads stay event-wide.
     const wish = await guestWishService.create({
       eventId: resolved.eventId,
-      invitationId: body.invitationId ?? resolved.invitationId,
+      invitationId,
       guestId: body.guestId,
       authorName: body.authorName,
       message: body.message,
     });
 
+    const { authorToken: _authorToken, ...publicWish } = wish;
+
     return NextResponse.json(
-      { success: true, data: wish },
+      { success: true, data: publicWish },
       {
         status: 201,
         headers: { "Cache-Control": "private, no-store, max-age=0" },

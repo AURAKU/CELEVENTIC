@@ -52,16 +52,23 @@
 
 .headerRow {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.85rem;
+  margin-bottom: 1.2rem;
 }
 
 .headerLead {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.9rem;
   min-width: 0;
+  flex: 1;
+}
+
+.headerLeadCopy {
+  min-width: 0;
+  flex: 1;
 }
 
 .mark {
@@ -102,11 +109,12 @@
 .title {
   margin: 0.35rem 0 0;
   font-family: var(--fw-display);
-  font-size: clamp(1.35rem, 4.2vw, 1.85rem);
+  font-size: clamp(1.05rem, 3.2vw, 1.55rem);
   font-weight: 400;
-  letter-spacing: 0.1em;
-  line-height: 1.15;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
   text-transform: uppercase;
+  text-wrap: balance;
   color: var(--fw-espresso);
 }
 

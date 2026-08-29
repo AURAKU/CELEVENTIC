@@ -22,7 +22,7 @@ export function duckInvitationAudio(): void {
 export function unduckInvitationAudio(): void {
   if (!invitationAudioDucked) return;
   invitationAudioDucked = false;
-  void activeInvitationAudioManager?.play();
+  void activeInvitationAudioManager?.resume();
 }
 
 export interface InvitationAudioManager {
@@ -41,6 +41,8 @@ export interface InvitationAudioManager {
    */
   armSilently: () => Promise<boolean>;
   play: () => Promise<boolean>;
+  /** Continue from the current playhead after a film duck — do not rewind. */
+  resume: () => Promise<boolean>;
   pause: () => void;
   toggle: () => Promise<boolean>;
   mute: () => void;
@@ -326,6 +328,27 @@ export function createInvitationAudioManager(
     unlock: async () => playNow(true),
     armSilently,
     play: async () => playNow(true),
+    async resume() {
+      const a = ensureAudio();
+      try {
+        if (activeInvitationAudioManager && activeInvitationAudioManager !== manager) {
+          activeInvitationAudioManager.pause();
+        }
+        activeInvitationAudioManager = manager;
+        if (muted) applyMuteToElement(a);
+        await a.play();
+        if (muted) {
+          applyMuteToElement(a);
+        } else {
+          clearFade();
+          a.muted = false;
+          a.volume = musicSelection?.volume ?? savedVolume;
+        }
+        return true;
+      } catch {
+        return playNow(true);
+      }
+    },
     pause() {
       clearFade();
       audio?.pause();

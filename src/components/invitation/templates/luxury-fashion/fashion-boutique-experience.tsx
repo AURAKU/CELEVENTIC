@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { CalendarDays, MapPin, Shirt, Store } from "lucide-react";
 import { lockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
-import type { FashionNavDestination } from "@/lib/experience/luxury-fashion";
+import {
+  fashionHouseLogoSrc,
+  resolveFashionFlyerCard,
+  resolveFashionVisionStore,
+  type FashionLookbookItem,
+  type FashionNavDestination,
+  type LuxuryFashionHouseConfig,
+} from "@/lib/experience/luxury-fashion";
+import { FashionVisionStore } from "./fashion-vision-store";
 import styles from "./luxury-fashion-flagship.module.css";
 
 const PORTALS: Array<{
@@ -18,18 +26,33 @@ const PORTALS: Array<{
 ];
 
 export function FashionBoutiqueExperience({
-  houseName,
+  house,
+  looks,
   open,
   available,
   onClose,
   onSelect,
 }: {
-  houseName: string;
+  house: LuxuryFashionHouseConfig;
+  looks?: FashionLookbookItem[];
   open: boolean;
   available?: FashionNavDestination[];
   onClose: () => void;
   onSelect: (id: FashionNavDestination) => void;
 }) {
+  const cardSrc = useMemo(() => resolveFashionFlyerCard(house), [house]);
+  const visionOpen = resolveFashionVisionStore(house);
+  const logoSrc = useMemo(() => fashionHouseLogoSrc(house), [house]);
+  const visionLooks = useMemo(() => {
+    const clothing = (house.lookbookItems ?? []).filter(
+      (item) => item.type === "image" && Boolean(item.url) && !/\.(mp4|webm|mov)(\?|$)/i.test(item.url)
+    );
+    const source = clothing.length ? clothing : looks ?? [];
+    return source.filter(
+      (item) => item.type === "image" && Boolean(item.url) && !/\.(mp4|webm|mov)(\?|$)/i.test(item.url)
+    );
+  }, [house.lookbookItems, looks]);
+
   useEffect(() => {
     if (!open) return;
     const unlock = lockRevealScroll();
@@ -50,7 +73,7 @@ export function FashionBoutiqueExperience({
       className={styles.boutique}
       role="dialog"
       aria-modal="true"
-      aria-label={`${houseName} boutique`}
+      aria-label={`${house.houseName} boutique`}
       data-testid="fashion-boutique-experience"
     >
       <button type="button" className={styles.boutiqueClose} onClick={onClose} data-testid="fashion-boutique-close">
@@ -60,28 +83,51 @@ export function FashionBoutiqueExperience({
         <span className={styles.boutiqueRail} />
         <span className={styles.boutiqueDepth} />
       </div>
-      <p className={styles.kicker}>{houseName}</p>
-      <h2 className={styles.heading}>Step inside</h2>
-      <p className={styles.lede}>A first corridor. Choose a room.</p>
-      <div className={styles.boutiqueGrid}>
-        {PORTALS.filter((portal) => !available || available.includes(portal.id)).map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            className={styles.boutiqueDoor}
-            onClick={() => {
-              onSelect(id);
-              onClose();
-            }}
-          >
-            <Icon size={18} strokeWidth={1.25} aria-hidden />
-            {label}
-          </button>
-        ))}
+      <div className={styles.boutiqueInner}>
+        <p className={styles.kicker}>{house.houseName}</p>
+        <h2 className={styles.heading}>Step inside</h2>
+        {cardSrc ? (
+          <figure className={styles.boutiqueCard} data-testid="fashion-boutique-invitation">
+            <div className={styles.boutiqueCardStage}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={cardSrc} alt="Invitation card" />
+              <span className={styles.boutiqueCardSheen} aria-hidden />
+            </div>
+          </figure>
+        ) : null}
+        {visionOpen ? (
+          <FashionVisionStore
+            houseName={house.houseName}
+            logoSrc={logoSrc}
+            kicker={house.visionStoreKicker || "Online vision store"}
+            title={house.visionStoreTitle || "The house, in your hands"}
+            line={house.visionStoreLine || "A first look at shopping the collection from anywhere."}
+            deliveryLine={house.visionStoreDeliveryLine || "Nationwide delivery"}
+            soonLabel={house.visionStoreSoonLabel || "Opening soon"}
+            looks={visionLooks}
+          />
+        ) : null}
+        {visionOpen ? null : <p className={styles.lede}>A first corridor. Choose a room.</p>}
+        <div className={styles.boutiqueGrid}>
+          {PORTALS.filter((portal) => !available || available.includes(portal.id)).map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              className={styles.boutiqueDoor}
+              onClick={() => {
+                onSelect(id);
+                onClose();
+              }}
+            >
+              <Icon size={18} strokeWidth={1.25} aria-hidden />
+              {label}
+            </button>
+          ))}
+        </div>
+        <button type="button" className={styles.cta} onClick={onClose}>
+          Return to the invitation
+        </button>
       </div>
-      <button type="button" className={styles.cta} onClick={onClose}>
-        Return to the invitation
-      </button>
     </div>
   );
 }

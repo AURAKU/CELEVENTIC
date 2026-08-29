@@ -4,6 +4,7 @@ import { MapPin, Phone, Share2, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ButtonStyle } from "@/lib/invitation-studio/studio-types";
 import { styledInvitationButton } from "@/lib/invitation/invitation-button-styles";
+import { copyText } from "@/lib/clipboard";
 import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
@@ -60,10 +61,14 @@ export function InvitationActions({
       return;
     }
     if (navigator.share) {
-      await navigator.share({ title: event.title, url: window.location.href });
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
+      try {
+        await navigator.share({ title: event.title, url: window.location.href });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
     }
+    await copyText(window.location.href);
   }
 
   return (

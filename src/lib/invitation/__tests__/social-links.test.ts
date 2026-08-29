@@ -41,6 +41,17 @@ test("missing URL keeps the handle and does not invent a Follow destination", ()
   assert.equal(socialLinkHasDestination(link!), false);
 });
 
+test("scheme-less Instagram URLs become HTTPS destinations", () => {
+  assert.equal(
+    safeSocialHttpUrl("www.instagram.com/femmora_gh/", "instagram"),
+    "https://www.instagram.com/femmora_gh/"
+  );
+  const [link] = resolveInvitationSocialLinks([
+    { platform: "tiktok", handle: "@femmora.woman", url: "www.tiktok.com/@femmora.woman", enabled: true },
+  ]);
+  assert.equal(link?.url, "https://www.tiktok.com/@femmora.woman");
+});
+
 test("javascript URLs are rejected", () => {
   assert.equal(safeSocialHttpUrl("javascript:alert(1)", "instagram"), null);
   const [link] = resolveInvitationSocialLinks([

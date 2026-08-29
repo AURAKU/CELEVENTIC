@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  buildInviteShareChannelHref,
   buildInviteSharePayload,
   copyInviteShareLink,
   tryNativeInviteShare,
@@ -25,18 +24,14 @@ export function FashionShareScene({
     event,
     uniqueLink,
   });
-  const whatsapp = buildInviteShareChannelHref("whatsapp", payload);
 
-  async function nativeShare() {
+  async function share() {
     onShare?.();
     const result = await tryNativeInviteShare(payload);
-    if (result === "unavailable") await copy();
-  }
-
-  async function copy() {
-    onShare?.();
-    const ok = await copyInviteShareLink(payload.url);
-    setCopied(ok);
+    if (result === "unavailable") {
+      const ok = await copyInviteShareLink(payload.url);
+      setCopied(ok);
+    }
   }
 
   return (
@@ -44,14 +39,13 @@ export function FashionShareScene({
       <p className={styles.kicker}>Share</p>
       <h2 className={styles.heading}>Pass the invitation</h2>
       <div className={styles.ctaRow}>
-        <button type="button" className={`${styles.cta} ${styles.ctaSolid}`} onClick={() => void nativeShare()}>
-          Share
-        </button>
-        <a className={styles.cta} href={whatsapp} target="_blank" rel="noreferrer" onClick={onShare}>
-          WhatsApp
-        </a>
-        <button type="button" className={styles.cta} onClick={() => void copy()} data-testid="fashion-copy-link">
-          {copied ? "Link copied" : "Copy link"}
+        <button
+          type="button"
+          className={`${styles.cta} ${styles.ctaSolid}`}
+          onClick={() => void share()}
+          data-testid="fashion-copy-link"
+        >
+          {copied ? "Link copied" : "Share"}
         </button>
       </div>
     </div>

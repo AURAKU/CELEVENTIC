@@ -4,6 +4,7 @@ import {
   buildGoogleCalendarUrl,
   buildIcsContent,
   defaultReminderMinutes,
+  toMapsEmbedUrl,
 } from "@/lib/invitation/calendar-utils";
 
 describe("calendar reminders", () => {
@@ -37,5 +38,16 @@ describe("calendar reminders", () => {
     assert.match(url, /calendar\.google\.com/);
     assert.match(url, /action=TEMPLATE/);
     assert.match(url, /Reminders/);
+  });
+});
+
+describe("maps embed URLs", () => {
+  it("parses scheme-less Google Maps search links", () => {
+    const embed = toMapsEmbedUrl(
+      "www.google.com/maps/search/?api=1&query=Femmora%20GH%20Westlands",
+      "FEMMORA GH, Westlands"
+    );
+    assert.match(embed ?? "", /^https:\/\/maps\.google\.com\/maps\?q=/);
+    assert.match(embed ?? "", /Femmora/);
   });
 });

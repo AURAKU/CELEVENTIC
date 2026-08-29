@@ -1,3 +1,5 @@
+import { normalizeExternalHref } from "@/lib/invitation/maps-utils";
+
 export interface CalendarEventInput {
   title: string;
   startDateRaw: string;
@@ -213,7 +215,7 @@ export async function shareOrDownloadIcs(
 
 /** Embed-friendly Google Maps URL (no API key). */
 export function toMapsEmbedUrl(mapsLink?: string | null, venueLabel?: string | null): string | null {
-  const link = mapsLink?.trim() || "";
+  const link = normalizeExternalHref(mapsLink);
   if (link.includes("output=embed") || link.includes("/maps/embed")) {
     return link;
   }

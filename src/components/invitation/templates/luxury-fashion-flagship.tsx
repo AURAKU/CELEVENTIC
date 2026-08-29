@@ -109,7 +109,6 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
         setCollectionOpen(false);
         setFilmPlayNonce((n) => n + 1);
         trackFashionAction("store_preview_started", { invitationId, templateSlug });
-        void filmRef.current?.play({ allowMutedFallback: true });
         requestAnimationFrame(() => scrollTo(id));
         return;
       }
@@ -299,7 +298,8 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
 
       {chapters.experience ? (
         <FashionBoutiqueExperience
-          houseName={house.houseName}
+          house={house}
+          looks={looks}
           open={boutiqueOpen}
           available={navLabels.map((item) => item.id)}
           onClose={() => setBoutiqueOpen(false)}
