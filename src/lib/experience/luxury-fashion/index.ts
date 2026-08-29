@@ -49,6 +49,7 @@ export {
   socialLinkHasDestination,
 } from "./social";
 export {
+  formatFashionVenueLine,
   resolveFashionChapters,
   resolveFashionFilm,
   resolveFashionFlyerCard,

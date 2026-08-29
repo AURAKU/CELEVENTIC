@@ -36,7 +36,7 @@ export function FashionRsvpScene({
     <div data-testid="fashion-rsvp" onFocusCapture={onStarted}>
       <p className={styles.kicker}>Your reply</p>
       <h2 className={styles.heading}>{heading}</h2>
-      <p className={styles.lede}>Yes, maybe, or unable to attend — we will keep your place with care.</p>
+      <p className={styles.lede}>Yes, maybe, or unable to attend, we will keep your place with care.</p>
       {days.length ? (
         <fieldset className={styles.visitField} data-testid="fashion-visit-day">
           <legend>Preferred visit date</legend>

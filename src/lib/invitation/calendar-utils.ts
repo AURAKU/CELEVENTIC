@@ -6,6 +6,8 @@ export interface CalendarEventInput {
   endDateRaw?: string;
   venue?: string;
   description?: string;
+  /** IANA zone so Google/Apple show the house's wall-clock hours (e.g. Africa/Nairobi). */
+  timeZone?: string;
   /**
    * Reminder offsets in minutes before start (e.g. `[1440, 60]` = 1 day + 1 hour).
    * Applied in .ics VALARM blocks for Apple / Outlook / most calendar apps.
@@ -40,13 +42,23 @@ function icsFold(line: string): string {
   return chunks.join("\r\n");
 }
 
-/** Google Calendar `dates` param (UTC). */
-export function toGoogleCalendarDates(startIso: string, endIso?: string) {
+/** Google Calendar `dates` param (UTC). Empty when the window cannot be parsed. */
+export function toGoogleCalendarDates(startIso: string, endIso?: string): string {
   const start = new Date(startIso);
+  if (Number.isNaN(start.getTime())) return "";
   const end = endIso ? new Date(endIso) : new Date(start.getTime() + 4 * 60 * 60 * 1000);
+  if (Number.isNaN(end.getTime())) return "";
   const fmt = (d: Date) =>
     `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
   return `${fmt(start)}/${fmt(end)}`;
+}
+
+export function hasValidCalendarWindow(event: CalendarEventInput): boolean {
+  const start = Date.parse(event.startDateRaw);
+  if (!Number.isFinite(start)) return false;
+  if (!event.endDateRaw) return true;
+  const end = Date.parse(event.endDateRaw);
+  return Number.isFinite(end) && end > start;
 }
 
 export function resolveEventWindow(event: CalendarEventInput): { start: Date; end: Date } {
@@ -81,11 +93,15 @@ function reminderDescription(minutes: number[]): string {
 }
 
 export function buildGoogleCalendarUrl(event: CalendarEventInput): string {
+  const dates = toGoogleCalendarDates(event.startDateRaw, event.endDateRaw);
+  if (!dates || !hasValidCalendarWindow(event)) return "";
   const url = new URL("https://calendar.google.com/calendar/render");
   url.searchParams.set("action", "TEMPLATE");
   url.searchParams.set("text", event.title);
-  url.searchParams.set("dates", toGoogleCalendarDates(event.startDateRaw, event.endDateRaw));
+  url.searchParams.set("dates", dates);
   if (event.venue) url.searchParams.set("location", event.venue);
+  const tz = event.timeZone?.trim();
+  if (tz) url.searchParams.set("ctz", tz);
   const reminders = defaultReminderMinutes(event);
   const details = [event.description?.trim(), reminderDescription(reminders)]
     .filter(Boolean)
@@ -96,7 +112,9 @@ export function buildGoogleCalendarUrl(event: CalendarEventInput): string {
 }
 
 export function buildOutlookCalendarUrl(event: CalendarEventInput): string {
+  if (!hasValidCalendarWindow(event)) return "";
   const { start, end } = resolveEventWindow(event);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return "";
   const url = new URL("https://outlook.live.com/calendar/0/deeplink/compose");
   url.searchParams.set("path", "/calendar/action/compose");
   url.searchParams.set("rru", "addevent");
@@ -133,6 +151,7 @@ function buildValarmBlocks(minutesBefore: number[]): string[] {
 }
 
 export function buildIcsContent(event: CalendarEventInput): string {
+  if (!hasValidCalendarWindow(event)) return "";
   const { start, end } = resolveEventWindow(event);
   const uid = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}@celeventic.com`;
   const reminders = defaultReminderMinutes(event);
@@ -168,7 +187,9 @@ export function buildIcsBlob(event: CalendarEventInput): Blob {
 }
 
 export function downloadIcsFile(event: CalendarEventInput, filename = "event.ics") {
-  const blob = buildIcsBlob(event);
+  const ics = buildIcsContent(event);
+  if (!ics) return;
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

@@ -3,6 +3,7 @@
 import { useCallback, useState, type ReactNode } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, Ref } from "react";
 import {
+  formatFashionVenueLine,
   resolveFashionLede,
   type FashionChapterFlags,
   type FashionNavDestination,
@@ -83,7 +84,7 @@ export function FashionCampaignHero({
     });
   }, []);
 
-  const place = [house.locationName, house.address].filter(Boolean).join(", ");
+  const place = formatFashionVenueLine(house.locationName, house.address);
 
   return (
     <header

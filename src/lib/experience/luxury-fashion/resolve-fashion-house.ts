@@ -22,6 +22,45 @@ export function resolveFashionLede(house: LuxuryFashionHouseConfig): string {
   return lede;
 }
 
+/** One venue line — never "FEMMORA GH, FEMMORA GH". */
+export function formatFashionVenueLine(locationName?: string | null, address?: string | null): string {
+  const name = trim(locationName);
+  const addr = trim(address);
+  if (!name) return addr;
+  if (!addr) return name;
+  if (name.localeCompare(addr, undefined, { sensitivity: "accent" }) === 0) return name;
+  const nameLower = name.toLowerCase();
+  const addrLower = addr.toLowerCase();
+  if (addrLower.startsWith(nameLower)) {
+    const rest = addr.slice(name.length).replace(/^[\s,]+/, "");
+    return rest ? `${name}, ${rest}` : name;
+  }
+  if (addrLower.includes(nameLower)) return addr;
+  if (nameLower.includes(addrLower)) return name;
+  return `${name}, ${addr}`;
+}
+
+function collapseFashionVenue(
+  locationName: string,
+  address: string,
+  fallbackAddress = ""
+): { locationName: string; address: string } {
+  const name = trim(locationName);
+  let addr = trim(address);
+  if (!name) return { locationName: name, address: addr || trim(fallbackAddress) };
+  // A duplicated venue name must not wipe the house district (Westlands).
+  if (addr && name.localeCompare(addr, undefined, { sensitivity: "accent" }) === 0) {
+    addr = trim(fallbackAddress);
+    if (name.localeCompare(addr, undefined, { sensitivity: "accent" }) === 0) {
+      addr = "";
+    }
+  }
+  if (addr && addr.toLowerCase().startsWith(name.toLowerCase())) {
+    addr = addr.slice(name.length).replace(/^[\s,]+/, "");
+  }
+  return { locationName: name, address: addr };
+}
+
 export function resolveFashionHouse(
   design?: InvitationDesignConfig | null,
   event?: InvitationEventData | null
@@ -29,8 +68,13 @@ export function resolveFashionHouse(
   const stored = design?.experience?.fashionHouse;
   const merged = mergeFashionHouse(LUXURY_FASHION_HOUSE_DEFAULTS, stored);
 
-  const locationName = trim(event?.venueName) || merged.locationName;
-  const address = trim(event?.landmark) || merged.address;
+  const venue = collapseFashionVenue(
+    trim(event?.venueName) || merged.locationName,
+    trim(event?.landmark) || merged.address,
+    merged.address
+  );
+  const locationName = venue.locationName;
+  const address = venue.address;
   const mapsUrl = trim(event?.mapsLink) || merged.mapsUrl;
   const eventTitle = trim(event?.title) || merged.eventTitle;
   const houseName = trim(event?.hostName) || merged.houseName;

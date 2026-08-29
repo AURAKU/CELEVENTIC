@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import {
   fashionTokenStyleFromColors,
+  formatFashionVenueLine,
   LUXURY_FASHION_LAYOUT_SLUG,
   resolveFashionChapters,
   resolveFashionFilm,
@@ -178,11 +179,20 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
                   title: `${house.houseName} ${house.eventTitle}`.trim(),
                   startDateRaw: house.startAtIso,
                   endDateRaw: house.endAtIso,
-                  venue: [house.locationName, house.address].filter(Boolean).join(", "),
-                  description: resolveFashionLede(house) || `${house.houseName} ${house.eventTitle}`.trim(),
+                  venue: formatFashionVenueLine(house.locationName, house.address),
+                  description: [
+                    house.datesLabel,
+                    house.hoursLabel,
+                    resolveFashionLede(house) || `${house.houseName} ${house.eventTitle}`.trim(),
+                  ]
+                    .filter(Boolean)
+                    .join(" · "),
+                  timeZone: house.timeZone,
+                  reminderMinutesBefore: [24 * 60, 60],
                 }}
                 accentColor={props.design.colors.accent}
-                variant="minimal"
+                variant="plain"
+                showHint={false}
               />
             </span>
           ) : null

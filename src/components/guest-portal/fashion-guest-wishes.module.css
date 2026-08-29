@@ -310,10 +310,17 @@
 .author {
   margin: 0;
   font-family: var(--fw-display);
-  font-size: 0.78rem;
-  letter-spacing: 0.16em;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--fw-gold-deep);
+  color: var(--fw-espresso);
+  display: inline-block;
+  padding: 0.06rem 0.28rem 0.12rem;
+  background: linear-gradient(
+    transparent 58%,
+    color-mix(in srgb, var(--fw-gold) 52%, var(--fw-champagne) 48%) 58%
+  );
 }
 
 .time {
