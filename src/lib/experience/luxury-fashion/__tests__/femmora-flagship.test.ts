@@ -703,6 +703,43 @@ test("ENTER EXPERIENCE shows the invitation card and a motion iPhone vision stor
   assert.equal(MAISON_VALE_HOUSE.visionStoreEnabled, false);
   assert.equal(resolveFashionVisionStore(FEMMORA_HOUSE_DEFAULTS), true);
   assert.equal(resolveFashionVisionStore(MAISON_VALE_HOUSE), false);
+  assert.equal(
+    resolveFashionVisionStore({ ...FEMMORA_HOUSE_DEFAULTS, visionStoreEnabled: false }),
+    true
+  );
+  assert.equal(
+    resolveFashionVisionStore({ ...LUXURY_FASHION_HOUSE_DEFAULTS, visionStoreEnabled: false }),
+    false
+  );
+  const liveSnapshot = resolveFashionHouse(
+    {
+      layout: "luxury-fashion-flagship",
+      colors: { primary: "#000", secondary: "#000", accent: "#000", background: "#fff", text: "#000" },
+      experience: {
+        fashionHouse: mergeFashionHouse(LUXURY_FASHION_HOUSE_DEFAULTS, {
+          houseName: "FEMMORA",
+          flyerCardUrl: FEMMORA_HOUSE_DEFAULTS.flyerCardUrl,
+          visionStoreEnabled: false,
+        }),
+      },
+    },
+    { hostName: "Femmora", title: "Flagship Store Opening" } as never
+  );
+  assert.equal(liveSnapshot.visionStoreEnabled, true);
+  assert.equal(resolveFashionVisionStore(liveSnapshot), true);
+  assert.equal(liveSnapshot.visionStoreTitle, "Buy online");
+  assert.equal(liveSnapshot.visionStoreSoonLabel, "Opening");
+  const valeLive = resolveFashionHouse(
+    {
+      layout: "luxury-fashion-flagship",
+      colors: MAISON_VALE_COLORS,
+      experience: { fashionHouse: MAISON_VALE_HOUSE },
+    },
+    { hostName: "MAISON VALE", title: "Collection Launch" } as never
+  );
+  assert.equal(valeLive.visionStoreEnabled, false);
+  assert.equal(resolveFashionVisionStore(valeLive), false);
+  assert.equal(assertHouseIsNotFemmora(valeLive).length, 0);
   assert.equal(resolveFashionFlyerCard(FEMMORA_HOUSE_DEFAULTS), FEMMORA_HOUSE_DEFAULTS.flyerCardUrl);
   assert.equal(resolveFashionFlyerCard(MAISON_VALE_HOUSE), null);
   assert.equal(
