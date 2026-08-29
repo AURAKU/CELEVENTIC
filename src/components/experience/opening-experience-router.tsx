@@ -37,6 +37,7 @@ import { LuxuryFashionOpeningExperience } from "@/components/experience/luxury-f
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion";
 import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 import { ReducedMotionGate, RevealKeyboardFallback } from "@/components/experience/reveal-accessibility";
+import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import { useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import type { ResolvedSealStyle } from "@/lib/invitation/seal-design";
@@ -114,6 +115,7 @@ export function OpeningExperienceRouter({
   const isFashionFlagship = resolvedExperienceId === "luxury-fashion-flagship";
 
   function complete() {
+    forceUnlockRevealScroll();
     setRevealed(true);
     onComplete();
   }

@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   LUXURY_FASHION_HOUSE_DEFAULTS,
   mergeFashionHouse,
+  type FashionOpeningStyle,
   type FashionSilkStyle,
   type LuxuryFashionHouseConfig,
 } from "@/lib/experience/luxury-fashion";
@@ -139,6 +140,74 @@ export function FashionHouseStudioPanel({
       <div className="grid gap-2">
         <Label>Countdown after</Label>
         <Input value={house.countdownAfterLabel} onChange={(e) => patch({ countdownAfterLabel: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Countdown ended</Label>
+        <Input
+          value={house.countdownEndedLabel ?? ""}
+          onChange={(e) => patch({ countdownEndedLabel: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Opening style</Label>
+        <select
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          value={house.openingStyle === "folio-silk" ? "card-envelope" : house.openingStyle ?? "card-envelope"}
+          onChange={(e) => patch({ openingStyle: e.target.value as FashionOpeningStyle })}
+        >
+          <option value="card-envelope">Card envelope</option>
+          <option value="silk-only">Silk only</option>
+          <option value="portal-only">Portal only</option>
+        </select>
+      </div>
+      <div className="grid gap-2">
+        <Label>Envelope face line</Label>
+        <Input
+          value={house.envelopeFaceLine ?? house.folioFaceLine ?? ""}
+          onChange={(e) => patch({ envelopeFaceLine: e.target.value, folioFaceLine: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Card CTA</Label>
+        <Input
+          value={house.cardCtaLabel ?? ""}
+          onChange={(e) => patch({ cardCtaLabel: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Place teaser</Label>
+        <Input
+          value={house.teaserPlaceLine ?? ""}
+          onChange={(e) => patch({ teaserPlaceLine: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Date teaser</Label>
+        <Input
+          value={house.teaserDateLine ?? ""}
+          onChange={(e) => patch({ teaserDateLine: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Teaser clip URL</Label>
+        <Input
+          value={house.teaserClipUrl ?? ""}
+          onChange={(e) => patch({ teaserClipUrl: e.target.value || null })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Teaser poster URL</Label>
+        <Input
+          value={house.teaserPosterUrl ?? ""}
+          onChange={(e) => patch({ teaserPosterUrl: e.target.value || null })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Maps CTA</Label>
+        <Input
+          value={house.mapsCtaLabel ?? ""}
+          onChange={(e) => patch({ mapsCtaLabel: e.target.value })}
+        />
       </div>
       <div className="grid gap-2">
         <Label>Silk reveal style</Label>

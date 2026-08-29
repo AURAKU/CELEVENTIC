@@ -16,6 +16,7 @@ function categoriesPresent(templates: CatalogTemplate[]): InvitationCategory[] {
     "Funeral",
     "Church",
     "Corporate",
+    "Lunch",
     "Conference",
     "Concert",
     "Private Event",

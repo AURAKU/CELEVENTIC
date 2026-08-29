@@ -739,7 +739,9 @@ export function PremiumInviteWrapper({
             accentColor={themeColors?.accent ?? softAccent}
             primaryColor={themeColors?.primary ?? themeColors?.secondary}
             backgroundColor={themeColors?.background}
-            atmosphereUrl={softAtmosphereUrl}
+            atmosphereUrl={
+              enrichedDesign.layout === "luxury-fashion-flagship" ? null : softAtmosphereUrl
+            }
             ceremonyLabel={tapCeremonyLabel}
             invitationName={props.invitation.name}
             name1={hasTapCoupleNames ? tapCoupleName1 : tapFuneralHonouree}
@@ -755,13 +757,17 @@ export function PremiumInviteWrapper({
             textColorOverride={experience?.welcomeTextColor}
             accentColorOverride={experience?.welcomeAccentColor}
             scrim={experience?.welcomeScrim}
-            ctaLabelOverride={
+            ctaLabelOverride={undefined}
+            hideCtaChip={enrichedDesign.layout === "luxury-fashion-flagship"}
+            fashionAtmosphere={enrichedDesign.layout === "luxury-fashion-flagship"}
+            ariaLabelOverride={
               enrichedDesign.layout === "luxury-fashion-flagship"
-                ? experience?.fashionHouse?.unveilingLabel || "Enter the Unveiling"
+                ? `Open the ${experience?.fashionHouse?.houseName || "house"} invitation`
                 : undefined
             }
             brandMarkLetter={
-              enrichedDesign.layout === "luxury-fashion-flagship"
+              enrichedDesign.layout === "luxury-fashion-flagship" &&
+              !experience?.fashionHouse?.logoUrl
                 ? experience?.fashionHouse?.monogram
                 : undefined
             }
@@ -777,6 +783,14 @@ export function PremiumInviteWrapper({
                     script: experience?.fashionHouse?.whisperScript,
                     plain: experience?.fashionHouse?.whisperLine,
                   }
+                : undefined
+            }
+            kickerLines={
+              enrichedDesign.layout === "luxury-fashion-flagship"
+                ? [
+                    experience?.fashionHouse?.teaserPlaceLine,
+                    experience?.fashionHouse?.teaserDateLine,
+                  ].filter((line): line is string => Boolean(line?.trim()))
                 : undefined
             }
           />
@@ -894,7 +908,7 @@ export function PremiumInviteWrapper({
               fashionHouse={experience?.fashionHouse}
               embedded={Boolean(embedded)}
               autoOpen={envelopeAutoOpen}
-              allowSkip={false}
+              allowSkip={Boolean(embedded) && openingExperience === "luxury-fashion-flagship"}
               ceremonialDoves={isFuneralExperience}
               onBegin={() => {
                 void startAudio();

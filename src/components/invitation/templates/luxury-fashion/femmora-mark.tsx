@@ -10,7 +10,14 @@ export function FashionHouseMark({
   if (house.logoUrl?.trim()) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img className={className} src={house.logoUrl} alt="" width={56} height={56} />
+      <img
+        className={className}
+        src={house.logoUrl}
+        alt=""
+        width={560}
+        height={560}
+        style={{ objectFit: "contain" }}
+      />
     );
   }
   if (house.markVariant === "botanical") {
@@ -29,8 +36,8 @@ export function FashionBotanicalMark({ className }: { className?: string }) {
     <svg
       className={className}
       viewBox="0 0 64 64"
-      width="56"
-      height="56"
+      width="96"
+      height="96"
       fill="none"
       aria-hidden
     >

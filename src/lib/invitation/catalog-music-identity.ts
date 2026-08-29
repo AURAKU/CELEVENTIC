@@ -304,14 +304,14 @@ export const CATALOG_MUSIC_IDENTITY: Record<string, LayoutMusicProfile> = {
   },
   "femmora-flagship-soft-opening": {
     trackId: "catalog-femmora-flagship-soft-opening",
-    title: "Femmora Atelier Quiet",
-    category: "lounge",
-    bundledFile: "jazz-soft-lounge",
-    startSec: 0,
-    endSec: 72,
-    volume: 0.3,
-    fadeInSec: 2.4,
-    fadeOutSec: 1.4,
+    title: "Femmora Flagship Score",
+    category: "instrumentals",
+    bundledFile: "ambient-cinematic",
+    startSec: 8,
+    endSec: 92,
+    volume: 0.34,
+    fadeInSec: 3,
+    fadeOutSec: 1.8,
   },
 };
 

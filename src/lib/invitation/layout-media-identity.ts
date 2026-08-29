@@ -495,25 +495,24 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     video: "https://assets.mixkit.co/videos/preview/mixkit-falling-stars-9455-large.mp4",
   },
   "luxury-fashion-flagship": {
-    hero: u("1618221195710-dd6b41faaea6", 900),
+    hero: u("1441986300917-64674bd600d8", 900),
     background: uBg("1441986300917-64674bd600d8"),
     gallery: [
-      u("1618221195710-dd6b41faaea6"),
       u("1441986300917-64674bd600d8"),
       u("1515562141207-7a88fb7ce338"),
       u("1558618666-fcd25c85cd64"),
       u("1579546929518-9e396f3cc809"),
+      u("1483985988355-763728e1935b"),
     ],
   },
   "femmora-flagship-soft-opening": {
-    hero: u("1618221195710-dd6b41faaea6", 900),
-    background: uBg("1441986300917-64674bd600d8"),
+    hero: "/templates/femmora/look-01.jpg",
+    background: "/templates/femmora/look-01.jpg",
     gallery: [
-      u("1441986300917-64674bd600d8"),
-      u("1618221195710-dd6b41faaea6"),
-      u("1515562141207-7a88fb7ce338"),
-      u("1558618666-fcd25c85cd64"),
-      u("1579546929518-9e396f3cc809"),
+      "/templates/femmora/look-01.jpg",
+      "/templates/femmora/look-02.jpg",
+      "/templates/femmora/look-03.jpg",
+      "/templates/femmora/store-poster.jpg",
     ],
   },
 };

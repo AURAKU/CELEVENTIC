@@ -2,17 +2,24 @@
 
 import { useState } from "react";
 import { copyText } from "@/lib/clipboard";
+import { FashionMapsPreview } from "./fashion-maps-preview";
 import styles from "./luxury-fashion-flagship.module.css";
 
 export function LuxuryLocationScene({
   locationName,
   address,
   mapsUrl,
+  mapsCtaLabel = "View on Google Maps",
+  copyLabel = "Copy location",
+  shareLabel = "Share location",
   onMaps,
 }: {
   locationName: string;
   address: string;
   mapsUrl: string;
+  mapsCtaLabel?: string;
+  copyLabel?: string;
+  shareLabel?: string;
   onMaps?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -41,6 +48,14 @@ export function LuxuryLocationScene({
       <p className={styles.kicker}>Location</p>
       <h2 className={styles.heading}>{locationName}</h2>
       <p className={styles.lede}>{address}</p>
+      {href ? (
+        <FashionMapsPreview
+          mapsUrl={href}
+          locationName={locationName}
+          address={address}
+          onOpen={onMaps}
+        />
+      ) : null}
       <div className={styles.ctaRow}>
         {href ? (
           <a
@@ -51,14 +66,24 @@ export function LuxuryLocationScene({
             onClick={onMaps}
             data-testid="fashion-maps-cta"
           >
-            View on Google Maps
+            {mapsCtaLabel}
           </a>
         ) : null}
-        <button type="button" className={styles.cta} onClick={() => void copyAddress()}>
-          {copied ? "Address copied" : "Copy address"}
+        <button
+          type="button"
+          className={styles.cta}
+          onClick={() => void copyAddress()}
+          data-testid="fashion-copy-location"
+        >
+          {copied ? "Location copied" : copyLabel}
         </button>
-        <button type="button" className={styles.cta} onClick={() => void shareLocation()}>
-          Share location
+        <button
+          type="button"
+          className={styles.cta}
+          onClick={() => void shareLocation()}
+          data-testid="fashion-share-location"
+        >
+          {shareLabel}
         </button>
       </div>
     </div>

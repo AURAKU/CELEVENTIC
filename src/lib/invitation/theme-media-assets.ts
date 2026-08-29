@@ -12,6 +12,7 @@ export type EventThemeCategory =
   | "Funeral"
   | "Birthday"
   | "Corporate"
+  | "Lunch"
   | "Conference"
   | "Concert"
   | "Church"
@@ -21,7 +22,7 @@ const LAYOUT_THEME: Record<string, EventThemeCategory> = {
   "memorial-candle-tribute": "Funeral",
   "neon-celebration-party": "Birthday",
   "corporate-prestige-summit": "Corporate",
-  "luxury-fashion-flagship": "Corporate",
+  "luxury-fashion-flagship": "Lunch",
   "floral-garden-romance": "Wedding",
 };
 
@@ -169,6 +170,16 @@ const THEME_PACKS: Record<
   Funeral: { hero: FUNERAL_HERO, gallery: FUNERAL_GALLERY, background: FUNERAL_BG },
   Birthday: { hero: BIRTHDAY_GALLERY[0], gallery: BIRTHDAY_GALLERY, background: BIRTHDAY_BG },
   Corporate: { hero: CORPORATE_GALLERY[0], gallery: CORPORATE_GALLERY, background: CORPORATE_BG },
+  Lunch: {
+    hero: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&q=80&auto=format&fit=crop",
+    gallery: [
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80&auto=format&fit=crop",
+    ],
+    background:
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&q=60&auto=format&fit=crop&blur=8",
+  },
   Conference: { hero: CORPORATE_GALLERY[0], gallery: CORPORATE_GALLERY, background: CORPORATE_BG },
   Concert: { hero: CONCERT_GALLERY[0], gallery: CONCERT_GALLERY, background: CONCERT_BG },
   Church: { hero: CHURCH_GALLERY[0], gallery: CHURCH_GALLERY, background: CHURCH_BG },
@@ -185,6 +196,9 @@ export function resolveEventTheme(layout: string, category?: string): EventTheme
   const slug = layout.toLowerCase();
   if (slug.includes("memorial") || slug.includes("funeral") || slug.includes("janazah")) {
     return "Funeral";
+  }
+  if (slug.includes("fashion") || slug.includes("flagship") || slug.includes("lunch")) {
+    return "Lunch";
   }
   if (slug.includes("corporate") || slug.includes("summit") || slug.includes("conference")) {
     return slug.includes("conference") ? "Conference" : "Corporate";

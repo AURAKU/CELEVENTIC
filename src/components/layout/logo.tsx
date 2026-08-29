@@ -132,6 +132,7 @@ export function Logo({
   return (
     <Link
       href="/"
+      suppressHydrationWarning
       className={cn(
         "inline-flex group shrink-0 focus:outline-none",
         "focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",

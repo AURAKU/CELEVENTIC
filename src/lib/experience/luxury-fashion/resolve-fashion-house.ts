@@ -2,7 +2,7 @@ import type { HubTabId } from "@/lib/experience/experience-types";
 import type { InvitationDesignConfig, InvitationEventData, InvitationMediaAsset } from "@/types/invitation-design";
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "./house-defaults";
 import { resolveFashionSocialLinks } from "./social";
-import type { FashionLookbookItem, FashionNavDestination, LuxuryFashionHouseConfig } from "./types";
+import type { FashionLookbookItem, FashionNavDestination, FashionOpeningStyle, LuxuryFashionHouseConfig } from "./types";
 
 export { mergeFashionHouse };
 
@@ -134,4 +134,24 @@ export function resolveFashionChapters(input: {
     countdown: ch?.countdown !== false && Boolean(input.house.startAtIso) && tabOn("countdown"),
     mapsCta: ch?.maps !== false && Boolean(input.house.mapsUrl),
   };
+}
+
+export function resolveFashionOpeningStyle(house: LuxuryFashionHouseConfig): FashionOpeningStyle {
+  if (house.openingStyle === "silk-only" || house.openingStyle === "portal-only") {
+    return house.openingStyle;
+  }
+  return "card-envelope";
+}
+
+/** Envelope never plays store film. Dedicated teaser clips are unused. */
+export function resolveFashionTeaser(): { src: string | null; poster: string | null } {
+  return { src: null, poster: null };
+}
+
+export function resolveFashionFlyerCard(house: LuxuryFashionHouseConfig): string | null {
+  return house.flyerCardUrl?.trim() || null;
+}
+
+export function resolveFashionExperienceFlyer(house: LuxuryFashionHouseConfig): string | null {
+  return house.experienceFlyerUrl?.trim() || house.flyerCardUrl?.trim() || null;
 }

@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Cursor preview uses localhost; Playwright and some tabs use 127.0.0.1.
+  // Without this, Next 15 blocks cross-origin /_next chunks and paints the red portal.
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
+  // Hide the idle N badge so it does not sit on cinematic invitation previews.
+  // Compile/runtime errors still open the overlay.
+  devIndicators: false,
   // Allows building to a scratch dir (NEXT_DIST_DIR=.next-verify) without clobbering
   // the .next that a running `next start` is serving from.
   distDir: process.env.NEXT_DIST_DIR || ".next",

@@ -213,14 +213,29 @@ export async function shareOrDownloadIcs(
 
 /** Embed-friendly Google Maps URL (no API key). */
 export function toMapsEmbedUrl(mapsLink?: string | null, venueLabel?: string | null): string | null {
-  const query = venueLabel?.trim() || mapsLink?.trim();
-  if (!query) return null;
-  if (mapsLink?.includes("output=embed") || mapsLink?.includes("/maps/embed")) {
-    return mapsLink;
+  const link = mapsLink?.trim() || "";
+  if (link.includes("output=embed") || link.includes("/maps/embed")) {
+    return link;
   }
-  if (mapsLink && mapsLink.includes("google.") && mapsLink.includes("/maps")) {
-    const sep = mapsLink.includes("?") ? "&" : "?";
-    return `${mapsLink}${sep}output=embed`;
+  let query = venueLabel?.trim() || "";
+  if (link) {
+    try {
+      const parsed = new URL(link);
+      query =
+        parsed.searchParams.get("query") ||
+        parsed.searchParams.get("q") ||
+        parsed.searchParams.get("destination") ||
+        query;
+    } catch {
+      /* keep venue label */
+    }
   }
-  return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&hl=en&z=15&output=embed`;
+  if (query) {
+    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&hl=en&z=16&output=embed`;
+  }
+  if (link && /google\./i.test(link) && link.includes("/maps")) {
+    const sep = link.includes("?") ? "&" : "?";
+    return `${link}${sep}output=embed`;
+  }
+  return null;
 }

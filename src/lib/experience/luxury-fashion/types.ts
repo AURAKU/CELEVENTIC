@@ -10,6 +10,8 @@ import type {
 
 export type FashionSilkStyle = "ivory-champagne" | "pearl-mocha" | "espresso-gold";
 
+export type FashionOpeningStyle = "card-envelope" | "silk-only" | "portal-only" | "folio-silk";
+
 export type FashionNavStyle = "editorial-index" | "garment-tag" | "runway-chapters";
 
 export type FashionNavDestination =
@@ -61,6 +63,29 @@ export interface LuxuryFashionHouseConfig {
   address: string;
   mapsUrl: string;
   silkStyle: FashionSilkStyle;
+  /** Femmora default is card-envelope. Other houses may choose silk-only or portal-only. */
+  openingStyle?: FashionOpeningStyle;
+  /** Tiny envelope-face line. Femmora default: PRIVATE INVITATION. */
+  envelopeFaceLine?: string;
+  /** @deprecated Use envelopeFaceLine. */
+  folioFaceLine?: string;
+  /** Gesture #2 CTA on the risen card. Femmora default: ENTER FEMMORA. */
+  cardCtaLabel?: string;
+  teaserPlaceLine?: string;
+  teaserDateLine?: string;
+  teaserClipUrl?: string | null;
+  teaserPosterUrl?: string | null;
+  /** Invitation flyer artwork used as the rising card face — never as hub wallpaper. */
+  flyerCardUrl?: string | null;
+  /** Full-screen ENTER EXPERIENCE flyer. When set, replaces the 2.5D boutique. */
+  experienceFlyerUrl?: string | null;
+  mapsCtaLabel?: string;
+  copyLocationLabel?: string;
+  shareLocationLabel?: string;
+  countdownEndedLabel?: string;
+  replayUnveilingLabel?: string;
+  filmChapterTitle?: string;
+  filmChapterLede?: string;
   markVariant?: "letter" | "botanical";
   logoUrl?: string | null;
   filmCta: string;
@@ -103,11 +128,17 @@ export interface LuxuryFashionHouseConfig {
 }
 
 export type FashionOpeningPhase =
+  | "envelope"
+  | "envelope-opening"
+  | "card-presented"
+  | "card-morphing"
+  | "arming-folio"
+  | "folio"
+  | "folio-opening"
   | "arming-silk"
   | "silk"
   | "silk-opening"
   | "doors-opening"
-  | "film"
   | "complete";
 
 export const FASHION_NAV_DESTINATIONS: FashionNavDestination[] = [
@@ -124,6 +155,7 @@ export const FASHION_NAV_DESTINATIONS: FashionNavDestination[] = [
 export {
   FASHION_DOORS_OPEN_MS,
   FASHION_EXIT_POINTER_MS,
+  FASHION_FOLIO_OPEN_MS,
   FASHION_GESTURE_ARM_MS,
   FASHION_REDUCED_OPEN_MS,
   FASHION_SILK_DRAG_PX,

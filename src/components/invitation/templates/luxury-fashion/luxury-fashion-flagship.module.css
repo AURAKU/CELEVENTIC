@@ -18,130 +18,433 @@
   mix-blend-mode: multiply;
 }
 
-.hero {
+.campaign {
   position: relative;
   z-index: 1;
   min-height: 100svh;
   min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: max(2.5rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(5rem, env(safe-area-inset-bottom, 0px));
-  text-align: center;
-  overflow: hidden;
+  padding:
+    max(1.5rem, env(safe-area-inset-top, 0px))
+    var(--ff-pad)
+    max(6.75rem, calc(env(safe-area-inset-bottom, 0px) + 5.5rem));
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.campaignEnv {
+  position: absolute;
+  inset: -14%;
+  pointer-events: none;
 }
 
 .silkBed {
   position: absolute;
-  inset: -8%;
+  inset: 0;
   background:
-    var(--ff-silk-bed, none) center / cover no-repeat,
-    radial-gradient(90% 70% at 50% 20%, #fffdf8 0%, var(--ff-cream, #f3ebe0) 55%, #d9c4a0 100%);
-  filter: saturate(0.92) contrast(0.96);
-  transform: scale(1.04);
-  pointer-events: none;
+    radial-gradient(90% 70% at 50% 18%, #fffdf8 0%, var(--ff-cream, #f3ebe0) 52%, #e8d9c4 100%);
+  animation: silkWash 14s ease-in-out infinite;
+}
+
+@keyframes silkWash {
+  0%,
+  100% { transform: scale(1.02) translate3d(0, 0, 0); }
+  50% { transform: scale(1.06) translate3d(1.1%, -0.7%, 0); }
 }
 
 .silkBed::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(247, 241, 232, 0.28) 0%, rgba(247, 241, 232, 0.55) 100%);
+  background:
+    linear-gradient(180deg, rgba(251, 247, 240, 0.08) 0%, rgba(247, 241, 232, 0.28) 62%, rgba(243, 235, 224, 0.52) 100%);
 }
 
-.card {
+.campaignFold,
+.campaignFoldAlt {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: soft-light;
+}
+
+.campaignFold {
+  background:
+    radial-gradient(70% 50% at 18% 30%, rgba(255, 252, 245, 0.7) 0%, transparent 62%),
+    radial-gradient(55% 45% at 88% 70%, rgba(184, 149, 106, 0.28) 0%, transparent 58%);
+}
+
+.campaignFoldAlt {
+  background:
+    linear-gradient(118deg, transparent 20%, rgba(255, 248, 230, 0.22) 48%, transparent 72%);
+  opacity: 0.7;
+}
+
+.campaignGlow {
+  position: absolute;
+  inset: -8%;
+  background: radial-gradient(ellipse at 50% 28%, rgba(255, 248, 230, 0.55) 0%, rgba(217, 196, 160, 0.12) 42%, transparent 70%);
+  transform: translate3d(calc(var(--pointer-x, 0) * 28px), calc(var(--pointer-y, 0) * 18px), 0);
+  transition: transform 220ms ease-out;
+}
+
+.campaignFoil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 36%,
+    color-mix(in srgb, var(--ff-gold, #c4a574) 22%, transparent) 50%,
+    transparent 64%
+  );
+  transform: translateX(-40%);
+  animation: campaignFoil 9.5s ease-in-out infinite;
+  mix-blend-mode: screen;
+  opacity: 0.45;
+}
+
+@keyframes campaignFoil {
+  0%,
+  100% { transform: translateX(-46%); }
+  50% { transform: translateX(46%); }
+}
+
+.campaignGrid {
   position: relative;
   z-index: 1;
-  width: min(100%, 26rem);
-  aspect-ratio: 1 / 1.08;
-  max-height: min(86svh, 38rem);
   display: grid;
-  place-content: center;
-  gap: 0.35rem;
-  padding: 1.6rem 1.35rem 1.5rem;
-  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 92%, white);
-  color: var(--ff-gold-deep, #a67c52);
-  box-shadow:
-    0 28px 70px rgba(44, 33, 28, 0.16),
-    inset 0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 70%, transparent),
-    inset 0 0 0 7px color-mix(in srgb, var(--ff-ivory, #f7f1e8) 100%, transparent),
-    inset 0 0 0 8px color-mix(in srgb, var(--ff-gold, #b8956a) 55%, transparent);
+  gap: 2.25rem;
+  max-width: 76rem;
+  margin: 0 auto;
+  align-items: center;
 }
 
-.mark {
-  margin: 0 auto 0.55rem;
-  color: var(--ff-gold-deep, #a67c52);
-}
-
-.ornament {
-  display: block;
-  width: 0.55rem;
-  height: 0.55rem;
-  margin: 0.45rem auto;
-  transform: rotate(45deg);
-  border: 1px solid var(--ff-gold, #b8956a);
-}
-
-.cardFacts {
-  list-style: none;
-  margin: 0.85rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.85rem;
-  text-align: center;
-}
-
-.cardFacts li {
+.masthead {
   display: grid;
   justify-items: center;
-  gap: 0.28rem;
+  text-align: center;
+  gap: 0.35rem;
+}
+
+.campaignMark {
+  width: 4.25rem;
+  height: 4.25rem;
+  margin: 0 0 0.55rem;
   color: var(--ff-gold-deep, #a67c52);
-}
-
-.cardFacts p {
-  margin: 0;
-  font-size: 0.58rem;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-}
-
-.cardFacts strong {
-  display: block;
-  font-weight: 500;
-  font-size: 0.82rem;
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--ff-gold, #c4a574) 45%, transparent));
+  display: grid;
+  place-items: center;
+  font-family: var(--font-marcellus), Marcellus, serif;
+  font-size: 2.1rem;
   letter-spacing: 0.12em;
+}
+
+.campaignMark:has(img) {
+  width: clamp(10rem, 42vw, 17.5rem);
+  height: clamp(10rem, 42vw, 17.5rem);
+  margin-inline: auto;
+  border: 0;
+  filter: none;
+}
+
+.campaignMark svg,
+.campaignMark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.campaignHouse {
+  margin: 0;
+  font-family: var(--font-marcellus), Marcellus, serif;
+  font-size: clamp(2.35rem, 11vw, 4.6rem);
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  line-height: 1.05;
   text-transform: uppercase;
   color: var(--ff-espresso, #2c211c);
 }
 
-.cardFacts a {
-  display: inline-block;
-  margin-top: 0.15rem;
-  color: var(--ff-gold-deep, #a67c52);
-  font-style: italic;
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
+.campaignEvent {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-marcellus), Marcellus, serif;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  text-transform: uppercase;
+  font-size: clamp(0.95rem, 3.6vw, 1.35rem);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 58%, var(--ff-gold-deep, #8a6240));
+}
+
+.campaignLede {
+  margin: 0.55rem 0 0;
+  max-width: 28rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--ff-mocha, #6b5344);
+}
+
+.campaignFacts {
+  list-style: none;
+  margin: 1.35rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.95rem;
+}
+
+.campaignFacts li {
+  display: grid;
+  grid-template-columns: 1.45rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 52%, var(--ff-gold-deep, #8a6240));
+}
+
+.campaignFacts p {
+  margin: 0;
+  font-size: 0.66rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 52%, var(--ff-gold-deep, #8a6240));
+}
+
+.factMark {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.12rem;
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 35%, var(--ff-gold-deep, #8a6240));
+  flex-shrink: 0;
+}
+
+.campaignFacts strong {
+  display: block;
+  font-weight: 500;
+  font-size: 0.92rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ff-espresso, #2c211c);
+}
+
+.mapsCta {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.45rem;
+  padding: 0.48rem 0.82rem;
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 70%, transparent);
+  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 72%, var(--ff-champagne, #d9c4a0));
+  color: var(--ff-espresso, #2c211c);
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   text-decoration: none;
 }
 
-.cardFacts a:focus-visible {
+.mapsCta:focus-visible,
+.mapsPreview:focus-visible {
   outline: 2px solid var(--ff-gold, #b8956a);
   outline-offset: 3px;
+}
+
+.mapsPreview {
+  display: block;
+  margin: 0.9rem 0 0;
+  width: 100%;
+  max-width: none;
+  text-decoration: none;
+  color: inherit;
+  isolation: isolate;
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--ff-standard, 0.28s) ease, box-shadow var(--ff-standard, 0.28s) ease;
+}
+
+.mapsPreviewCompact {
+  width: 100%;
+}
+
+.mapsPreview:hover,
+.mapsPreview:active {
+  transform: translate3d(0, -2px, 0);
+}
+
+.mapsPreviewFrame {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  aspect-ratio: 16 / 10;
+  min-height: 14.5rem;
+  background: var(--ff-cream, #f3ebe0);
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 78%, transparent);
+  box-shadow:
+    0 22px 48px rgba(28, 22, 19, 0.14),
+    inset 0 0 0 8px var(--ff-ivory, #f7f1e8),
+    inset 0 0 0 9px color-mix(in srgb, var(--ff-gold, #b8956a) 48%, transparent);
+}
+
+.mapsPreviewCompact .mapsPreviewFrame {
+  min-height: 13.75rem;
+}
+
+.mapsPreview iframe,
+.mapsPreviewGrain {
+  position: absolute;
+  inset: -18% -12% -8%;
+  width: 124%;
+  height: 126%;
+  border: 0;
+  pointer-events: none;
+  filter: saturate(0.42) sepia(0.28) contrast(1.06) brightness(1.06);
+  transform: translate3d(calc(var(--pointer-x, 0) * -10px), calc(var(--pointer-y, 0) * -8px), 0);
+  transition: transform 220ms ease-out;
+}
+
+.mapsPreviewGrain {
+  background:
+    radial-gradient(70% 80% at 48% 42%, #efe4d4 0%, #e4d3b8 46%, #cbb48c 100%),
+    repeating-linear-gradient(115deg, transparent, transparent 6px, rgba(90, 64, 42, 0.04) 7px);
+  animation: mapsPaper 10s ease-in-out infinite;
+}
+
+.mapsPreviewVeil {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 58%, transparent 0%, rgba(247, 241, 232, 0.12) 48%, rgba(247, 241, 232, 0.72) 100%),
+    linear-gradient(180deg, rgba(247, 241, 232, 0.55) 0%, transparent 22%, transparent 58%, rgba(247, 241, 232, 0.78) 100%);
+}
+
+.mapsPreviewFoil {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    108deg,
+    transparent 34%,
+    color-mix(in srgb, var(--ff-gold, #b8956a) 28%, transparent) 50%,
+    transparent 66%
+  );
+  transform: translateX(calc(-28% + var(--pointer-x, 0) * 18%));
+  mix-blend-mode: soft-light;
+  animation: mapsFoil 8.5s ease-in-out infinite;
+}
+
+.mapsPreviewPin {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -62%);
+  background:
+    radial-gradient(circle at 35% 30%, #fffdf8, var(--ff-ivory, #f7f1e8) 46%, var(--ff-champagne, #d9c4a0) 100%);
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 80%, transparent);
+  box-shadow: 0 10px 22px rgba(28, 22, 19, 0.18);
+}
+
+.mapsPreviewPin::after {
+  content: "";
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #fff8ea 0%, var(--ff-gold, #c4a574) 42%, var(--ff-gold-deep, #8a6240) 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 55%, transparent);
+}
+
+.mapsPreviewHint {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  bottom: 0.85rem;
+  transform: translateX(-50%);
+  padding: 0.38rem 0.7rem;
+  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 55%, transparent);
+  color: var(--ff-espresso, #2c211c);
+  font-size: 0.52rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mapsPreviewCaption {
+  display: block;
+  margin: 0.55rem 0 0;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 52%, var(--ff-gold-deep, #8a6240));
+}
+
+@keyframes mapsFoil {
+  0%,
+  100% { opacity: 0.35; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes mapsPaper {
+  0%,
+  100% { transform: scale(1.02); }
+  50% { transform: scale(1.06); }
+}
+
+.campaignCountdown {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  width: min(100%, 26rem);
+}
+
+.campaignCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.6rem;
+}
+
+.campaignFilm {
+  position: relative;
+  width: min(100%, 26rem);
+  justify-self: center;
+}
+
+.campaignFilmTitle {
+  margin: 0.4rem 0 1rem;
+  font-family: var(--font-marcellus), Marcellus, serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 1.05rem;
+}
+
+.filmFrameCampaign {
+  width: min(100%, 22rem);
+  max-height: 46svh;
+  aspect-ratio: 3 / 4;
+  box-shadow:
+    0 28px 70px rgba(44, 33, 28, 0.22),
+    inset 0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 70%, transparent),
+    inset 0 0 0 10px color-mix(in srgb, var(--ff-ivory, #f7f1e8) 88%, transparent),
+    inset 0 0 0 11px color-mix(in srgb, var(--ff-gold, #b8956a) 42%, transparent);
+}
+
+.filmFrameCampaign::before {
+  content: "";
+  position: absolute;
+  inset: 8% auto 18% -8%;
+  width: 28%;
+  background: linear-gradient(90deg, rgba(247, 241, 232, 0.55), transparent);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .ord {
   font-size: 0.55em;
   letter-spacing: 0.08em;
-}
-
-.monogram {
-  width: 3.5rem;
-  height: 3.5rem;
-  margin: 0 auto 1.5rem;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--ff-gold, #c4a574);
-  letter-spacing: 0.2em;
-  font-family: var(--font-marcellus), Marcellus, serif;
 }
 
 .house {
@@ -318,7 +621,8 @@
   gap: 1rem;
   padding: max(1.5rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(2rem, env(safe-area-inset-bottom, 0px));
   background:
-    radial-gradient(80% 70% at 50% 20%, rgba(255, 253, 248, 0.92) 0%, rgba(44, 33, 28, 0.88) 100%);
+    radial-gradient(70% 55% at 50% 8%, rgba(255, 248, 230, 0.28) 0%, transparent 42%),
+    linear-gradient(180deg, #1c1613 0%, #2c211c 42%, #16110e 100%);
   color: var(--ff-ivory, #fbf7f0);
   text-align: center;
 }
@@ -334,26 +638,44 @@
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  perspective: 900px;
 }
 
 .boutiqueRail {
   position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 18%;
+  left: 10%;
+  right: 10%;
+  top: 16%;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--ff-gold, #c4a574), transparent);
+  box-shadow: 0 40px 80px rgba(217, 196, 160, 0.18);
 }
 
 .boutiqueDepth {
   position: absolute;
   left: 50%;
-  top: 18%;
-  width: 38%;
-  height: 62%;
-  transform: translateX(-50%) perspective(900px) rotateX(8deg);
-  border: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 35%, transparent);
+  top: 14%;
+  width: 46%;
+  height: 68%;
+  transform: translateX(-50%) rotateX(12deg);
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 38%, transparent);
+  box-shadow:
+    inset 0 0 80px rgba(217, 196, 160, 0.12),
+    0 30px 80px rgba(0, 0, 0, 0.35);
 }
+
+.boutiqueDepth::before,
+.boutiqueDepth::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22%;
+  background: linear-gradient(180deg, rgba(217, 196, 160, 0.16), transparent 70%);
+}
+
+.boutiqueDepth::before { left: 0; }
+.boutiqueDepth::after { right: 0; }
 
 .boutiqueGrid {
   position: relative;
@@ -400,9 +722,10 @@
 
 .kicker {
   font-size: 0.68rem;
+  font-weight: 600;
   letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: var(--ff-gold-deep, #9a7a48);
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 52%, var(--ff-gold-deep, #8a6240));
 }
 
 .heading {
@@ -773,15 +1096,17 @@
 }
 
 .cell {
-  border: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 40%, transparent);
-  padding: 0.85rem 0.3rem;
-  text-align: center;
+  padding: 0.55rem 0.15rem;
+  text-align: left;
+  border-bottom: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 40%, transparent);
 }
 
 .cell strong {
   display: block;
   font-family: var(--font-marcellus), Marcellus, serif;
   font-size: 1.45rem;
+  line-height: 1.15;
+  color: var(--ff-espresso, #2c211c);
 }
 
 .cell span {
@@ -853,14 +1178,57 @@
   font-size: 0.68rem;
 }
 
-@media (min-width: 900px) {
-  .filmFrame {
-    width: min(100%, 22rem);
-  }
+.flyerExperience {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding:
+    max(4.5rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(1.25rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+  background: var(--ff-ivory, #f7f1e8);
+}
 
-  .lookbook,
-  .storeStrip {
-    grid-auto-columns: minmax(14rem, 18rem);
+.flyerSilk {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 18%, rgba(255, 248, 230, 0.9) 0%, transparent 58%),
+    linear-gradient(168deg, #fbf7f0 0%, #f3ebe0 46%, #e6d4bc 100%);
+}
+
+.flyerPhoto {
+  position: relative;
+  z-index: 1;
+  width: min(96vw, 56rem);
+  height: min(82svh, 100%);
+  object-fit: contain;
+  box-shadow: 0 28px 64px rgba(28, 22, 19, 0.22);
+}
+
+.flyerClose {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  left: max(1rem, env(safe-area-inset-left, 0px));
+  z-index: 2;
+  min-height: 2.75rem;
+  padding: 0 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--ff-espresso, #2c211c);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+@media (min-width: 900px) {
+  .filmFrame:not(.filmFrameCampaign) {
+    width: min(100%, 22rem);
   }
 
   .section {
@@ -875,14 +1243,51 @@
     width: 100%;
   }
 
-  .hero {
-    padding-bottom: 4rem;
+  .campaignGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+    gap: 3.5rem;
+    min-height: calc(100svh - 7rem);
+  }
+
+  .mapsPreviewFrame,
+  .mapsPreviewCompact .mapsPreviewFrame {
+    min-height: 17.5rem;
+  }
+
+  .campaignFilm {
+    width: min(100%, 26rem);
+    justify-self: end;
+  }
+
+  .filmFrameCampaign {
+    max-height: none;
+    aspect-ratio: 9 / 16;
+    width: 100%;
+  }
+
+  .lookbook,
+  .storeStrip {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .countdown {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  .cell {
+    border: 0;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 35%, transparent);
   }
 }
 
 @media (min-width: 1280px) {
-  .card {
-    width: min(100%, 30rem);
+  .campaignHouse {
+    letter-spacing: 0.32em;
   }
 
   .index {
@@ -895,7 +1300,19 @@
   .look,
   .storeStill,
   .boutiqueDoor,
-  .tag {
+  .tag,
+  .campaignFoil,
+  .campaignGlow,
+  .silkBed,
+  .mapsPreviewFoil,
+  .mapsPreviewGrain,
+  .mapsPreview iframe {
+    animation: none;
     transition: none;
+  }
+
+  .mapsPreview:hover,
+  .mapsPreview:active {
+    transform: none;
   }
 }

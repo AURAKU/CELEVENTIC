@@ -109,6 +109,15 @@ const CATEGORY_DEMOS: Record<string, DemoContent> = {
     landmark: "Accra",
     dressCode: "Business formal",
   },
+  Lunch: {
+    title: "Flagship Soft Opening Lunch",
+    hostName: "THE HOUSE",
+    message: "You are invited to a private lunch for the flagship unveiling.",
+    invitationName: "Flagship Lunch",
+    venueName: "The House",
+    landmark: "",
+    dressCode: "Atelier dress",
+  },
   Conference: {
     title: "West Africa Innovation Summit",
     hostName: "Summit Organizers",
@@ -145,6 +154,7 @@ const CATEGORY_DEMO_MUSIC: Record<string, { url: string; title: string }> = {
   Concert: { url: catalogMusicUrl("party-edm-energy", "celebration"), title: "Live energy" },
   Birthday: { url: catalogMusicUrl("happy-celebration", "celebration"), title: "Party vibes" },
   Corporate: { url: catalogMusicUrl("corporate-summit", "corporate"), title: "Summit presentation" },
+  Lunch: { url: catalogMusicUrl("jazz-soft-lounge", "lounge"), title: "Quiet lounge jazz" },
   Conference: { url: catalogMusicUrl("corporate-summit", "corporate"), title: "Conference ambience" },
   Church: { url: catalogMusicUrl("piano-elegance", "piano"), title: "Worship instrumental" },
   "Private Event": { url: catalogMusicUrl("piano-garden", "piano"), title: "Elegant evening" },

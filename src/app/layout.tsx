@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { APP_NAME, APP_TAGLINE, BRAND, BRAND_MOTTO } from "@/lib/constants";
 import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
+import { INSPECTOR_ATTR_GUARD_SCRIPT } from "@/lib/dev/inspector-attr-guard";
 import { getServerI18nState } from "@/lib/i18n/server-locale";
 import "./globals.css";
 
@@ -46,7 +47,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={`${poppins.variable} font-sans`}>
+      <head>
+        {process.env.NODE_ENV === "development" ? (
+          <script
+            id="inspector-attr-guard"
+            dangerouslySetInnerHTML={{ __html: INSPECTOR_ATTR_GUARD_SCRIPT }}
+          />
+        ) : null}
+      </head>
+      <body className={`${poppins.variable} font-sans`} suppressHydrationWarning>
         <Providers initialLocale={locale} initialMessages={messages}>
           {children}
         </Providers>

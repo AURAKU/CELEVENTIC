@@ -325,8 +325,8 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
   },
   {
     id: "luxury-fashion-flagship",
-    label: "Silk flagship unveil",
-    description: "Enter the unveiling, then draw sealed silk — silk, light and doors play as one ceremony",
+    label: "Fashion envelope unveil",
+    description: "Tap to open a couture envelope — the invitation card rises, then becomes the live house",
     category: "interactive",
   },
   { id: "none", label: "Instant", description: "Skip opening ceremony", category: "instant" },
@@ -547,9 +547,9 @@ const OPENING_TAP_COPY: Partial<Record<OpeningExperienceId, PreviewTapCopy>> = {
     steps: ["Cover turns", "Invite reveals"],
   },
   "luxury-fashion-flagship": {
-    label: "Enter the Unveiling",
+    label: "Tap to open",
     subtitle: "Play the opening exactly as your guests will see it",
-    steps: ["Silk parts", "House opens"],
+    steps: ["Envelope opens", "Invitation opens"],
   },
 };
 
