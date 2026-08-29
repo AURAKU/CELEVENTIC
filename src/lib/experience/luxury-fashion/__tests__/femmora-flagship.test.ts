@@ -111,7 +111,13 @@ test("guest-wishes nameplate and crest stay house-owned, never a shared Femmora 
   );
   assert.equal(
     FEMMORA_HOUSE_DEFAULTS.wishesEmpty,
-    "A quiet boutique — be the first to compliment this opening."
+    "This opening is waiting for its first compliment."
+  );
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.wishesEmpty.includes("boutique"), false);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.wishesEmpty.includes("—"), false);
+  assert.equal(
+    LUXURY_FASHION_HOUSE_DEFAULTS.wishesEmpty,
+    "The atelier is still quiet — leave the first compliment."
   );
   assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.wishesEmpty.includes("Femmora"), false);
   assert.equal(MAISON_VALE_HOUSE.wishesEmpty?.toLowerCase().includes("femmora"), false);
@@ -311,8 +317,20 @@ test("share, maps and calendar CTAs produce real destinations", () => {
     "src/components/invitation/templates/luxury-fashion/fashion-rsvp-scene.tsx",
     "utf8"
   );
-  assert.match(rsvpScene, /unable to attend, we will keep your place/);
+  assert.match(rsvpScene, /lede\?\.trim\(\)/);
   assert.equal(rsvpScene.includes("attend — we"), false);
+  assert.equal(rsvpScene.includes("deliver wherever"), false);
+  assert.equal(
+    FEMMORA_HOUSE_DEFAULTS.rsvpLede,
+    "Yes, maybe, or unable to attend, we can deliver wherever you are."
+  );
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.rsvpLede?.includes("whereever"), false);
+  assert.equal(
+    LUXURY_FASHION_HOUSE_DEFAULTS.rsvpLede,
+    "Yes, maybe, or unable to attend, we will keep your place with care."
+  );
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.rsvpLede?.includes("deliver"), false);
+  assert.equal(MAISON_VALE_HOUSE.rsvpLede?.includes("deliver"), false);
   const locationActions = readFileSync(
     "src/components/invitation/templates/luxury-fashion/luxury-location-scene.tsx",
     "utf8"
@@ -348,6 +366,8 @@ test("share, maps and calendar CTAs produce real destinations", () => {
   );
   assert.match(wishesCss, /\.author \{[\s\S]*font-weight:\s*700/);
   assert.match(wishesCss, /linear-gradient\(/);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.visionStoreTitle, "Buy online");
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.visionStoreTitle, "The house, in your hands");
   assert.equal(
     FEMMORA_HOUSE_DEFAULTS.visionStoreLine,
     "Our Bespoke digital store is on its way, shop the collection from anywhere."
@@ -703,9 +723,19 @@ test("ENTER EXPERIENCE shows the invitation card and a motion iPhone vision stor
   assert.ok(boutique.indexOf("FashionVisionStore") < boutique.indexOf("fashion-boutique-invitation"));
   assert.match(boutique, /label: "The flagship store"/);
   assert.match(boutique, /label: "The location"/);
-  assert.match(boutique, /createLucideIcon\("dress"/);
-  assert.match(boutique, /Icon: Dress/);
+  assert.match(boutique, /Icon: FashionDressIcon/);
   assert.equal(/\bShirt\b/.test(boutique), false);
+  const dressIcon = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-dress-icon.tsx",
+    "utf8"
+  );
+  assert.match(dressIcon, /createLucideIcon\("dress"/);
+  const index = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-editorial-index.tsx",
+    "utf8"
+  );
+  assert.match(index, /collection: FashionDressIcon/);
+  assert.equal(/\bShirt\b/.test(index), false);
   assert.equal(/label: "The house"/.test(boutique), false);
   const phone = readFileSync(
     "src/components/invitation/templates/luxury-fashion/fashion-vision-store.tsx",
@@ -750,6 +780,7 @@ test("Studio lets organizers upload store film, looks, and first-look copy for t
   assert.match(panel, /filmChapterTitle/);
   assert.match(panel, /wishesTitle/);
   assert.match(panel, /wishesEmpty/);
+  assert.match(panel, /rsvpLede/);
   assert.match(panel, /Upload store preview video/);
   assert.match(panel, /Upload invitation card/);
   assert.match(panel, /Collection looks/);

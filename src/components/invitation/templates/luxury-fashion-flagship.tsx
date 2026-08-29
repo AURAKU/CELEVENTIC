@@ -239,6 +239,7 @@ export function LuxuryFashionFlagshipTemplate(props: InvitationRenderProps & { g
             initialRsvpStatus={props.initialRsvpStatus}
             initialAttendingCount={props.initialAttendingCount}
             heading={house.rsvpHeading}
+            lede={house.rsvpLede}
             acceptedLabel={house.rsvpAcceptedLabel}
             visitDayOptions={house.visitDayOptions}
             onStarted={() => {

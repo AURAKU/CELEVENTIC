@@ -224,6 +224,10 @@ export function FashionHouseStudioPanel({
         <Input value={house.rsvpHeading} onChange={(e) => patch({ rsvpHeading: e.target.value })} />
       </div>
       <div className="grid gap-2">
+        <Label>RSVP lede</Label>
+        <Input value={house.rsvpLede ?? ""} onChange={(e) => patch({ rsvpLede: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
         <Label>Guest wishes heading</Label>
         <Input
           value={house.wishesTitle ?? ""}

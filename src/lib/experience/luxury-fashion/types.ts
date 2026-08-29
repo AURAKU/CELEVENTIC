@@ -56,6 +56,8 @@ export interface LuxuryFashionHouseConfig {
   portalPrompt: string;
   rsvpHeading: string;
   rsvpAcceptedLabel: string;
+  /** RSVP lede under the heading. Femmora may promise delivery; other houses keep a place-held line. */
+  rsvpLede?: string;
   finaleKicker: string;
   hoursLabel: string;
   datesLabel: string;

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, MapPin, Store, createLucideIcon } from "lucide-react";
+import { CalendarDays, MapPin, Store } from "lucide-react";
 import { lockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import {
   fashionHouseLogoSrc,
@@ -12,19 +12,9 @@ import {
   type FashionNavDestination,
   type LuxuryFashionHouseConfig,
 } from "@/lib/experience/luxury-fashion";
+import { FashionDressIcon } from "./fashion-dress-icon";
 import { FashionVisionStore } from "./fashion-vision-store";
 import styles from "./luxury-fashion-flagship.module.css";
-
-/** Lucide Lab dress mark — couture silhouette for the collection door. */
-const Dress = createLucideIcon("dress", [
-  [
-    "path",
-    {
-      d: "M16 2v3a5.14 5.14 0 0 1 .7 4.8l-.2.5a7.64 7.64 0 0 0 .4 6.3C17.7 17.9 19 20 19 20s-3.1 2-7 2-7-2-7-2 1.3-2.1 2.1-3.5a7.64 7.64 0 0 0 .4-6.2l-.2-.5A5.66 5.66 0 0 1 8 5V2",
-    },
-  ],
-  ["path", { d: "M16 5c-1.8 0-3.3 1-4 2.5C11.3 6 9.8 5 8 5" }],
-]);
 
 const PORTALS: Array<{
   id: FashionNavDestination;
@@ -32,7 +22,7 @@ const PORTALS: Array<{
   Icon: typeof Store;
 }> = [
   { id: "store-preview", label: "The flagship store", Icon: Store },
-  { id: "collection", label: "The collection", Icon: Dress },
+  { id: "collection", label: "The collection", Icon: FashionDressIcon },
   { id: "event-details", label: "Opening details", Icon: CalendarDays },
   { id: "location", label: "The location", Icon: MapPin },
 ];
