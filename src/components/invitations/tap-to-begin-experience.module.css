@@ -189,26 +189,48 @@
   image-rendering: auto;
 }
 
-/**
- * Location is the only emphasized kicker. Date stays whisper-quiet.
- * Higher-specificity first/not-first rules win if both lines share a class.
- * Copy is resolved DNA; never a hardcoded house word.
- */
-.fashionRoot .kickerStack > .kickerBeat:not(:first-child) {
-  display: block;
-  padding: 0;
-  font-size: calc(0.68rem * var(--tap-scale, 1));
-  font-weight: 500;
-  letter-spacing: 0.32em;
-  text-indent: 0.32em;
-  line-height: 1.28;
-  white-space: nowrap;
-  color: color-mix(in srgb, var(--ff-gold-deep, #a67c52) 78%, var(--ff-espresso, #2c211c));
-  background: none;
+.fashionRoot .kickerStack {
+  gap: 0.5rem;
 }
 
+/**
+ * Location and date share the cover masthead. Date is a highlighted
+ * gold line — never a whisper caption under WESTLANDS.
+ * Copy is resolved DNA; never a hardcoded house word.
+ */
+.fashionRoot .kickerBeatDate,
+.fashionRoot .kickerStack > .kickerBeat:not(:first-child) {
+  display: inline-block;
+  padding: 0.16rem 0.7rem 0.22rem;
+  font-size: calc(clamp(1.02rem, 4.2vw, 1.28rem) * var(--tap-scale, 1));
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  line-height: 1.18;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 42%, var(--ff-gold-deep, #a67c52));
+  background: linear-gradient(
+    180deg,
+    transparent 10%,
+    color-mix(in srgb, #ead6a0 78%, transparent) 100%
+  );
+}
+
+.fashionRoot .kickerBeatDate::after,
 .fashionRoot .kickerStack > .kickerBeat:not(:first-child)::after {
-  content: none;
+  content: "";
+  display: block;
+  width: calc(100% - 0.4em);
+  height: 1.5px;
+  margin: 0.2rem auto 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--ff-gold, #b8956a) 14%,
+    var(--ff-gold-deep, #a67c52) 50%,
+    var(--ff-gold, #b8956a) 86%,
+    transparent
+  );
 }
 
 .fashionRoot .kickerBeatLocation,
