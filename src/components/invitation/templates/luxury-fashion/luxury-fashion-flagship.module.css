@@ -444,6 +444,13 @@
   width: min(100%, 26rem);
 }
 
+.campaignCountdown .lede {
+  margin-top: 0.4rem;
+  font-size: 1.02rem;
+  line-height: 1.4;
+  color: var(--ff-espresso, #2c211c);
+}
+
 .campaignCalendar {
   margin-top: 0.45rem;
   margin-bottom: 0;
@@ -600,7 +607,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
   padding: 0.35rem var(--ff-pad) 0.35rem;
-  background: color-mix(in srgb, var(--ff-ivory, #fbf7f0) 90%, transparent);
+  background: var(--ff-ivory, #fbf7f0);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 22%, transparent);
 }
@@ -612,7 +619,7 @@
   gap: 0.35rem;
   min-height: 2.75rem;
   border: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 55%, transparent);
-  background: color-mix(in srgb, var(--ff-ivory, #fbf7f0) 70%, transparent);
+  background: var(--ff-ivory, #fbf7f0);
   color: var(--ff-espresso, #2c211c);
   font-size: clamp(0.52rem, 2.4vw, 0.62rem);
   letter-spacing: 0.1em;
@@ -1201,6 +1208,11 @@
   justify-content: center;
   gap: 0.65rem;
   margin-top: 1.5rem;
+}
+
+.campaignFacts .ctaRow {
+  margin-top: 0.7rem;
+  width: 100%;
 }
 
 .cta {

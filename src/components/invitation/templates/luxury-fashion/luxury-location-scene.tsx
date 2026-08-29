@@ -10,13 +10,11 @@ export function FashionLocationActions({
   locationName,
   address,
   mapsUrl,
-  copyLabel = "Copy location",
   shareLabel = "Share location",
 }: {
   locationName: string;
   address: string;
   mapsUrl: string;
-  copyLabel?: string;
   shareLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -58,18 +56,10 @@ export function FashionLocationActions({
       <button
         type="button"
         className={styles.cta}
-        onClick={() => void copyAddress()}
-        data-testid="fashion-copy-location"
-      >
-        {copied ? "Location copied" : copyLabel}
-      </button>
-      <button
-        type="button"
-        className={styles.cta}
         onClick={() => void shareLocation()}
         data-testid="fashion-share-location"
       >
-        {shareLabel}
+        {copied ? "Location copied" : shareLabel}
       </button>
     </div>
   );

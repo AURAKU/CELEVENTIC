@@ -51,6 +51,7 @@ import { InviteGuestHelpFab } from "@/components/celeventic-guide/guest-quick-ac
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import { formatEventDetailsTime } from "@/lib/invitation-blocks/event-details";
+import { cn } from "@/lib/utils";
 
 interface GuestInvitationPortalProps extends PremiumInviteExperienceProps {
   backgroundImageUrl?: string | null;
@@ -298,6 +299,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     isTraditionalMarriage ||
     props.design.layout === "forever-afaris-wedding" ||
     props.design.layout === "luxury-fashion-flagship";
+  const fashionOwnsPaper = props.design.layout === "luxury-fashion-flagship";
+  const fashionPaperFill =
+    "radial-gradient(120% 90% at 50% 0%, #fffdf8 0%, #fbf7f0 48%, #f4ede1 100%)";
 
   const cinematicMode =
     props.cinematicMode !== false &&
@@ -339,13 +343,16 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     <InviteViewportShell
       mode={props.embedded ? "embedded" : "live"}
       scrollable
-      className="bg-[#FAF8F4] relative overflow-x-hidden"
+      className={cn("relative overflow-x-hidden", fashionOwnsPaper ? "bg-[#FBF7F0]" : "bg-[#FAF8F4]")}
       style={{
         backgroundColor:
-          props.design?.colors?.background?.startsWith("linear") ||
-          props.design?.colors?.background?.startsWith("radial")
-            ? undefined
-            : (props.design?.colors?.background ?? "#FAF8F4"),
+          fashionOwnsPaper
+            ? "#FBF7F0"
+            : props.design?.colors?.background?.startsWith("linear") ||
+                props.design?.colors?.background?.startsWith("radial")
+              ? undefined
+              : (props.design?.colors?.background ?? "#FAF8F4"),
+        backgroundImage: fashionOwnsPaper ? fashionPaperFill : undefined,
         fontFamily: "var(--font-sans)",
         ...(props.design?.studio?.headingSize
           ? { ["--inv-heading-size" as string]: `${props.design.studio.headingSize}px` }
@@ -364,12 +371,12 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           : {}),
       }}
     >
-      {!hiddenLayers.has("environment") && (
+      {!fashionOwnsPaper && !hiddenLayers.has("environment") && (
         <div className="pointer-events-none fixed inset-0" style={{ zIndex: layerZ.environment }}>
           <ParticleEnvironment presetId={environmentId} intensity={environmentIntensity} />
         </div>
       )}
-      {!hiddenLayers.has("background") && !props.backgroundVideoUrl && !props.backgroundImageUrl && (
+      {!fashionOwnsPaper && !hiddenLayers.has("background") && !props.backgroundVideoUrl && !props.backgroundImageUrl && (
         <div
           className="pointer-events-none fixed inset-0 opacity-90"
           style={{ zIndex: layerZ.background }}
@@ -405,7 +412,10 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         </div>
       )}
 
-      <div className="relative z-10">
+      <div
+        className={cn("relative z-10", fashionOwnsPaper && "min-h-full")}
+        style={fashionOwnsPaper ? { background: fashionPaperFill } : undefined}
+      >
         {useBlocks && welcomeBlocks.length > 0 && (
           <div className="mx-auto max-w-2xl px-4 pb-2 pt-6 invite-content-pad">
             <PortalSection>

@@ -474,7 +474,7 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     pacing: "slow",
     slideDurationMs: 8000,
     typographyPackId: "editorial",
-    backgroundPackId: "static",
+    backgroundPackId: "paper",
   },
 };
 

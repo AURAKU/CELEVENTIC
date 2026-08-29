@@ -43,7 +43,8 @@ import { getDefaultDesignConfig } from "@/lib/invitation-templates";
 import { getCatalogMusicProfile } from "@/lib/invitation/catalog-music-identity";
 import { getLayoutMusicProfile } from "@/lib/invitation/layout-music-identity";
 import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
-import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
+import { enrichDesignWithExperienceDNA, getTemplateExperienceDNA } from "@/lib/experience/experience-engine-v2";
+import { getLayoutVisualProfile } from "@/lib/experience/layout-visual-profiles";
 import { buildDirectionsUrl, normalizeExternalHref } from "@/lib/invitation/maps-utils";
 import { buildInviteShareChannelHref, buildInviteSharePayload } from "@/lib/invitation/invite-share";
 import { buildGoogleCalendarUrl, toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
@@ -312,6 +313,12 @@ test("share, maps and calendar CTAs produce real destinations", () => {
   );
   assert.match(rsvpScene, /unable to attend, we will keep your place/);
   assert.equal(rsvpScene.includes("attend — we"), false);
+  const locationActions = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/luxury-location-scene.tsx",
+    "utf8"
+  );
+  assert.match(locationActions, /fashion-share-location/);
+  assert.equal(locationActions.includes("fashion-copy-location"), false);
   assert.equal(formatFashionVenueLine("FEMMORA GH", "FEMMORA GH"), "FEMMORA GH");
   assert.equal(formatFashionVenueLine("FEMMORA GH", "Westlands"), "FEMMORA GH, Westlands");
   const liveVenue = resolveFashionHouse(
@@ -384,6 +391,14 @@ test("layout engine defaults are generic, not Femmora", () => {
   assert.equal(design.experience?.fashionHouse?.filmUrl, null);
   assert.equal(design.experience?.fashionHouse?.lookbookItems?.length, 0);
   assert.equal(design.themeId, undefined);
+  assert.equal(getTemplateExperienceDNA("luxury-fashion-flagship").backgroundPackId, "paper");
+  assert.match(
+    getLayoutVisualProfile("luxury-fashion-flagship").background,
+    /#fbf7f0|#fffdf8|#f4ede1/i
+  );
+  const portal = readFileSync("src/components/guest-portal/guest-invitation-portal.tsx", "utf8");
+  assert.match(portal, /fashionOwnsPaper/);
+  assert.match(portal, /#FBF7F0/);
   const blob = JSON.stringify(design.experience?.fashionHouse).toLowerCase();
   assert.equal(blob.includes("femmora"), false);
   assert.equal(blob.includes("westlands"), false);
@@ -629,6 +644,22 @@ test("fashion cover masthead is centered for every viewport", () => {
   assert.match(css, /\.campaignHouse[\s\S]*?white-space:\s*nowrap/);
   assert.match(css, /\.boutiqueGrid[\s\S]*?flex-wrap:\s*nowrap/);
   assert.match(css, /\.mapsPreviewCompact[\s\S]*?max-width:\s*min\(100%, 40rem\)/);
+});
+
+test("live countdown uses a shop-open kicker and walk-in lede, never a duplicated doors line", () => {
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.countdownAfterKicker, "Shop is open");
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.countdownAfterLabel, "Walk-in now. We are ready to serve you.");
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.countdownAfterKicker, undefined);
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.countdownAfterLabel, "The doors are open");
+  assert.notEqual(MAISON_VALE_HOUSE.countdownAfterLabel, FEMMORA_HOUSE_DEFAULTS.countdownAfterLabel);
+  assert.equal(MAISON_VALE_HOUSE.countdownAfterKicker, undefined);
+  const countdown = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-launch-countdown.tsx",
+    "utf8"
+  );
+  assert.match(countdown, /afterKicker/);
+  assert.match(countdown, /liveLede !== liveKicker/);
+  assert.doesNotMatch(countdown, /open \? afterLabel : beforeLabel[\s\S]*afterLabel/);
 });
 
 test("presented card can receive OPEN — flap and overlay do not trap the guest", () => {

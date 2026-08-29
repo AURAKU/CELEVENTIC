@@ -134,7 +134,6 @@ export function FashionCampaignHero({
                   locationName={house.locationName}
                   address={house.address}
                   mapsUrl={house.mapsUrl}
-                  copyLabel={house.copyLocationLabel}
                   shareLabel={house.shareLocationLabel}
                 />
               </div>
@@ -168,6 +167,7 @@ export function FashionCampaignHero({
                 endAtIso={house.endAtIso}
                 beforeLabel={house.countdownBeforeLabel}
                 afterLabel={house.countdownAfterLabel}
+                afterKicker={house.countdownAfterKicker}
                 endedLabel={house.countdownEndedLabel}
               />
             </div>
