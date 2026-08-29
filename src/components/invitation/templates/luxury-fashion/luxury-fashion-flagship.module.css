@@ -917,12 +917,12 @@
 .boutique {
   position: fixed;
   inset: 0;
-  z-index: 110;
+  z-index: 240;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: max(3.4rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(2rem, env(safe-area-inset-bottom, 0px));
+  padding: max(3.2rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(1.4rem, env(safe-area-inset-bottom, 0px));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -948,9 +948,27 @@
   z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 0.85rem;
-  width: min(100%, 28rem);
+  gap: 0.7rem;
+  width: min(100%, 42rem);
   padding-bottom: 0.5rem;
+}
+
+.boutiqueStage {
+  display: grid;
+  width: 100%;
+  gap: 0.85rem 1.35rem;
+  justify-items: center;
+  align-items: center;
+}
+
+.boutique[data-vision="true"] .boutiqueCard {
+  width: min(100%, 15.5rem);
+}
+
+@media (min-width: 720px) {
+  .boutique[data-vision="true"] .boutiqueStage {
+    grid-template-columns: minmax(0, 18.5rem) minmax(0, 16rem);
+  }
 }
 
 .boutique .heading {

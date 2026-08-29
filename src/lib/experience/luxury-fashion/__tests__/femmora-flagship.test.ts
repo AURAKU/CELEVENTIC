@@ -609,6 +609,8 @@ test("ENTER EXPERIENCE shows the invitation card and a motion iPhone vision stor
   );
   assert.match(boutique, /fashion-boutique-invitation/);
   assert.match(boutique, /FashionVisionStore/);
+  assert.match(boutique, /createPortal/);
+  assert.ok(boutique.indexOf("FashionVisionStore") < boutique.indexOf("fashion-boutique-invitation"));
   assert.equal(/Femmora|@femmora/i.test(boutique), false);
   const phone = readFileSync(
     "src/components/invitation/templates/luxury-fashion/fashion-vision-store.tsx",
@@ -624,6 +626,7 @@ test("ENTER EXPERIENCE shows the invitation card and a motion iPhone vision stor
   assert.match(motion, /@keyframes phoneFloat/);
   assert.match(motion, /@keyframes marquee/);
   assert.match(motion, /@keyframes islandAnnounce/);
+  assert.match(motion, /max-height:\s*min\(64vh/);
   assert.match(motion, /Nationwide delivery|deliveryCopy/);
 });
 
