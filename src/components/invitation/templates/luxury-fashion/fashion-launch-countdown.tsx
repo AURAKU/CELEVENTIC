@@ -18,12 +18,14 @@ export function FashionLaunchCountdown({
   endAtIso,
   beforeLabel,
   afterLabel,
+  afterKicker,
   endedLabel,
 }: {
   startAtIso: string;
   endAtIso?: string;
   beforeLabel: string;
   afterLabel: string;
+  afterKicker?: string;
   endedLabel?: string;
 }) {
   const start = Number.isNaN(Date.parse(startAtIso)) ? null : Date.parse(startAtIso);
@@ -40,10 +42,17 @@ export function FashionLaunchCountdown({
   const ended = end != null && now != null && now >= end;
   const open = remaining != null && remaining <= 0;
   const value = remaining == null ? { days: 0, hours: 0, minutes: 0, seconds: 0 } : parts(remaining);
+  const liveKicker = ended
+    ? endedLabel || afterKicker || afterLabel
+    : open
+      ? afterKicker || afterLabel
+      : beforeLabel;
+  const liveLede = ended ? "" : open && afterKicker ? afterLabel : "";
+  const showLede = Boolean(liveLede) && liveLede !== liveKicker;
 
   return (
     <div data-testid="fashion-countdown" suppressHydrationWarning>
-      <p className={styles.kicker}>{ended ? endedLabel || afterLabel : open ? afterLabel : beforeLabel}</p>
+      <p className={styles.kicker}>{liveKicker}</p>
       {!open && !ended ? (
         <div className={styles.countdown} aria-live="polite">
           {(
@@ -60,9 +69,9 @@ export function FashionLaunchCountdown({
             </div>
           ))}
         </div>
-      ) : (
-        <p className={styles.lede}>{ended ? endedLabel || afterLabel : afterLabel}</p>
-      )}
+      ) : showLede ? (
+        <p className={styles.lede}>{liveLede}</p>
+      ) : null}
     </div>
   );
 }

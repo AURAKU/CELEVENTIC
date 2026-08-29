@@ -42,12 +42,11 @@
 .campaign {
   position: relative;
   z-index: 1;
-  min-height: 100svh;
-  min-height: 100dvh;
+  min-height: 0;
   padding:
-    max(1.5rem, env(safe-area-inset-top, 0px))
+    max(1.25rem, env(safe-area-inset-top, 0px))
     var(--ff-pad)
-    max(6.75rem, calc(env(safe-area-inset-bottom, 0px) + 5.5rem));
+    0.7rem;
   overflow-x: clip;
   overflow-y: visible;
 }
@@ -445,12 +444,21 @@
   width: min(100%, 26rem);
 }
 
+.campaignCountdown .lede {
+  margin-top: 0.4rem;
+  font-size: 1.02rem;
+  line-height: 1.4;
+  color: var(--ff-espresso, #2c211c);
+}
+
 .campaignCalendar {
-  margin-top: 0.85rem;
+  margin-top: 0.45rem;
+  margin-bottom: 0;
   display: flex;
   justify-content: center;
 }
 
+.campaignCalendar :global(a),
 .campaignCalendar :global(button) {
   min-height: 2.75rem;
   border-radius: 0;
@@ -461,9 +469,11 @@
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  text-decoration: none;
   box-shadow: none;
 }
 
+.campaignCalendar :global(a:hover),
 .campaignCalendar :global(button:hover) {
   background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 55%, var(--ff-champagne, #d9c4a0));
 }
@@ -596,8 +606,8 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
-  padding: 0.85rem var(--ff-pad) 0.35rem;
-  background: color-mix(in srgb, var(--ff-ivory, #fbf7f0) 90%, transparent);
+  padding: 0.35rem var(--ff-pad) 0.35rem;
+  background: var(--ff-ivory, #fbf7f0);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 22%, transparent);
 }
@@ -609,7 +619,7 @@
   gap: 0.35rem;
   min-height: 2.75rem;
   border: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 55%, transparent);
-  background: color-mix(in srgb, var(--ff-ivory, #fbf7f0) 70%, transparent);
+  background: var(--ff-ivory, #fbf7f0);
   color: var(--ff-espresso, #2c211c);
   font-size: clamp(0.52rem, 2.4vw, 0.62rem);
   letter-spacing: 0.1em;
@@ -922,7 +932,7 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: max(3.2rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(1.4rem, env(safe-area-inset-bottom, 0px));
+  padding: max(0.95rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(0.85rem, env(safe-area-inset-bottom, 0px));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -943,14 +953,29 @@
   color: var(--ff-ivory, #fbf7f0);
 }
 
+.boutique .kicker {
+  margin: 0.1rem 0 0.85rem;
+  font-family: Marcellus, var(--font-marcellus), serif;
+  font-size: clamp(3.15rem, 12vw, 5.5rem);
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  line-height: 0.84;
+}
+
 .boutiqueInner {
   position: relative;
   z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 0.7rem;
+  gap: 1.05rem;
   width: min(100%, 42rem);
-  padding-bottom: 0.5rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.15rem;
+}
+
+.boutique[data-vision="true"] .boutiqueInner {
+  width: min(100%, 58rem);
 }
 
 .boutiqueStage {
@@ -962,17 +987,18 @@
 }
 
 .boutique[data-vision="true"] .boutiqueCard {
-  width: min(100%, 15.5rem);
+  width: min(100%, 28rem);
 }
 
 @media (min-width: 720px) {
   .boutique[data-vision="true"] .boutiqueStage {
-    grid-template-columns: minmax(0, 18.5rem) minmax(0, 16rem);
+    grid-template-columns: minmax(0, 17.5rem) minmax(22rem, 30rem);
+    align-items: start;
   }
 }
 
 .boutique .heading {
-  margin-top: 0;
+  margin-top: 0.15rem;
 }
 
 .boutiqueCard {
@@ -987,6 +1013,7 @@
   overflow: hidden;
   border-radius: 0.35rem;
   aspect-ratio: 1024 / 790;
+  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 10%, #1c1613);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--ff-gold, #c4a574) 45%, transparent),
     0 22px 48px rgba(0, 0, 0, 0.38);
@@ -996,8 +1023,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  animation: boutiqueKenBurns 14s ease-in-out infinite;
+  object-fit: contain;
 }
 
 .boutiqueCardSheen {
@@ -1083,7 +1109,7 @@
   gap: 0.55rem;
   width: 100%;
   max-width: 36rem;
-  margin: 0.5rem auto 0;
+  margin: 0.2rem auto 0;
 }
 
 .boutiqueDoor {
@@ -1182,6 +1208,11 @@
   justify-content: center;
   gap: 0.65rem;
   margin-top: 1.5rem;
+}
+
+.campaignFacts .ctaRow {
+  margin-top: 0.7rem;
+  width: 100%;
 }
 
 .cta {
@@ -1723,11 +1754,8 @@
     width: 100%;
   }
 
-  .campaignGrid {
-    min-height: calc(100svh - 7rem);
-  }
-
   .campaignGrid[data-film-open="true"] {
+    min-height: calc(100svh - 7rem);
     width: min(100%, 76rem);
     grid-template-columns: minmax(0, 1fr) minmax(28rem, 40rem);
     gap: 3.5rem;

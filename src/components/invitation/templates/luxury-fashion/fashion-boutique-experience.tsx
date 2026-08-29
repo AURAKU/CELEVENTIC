@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, MapPin, Shirt, Store } from "lucide-react";
+import { CalendarDays, MapPin, Store } from "lucide-react";
 import { lockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import {
   fashionHouseLogoSrc,
@@ -12,6 +12,7 @@ import {
   type FashionNavDestination,
   type LuxuryFashionHouseConfig,
 } from "@/lib/experience/luxury-fashion";
+import { FashionDressIcon } from "./fashion-dress-icon";
 import { FashionVisionStore } from "./fashion-vision-store";
 import styles from "./luxury-fashion-flagship.module.css";
 
@@ -20,10 +21,10 @@ const PORTALS: Array<{
   label: string;
   Icon: typeof Store;
 }> = [
-  { id: "store-preview", label: "The store", Icon: Store },
-  { id: "collection", label: "The collection", Icon: Shirt },
+  { id: "store-preview", label: "The flagship store", Icon: Store },
+  { id: "collection", label: "The collection", Icon: FashionDressIcon },
   { id: "event-details", label: "Opening details", Icon: CalendarDays },
-  { id: "location", label: "The house", Icon: MapPin },
+  { id: "location", label: "The location", Icon: MapPin },
 ];
 
 export function FashionBoutiqueExperience({

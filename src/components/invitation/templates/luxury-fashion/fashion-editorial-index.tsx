@@ -6,17 +6,17 @@ import {
   Instagram,
   Mail,
   MapPin,
-  Shirt,
   Store,
   type LucideIcon,
 } from "lucide-react";
 import type { FashionNavDestination, FashionNavLabel } from "@/lib/experience/luxury-fashion";
+import { FashionDressIcon } from "./fashion-dress-icon";
 import styles from "./luxury-fashion-flagship.module.css";
 
 const ICONS: Record<FashionNavDestination, LucideIcon> = {
   experience: DoorOpen,
   "store-preview": Store,
-  collection: Shirt,
+  collection: FashionDressIcon,
   rsvp: Mail,
   location: MapPin,
   "event-details": CalendarDays,

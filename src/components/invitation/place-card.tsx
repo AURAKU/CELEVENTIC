@@ -5,6 +5,7 @@ import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { resolveFeatureThemeTokens } from "@/lib/invitation-features/adapters";
 import {
   buildPlaceCardViewModel,
+  PLACE_CARD_FALLBACK_RECIPIENT,
   placeCardHasSeating,
   type PlaceCardConfig,
   type PlaceCardFrameStyle,
@@ -90,6 +91,12 @@ export function PlaceCard({
   );
 
   const treatment = THEME_TREATMENT[model.theme] ?? THEME_TREATMENT.inherit;
+  const isFashionLayout = design.layout === "luxury-fashion-flagship";
+  const fallbackGuest =
+    model.recipientLine.localeCompare(PLACE_CARD_FALLBACK_RECIPIENT, undefined, {
+      sensitivity: "accent",
+    }) === 0;
+  const showCapacity = Boolean(model.allowanceCopy) && tokens.hidePartyCapacity !== true;
   // A template that asks for no motion always wins over the organiser's choice:
   // the template author knows the page is already carrying an animation budget.
   const motionClass =
@@ -104,6 +111,7 @@ export function PlaceCard({
       aria-label="Your place card"
       className={cn("px-4 pt-8 pb-2", className)}
       data-testid="invitation-place-card"
+      style={{ background: tokens.background }}
     >
       <div
         className={cn("relative mx-auto w-full max-w-[520px] px-6 py-8 text-center", motionClass)}
@@ -144,7 +152,7 @@ export function PlaceCard({
         {model.salutation && (
           <p
             className="mt-4 text-lg font-medium leading-none sm:text-xl"
-            style={{ color: tokens.text, opacity: 0.88 }}
+            style={{ color: tokens.text, opacity: isFashionLayout ? 1 : 0.88 }}
           >
             {model.salutation}
           </p>
@@ -155,13 +163,14 @@ export function PlaceCard({
           style={{
             color: tokens.primary,
             fontFamily: tokens.fontHeading,
-            textTransform: treatment.headingTransform,
+            textTransform: fallbackGuest ? "uppercase" : treatment.headingTransform,
+            letterSpacing: fallbackGuest ? "0.14em" : undefined,
           }}
         >
           {model.recipientLine}
         </p>
 
-        {model.allowanceCopy ? (
+        {showCapacity ? (
           <p
             className="mt-4 text-[13px] font-semibold sm:text-sm"
             style={{ color: tokens.primary, letterSpacing: "0.06em" }}
@@ -194,7 +203,7 @@ export function PlaceCard({
         {model.wording && (
           <p
             className="mx-auto mt-4 max-w-[26rem] text-sm leading-relaxed"
-            style={{ color: tokens.text, opacity: 0.85 }}
+            style={{ color: tokens.text, opacity: isFashionLayout ? 0.92 : 0.85 }}
           >
             {model.wording}
           </p>
@@ -209,7 +218,7 @@ export function PlaceCard({
         {model.supportingMessage && (
           <p
             className="mx-auto mt-5 max-w-[26rem] text-xs leading-relaxed"
-            style={{ color: tokens.text, opacity: 0.7 }}
+            style={{ color: tokens.text, opacity: isFashionLayout ? 0.82 : 0.7 }}
           >
             {model.supportingMessage}
           </p>

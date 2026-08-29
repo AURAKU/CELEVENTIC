@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
+import { formatFashionVenueLine } from "@/lib/experience/luxury-fashion";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
 import { toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
 import { resolveMapsLocationHref } from "@/lib/invitation/maps-utils";
@@ -21,7 +22,7 @@ export function FashionMapsPreview({
   onOpen?: () => void;
 }) {
   const staticPreview = useInvitationStaticPreview();
-  const label = [locationName, address].filter(Boolean).join(", ");
+  const label = formatFashionVenueLine(locationName, address);
   const href = resolveMapsLocationHref({ mapsUrl, locationName, address });
   const embedUrl = toMapsEmbedUrl(href, label);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });

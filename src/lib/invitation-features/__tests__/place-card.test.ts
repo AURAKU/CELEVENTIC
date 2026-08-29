@@ -192,10 +192,10 @@ test("ceremony titles never appear as the place-card recipient", () => {
       groupName: null,
     })
   );
-  assert.equal(line, "Dear invited guest");
+  assert.equal(line, "Invited Guest");
 });
 
-test("unassigned invitations always address Dear invited guest", () => {
+test("unassigned invitations always address Invited Guest", () => {
   const line = resolveRecipientLine(
     config({ recipientDisplay: "name" }),
     recipient({
@@ -205,7 +205,7 @@ test("unassigned invitations always address Dear invited guest", () => {
       assigned: false,
     })
   );
-  assert.equal(line, "Dear invited guest");
+  assert.equal(line, "Invited Guest");
 });
 
 test("named guests win over invitation labels", () => {
@@ -219,7 +219,7 @@ test("named guests win over invitation labels", () => {
   assert.equal(line, "Kwame Asante");
 });
 
-test("ceremony-titled guest rows still fall back to Dear invited guest", () => {
+test("ceremony-titled guest rows still fall back to Invited Guest", () => {
   const line = resolveRecipientLine(
     config({ recipientDisplay: "name" }),
     recipient({
@@ -228,10 +228,22 @@ test("ceremony-titled guest rows still fall back to Dear invited guest", () => {
       assigned: true,
     })
   );
-  assert.equal(line, "Dear invited guest");
+  assert.equal(line, "Invited Guest");
 });
 
-test("default greeting hides the duplicate Dear salutation", () => {
+test("flagship openings never print the event title as the guest", () => {
+  const line = resolveRecipientLine(
+    config({ recipientDisplay: "name" }),
+    recipient({
+      guestName: "Flagship Store Opening",
+      invitationName: "Flagship Store Opening",
+      assigned: true,
+    })
+  );
+  assert.equal(line, "Invited Guest");
+});
+
+test("Dear stays above Invited Guest so the name line is not duplicated", () => {
   const model = buildPlaceCardViewModel(
     config(),
     recipient({
@@ -241,8 +253,8 @@ test("default greeting hides the duplicate Dear salutation", () => {
     }),
     party({ allowance: 1 })
   );
-  assert.equal(model.salutation, "");
-  assert.equal(model.recipientLine, "Dear invited guest");
+  assert.equal(model.salutation, "Dear");
+  assert.equal(model.recipientLine, "Invited Guest");
 });
 
 test("assigned guests keep Dear above their name", () => {
@@ -396,4 +408,23 @@ test("a template with its own adapter still inherits its own palette", () => {
   assert.equal(tokens.primary, "#1A1408");
   assert.equal(tokens.motion, "full");
   assert.equal(tokens.radius, "1.25rem");
+});
+
+test("luxury fashion place cards sit on ivory paper and hide general-admission capacity", () => {
+  const design = {
+    layout: "luxury-fashion-flagship",
+    colors: {
+      primary: "#2C211C",
+      secondary: "#B8956A",
+      accent: "#D9C4A0",
+      background: "#1C2333",
+      text: "#F7F1E8",
+    },
+  } as unknown as InvitationDesignConfig;
+
+  const tokens = getTemplateFeatureAdapter(design.layout).themeTokens(design);
+  assert.equal(tokens.surface, "#FBF7F0");
+  assert.equal(tokens.background, "#F7F1E8");
+  assert.equal(tokens.hidePartyCapacity, true);
+  assert.equal(tokens.primary, "#2C211C");
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatFashionVenueLine } from "@/lib/experience/luxury-fashion";
 import { copyText } from "@/lib/clipboard";
 import { resolveMapsLocationHref } from "@/lib/invitation/maps-utils";
 import styles from "./luxury-fashion-flagship.module.css";
@@ -9,18 +10,16 @@ export function FashionLocationActions({
   locationName,
   address,
   mapsUrl,
-  copyLabel = "Copy location",
   shareLabel = "Share location",
 }: {
   locationName: string;
   address: string;
   mapsUrl: string;
-  copyLabel?: string;
   shareLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const href = resolveMapsLocationHref({ mapsUrl, locationName, address }) || undefined;
-  const label = [locationName, address].filter(Boolean).join(", ");
+  const label = formatFashionVenueLine(locationName, address);
   const copyValue = [label, href].filter(Boolean).join("\n");
 
   useEffect(() => {
@@ -57,18 +56,10 @@ export function FashionLocationActions({
       <button
         type="button"
         className={styles.cta}
-        onClick={() => void copyAddress()}
-        data-testid="fashion-copy-location"
-      >
-        {copied ? "Location copied" : copyLabel}
-      </button>
-      <button
-        type="button"
-        className={styles.cta}
         onClick={() => void shareLocation()}
         data-testid="fashion-share-location"
       >
-        {shareLabel}
+        {copied ? "Location copied" : shareLabel}
       </button>
     </div>
   );

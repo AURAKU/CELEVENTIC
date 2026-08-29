@@ -269,7 +269,7 @@ export interface PlaceCardRecipientInput {
 
 /** Ceremony / event titles must never appear as the place-card recipient. */
 export function looksLikeEventTitle(value: string): boolean {
-  return /\b(ceremony|wedding|invitation|marriage|celebration|funeral|memorial|birthday|engagement|anniversary)\b/i.test(
+  return /\b(ceremony|wedding|invitation|marriage|celebration|funeral|memorial|birthday|engagement|anniversary|opening|flagship|launch|unveiling|boutique)\b/i.test(
     value.trim()
   );
 }
@@ -357,7 +357,7 @@ export function compactPlaceCardMonogram(raw?: string | null): string {
 }
 
 /** Default place-card addressee when no guest name is assigned. */
-export const PLACE_CARD_FALLBACK_RECIPIENT = "Dear invited guest";
+export const PLACE_CARD_FALLBACK_RECIPIENT = "Invited Guest";
 
 /** True when a candidate string is not a real guest / party addressee. */
 export function isAnonymousRecipientName(value?: string | null): boolean {
@@ -371,7 +371,7 @@ export function isAnonymousRecipientName(value?: string | null): boolean {
  * Resolve the hero name line under the salutation.
  *
  * Only a real guest / party name is allowed here. Ceremony titles and blank
- * invitations fall back to "Dear invited guest".
+ * invitations fall back to "Invited Guest".
  */
 export function resolveRecipientLine(
   config: PlaceCardConfig,
@@ -528,7 +528,6 @@ export function buildPlaceCardViewModel(
   const configuredMonogram = formatPlaceCardMonogram(config.monogram);
   const monogram = configuredMonogram;
   const configuredSalutation = config.salutation.trim() || "Dear";
-  // The default addressee already includes "Dear", so don't print it twice.
   const salutation = /^dear\b/i.test(recipientLine) ? "" : configuredSalutation;
 
   return {

@@ -22,6 +22,8 @@ export interface FeatureThemeTokens {
   radius: string;
   /** Motion intensity hint for feature sections. */
   motion: "full" | "restrained" | "none";
+  /** Fashion flagship is general admission — never print party-capacity copy. */
+  hidePartyCapacity?: boolean;
 }
 
 export interface InvitationTemplateFeatureAdapter {
@@ -73,9 +75,46 @@ const traditionalMarriageAdapter: InvitationTemplateFeatureAdapter = {
   },
 };
 
+function isDarkCssColor(value: string | undefined): boolean {
+  const hex = value?.trim().match(/^#([0-9a-f]{6})$/i);
+  if (!hex) return false;
+  const n = Number.parseInt(hex[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 150;
+}
+
+/** Luxury fashion — ivory salon paper, champagne gold, espresso ink. */
+const luxuryFashionAdapter: InvitationTemplateFeatureAdapter = {
+  layout: "luxury-fashion-flagship",
+  themeTokens(design) {
+    const c = design.colors;
+    const ivory = isDarkCssColor(c.background) || !c.background ? "#F7F1E8" : c.background;
+    const gold = c.secondary?.trim() || "#B8956A";
+    const espresso = c.primary?.trim() || "#2C211C";
+    const ink = c.text?.trim() && isDarkCssColor(c.text) ? c.text : espresso;
+    return {
+      background: ivory,
+      surface: "#FBF7F0",
+      primary: espresso,
+      secondary: gold,
+      accent: c.accent?.trim() || "#D9C4A0",
+      text: ink,
+      border: gold,
+      fontHeading: design.fonts?.heading ?? "EB Garamond",
+      fontBody: design.fonts?.body ?? "EB Garamond",
+      radius: "0.2rem",
+      motion: design.animation === "none" ? "none" : "restrained",
+      hidePartyCapacity: true,
+    };
+  },
+};
+
 const ADAPTERS: Record<string, InvitationTemplateFeatureAdapter> = {
   [foreverAfarisAdapter.layout]: foreverAfarisAdapter,
   [traditionalMarriageAdapter.layout]: traditionalMarriageAdapter,
+  [luxuryFashionAdapter.layout]: luxuryFashionAdapter,
 };
 
 /** Resolve the adapter for a layout, always falling back to the default. */

@@ -56,6 +56,8 @@ export interface LuxuryFashionHouseConfig {
   portalPrompt: string;
   rsvpHeading: string;
   rsvpAcceptedLabel: string;
+  /** RSVP lede under the heading. Femmora may promise delivery; other houses keep a place-held line. */
+  rsvpLede?: string;
   finaleKicker: string;
   hoursLabel: string;
   datesLabel: string;
@@ -107,6 +109,8 @@ export interface LuxuryFashionHouseConfig {
   navLabels: FashionNavLabel[];
   countdownBeforeLabel: string;
   countdownAfterLabel: string;
+  /** Live-day eyebrow. When set, `countdownAfterLabel` is the sentence beneath — never a duplicate. */
+  countdownAfterKicker?: string;
   finaleMessage: string;
   lookbookTitle: string;
   /** Editorial shop eyebrow. Femmora default: First looks. */

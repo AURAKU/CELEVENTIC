@@ -75,6 +75,7 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   wishesEmpty: "The atelier is still quiet — leave the first compliment.",
   rsvpHeading: "Will we see you?",
   rsvpAcceptedLabel: "Yes — I'll be there",
+  rsvpLede: "Yes, maybe, or unable to attend, we will keep your place with care.",
   finaleKicker: "A new chapter in style.",
   hoursLabel: "9 AM TO 8 PM",
   datesLabel: "OPENING DAYS",

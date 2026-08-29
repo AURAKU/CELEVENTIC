@@ -4,6 +4,8 @@ import {
   buildGoogleCalendarUrl,
   buildIcsContent,
   defaultReminderMinutes,
+  hasValidCalendarWindow,
+  toGoogleCalendarDates,
   toMapsEmbedUrl,
 } from "@/lib/invitation/calendar-utils";
 
@@ -38,6 +40,28 @@ describe("calendar reminders", () => {
     assert.match(url, /calendar\.google\.com/);
     assert.match(url, /action=TEMPLATE/);
     assert.match(url, /Reminders/);
+  });
+
+  it("embeds the Femmora opening window in UTC with Nairobi display zone", async () => {
+    const { FEMMORA_HOUSE_DEFAULTS } = await import(
+      "@/lib/experience/luxury-fashion/femmora-preset"
+    );
+    const url = buildGoogleCalendarUrl({
+      title: "FEMMORA Soft Opening",
+      startDateRaw: FEMMORA_HOUSE_DEFAULTS.startAtIso,
+      endDateRaw: FEMMORA_HOUSE_DEFAULTS.endAtIso,
+      venue: "FEMMORA GH, Westlands",
+      timeZone: FEMMORA_HOUSE_DEFAULTS.timeZone,
+    });
+    assert.match(url, /dates=20260829T060000Z%2F20260830T170000Z/);
+    assert.match(url, /ctz=Africa%2FNairobi/);
+    assert.match(url, /location=FEMMORA/);
+  });
+
+  it("refuses invalid calendar windows", () => {
+    assert.equal(hasValidCalendarWindow({ title: "x", startDateRaw: "not-a-date" }), false);
+    assert.equal(toGoogleCalendarDates("garbage"), "");
+    assert.equal(buildGoogleCalendarUrl({ title: "x", startDateRaw: "not-a-date" }), "");
   });
 });
 

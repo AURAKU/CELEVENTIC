@@ -340,7 +340,7 @@ export function InvitationRsvpPanel({
           {label}
         </p>
       ) : null}
-      {capacityCopy ? (
+      {capacityCopy && !fashion ? (
         <p
           className={
             fashion
