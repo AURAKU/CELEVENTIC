@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
+import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
 import { toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
-import { buildDirectionsUrl, normalizeExternalHref } from "@/lib/invitation/maps-utils";
+import { resolveMapsLocationHref } from "@/lib/invitation/maps-utils";
 import styles from "./luxury-fashion-flagship.module.css";
 
 export function FashionMapsPreview({
@@ -19,11 +20,9 @@ export function FashionMapsPreview({
   compact?: boolean;
   onOpen?: () => void;
 }) {
+  const staticPreview = useInvitationStaticPreview();
   const label = [locationName, address].filter(Boolean).join(", ");
-  const href =
-    normalizeExternalHref(mapsUrl) ||
-    buildDirectionsUrl({ venueName: locationName, landmark: address }) ||
-    "";
+  const href = resolveMapsLocationHref({ mapsUrl, locationName, address });
   const embedUrl = toMapsEmbedUrl(href, label);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
 
@@ -37,7 +36,44 @@ export function FashionMapsPreview({
     });
   }, []);
 
+  const openLocation = useCallback(
+    (event: ReactMouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
+      onOpen?.();
+      if (!href) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+        return;
+      }
+      event.preventDefault();
+      window.open(href, "_blank", "noopener,noreferrer");
+    },
+    [href, onOpen]
+  );
+
   if (!href) return null;
+
+  const hit = staticPreview ? (
+    <button
+      type="button"
+      className={styles.mapsPreviewHit}
+      onClick={openLocation}
+      data-testid="fashion-maps-cta"
+      aria-label={`Open ${label || "the venue"} in Google Maps`}
+    >
+      <span className={styles.mapsPreviewHint}>Tap to open directions</span>
+    </button>
+  ) : (
+    <a
+      className={styles.mapsPreviewHit}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={openLocation}
+      data-testid="fashion-maps-cta"
+      aria-label={`Open ${label || "the venue"} in Google Maps`}
+    >
+      <span className={styles.mapsPreviewHint}>Tap to open directions</span>
+    </a>
+  );
 
   return (
     <div
@@ -65,17 +101,7 @@ export function FashionMapsPreview({
         )}
         <span className={styles.mapsPreviewVeil} aria-hidden />
         <span className={styles.mapsPreviewFoil} aria-hidden />
-        <a
-          className={styles.mapsPreviewHit}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={onOpen}
-          data-testid="fashion-maps-cta"
-          aria-label={`Open ${label || "the venue"} in Google Maps`}
-        >
-          <span className={styles.mapsPreviewHint}>Tap to open directions</span>
-        </a>
+        {hit}
       </div>
     </div>
   );

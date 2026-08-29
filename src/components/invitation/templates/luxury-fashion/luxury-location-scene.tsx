@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { copyText } from "@/lib/clipboard";
-import { buildDirectionsUrl, normalizeExternalHref } from "@/lib/invitation/maps-utils";
+import { resolveMapsLocationHref } from "@/lib/invitation/maps-utils";
 import styles from "./luxury-fashion-flagship.module.css";
 
 export function FashionLocationActions({
@@ -19,10 +19,7 @@ export function FashionLocationActions({
   shareLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
-  const href =
-    normalizeExternalHref(mapsUrl) ||
-    buildDirectionsUrl({ venueName: locationName, landmark: address }) ||
-    undefined;
+  const href = resolveMapsLocationHref({ mapsUrl, locationName, address }) || undefined;
   const label = [locationName, address].filter(Boolean).join(", ");
   const copyValue = [label, href].filter(Boolean).join("\n");
 
