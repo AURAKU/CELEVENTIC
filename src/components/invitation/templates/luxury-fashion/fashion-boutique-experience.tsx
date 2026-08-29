@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarDays, MapPin, Shirt, Store } from "lucide-react";
 import { lockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
 import {
@@ -40,6 +41,7 @@ export function FashionBoutiqueExperience({
   onClose: () => void;
   onSelect: (id: FashionNavDestination) => void;
 }) {
+  const [mounted, setMounted] = useState(false);
   const cardSrc = useMemo(() => resolveFashionFlyerCard(house), [house]);
   const visionOpen = resolveFashionVisionStore(house);
   const logoSrc = useMemo(() => fashionHouseLogoSrc(house), [house]);
@@ -54,6 +56,10 @@ export function FashionBoutiqueExperience({
   }, [house.lookbookItems, looks]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     const unlock = lockRevealScroll();
     function onKey(event: KeyboardEvent) {
@@ -66,15 +72,16 @@ export function FashionBoutiqueExperience({
     };
   }, [onClose, open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  const node = (
     <div
       className={styles.boutique}
       role="dialog"
       aria-modal="true"
       aria-label={`${house.houseName} boutique`}
       data-testid="fashion-boutique-experience"
+      data-vision={visionOpen ? "true" : "false"}
     >
       <button type="button" className={styles.boutiqueClose} onClick={onClose} data-testid="fashion-boutique-close">
         Close
@@ -86,27 +93,29 @@ export function FashionBoutiqueExperience({
       <div className={styles.boutiqueInner}>
         <p className={styles.kicker}>{house.houseName}</p>
         <h2 className={styles.heading}>Step inside</h2>
-        {cardSrc ? (
-          <figure className={styles.boutiqueCard} data-testid="fashion-boutique-invitation">
-            <div className={styles.boutiqueCardStage}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cardSrc} alt="Invitation card" />
-              <span className={styles.boutiqueCardSheen} aria-hidden />
-            </div>
-          </figure>
-        ) : null}
-        {visionOpen ? (
-          <FashionVisionStore
-            houseName={house.houseName}
-            logoSrc={logoSrc}
-            kicker={house.visionStoreKicker || "Online vision store"}
-            title={house.visionStoreTitle || "The house, in your hands"}
-            line={house.visionStoreLine || "A first look at shopping the collection from anywhere."}
-            deliveryLine={house.visionStoreDeliveryLine || "Nationwide delivery"}
-            soonLabel={house.visionStoreSoonLabel || "Opening soon"}
-            looks={visionLooks}
-          />
-        ) : null}
+        <div className={styles.boutiqueStage}>
+          {visionOpen ? (
+            <FashionVisionStore
+              houseName={house.houseName}
+              logoSrc={logoSrc}
+              kicker={house.visionStoreKicker || "Online vision store"}
+              title={house.visionStoreTitle || "The house, in your hands"}
+              line={house.visionStoreLine || "A first look at shopping the collection from anywhere."}
+              deliveryLine={house.visionStoreDeliveryLine || "Nationwide delivery"}
+              soonLabel={house.visionStoreSoonLabel || "Opening soon"}
+              looks={visionLooks}
+            />
+          ) : null}
+          {cardSrc ? (
+            <figure className={styles.boutiqueCard} data-testid="fashion-boutique-invitation">
+              <div className={styles.boutiqueCardStage}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={cardSrc} alt="Invitation card" />
+                <span className={styles.boutiqueCardSheen} aria-hidden />
+              </div>
+            </figure>
+          ) : null}
+        </div>
         {visionOpen ? null : <p className={styles.lede}>A first corridor. Choose a room.</p>}
         <div className={styles.boutiqueGrid}>
           {PORTALS.filter((portal) => !available || available.includes(portal.id)).map(({ id, label, Icon }) => (
@@ -130,4 +139,6 @@ export function FashionBoutiqueExperience({
       </div>
     </div>
   );
+
+  return createPortal(node, document.body);
 }

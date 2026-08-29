@@ -1,8 +1,8 @@
 .stage {
   position: relative;
   z-index: 1;
-  width: min(100%, 22.5rem);
-  margin: 0.35rem auto 0.2rem;
+  width: min(100%, 18.5rem);
+  margin: 0 auto;
   perspective: 1200px;
 }
 
@@ -19,7 +19,8 @@
 
 .phone {
   position: relative;
-  width: min(100%, 20.4rem);
+  width: min(100%, 17.6rem, calc(min(64vh, 36rem) * 9 / 19.45));
+  max-height: min(64vh, 36rem);
   margin: 0 auto;
   aspect-ratio: 9 / 19.45;
   border-radius: 2.85rem;
