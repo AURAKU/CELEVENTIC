@@ -737,6 +737,7 @@ test("ENTER EXPERIENCE shows the invitation card and a motion iPhone vision stor
   assert.match(index, /collection: FashionDressIcon/);
   assert.equal(/\bShirt\b/.test(index), false);
   assert.equal(/label: "The house"/.test(boutique), false);
+  assert.equal(/Femmora|@femmora/i.test(boutique), false);
   const phone = readFileSync(
     "src/components/invitation/templates/luxury-fashion/fashion-vision-store.tsx",
     "utf8"
