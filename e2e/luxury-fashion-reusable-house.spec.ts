@@ -44,6 +44,8 @@ test.describe("Luxury fashion engine is reusable beyond Femmora", () => {
     const unveil = page.getByRole("button", { name: /enter the atelier/i });
     await expect(unveil).toBeVisible({ timeout: 45_000 });
     await expect(page.getByText("THE NIGHT OPENS", { exact: true })).toBeVisible();
+    await expect(page.getByText("In darker gold", { exact: true })).toBeVisible();
+    await expect(page.getByText("Soft Opening")).toHaveCount(0);
     await expect(page.getByText(/femmora/i)).toHaveCount(0);
     await dismissCookieBanner(page);
     await unveil.click();
@@ -74,10 +76,20 @@ test.describe("Luxury fashion engine is reusable beyond Femmora", () => {
     await expect(hub.getByTestId("fashion-details").getByText(/12th & 13th september/i)).toBeVisible();
     await expect(page.getByTestId("fashion-film-scene")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /store preview/i })).toHaveCount(0);
+    await page.getByTestId("fashion-nav").getByRole("button", { name: /view collection/i }).click();
     await expect(page.getByTestId("fashion-lookbook")).toBeVisible();
+    const valeLooks = page.locator("[data-testid='fashion-lookbook'] img");
+    await expect(valeLooks).toHaveCount(2);
+    const valeSrcs = await valeLooks.evaluateAll((nodes) =>
+      nodes.map((node) => (node as HTMLImageElement).getAttribute("src") ?? "")
+    );
+    expect(valeSrcs.every((src) => !src.includes("/templates/femmora"))).toBeTruthy();
+    expect(valeSrcs.some((src) => /look-crystal-knit|look-floral-mini|look-pearl-gown/.test(src))).toBeFalsy();
     await expect(page.getByTestId("fashion-social")).toHaveCount(0);
     await expect(page.getByTestId("fashion-social-finale")).toHaveCount(0);
     await expect(page.getByText(/westlands/i)).toHaveCount(0);
+    await expect(page.getByText(/femmora_gh/i)).toHaveCount(0);
+    await expect(page.getByText(/femmora\.woman/i)).toHaveCount(0);
     await expect(page.getByText(/femmora/i)).toHaveCount(0);
     await context.close();
   });

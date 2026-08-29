@@ -1,22 +1,31 @@
+import Image from "next/image";
 import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 
 export function FashionHouseMark({
   house,
   className,
+  priority = false,
 }: {
   house: Pick<LuxuryFashionHouseConfig, "monogram" | "logoUrl" | "markVariant" | "houseName">;
   className?: string;
+  /** Hub masthead crest is above the fold — never lazy-decode a 384w mush slot. */
+  priority?: boolean;
 }) {
   if (house.logoUrl?.trim()) {
+    const src = house.logoUrl.trim();
+    const alt = house.houseName.trim();
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         className={className}
-        src={house.logoUrl}
-        alt=""
-        width={560}
-        height={560}
-        style={{ objectFit: "contain" }}
+        src={src}
+        alt={alt}
+        width={1536}
+        height={1536}
+        quality={100}
+        priority={priority}
+        fetchPriority={priority ? "high" : undefined}
+        unoptimized
+        style={{ objectFit: "contain", maxWidth: "100%" }}
       />
     );
   }

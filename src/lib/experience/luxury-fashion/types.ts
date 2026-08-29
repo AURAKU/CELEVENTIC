@@ -88,6 +88,8 @@ export interface LuxuryFashionHouseConfig {
   filmChapterLede?: string;
   markVariant?: "letter" | "botanical";
   logoUrl?: string | null;
+  /** Absolute or site-relative URL for WhatsApp/Snapchat/iMessage link previews. */
+  shareOgImageUrl?: string | null;
   filmCta: string;
   filmSkipLabel: string;
   navigationStyle: FashionNavStyle;
@@ -96,6 +98,8 @@ export interface LuxuryFashionHouseConfig {
   countdownAfterLabel: string;
   finaleMessage: string;
   lookbookTitle: string;
+  /** Editorial shop eyebrow. Femmora default: First looks. */
+  lookbookKicker?: string;
   lookbookItems?: FashionLookbookItem[];
   silkBedUrl?: string | null;
   /** Absolute ISO-8601 with offset. Countdown/calendar source of truth. */
@@ -109,11 +113,13 @@ export interface LuxuryFashionHouseConfig {
   showSocialSection?: boolean;
   instagramHandle?: string;
   instagramUrl?: string;
+  tiktokHandle?: string;
+  tiktokUrl?: string;
   socialIntroText?: string;
   socialTitle?: string;
   socialCtaLabel?: string;
   showSocialIconsInFinale?: boolean;
-  /** Extra platforms later. Instagram can also live here. */
+  /** Extra platforms later. Instagram and TikTok also live here. */
   socialLinks?: FashionSocialLink[];
   chapters?: {
     boutique?: boolean;

@@ -127,7 +127,12 @@ function resolveEventBeat(input: {
     return { plain: input.eventBeatOverride.plain.trim() };
   }
   if (input.layoutSlug === "luxury-fashion-flagship") {
-    return { eyebrow: "THE HOUSE", script: "UNVEILED" };
+    const script =
+      input.eventBeatOverride?.script?.trim() ||
+      input.eventTitle?.trim() ||
+      "The Invitation";
+    const eyebrow = input.eventBeatOverride?.eyebrow?.trim() || "THE HOUSE";
+    return { eyebrow, script };
   }
   const label = input.ceremonyLabel?.trim();
   if (label) {
@@ -478,11 +483,13 @@ export function TapToBeginExperience({
               <Image
                 src={markUrl}
                 alt=""
-                width={560}
-                height={560}
-                sizes="(max-width: 768px) 48vw, 280px"
+                width={1536}
+                height={1536}
+                quality={100}
+                priority
+                fetchPriority="high"
                 className={styles.brandMarkImg}
-                unoptimized={shouldUnoptimizeNextImage(markUrl)}
+                unoptimized
               />
             ) : (
               <span className={styles.brandMarkLetter}>{markLetter}</span>
@@ -493,8 +500,15 @@ export function TapToBeginExperience({
           <div className={styles.kickerStack}>
             {kickerLines
               .filter((line) => line.trim())
-              .map((line) => (
-                <p key={line} className={styles.kickerBeat}>
+              .map((line, index) => (
+                <p
+                  key={line}
+                  className={
+                    index === 0
+                      ? `${styles.kickerBeat} ${styles.kickerBeatLocation}`
+                      : styles.kickerBeat
+                  }
+                >
                   {line}
                 </p>
               ))}

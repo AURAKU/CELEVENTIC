@@ -146,7 +146,10 @@
 .brandMarkImg {
   width: 100%;
   height: 100%;
+  max-width: 100%;
   object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
 }
 
 .brandMarkLogo {
@@ -178,28 +181,167 @@
   width: clamp(10rem, 48vw, 17.5rem);
   height: clamp(10rem, 48vw, 17.5rem);
   margin-bottom: 1.35rem;
+  animation-name: tap-mark-crisp;
 }
 
+.fashionRoot .brandMarkImg {
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+/**
+ * Location is the only emphasized kicker. Date stays whisper-quiet.
+ * Higher-specificity first/not-first rules win if both lines share a class.
+ * Copy is resolved DNA; never a hardcoded house word.
+ */
+.fashionRoot .kickerStack > .kickerBeat:not(:first-child) {
+  display: block;
+  padding: 0;
+  font-size: calc(0.68rem * var(--tap-scale, 1));
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  line-height: 1.28;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--ff-gold-deep, #a67c52) 78%, var(--ff-espresso, #2c211c));
+  background: none;
+}
+
+.fashionRoot .kickerStack > .kickerBeat:not(:first-child)::after {
+  content: none;
+}
+
+.fashionRoot .kickerBeatLocation,
+.fashionRoot .kickerStack > .kickerBeat:first-child {
+  display: inline-block;
+  padding: 0.14rem 0.55rem 0.2rem;
+  font-size: calc(1.02rem * var(--tap-scale, 1));
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  line-height: 1.15;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 70%, var(--ff-gold-deep, #a67c52));
+  background: linear-gradient(
+    180deg,
+    transparent 18%,
+    color-mix(in srgb, #ead6a0 62%, transparent) 100%
+  );
+}
+
+.fashionRoot .kickerBeatLocation::after,
+.fashionRoot .kickerStack > .kickerBeat:first-child::after {
+  content: "";
+  display: block;
+  width: calc(100% - 0.55em);
+  height: 1px;
+  margin: 0.18rem auto 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--ff-gold, #b8956a) 14%,
+    var(--ff-gold-deep, #a67c52) 50%,
+    var(--ff-gold, #b8956a) 86%,
+    transparent
+  );
+}
+
+/**
+ * House nameplate — the whisper hero. Scale/weight apply to whatever
+ * eventBeat string the house DNA passes; never a hardcoded house word.
+ */
 .fashionRoot .eventBeat {
-  max-width: none;
-  color: #1c1613;
-  font-size: calc(clamp(2.4rem, 13vw, 4.8rem) * var(--tap-scale, 1));
-  letter-spacing: 0.22em;
-  text-indent: 0.22em;
-  line-height: 0.95;
+  position: relative;
+  margin: 0.1rem 0 0;
+  max-width: min(100%, 22rem);
+  padding: 0.15rem 0.55rem 0.05rem;
+  font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
+  font-size: calc(clamp(1.95rem, 8.6vw, 3.45rem) * var(--tap-scale, 1));
+  font-weight: 700;
+  letter-spacing: clamp(0.16em, 2.6vw, 0.34em);
+  text-indent: clamp(0.16em, 2.6vw, 0.34em);
+  line-height: 1.06;
+  text-transform: uppercase;
   white-space: normal;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  color: var(--ff-gold-deep, #a67c52);
+  background-image: linear-gradient(
+    188deg,
+    color-mix(in srgb, #f6e6c0 70%, var(--ff-gold, #b8956a)) 0%,
+    var(--ff-gold, #b8956a) 42%,
+    var(--ff-gold-deep, #a67c52) 78%,
+    #6b4630 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   text-shadow: none;
 }
 
-.fashionRoot .kickerBeat {
-  color: #a67c52;
+.fashionRoot .eventBeat::before,
+.fashionRoot .eventBeat::after {
+  content: "";
+  display: block;
+  width: min(3.6rem, 26vw);
+  height: 1px;
+  margin-inline: auto;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--ff-gold, #b8956a) 22%,
+    var(--ff-gold-deep, #a67c52) 50%,
+    var(--ff-gold, #b8956a) 78%,
+    transparent
+  );
+}
+
+.fashionRoot .eventBeat::before {
+  margin-bottom: 0.72rem;
+}
+
+.fashionRoot .eventBeat::after {
+  margin-top: 0.58rem;
 }
 
 .fashionRoot .scriptBeat {
-  margin-top: 0.55rem;
-  color: #8a5a12;
-  font-size: calc(clamp(1.35rem, 5.2vw, 1.85rem) * var(--tap-scale, 1));
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 46%, var(--ff-gold-deep, #8a5a12));
+  font-family: var(--tap-font-family, var(--font-great-vibes), "Great Vibes", cursive);
+  font-size: calc(clamp(1.18rem, 4.4vw, 1.58rem) * var(--tap-scale, 1));
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  max-width: min(92vw, 16.75rem);
+  margin-top: 0.15rem;
+  padding-inline: 0.6rem;
+  text-align: center;
   text-shadow: none;
+  text-transform: none;
+  text-wrap: balance;
+  white-space: normal;
+}
+
+.fashionRoot .cta {
+  margin-top: 1.55rem;
+}
+
+@media (max-height: 700px) {
+  .fashionRoot .eventBeat {
+    font-size: calc(clamp(1.55rem, 6.4vw, 2.35rem) * var(--tap-scale, 1));
+  }
+
+  .fashionRoot .eventBeat::before {
+    margin-bottom: 0.48rem;
+  }
+
+  .fashionRoot .eventBeat::after {
+    margin-top: 0.38rem;
+  }
+
+  .fashionRoot .cta {
+    margin-top: 1.15rem;
+  }
 }
 
 .fashionHint {
@@ -222,6 +364,7 @@
 .kickerStack {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.28rem;
   margin: 0 0 0.85rem;
   animation: tap-line-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
@@ -236,6 +379,10 @@
   text-indent: 0.32em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--tap-gold) 82%, var(--tap-ivory) 18%);
+}
+
+.kickerBeatLocation {
+  font-weight: 700;
 }
 
 .eventBeat {
@@ -577,6 +724,17 @@
   }
 }
 
+@keyframes tap-mark-crisp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes tap-chip-glow {
   0%,
   100% {
@@ -610,6 +768,7 @@
 @media (prefers-reduced-motion: reduce) {
   .heroImg,
   .stage,
+  .brandMark,
   .eventBeat,
   .scriptBeat,
   .names,

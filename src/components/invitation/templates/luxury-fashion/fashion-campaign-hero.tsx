@@ -1,13 +1,19 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
-import type { FashionChapterFlags, FashionNavDestination, LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
+import { useCallback, useState, type ReactNode } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, Ref } from "react";
+import {
+  resolveFashionLede,
+  type FashionChapterFlags,
+  type FashionNavDestination,
+  type LuxuryFashionHouseConfig,
+} from "@/lib/experience/luxury-fashion";
 import { FashionHouseMark } from "./femmora-mark";
 import { FashionFactMark } from "./fashion-fact-marks";
-import { FashionFilmScene } from "./fashion-film-scene";
+import { FashionFilmScene, type FashionFilmHandle } from "./fashion-film-scene";
 import { FashionLaunchCountdown } from "./fashion-launch-countdown";
 import { FashionMapsPreview } from "./fashion-maps-preview";
+import { FashionLocationActions } from "./luxury-location-scene";
 import styles from "./luxury-fashion-flagship.module.css";
 
 function FashionOrdinalLine({ text }: { text: string }) {
@@ -41,6 +47,10 @@ export function FashionCampaignHero({
   onFilmFullscreen,
   storePreviewId,
   filmPlayNonce = 0,
+  storePreviewOpen = false,
+  filmRevealed,
+  filmRef,
+  calendar,
 }: {
   house: LuxuryFashionHouseConfig;
   chapters: FashionChapterFlags;
@@ -54,7 +64,13 @@ export function FashionCampaignHero({
   onFilmFullscreen?: () => void;
   storePreviewId: string;
   filmPlayNonce?: number;
+  storePreviewOpen?: boolean;
+  filmRevealed?: boolean;
+  filmRef?: Ref<FashionFilmHandle>;
+  calendar?: ReactNode;
 }) {
+  const filmOpen = filmRevealed ?? storePreviewOpen;
+  const lede = resolveFashionLede(house);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
 
   const onMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
@@ -91,56 +107,57 @@ export function FashionCampaignHero({
         <span className={styles.campaignFoil} />
       </div>
 
-      <div className={styles.campaignGrid}>
+      <div className={styles.campaignGrid} data-film-open={filmOpen ? "true" : "false"}>
         <div className={styles.masthead}>
-          <FashionHouseMark house={house} className={styles.campaignMark} />
+          <FashionHouseMark house={house} className={styles.campaignMark} priority />
           <h1 className={styles.campaignHouse}>{house.houseName}</h1>
-          <p className={styles.campaignEvent}>{house.eventTitle}</p>
-          <p className={styles.campaignLede}>{house.hubLede}</p>
+          {house.eventTitle.trim() ? <p className={styles.campaignEvent}>{house.eventTitle}</p> : null}
+          {lede ? <p className={styles.campaignLede}>{lede}</p> : null}
 
           <ul className={styles.campaignFacts}>
-            <li>
+            <li id="fashion-location">
               <FashionFactMark kind="location" />
               <div>
                 <p>Location</p>
-                <strong>{place}</strong>
-                {chapters.mapsCta ? (
-                  <a
-                    className={styles.mapsCta}
-                    href={house.mapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={onMaps}
-                  >
-                    {house.mapsCtaLabel || "View on Google Maps"}
-                  </a>
-                ) : null}
+                {place ? <strong>{place}</strong> : null}
                 {chapters.mapsCta ? (
                   <FashionMapsPreview
+                    compact
                     mapsUrl={house.mapsUrl}
                     locationName={house.locationName}
                     address={house.address}
                     onOpen={onMaps}
                   />
                 ) : null}
+                <FashionLocationActions
+                  locationName={house.locationName}
+                  address={house.address}
+                  mapsUrl={house.mapsUrl}
+                  copyLabel={house.copyLocationLabel}
+                  shareLabel={house.shareLocationLabel}
+                />
               </div>
             </li>
-            <li>
-              <FashionFactMark kind="time" />
-              <div>
-                <p>Time</p>
-                <strong>{house.hoursLabel}</strong>
-              </div>
-            </li>
-            <li>
-              <FashionFactMark kind="date" />
-              <div>
-                <p>Date</p>
-                <strong>
-                  <FashionOrdinalLine text={house.datesLabel} />
-                </strong>
-              </div>
-            </li>
+            {house.hoursLabel.trim() ? (
+              <li>
+                <FashionFactMark kind="time" />
+                <div>
+                  <p>Time</p>
+                  <strong>{house.hoursLabel}</strong>
+                </div>
+              </li>
+            ) : null}
+            {house.datesLabel.trim() ? (
+              <li>
+                <FashionFactMark kind="date" />
+                <div>
+                  <p>Date</p>
+                  <strong>
+                    <FashionOrdinalLine text={house.datesLabel} />
+                  </strong>
+                </div>
+              </li>
+            ) : null}
           </ul>
 
           {chapters.countdown ? (
@@ -155,49 +172,35 @@ export function FashionCampaignHero({
             </div>
           ) : null}
 
-          <div className={styles.campaignCtas}>
-            {chapters.experience ? (
-              <button type="button" className={`${styles.cta} ${styles.ctaSolid}`} onClick={() => onNavigate("experience")}>
-                {house.navLabels.find((item) => item.id === "experience")?.label ?? "Enter Experience"}
-              </button>
-            ) : null}
-            {chapters["store-preview"] ? (
-              <button type="button" className={styles.cta} onClick={() => onNavigate("store-preview")}>
-                {house.navLabels.find((item) => item.id === "store-preview")?.label ?? "Store Preview"}
-              </button>
-            ) : null}
-            {chapters.collection ? (
-              <button type="button" className={styles.cta} onClick={() => onNavigate("collection")}>
-                {house.navLabels.find((item) => item.id === "collection")?.label ?? "View Collection"}
-              </button>
-            ) : null}
-            {chapters.rsvp ? (
-              <button type="button" className={styles.cta} onClick={() => onNavigate("rsvp")}>
-                RSVP
-              </button>
-            ) : null}
-          </div>
+          {calendar ? <div className={styles.campaignCalendar}>{calendar}</div> : null}
         </div>
 
         {chapters["store-preview"] ? (
-          <div className={styles.campaignFilm} id={storePreviewId}>
-            <p className={styles.kicker}>Store preview</p>
-            <h2 className={styles.campaignFilmTitle}>
-              {house.filmChapterTitle || `Experience ${house.houseName}`}
-            </h2>
-            <FashionFilmScene
-              src={filmSrc}
-              poster={filmPoster}
-              cta={house.filmCta}
-              skipLabel={house.filmSkipLabel}
-              variant="campaign"
-              playNonce={filmPlayNonce}
-              onStarted={onFilmStarted}
-              onCompleted={onFilmCompleted}
-              onMuteToggle={onFilmMute}
-              onFullscreen={onFilmFullscreen}
-              onContinue={() => onNavigate(chapters.collection ? "collection" : "event-details")}
-            />
+          <div
+            className={`${styles.campaignFilm} ${filmOpen ? styles.campaignFilmOpen : ""}`}
+            id={storePreviewId}
+            data-testid="fashion-store-preview"
+            data-open={filmOpen ? "true" : "false"}
+            aria-hidden={!filmOpen}
+            inert={!filmOpen ? true : undefined}
+          >
+            <div className={styles.campaignFilmInner}>
+              <p className={styles.kicker}>{house.filmChapterTitle || "Store preview"}</p>
+              <FashionFilmScene
+                ref={filmRef}
+                src={filmSrc}
+                poster={filmPoster}
+                skipLabel={house.filmSkipLabel}
+                variant="campaign"
+                playNonce={filmPlayNonce}
+                active={filmOpen}
+                onStarted={onFilmStarted}
+                onCompleted={onFilmCompleted}
+                onMuteToggle={onFilmMute}
+                onFullscreen={onFilmFullscreen}
+                onContinue={() => onNavigate(chapters.collection ? "collection" : "rsvp")}
+              />
+            </div>
           </div>
         ) : null}
       </div>

@@ -48,13 +48,7 @@ class FashionOpeningFallback extends Component<
       return (
         <div className={styles.fallback} data-testid="fashion-opening-fallback">
           <p>The unveiling could not complete.</p>
-          <button
-            type="button"
-            onClick={() => {
-              forceUnlockRevealScroll();
-              this.props.onContinue();
-            }}
-          >
+          <button type="button" onClick={this.props.onContinue}>
             Continue to the invitation
           </button>
         </div>
@@ -66,7 +60,7 @@ class FashionOpeningFallback extends Component<
 
 export function LuxuryFashionOpeningExperience(props: LuxuryFashionOpeningExperienceProps) {
   return (
-    <FashionOpeningFallback key="envelope-card-v2" onContinue={props.onComplete}>
+    <FashionOpeningFallback key="envelope-card-v1" onContinue={props.onComplete}>
       <LuxuryFashionOpeningStage {...props} />
     </FashionOpeningFallback>
   );
@@ -298,6 +292,17 @@ function LuxuryFashionOpeningStage({
       data-silk-style={house.silkStyle}
       onPointerMove={onPointerMove}
     >
+      <div className={styles.salon} aria-hidden>
+        <span className={styles.salonSilk} />
+        <span className={styles.salonSilkAlt} />
+        <span className={styles.salonDrapeLeft} />
+        <span className={styles.salonDrapeRight} />
+        <span className={styles.salonGlow} />
+        <span className={styles.salonFoil} />
+        <span className={styles.salonFloor} />
+        <span className={styles.salonVignette} />
+        <span className={styles.salonFrame} />
+      </div>
       <div className={`${styles.light} ${silkOpen || ceremony ? styles.lightCeremony : ""}`} aria-hidden />
       <div className={styles.grain} aria-hidden />
 

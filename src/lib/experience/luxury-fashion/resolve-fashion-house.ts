@@ -10,6 +10,12 @@ function trim(value: string | null | undefined): string {
   return value?.trim() ?? "";
 }
 
+export function resolveFashionLede(house: LuxuryFashionHouseConfig): string {
+  const lede = house.hubLede.trim();
+  if (!lede || lede === LUXURY_FASHION_HOUSE_DEFAULTS.hubLede) return "";
+  return lede;
+}
+
 export function resolveFashionHouse(
   design?: InvitationDesignConfig | null,
   event?: InvitationEventData | null
@@ -123,7 +129,7 @@ export function resolveFashionChapters(input: {
     experience: ch?.boutique !== false,
     "store-preview": ch?.film !== false && Boolean(input.filmSrc),
     collection: ch?.collection !== false && input.looksCount > 0,
-    "event-details": true,
+    "event-details": false,
     location: hasVenue,
     rsvp: ch?.rsvp !== false && tabOn("rsvp"),
     share: ch?.share !== false,
@@ -150,8 +156,4 @@ export function resolveFashionTeaser(): { src: string | null; poster: string | n
 
 export function resolveFashionFlyerCard(house: LuxuryFashionHouseConfig): string | null {
   return house.flyerCardUrl?.trim() || null;
-}
-
-export function resolveFashionExperienceFlyer(house: LuxuryFashionHouseConfig): string | null {
-  return house.experienceFlyerUrl?.trim() || house.flyerCardUrl?.trim() || null;
 }

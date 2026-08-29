@@ -7,9 +7,157 @@
   overflow: hidden;
   isolation: isolate;
   color: var(--ff-espresso, #2c211c);
-  background:
-    radial-gradient(120% 90% at 50% 8%, #fffdf8 0%, var(--ff-ivory, #fbf7f0) 42%, var(--ff-cream, #f4ede1) 78%, #e6d8c4 100%);
+  background-color: #d8c3a4;
+  background-image:
+    radial-gradient(ellipse 56% 48% at 50% 40%, #f4ebe0 0%, transparent 64%),
+    radial-gradient(ellipse 88% 38% at 50% -8%, rgba(255, 244, 214, 0.55) 0%, transparent 54%),
+    radial-gradient(ellipse 80% 34% at 50% 108%, rgba(139, 105, 70, 0.32) 0%, transparent 56%),
+    linear-gradient(180deg, #e6d3b6 0%, #dcc4a0 46%, #c9ae86 100%);
   font-family: var(--font-eb-garamond), "EB Garamond", Georgia, serif;
+}
+
+.salon {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.salonSilk,
+.salonSilkAlt {
+  position: absolute;
+  inset: -18% -12%;
+  background:
+    repeating-linear-gradient(
+      86deg,
+      rgba(139, 105, 70, 0.2) 0px,
+      rgba(255, 246, 220, 0.42) 36px,
+      rgba(232, 210, 176, 0.08) 72px,
+      rgba(184, 149, 106, 0.3) 104px,
+      rgba(255, 250, 236, 0.48) 148px,
+      rgba(196, 165, 116, 0.16) 188px,
+      rgba(139, 105, 70, 0.18) 220px
+    ),
+    linear-gradient(180deg, rgba(255, 248, 230, 0.28) 0%, rgba(220, 196, 160, 0.12) 48%, rgba(168, 132, 92, 0.28) 100%);
+  filter: blur(12px);
+  opacity: 0.88;
+  transform: scale(1.06);
+}
+
+.salonSilkAlt {
+  inset: -22% -16%;
+  opacity: 0.55;
+  filter: blur(16px);
+  transform: scaleX(-1) scale(1.08) translate3d(2%, 0, 0);
+  mix-blend-mode: soft-light;
+}
+
+.salonDrapeLeft,
+.salonDrapeRight {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  width: 30%;
+  filter: blur(1.2px);
+}
+
+.salonDrapeLeft {
+  left: -8%;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(107, 83, 68, 0.38) 0%,
+      rgba(184, 149, 106, 0.28) 28%,
+      rgba(232, 210, 176, 0.16) 62%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(
+      92deg,
+      rgba(90, 64, 42, 0.14) 0 22px,
+      rgba(255, 248, 230, 0.2) 22px 48px,
+      rgba(184, 149, 106, 0.12) 48px 70px
+    );
+  box-shadow: inset -36px 0 70px rgba(255, 248, 230, 0.18);
+}
+
+.salonDrapeRight {
+  right: -8%;
+  background:
+    linear-gradient(
+      270deg,
+      rgba(107, 83, 68, 0.38) 0%,
+      rgba(184, 149, 106, 0.28) 28%,
+      rgba(232, 210, 176, 0.16) 62%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(
+      88deg,
+      rgba(90, 64, 42, 0.14) 0 22px,
+      rgba(255, 248, 230, 0.2) 22px 48px,
+      rgba(184, 149, 106, 0.12) 48px 70px
+    );
+  box-shadow: inset 36px 0 70px rgba(255, 248, 230, 0.18);
+}
+
+.salonGlow {
+  position: absolute;
+  inset: -18%;
+  background:
+    radial-gradient(ellipse 48% 42% at 50% 38%, rgba(255, 244, 214, 0.62) 0%, transparent 58%),
+    radial-gradient(ellipse at 14% 78%, rgba(184, 149, 106, 0.28) 0%, transparent 42%),
+    radial-gradient(ellipse at 86% 72%, rgba(196, 165, 116, 0.24) 0%, transparent 40%);
+  animation: salonBreathe 10s ease-in-out infinite;
+}
+
+.salonFoil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    108deg,
+    transparent 24%,
+    rgba(255, 248, 230, 0.22) 44%,
+    color-mix(in srgb, var(--ff-gold, #b8956a) 34%, transparent) 52%,
+    transparent 70%
+  );
+  mix-blend-mode: soft-light;
+  animation: salonFoil 11s ease-in-out infinite;
+}
+
+.salonFloor {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 0;
+  height: 36%;
+  background: radial-gradient(ellipse at 50% 28%, rgba(28, 22, 19, 0.28), transparent 72%);
+}
+
+.salonVignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 42%, transparent 18%, rgba(90, 64, 42, 0.16) 62%, rgba(44, 33, 28, 0.42) 100%);
+}
+
+.salonFrame {
+  position: absolute;
+  inset: max(0.7rem, env(safe-area-inset-top, 0px)) max(0.7rem, env(safe-area-inset-right, 0px))
+    max(0.7rem, env(safe-area-inset-bottom, 0px)) max(0.7rem, env(safe-area-inset-left, 0px));
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 55%, transparent);
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--ff-ivory, #f7f1e8) 18%, transparent);
+}
+
+@keyframes salonBreathe {
+  0%,
+  100% { opacity: 0.78; transform: translate3d(0, 0, 0) scale(1); }
+  50% { opacity: 1; transform: translate3d(0, -1.4%, 0) scale(1.03); }
+}
+
+@keyframes salonFoil {
+  0%,
+  100% { transform: translateX(-18%); opacity: 0.5; }
+  50% { transform: translateX(16%); opacity: 0.88; }
 }
 
 .stageEmbedded {
@@ -24,8 +172,9 @@
 .light {
   position: absolute;
   inset: -10%;
+  z-index: 1;
   background:
-    radial-gradient(ellipse at 50% 42%, rgba(255, 248, 230, 0.72) 0%, rgba(212, 196, 160, 0.18) 38%, transparent 70%);
+    radial-gradient(ellipse 52% 46% at 50% 40%, rgba(255, 244, 214, 0.36) 0%, rgba(212, 188, 148, 0.12) 40%, transparent 68%);
   transform: translate3d(calc(var(--pointer-x, 0) * 8px), calc(var(--pointer-y, 0) * 6px), 0);
   transition: transform 180ms ease-out, opacity 520ms ease;
   pointer-events: none;
@@ -33,13 +182,14 @@
 
 .lightCeremony {
   background:
-    radial-gradient(ellipse at 50% 46%, rgba(255, 250, 236, 0.92) 0%, rgba(217, 196, 160, 0.42) 34%, transparent 68%);
+    radial-gradient(ellipse 50% 44% at 50% 44%, rgba(255, 246, 220, 0.48) 0%, rgba(217, 196, 160, 0.22) 38%, transparent 68%);
 }
 
 .grain {
   position: absolute;
   inset: 0;
-  opacity: 0.18;
+  z-index: 2;
+  opacity: 0.38;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
@@ -48,6 +198,7 @@
 .silk {
   position: absolute;
   inset: 0;
+  z-index: 3;
   pointer-events: none;
 }
 
@@ -171,7 +322,7 @@
 
 .mark {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   text-align: center;
   padding: 0 1.25rem;
   max-width: 22rem;
@@ -346,7 +497,9 @@
   .breatheRight,
   .sheen,
   .light,
-  .whisperLine {
+  .whisperLine,
+  .salonGlow,
+  .salonFoil {
     animation: none;
     transform: none;
   }
@@ -442,14 +595,67 @@
 }
 
 .stage[data-silk-style="pearl-mocha"] {
-  background:
-    radial-gradient(120% 90% at 50% 8%, #f7f1e8 0%, #efe7da 42%, #d9c4a0 78%, #6b5344 100%);
+  background-color: #d4c0a2;
+  background-image:
+    radial-gradient(ellipse 56% 48% at 50% 40%, #efe4d4 0%, transparent 64%),
+    linear-gradient(180deg, #e4d3b8 0%, #d4bc96 52%, #c4a574 100%);
 }
 
 .stage[data-silk-style="espresso-gold"] {
-  background:
-    radial-gradient(120% 90% at 50% 8%, #3a2c24 0%, #2c211c 48%, #1c1613 100%);
+  background-color: #1c1613;
+  background-image:
+    radial-gradient(ellipse 58% 46% at 50% 40%, rgba(90, 64, 42, 0.55) 0%, transparent 62%),
+    radial-gradient(ellipse 80% 48% at 50% -4%, #5a4334 0%, transparent 55%),
+    linear-gradient(180deg, #3a2c24 0%, #2c211c 46%, #1c1613 100%);
   color: var(--ff-ivory, #fbf7f0);
+}
+
+.stage[data-silk-style="espresso-gold"] .salonSilk {
+  background:
+    repeating-linear-gradient(
+      86deg,
+      rgba(28, 22, 19, 0.45) 0px,
+      rgba(90, 64, 42, 0.28) 36px,
+      rgba(196, 165, 116, 0.18) 72px,
+      rgba(44, 33, 28, 0.4) 110px,
+      rgba(184, 149, 106, 0.16) 148px,
+      rgba(28, 22, 19, 0.35) 188px
+    ),
+    linear-gradient(180deg, rgba(90, 64, 42, 0.4), rgba(28, 22, 19, 0.55));
+}
+
+.stage[data-silk-style="espresso-gold"] .salonDrapeLeft {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(12, 8, 6, 0.55) 0%,
+      rgba(90, 64, 42, 0.32) 40%,
+      transparent 100%
+    );
+}
+
+.stage[data-silk-style="espresso-gold"] .salonDrapeRight {
+  background:
+    linear-gradient(
+      270deg,
+      rgba(12, 8, 6, 0.55) 0%,
+      rgba(90, 64, 42, 0.32) 40%,
+      transparent 100%
+    );
+}
+
+.stage[data-silk-style="espresso-gold"] .salonGlow {
+  background:
+    radial-gradient(ellipse 48% 42% at 50% 36%, rgba(196, 165, 116, 0.38) 0%, transparent 56%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 149, 106, 0.2) 0%, transparent 40%);
+}
+
+.stage[data-silk-style="espresso-gold"] .salonVignette {
+  background: radial-gradient(ellipse at 50% 42%, transparent 18%, rgba(12, 8, 6, 0.58) 100%);
+}
+
+.stage[data-silk-style="espresso-gold"] .salonFrame {
+  border-color: color-mix(in srgb, var(--ff-gold, #b8956a) 42%, transparent);
 }
 
 .stage[data-silk-style="espresso-gold"] .house,
@@ -703,7 +909,7 @@
   }
 
   .envelopePresented .invitationCard {
-    transform: translate3d(0, -68%, 0);
+    transform: translate3d(0, -46%, 0);
   }
 
   .envelopeLayerMorph {
@@ -723,9 +929,23 @@
   perspective: 1200px;
 }
 
+.envelopePresented {
+  padding: max(1.7rem, env(safe-area-inset-top)) 1.55rem max(1.85rem, env(safe-area-inset-bottom));
+}
+
+.envelopePresented .envelopeLining,
+.envelopePresented .envelopeFlap,
+.envelopePresented .envelopeShadow {
+  opacity: 0.22;
+}
+
 .envelopeStage {
-  width: min(88vw, 24rem);
+  width: min(78vw, 22.5rem);
   max-height: min(82svh, 40rem);
+}
+
+.envelopePresented .envelopeStage {
+  width: min(72vw, 21.5rem);
 }
 
 .envelope {
@@ -775,10 +995,9 @@
 }
 
 .envelopeMark {
-  width: clamp(6.5rem, 28vw, 10rem);
-  height: clamp(6.5rem, 28vw, 10rem);
+  width: 4.2rem;
+  height: 4.2rem;
   color: var(--ff-gold-deep, #a67c52);
-  object-fit: contain;
 }
 
 .envelopeHouse {
@@ -843,12 +1062,37 @@
   padding: 0;
   cursor: pointer;
   pointer-events: auto;
-  background: var(--ff-ivory, #f7f1e8);
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 250, 236, 0.55), transparent 58%),
+    linear-gradient(180deg, #fbf6ee 0%, var(--ff-ivory, #f7f1e8) 46%, var(--ff-cream, #f3ebe0) 100%);
   box-shadow:
-    0 18px 40px rgba(28, 22, 19, 0.2),
-    0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 55%, transparent);
+    0 22px 48px rgba(28, 22, 19, 0.28),
+    0 0 0 1px color-mix(in srgb, var(--ff-gold, #b8956a) 72%, transparent),
+    inset 0 0 0 7px var(--ff-ivory, #f7f1e8),
+    inset 0 0 0 8px color-mix(in srgb, var(--ff-gold, #b8956a) 68%, transparent);
   transform: translate3d(0, 42%, 0);
   transition: transform 3.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.invitationCard::before {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  z-index: 2;
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 58%, transparent);
+  pointer-events: none;
+}
+
+.invitationCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(90, 64, 42, 0.02) 3px);
 }
 
 .invitationCard:disabled {
@@ -856,7 +1100,7 @@
 }
 
 .invitationCardReady {
-  transform: translate3d(0, -58%, 0);
+  transform: translate3d(0, -46%, 0);
 }
 
 .invitationCard:focus-visible {
@@ -874,8 +1118,10 @@
 }
 
 .liveCover {
-  padding: 1.1rem 0.9rem;
+  padding: 1.35rem 1.2rem;
   overflow: hidden;
+  background: var(--ff-ivory, #f7f1e8);
+  color: var(--ff-espresso, #2c211c);
 }
 
 .cardFoil {
@@ -890,12 +1136,13 @@
 
 .cardCta {
   position: absolute;
+  z-index: 3;
   left: 50%;
   bottom: 7%;
   transform: translateX(-50%);
   padding: 0.45rem 0.9rem;
   border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 70%, transparent);
-  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 82%, transparent);
+  background: var(--ff-ivory, #f7f1e8);
   color: var(--ff-espresso, #2c211c);
   font-size: 0.58rem;
   letter-spacing: 0.28em;

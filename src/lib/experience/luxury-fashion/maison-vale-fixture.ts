@@ -75,6 +75,12 @@ export const MAISON_VALE_HOUSE: LuxuryFashionHouseConfig = mergeFashionHouse(
       { id: "13", label: "13 September" },
       { id: "BOTH", label: "Both" },
     ],
+    showSocialSection: false,
+    instagramHandle: "",
+    instagramUrl: "",
+    tiktokHandle: "",
+    tiktokUrl: "",
+    socialLinks: [],
     chapters: {
       boutique: true,
       film: false,

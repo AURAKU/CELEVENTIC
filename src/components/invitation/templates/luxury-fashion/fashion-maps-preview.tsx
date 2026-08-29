@@ -43,7 +43,7 @@ export function FashionMapsPreview({
       rel="noreferrer"
       onClick={onOpen}
       onPointerMove={onMove}
-      data-testid="fashion-maps-preview"
+      data-testid="fashion-maps-cta"
       aria-label={`Open ${label || "the venue"} in Google Maps`}
       style={
         {
@@ -67,12 +67,10 @@ export function FashionMapsPreview({
         )}
         <span className={styles.mapsPreviewVeil} aria-hidden />
         <span className={styles.mapsPreviewFoil} aria-hidden />
-        <span className={styles.mapsPreviewPin} aria-hidden />
         <span className={styles.mapsPreviewHint} aria-hidden>
           Tap to open directions
         </span>
       </div>
-      <span className={styles.mapsPreviewCaption}>{label || "View on Google Maps"}</span>
     </a>
   );
 }
