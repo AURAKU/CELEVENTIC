@@ -37,11 +37,14 @@ export interface LayoutMusicProfile {
   title: string;
   category: string;
   bundledFile: BundledMusicFile;
+  /** When set, playback uses this path instead of `/music/${bundledFile}.mp3`. */
+  url?: string;
   startSec: number;
   endSec: number;
   volume: number;
   fadeInSec: number;
   fadeOutSec: number;
+  originalDurationSec?: number;
 }
 
 /**
@@ -311,6 +314,10 @@ export function bundledMusicUrl(file: BundledMusicFile): string {
   return `/music/${file}.mp3`;
 }
 
+export function musicProfileUrl(profile: LayoutMusicProfile): string {
+  return profile.url ?? bundledMusicUrl(profile.bundledFile);
+}
+
 export function buildMusicSelectionForLayout(
   layout: string,
   options?: Partial<MusicSelection>
@@ -319,11 +326,11 @@ export function buildMusicSelectionForLayout(
   return {
     source: "library",
     libraryTrackId: profile.trackId,
-    url: bundledMusicUrl(profile.bundledFile),
+    url: musicProfileUrl(profile),
     title: profile.title,
     startSec: profile.startSec,
     endSec: profile.endSec,
-    originalDurationSec: 260,
+    originalDurationSec: profile.originalDurationSec ?? 260,
     autoPlay: true,
     loop: true,
     volume: profile.volume,
@@ -345,7 +352,7 @@ export function getLayoutMusicCatalogTracks() {
     title: p.title,
     artist: "Celeventic · " + layout.replace(/-/g, " "),
     category: p.category,
-    url: bundledMusicUrl(p.bundledFile),
+    url: musicProfileUrl(p),
     durationSec: p.endSec - p.startSec + 30,
     layoutSlug: layout,
   }));

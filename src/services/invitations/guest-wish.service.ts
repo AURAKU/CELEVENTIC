@@ -228,30 +228,26 @@ export class GuestWishService {
     });
     if (!event) throw new Error("Event not found");
 
-    if (input.invitationId) {
+    let invitationId = input.invitationId;
+    if (invitationId) {
       const inv = await prisma.invitation.findFirst({
-        where: { id: input.invitationId, eventId: input.eventId },
+        where: { id: invitationId, eventId: input.eventId },
         select: { id: true },
       });
-      if (!inv) throw new Error("Invitation not found for this event");
+      if (!inv) invitationId = undefined;
     }
 
-    if (input.guestId) {
+    let guestId = input.guestId;
+    if (guestId) {
       const guest = await prisma.guest.findFirst({
         where: {
-          id: input.guestId,
+          id: guestId,
           eventId: input.eventId,
-          ...(input.invitationId ? { invitationId: input.invitationId } : {}),
+          ...(invitationId ? { invitationId } : {}),
         },
         select: { id: true },
       });
-      if (!guest) {
-        throw new Error(
-          input.invitationId
-            ? "Guest not found for this invitation"
-            : "Guest not found for this event"
-        );
-      }
+      if (!guest) guestId = undefined;
     }
 
     if (input.avatarUrl) {
@@ -268,8 +264,8 @@ export class GuestWishService {
     const created = await prisma.invitationGuestWish.create({
       data: {
         eventId: input.eventId,
-        invitationId: input.invitationId,
-        guestId: input.guestId,
+        invitationId,
+        guestId,
         authorName: input.isAnonymous ? "A guest" : authorName,
         message,
         title,

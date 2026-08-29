@@ -24,6 +24,8 @@ export function mergeFashionHouse(
     flyerCardUrl: override.flyerCardUrl === undefined ? base.flyerCardUrl : override.flyerCardUrl,
     experienceFlyerUrl:
       override.experienceFlyerUrl === undefined ? base.experienceFlyerUrl : override.experienceFlyerUrl,
+    visionStoreEnabled:
+      override.visionStoreEnabled === undefined ? base.visionStoreEnabled : override.visionStoreEnabled,
     visitDayOptions:
       override.visitDayOptions !== undefined ? override.visitDayOptions : base.visitDayOptions,
     socialLinks: override.socialLinks !== undefined ? override.socialLinks : base.socialLinks,
@@ -69,6 +71,8 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   replayUnveilingLabel: "Replay the unveiling",
   filmChapterTitle: "The first look",
   filmChapterLede: "Experience the house",
+  wishesTitle: "Compliments and guest wishes to the host",
+  wishesEmpty: "The atelier is still quiet — leave the first compliment.",
   rsvpHeading: "Will we see you?",
   rsvpAcceptedLabel: "Yes — I'll be there",
   finaleKicker: "A new chapter in style.",
@@ -93,6 +97,12 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   shareOgImageUrl: null,
   flyerCardUrl: null,
   experienceFlyerUrl: null,
+  visionStoreEnabled: false,
+  visionStoreKicker: "Online vision store",
+  visionStoreTitle: "The house, in your hands",
+  visionStoreLine: "A first look at shopping the collection from anywhere.",
+  visionStoreDeliveryLine: "Nationwide delivery",
+  visionStoreSoonLabel: "Opening soon",
   startAtIso: "",
   endAtIso: "",
   timeZone: "Africa/Nairobi",

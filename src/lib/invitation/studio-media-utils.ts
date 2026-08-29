@@ -59,7 +59,12 @@ export function resolveBackgroundMedia(
 export function syncDesignMediaHero(
   design: InvitationDesignConfig,
   url: string | null,
-  type: "image" | "video" = "image"
+  type: "image" | "video" = "image",
+  extras?: {
+    posterUrl?: string | null;
+    thumbnailUrl?: string | null;
+    name?: string;
+  }
 ): InvitationDesignConfig {
   const rest = (design.media ?? []).filter((m) => m.role !== "hero");
   if (!url) {
@@ -73,7 +78,9 @@ export function syncDesignMediaHero(
     url,
     type,
     role: "hero",
-    name: type === "video" ? "Hero video" : "Hero photo",
+    name: extras?.name || (type === "video" ? "Hero video" : "Hero photo"),
+    posterUrl: extras?.posterUrl ?? null,
+    thumbnailUrl: extras?.thumbnailUrl ?? null,
   };
   return { ...design, media: [asset, ...rest], heroCleared: false };
 }

@@ -1,0 +1,590 @@
+.stage {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 22.5rem);
+  margin: 0.35rem auto 0.2rem;
+  perspective: 1200px;
+}
+
+.aura {
+  position: absolute;
+  inset: 6% 8% 4%;
+  border-radius: 48% 48% 42% 42%;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 18%, rgba(255, 236, 196, 0.42), transparent 62%),
+    radial-gradient(ellipse 80% 70% at 50% 70%, rgba(196, 165, 116, 0.28), transparent 68%);
+  filter: blur(18px);
+  animation: auraBreath 5.6s ease-in-out infinite;
+}
+
+.phone {
+  position: relative;
+  width: min(100%, 20.4rem);
+  margin: 0 auto;
+  aspect-ratio: 9 / 19.45;
+  border-radius: 2.85rem;
+  background:
+    linear-gradient(145deg, #efe2c8 0%, #c4a574 28%, #8a6a3c 58%, #3a2b22 100%);
+  padding: 0.42rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 236, 196, 0.28),
+    0 28px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 248, 230, 0.45);
+  transform-origin: 50% 42%;
+  animation: phoneFloat 7.2s ease-in-out infinite;
+}
+
+.bezel {
+  height: 100%;
+  border-radius: 2.48rem;
+  background: #0a0807;
+  padding: 0.28rem;
+  overflow: hidden;
+}
+
+.screen {
+  position: relative;
+  height: 100%;
+  border-radius: 2.28rem;
+  overflow: hidden;
+  background: #14110e;
+  color: #fbf7f0;
+  isolation: isolate;
+}
+
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(255, 232, 190, 0.22), transparent 46%),
+    linear-gradient(165deg, #2a211c 0%, #171310 42%, #0e0b09 100%);
+  animation: wallDrift 12s ease-in-out infinite;
+}
+
+.status {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 3.4rem 1fr 3.4rem;
+  align-items: center;
+  padding: 0.72rem 1.05rem 0.15rem;
+}
+
+.clock {
+  font-family: var(--font-marcellus), Marcellus, serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  justify-self: start;
+}
+
+.island {
+  position: relative;
+  justify-self: center;
+  width: 5.4rem;
+  height: 1.28rem;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.islandCore {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #050505;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.islandToast {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 0.45rem;
+  font-size: 0.42rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #f4e4c4;
+  opacity: 0;
+  transform: translateY(110%);
+  animation: islandAnnounce 6.4s ease-in-out infinite;
+}
+
+.statusTrail {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.signal {
+  width: 0.72rem;
+  height: 0.5rem;
+  background:
+    linear-gradient(#fbf7f0, #fbf7f0) 0 100% / 18% 40% no-repeat,
+    linear-gradient(#fbf7f0, #fbf7f0) 28% 100% / 18% 58% no-repeat,
+    linear-gradient(#fbf7f0, #fbf7f0) 56% 100% / 18% 76% no-repeat,
+    linear-gradient(#fbf7f0, #fbf7f0) 84% 100% / 18% 100% no-repeat;
+  opacity: 0.92;
+}
+
+.battery {
+  width: 1.15rem;
+  height: 0.52rem;
+  border: 1px solid rgba(251, 247, 240, 0.72);
+  border-radius: 0.16rem;
+  position: relative;
+}
+
+.battery::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 0.08rem;
+  background: linear-gradient(90deg, #c4a574, #f3e2b8);
+  transform-origin: left center;
+  animation: batteryFill 5.2s ease-in-out infinite;
+}
+
+.battery::after {
+  content: "";
+  position: absolute;
+  right: -0.16rem;
+  top: 0.12rem;
+  width: 0.1rem;
+  height: 0.26rem;
+  border-radius: 0 1px 1px 0;
+  background: rgba(251, 247, 240, 0.72);
+}
+
+.app {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.38rem;
+  padding: 0.35rem 0.85rem 0.2rem;
+  text-align: center;
+}
+
+.appKicker {
+  margin: 0;
+  font-size: 0.48rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #d9c4a0;
+  animation: kickerGlow 3.8s ease-in-out infinite;
+}
+
+.marquee {
+  width: 100%;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  font-size: 0.5rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #c4a574;
+  white-space: nowrap;
+}
+
+.marquee span {
+  display: inline-block;
+  padding-right: 2.4rem;
+  animation: marquee 11s linear infinite;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+.appMark,
+.appMonogram {
+  width: 2.1rem;
+  height: 2.1rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+  animation: markSpin 10s ease-in-out infinite;
+}
+
+.appMonogram {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(196, 165, 116, 0.55);
+  font-family: var(--font-marcellus), Marcellus, serif;
+  font-size: 0.95rem;
+}
+
+.brandCopy {
+  min-width: 0;
+  text-align: left;
+}
+
+.appHouse {
+  margin: 0;
+  font-family: var(--font-marcellus), Marcellus, serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.appSoon {
+  margin: 0.12rem 0 0;
+  font-size: 0.52rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #e8d3a4;
+  animation: soonPulse 2.4s ease-in-out infinite;
+}
+
+.appTitle {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-marcellus), Marcellus, serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.appLine {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  color: rgba(251, 247, 240, 0.78);
+}
+
+.reelMask {
+  width: calc(100% + 0.4rem);
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.reel {
+  display: flex;
+  gap: 0.42rem;
+  width: max-content;
+  animation: reel 16s linear infinite;
+}
+
+.reelLook {
+  width: 3.55rem;
+  height: 4.55rem;
+  object-fit: cover;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(196, 165, 116, 0.35);
+}
+
+.foilStrip {
+  display: flex;
+  gap: 0.42rem;
+  width: 100%;
+}
+
+.foilStrip span {
+  flex: 1;
+  height: 4.2rem;
+  border-radius: 0.45rem;
+  background:
+    linear-gradient(120deg, transparent 30%, rgba(255, 236, 196, 0.35) 50%, transparent 70%),
+    linear-gradient(180deg, #3a2b22, #1c1613);
+  background-size: 220% 100%, 100% 100%;
+  animation: foilSweep 3.2s ease-in-out infinite;
+}
+
+.foilStrip span:nth-child(2) { animation-delay: 0.35s; }
+.foilStrip span:nth-child(3) { animation-delay: 0.7s; }
+
+.hero,
+.heroFallback {
+  position: relative;
+  width: 100%;
+  margin: 0.1rem 0 0;
+}
+
+.heroStage,
+.heroFallback {
+  display: block;
+  height: 6.4rem;
+  border-radius: 0.7rem;
+  overflow: hidden;
+  border: 1px solid rgba(196, 165, 116, 0.32);
+}
+
+.heroStage img,
+.heroFallback {
+  width: 100%;
+  height: 6.4rem;
+  object-fit: cover;
+}
+
+.heroStage img {
+  animation: kenBurns 9s ease-in-out infinite;
+}
+
+.heroSheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 244, 214, 0.38) 50%, transparent 62%);
+  transform: translateX(-120%);
+  animation: sheen 4.6s ease-in-out infinite;
+}
+
+.hero figcaption {
+  margin-top: 0.28rem;
+  font-size: 0.48rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #d9c4a0;
+}
+
+.heroFallback {
+  background:
+    linear-gradient(180deg, rgba(196, 165, 116, 0.22), transparent 55%),
+    #2c211c;
+}
+
+.delivery {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.85rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(44, 33, 28, 0.7), rgba(26, 20, 16, 0.85));
+  border: 1px solid rgba(196, 165, 116, 0.4);
+}
+
+.delivery::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 232, 190, 0.16), transparent);
+  transform: translateX(-100%);
+  animation: deliverySweep 3.4s linear infinite;
+}
+
+.deliveryPulse {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: #e8d3a4;
+  box-shadow: 0 0 0 0 rgba(232, 211, 164, 0.55);
+  animation: pulse 1.8s ease-out infinite;
+}
+
+.deliveryCopy,
+.deliverySoon {
+  position: relative;
+  font-size: 0.48rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.deliverySoon {
+  color: #e8d3a4;
+  animation: soonPulse 2.4s ease-in-out infinite;
+}
+
+.dock {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0.35rem 0.7rem 0;
+  padding: 0.42rem 0.2rem 0.2rem;
+  font-size: 0.42rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(251, 247, 240, 0.62);
+}
+
+.dockPill {
+  position: absolute;
+  left: 4%;
+  top: 0.18rem;
+  width: 22%;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #c4a574 28%, transparent);
+  border: 1px solid rgba(196, 165, 116, 0.4);
+  animation: dockTravel 8s ease-in-out infinite;
+}
+
+.home {
+  display: block;
+  width: 5.4rem;
+  height: 0.28rem;
+  margin: 0.45rem auto 0.55rem;
+  border-radius: 999px;
+  background: rgba(251, 247, 240, 0.78);
+  animation: homeGlow 3s ease-in-out infinite;
+}
+
+.hwBtn {
+  position: absolute;
+  background: linear-gradient(90deg, #9a7a4e, #d9c4a0 45%, #6b5344);
+  z-index: 4;
+}
+
+.hwSilent {
+  left: -0.12rem;
+  top: 6.4rem;
+  width: 0.16rem;
+  height: 0.7rem;
+  border-radius: 2px 0 0 2px;
+}
+
+.hwVolUp,
+.hwVolDown {
+  left: -0.14rem;
+  width: 0.18rem;
+  height: 1.15rem;
+  border-radius: 2px 0 0 2px;
+}
+
+.hwVolUp { top: 8.1rem; }
+.hwVolDown { top: 9.5rem; }
+
+.hwPower {
+  right: -0.14rem;
+  top: 8.35rem;
+  width: 0.18rem;
+  height: 2.1rem;
+  border-radius: 0 2px 2px 0;
+}
+
+.hwCamera {
+  right: -0.18rem;
+  top: 11.1rem;
+  width: 0.22rem;
+  height: 1.55rem;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #c4a574, #5c4632);
+  animation: cameraCatch 4.8s ease-in-out infinite;
+}
+
+@keyframes auraBreath {
+  0%, 100% { opacity: 0.72; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes phoneFloat {
+  0%, 100% { transform: rotateX(4deg) rotateY(-7deg) translate3d(0, 0, 0); }
+  50% { transform: rotateX(7deg) rotateY(6deg) translate3d(0, -0.45rem, 0); }
+}
+
+@keyframes wallDrift {
+  0%, 100% { transform: scale(1) translate3d(0, 0, 0); }
+  50% { transform: scale(1.08) translate3d(2%, -1.5%, 0); }
+}
+
+@keyframes islandAnnounce {
+  0%, 18%, 100% { opacity: 0; transform: translateY(110%); }
+  28%, 62% { opacity: 1; transform: translateY(0); }
+  74% { opacity: 0; transform: translateY(-110%); }
+}
+
+@keyframes batteryFill {
+  0%, 100% { transform: scaleX(0.42); }
+  50% { transform: scaleX(0.92); }
+}
+
+@keyframes kickerGlow {
+  0%, 100% { opacity: 0.62; letter-spacing: 0.28em; }
+  50% { opacity: 1; letter-spacing: 0.34em; }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+@keyframes markSpin {
+  0%, 100% { transform: rotate(-4deg) scale(1); }
+  50% { transform: rotate(4deg) scale(1.06); }
+}
+
+@keyframes soonPulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes reel {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.333%); }
+}
+
+@keyframes foilSweep {
+  0%, 100% { background-position: 0% 50%, 0 0; }
+  50% { background-position: 100% 50%, 0 0; }
+}
+
+@keyframes kenBurns {
+  0%, 100% { transform: scale(1.04) translate3d(0, 0, 0); }
+  50% { transform: scale(1.16) translate3d(-2%, 1.5%, 0); }
+}
+
+@keyframes sheen {
+  0%, 28% { transform: translateX(-120%); }
+  58%, 100% { transform: translateX(120%); }
+}
+
+@keyframes deliverySweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(232, 211, 164, 0.5); }
+  70% { box-shadow: 0 0 0 0.55rem rgba(232, 211, 164, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(232, 211, 164, 0); }
+}
+
+@keyframes dockTravel {
+  0%, 12% { left: 4%; }
+  25%, 37% { left: 27%; }
+  50%, 62% { left: 52%; }
+  75%, 87% { left: 76%; }
+  100% { left: 4%; }
+}
+
+@keyframes homeGlow {
+  0%, 100% { opacity: 0.55; width: 5.4rem; }
+  50% { opacity: 1; width: 6.1rem; }
+}
+
+@keyframes cameraCatch {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura {
+    animation-duration: 12s;
+  }
+
+  .phone {
+    animation: none;
+    transform: none;
+  }
+
+  .islandToast,
+  .marquee span,
+  .reel,
+  .heroStage img,
+  .heroSheen,
+  .delivery::before,
+  .dockPill,
+  .hwCamera {
+    animation-duration: 18s;
+  }
+}

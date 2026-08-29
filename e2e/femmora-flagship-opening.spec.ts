@@ -279,7 +279,7 @@ test.describe("Femmora luxury flagship opening", () => {
     await expect(page.getByRole("link", { name: /follow femmora on tiktok/i }).first()).toBeVisible();
 
     await page.getByTestId("fashion-copy-link").click();
-    await expect(page.getByTestId("fashion-copy-link")).toContainText(/copied|copy/i);
+    await expect(page.getByTestId("fashion-copy-link")).toContainText(/share|copied/i);
 
     await page.getByTestId("fashion-finale").scrollIntoViewIfNeeded();
     await expect(page.getByTestId("fashion-finale")).toContainText(/can't wait to welcome you|exclusive invitation/i);

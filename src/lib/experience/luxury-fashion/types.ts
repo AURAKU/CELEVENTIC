@@ -79,6 +79,13 @@ export interface LuxuryFashionHouseConfig {
   flyerCardUrl?: string | null;
   /** Full-screen ENTER EXPERIENCE flyer. When set, replaces the 2.5D boutique. */
   experienceFlyerUrl?: string | null;
+  /** iPhone vision-store teaser in ENTER EXPERIENCE. Off unless a preset or Studio enables it. */
+  visionStoreEnabled?: boolean;
+  visionStoreKicker?: string;
+  visionStoreTitle?: string;
+  visionStoreLine?: string;
+  visionStoreDeliveryLine?: string;
+  visionStoreSoonLabel?: string;
   mapsCtaLabel?: string;
   copyLocationLabel?: string;
   shareLocationLabel?: string;
@@ -86,6 +93,10 @@ export interface LuxuryFashionHouseConfig {
   replayUnveilingLabel?: string;
   filmChapterTitle?: string;
   filmChapterLede?: string;
+  /** Guest notes heading. Femmora default names the host; other houses keep a generic line. */
+  wishesTitle?: string;
+  /** Empty guest-notes line. Clothing-opening copy; never a shared Femmora fallback. */
+  wishesEmpty?: string;
   markVariant?: "letter" | "botanical";
   logoUrl?: string | null;
   /** Absolute or site-relative URL for WhatsApp/Snapchat/iMessage link previews. */

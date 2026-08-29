@@ -7,6 +7,7 @@ import {
   getLayoutMusicProfile,
   getLayoutMusicProfileByTrackId,
   getLayoutSlugByTrackId,
+  musicProfileUrl,
   type BundledMusicFile,
 } from "@/lib/invitation/layout-music-identity";
 import {
@@ -125,7 +126,7 @@ export function getAudioTrackById(id: string): MusicLibraryTrack | undefined {
       id: catalogProfile.trackId,
       title: catalogProfile.title,
       category: catalogProfile.category,
-      url: bundledMusicUrl(catalogProfile.bundledFile),
+      url: musicProfileUrl(catalogProfile),
       durationSec: catalogProfile.endSec - catalogProfile.startSec + 30,
     };
   }
@@ -135,7 +136,7 @@ export function getAudioTrackById(id: string): MusicLibraryTrack | undefined {
       id: layoutProfile.trackId,
       title: layoutProfile.title,
       category: layoutProfile.category,
-      url: bundledMusicUrl(layoutProfile.bundledFile),
+      url: musicProfileUrl(layoutProfile),
       durationSec: layoutProfile.endSec - layoutProfile.startSec + 30,
     };
   }
@@ -162,11 +163,11 @@ export function buildMusicSelectionFromTrack(
     return {
       source: "library",
       libraryTrackId: catalogByTrack.trackId,
-      url: bundledMusicUrl(catalogByTrack.bundledFile),
+      url: musicProfileUrl(catalogByTrack),
       title: catalogByTrack.title,
       startSec: catalogByTrack.startSec,
       endSec: catalogByTrack.endSec,
-      originalDurationSec: 260,
+      originalDurationSec: catalogByTrack.originalDurationSec ?? 260,
       autoPlay: true,
       loop: true,
       volume: catalogByTrack.volume,

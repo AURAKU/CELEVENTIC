@@ -68,6 +68,8 @@ export function FashionRsvpScene({
           initialRsvpStatus={initialRsvpStatus}
           initialAttendingCount={initialAttendingCount}
           variant="fashion"
+          showEmail={false}
+          showPhone={false}
           accentColor="#9A7A48"
           choiceLabels={{
             accepted: acceptedLabel,

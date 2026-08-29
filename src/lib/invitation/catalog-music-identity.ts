@@ -1,10 +1,13 @@
 import type { MusicSelection } from "@/lib/music/music-types";
 import {
-  bundledMusicUrl,
   getLayoutMusicProfile,
-  type BundledMusicFile,
+  musicProfileUrl,
   type LayoutMusicProfile,
 } from "@/lib/invitation/layout-music-identity";
+import {
+  FEMMORA_INVITE_MUSIC,
+  FEMMORA_INVITE_MUSIC_DURATION_SEC,
+} from "@/lib/experience/luxury-fashion/femmora-preset";
 
 /**
  * Per-catalog-SKU music overrides.
@@ -304,14 +307,16 @@ export const CATALOG_MUSIC_IDENTITY: Record<string, LayoutMusicProfile> = {
   },
   "femmora-flagship-soft-opening": {
     trackId: "catalog-femmora-flagship-soft-opening",
-    title: "Femmora Atelier Quiet",
-    category: "lounge",
-    bundledFile: "jazz-soft-lounge",
+    title: "The Beauty",
+    category: "cinematic",
+    bundledFile: "ambient-cinematic",
+    url: FEMMORA_INVITE_MUSIC,
     startSec: 0,
-    endSec: 72,
-    volume: 0.3,
-    fadeInSec: 2.4,
-    fadeOutSec: 1.4,
+    endSec: FEMMORA_INVITE_MUSIC_DURATION_SEC,
+    originalDurationSec: FEMMORA_INVITE_MUSIC_DURATION_SEC,
+    volume: 0.4,
+    fadeInSec: 1.8,
+    fadeOutSec: 1.6,
   },
 };
 
@@ -333,11 +338,11 @@ export function buildMusicSelectionForCatalog(
   return {
     source: "library",
     libraryTrackId: profile.trackId,
-    url: bundledMusicUrl(profile.bundledFile),
+    url: musicProfileUrl(profile),
     title: profile.title,
     startSec: profile.startSec,
     endSec: profile.endSec,
-    originalDurationSec: 260,
+    originalDurationSec: profile.originalDurationSec ?? 260,
     autoPlay: true,
     loop: true,
     volume: profile.volume,
@@ -360,11 +365,11 @@ export function resolveMusicForCatalogOrLayout(
   return {
     source: "library",
     libraryTrackId: layout.trackId,
-    url: bundledMusicUrl(layout.bundledFile as BundledMusicFile),
+    url: musicProfileUrl(layout),
     title: layout.title,
     startSec: layout.startSec,
     endSec: layout.endSec,
-    originalDurationSec: 260,
+    originalDurationSec: layout.originalDurationSec ?? 260,
     autoPlay: true,
     loop: true,
     volume: layout.volume,
@@ -381,9 +386,9 @@ export function getCatalogMusicLibraryTracks() {
   return Object.entries(CATALOG_MUSIC_IDENTITY).map(([slug, p]) => ({
     id: p.trackId,
     title: p.title,
-    artist: "Celeventic · " + slug.replace(/-/g, " "),
+    artist: slug === "femmora-flagship-soft-opening" ? "Adrian Berenguer" : "Celeventic · " + slug.replace(/-/g, " "),
     category: p.category,
-    url: bundledMusicUrl(p.bundledFile),
+    url: musicProfileUrl(p),
     durationSec: p.endSec - p.startSec + 30,
     catalogSlug: slug,
   }));

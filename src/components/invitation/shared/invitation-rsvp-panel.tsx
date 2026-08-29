@@ -36,6 +36,8 @@ interface InvitationRsvpPanelProps {
   initialAttendingCount?: number | null;
   /** When false, the optional email field is omitted (e.g. funeral attendance). Default true. */
   showEmail?: boolean;
+  /** When false, the optional phone field is omitted. Default true. */
+  showPhone?: boolean;
   /** Celebration vs memorial reply chrome (button language & styling). */
   tone?: "celebration" | "memorial";
   /** Optional guest-facing labels. Values posted to the API stay ACCEPTED/DECLINED/MAYBE. */
@@ -75,6 +77,7 @@ export function InvitationRsvpPanel({
   initialRsvpStatus = null,
   initialAttendingCount = null,
   showEmail = true,
+  showPhone = true,
   tone = "celebration",
   choiceLabels,
   onSubmitted,
@@ -138,7 +141,7 @@ export function InvitationRsvpPanel({
     const cappedAttending = clampAttendingCount(attendingCount, allowance);
     const contact = {
       ...(showEmail ? { email: email.trim() || undefined } : {}),
-      phone: phone.trim() || undefined,
+      ...(showPhone ? { phone: phone.trim() || undefined } : {}),
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
     const note = guestMessage?.trim();
@@ -304,7 +307,7 @@ export function InvitationRsvpPanel({
     />
   );
 
-  const phoneField = fashion ? (
+  const phoneField = !showPhone ? null : fashion ? (
     <FashionRsvpField
       type="tel"
       placeholder={t("rsvp.your_phone")}

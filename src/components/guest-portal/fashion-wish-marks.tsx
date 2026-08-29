@@ -1,7 +1,6 @@
 /** Original thin gold line-art for fashion guest notes — not Lucide, not emoji. */
 
 import Image from "next/image";
-import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 
 /** House crest from fashion DNA `logoUrl`. Not a drawn F and not Femmora by default. */
 export function FashionHouseLogoMark({
@@ -21,7 +20,7 @@ export function FashionHouseLogoMark({
         quality={100}
         sizes="56px"
         style={{ width: "100%", height: "100%", objectFit: "contain" }}
-        unoptimized={shouldUnoptimizeNextImage(src)}
+        unoptimized
         aria-hidden
       />
     </span>

@@ -50,6 +50,8 @@ export function FashionEnvelopeScene({
               className={`${styles.invitationCard} ${presented ? styles.invitationCardReady : ""}`}
               data-testid="fashion-invitation-card"
               aria-label={label}
+              aria-hidden={presented}
+              tabIndex={presented ? -1 : 0}
               disabled={!armed || !presented || morphing}
               onClick={onOpenCard}
             >

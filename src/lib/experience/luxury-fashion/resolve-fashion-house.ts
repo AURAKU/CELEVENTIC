@@ -1,6 +1,7 @@
 import type { HubTabId } from "@/lib/experience/experience-types";
 import type { InvitationDesignConfig, InvitationEventData, InvitationMediaAsset } from "@/types/invitation-design";
-import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "./house-defaults";
+import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
+import { fashionHouseLogoSrc, LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "./house-defaults";
 import { resolveFashionSocialLinks } from "./social";
 import type { FashionLookbookItem, FashionNavDestination, FashionOpeningStyle, LuxuryFashionHouseConfig } from "./types";
 
@@ -8,6 +9,11 @@ export { mergeFashionHouse };
 
 function trim(value: string | null | undefined): string {
   return value?.trim() ?? "";
+}
+
+function publicMediaUrl(url: string | null | undefined): string | null {
+  const resolved = resolvePublicMediaUrl(url).trim();
+  return resolved || null;
 }
 
 export function resolveFashionLede(house: LuxuryFashionHouseConfig): string {
@@ -45,8 +51,8 @@ export function resolveFashionFilm(input: {
   media?: InvitationMediaAsset[] | null;
 }): { src: string | null; poster: string | null; status?: InvitationMediaAsset["status"] } {
   const heroVideo = input.media?.find((m) => m.type === "video" && m.role === "hero" && m.url);
-  const src = heroVideo?.url || input.house.filmUrl || null;
-  const poster = heroVideo?.posterUrl || input.house.filmPosterUrl || null;
+  const src = publicMediaUrl(heroVideo?.url) || publicMediaUrl(input.house.filmUrl);
+  const poster = publicMediaUrl(heroVideo?.posterUrl) || publicMediaUrl(input.house.filmPosterUrl);
   return { src, poster, status: heroVideo?.status };
 }
 
@@ -55,12 +61,9 @@ export function resolveFashionLookbook(input: {
   galleryUrls?: string[] | null;
   media?: InvitationMediaAsset[] | null;
 }): FashionLookbookItem[] {
-  if (input.house.lookbookItems?.length) {
-    return input.house.lookbookItems.filter((item) => item.url);
-  }
-
   const fromGallery = (input.galleryUrls ?? [])
-    .filter(Boolean)
+    .map((url) => publicMediaUrl(url))
+    .filter((url): url is string => Boolean(url))
     .map((url, index) => ({
       id: `gallery-${index}`,
       url,
@@ -70,14 +73,25 @@ export function resolveFashionLookbook(input: {
     }));
   if (fromGallery.length) return fromGallery;
 
+  if (input.house.lookbookItems?.length) {
+    return input.house.lookbookItems
+      .map((item) => ({
+        ...item,
+        url: publicMediaUrl(item.url) ?? "",
+        posterUrl: publicMediaUrl(item.posterUrl) ?? item.posterUrl,
+      }))
+      .filter((item) => item.url);
+  }
+
   const fromMedia = (input.media ?? [])
     .filter((m) => m.role === "reference" && m.url)
     .map((m, index) => ({
       id: m.name || `ref-${index}`,
-      url: m.url,
+      url: publicMediaUrl(m.url) ?? "",
       type: (m.type === "video" ? "video" : "image") as "image" | "video",
-      posterUrl: m.posterUrl,
-    }));
+      posterUrl: publicMediaUrl(m.posterUrl),
+    }))
+    .filter((item) => item.url);
   return fromMedia;
 }
 
@@ -155,5 +169,9 @@ export function resolveFashionTeaser(): { src: string | null; poster: string | n
 }
 
 export function resolveFashionFlyerCard(house: LuxuryFashionHouseConfig): string | null {
-  return house.flyerCardUrl?.trim() || null;
+  return fashionHouseLogoSrc(house.flyerCardUrl, house.houseName);
+}
+
+export function resolveFashionVisionStore(house: LuxuryFashionHouseConfig): boolean {
+  return house.visionStoreEnabled === true;
 }

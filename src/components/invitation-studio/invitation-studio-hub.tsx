@@ -92,6 +92,8 @@ import { MusicPreferenceEditor } from "@/components/music/music-preference-edito
 import { WeddingBoardStudioPanel } from "@/components/invitation-studio/wedding-board-studio-panel";
 import { VisionBoardStudioPanel } from "@/components/invitation-studio/vision-board-studio-panel";
 import { FashionHouseStudioPanel } from "@/components/invitation-studio/fashion-house-studio-panel";
+import { mergeFashionHouse } from "@/lib/experience/luxury-fashion";
+import { syncDesignMediaHero } from "@/lib/invitation/studio-media-utils";
 import type { MusicSelection } from "@/lib/music/music-types";
 import {
   TYPOGRAPHY_PACKS,
@@ -561,6 +563,7 @@ export const InvitationStudioHub = forwardRef<
         onGalleryChange={onGalleryChange}
         maxGalleryImages={mediaLimits.maxPhotos}
         allowVideoBackground={mediaLimits.allowVideoBackground}
+        orderId={orderId}
       />
     ) : (
       <p className="text-xs text-slate-500">Media uploads are unavailable for this package.</p>
@@ -1744,6 +1747,50 @@ export const InvitationStudioHub = forwardRef<
                 {design.layout === "luxury-fashion-flagship" && (
                   <FashionHouseStudioPanel
                     value={experience.fashionHouse}
+                    orderId={orderId}
+                    galleryUrls={galleryUrls}
+                    onGalleryChange={onGalleryChange}
+                    storeFilmUrl={
+                      (design.media?.find((m) => m.role === "hero" && m.type === "video")?.url ??
+                        experience.fashionHouse?.filmUrl) ||
+                      null
+                    }
+                    storePosterUrl={
+                      design.media?.find((m) => m.role === "hero")?.posterUrl ??
+                      experience.fashionHouse?.filmPosterUrl ??
+                      null
+                    }
+                    onStoreFilm={({ url, posterUrl }) => {
+                      const withHero = syncDesignMediaHero(design, url, "video", {
+                        posterUrl,
+                        name: "Store preview film",
+                      });
+                      onChange({
+                        ...withHero,
+                        experience: {
+                          ...experience,
+                          fashionHouse: mergeFashionHouse(experience.fashionHouse, {
+                            filmUrl: url,
+                            filmPosterUrl: posterUrl ?? experience.fashionHouse?.filmPosterUrl ?? null,
+                          }),
+                          experienceCustomized: true,
+                        },
+                      });
+                    }}
+                    onClearStoreFilm={() => {
+                      const cleared = syncDesignMediaHero(design, null);
+                      onChange({
+                        ...cleared,
+                        experience: {
+                          ...experience,
+                          fashionHouse: mergeFashionHouse(experience.fashionHouse, {
+                            filmUrl: null,
+                            filmPosterUrl: null,
+                          }),
+                          experienceCustomized: true,
+                        },
+                      });
+                    }}
                     viralFooterEnabled={experience.viralFooterEnabled === true}
                     onViralFooterChange={(viralFooterEnabled) =>
                       patchExperience({ viralFooterEnabled, experienceCustomized: true })

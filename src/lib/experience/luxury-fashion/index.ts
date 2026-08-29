@@ -11,6 +11,8 @@ export {
   FEMMORA_TIKTOK_HANDLE,
   FEMMORA_TIKTOK_URL,
   FEMMORA_LOGO_MARK,
+  FEMMORA_INVITE_MUSIC,
+  FEMMORA_INVITE_MUSIC_DURATION_SEC,
   FEMMORA_SHARE_PLACECARD,
   FEMMORA_SHARE_PLACECARD_HEIGHT,
   FEMMORA_SHARE_PLACECARD_WIDTH,
@@ -56,6 +58,7 @@ export {
   resolveFashionOpeningStyle,
   resolveFashionStoreStills,
   resolveFashionTeaser,
+  resolveFashionVisionStore,
 } from "./resolve-fashion-house";
 export {
   FASHION_CARD_MORPH_MS,

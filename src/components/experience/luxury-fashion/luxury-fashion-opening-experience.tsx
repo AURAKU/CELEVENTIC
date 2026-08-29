@@ -209,6 +209,34 @@ function LuxuryFashionOpeningStage({
     timers.current.push(window.setTimeout(() => finish(), morphMs));
   }, [cardArmed, cardPresented, finish, reduceMotion]);
 
+  const swipeOrigin = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isCardEnvelope || !cardPresented || !cardArmed) return;
+    function onWheel(event: WheelEvent) {
+      if (Math.abs(event.deltaY) < 10 && Math.abs(event.deltaX) < 10) return;
+      event.preventDefault();
+      openCard();
+    }
+    function onTouchStart(event: TouchEvent) {
+      swipeOrigin.current = event.touches[0]?.clientY ?? null;
+    }
+    function onTouchMove(event: TouchEvent) {
+      const start = swipeOrigin.current;
+      const now = event.touches[0]?.clientY;
+      if (start == null || now == null) return;
+      if (Math.abs(now - start) >= 28) openCard();
+    }
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      swipeOrigin.current = null;
+    };
+  }, [cardArmed, cardPresented, isCardEnvelope, openCard]);
+
   const portalOnce = useRef(false);
   useEffect(() => {
     if (openingStyle !== "portal-only" || portalOnce.current) return;
@@ -262,6 +290,7 @@ function LuxuryFashionOpeningStage({
   }, [cardPresented, openCard, openSilk, silkInteractive]);
 
   const showEnvelope = isCardEnvelope && phase !== "complete";
+  const showCardHit = isCardEnvelope && cardPresented;
   const showSilkHit = openingStyle === "silk-only" && phase !== "complete";
   const label = `Draw the silk to unveil ${house.houseName}`;
   const envelopePhase =
@@ -391,6 +420,17 @@ function LuxuryFashionOpeningStage({
           ) : null}
           <span className="sr-only">{eventTitle}</span>
         </div>
+      ) : null}
+
+      {showCardHit ? (
+        <button
+          type="button"
+          className={`${styles.hit} ${styles.cardHit}`}
+          data-testid="fashion-card-stage"
+          aria-label={`Open the ${house.houseName} invitation`}
+          disabled={!cardArmed}
+          onClick={openCard}
+        />
       ) : null}
 
       {showSilkHit ? (

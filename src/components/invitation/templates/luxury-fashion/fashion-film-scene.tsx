@@ -1,13 +1,28 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
-import { pauseAllInvitationAudio, duckInvitationAudio, unduckInvitationAudio } from "@/lib/music/invitation-audio-manager";
+import { duckInvitationAudio, unduckInvitationAudio } from "@/lib/music/invitation-audio-manager";
 import styles from "./luxury-fashion-flagship.module.css";
 
 export type FashionFilmHandle = {
-  play: (opts?: { allowMutedFallback?: boolean }) => Promise<void>;
+  play: (opts?: { allowMutedFallback?: boolean; fromStart?: boolean }) => Promise<void>;
   pause: () => void;
 };
+
+function waitForFilmReady(el: HTMLVideoElement): Promise<void> {
+  if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return Promise.resolve();
+  return new Promise((resolve) => {
+    const finish = () => {
+      el.removeEventListener("loadeddata", finish);
+      el.removeEventListener("canplay", finish);
+      el.removeEventListener("error", finish);
+      resolve();
+    };
+    el.addEventListener("loadeddata", finish, { once: true });
+    el.addEventListener("canplay", finish, { once: true });
+    el.addEventListener("error", finish, { once: true });
+  });
+}
 
 export const FashionFilmScene = forwardRef<
   FashionFilmHandle,
@@ -42,6 +57,7 @@ export const FashionFilmScene = forwardRef<
   const videoRef = useRef<HTMLVideoElement>(null);
   const hitRef = useRef<HTMLButtonElement>(null);
   const mutedRef = useRef(false);
+  const startingRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState(false);
@@ -53,7 +69,6 @@ export const FashionFilmScene = forwardRef<
     if (ducked.current) return;
     ducked.current = true;
     duckInvitationAudio();
-    pauseAllInvitationAudio();
   }, []);
 
   const unduck = useCallback(() => {
@@ -63,12 +78,21 @@ export const FashionFilmScene = forwardRef<
   }, []);
 
   const play = useCallback(
-    async (opts?: { allowMutedFallback?: boolean }) => {
+    async (opts?: { allowMutedFallback?: boolean; fromStart?: boolean }) => {
       const el = videoRef.current;
       if (!el || !src) return;
       setError(false);
+      startingRef.current = true;
       duck();
       try {
+        if (opts?.fromStart) {
+          await waitForFilmReady(el);
+          try {
+            el.currentTime = 0;
+          } catch {
+            /* iOS can reject seek before ready */
+          }
+        }
         el.muted = mutedRef.current;
         await el.play();
         setPlaying(true);
@@ -80,6 +104,13 @@ export const FashionFilmScene = forwardRef<
             el.muted = true;
             mutedRef.current = true;
             setMuted(true);
+            if (opts.fromStart) {
+              try {
+                el.currentTime = 0;
+              } catch {
+                /* ignore */
+              }
+            }
             await el.play();
             setPlaying(true);
             setEntered(true);
@@ -91,6 +122,8 @@ export const FashionFilmScene = forwardRef<
         }
         unduck();
         hitRef.current?.focus();
+      } finally {
+        startingRef.current = false;
       }
     },
     [duck, onStarted, src, unduck]
@@ -105,8 +138,13 @@ export const FashionFilmScene = forwardRef<
   useImperativeHandle(ref, () => ({ play, pause }), [play, pause]);
 
   const toggle = useCallback(() => {
-    if (playing) pause();
-    else void play();
+    const el = videoRef.current;
+    if (playing) {
+      pause();
+      return;
+    }
+    const finished = Boolean(el?.ended) || (el != null && el.duration > 0 && el.currentTime >= el.duration - 0.05);
+    void play({ fromStart: finished, allowMutedFallback: true });
   }, [pause, play, playing]);
 
   useEffect(() => {
@@ -117,9 +155,18 @@ export const FashionFilmScene = forwardRef<
       unduck();
       onCompleted?.();
     };
+    const onNativePause = () => {
+      if (el.ended || el.seeking || startingRef.current) return;
+      setPlaying(false);
+      unduck();
+    };
     el.addEventListener("ended", onEnd);
-    return () => el.removeEventListener("ended", onEnd);
-  }, [onCompleted, unduck]);
+    el.addEventListener("pause", onNativePause);
+    return () => {
+      el.removeEventListener("ended", onEnd);
+      el.removeEventListener("pause", onNativePause);
+    };
+  }, [onCompleted, src, unduck]);
 
   useEffect(() => () => unduck(), [unduck]);
 
@@ -127,29 +174,19 @@ export const FashionFilmScene = forwardRef<
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
+  const playthrough = useRef(play);
+  playthrough.current = play;
+
   useLayoutEffect(() => {
     if (!active || !src) {
-      pause();
+      videoRef.current?.pause();
+      setPlaying(false);
+      unduck();
       return;
     }
     if (!playNonce) return;
-    const el = videoRef.current;
-    if (el) el.currentTime = 0;
-    void play({ allowMutedFallback: true });
-  }, [active, pause, play, playNonce, src]);
-
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting && !el.paused) pause();
-      },
-      { threshold: 0.15 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [pause]);
+    void playthrough.current({ allowMutedFallback: true, fromStart: true });
+  }, [active, playNonce, src, unduck]);
 
   if (!src) {
     return (
@@ -182,6 +219,8 @@ export const FashionFilmScene = forwardRef<
         playsInline
         preload={active ? "auto" : "metadata"}
         muted={muted}
+        controls={false}
+        disablePictureInPicture
         onError={() => setError(true)}
         aria-hidden
         tabIndex={-1}

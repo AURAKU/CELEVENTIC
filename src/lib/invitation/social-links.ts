@@ -78,6 +78,13 @@ export function followAriaLabel(houseName: string | undefined, platform: Invitat
   return `Follow ${name} on ${PLATFORM_LABEL[platform]}`;
 }
 
+function coerceHttpsHref(value: string): string {
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("//")) return `https:${value}`;
+  if (/^[a-z0-9.-]+\.[a-z]{2,}([/:?#]|$)/i.test(value)) return `https://${value}`;
+  return value;
+}
+
 export function safeSocialHttpUrl(
   raw?: string | null,
   platform?: InvitationSocialPlatformId
@@ -85,7 +92,7 @@ export function safeSocialHttpUrl(
   const value = raw?.trim();
   if (!value) return null;
   try {
-    const url = new URL(value);
+    const url = new URL(coerceHttpsHref(value));
     if (url.protocol !== "https:" && url.protocol !== "http:") return null;
     const allowed = platform ? PLATFORM_HOSTS[platform] : null;
     if (allowed && !allowed.has(url.hostname.toLowerCase())) return null;
