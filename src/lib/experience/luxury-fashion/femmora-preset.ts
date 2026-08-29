@@ -96,7 +96,7 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     filmChapterTitle: "The first look",
     filmChapterLede: "Experience Femmora",
     wishesTitle: "Compliments and guest wishes to the host of Femmora",
-    wishesEmpty: "This opening is waiting for its first compliment.",
+    wishesEmpty: "Thank You for your feedback.",
     markVariant: "letter",
     logoUrl: FEMMORA_LOGO_MARK,
     shareOgImageUrl: FEMMORA_SHARE_PLACECARD,

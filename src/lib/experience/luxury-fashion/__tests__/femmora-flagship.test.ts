@@ -111,7 +111,7 @@ test("guest-wishes nameplate and crest stay house-owned, never a shared Femmora 
   );
   assert.equal(
     FEMMORA_HOUSE_DEFAULTS.wishesEmpty,
-    "This opening is waiting for its first compliment."
+    "Thank You for your feedback."
   );
   assert.equal(FEMMORA_HOUSE_DEFAULTS.wishesEmpty.includes("boutique"), false);
   assert.equal(FEMMORA_HOUSE_DEFAULTS.wishesEmpty.includes("—"), false);
@@ -730,6 +730,8 @@ test("ENTER EXPERIENCE shows the invitation card and a motion iPhone vision stor
     "utf8"
   );
   assert.match(dressIcon, /createLucideIcon\("dress"/);
+  assert.match(dressIcon, /key: "dress-body"/);
+  assert.match(dressIcon, /key: "dress-neck"/);
   const index = readFileSync(
     "src/components/invitation/templates/luxury-fashion/fashion-editorial-index.tsx",
     "utf8"
