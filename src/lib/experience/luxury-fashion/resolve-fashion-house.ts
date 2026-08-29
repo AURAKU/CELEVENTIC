@@ -1,6 +1,7 @@
 import type { HubTabId } from "@/lib/experience/experience-types";
 import type { InvitationDesignConfig, InvitationEventData, InvitationMediaAsset } from "@/types/invitation-design";
 import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
+import { FEMMORA_HOUSE_DEFAULTS } from "./femmora-preset";
 import { fashionHouseLogoSrc, LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "./house-defaults";
 import { resolveFashionSocialLinks } from "./social";
 import type { FashionLookbookItem, FashionNavDestination, FashionOpeningStyle, LuxuryFashionHouseConfig } from "./types";
@@ -9,6 +10,10 @@ export { mergeFashionHouse };
 
 function trim(value: string | null | undefined): string {
   return value?.trim() ?? "";
+}
+
+function isFemmoraHouseName(name?: string | null): boolean {
+  return trim(name).toUpperCase().includes("FEMMORA");
 }
 
 function publicMediaUrl(url: string | null | undefined): string | null {
@@ -66,7 +71,12 @@ export function resolveFashionHouse(
   event?: InvitationEventData | null
 ): LuxuryFashionHouseConfig {
   const stored = design?.experience?.fashionHouse;
-  const merged = mergeFashionHouse(LUXURY_FASHION_HOUSE_DEFAULTS, stored);
+  const femmora =
+    isFemmoraHouseName(stored?.houseName) || isFemmoraHouseName(event?.hostName);
+  const merged = mergeFashionHouse(
+    femmora ? FEMMORA_HOUSE_DEFAULTS : LUXURY_FASHION_HOUSE_DEFAULTS,
+    stored
+  );
 
   const venue = collapseFashionVenue(
     trim(event?.venueName) || merged.locationName,
@@ -78,6 +88,11 @@ export function resolveFashionHouse(
   const mapsUrl = trim(event?.mapsLink) || merged.mapsUrl;
   const eventTitle = trim(event?.title) || merged.eventTitle;
   const houseName = trim(event?.hostName) || merged.houseName;
+  const isFemmora = femmora || isFemmoraHouseName(houseName);
+  // Published Femmora invites often persist visionStoreEnabled: false from a
+  // generic Studio merge. Localhost injects the preset (flag on). Restore the
+  // iPhone teaser without republishing; Vale / generic houses stay off.
+  const restoreFemmoraVision = isFemmora && stored?.visionStoreEnabled !== true;
 
   return {
     ...merged,
@@ -87,6 +102,16 @@ export function resolveFashionHouse(
     address,
     mapsUrl,
     startAtIso: trim(event?.startDateRaw) || merged.startAtIso,
+    visionStoreEnabled: isFemmora ? true : merged.visionStoreEnabled === true,
+    ...(restoreFemmoraVision
+      ? {
+          visionStoreKicker: FEMMORA_HOUSE_DEFAULTS.visionStoreKicker,
+          visionStoreTitle: FEMMORA_HOUSE_DEFAULTS.visionStoreTitle,
+          visionStoreLine: FEMMORA_HOUSE_DEFAULTS.visionStoreLine,
+          visionStoreDeliveryLine: FEMMORA_HOUSE_DEFAULTS.visionStoreDeliveryLine,
+          visionStoreSoonLabel: FEMMORA_HOUSE_DEFAULTS.visionStoreSoonLabel,
+        }
+      : {}),
   };
 }
 
@@ -217,5 +242,6 @@ export function resolveFashionFlyerCard(house: LuxuryFashionHouseConfig): string
 }
 
 export function resolveFashionVisionStore(house: LuxuryFashionHouseConfig): boolean {
-  return house.visionStoreEnabled === true;
+  if (house.visionStoreEnabled === true) return true;
+  return isFemmoraHouseName(house.houseName);
 }
