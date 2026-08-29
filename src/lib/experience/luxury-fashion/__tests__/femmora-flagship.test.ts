@@ -287,7 +287,9 @@ test("share, maps and calendar CTAs produce real destinations", () => {
   );
   assert.match(mapsPreview, /mapsPreviewHit/);
   assert.match(mapsPreview, /rel="noopener noreferrer"/);
-  assert.equal(/<a[\s\S]*<iframe/.test(mapsPreview), false);
+  assert.match(mapsPreview, /window\.open\(href/);
+  assert.match(mapsPreview, /<iframe[\s\S]*\{hit\}/);
+  assert.match(mapsPreview, /<div\s+className=\{`\$\{styles\.mapsPreview\}/);
   const shareScene = readFileSync(
     "src/components/invitation/templates/luxury-fashion/fashion-share-scene.tsx",
     "utf8"

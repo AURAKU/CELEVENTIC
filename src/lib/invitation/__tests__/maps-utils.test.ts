@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDirectionsUrl, normalizeExternalHref } from "@/lib/invitation/maps-utils";
+import {
+  buildDirectionsUrl,
+  normalizeExternalHref,
+  resolveMapsLocationHref,
+} from "@/lib/invitation/maps-utils";
 
 test("normalizeExternalHref never leaves Google Maps as a same-origin path", () => {
   assert.equal(
@@ -30,6 +34,29 @@ test("buildDirectionsUrl prefers an absolute maps link over a constructed destin
   );
   assert.equal(
     buildDirectionsUrl({ venueName: "FEMMORA GH", landmark: "Westlands" }),
-    "https://www.google.com/maps/dir/?api=1&destination=FEMMORA%20GH%2C%20Westlands"
+    "https://www.google.com/maps/search/?api=1&query=FEMMORA%20GH%2C%20Westlands"
+  );
+});
+
+test("resolveMapsLocationHref never ships a same-origin maps path on live", () => {
+  assert.equal(
+    resolveMapsLocationHref({
+      mapsUrl: "https://maps.google.com",
+      locationName: "FEMMORA GH",
+      address: "Westlands",
+    }),
+    "https://www.google.com/maps/search/?api=1&query=FEMMORA%20GH%2C%20Westlands"
+  );
+  assert.equal(
+    resolveMapsLocationHref({
+      mapsUrl: "FEMMORA GH, Westlands",
+      locationName: "FEMMORA GH",
+      address: "Westlands",
+    }),
+    "https://www.google.com/maps/search/?api=1&query=FEMMORA%20GH%2C%20Westlands"
+  );
+  assert.equal(
+    resolveMapsLocationHref({ mapsUrl: "javascript:alert(1)", locationName: "FEMMORA GH" }),
+    "https://www.google.com/maps/search/?api=1&query=FEMMORA%20GH"
   );
 });
