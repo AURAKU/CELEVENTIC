@@ -1107,7 +1107,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       emotionalTone: "quiet-luxury",
       visualLanguage: "ivory silk, champagne light, mocha type, editorial index, portrait film frame",
       revealMechanic: "silk unveil then boutique portal",
-      audioMood: "cinematic ambient unveiling",
+      audioMood: "quiet lounge jazz",
       outroType: "credits page",
     },
     experienceOverrides: {

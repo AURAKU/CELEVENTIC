@@ -20,18 +20,29 @@ export type { InvitationSocialLink, ResolvedInvitationSocialLink };
 /** Prefer Studio socialLinks[]; keep legacy handle/url fields as a fallback. */
 export function houseSocialLinkSource(house: LuxuryFashionHouseConfig): InvitationSocialLink[] {
   if (house.socialLinks?.length) return house.socialLinks;
-  const handle = house.instagramHandle?.trim();
-  const url = house.instagramUrl?.trim();
-  if (!handle && !url) return [];
-  return [
-    {
+  const links: InvitationSocialLink[] = [];
+  const instagramHandle = house.instagramHandle?.trim();
+  const instagramUrl = house.instagramUrl?.trim();
+  if (instagramHandle || instagramUrl) {
+    links.push({
       platform: "instagram",
-      handle,
-      url,
+      handle: instagramHandle,
+      url: instagramUrl,
       enabled: true,
       ctaLabel: house.socialCtaLabel,
-    },
-  ];
+    });
+  }
+  const tiktokHandle = house.tiktokHandle?.trim();
+  const tiktokUrl = house.tiktokUrl?.trim();
+  if (tiktokHandle || tiktokUrl) {
+    links.push({
+      platform: "tiktok",
+      handle: tiktokHandle,
+      url: tiktokUrl,
+      enabled: true,
+    });
+  }
+  return links;
 }
 
 export function resolveFashionSocialLinks(house: LuxuryFashionHouseConfig): ResolvedInvitationSocialLink[] {

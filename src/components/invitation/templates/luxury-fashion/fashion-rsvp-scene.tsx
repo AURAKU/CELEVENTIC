@@ -67,9 +67,8 @@ export function FashionRsvpScene({
           partyAllowance={partyAllowance}
           initialRsvpStatus={initialRsvpStatus}
           initialAttendingCount={initialAttendingCount}
-          variant="light"
+          variant="fashion"
           accentColor="#9A7A48"
-          label="Your reply"
           choiceLabels={{
             accepted: acceptedLabel,
             maybe: "Maybe",

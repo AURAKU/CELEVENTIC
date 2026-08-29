@@ -8,8 +8,12 @@ export {
   FEMMORA_HOUSE_DEFAULTS,
   FEMMORA_INSTAGRAM_HANDLE,
   FEMMORA_INSTAGRAM_URL,
-  FEMMORA_INVITATION_FLYER,
+  FEMMORA_TIKTOK_HANDLE,
+  FEMMORA_TIKTOK_URL,
   FEMMORA_LOGO_MARK,
+  FEMMORA_SHARE_PLACECARD,
+  FEMMORA_SHARE_PLACECARD_HEIGHT,
+  FEMMORA_SHARE_PLACECARD_WIDTH,
   FEMMORA_MAPS_URL,
   FEMMORA_SILK_BED,
   FEMMORA_START_ISO,
@@ -21,6 +25,8 @@ export {
 export {
   LUXURY_FASHION_HOUSE_DEFAULTS,
   LUXURY_FASHION_NAV_LABELS,
+  fashionHouseLogoSrc,
+  fashionHouseNameplate,
   mergeFashionHouse,
 } from "./house-defaults";
 export {
@@ -42,10 +48,10 @@ export {
 } from "./social";
 export {
   resolveFashionChapters,
-  resolveFashionExperienceFlyer,
   resolveFashionFilm,
   resolveFashionFlyerCard,
   resolveFashionHouse,
+  resolveFashionLede,
   resolveFashionLookbook,
   resolveFashionOpeningStyle,
   resolveFashionStoreStills,
@@ -71,6 +77,7 @@ export {
 export type { FashionChapterFlags, FashionChapterId } from "./resolve-fashion-house";
 export type { ResolvedInvitationSocialLink } from "./social";
 export type {
+  FashionLookbookItem,
   FashionNavDestination,
   FashionNavLabel,
   FashionNavStyle,

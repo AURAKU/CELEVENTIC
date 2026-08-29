@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ComponentProps } from "react";
 import { Check, HelpCircle, Minus, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ interface InvitationRsvpPanelProps {
   guestName?: string;
   accentColor?: string;
   textColor?: string;
-  variant?: "light" | "dark";
+  variant?: "light" | "dark" | "fashion";
   buttonStyle?: ButtonStyle | string;
   label?: string;
   /** Organiser-set heads this invitation admits. */
@@ -51,6 +51,18 @@ interface InvitationRsvpPanelProps {
   successCopy?: string;
 }
 
+function FashionRsvpField({
+  className,
+  ...props
+}: ComponentProps<"input">) {
+  return (
+    <input
+      {...props}
+      className={["ff-rsvp-field", className].filter(Boolean).join(" ")}
+    />
+  );
+}
+
 export function InvitationRsvpPanel({
   invitationId,
   guestId,
@@ -71,6 +83,7 @@ export function InvitationRsvpPanel({
 }: InvitationRsvpPanelProps) {
   const { t } = useLocale();
   const memorial = tone === "memorial";
+  const fashion = variant === "fashion";
   const allowance = Math.max(1, Math.trunc(partyAllowance || 1));
   const seededStatus = normalizeRsvpChoice(initialRsvpStatus);
   const seededAttending = clampAttendingCount(
@@ -158,7 +171,7 @@ export function InvitationRsvpPanel({
   }
 
   const btnClass = buttonStyle
-    ? styledInvitationButton(buttonStyle, variant, "px-4")
+    ? styledInvitationButton(buttonStyle, variant === "dark" ? "dark" : "light", "px-4")
     : variant === "dark"
       ? "border-white/30 text-white hover:bg-white/10"
       : "";
@@ -172,23 +185,41 @@ export function InvitationRsvpPanel({
     return (
       <div
         className={
-          memorial
-            ? "inv-rsvp-confirmed text-center"
-            : "text-center p-4 rounded-lg font-medium inv-fade-in space-y-1"
+          fashion
+            ? "ff-rsvp-confirmed"
+            : memorial
+              ? "inv-rsvp-confirmed text-center"
+              : "text-center p-4 rounded-lg font-medium inv-fade-in space-y-1"
         }
         style={
-          memorial
+          memorial || fashion
             ? undefined
             : { backgroundColor: `${accentColor}18`, color: accentColor }
         }
       >
-        <p className={memorial ? "inv-rsvp-confirmed-title" : undefined}>
+        <p
+          className={
+            fashion
+              ? "ff-rsvp-confirmed-title"
+              : memorial
+                ? "inv-rsvp-confirmed-title"
+                : undefined
+          }
+        >
           {successCopy?.trim()
             ? successCopy.trim()
             : `${t("rsvp.title")}: ${rsvpStatus.replace(/_/g, " ")}, ${t("rsvp.thank_you")}`}
         </p>
         {rsvpStatus === "ACCEPTED" && allowance > 1 ? (
-          <p className={memorial ? "inv-rsvp-confirmed-detail" : "text-sm font-normal opacity-90"}>
+          <p
+            className={
+              fashion
+                ? "ff-rsvp-confirmed-detail"
+                : memorial
+                  ? "inv-rsvp-confirmed-detail"
+                  : "text-sm font-normal opacity-90"
+            }
+          >
             {rsvpAcceptedThankYou(confirmedAttending, allowance)}
           </p>
         ) : null}
@@ -226,122 +257,212 @@ export function InvitationRsvpPanel({
     },
   ];
 
+  const nameField = fashion ? (
+    <FashionRsvpField
+      placeholder={t("rsvp.your_name")}
+      value={guestName}
+      onChange={(e) => {
+        if (!nameLocked) setGuestName(e.target.value);
+      }}
+      readOnly={nameLocked}
+      aria-readonly={nameLocked || undefined}
+      title={nameLocked ? t("rsvp.name_locked") : undefined}
+      className={nameLocked ? "ff-rsvp-field--locked" : undefined}
+      disabled={loading}
+    />
+  ) : (
+    <Input
+      placeholder={t("rsvp.your_name")}
+      value={guestName}
+      onChange={(e) => {
+        if (!nameLocked) setGuestName(e.target.value);
+      }}
+      readOnly={nameLocked}
+      aria-readonly={nameLocked || undefined}
+      title={nameLocked ? t("rsvp.name_locked") : undefined}
+      className={`${fieldClass}${nameLocked ? " cursor-default opacity-90" : ""}`}
+      disabled={loading}
+    />
+  );
+
+  const emailField = !showEmail ? null : fashion ? (
+    <FashionRsvpField
+      type="email"
+      placeholder={t("rsvp.your_email")}
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      disabled={loading}
+    />
+  ) : (
+    <Input
+      type="email"
+      placeholder={t("rsvp.your_email")}
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      className={fieldClass}
+      disabled={loading}
+    />
+  );
+
+  const phoneField = fashion ? (
+    <FashionRsvpField
+      type="tel"
+      placeholder={t("rsvp.your_phone")}
+      value={phone}
+      onChange={(e) => setPhone(e.target.value)}
+      disabled={loading}
+    />
+  ) : (
+    <Input
+      type="tel"
+      placeholder={t("rsvp.your_phone")}
+      value={phone}
+      onChange={(e) => setPhone(e.target.value)}
+      className={fieldClass}
+      disabled={loading}
+    />
+  );
+
   return (
-    <div className={memorial ? "inv-rsvp-panel space-y-4" : "space-y-3"}>
+    <div
+      className={
+        fashion ? "ff-rsvp-panel" : memorial ? "inv-rsvp-panel space-y-4" : "space-y-3"
+      }
+    >
       {label ? (
-        <p className="text-sm font-medium" style={{ color: accentColor }}>
+        <p
+          className={fashion ? "ff-rsvp-label" : "text-sm font-medium"}
+          style={fashion ? undefined : { color: accentColor }}
+        >
           {label}
         </p>
       ) : null}
       {capacityCopy ? (
         <p
           className={
-            memorial
-              ? "inv-rsvp-capacity"
-              : "text-xs font-semibold tracking-wide"
+            fashion
+              ? "ff-rsvp-capacity"
+              : memorial
+                ? "inv-rsvp-capacity"
+                : "text-xs font-semibold tracking-wide"
           }
-          style={memorial ? undefined : { color: accentColor }}
+          style={memorial || fashion ? undefined : { color: accentColor }}
           data-testid="rsvp-capacity"
         >
           {capacityCopy}
         </p>
       ) : null}
-      <div className="space-y-2">
-        <Input
-          placeholder={t("rsvp.your_name")}
-          value={guestName}
-          onChange={(e) => {
-            if (!nameLocked) setGuestName(e.target.value);
-          }}
-          readOnly={nameLocked}
-          aria-readonly={nameLocked || undefined}
-          title={nameLocked ? t("rsvp.name_locked") : undefined}
-          className={`${fieldClass}${nameLocked ? " cursor-default opacity-90" : ""}`}
-          disabled={loading}
-        />
-        {showEmail ? (
-          <Input
-            type="email"
-            placeholder={t("rsvp.your_email")}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={fieldClass}
-            disabled={loading}
-          />
-        ) : null}
-        <Input
-          type="tel"
-          placeholder={t("rsvp.your_phone")}
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className={fieldClass}
-          disabled={loading}
-        />
+      <div className={fashion ? "ff-rsvp-fields" : "space-y-2"}>
+        {nameField}
+        {emailField}
+        {phoneField}
         {allowance > 1 ? (
           <div
             className={
-              memorial
-                ? "inv-rsvp-party"
-                : `rounded-lg border px-3 py-3 space-y-2 ${
-                    variant === "dark"
-                      ? "border-white/20 bg-white/5"
-                      : "border-slate-200 bg-slate-50/80"
-                  }`
+              fashion
+                ? "ff-rsvp-party"
+                : memorial
+                  ? "inv-rsvp-party"
+                  : `rounded-lg border px-3 py-3 space-y-2 ${
+                      variant === "dark"
+                        ? "border-white/20 bg-white/5"
+                        : "border-slate-200 bg-slate-50/80"
+                    }`
             }
             data-testid="rsvp-party-slots"
           >
             <p
               className={
-                memorial
-                  ? "inv-rsvp-party-label"
-                  : "text-xs font-semibold uppercase tracking-wide"
+                fashion
+                  ? "ff-rsvp-party-label"
+                  : memorial
+                    ? "inv-rsvp-party-label"
+                    : "text-xs font-semibold uppercase tracking-wide"
               }
-              style={memorial ? undefined : { color: accentColor }}
+              style={memorial || fashion ? undefined : { color: accentColor }}
             >
               Party seats
             </p>
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                className={memorial ? "inv-rsvp-party-stepper" : btnClass}
-                disabled={loading || attendingCount <= 1}
-                aria-label="Fewer attending"
-                onClick={() => setAttendingCount((n) => clampAttendingCount(n - 1, allowance))}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <div className="flex-1 text-center">
+            <div className={fashion ? "ff-rsvp-party-row" : "flex items-center gap-3"}>
+              {fashion ? (
+                <button
+                  type="button"
+                  className="ff-rsvp-party-stepper"
+                  disabled={loading || attendingCount <= 1}
+                  aria-label="Fewer attending"
+                  onClick={() => setAttendingCount((n) => clampAttendingCount(n - 1, allowance))}
+                >
+                  <span aria-hidden>−</span>
+                </button>
+              ) : (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className={memorial ? "inv-rsvp-party-stepper" : btnClass}
+                  disabled={loading || attendingCount <= 1}
+                  aria-label="Fewer attending"
+                  onClick={() => setAttendingCount((n) => clampAttendingCount(n - 1, allowance))}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+              )}
+              <div className={fashion ? "ff-rsvp-party-copy" : "flex-1 text-center"}>
                 <p
                   className={
-                    memorial
-                      ? "inv-rsvp-party-count"
-                      : "text-lg font-semibold tabular-nums"
+                    fashion
+                      ? "ff-rsvp-party-count"
+                      : memorial
+                        ? "inv-rsvp-party-count"
+                        : "text-lg font-semibold tabular-nums"
                   }
                   data-testid="rsvp-attending-count"
                 >
                   {slotGuidance.confirmed} / {allowance}
                 </p>
-                <p className={memorial ? "inv-rsvp-party-summary" : "text-xs opacity-80"}>
+                <p
+                  className={
+                    fashion
+                      ? "ff-rsvp-party-summary"
+                      : memorial
+                        ? "inv-rsvp-party-summary"
+                        : "text-xs opacity-80"
+                  }
+                >
                   {slotGuidance.summary}
                 </p>
               </div>
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                className={memorial ? "inv-rsvp-party-stepper" : btnClass}
-                disabled={loading || attendingCount >= allowance}
-                aria-label="More attending"
-                onClick={() => setAttendingCount((n) => clampAttendingCount(n + 1, allowance))}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              {fashion ? (
+                <button
+                  type="button"
+                  className="ff-rsvp-party-stepper"
+                  disabled={loading || attendingCount >= allowance}
+                  aria-label="More attending"
+                  onClick={() => setAttendingCount((n) => clampAttendingCount(n + 1, allowance))}
+                >
+                  <span aria-hidden>+</span>
+                </button>
+              ) : (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className={memorial ? "inv-rsvp-party-stepper" : btnClass}
+                  disabled={loading || attendingCount >= allowance}
+                  aria-label="More attending"
+                  onClick={() => setAttendingCount((n) => clampAttendingCount(n + 1, allowance))}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             <p
               className={
-                memorial ? "inv-rsvp-party-detail" : "text-xs text-center opacity-80"
+                fashion
+                  ? "ff-rsvp-party-detail"
+                  : memorial
+                    ? "inv-rsvp-party-detail"
+                    : "text-xs text-center opacity-80"
               }
               data-testid="rsvp-remaining-slots"
             >
@@ -350,10 +471,30 @@ export function InvitationRsvpPanel({
           </div>
         ) : null}
       </div>
-      {error && (
-        <p className={memorial ? "inv-rsvp-error" : "text-sm text-red-500"}>{error}</p>
-      )}
-      {memorial ? (
+      {error ? (
+        <p
+          className={
+            fashion ? "ff-rsvp-error" : memorial ? "inv-rsvp-error" : "text-sm text-red-500"
+          }
+        >
+          {error}
+        </p>
+      ) : null}
+      {fashion ? (
+        <div className="ff-rsvp-choices" role="group" aria-label="Attendance reply">
+          {choices.map((choice) => (
+            <button
+              key={choice.id}
+              type="button"
+              className={`ff-rsvp-choice ff-rsvp-choice--${choice.tone}`}
+              onClick={() => void handleRsvp(choice.id)}
+              disabled={loading}
+            >
+              {choice.label}
+            </button>
+          ))}
+        </div>
+      ) : memorial ? (
         <div
           className="inv-rsvp-choices"
           role="group"

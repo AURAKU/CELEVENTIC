@@ -146,6 +146,9 @@ test.describe("Femmora luxury flagship opening", () => {
     const page = await context.newPage();
     await page.goto(runtime, { waitUntil: "domcontentloaded" });
     await dismissCookieBanner(page);
+    await expect(page.getByText("Soft Opening", { exact: true })).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByText(/^unveiled$/i)).toHaveCount(0);
+    await expect(page.getByText(/tap to open/i).first()).toBeVisible();
     await shot(page, "A-mobile-whisper");
 
     const enter = page.getByRole("button", { name: /enter the house/i });
@@ -188,18 +191,28 @@ test.describe("Femmora luxury flagship opening", () => {
       (el as HTMLElement).scrollTop = 0;
     });
     await expect(page.getByTestId("fashion-details").getByRole("heading", { level: 1 })).toHaveText(/femmora/i);
-    await expect(page.getByTestId("fashion-film-scene")).toBeVisible();
+    await expect(page.getByTestId("fashion-store-preview")).toHaveAttribute("data-open", "false");
+    await expect(page.getByTestId("fashion-film-scene")).toBeHidden();
     await expect(page.getByTestId("fashion-details").getByRole("button", { name: /enter experience/i })).toBeVisible();
     await shot(page, "G-mobile-details");
 
-    await page.getByTestId("fashion-film-scene").scrollIntoViewIfNeeded();
+    await page.getByTestId("fashion-store-preview-cta").click();
+    await expect(page.getByTestId("fashion-store-preview")).toHaveAttribute("data-open", "true");
     await expect(page.getByTestId("fashion-film-scene")).toBeVisible();
+    await page.getByTestId("fashion-film-scene").scrollIntoViewIfNeeded();
     await shot(page, "F-mobile-store-film");
     const film = page.getByTestId("fashion-film-scene");
-    await film.getByRole("button", { name: /step inside|play/i }).first().click();
-    await expect(film.getByRole("button", { name: /mute|unmute/i })).toBeVisible();
-    await film.getByRole("button", { name: /mute|unmute/i }).click();
-    await page.getByRole("button", { name: /continue to the invitation/i }).click();
+    await expect(film.getByTestId("fashion-film-play")).toHaveCount(0);
+    await expect(film.getByTestId("fashion-film-chrome")).toHaveCount(0);
+    await expect(film.getByTestId("fashion-film-mute")).toHaveCount(0);
+    await expect(film.getByTestId("fashion-film-replay")).toHaveCount(0);
+    await expect(film.getByTestId("fashion-film-fullscreen")).toHaveCount(0);
+    await expect(film.getByRole("button", { name: /step inside/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /continue to the invitation/i })).toHaveCount(0);
+    await expect(film.getByTestId("fashion-film-toggle")).toBeVisible();
+    await film.getByTestId("fashion-film-toggle").click();
+    await page.getByTestId("fashion-nav").getByRole("button", { name: /view collection/i }).click();
+    await expect(page.getByTestId("fashion-store-preview")).toHaveAttribute("data-open", "false");
 
     const lookbook = page.getByTestId("fashion-lookbook").or(page.getByTestId("fashion-lookbook-empty"));
     await lookbook.scrollIntoViewIfNeeded();
@@ -212,7 +225,7 @@ test.describe("Femmora luxury flagship opening", () => {
 
     const maps = page.getByTestId("fashion-maps-cta");
     await expect(maps).toHaveAttribute("href", /google\.com\/maps/);
-    await expect(maps).toContainText(/view on google maps/i);
+    await expect(maps).toBeVisible();
     await page.getByTestId("fashion-copy-location").click();
     await expect(page.getByTestId("fashion-copy-location")).toContainText(/copied|copy/i);
     await expect(page.getByTestId("fashion-share-location")).toBeVisible();
@@ -245,9 +258,25 @@ test.describe("Femmora luxury flagship opening", () => {
     await expect(page.getByTestId("fashion-social-cta")).toHaveAttribute("target", "_blank");
     await expect(page.getByTestId("fashion-social-cta")).toHaveAttribute("rel", /noopener/);
     await expect(page.getByTestId("fashion-social-handle")).toContainText("@femmora_gh");
+    await expect(page.getByTestId("fashion-social-handle-tiktok")).toHaveAttribute(
+      "href",
+      "https://www.tiktok.com/@femmora.woman"
+    );
+    await expect(page.getByTestId("fashion-social-handle-tiktok")).toContainText("@femmora.woman");
+    await expect(page.getByTestId("fashion-social-icon-tiktok")).toHaveAttribute(
+      "href",
+      "https://www.tiktok.com/@femmora.woman"
+    );
+    await expect(page.getByTestId("fashion-social-cta-tiktok")).toHaveAttribute(
+      "href",
+      "https://www.tiktok.com/@femmora.woman"
+    );
+    await expect(page.getByTestId("fashion-social-cta-tiktok")).toHaveAttribute("target", "_blank");
+    await expect(page.getByTestId("fashion-social-cta-tiktok")).toHaveAttribute("rel", /noopener/);
     await page.getByTestId("fashion-social-cta").focus();
     await expect(page.getByTestId("fashion-social-cta")).toBeFocused();
     await expect(page.getByRole("link", { name: /follow femmora on instagram/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /follow femmora on tiktok/i }).first()).toBeVisible();
 
     await page.getByTestId("fashion-copy-link").click();
     await expect(page.getByTestId("fashion-copy-link")).toContainText(/copied|copy/i);
@@ -255,13 +284,9 @@ test.describe("Femmora luxury flagship opening", () => {
     await page.getByTestId("fashion-finale").scrollIntoViewIfNeeded();
     await expect(page.getByTestId("fashion-finale")).toContainText(/can't wait to welcome you|exclusive invitation/i);
     await expect(page.getByTestId("fashion-replay-unveiling")).toBeVisible();
-    await expect(page.getByTestId("fashion-finale-actions").getByRole("button", { name: /replay store film/i })).toBeVisible();
-    await expect(page.getByTestId("fashion-social-finale")).toContainText(/follow/i);
-    await expect(page.getByTestId("fashion-social-finale")).toContainText("@femmora_gh");
-    await expect(page.getByTestId("fashion-social-finale-instagram")).toHaveAttribute(
-      "href",
-      "https://www.instagram.com/femmora_gh/"
-    );
+    await expect(page.getByTestId("fashion-finale-actions").getByRole("button", { name: /replay store film/i })).toHaveCount(0);
+    await expect(page.getByTestId("fashion-social")).toContainText("@femmora_gh");
+    await expect(page.getByTestId("fashion-social")).toContainText("@femmora.woman");
     await shot(page, "J-mobile-finale");
 
     const scroller = await inviteScroller(page);
@@ -303,6 +328,8 @@ test.describe("Femmora luxury flagship opening", () => {
     const page = await context.newPage();
     await page.goto(runtime, { waitUntil: "domcontentloaded" });
     await dismissCookieBanner(page);
+    await expect(page.getByText("Soft Opening", { exact: true })).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByText(/^unveiled$/i)).toHaveCount(0);
     await shot(page, "A-desktop-whisper");
     const enter = page.getByRole("button", { name: /enter the house/i });
     await expect(enter).toBeVisible({ timeout: 45_000 });
@@ -390,8 +417,14 @@ test.describe("Femmora luxury flagship opening", () => {
     const page = await context.newPage();
     await page.goto(runtime, { waitUntil: "domcontentloaded" });
     await completeOpening(page);
-    await page.getByTestId("fashion-film-scene").scrollIntoViewIfNeeded();
-    await page.getByRole("button", { name: /continue to the invitation/i }).click();
+    await page.getByTestId("fashion-store-preview-cta").click();
+    await expect(page.getByTestId("fashion-film-scene")).toBeVisible();
+    await expect(page.getByTestId("fashion-film-play")).toHaveCount(0);
+    await expect(page.getByTestId("fashion-film-chrome")).toHaveCount(0);
+    await expect(page.getByTestId("fashion-film-mute")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /step inside/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /continue to the invitation/i })).toHaveCount(0);
+    await page.getByTestId("fashion-nav").getByRole("button", { name: /view collection/i }).click();
     await expect(page.getByTestId("fashion-lookbook").or(page.getByTestId("fashion-lookbook-empty"))).toBeVisible();
     await context.close();
   });
@@ -403,10 +436,11 @@ test.describe("Femmora luxury flagship opening", () => {
     await page.route("**/templates/femmora/store-preview.mp4**", (route) => route.abort());
     await page.goto(runtime, { waitUntil: "domcontentloaded" });
     await completeOpening(page);
-    await page.getByTestId("fashion-film-scene").scrollIntoViewIfNeeded();
-    await page.getByRole("button", { name: /retry film|step inside|play/i }).first().click();
-    await expect(page.getByText(/could not load|retry or continue/i)).toBeVisible({ timeout: 8_000 });
-    await page.getByRole("button", { name: /continue to the invitation/i }).click();
+    await page.getByTestId("fashion-store-preview-cta").click();
+    await expect(page.getByTestId("fashion-film-scene")).toBeVisible();
+    await expect(page.getByText(/could not load/i)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByRole("button", { name: /continue to the invitation/i })).toHaveCount(0);
+    await page.getByTestId("fashion-nav").getByRole("button", { name: /view collection/i }).click();
     await assertScrollUnlocked(page);
     await expect(page.getByTestId("fashion-lookbook").or(page.getByTestId("fashion-lookbook-empty"))).toBeVisible();
     await context.close();

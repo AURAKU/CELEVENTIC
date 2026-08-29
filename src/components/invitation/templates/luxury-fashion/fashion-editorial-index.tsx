@@ -45,6 +45,8 @@ export function FashionEditorialIndex({
             type="button"
             className={styles.tag}
             aria-current={current === item.id ? "true" : undefined}
+            aria-expanded={item.id === "collection" ? current === "collection" : undefined}
+            aria-controls={item.id === "collection" ? "fashion-collection" : undefined}
             onClick={() => onSelect(item.id)}
           >
             <Icon size={16} strokeWidth={1.25} aria-hidden />

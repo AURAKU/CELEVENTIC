@@ -7,7 +7,12 @@ import {
   socialLinkHasDestination,
   type ResolvedInvitationSocialLink,
 } from "@/lib/experience/luxury-fashion";
+import type { InvitationSocialPlatformId } from "@/lib/invitation/social-links";
 import styles from "./luxury-fashion-flagship.module.css";
+
+function socialTestId(base: string, platform: InvitationSocialPlatformId): string {
+  return platform === "instagram" ? base : `${base}-${platform}`;
+}
 
 function FashionSocialAnchor({
   href,
@@ -69,14 +74,18 @@ export function FashionSocialScene({
               <FashionSocialAnchor
                 href={destination}
                 className={styles.socialGlyph}
-                testId={`fashion-social-icon${link.platform === "instagram" ? "" : `-${link.platform}`}`}
+                testId={socialTestId("fashion-social-icon", link.platform)}
                 ariaLabel={label}
                 onOpen={() => onOpen?.(link.platform)}
               >
                 <InvitationSocialPlatformIcon platform={link.platform} size={28} />
               </FashionSocialAnchor>
             ) : (
-              <span className={styles.socialGlyph} data-testid="fashion-social-icon" aria-hidden>
+              <span
+                className={styles.socialGlyph}
+                data-testid={socialTestId("fashion-social-icon", link.platform)}
+                aria-hidden
+              >
                 <InvitationSocialPlatformIcon platform={link.platform} size={28} />
               </span>
             )}
@@ -85,13 +94,16 @@ export function FashionSocialScene({
                 <FashionSocialAnchor
                   href={destination}
                   className={styles.socialHandle}
-                  testId="fashion-social-handle"
+                  testId={socialTestId("fashion-social-handle", link.platform)}
                   onOpen={() => onOpen?.(link.platform)}
                 >
                   {link.displayHandle}
                 </FashionSocialAnchor>
               ) : (
-                <p className={styles.socialHandle} data-testid="fashion-social-handle">
+                <p
+                  className={styles.socialHandle}
+                  data-testid={socialTestId("fashion-social-handle", link.platform)}
+                >
                   {link.displayHandle}
                 </p>
               )
@@ -100,7 +112,7 @@ export function FashionSocialScene({
               <FashionSocialAnchor
                 href={destination}
                 className={`${styles.cta} ${styles.ctaSolid} ${styles.socialCta}`}
-                testId="fashion-social-cta"
+                testId={socialTestId("fashion-social-cta", link.platform)}
                 ariaLabel={label}
                 onOpen={() => onOpen?.(link.platform)}
               >
@@ -133,7 +145,7 @@ export function FashionSocialFinaleStrip({
         const body = (
           <>
             <span className={styles.socialFinaleIcon}>
-              <InvitationSocialPlatformIcon platform={link.platform} size={16} />
+              <InvitationSocialPlatformIcon platform={link.platform} size={24} />
             </span>
             {link.displayHandle ? <span>{link.displayHandle}</span> : null}
           </>

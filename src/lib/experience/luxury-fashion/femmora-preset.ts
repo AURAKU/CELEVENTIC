@@ -19,31 +19,37 @@ export const FEMMORA_SILK_BED = "/templates/femmora/silk-bed.jpg";
 export const FEMMORA_INVITATION_FLYER = "/templates/femmora/invitation-flyer.jpg";
 export const FEMMORA_FLYER_CARD = FEMMORA_INVITATION_FLYER;
 export const FEMMORA_LOGO_MARK = "/templates/femmora/logo-mark.png";
+/** WhatsApp / iMessage / Snapchat link preview — physical card on silk, never hub wallpaper. */
+export const FEMMORA_SHARE_PLACECARD = "/templates/femmora/share-placecard.jpg";
+export const FEMMORA_SHARE_PLACECARD_WIDTH = 1600;
+export const FEMMORA_SHARE_PLACECARD_HEIGHT = 1234;
 export const FEMMORA_STORE_FILM = "/templates/femmora/store-preview.mp4";
 export const FEMMORA_STORE_POSTER = "/templates/femmora/store-poster.jpg";
 export const FEMMORA_INSTAGRAM_HANDLE = "@femmora_gh";
 export const FEMMORA_INSTAGRAM_URL = "https://www.instagram.com/femmora_gh/";
+export const FEMMORA_TIKTOK_HANDLE = "@femmora.woman";
+export const FEMMORA_TIKTOK_URL = "https://www.tiktok.com/@femmora.woman";
 
 export const FEMMORA_DEFAULT_LOOKS: FashionLookbookItem[] = [
   {
-    id: "femmora-look-01",
-    url: "/templates/femmora/look-01.jpg",
+    id: "femmora-look-crystal-knit",
+    url: "/templates/femmora/look-crystal-knit.jpg",
     type: "image",
-    caption: "Atelier 01",
+    caption: "Crystal knit",
     collectionName: "The Collection",
   },
   {
-    id: "femmora-look-02",
-    url: "/templates/femmora/look-02.jpg",
+    id: "femmora-look-floral-mini",
+    url: "/templates/femmora/look-floral-mini.jpg",
     type: "image",
-    caption: "Atelier 02",
+    caption: "Floral mini",
     collectionName: "The Collection",
   },
   {
-    id: "femmora-look-03",
-    url: "/templates/femmora/look-03.jpg",
+    id: "femmora-look-pearl-gown",
+    url: "/templates/femmora/look-pearl-gown.jpg",
     type: "image",
-    caption: "Atelier 03",
+    caption: "Pearl gown",
     collectionName: "The Collection",
   },
 ];
@@ -58,7 +64,7 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     whisperLine: "A private first look",
     whisperEyebrow: "FEMMORA",
     whisperScript: "Soft Opening",
-    hubLede: "An invitation to experience the world of Femmora.",
+    hubLede: "",
     portalWelcome: "STEP INSIDE FEMMORA",
     portalPrompt: "The house is waiting",
     rsvpHeading: "Will we see you at Femmora?",
@@ -86,10 +92,11 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     filmChapterLede: "Experience Femmora",
     markVariant: "letter",
     logoUrl: FEMMORA_LOGO_MARK,
+    shareOgImageUrl: FEMMORA_SHARE_PLACECARD,
+    lookbookKicker: "First looks",
     lookbookItems: FEMMORA_DEFAULT_LOOKS,
     silkBedUrl: null,
     flyerCardUrl: FEMMORA_FLYER_CARD,
-    experienceFlyerUrl: FEMMORA_INVITATION_FLYER,
     startAtIso: FEMMORA_START_ISO,
     endAtIso: FEMMORA_END_ISO,
     filmUrl: FEMMORA_STORE_FILM,
@@ -102,6 +109,8 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     showSocialSection: true,
     instagramHandle: FEMMORA_INSTAGRAM_HANDLE,
     instagramUrl: FEMMORA_INSTAGRAM_URL,
+    tiktokHandle: FEMMORA_TIKTOK_HANDLE,
+    tiktokUrl: FEMMORA_TIKTOK_URL,
     socialIntroText: "Discover new arrivals, behind-the-scenes moments, and more from the world of Femmora.",
     socialTitle: "Follow Femmora",
     socialCtaLabel: "Follow on Instagram",
@@ -111,6 +120,12 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
         platform: "instagram",
         handle: FEMMORA_INSTAGRAM_HANDLE,
         url: FEMMORA_INSTAGRAM_URL,
+        enabled: true,
+      },
+      {
+        platform: "tiktok",
+        handle: FEMMORA_TIKTOK_HANDLE,
+        url: FEMMORA_TIKTOK_URL,
         enabled: true,
       },
     ],

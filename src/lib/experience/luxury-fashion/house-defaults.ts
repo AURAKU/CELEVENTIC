@@ -12,6 +12,8 @@ export function mergeFashionHouse(
     lookbookItems: override.lookbookItems !== undefined ? override.lookbookItems : base.lookbookItems,
     silkBedUrl: override.silkBedUrl === undefined ? base.silkBedUrl : override.silkBedUrl,
     logoUrl: override.logoUrl === undefined ? base.logoUrl : override.logoUrl,
+    shareOgImageUrl:
+      override.shareOgImageUrl === undefined ? base.shareOgImageUrl : override.shareOgImageUrl,
     filmUrl: override.filmUrl === undefined ? base.filmUrl : override.filmUrl,
     filmPosterUrl: override.filmPosterUrl === undefined ? base.filmPosterUrl : override.filmPosterUrl,
     teaserClipUrl: override.teaserClipUrl === undefined ? base.teaserClipUrl : override.teaserClipUrl,
@@ -35,7 +37,6 @@ export const LUXURY_FASHION_NAV_LABELS: FashionNavLabel[] = [
   { id: "collection", label: "View Collection" },
   { id: "rsvp", label: "RSVP" },
   { id: "location", label: "Location" },
-  { id: "event-details", label: "Event Details" },
   { id: "social", label: "Stay Connected" },
 ];
 
@@ -48,7 +49,7 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   teaserLine: "A quiet house. A first light.",
   whisperLine: "A private first look",
   whisperEyebrow: "THE HOUSE",
-  whisperScript: "UNVEILED",
+  whisperScript: "Flagship Opening",
   hubLede: "An invitation to experience the house.",
   swipeHint: "Swipe to explore",
   portalWelcome: "Step inside",
@@ -86,8 +87,10 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   countdownAfterLabel: "The doors are open",
   finaleMessage: "We'll see you inside.",
   lookbookTitle: "The Collection",
+  lookbookKicker: "First looks",
   lookbookItems: [] as FashionLookbookItem[],
   silkBedUrl: null,
+  shareOgImageUrl: null,
   flyerCardUrl: null,
   experienceFlyerUrl: null,
   startAtIso: "",
@@ -99,6 +102,8 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
   showSocialSection: false,
   instagramHandle: "",
   instagramUrl: "",
+  tiktokHandle: "",
+  tiktokUrl: "",
   socialIntroText: "",
   socialTitle: "Stay Connected",
   socialCtaLabel: "Follow on Instagram",
@@ -115,3 +120,40 @@ export const LUXURY_FASHION_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = {
     social: true,
   },
 };
+
+const FEMMORA_ASSET_MARKER = "/templates/femmora/";
+
+/** Guest-wishes kicker — each house’s uppercase nameplate, not a shared salon label. */
+export function fashionHouseNameplate(houseName?: string | null): string {
+  const resolved = houseName?.trim() || LUXURY_FASHION_HOUSE_DEFAULTS.houseName;
+  return resolved.toUpperCase();
+}
+
+type FashionHouseLogoInput =
+  | string
+  | {
+      logoUrl?: string | null;
+      houseName?: string | null;
+    }
+  | null
+  | undefined;
+
+/**
+ * Guest-wishes crest — only that house’s own `logoUrl`.
+ * Femmora’s PNG is used only for a Femmora house; Vale never inherits it.
+ * Empty/missing never falls back to Femmora’s mark.
+ */
+export function fashionHouseLogoSrc(
+  houseOrLogo?: FashionHouseLogoInput,
+  houseName?: string | null
+): string | null {
+  const fromHouse = houseOrLogo !== null && typeof houseOrLogo === "object";
+  const src = (fromHouse ? houseOrLogo.logoUrl : houseOrLogo)?.trim() ?? "";
+  if (!src) return null;
+
+  const name = (fromHouse ? houseOrLogo.houseName : houseName)?.trim() ?? "";
+  const isFemmoraAsset = src.includes(FEMMORA_ASSET_MARKER);
+  const isFemmoraHouse = name.toUpperCase().includes("FEMMORA");
+  if (isFemmoraAsset && name.length > 0 && !isFemmoraHouse) return null;
+  return src;
+}

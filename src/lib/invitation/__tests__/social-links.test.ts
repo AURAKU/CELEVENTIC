@@ -58,3 +58,19 @@ test("later platforms can be added without showing empty ones", () => {
   ]);
   assert.equal(links.map((item) => item.platform).join(","), "instagram,tiktok");
 });
+
+test("TikTok canonical @ URLs stay on tiktok.com", () => {
+  const [link] = resolveInvitationSocialLinks([
+    {
+      platform: "tiktok",
+      handle: "@femmora.woman",
+      url: "https://www.tiktok.com/@femmora.woman",
+      enabled: true,
+    },
+  ]);
+  assert.equal(link?.displayHandle, "@femmora.woman");
+  assert.equal(link?.url, "https://www.tiktok.com/@femmora.woman");
+  assert.equal(socialLinkHasDestination(link!), true);
+  assert.equal(followAriaLabel("FEMMORA", "tiktok"), "Follow FEMMORA on TikTok");
+  assert.equal(safeSocialHttpUrl("https://example.com/@femmora.woman", "tiktok"), null);
+});

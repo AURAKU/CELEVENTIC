@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   images: {
     // Logo uses quality={100}; declare allowed qualities for Next 15/16
-    qualities: [75, 100],
+    qualities: [75, 90, 95, 100],
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
       { protocol: "https", hostname: "plus.unsplash.com", pathname: "/**" },

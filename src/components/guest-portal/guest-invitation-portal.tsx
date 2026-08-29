@@ -791,6 +791,19 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               accentColor={accent}
               memoryVaultEnabled={props.memoryVaultEnabled}
               suppressMemoryHint={templateOwnsJourney}
+              layout={props.design.layout}
+              colors={props.design.colors}
+              houseName={
+                props.design.experience?.fashionHouse?.houseName ??
+                experience?.fashionHouse?.houseName
+              }
+              houseLogoUrl={
+                props.design.experience?.fashionHouse?.logoUrl ??
+                experience?.fashionHouse?.logoUrl
+              }
+              fashionHouse={
+                props.design.experience?.fashionHouse ?? experience?.fashionHouse
+              }
             />
           </PortalSection>
 
