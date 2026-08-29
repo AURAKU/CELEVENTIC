@@ -118,6 +118,17 @@ export function TemplateStudioMediaPanel({
   const pageBgUrl = pageBg.backgroundVideoUrl ?? pageBg.backgroundImageUrl;
   const entrance = getMediaEntranceForLayout(design.layout ?? "classic-gold");
   const entranceLabel = MEDIA_ENTRANCE_OPTIONS.find((o) => o.id === entrance)?.label ?? entrance;
+  const isFashion = design.layout === "luxury-fashion-flagship";
+  const heroTitle = isFashion ? "Store preview film" : "Invitation hero photo / video";
+  const heroHint = isFashion
+    ? "The First Look film guests play from Store Preview. Upload a clip or a still. Organizers and admins can replace this on the live invitation at any time."
+    : "The arched portrait at the top of the invitation, organizers and admins set this independently of the photo gallery.";
+  const heroButton = isFashion ? "Upload store still" : "Upload invitation hero";
+  const heroVideoLabel = isFashion ? "Upload store preview video" : "Hero video";
+  const galleryTitle = isFashion ? "Collection looks" : "Swipe gallery";
+  const galleryDescription = isFashion
+    ? "Looks for View Collection and the vision-store reel. These replace the template’s bundled looks on the live invitation."
+    : "Photo and video slides for the invitation gallery only, separate from the invitation hero portrait and welcome photo above.";
   const [error, setError] = useState("");
   const experience = design.experience ?? {};
 
@@ -155,7 +166,18 @@ export function TemplateStudioMediaPanel({
   }
 
   function onHeroVideoUploaded(result: UploadedVideoResult) {
-    if (result.processedMp4Url) setHero(result.processedMp4Url, "video");
+    if (result.processedMp4Url) {
+      onDesignChange(
+        syncDesignMediaHero(design, result.processedMp4Url, "video", {
+          posterUrl: result.posterUrl,
+          thumbnailUrl: result.thumbnailUrl,
+          name: design.layout === "luxury-fashion-flagship" ? "Store preview film" : "Hero video",
+        })
+      );
+      if (galleryUrls.includes(result.processedMp4Url)) {
+        onGalleryChange(galleryUrls.filter((existing) => existing !== result.processedMp4Url));
+      }
+    }
   }
 
   function clearPageBackground() {
@@ -363,8 +385,8 @@ export function TemplateStudioMediaPanel({
 
       <MediaSection
         icon={ImageIcon}
-        title="Invitation hero photo / video"
-        hint="The arched portrait at the top of the invitation, organizers and admins set this independently of the photo gallery."
+        title={heroTitle}
+        hint={heroHint}
       >
         {heroUrl ? (
           <div className="relative rounded-xl overflow-hidden border aspect-[4/5] max-h-56 bg-slate-100 inv-hero-media-frame">
@@ -398,7 +420,7 @@ export function TemplateStudioMediaPanel({
             onUploaded={(r) => setHero(r.url, "image")}
             onError={setError}
             disabled={disabled}
-            buttonLabel="Upload invitation hero"
+            buttonLabel={heroButton}
             hint="Any photo, any shape, drag to select the exact region, or use the full image. 4:5 portrait is available as an optional preset, never locked."
             className="flex-1"
           />
@@ -407,8 +429,8 @@ export function TemplateStudioMediaPanel({
           category="INVITATION_BACKGROUND"
           orderId={orderId}
           role="hero"
-          buttonLabel="Hero video"
-          hint="Phone, DSLR, or exported clip, up to 150MB. Processed automatically for smooth playback."
+          buttonLabel={heroVideoLabel}
+          hint="Phone, DSLR, or exported clip, up to 150MB. Processed automatically for smooth playback on the live invitation."
           disabled={disabled}
           onUploaded={onHeroVideoUploaded}
           onError={setError}
@@ -479,8 +501,8 @@ export function TemplateStudioMediaPanel({
         disabled={disabled}
         maxImages={maxGalleryImages}
         orderId={orderId}
-        title="Swipe gallery"
-        description="Photo and video slides for the invitation gallery only, separate from the invitation hero portrait and welcome photo above."
+        title={galleryTitle}
+        description={galleryDescription}
       />
 
       {error && <p className="text-xs text-red-600">{error}</p>}

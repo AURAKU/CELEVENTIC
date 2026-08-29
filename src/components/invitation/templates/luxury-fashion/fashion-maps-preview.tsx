@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
+import { buildDirectionsUrl, normalizeExternalHref } from "@/lib/invitation/maps-utils";
 import styles from "./luxury-fashion-flagship.module.css";
 
 export function FashionMapsPreview({
@@ -18,12 +19,15 @@ export function FashionMapsPreview({
   compact?: boolean;
   onOpen?: () => void;
 }) {
-  const href = mapsUrl.trim();
   const label = [locationName, address].filter(Boolean).join(", ");
+  const href =
+    normalizeExternalHref(mapsUrl) ||
+    buildDirectionsUrl({ venueName: locationName, landmark: address }) ||
+    "";
   const embedUrl = toMapsEmbedUrl(href, label);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
 
-  const onMove = useCallback((event: ReactPointerEvent<HTMLAnchorElement>) => {
+  const onMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const rect = event.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -36,15 +40,9 @@ export function FashionMapsPreview({
   if (!href) return null;
 
   return (
-    <a
+    <div
       className={`${styles.mapsPreview} ${compact ? styles.mapsPreviewCompact : ""}`}
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      onClick={onOpen}
       onPointerMove={onMove}
-      data-testid="fashion-maps-cta"
-      aria-label={`Open ${label || "the venue"} in Google Maps`}
       style={
         {
           ["--pointer-x" as string]: String(pointer.x),
@@ -67,10 +65,18 @@ export function FashionMapsPreview({
         )}
         <span className={styles.mapsPreviewVeil} aria-hidden />
         <span className={styles.mapsPreviewFoil} aria-hidden />
-        <span className={styles.mapsPreviewHint} aria-hidden>
-          Tap to open directions
-        </span>
+        <a
+          className={styles.mapsPreviewHit}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onOpen}
+          data-testid="fashion-maps-cta"
+          aria-label={`Open ${label || "the venue"} in Google Maps`}
+        >
+          <span className={styles.mapsPreviewHint}>Tap to open directions</span>
+        </a>
       </div>
-    </a>
+    </div>
   );
 }

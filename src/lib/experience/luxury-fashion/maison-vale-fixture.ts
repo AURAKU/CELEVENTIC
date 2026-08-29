@@ -66,6 +66,7 @@ export const MAISON_VALE_HOUSE: LuxuryFashionHouseConfig = mergeFashionHouse(
       },
     ],
     silkBedUrl: null,
+    visionStoreEnabled: false,
     startAtIso: MAISON_VALE_START_ISO,
     endAtIso: MAISON_VALE_END_ISO,
     filmUrl: null,

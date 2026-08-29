@@ -509,10 +509,9 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     hero: "/templates/femmora/look-01.jpg",
     background: "/templates/femmora/look-01.jpg",
     gallery: [
-      "/templates/femmora/look-01.jpg",
-      "/templates/femmora/look-02.jpg",
-      "/templates/femmora/look-03.jpg",
-      "/templates/femmora/store-poster.jpg",
+      "/templates/femmora/look-crystal-knit.jpg",
+      "/templates/femmora/look-floral-mini.jpg",
+      "/templates/femmora/look-pearl-gown.jpg",
     ],
   },
 };

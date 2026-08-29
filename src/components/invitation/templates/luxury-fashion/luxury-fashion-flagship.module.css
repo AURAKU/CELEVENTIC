@@ -138,8 +138,10 @@
   z-index: 1;
   display: grid;
   gap: 0;
+  width: min(100%, 34rem);
   max-width: 76rem;
   margin: 0 auto;
+  justify-items: center;
   align-items: center;
 }
 
@@ -149,9 +151,10 @@
 
 .masthead {
   display: grid;
-  justify-items: start;
-  text-align: left;
+  justify-items: center;
+  text-align: center;
   gap: 0.35rem;
+  width: 100%;
 }
 
 .campaignMark {
@@ -189,9 +192,9 @@
 .campaign .campaignMark {
   width: clamp(10.25rem, 48vw, 13.75rem);
   height: clamp(10.25rem, 48vw, 13.75rem);
-  margin: 0 0 0.9rem;
+  margin: 0 auto 0.9rem;
   font-size: clamp(3.75rem, 18vw, 5.5rem);
-  justify-self: start;
+  justify-self: center;
   flex-shrink: 0;
   object-fit: contain;
 }
@@ -207,11 +210,12 @@
 .campaignHouse {
   margin: 0;
   font-family: var(--font-marcellus), Marcellus, serif;
-  font-size: clamp(2.35rem, 11vw, 4.6rem);
-  letter-spacing: 0.28em;
-  text-indent: 0.28em;
+  font-size: clamp(2.1rem, 8.4vw, 3.4rem);
+  letter-spacing: clamp(0.12em, 1.8vw, 0.22em);
+  text-indent: clamp(0.12em, 1.8vw, 0.22em);
   line-height: 1.05;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--ff-espresso, #2c211c);
 }
 
@@ -227,7 +231,7 @@
 }
 
 .campaignLede {
-  margin: 0.55rem 0 0;
+  margin: 0.55rem auto 0;
   max-width: 28rem;
   font-size: 1.05rem;
   line-height: 1.5;
@@ -236,17 +240,20 @@
 
 .campaignFacts {
   list-style: none;
-  margin: 1.35rem 0 0;
+  margin: 1.35rem auto 0;
   padding: 0;
   display: grid;
   gap: 0.95rem;
+  width: min(100%, 42rem);
+  text-align: center;
 }
 
 .campaignFacts li {
   display: grid;
-  grid-template-columns: 1.45rem minmax(0, 1fr);
-  gap: 0.7rem;
-  align-items: start;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 0.4rem;
+  text-align: center;
   color: color-mix(in srgb, var(--ff-espresso, #2c211c) 52%, var(--ff-gold-deep, #8a6240));
 }
 
@@ -262,7 +269,7 @@
 .factMark {
   width: 1.35rem;
   height: 1.35rem;
-  margin-top: 0.12rem;
+  margin: 0 auto;
   color: color-mix(in srgb, var(--ff-espresso, #2c211c) 35%, var(--ff-gold-deep, #8a6240));
   flex-shrink: 0;
 }
@@ -293,14 +300,14 @@
 }
 
 .mapsCta:focus-visible,
-.mapsPreview:focus-visible {
+.mapsPreviewHit:focus-visible {
   outline: 2px solid var(--ff-gold, #b8956a);
   outline-offset: 3px;
 }
 
 .mapsPreview {
   display: block;
-  margin: 0.9rem 0 0;
+  margin: 0.9rem auto 0;
   max-width: 32rem;
   text-decoration: none;
   color: inherit;
@@ -310,7 +317,8 @@
 }
 
 .mapsPreviewCompact {
-  max-width: 22rem;
+  width: 100%;
+  max-width: min(100%, 40rem);
 }
 
 .mapsPreview:hover,
@@ -333,7 +341,14 @@
 }
 
 .mapsPreviewCompact .mapsPreviewFrame {
-  min-height: 9.75rem;
+  aspect-ratio: 16 / 11;
+  min-height: 16.5rem;
+}
+
+@media (min-width: 768px) {
+  .mapsPreviewCompact .mapsPreviewFrame {
+    min-height: 20.5rem;
+  }
 }
 
 .mapsPreview iframe,
@@ -379,6 +394,16 @@
   animation: mapsFoil 8.5s ease-in-out infinite;
 }
 
+.mapsPreviewHit {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: block;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
 .mapsPreviewHint {
   pointer-events: none;
   position: absolute;
@@ -410,11 +435,35 @@
 .campaignCountdown {
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
+  margin-inline: auto;
   width: min(100%, 26rem);
 }
 
 .campaignCalendar {
   margin-top: 0.85rem;
+  display: flex;
+  justify-content: center;
+}
+
+.campaignCalendar :global(button) {
+  min-height: 2.75rem;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--ff-gold, #b8956a) 78%, transparent);
+  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 78%, var(--ff-champagne, #d9c4a0));
+  color: var(--ff-espresso, #2c211c);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+.campaignCalendar :global(button:hover) {
+  background: color-mix(in srgb, var(--ff-ivory, #f7f1e8) 55%, var(--ff-champagne, #d9c4a0));
+}
+
+.campaignCalendar :global(p) {
+  color: color-mix(in srgb, var(--ff-espresso, #2c211c) 55%, var(--ff-gold, #b8956a));
 }
 
 .campaignCtas {
@@ -863,10 +912,16 @@
   position: fixed;
   inset: 0;
   z-index: 110;
-  display: grid;
-  place-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1rem;
-  padding: max(1.5rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(2rem, env(safe-area-inset-bottom, 0px));
+  padding: max(3.4rem, env(safe-area-inset-top, 0px)) var(--ff-pad) max(2rem, env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   background:
     radial-gradient(70% 55% at 50% 8%, rgba(255, 248, 230, 0.28) 0%, transparent 42%),
     linear-gradient(180deg, #1c1613 0%, #2c211c 42%, #16110e 100%);
@@ -877,7 +932,70 @@
 .boutique .kicker,
 .boutique .heading,
 .boutique .lede {
+  position: relative;
+  z-index: 1;
   color: var(--ff-ivory, #fbf7f0);
+}
+
+.boutiqueInner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.85rem;
+  width: min(100%, 28rem);
+  padding-bottom: 0.5rem;
+}
+
+.boutique .heading {
+  margin-top: 0;
+}
+
+.boutiqueCard {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 22.5rem);
+  margin: 0.15rem 0 0;
+}
+
+.boutiqueCardStage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.35rem;
+  aspect-ratio: 1024 / 790;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ff-gold, #c4a574) 45%, transparent),
+    0 22px 48px rgba(0, 0, 0, 0.38);
+}
+
+.boutiqueCardStage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: boutiqueKenBurns 14s ease-in-out infinite;
+}
+
+.boutiqueCardSheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 36%, rgba(255, 244, 214, 0.34) 50%, transparent 64%);
+  transform: translateX(-130%);
+  animation: boutiqueSheen 5.2s ease-in-out infinite;
+}
+
+@keyframes boutiqueKenBurns {
+  0%,
+  100% { transform: scale(1.04) translate3d(0, 0, 0); }
+  50% { transform: scale(1.12) translate3d(-1.6%, 1.2%, 0); }
+}
+
+@keyframes boutiqueSheen {
+  0%,
+  22% { transform: translateX(-130%); }
+  58%,
+  100% { transform: translateX(130%); }
 }
 
 .boutiqueCorridor {
@@ -896,6 +1014,13 @@
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--ff-gold, #c4a574), transparent);
   box-shadow: 0 40px 80px rgba(217, 196, 160, 0.18);
+  animation: boutiqueRailSweep 6.4s ease-in-out infinite;
+}
+
+@keyframes boutiqueRailSweep {
+  0%,
+  100% { opacity: 0.55; transform: scaleX(0.92); }
+  50% { opacity: 1; transform: scaleX(1); }
 }
 
 .boutiqueDepth {
@@ -927,24 +1052,41 @@
 .boutiqueGrid {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
-  max-width: 28rem;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.55rem;
+  width: 100%;
+  max-width: 36rem;
   margin: 0.5rem auto 0;
 }
 
 .boutiqueDoor {
-  min-height: 5.5rem;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 5.25rem;
+  padding: 0.7rem 0.35rem;
   display: grid;
   place-content: center;
   gap: 0.45rem;
   border: 1px solid color-mix(in srgb, var(--ff-gold, #c4a574) 55%, transparent);
   background: color-mix(in srgb, var(--ff-espresso, #2c211c) 55%, transparent);
   color: var(--ff-ivory, #fbf7f0);
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-size: 0.62rem;
+  font-size: clamp(0.48rem, 2.4vw, 0.62rem);
+  animation: boutiqueDoorBreath 4.8s ease-in-out infinite;
+}
+
+.boutiqueDoor:nth-child(2) { animation-delay: 0.45s; }
+.boutiqueDoor:nth-child(3) { animation-delay: 0.9s; }
+.boutiqueDoor:nth-child(4) { animation-delay: 1.35s; }
+
+@keyframes boutiqueDoorBreath {
+  0%,
+  100% { transform: translateY(0); border-color: color-mix(in srgb, var(--ff-gold, #c4a574) 55%, transparent); }
+  50% { transform: translateY(-0.18rem); border-color: color-mix(in srgb, var(--ff-gold, #c4a574) 88%, transparent); }
 }
 
 .boutique .cta {
@@ -961,6 +1103,8 @@
   padding: 3.5rem var(--ff-pad) 1.5rem;
   max-width: 44rem;
   margin: 0 auto;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 42rem;
 }
 
 .sectionWide {
@@ -1011,6 +1155,7 @@
 .ctaRow {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.65rem;
   margin-top: 1.5rem;
 }
@@ -1559,6 +1704,7 @@
   }
 
   .campaignGrid[data-film-open="true"] {
+    width: min(100%, 76rem);
     grid-template-columns: minmax(0, 1fr) minmax(28rem, 40rem);
     gap: 3.5rem;
   }
@@ -1610,7 +1756,8 @@
 
 @media (min-width: 1280px) {
   .campaignHouse {
-    letter-spacing: 0.32em;
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
   }
 
   .index {
@@ -1628,6 +1775,9 @@
   .look,
   .storeStill,
   .boutiqueDoor,
+  .boutiqueCardStage img,
+  .boutiqueCardSheen,
+  .boutiqueRail,
   .tag,
   .campaignFoil,
   .campaignGlow,

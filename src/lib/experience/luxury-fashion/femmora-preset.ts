@@ -23,6 +23,9 @@ export const FEMMORA_LOGO_MARK = "/templates/femmora/logo-mark.png";
 export const FEMMORA_SHARE_PLACECARD = "/templates/femmora/share-placecard.jpg";
 export const FEMMORA_SHARE_PLACECARD_WIDTH = 1600;
 export const FEMMORA_SHARE_PLACECARD_HEIGHT = 1234;
+/** Invitation bed — Adrian Berenguer, The Beauty. Femmora SKU only. */
+export const FEMMORA_INVITE_MUSIC = "/templates/femmora/the-beauty.mp3";
+export const FEMMORA_INVITE_MUSIC_DURATION_SEC = 137.52;
 export const FEMMORA_STORE_FILM = "/templates/femmora/store-preview.mp4";
 export const FEMMORA_STORE_POSTER = "/templates/femmora/store-poster.jpg";
 export const FEMMORA_INSTAGRAM_HANDLE = "@femmora_gh";
@@ -90,6 +93,8 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     replayUnveilingLabel: "Replay the unveiling",
     filmChapterTitle: "The first look",
     filmChapterLede: "Experience Femmora",
+    wishesTitle: "Compliments and guest wishes to the host of Femmora",
+    wishesEmpty: "A quiet boutique — be the first to compliment this opening.",
     markVariant: "letter",
     logoUrl: FEMMORA_LOGO_MARK,
     shareOgImageUrl: FEMMORA_SHARE_PLACECARD,
@@ -97,6 +102,12 @@ export const FEMMORA_HOUSE_DEFAULTS: LuxuryFashionHouseConfig = mergeFashionHous
     lookbookItems: FEMMORA_DEFAULT_LOOKS,
     silkBedUrl: null,
     flyerCardUrl: FEMMORA_FLYER_CARD,
+    visionStoreEnabled: true,
+    visionStoreKicker: "Online vision store",
+    visionStoreTitle: "The house, wherever you are",
+    visionStoreLine: "A first digital store is on its way — shop the collection from anywhere.",
+    visionStoreDeliveryLine: "Nationwide delivery",
+    visionStoreSoonLabel: "Opening soon",
     startAtIso: FEMMORA_START_ISO,
     endAtIso: FEMMORA_END_ISO,
     filmUrl: FEMMORA_STORE_FILM,

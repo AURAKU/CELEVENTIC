@@ -296,10 +296,23 @@ export default async function InvitePage({
   const productionDesign = productionOrder
     ? buildPublishedDesignConfig(productionOrder)
     : null;
-  const design = applyCatalogCreativeIdentity(
+  const catalogDesign = applyCatalogCreativeIdentity(
     productionDesign ?? baseDesign,
     catalogSlug
   );
+  const design: InvitationDesignConfig = {
+    ...catalogDesign,
+    media: catalogDesign.media?.map((asset) => ({
+      ...asset,
+      url: resolvePublicMediaUrl(asset.url) || asset.url,
+      posterUrl: asset.posterUrl
+        ? resolvePublicMediaUrl(asset.posterUrl) || asset.posterUrl
+        : asset.posterUrl,
+      thumbnailUrl: asset.thumbnailUrl
+        ? resolvePublicMediaUrl(asset.thumbnailUrl) || asset.thumbnailUrl
+        : asset.thumbnailUrl,
+    })),
+  };
   const guestFacingStartDate = resolveGuestFacingEventInstant(event.startDate, design);
   const guestFacingVenue = resolveGuestFacingVenue(event.venueName, design);
   const blocks = productionOrder

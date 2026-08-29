@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUploadCropper } from "@/components/media/image-upload-cropper";
+import { GalleryUploadPanel } from "@/components/media/gallery-upload-panel";
+import { VideoUploader, type UploadedVideoResult } from "@/components/media/video-uploader";
 import {
   LUXURY_FASHION_HOUSE_DEFAULTS,
   mergeFashionHouse,
@@ -16,16 +20,39 @@ export function FashionHouseStudioPanel({
   viralFooterEnabled = false,
   onChange,
   onViralFooterChange,
+  orderId,
+  galleryUrls,
+  onGalleryChange,
+  storeFilmUrl,
+  storePosterUrl,
+  onStoreFilm,
+  onClearStoreFilm,
 }: {
   value?: LuxuryFashionHouseConfig;
   viralFooterEnabled?: boolean;
   onChange: (next: LuxuryFashionHouseConfig) => void;
   onViralFooterChange?: (enabled: boolean) => void;
+  orderId?: string;
+  galleryUrls?: string[];
+  onGalleryChange?: (urls: string[]) => void;
+  storeFilmUrl?: string | null;
+  storePosterUrl?: string | null;
+  onStoreFilm?: (input: { url: string; posterUrl?: string | null }) => void;
+  onClearStoreFilm?: () => void;
 }) {
   const house = mergeFashionHouse(LUXURY_FASHION_HOUSE_DEFAULTS, value);
+  const [uploadError, setUploadError] = useState("");
 
   function patch(partial: Partial<LuxuryFashionHouseConfig>) {
     onChange(mergeFashionHouse(house, partial));
+  }
+
+  function onFilmUploaded(result: UploadedVideoResult) {
+    if (!result.processedMp4Url) return;
+    onStoreFilm?.({ url: result.processedMp4Url, posterUrl: result.posterUrl });
+    if (!onStoreFilm) {
+      patch({ filmUrl: result.processedMp4Url, filmPosterUrl: result.posterUrl ?? house.filmPosterUrl });
+    }
   }
 
   return (
@@ -45,6 +72,85 @@ export function FashionHouseStudioPanel({
         <Label>Event title</Label>
         <Input value={house.eventTitle} onChange={(e) => patch({ eventTitle: e.target.value })} />
       </div>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-800/80 pt-1">
+        The first look
+      </p>
+      <p className="text-[11px] text-slate-500">
+        Upload the store film, stills, and collection looks here. Saves to this live invitation
+        for the organizer and admin. Guests see the new files on their unique link after save.
+      </p>
+      <div className="grid gap-2">
+        <Label>Film heading</Label>
+        <Input
+          value={house.filmChapterTitle ?? ""}
+          onChange={(e) => patch({ filmChapterTitle: e.target.value })}
+          placeholder="The first look"
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Film line</Label>
+        <Input
+          value={house.filmChapterLede ?? ""}
+          onChange={(e) => patch({ filmChapterLede: e.target.value })}
+          placeholder="Experience the house"
+        />
+      </div>
+      <VideoUploader
+        category="INVITATION_BACKGROUND"
+        orderId={orderId}
+        role="hero"
+        buttonLabel={storeFilmUrl || house.filmUrl ? "Replace store preview video" : "Upload store preview video"}
+        hint="MP4, MOV, or phone clip. Plays in full on Store Preview on the live invitation."
+        previewUrl={storeFilmUrl ?? house.filmUrl}
+        onClear={onClearStoreFilm}
+        onUploaded={onFilmUploaded}
+        onError={setUploadError}
+      />
+      <ImageUploadCropper
+        label="Store preview still"
+        buttonLabel={storePosterUrl || house.filmPosterUrl ? "Replace film still" : "Upload film still"}
+        hint="Poster shown before the film plays."
+        defaultAspect="free"
+        extraFormFields={{ role: "poster", buildMode: "template" }}
+        previewUrl={storePosterUrl ?? house.filmPosterUrl}
+        onUploaded={(r) => {
+          patch({ filmPosterUrl: r.url });
+        }}
+        onError={setUploadError}
+      />
+      <ImageUploadCropper
+        label="House logo"
+        buttonLabel={house.logoUrl ? "Replace logo" : "Upload logo"}
+        hint="Crest on the whisper, envelope, and invitation."
+        defaultAspect="free"
+        extraFormFields={{ role: "logo", buildMode: "template" }}
+        previewUrl={house.logoUrl}
+        onUploaded={(r) => patch({ logoUrl: r.url })}
+        onClear={() => patch({ logoUrl: null })}
+        onError={setUploadError}
+      />
+      <ImageUploadCropper
+        label="Invitation card photo"
+        buttonLabel={house.flyerCardUrl ? "Replace invitation card" : "Upload invitation card"}
+        hint="Physical card photo under Step inside."
+        defaultAspect="free"
+        extraFormFields={{ role: "flyer", buildMode: "template" }}
+        previewUrl={house.flyerCardUrl}
+        onUploaded={(r) => patch({ flyerCardUrl: r.url })}
+        onClear={() => patch({ flyerCardUrl: null })}
+        onError={setUploadError}
+      />
+      {onGalleryChange ? (
+        <GalleryUploadPanel
+          urls={galleryUrls ?? []}
+          onChange={onGalleryChange}
+          orderId={orderId}
+          title="Collection looks"
+          description="Replaces the bundled looks on the live invitation. Photos appear in View Collection and the vision store."
+          extraFormFields={{ role: "gallery", buildMode: "template" }}
+        />
+      ) : null}
+      {uploadError ? <p className="text-[11px] text-red-600">{uploadError}</p> : null}
       <div className="grid gap-2">
         <Label>Opening copy</Label>
         <Input value={house.teaserLine} onChange={(e) => patch({ teaserLine: e.target.value })} />
@@ -116,6 +222,20 @@ export function FashionHouseStudioPanel({
       <div className="grid gap-2">
         <Label>RSVP heading</Label>
         <Input value={house.rsvpHeading} onChange={(e) => patch({ rsvpHeading: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Guest wishes heading</Label>
+        <Input
+          value={house.wishesTitle ?? ""}
+          onChange={(e) => patch({ wishesTitle: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Guest wishes empty line</Label>
+        <Input
+          value={house.wishesEmpty ?? ""}
+          onChange={(e) => patch({ wishesEmpty: e.target.value })}
+        />
       </div>
       <div className="grid gap-2">
         <Label>RSVP yes label</Label>
@@ -240,6 +360,61 @@ export function FashionHouseStudioPanel({
       <div className="grid gap-2">
         <Label>Lookbook title</Label>
         <Input value={house.lookbookTitle} onChange={(e) => patch({ lookbookTitle: e.target.value })} />
+      </div>
+      <div className="grid gap-2">
+        <Label>Lookbook kicker</Label>
+        <Input
+          value={house.lookbookKicker ?? ""}
+          onChange={(e) => patch({ lookbookKicker: e.target.value })}
+          placeholder="First looks"
+        />
+      </div>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-800/80 pt-1">
+        Vision store
+      </p>
+      <label className="flex items-start gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={house.visionStoreEnabled === true}
+          onChange={(e) => patch({ visionStoreEnabled: e.target.checked })}
+        />
+        <span>Show iPhone vision-store teaser in Enter Experience</span>
+      </label>
+      <div className="grid gap-2">
+        <Label>Vision store kicker</Label>
+        <Input
+          value={house.visionStoreKicker ?? ""}
+          onChange={(e) => patch({ visionStoreKicker: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Vision store title</Label>
+        <Input
+          value={house.visionStoreTitle ?? ""}
+          onChange={(e) => patch({ visionStoreTitle: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Vision store line</Label>
+        <Input
+          value={house.visionStoreLine ?? ""}
+          onChange={(e) => patch({ visionStoreLine: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Nationwide delivery line</Label>
+        <Input
+          value={house.visionStoreDeliveryLine ?? ""}
+          onChange={(e) => patch({ visionStoreDeliveryLine: e.target.value })}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Opening soon label</Label>
+        <Input
+          value={house.visionStoreSoonLabel ?? ""}
+          onChange={(e) => patch({ visionStoreSoonLabel: e.target.value })}
+        />
       </div>
       <div className="grid gap-2">
         <Label>Finale kicker</Label>
@@ -412,9 +587,9 @@ export function FashionHouseStudioPanel({
         </label>
       ) : null}
       <p className="text-[11px] text-slate-500">
-        Store film and lookbook use Studio Media (hero video, poster, gallery). Empty media
-        removes those chapters. Maps, RSVP and countdown follow the same invitation feature
-        flags as every other Celeventic template. Music uses the existing soundtrack picker.
+        Video, logo, card photo, and collection looks upload here and in Assets. They save to
+        this order and appear on the live guest link. Date, venue, and maps also follow Event
+        details. Music uses the soundtrack picker.
       </p>
     </div>
   );

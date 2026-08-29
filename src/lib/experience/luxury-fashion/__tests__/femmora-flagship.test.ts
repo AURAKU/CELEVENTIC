@@ -7,6 +7,8 @@ import {
   FASHION_SILK_DRAG_PX,
   FASHION_WHISPER_MS,
   FEMMORA_HOUSE_DEFAULTS,
+  FEMMORA_INVITE_MUSIC,
+  FEMMORA_INVITE_MUSIC_DURATION_SEC,
   FEMMORA_LOGO_MARK,
   FEMMORA_MAPS_URL,
   FEMMORA_STORE_FILM,
@@ -22,6 +24,7 @@ import {
   mergeFashionHouse,
   resolveFashionChapters,
   resolveFashionFilm,
+  resolveFashionFlyerCard,
   resolveFashionHouse,
   resolveFashionLede,
   resolveFashionLookbook,
@@ -29,14 +32,18 @@ import {
   resolveFashionSocialLinks,
   resolveFashionStoreStills,
   resolveFashionTeaser,
+  resolveFashionVisionStore,
   socialLinkHasDestination,
 } from "@/lib/experience/luxury-fashion";
 import { isPointerArmSafe } from "@/lib/experience/luxury-fashion/gesture-arming";
 import { previewTapLabelForOpening } from "@/lib/experience/opening-experiences";
 import { getCatalogTemplate, getBrowseCatalogTemplates, filterCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
 import { getDefaultDesignConfig } from "@/lib/invitation-templates";
+import { getCatalogMusicProfile } from "@/lib/invitation/catalog-music-identity";
+import { getLayoutMusicProfile } from "@/lib/invitation/layout-music-identity";
+import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
-import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
+import { buildDirectionsUrl, normalizeExternalHref } from "@/lib/invitation/maps-utils";
 import { buildInviteShareChannelHref, buildInviteSharePayload } from "@/lib/invitation/invite-share";
 import { buildGoogleCalendarUrl, toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
 
@@ -83,10 +90,31 @@ test("guest-wishes nameplate and crest stay house-owned, never a shared Femmora 
   assert.equal(fashionHouseLogoSrc({ logoUrl: "", houseName: "FEMMORA" }), null);
 
   const wishesSrc = readFileSync("src/components/guest-portal/guest-wishes-card.tsx", "utf8");
-  assert.match(wishesSrc, /The house is waiting — be the first to leave a note/);
+  assert.match(wishesSrc, /fashionHouse\?\.wishesEmpty/);
+  assert.match(wishesSrc, /The atelier is still quiet — leave the first compliment/);
   assert.match(wishesSrc, /kicker: fashionHouseNameplate\(resolvedHouseName\)/);
+  assert.match(wishesSrc, /fashionHouse\?\.wishesTitle/);
+  assert.match(wishesSrc, /Your note is now visible to every guest/);
+  assert.match(wishesSrc, /setInterval\(refresh, 8000\)/);
+  assert.match(wishesSrc, /link: inviteLink \|\| undefined/);
+  assert.doesNotMatch(wishesSrc, /Compliments to the House/);
+  assert.doesNotMatch(wishesSrc, /Leave a note for this opening/);
+  assert.doesNotMatch(wishesSrc, /Notes the house approves/);
+  assert.doesNotMatch(wishesSrc, /The house is waiting/);
   assert.doesNotMatch(wishesSrc, /THE SALON/);
   assert.doesNotMatch(wishesSrc, /The salon is waiting/);
+  assert.equal(
+    FEMMORA_HOUSE_DEFAULTS.wishesTitle,
+    "Compliments and guest wishes to the host of Femmora"
+  );
+  assert.equal(
+    FEMMORA_HOUSE_DEFAULTS.wishesEmpty,
+    "A quiet boutique — be the first to compliment this opening."
+  );
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.wishesEmpty.includes("Femmora"), false);
+  assert.equal(MAISON_VALE_HOUSE.wishesEmpty?.toLowerCase().includes("femmora"), false);
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.wishesTitle.includes("Femmora"), false);
+  assert.equal(MAISON_VALE_HOUSE.wishesTitle?.toLowerCase().includes("femmora"), false);
 });
 
 test("fashion house merge prefers organizer overrides without dropping nav labels", () => {
@@ -118,6 +146,19 @@ test("store film resolves from bundled Femmora media, then Studio hero video, ne
   });
   assert.equal(film.src, "https://cdn.example.com/femmora-store.mp4");
   assert.ok(!film.src?.startsWith("/Users/"));
+  const fromStudioUpload = resolveFashionFilm({
+    house,
+    media: [
+      {
+        url: "http://localhost:3000/api/uploads/invitations/u1/store.mp4",
+        type: "video",
+        role: "hero",
+        posterUrl: "http://127.0.0.1:3000/api/uploads/invitations/u1/poster.jpg",
+      },
+    ],
+  });
+  assert.equal(fromStudioUpload.src, "/uploads/invitations/u1/store.mp4");
+  assert.equal(fromStudioUpload.poster, "/uploads/invitations/u1/poster.jpg");
 });
 
 test("lookbook prefers organizer items then gallery, with bundled atelier stills as fallback", () => {
@@ -141,6 +182,12 @@ test("lookbook prefers organizer items then gallery, with bundled atelier stills
   });
   assert.equal(fromGallery.length, 2);
   assert.equal(fromGallery[0]?.caption, "Look 01");
+  const organizerGalleryWins = resolveFashionLookbook({
+    house,
+    galleryUrls: ["https://cdn.example.com/look-new.jpg"],
+  });
+  assert.equal(organizerGalleryWins.length, 1);
+  assert.equal(organizerGalleryWins[0]?.url, "https://cdn.example.com/look-new.jpg");
 });
 
 test("gesture arming rejects input until armed", () => {
@@ -161,6 +208,24 @@ test("catalogue SKU and opening copy are registered", () => {
   const lunch = getCatalogTemplate("femmora-flagship-soft-opening");
   assert.equal(lunch?.category, "Lunch");
   assert.ok((lunch?.tags ?? []).includes("lunch"));
+});
+
+test("Femmora invitation bed is The Beauty and Vale does not inherit it", () => {
+  const profile = getCatalogMusicProfile("femmora-flagship-soft-opening");
+  assert.equal(profile?.title, "The Beauty");
+  assert.equal(profile?.url, FEMMORA_INVITE_MUSIC);
+  assert.equal(profile?.endSec, FEMMORA_INVITE_MUSIC_DURATION_SEC);
+  const design = getDefaultDesignConfig("femmora-flagship-soft-opening");
+  const resolved = resolveInvitationMusic({
+    design,
+    catalogSlug: "femmora-flagship-soft-opening",
+  });
+  assert.equal(resolved.musicSelection?.url, FEMMORA_INVITE_MUSIC);
+  assert.equal(resolved.musicSelection?.title, "The Beauty");
+  assert.match(resolved.musicSelection?.url ?? "", /\/templates\/femmora\/the-beauty\.mp3$/);
+  const valeLayout = getLayoutMusicProfile("luxury-fashion-flagship");
+  assert.notEqual(valeLayout.url ?? `/music/${valeLayout.bundledFile}.mp3`, FEMMORA_INVITE_MUSIC);
+  assert.notEqual(valeLayout.title, "The Beauty");
 });
 
 test("lunch catalogue browse lists the Femmora flagship invitation", () => {
@@ -208,6 +273,29 @@ test("share, maps and calendar CTAs produce real destinations", () => {
     venue: "FEMMORA GH, Westlands",
   });
   assert.match(cal, /^https:\/\/calendar\.google\.com\//);
+  assert.equal(
+    normalizeExternalHref("www.google.com/maps/search/?api=1&query=Westlands"),
+    "https://www.google.com/maps/search/?api=1&query=Westlands"
+  );
+  assert.equal(
+    normalizeExternalHref("//www.google.com/maps/search/?api=1&query=Westlands"),
+    "https://www.google.com/maps/search/?api=1&query=Westlands"
+  );
+  const mapsPreview = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-maps-preview.tsx",
+    "utf8"
+  );
+  assert.match(mapsPreview, /mapsPreviewHit/);
+  assert.match(mapsPreview, /rel="noopener noreferrer"/);
+  assert.equal(/<a[\s\S]*<iframe/.test(mapsPreview), false);
+  const shareScene = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-share-scene.tsx",
+    "utf8"
+  );
+  assert.match(shareScene, />Share</);
+  assert.equal(/WhatsApp/.test(shareScene), false);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.visionStoreLine.includes("digital store"), true);
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.visionStoreLine.includes("salon"), false);
 });
 
 test("motion tokens stay editorial and silk drag requires a new gesture", () => {
@@ -458,4 +546,118 @@ test("Maison Vale can replace Instagram through house DNA without code changes",
     looksCount: 2,
   });
   assert.equal(chapters.social, true);
+});
+
+test("fashion RSVP keeps name only — optional email and phone stay off the card", () => {
+  const rsvp = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-rsvp-scene.tsx",
+    "utf8"
+  );
+  assert.match(rsvp, /showEmail=\{false\}/);
+  assert.match(rsvp, /showPhone=\{false\}/);
+});
+
+test("fashion cover masthead is centered for every viewport", () => {
+  const css = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/luxury-fashion-flagship.module.css",
+    "utf8"
+  );
+  assert.match(css, /\.masthead[\s\S]*?justify-items:\s*center/);
+  assert.match(css, /\.masthead[\s\S]*?text-align:\s*center/);
+  assert.match(css, /\.campaignGrid[\s\S]*?margin:\s*0 auto/);
+  assert.match(css, /\.campaignHouse[\s\S]*?white-space:\s*nowrap/);
+  assert.match(css, /\.boutiqueGrid[\s\S]*?flex-wrap:\s*nowrap/);
+  assert.match(css, /\.mapsPreviewCompact[\s\S]*?max-width:\s*min\(100%, 40rem\)/);
+});
+
+test("presented card can receive OPEN — flap and overlay do not trap the guest", () => {
+  const css = readFileSync(
+    "src/components/experience/luxury-fashion/luxury-fashion-opening.module.css",
+    "utf8"
+  );
+  assert.match(css, /\.envelopeFlap[\s\S]*?pointer-events:\s*none/);
+  assert.match(css, /\.cardHit[\s\S]*?z-index:\s*12/);
+  const opening = readFileSync(
+    "src/components/experience/luxury-fashion/luxury-fashion-opening-experience.tsx",
+    "utf8"
+  );
+  assert.match(opening, /fashion-card-stage/);
+  assert.match(opening, /forceUnlockRevealScroll/);
+});
+
+test("ENTER EXPERIENCE shows the invitation card and a motion iPhone vision store for Femmora only", () => {
+  assert.equal(FEMMORA_HOUSE_DEFAULTS.visionStoreEnabled, true);
+  assert.equal(LUXURY_FASHION_HOUSE_DEFAULTS.visionStoreEnabled, false);
+  assert.equal(MAISON_VALE_HOUSE.visionStoreEnabled, false);
+  assert.equal(resolveFashionVisionStore(FEMMORA_HOUSE_DEFAULTS), true);
+  assert.equal(resolveFashionVisionStore(MAISON_VALE_HOUSE), false);
+  assert.equal(resolveFashionFlyerCard(FEMMORA_HOUSE_DEFAULTS), FEMMORA_HOUSE_DEFAULTS.flyerCardUrl);
+  assert.equal(resolveFashionFlyerCard(MAISON_VALE_HOUSE), null);
+  assert.equal(
+    resolveFashionFlyerCard({
+      ...MAISON_VALE_HOUSE,
+      flyerCardUrl: FEMMORA_HOUSE_DEFAULTS.flyerCardUrl,
+    }),
+    null
+  );
+  assert.equal(assertHouseIsNotFemmora(MAISON_VALE_HOUSE).length, 0);
+  const boutique = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-boutique-experience.tsx",
+    "utf8"
+  );
+  assert.match(boutique, /fashion-boutique-invitation/);
+  assert.match(boutique, /FashionVisionStore/);
+  assert.equal(/Femmora|@femmora/i.test(boutique), false);
+  const phone = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-vision-store.tsx",
+    "utf8"
+  );
+  assert.match(phone, /fashion-vision-store/);
+  assert.match(phone, /isFashionStill/);
+  assert.equal(/Femmora|@femmora/i.test(phone), false);
+  const motion = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-vision-store.module.css",
+    "utf8"
+  );
+  assert.match(motion, /@keyframes phoneFloat/);
+  assert.match(motion, /@keyframes marquee/);
+  assert.match(motion, /@keyframes islandAnnounce/);
+  assert.match(motion, /Nationwide delivery|deliveryCopy/);
+});
+
+test("store preview plays from the first frame to ended and never auto-pauses offscreen", () => {
+  const film = readFileSync(
+    "src/components/invitation/templates/luxury-fashion/fashion-film-scene.tsx",
+    "utf8"
+  );
+  assert.match(film, /fromStart:\s*true/);
+  assert.match(film, /el\.currentTime = 0/);
+  assert.match(film, /addEventListener\("ended"/);
+  assert.equal(film.includes("IntersectionObserver"), false);
+  assert.equal(/\sloop[\s=]/.test(film), false);
+  const flagship = readFileSync(
+    "src/components/invitation/templates/luxury-fashion-flagship.tsx",
+    "utf8"
+  );
+  assert.equal(flagship.includes("filmRef.current?.play("), false);
+});
+
+test("Studio lets organizers upload store film, looks, and first-look copy for the live invitation", () => {
+  const panel = readFileSync(
+    "src/components/invitation-studio/fashion-house-studio-panel.tsx",
+    "utf8"
+  );
+  assert.match(panel, /filmChapterTitle/);
+  assert.match(panel, /wishesTitle/);
+  assert.match(panel, /wishesEmpty/);
+  assert.match(panel, /Upload store preview video/);
+  assert.match(panel, /Upload invitation card/);
+  assert.match(panel, /Collection looks/);
+  assert.match(panel, /VideoUploader/);
+  assert.match(panel, /ImageUploadCropper/);
+  const hub = readFileSync("src/components/invitation-studio/invitation-studio-hub.tsx", "utf8");
+  assert.match(hub, /orderId=\{orderId\}/);
+  assert.match(hub, /onStoreFilm/);
+  const media = readFileSync("src/lib/invitation/studio-media-utils.ts", "utf8");
+  assert.match(media, /posterUrl: extras\?\.posterUrl/);
 });

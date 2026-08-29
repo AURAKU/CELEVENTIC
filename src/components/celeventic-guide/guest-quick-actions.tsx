@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type ComponentType } from "react";
+import { type ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -14,7 +14,6 @@ import {
   Armchair,
   Utensils,
   CalendarDays,
-  X,
 } from "lucide-react";
 import { GUEST_QUICK_ACTIONS } from "@/lib/celeventic-guide/guest-zero-experience";
 import { cn } from "@/lib/utils";
@@ -82,8 +81,8 @@ export function GuestQuickActions({
 }
 
 /**
- * Invitation footer: Celeventic logo opens an in-invite guest help tour video
- * so guests understand the invitation without leaving the ceremony.
+ * Invitation footer: Celeventic logo opens the Guest Guide so guests can
+ * learn how to navigate the invitation and the rest of the platform.
  */
 export function InviteGuestHelpFab({
   className,
@@ -91,158 +90,54 @@ export function InviteGuestHelpFab({
   alignEnd = false,
 }: {
   className?: string;
-  /** Full Guest help page — offered after / beside the tour video. */
   guideHref?: string;
   /** Fashion flagship: keep the FAB off the campaign masthead and CTAs. */
   alignEnd?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const titleId = useId();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
-
-  const close = useCallback(() => {
-    const el = videoRef.current;
-    if (el) {
-      el.pause();
-      el.currentTime = 0;
-    }
-    setOpen(false);
-  }, []);
-
-  const openTour = useCallback(() => {
-    trackGuideEvent("guide_context_help", { action: "open-guest-help-tour", surface: "invite-fab" });
-    setOpen(true);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeBtnRef.current?.focus();
-    const el = videoRef.current;
-    if (el) {
-      void el.play().catch(() => {
-        /* autoplay may require a gesture — controls remain available */
-      });
-    }
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [open, close]);
-
   return (
-    <>
-      <div
+    <div
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex",
+        alignEnd
+          ? "justify-end pr-[max(0.75rem,env(safe-area-inset-right))] pl-3"
+          : "justify-center",
+        "pb-[max(1rem,env(safe-area-inset-bottom))] pt-3",
+        className
+      )}
+    >
+      <Link
+        href={guideHref}
+        onClick={() =>
+          trackGuideEvent("guide_context_help", { action: "open-guest-guide", surface: "invite-fab" })
+        }
         className={cn(
-          "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex",
-          alignEnd
-            ? "justify-end pr-[max(0.75rem,env(safe-area-inset-right))] pl-3"
-            : "justify-center",
-          "pb-[max(1rem,env(safe-area-inset-bottom))] pt-3",
-          className
+          "pointer-events-auto group inline-flex flex-col items-center gap-1.5",
+          alignEnd ? "min-h-11 min-w-11 rounded-full px-2.5 py-2" : "min-h-[3.5rem] rounded-full px-5 py-2.5",
+          "bg-white/95 backdrop-blur-md border border-[#0B8A83]/25",
+          "shadow-[0_8px_28px_rgba(11,138,131,0.22),0_2px_8px_rgba(15,23,42,0.08)]",
+          "hover:border-[#0B8A83]/45 hover:shadow-[0_10px_32px_rgba(11,138,131,0.28)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2",
+          "transition-[transform,box-shadow,border-color] duration-200",
+          "active:scale-[0.98]"
         )}
+        aria-label={`${APP_NAME} Guest Guide — learn how to navigate the invitation`}
       >
-        <button
-          type="button"
-          onClick={openTour}
-          className={cn(
-            "pointer-events-auto group inline-flex flex-col items-center gap-1.5",
-            alignEnd ? "min-h-11 min-w-11 rounded-full px-2.5 py-2" : "min-h-[3.5rem] rounded-full px-5 py-2.5",
-            "bg-white/95 backdrop-blur-md border border-[#0B8A83]/25",
-            "shadow-[0_8px_28px_rgba(11,138,131,0.22),0_2px_8px_rgba(15,23,42,0.08)]",
-            "hover:border-[#0B8A83]/45 hover:shadow-[0_10px_32px_rgba(11,138,131,0.28)]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2",
-            "transition-[transform,box-shadow,border-color] duration-200",
-            "active:scale-[0.98]"
-          )}
-          aria-label={`${APP_NAME} Help & tour — watch how this invitation works`}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-        >
-          <span className="inline-flex items-center gap-2.5">
-            <Image
-              src={BRAND_LOGO_FULL}
-              alt={BRAND_LOGO_ALT}
-              width={120}
-              height={36}
-              className={alignEnd ? "h-6 w-auto object-contain" : "h-8 w-auto object-contain sm:h-9"}
-              priority={false}
-            />
+        <span className="inline-flex items-center gap-2.5">
+          <Image
+            src={BRAND_LOGO_FULL}
+            alt={BRAND_LOGO_ALT}
+            width={120}
+            height={36}
+            className={alignEnd ? "h-6 w-auto object-contain" : "h-8 w-auto object-contain sm:h-9"}
+            priority={false}
+          />
+        </span>
+        {alignEnd ? null : (
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#0B8A83]">
+            Guest guide
           </span>
-          {alignEnd ? null : (
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#0B8A83]">
-              Help & tour
-            </span>
-          )}
-        </button>
-      </div>
-
-      {open ? (
-        <div
-          className="fixed inset-0 z-[130] flex flex-col bg-black/92 print:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-        >
-          <div className="flex items-center justify-between gap-3 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
-            <p id={titleId} className="min-w-0 truncate px-1 text-sm font-semibold text-white">
-              {APP_NAME} guest tour
-            </p>
-            <button
-              ref={closeBtnRef}
-              type="button"
-              onClick={close}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              aria-label="Close guest tour"
-            >
-              <X className="h-5 w-5" aria-hidden />
-            </button>
-          </div>
-
-          <div className="relative mx-auto flex min-h-0 w-full max-w-lg flex-1 items-center justify-center px-3 pb-3">
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video
-              ref={videoRef}
-              className="max-h-full max-w-full rounded-2xl bg-black object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
-              src={GUEST_HELP_TOUR_VIDEO}
-              poster={GUEST_HELP_TOUR_POSTER}
-              controls
-              playsInline
-              preload="metadata"
-              controlsList="nodownload"
-            />
-          </div>
-
-          <div className="flex flex-col items-center gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">
-            <Link
-              href={guideHref}
-              onClick={() => {
-                trackGuideEvent("guide_context_help", {
-                  action: "open-guest-help-more",
-                  surface: "invite-fab-tour",
-                });
-                close();
-              }}
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#0B8A83] px-5 text-sm font-semibold text-white hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-              More guest help
-            </Link>
-            <button
-              type="button"
-              onClick={close}
-              className="min-h-10 text-sm font-medium text-white/75 hover:text-white"
-            >
-              Back to invitation
-            </button>
-          </div>
-        </div>
-      ) : null}
-    </>
+        )}
+      </Link>
+    </div>
   );
 }

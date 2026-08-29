@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Heart, Loader2, Pencil, Send, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
   viewerCanDeleteWish,
   viewerCanEditWish,
 } from "@/lib/invitation/guest-wish-permissions";
+import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import cb from "./condolence-book.module.css";
 import fw from "./fashion-guest-wishes.module.css";
 import { FashionHouseLogoMark, FashionQuillMark, FashionSalonMark } from "./fashion-wish-marks";
@@ -63,6 +64,8 @@ interface GuestWishesCardProps {
   fashionHouse?: {
     houseName?: string | null;
     logoUrl?: string | null;
+    wishesTitle?: string | null;
+    wishesEmpty?: string | null;
   } | null;
 }
 
@@ -152,20 +155,23 @@ export function GuestWishesCard({
       }
     : fashion
       ? {
-          title: "Compliments to the House",
+          title:
+            fashionHouse?.wishesTitle?.trim() ||
+            "Compliments and guest wishes to the host",
           kicker: fashionHouseNameplate(resolvedHouseName),
-          lead: "Leave a note for this opening.",
-          leadModerator: " As organizer, you may edit or remove any note.",
-          leadGuest:
-            " Notes the house approves are shared with every guest invited.",
+          lead: "",
+          leadModerator: "",
+          leadGuest: "",
           nameLabel: "Your name",
           namePlaceholder: "As you wish it written",
           messageLabel: "Your note",
-          placeholder: "A compliment, a first impression, or a wish for the house…",
+          placeholder: "A first impression, a compliment, a word for this opening…",
           submit: "Leave your note",
           loading: "Opening the house…",
-          empty: "The house is waiting — be the first to leave a note.",
-          success: "Your note has been received by the house.",
+          empty:
+            fashionHouse?.wishesEmpty?.trim() ||
+            "The atelier is still quiet — leave the first compliment.",
+          success: "Your note is now visible to every guest.",
           nounOne: "note",
           nounMany: "notes",
           loadMore: "Read further notes",
@@ -206,9 +212,11 @@ export function GuestWishesCard({
   const [savingEdit, setSavingEdit] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const submittingRef = useRef(false);
+  const editingRef = useRef<string | null>(null);
 
   const fetchPage = useCallback(
-    async (pageNum: number, append: boolean) => {
+    async (pageNum: number, append: boolean, opts?: { silent?: boolean }) => {
       if (!eventId && !inviteLink && !invitationId) {
         setWishes([]);
         setCanModerate(false);
@@ -217,8 +225,10 @@ export function GuestWishesCard({
         setLoading(false);
         return;
       }
-      if (append) setLoadingMore(true);
-      else setLoading(true);
+      if (!opts?.silent) {
+        if (append) setLoadingMore(true);
+        else setLoading(true);
+      }
       try {
         const params = new URLSearchParams({
           page: String(pageNum),
@@ -235,29 +245,36 @@ export function GuestWishesCard({
         if (res.ok && data.success) {
           const items = (data.data.items ?? []) as GuestWishItem[];
           setWishes((prev) => {
-            if (!append) return items;
-            const seen = new Set(prev.map((w) => w.id));
-            const merged = [...prev];
-            for (const item of items) {
-              if (!seen.has(item.id)) {
-                seen.add(item.id);
-                merged.push(item);
+            if (append) {
+              const seen = new Set(prev.map((w) => w.id));
+              const merged = [...prev];
+              for (const item of items) {
+                if (!seen.has(item.id)) {
+                  seen.add(item.id);
+                  merged.push(item);
+                }
               }
+              return merged;
             }
-            return merged;
+            if (opts?.silent && prev.length) {
+              const incoming = new Map(items.map((item) => [item.id, item]));
+              const rest = prev.filter((wish) => !incoming.has(wish.id));
+              return [...items, ...rest];
+            }
+            return items;
           });
           setTotal(data.data.total ?? 0);
           setHasMore(Boolean(data.data.hasMore ?? pageNum < (data.data.pages ?? 1)));
           setPage(pageNum);
           setCanModerate(Boolean(data.data.canModerate));
-        } else if (!append) {
+        } else if (!append && !opts?.silent) {
           setCanModerate(false);
           setWishes([]);
           setTotal(0);
           setHasMore(false);
         }
       } catch {
-        if (!append) setCanModerate(false);
+        if (!append && !opts?.silent) setCanModerate(false);
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -269,6 +286,21 @@ export function GuestWishesCard({
   useEffect(() => {
     void fetchPage(1, false);
   }, [fetchPage]);
+
+  useEffect(() => {
+    if (!eventId && !inviteLink && !invitationId) return;
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      if (submittingRef.current || editingRef.current) return;
+      void fetchPage(1, false, { silent: true });
+    };
+    const interval = window.setInterval(refresh, 8000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [fetchPage, eventId, inviteLink, invitationId]);
 
   useEffect(() => {
     if (guestName?.trim()) setAuthorName(guestName.trim());
@@ -283,10 +315,12 @@ export function GuestWishesCard({
       setError("This invitation is not linked to an event yet.");
       return;
     }
+    submittingRef.current = true;
     setSubmitting(true);
     setError("");
     setSuccess("");
     try {
+      const preview = isPreviewInvitationId(inviteLink) || isPreviewInvitationId(invitationId);
       const res = await fetch("/api/invite/wishes", {
         method: "POST",
         credentials: "same-origin",
@@ -294,7 +328,7 @@ export function GuestWishesCard({
         body: JSON.stringify({
           eventId: eventId || undefined,
           invitationId: invitationId || undefined,
-          guestId: guestId || undefined,
+          guestId: preview ? undefined : guestId || undefined,
           link: inviteLink || undefined,
           authorName: authorName.trim(),
           message: message.trim(),
@@ -302,7 +336,14 @@ export function GuestWishesCard({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Could not save your wish");
+        const raw = typeof data.error === "string" ? data.error : "";
+        setError(
+          !raw || raw === "Required"
+            ? fashion
+              ? "Could not save your note. Please try again."
+              : "Could not save your wish. Please try again."
+            : raw
+        );
         return;
       }
       setMessage("");
@@ -315,14 +356,20 @@ export function GuestWishesCard({
         await fetchPage(1, false);
       }
     } catch {
-      setError("Could not save your wish. Please try again.");
+      setError(
+        fashion
+          ? "Could not save your note. Please try again."
+          : "Could not save your wish. Please try again."
+      );
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
 
   function beginEdit(wish: GuestWishItem) {
     if (!canEditWish) return;
+    editingRef.current = wish.id;
     setEditingId(wish.id);
     setEditAuthorName(wish.authorName);
     setEditMessage(wish.message);
@@ -331,6 +378,7 @@ export function GuestWishesCard({
   }
 
   function cancelEdit() {
+    editingRef.current = null;
     setEditingId(null);
     setEditAuthorName("");
     setEditMessage("");
@@ -648,7 +696,7 @@ export function GuestWishesCard({
                   ) : (
                     <FashionSalonMark className={fw.mark} />
                   )}
-                  <div>
+                  <div className={fw.headerLeadCopy}>
                     {copy.kicker ? <p className={fw.kicker}>{copy.kicker}</p> : null}
                     <h3 className={fw.title}>{copy.title}</h3>
                   </div>
@@ -659,10 +707,12 @@ export function GuestWishesCard({
                   </span>
                 )}
               </div>
-              <p className={fw.lede}>
-                {copy.lead}
-                {canModerate ? copy.leadModerator : copy.leadGuest}
-              </p>
+              {(copy.lead || (canModerate ? copy.leadModerator : copy.leadGuest)) ? (
+                <p className={fw.lede}>
+                  {copy.lead}
+                  {canModerate ? copy.leadModerator : copy.leadGuest}
+                </p>
+              ) : null}
             </>
           )}
           {hideHeader && total > 0 && (
@@ -671,38 +721,48 @@ export function GuestWishesCard({
             </p>
           )}
 
-          <form onSubmit={(e) => void submit(e)} className={fw.form}>
+          <form onSubmit={(e) => void submit(e)} className={fw.form} noValidate>
             <div>
-              <label htmlFor="guest-wish-name" className={fw.label}>
+              <label htmlFor="fashion-guest-wish-name" className={fw.label}>
                 {copy.nameLabel}
               </label>
               <Input
-                id="guest-wish-name"
+                id="fashion-guest-wish-name"
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
                 placeholder={copy.namePlaceholder}
                 required
+                autoComplete="name"
                 maxLength={80}
                 className={fw.field}
               />
             </div>
             <div>
-              <label htmlFor="guest-wish-message" className={fw.label}>
+              <label htmlFor="fashion-guest-wish-message" className={fw.label}>
                 {copy.messageLabel}
               </label>
               <Textarea
-                id="guest-wish-message"
+                id="fashion-guest-wish-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={copy.placeholder}
                 required
+                minLength={2}
                 rows={4}
                 maxLength={1000}
                 className={`${fw.field} ${fw.letter}`}
               />
             </div>
-            {error && <p className={fw.error}>{error}</p>}
-            {success && <p className={fw.success}>{success}</p>}
+            {error && (
+              <p className={fw.error} role="alert">
+                {error}
+              </p>
+            )}
+            {success && (
+              <p className={fw.success} role="status">
+                {success}
+              </p>
+            )}
             <button
               type="submit"
               disabled={submitting || !authorName.trim() || message.trim().length < 2}
@@ -717,7 +777,7 @@ export function GuestWishesCard({
             </button>
           </form>
 
-          <div className={fw.feed}>
+          <div className={fw.feed} aria-live="polite" data-testid="fashion-wish-feed">
             {loading ? (
               <p className={fw.status}>{copy.loading}</p>
             ) : wishes.length === 0 ? (
