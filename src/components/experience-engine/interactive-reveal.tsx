@@ -72,8 +72,19 @@ export function InteractiveReveal({
   useEffect(() => {
     if (embedded) return;
     const unlock = lockRevealScroll();
-    return unlock;
+    return () => {
+      unlock();
+    };
   }, [embedded]);
+
+  // Harness-only: ?throwReveal=1 forces a render throw inside the reveal tree
+  // so CeremonyErrorBoundary hold/recover can be proven in Playwright.
+  const harnessThrow =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("throwReveal") === "1";
+  if (harnessThrow) {
+    throw new Error("[harness] intentional InteractiveReveal throw");
+  }
 
   return (
     <div

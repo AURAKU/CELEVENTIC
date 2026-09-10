@@ -385,9 +385,12 @@ export function TapToBeginExperience({
     if (completed.current || exitingRef.current) return;
     exitingRef.current = true;
     setExiting(true);
-    const delay = reduceMotion ? 0 : EXIT_MS;
-    exitTimer.current = setTimeout(finish, delay);
-  }, [finish, reduceMotion]);
+    // Advance the invite pipeline on this gesture tick. The sealed envelope
+    // mounts DISARMED so this same pointer sequence cannot open the seal.
+    // Visual exit CSS may continue briefly after unmount for polish.
+    if (exitTimer.current) clearTimeout(exitTimer.current);
+    finish();
+  }, [finish]);
 
   useEffect(() => {
     return () => {

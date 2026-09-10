@@ -100,6 +100,8 @@ export {
   lockRevealScroll,
   unlockRevealScroll,
   forceUnlockRevealScroll,
+  forceUnlockInvitationViewport,
+  assertPortalViewportInteractive,
   createRevealSession,
   markRevealActive,
   markRevealComplete,
