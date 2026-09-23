@@ -51,7 +51,7 @@ import {
   openingMemoryKey,
   rememberOpeningSeen,
 } from "@/lib/experience/opening-visit-memory";
-import { forceUnlockRevealScroll } from "@/lib/experience-engine/reveal-runtime";
+import { forceUnlockInvitationViewport, assertPortalViewportInteractive } from "@/lib/experience-engine/reveal-runtime";
 import {
   assertMandatoryMemorialEnvelopeInvariant,
   isLiveGuestInviteMount,
@@ -60,6 +60,15 @@ import {
   resolveLiveRevealConfiguration,
   resolvePhaseAfterTapBegin,
 } from "@/lib/experience/live-envelope-contract";
+
+const PHASE_DIAG_ENABLED =
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_CELEVENTIC_LIVE_REVEAL_DIAG === "1";
+
+function logInvitePhase(payload: Record<string, unknown>): void {
+  if (!PHASE_DIAG_ENABLED) return;
+  console.info("[invite-phase]", payload);
+}
 
 /**
  * Full opening pipeline (platform → ceremony → invite):
@@ -338,8 +347,33 @@ export function PremiumInviteWrapper({
     themeColors?.primary ??
     (enrichedDesign.layout === "traditional-marriage-ceremony" ? "#F5EBE3" : undefined);
 
-  const [phase, setPhase] = useState<ExperiencePhase>(() =>
+  const [phase, setPhaseState] = useState<ExperiencePhase>(() =>
     resolveInitialInvitePhase(pipelineFlags)
+  );
+  const setPhase = useCallback(
+    (next: ExperiencePhase, reason: string) => {
+      setPhaseState((prev) => {
+        logInvitePhase({
+          from: prev,
+          to: next,
+          reason,
+          timestamp: Date.now(),
+          showReveal,
+          revealMode: liveReveal.resolvedRevealMode,
+          openingExperience: liveReveal.resolvedOpeningExperience,
+          isLiveGuest,
+          envelopeAutoOpen,
+        });
+        return next;
+      });
+    },
+    [
+      showReveal,
+      liveReveal.resolvedRevealMode,
+      liveReveal.resolvedOpeningExperience,
+      isLiveGuest,
+      envelopeAutoOpen,
+    ]
   );
   /** Bumps on Replay Opening so soft-intro / tap / reveal remount from frame 0. */
   const [ceremonyGeneration, setCeremonyGeneration] = useState(0);
@@ -462,21 +496,25 @@ export function PremiumInviteWrapper({
     // skipped, not on first visit, not on a return visit. A returning
     // guest can use the visible "Skip intro" control on that beat; the
     // ceremony itself always continues normally from here.
-    setPhase(phaseAfterSoftIntro(pipelineFlags));
-  }, [pipelineFlags]);
+    setPhase(phaseAfterSoftIntro(pipelineFlags), "soft-intro-complete");
+  }, [pipelineFlags, setPhase]);
 
   const afterReveal = useCallback(() => {
+    // Unlock BEFORE portal paints — never hand the guest a locked viewport.
+    forceUnlockInvitationViewport("reveal-complete");
     void startAudio();
     // Soft settle from the top onto the framed cover — never leave guests mid/bottom.
     setPortalEntrance("from-top");
-    setPhase("portal");
+    setPhase("portal", "reveal-complete");
     // Pin cover immediately, then again after layout/animation frames.
     resetInviteScrollToCover({ smooth: false });
     requestAnimationFrame(() => {
+      forceUnlockInvitationViewport("portal-raf");
+      assertPortalViewportInteractive();
       resetInviteScrollToCover({ smooth: false });
       window.setTimeout(() => resetInviteScrollToCover({ smooth: true }), 120);
     });
-  }, [startAudio]);
+  }, [startAudio, setPhase]);
 
   const handleRevealCeremonyError = useCallback(
     (error: Error, beat: "soft-intro" | "tap-to-begin" | "reveal") => {
@@ -490,6 +528,8 @@ export function PremiumInviteWrapper({
         message: error.message,
         name: error.name,
       });
+      // Mandatory memorial: keep viewport unlocked for recovery UI; never portal.
+      forceUnlockInvitationViewport("reveal-error");
     },
     [
       mandatoryMemorialEnvelope,
@@ -499,19 +539,26 @@ export function PremiumInviteWrapper({
     ]
   );
 
+  const remountRevealCeremony = useCallback(() => {
+    forceUnlockInvitationViewport("reveal-retry");
+    setCeremonyGeneration((n) => n + 1);
+    setPhase("reveal", "reveal-retry");
+  }, [setPhase]);
+
   const handleTapBegin = useCallback(() => {
     void startAudio();
     if (showReveal) {
       // Keep underlay pinned to cover while the envelope opens over it.
       resetInviteScrollToCover({ smooth: false });
-      setPhase(resolvePhaseAfterTapBegin(showReveal));
+      setPhase(resolvePhaseAfterTapBegin(showReveal), "guest-tap-begin");
       return;
     }
     // No envelope ceremony — soft open is appropriate.
+    forceUnlockInvitationViewport("tap-begin-no-reveal");
     setPortalEntrance("fade");
-    setPhase("portal");
+    setPhase("portal", "tap-begin-no-reveal");
     resetInviteScrollToCover({ smooth: false });
-  }, [showReveal, startAudio]);
+  }, [showReveal, startAudio, setPhase]);
 
   useEffect(() => {
     if (phase === "portal" && hasMusic && wantsAutoplay && !audioStarted.current) {
@@ -522,22 +569,28 @@ export function PremiumInviteWrapper({
   // Guarantee mobile page scroll after ceremony — never leave reveal lock stuck.
   useEffect(() => {
     if (phase !== "portal" || typeof document === "undefined") return;
-    forceUnlockRevealScroll();
+    forceUnlockInvitationViewport("portal-effect");
     document.documentElement.classList.remove("reveal-scroll-locked");
     document.body.style.overflow = "";
     document.body.style.touchAction = "";
+    document.body.style.pointerEvents = "";
 
     const scroller = document.querySelector<HTMLElement>(".inv-paged-scroll");
-    if (!scroller) return;
+    if (!scroller) {
+      assertPortalViewportInteractive();
+      return;
+    }
 
     scroller.classList.add("inv-paged-scroll--settle");
     scroller.style.pointerEvents = "auto";
     scroller.style.overflowY = "auto";
+    scroller.style.touchAction = "pan-y";
     resetInviteScrollToCover({ smooth: false });
 
     const settleMs = window.setTimeout(() => {
       scroller.classList.remove("inv-paged-scroll--settle");
       resetInviteScrollToCover({ smooth: false });
+      assertPortalViewportInteractive();
     }, 420);
 
     return () => {
@@ -586,8 +639,8 @@ export function PremiumInviteWrapper({
     }
     setCeremonyGeneration((n) => n + 1);
     setPortalEntrance("none");
-    setPhase(resolveInitialInvitePhase(pipelineFlags));
-  }, [audioManager, ceremonyMemoryKey, musicSelection?.startSec, pipelineFlags, props.invitation.id, props.invitation.uniqueLink]);
+    setPhase(resolveInitialInvitePhase(pipelineFlags), "replay-opening");
+  }, [audioManager, ceremonyMemoryKey, musicSelection?.startSec, pipelineFlags, props.invitation.id, props.invitation.uniqueLink, setPhase]);
 
   // "Replay Opening" inside a template restarts from the brand video intro.
   useEffect(() => onInvitationReplay(restartOpeningCeremony), [restartOpeningCeremony]);
@@ -649,16 +702,17 @@ export function PremiumInviteWrapper({
   useEffect(() => {
     if (phase !== "intro") return;
     if (needsTapGate) {
-      setPhase("tap-to-begin");
+      setPhase("tap-to-begin", "legacy-intro-recovery");
       return;
     }
     if (showReveal) {
-      setPhase("reveal");
+      setPhase("reveal", "legacy-intro-recovery");
       return;
     }
     void startAudio();
-    setPhase("portal");
-  }, [phase, needsTapGate, showReveal, startAudio]);
+    forceUnlockInvitationViewport("legacy-intro-recovery");
+    setPhase("portal", "legacy-intro-recovery");
+  }, [phase, needsTapGate, showReveal, startAudio, setPhase]);
 
   // Both banners are admission conveniences layered over the ceremony. They poll
   // the network, so they are the likeliest thing here to throw on a flaky
@@ -876,6 +930,18 @@ export function PremiumInviteWrapper({
                 ? "pointer-events-none"
                 : undefined
         }
+        style={
+          phase === "reveal"
+            ? {
+                // Keep underlay mounted for peek, but never let it win the
+                // stacking context over the sealed envelope (z-index race with
+                // `.invite-viewport-live { z-index: 50 }`).
+                position: "relative",
+                zIndex: 1,
+                pointerEvents: "none",
+              }
+            : undefined
+        }
         aria-hidden={phase === "reveal" ? true : undefined}
       >
         {portal}
@@ -890,8 +956,31 @@ export function PremiumInviteWrapper({
         {phase === "reveal" ? (
           <CeremonyErrorBoundary
             beat="reveal"
+            fallthroughPolicy={mandatoryMemorialEnvelope ? "hold" : "advance"}
             onFallthrough={afterReveal}
             onError={handleRevealCeremonyError}
+            recoverFallback={
+              <div
+                className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-[#0a0908] px-6 text-center"
+                data-ceremony-recover="reveal"
+                role="alert"
+              >
+                <p
+                  className="max-w-sm text-sm tracking-wide text-[#F7EFD8]/90"
+                  style={{ fontFamily: "var(--font-cinzel), Cinzel, serif" }}
+                >
+                  The opening ceremony could not start. Your invitation is still here.
+                </p>
+                <button
+                  type="button"
+                  onClick={remountRevealCeremony}
+                  className="rounded-full border border-[#E0B84A]/70 bg-black/70 px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#F7EFD8]"
+                  data-ceremony-retry="reveal"
+                >
+                  Show sealed envelope
+                </button>
+              </div>
+            }
           >
             <InteractiveReveal
               key={`reveal-${ceremonyGeneration}`}

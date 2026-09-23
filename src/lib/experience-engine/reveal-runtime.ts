@@ -1,46 +1,18 @@
 /**
  * Reveal runtime helpers — scroll lock, completion, and replay without
  * rewriting individual reveal UIs.
+ *
+ * Scroll locking is centralized in invitation-scroll-lock.ts.
  */
 
-let lockCount = 0;
-let previousOverflow = "";
-let previousTouchAction = "";
-
-/** Lock body scroll while a fullscreen reveal is active (nested-safe). */
-export function lockRevealScroll(): () => void {
-  if (typeof document === "undefined") return () => undefined;
-  lockCount += 1;
-  if (lockCount === 1) {
-    previousOverflow = document.body.style.overflow;
-    previousTouchAction = document.body.style.touchAction;
-    document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
-    document.documentElement.classList.add("reveal-scroll-locked");
-  }
-  return () => unlockRevealScroll();
-}
-
-export function unlockRevealScroll(): void {
-  if (typeof document === "undefined") return;
-  lockCount = Math.max(0, lockCount - 1);
-  if (lockCount === 0) {
-    document.body.style.overflow = previousOverflow;
-    document.body.style.touchAction = previousTouchAction;
-    document.documentElement.classList.remove("reveal-scroll-locked");
-  }
-}
-
-/** Hard clear after envelope → portal — never leave touchAction:none stuck. */
-export function forceUnlockRevealScroll(): void {
-  if (typeof document === "undefined") return;
-  lockCount = 0;
-  document.body.style.overflow = "";
-  document.body.style.touchAction = "";
-  document.documentElement.classList.remove("reveal-scroll-locked");
-  previousOverflow = "";
-  previousTouchAction = "";
-}
+export {
+  lockRevealScroll,
+  unlockRevealScroll,
+  forceUnlockRevealScroll,
+  forceUnlockInvitationViewport,
+  assertPortalViewportInteractive,
+  getInvitationScrollLockCountForTests,
+} from "@/lib/experience-engine/invitation-scroll-lock";
 
 export type RevealCompletionState = "idle" | "active" | "complete";
 

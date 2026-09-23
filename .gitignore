@@ -27,6 +27,11 @@
 .claude/
 .cursor/
 
+# Nested git worktrees checked out inside this folder — never commit them.
+/CELEVENTIC-event-guide/
+/CELEVENTIC-femmora/
+/CELEVENTIC-memory-vault/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useReducedMotion } from "framer-motion";
 import { triggerHapticLight } from "@/lib/haptics";
 import { playRevealSounds } from "@/lib/experience/reveal-sounds";
@@ -15,6 +15,7 @@ import {
   type ResolvedSealStyle,
 } from "@/lib/invitation/seal-design";
 import { shouldEnvelopeAutoOpen } from "@/lib/experience/live-envelope-contract";
+import { createCeremonyGestureBoundary } from "@/lib/experience/ceremony-gesture-boundary";
 
 interface EnvelopeCollectionRevealProps {
   theme: EnvelopeVisualTheme;
@@ -142,11 +143,13 @@ export function EnvelopeCollectionReveal({
   const unsealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoOpenBootstrapped = useRef(false);
   /**
-   * Require pointerdown on this control before click opens — blocks the
-   * Tap-to-Begin → reveal mount click-through that would otherwise fire
-   * beginOpen on the same guest gesture without a second intentional tap.
+   * Ceremony arming boundary: mount DISARMED so Tap-to-Begin's pointer
+   * sequence cannot open the seal. Arms after that sequence ends; then a
+   * NEW seal pointerdown owns the gesture and its click may BEGIN.
    */
-  const pointerArmed = useRef(false);
+  const gestureBoundary = useRef(createCeremonyGestureBoundary());
+  const sealGestureToken = useRef<number | null>(null);
+  const [ceremonyArmed, setCeremonyArmed] = useState(false);
 
   /** Cream embroidered face, photoreal art fill + interactive seal when themed. */
   const photoreal = Boolean(theme.photoreal);
@@ -276,20 +279,47 @@ export function EnvelopeCollectionReveal({
   }, [enableSounds, onBegin, phase, photoreal, runOpenSequence, staticPreview]);
 
   const onSealPointerDown = useCallback(() => {
-    pointerArmed.current = true;
+    sealGestureToken.current = gestureBoundary.current.noteSealPointerDown();
   }, []);
 
   const onSealClick = useCallback(() => {
-    if (!pointerArmed.current) return;
-    pointerArmed.current = false;
+    if (!gestureBoundary.current.mayOpenFromSealClick(sealGestureToken.current)) {
+      sealGestureToken.current = null;
+      return;
+    }
+    sealGestureToken.current = null;
     beginOpen();
   }, [beginOpen]);
+
+  const onSealKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLButtonElement>) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      if (!gestureBoundary.current.mayOpenFromKeyboard()) return;
+      beginOpen();
+    },
+    [beginOpen]
+  );
 
   useEffect(() => {
     return () => {
       clearOpenTimers();
     };
   }, [clearOpenTimers]);
+
+  // Arm only after the prior Tap-to-Begin gesture is fully quiet.
+  useEffect(() => {
+    if (staticPreview || shouldAutoOpen) {
+      setCeremonyArmed(true);
+      return;
+    }
+    setCeremonyArmed(false);
+    const boundary = createCeremonyGestureBoundary({
+      onArmed: () => setCeremonyArmed(true),
+    });
+    gestureBoundary.current = boundary;
+    return boundary.mountDisarmed();
+  }, [staticPreview, shouldAutoOpen]);
 
   /**
    * Catalogue “Tap to open envelope” already happened.
@@ -318,25 +348,34 @@ export function EnvelopeCollectionReveal({
     };
   }, [shouldAutoOpen, onBegin, enableSounds, photoreal, runOpenSequence]);
 
-  useEffect(() => {
-    if (staticPreview || phase !== "idle") return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        beginOpen();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [beginOpen, phase, staticPreview]);
+  // Keyboard open only via the focused seal button (onSealKeyDown) — never a
+  // window-level listener that can swallow a held Space/Enter from Tap to Begin.
 
-  if (phase === "done") return null;
+  /** Must beat portal `.invite-viewport-live { z-index: 50 }` — never reuse that class here. */
+  const shellZIndex = staticPreview ? undefined : embedded ? 100 : 200;
+
+  if (phase === "done") {
+    // Keep a non-interactive exit shell for one paint so portal handoff can
+    // claim the viewport without a blank flash or leftover hit target.
+    return (
+      <div
+        className={
+          embedded
+            ? "absolute inset-0 pointer-events-none"
+            : "fixed inset-0 pointer-events-none"
+        }
+        style={{ zIndex: shellZIndex ?? 200 }}
+        data-envelope-phase="done"
+        aria-hidden
+      />
+    );
+  }
 
   const shellClass = staticPreview
     ? "absolute inset-0 overflow-hidden pointer-events-none"
     : embedded
-      ? "absolute inset-0 z-[100] overflow-hidden"
-      : "fixed inset-0 z-[100] invite-viewport-live overflow-hidden";
+      ? "absolute inset-0 overflow-hidden"
+      : "fixed inset-0 overflow-hidden";
 
   return (
     <div
@@ -344,6 +383,7 @@ export function EnvelopeCollectionReveal({
       data-envelope-phase={phase}
       data-envelope-auto-open={shouldAutoOpen ? "true" : "false"}
       style={{
+        zIndex: shellZIndex,
         background:
           isEnvelopeOpening
             ? "transparent"
@@ -529,8 +569,11 @@ export function EnvelopeCollectionReveal({
       {!staticPreview && !shouldAutoOpen && phase === "idle" && (
         <button
           type="button"
+          data-envelope-seal="true"
+          data-ceremony-armed={ceremonyArmed ? "true" : "false"}
           onPointerDown={onSealPointerDown}
           onClick={onSealClick}
+          onKeyDown={onSealKeyDown}
           className={`absolute inset-0 z-40 touch-manipulation bg-transparent border-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-12px] ${
             memorial
               ? "focus-visible:outline-[#E0B84A]/85"
