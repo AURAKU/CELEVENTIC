@@ -23,7 +23,8 @@ export type InvitationLayoutSlug =
   | "luxury-fashion-flagship"
   | "traditional-marriage-ceremony"
   | "forever-afaris-wedding"
-  | "aurelia-editorial-wedding";
+  | "aurelia-editorial-wedding"
+  | "seraphine-champagne-wedding";
 
 export type MediaType = "image" | "video" | "pdf";
 

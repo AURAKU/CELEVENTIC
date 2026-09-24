@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { catalogService } from "@/services/commerce/catalog.service";
+import { INVITATION_PACKAGES } from "@/lib/invitation-mvp/packages";
 import { EVENT_TYPES } from "@/lib/constants";
 import {
   eventTypesForCatalogCategory,
@@ -31,7 +32,9 @@ export default async function TemplateDetailPage({
   const eventType = resolveOrderEventType(template.category, eventTypeParam);
   const allowedEventTypes = new Set(eventTypesForCatalogCategory(template.category));
   const eventTypeChoices = EVENT_TYPES.filter((et) => allowedEventTypes.has(et.value));
-  const packages = await catalogService.getActivePackages(eventType);
+  const packages = await catalogService
+    .getActivePackages(eventType)
+    .catch(() => INVITATION_PACKAGES);
 
   return (
     <>

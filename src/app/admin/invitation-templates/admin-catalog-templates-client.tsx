@@ -200,6 +200,35 @@ export function AdminCatalogTemplatesClient() {
     load();
   }
 
+  async function setVisibility(template: TemplateRow) {
+    setBusyId(template.id);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/invitation-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "set-visibility",
+          slug: template.slug,
+          visible: !template.isActive,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setMessage(d.error || "Visibility update failed");
+        return;
+      }
+      setMessage(
+        template.isActive
+          ? `${template.name} hidden from the public catalogue. Direct links still work.`
+          : `${template.name} is now public in the catalogue.`
+      );
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function runAction(id: string, action: "duplicate" | "archive" | "restore" | "hard-delete") {
     setBusyId(id);
     setMessage("");
@@ -565,7 +594,7 @@ export function AdminCatalogTemplatesClient() {
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="font-semibold">{t.name}</p>
                 {t.isFeatured && <Badge className="bg-[#D4A63A] text-[#0F172A]"><Star className="h-3 w-3" /> Featured</Badge>}
-                {!t.isActive && <Badge variant="outline">Archived</Badge>}
+                {!t.isActive && <Badge variant="outline">Hidden from public catalogue</Badge>}
               </div>
               <p className="text-xs text-slate-500">{t.category} · {t.style} · {t.slug}</p>
               {uniqueness[t.slug] && (
@@ -599,8 +628,15 @@ export function AdminCatalogTemplatesClient() {
                     <RotateCcw className="h-3 w-3" />
                   </Button>
                 )}
-                <Button size="sm" variant="outline" onClick={() => toggle(t.id, "isActive", !t.isActive)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busyId === t.id}
+                  title={t.isActive ? "Hide from public catalogue" : "Show in public catalogue"}
+                  onClick={() => void setVisibility(t)}
+                >
                   {t.isActive ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                  <span className="ml-1">{t.isActive ? "Public" : "Hidden"}</span>
                 </Button>
                 <Button size="sm" variant="destructive" disabled={busyId === t.id} onClick={() => void runAction(t.id, "hard-delete")}>
                   <Trash2 className="h-3 w-3" />

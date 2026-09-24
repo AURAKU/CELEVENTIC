@@ -41,6 +41,7 @@ export type RevealMechanicId =
   | "blush-gate"
   | "luxury-fashion-flagship"
   | "aurelia-editorial-wedding"
+  | "seraphine-champagne-wedding"
   | "none";
 
 export interface ExperienceSceneDef {

@@ -86,6 +86,12 @@ export const PUBLIC_CATALOG_COPY: Record<string, PublicCatalogCopy> = {
       "Ivory editorial wedding. Tap the veil to open two ceremony days, dress palettes, RSVP and maps.",
     style: "Ivory",
   },
+  "seraphine-champagne-wedding": {
+    name: "Seraphine Champagne Wedding",
+    description:
+      "Champagne editorial wedding. Open the veil into two ceremony days, dress palettes, RSVP, maps and the album.",
+    style: "Champagne",
+  },
   "floral-garden-romance": {
     name: "Petal Promise",
     description: "Living garden romance. Floral logo bloom into petal reveal and floating frames.",
@@ -408,6 +414,16 @@ export const CATALOG_DEMO_IDENTITIES: Record<string, DemoIdentity> = {
     landmark: "Accra",
     dressCode: "Palette for Friday, elegant formal for Saturday",
     sealInitials: "E & D",
+  },
+  "seraphine-champagne-wedding": {
+    title: "The Wedding of Efua & Yaw",
+    hostName: "Efua Asante & Yaw Boateng",
+    message: "Together with their families, Efua and Yaw invite you to celebrate their wedding.",
+    invitationName: "Efua & Yaw Seraphine",
+    venueName: "TLPCI, Solution Centre",
+    landmark: "Accra",
+    dressCode: "Palette for Friday, elegant formal for Saturday",
+    sealInitials: "E & Y",
   },
   "floral-garden-romance": {
     title: "The Engagement of Hannah & David",

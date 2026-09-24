@@ -299,7 +299,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     isTraditionalMarriage ||
     props.design.layout === "forever-afaris-wedding" ||
     props.design.layout === "luxury-fashion-flagship" ||
-    props.design.layout === "aurelia-editorial-wedding";
+    props.design.layout === "aurelia-editorial-wedding" ||
+    props.design.layout === "seraphine-champagne-wedding";
   const fashionOwnsPaper = props.design.layout === "luxury-fashion-flagship";
   const fashionPaperFill =
     "radial-gradient(120% 90% at 50% 0%, #fffdf8 0%, #fbf7f0 48%, #f4ede1 100%)";
@@ -313,9 +314,6 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   if (cinematicMode) {
     return (
       <div className="relative">
-        {!props.embedded && (
-          <InviteGuestHelpFab alignEnd={props.design.layout === "luxury-fashion-flagship"} />
-        )}
       <CinematicInvitationSpotlight
         {...props}
         embedded={props.embedded}
@@ -336,6 +334,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         onShare={share}
         shareCopied={shareState === "copied"}
       />
+      {!props.embedded && (
+        <InviteGuestHelpFab alignEnd={props.design.layout === "luxury-fashion-flagship"} />
+      )}
       </div>
     );
   }
@@ -482,9 +483,6 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         )}
 
         <div className="mx-auto max-w-2xl px-4 py-6 invite-content-pad space-y-8">
-          {!props.embedded && (
-            <InviteGuestHelpFab alignEnd={props.design.layout === "luxury-fashion-flagship"} />
-          )}
           {lifecyclePhase === "event-day" && (
             <PortalSection id="event-day">
               <EventDayBanner
@@ -825,6 +823,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           </PortalSection>
 
           {props.design.layout !== "aurelia-editorial-wedding" &&
+            props.design.layout !== "seraphine-champagne-wedding" &&
             (props.giftUrl || hubTabs.includes("gifts")) && (
           <PortalSection delay={420} id="gifts">
             {props.giftUrl ? (
@@ -898,6 +897,10 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           )}
 
         </div>
+
+        {!props.embedded && (
+          <InviteGuestHelpFab alignEnd={props.design.layout === "luxury-fashion-flagship"} />
+        )}
 
         {!templateOwnsJourney &&
           !props.embedded &&

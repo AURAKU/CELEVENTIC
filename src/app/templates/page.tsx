@@ -4,7 +4,10 @@ import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getBrowseCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
+import {
+  getVisibleBrowseCatalogTemplates,
+  loadCatalogVisibilityOverlay,
+} from "@/lib/invitation-mvp/catalog-visibility";
 import { PublicTemplatesCatalog } from "@/components/invitation/public-templates-catalog";
 import {
   PublicDesignStudioCollection,
@@ -40,7 +43,8 @@ export default async function PublicTemplatesPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const limit = PUBLIC_GRID_LIMIT;
   const skip = (page - 1) * limit;
-  const browseTemplates = getBrowseCatalogTemplates();
+  const overlay = await loadCatalogVisibilityOverlay();
+  const browseTemplates = getVisibleBrowseCatalogTemplates(overlay);
 
   const where = { approvalStatus: "APPROVED" as const, isActive: true };
 

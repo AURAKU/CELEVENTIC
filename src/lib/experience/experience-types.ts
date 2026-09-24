@@ -47,6 +47,7 @@ export type OpeningExperienceId =
   | "blush-gate"
   | "luxury-fashion-flagship"
   | "aurelia-editorial-wedding"
+  | "seraphine-champagne-wedding"
   | "none";
 
 export type OutroExperienceId =
@@ -207,7 +208,8 @@ export type IntroVariantId =
   | "launch-orbit"
   | "investor-ledger"
   | "silk-whisper"
-  | "aurelia-ivory-veil";
+  | "aurelia-ivory-veil"
+  | "seraphine-ivory-veil";
 
 export interface JourneyChapter {
   id: string;

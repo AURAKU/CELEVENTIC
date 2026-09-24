@@ -3,7 +3,12 @@ export {
   AURELIA_INTRO_ID,
   AURELIA_LAYOUT_SLUG,
   AURELIA_OPENING_ID,
+  SERAPHINE_CATALOG_SLUG,
+  SERAPHINE_INTRO_ID,
+  SERAPHINE_LAYOUT_SLUG,
+  SERAPHINE_OPENING_ID,
   isAureliaEditorialLayout,
+  isAureliaFamilyOpening,
 } from "./types";
 export type {
   AureliaCeremony,
@@ -17,18 +22,24 @@ export type {
 } from "./types";
 export {
   AURELIA_HERO_FALLBACK,
+  AURELIA_INVITE_MUSIC,
+  AURELIA_INVITE_MUSIC_DURATION_SEC,
+  AURELIA_INVITE_MUSIC_TITLE,
   AURELIA_JOURNEY_FALLBACKS,
   AURELIA_RSVP_BY_ISO,
   AURELIA_STORY_FALLBACK,
   AURELIA_THEME_DEFAULTS,
   AURELIA_TRADITIONAL_ISO,
   AURELIA_TRADITIONAL_MAPS,
+  AURELIA_TRADITIONAL_PALETTE,
   AURELIA_WEDDING_DEFAULTS,
   AURELIA_WHITE_ISO,
   AURELIA_WHITE_MAPS,
+  SERAPHINE_WEDDING_DEFAULTS,
 } from "./preset";
 export {
   aureliaDistinctVenues,
+  aureliaFamilyDefaults,
   aureliaNavItems,
   aureliaSectionVisible,
   aureliaTokenStyle,

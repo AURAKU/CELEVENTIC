@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { getUniqueTemplatePresets } from "@/lib/invitation-templates";
 import { paginatedResult, parsePaginationFromUrl } from "@/lib/pagination";
+import {
+  applyCatalogVisibility,
+  loadCatalogVisibilityOverlay,
+} from "@/lib/invitation-mvp/catalog-visibility";
 
 export async function GET(req: Request) {
   const { page, limit, skip } = parsePaginationFromUrl(req.url);
-  const all = getUniqueTemplatePresets().map((t) => ({
+  const overlay = await loadCatalogVisibilityOverlay();
+  const all = getUniqueTemplatePresets(applyCatalogVisibility(overlay)).map((t) => ({
     slug: t.slug,
     name: t.name,
     description: t.description,

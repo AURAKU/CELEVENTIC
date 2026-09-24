@@ -56,6 +56,7 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
       case "luxury-fashion-flagship":
         return <LuxuryFashionFlagshipTemplate {...props} />;
       case "aurelia-editorial-wedding":
+      case "seraphine-champagne-wedding":
         return <AureliaEditorialWeddingTemplate {...props} />;
       case "passport-luxe":
         return <PassportLuxeTemplate {...props} />;

@@ -8,6 +8,7 @@ import {
   listEnabledGiftPaymentMethods,
   type GiftPaymentMethodId,
 } from "@/lib/gifts/gift-providers";
+import { GiftNetworkLogo } from "@/components/gifts/gift-network-logo";
 import { DEFAULT_MIN_AMOUNT_MINOR, DEFAULT_SUGGESTED_AMOUNTS_MINOR } from "@/lib/gifts/gift-copy";
 import { formatMinor, MoneyError, toMinorUnits } from "@/lib/gifts/money";
 import styles from "./aurelia-editorial-wedding.module.css";
@@ -102,7 +103,7 @@ export function AureliaGiftCheckout({
         if (cancelled) return;
         setCampaign(payload.data.campaign as PublicGiftCampaignView);
         if (Array.isArray(payload.data.methods) && payload.data.methods.length) {
-          setMethods(payload.data.methods);
+          setMethods(payload.data.methods.filter((item: MethodOption) => item.id !== "CARD"));
         }
         const prefill = payload.data.campaign?.guest?.name;
         if (typeof prefill === "string" && prefill.trim()) setGuestName(prefill.trim());
@@ -300,20 +301,23 @@ export function AureliaGiftCheckout({
 
           <p className={styles.giftLabel}>Pay with</p>
           <div className={styles.giftMethods}>
-            {methods.map((option) => {
-              const selected = method === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={selected ? styles.giftMethodSelected : styles.giftMethod}
-                  aria-pressed={selected}
-                  onClick={() => setMethod(option.id as GiftPaymentMethodId)}
-                >
-                  {option.shortLabel}
-                </button>
-              );
-            })}
+            {methods
+              .filter((option) => option.id !== "CARD")
+              .map((option) => {
+                const selected = method === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={selected ? styles.giftMethodSelected : styles.giftMethod}
+                    aria-pressed={selected}
+                    onClick={() => setMethod(option.id as GiftPaymentMethodId)}
+                  >
+                    <GiftNetworkLogo methodId={option.id} className={styles.giftMethodLogo} />
+                    <span>{option.shortLabel}</span>
+                  </button>
+                );
+              })}
           </div>
 
           {error ? (

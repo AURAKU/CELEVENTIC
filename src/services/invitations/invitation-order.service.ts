@@ -150,7 +150,6 @@ export class InvitationOrderService {
           category: t.category,
           style: t.style,
           layoutSlug: t.layoutSlug,
-          isActive: true,
           ...studioFields,
         },
         create: {
@@ -162,6 +161,7 @@ export class InvitationOrderService {
           layoutSlug: t.layoutSlug,
           previewGradient: t.previewGradient,
           isPremium: t.isPremium,
+          isActive: t.listed !== false,
           sortOrder: CATALOG_TEMPLATES.indexOf(t),
           ...studioFields,
         },

@@ -6,6 +6,7 @@ import type { PublicGiftCampaignView } from "@/lib/gifts/gift-privacy";
 import type { GiftThemeCssVars } from "@/lib/gifts/gift-theme";
 import { formatMinor, MoneyError, toMinorUnits } from "@/lib/gifts/money";
 import { detectMethodFromPhone } from "@/lib/gifts/gift-providers";
+import { GiftNetworkLogo } from "@/components/gifts/gift-network-logo";
 
 /**
  * The guest gifting flow.
@@ -54,6 +55,10 @@ export function GiftExperience({
   const [method, setMethod] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const visibleMethods = useMemo(
+    () => methods.filter((item) => item.id !== "CARD"),
+    [methods]
+  );
 
   const closed = campaign.status === "CLOSED";
 
@@ -198,7 +203,7 @@ export function GiftExperience({
             />
           ) : step === "method" ? (
             <MethodStep
-              methods={methods}
+              methods={visibleMethods}
               selected={method}
               onSelect={setMethod}
               onNext={() => goTo("confirm")}
@@ -208,7 +213,7 @@ export function GiftExperience({
             <ConfirmStep
               campaign={campaign}
               amountMinor={amountMinor}
-              method={methods.find((m) => m.id === method) ?? null}
+              method={visibleMethods.find((m) => m.id === method) ?? null}
               guestName={isAnonymous ? "Anonymous" : guestName}
               submitting={submitting}
               onSubmit={submit}
@@ -519,7 +524,9 @@ function MethodStep({
       <StepHeading title="How would you like to pay?" step={3} onBack={onBack} />
 
       <div className="mt-5 space-y-3">
-        {methods.map((m) => (
+        {methods
+          .filter((m) => m.id !== "CARD")
+          .map((m) => (
           <button
             key={m.id}
             type="button"
@@ -528,13 +535,16 @@ function MethodStep({
             aria-pressed={selected === m.id}
             className={`gift-chip flex w-full items-center justify-between px-4 py-4 text-left text-sm ${m.accentClass}`}
           >
-            <span>
-              <span className="font-medium">{m.label}</span>
-              {m.aka && (
-                <span className="ml-2 text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
-                  formerly {m.aka}
-                </span>
-              )}
+            <span className="flex items-center gap-3">
+              <GiftNetworkLogo methodId={m.id} className="h-9 w-9 shrink-0 rounded-[0.55rem]" />
+              <span>
+                <span className="font-medium">{m.label}</span>
+                {m.aka && (
+                  <span className="ml-2 text-xs" style={{ color: "var(--gift-color-ink-muted)" }}>
+                    formerly {m.aka}
+                  </span>
+                )}
+              </span>
             </span>
             {selected === m.id && (
               <span

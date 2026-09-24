@@ -43,6 +43,7 @@ const LAYOUT_CALENDAR_STYLE: Partial<Record<InvitationLayoutSlug, CalendarStyleI
   "corporate-prestige-summit": "summit-ticket",
   "luxury-fashion-flagship": "luxury-foil",
   "aurelia-editorial-wedding": "classic-3d",
+  "seraphine-champagne-wedding": "classic-3d",
 };
 
 const COLLECTION_FALLBACK: Partial<Record<ExperienceCollectionId, CalendarStyleId>> = {

@@ -19,13 +19,25 @@ export const AURELIA_THEME_DEFAULTS: AureliaThemeTokens = {
   text: "#3B2A25",
 };
 
+/** Traditional ceremony dress palette — Chamoisee through Smoky Black. */
+export const AURELIA_TRADITIONAL_PALETTE = [
+  { name: "Chamoisee", hex: "#A7795E" },
+  { name: "Kobicha", hex: "#6E3C19" },
+  { name: "Black Bean", hex: "#34170D" },
+  { name: "Licorice", hex: "#230F08" },
+  { name: "Smoky Black", hex: "#110703" },
+] as const;
+
 export const AURELIA_HERO_FALLBACK = "/templates/aurelia/hero.jpg";
 export const AURELIA_STORY_FALLBACK = "/templates/aurelia/story.jpg";
+export const AURELIA_INVITE_MUSIC = "/templates/aurelia/ordinary.mp3";
+export const AURELIA_INVITE_MUSIC_TITLE = "Ordinary";
+export const AURELIA_INVITE_MUSIC_DURATION_SEC = 188.21;
 export const AURELIA_JOURNEY_FALLBACKS = [
-  "/templates/aurelia/journey-01.svg",
-  "/templates/aurelia/journey-02.svg",
-  "/templates/aurelia/journey-03.svg",
-  "/templates/aurelia/journey-04.svg",
+  "/templates/aurelia/journey-01.jpg",
+  "/templates/aurelia/journey-02.jpg",
+  "/templates/aurelia/journey-03.jpg",
+  "/templates/aurelia/journey-04.jpg",
 ] as const;
 
 export const AURELIA_TRADITIONAL_ISO = "2027-04-09T10:00:00+00:00";
@@ -81,6 +93,12 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   journeyEyebrow: "Moments",
   journeyTitle: "Our Journey",
   journeyLede: "From our earliest memories to the promise of forever — every chapter led us here.",
+  albumEyebrow: "From your lens",
+  albumTitle: "The Album",
+  albumLede:
+    "Share the day as you see it. Scan the QR or open the lens to add photos and video — then find them together in the shared album.",
+  albumUploadCta: "Open the lens",
+  albumViewCta: "View the album",
   rsvpTitle: "Will You Celebrate With Us?",
   giftsEyebrow: "With gratitude",
   giftsTitle: "Your Presence Is Our Greatest Gift",
@@ -141,11 +159,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       eventLabel: "Traditional Wedding",
       dateLabel: "Friday, 9 April",
       title: "Traditional Wedding",
-      palette: [
-        { name: "Champagne", hex: "#D8C09C" },
-        { name: "Blush", hex: "#DDA8A0" },
-        { name: "Terracotta", hex: "#B65A37" },
-      ],
+      palette: [...AURELIA_TRADITIONAL_PALETTE],
       variant: "light",
     },
     {
@@ -159,12 +173,10 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       variant: "dark",
     },
   ],
-  journey: [
-    { id: "began", title: "Where it began", imageUrl: AURELIA_JOURNEY_FALLBACKS[0] },
-    { id: "adventure", title: "Growing together", imageUrl: AURELIA_JOURNEY_FALLBACKS[1] },
-    { id: "colour", title: "Life in full colour", imageUrl: AURELIA_JOURNEY_FALLBACKS[2] },
-    { id: "forever", title: "The beginning of forever", imageUrl: AURELIA_JOURNEY_FALLBACKS[3] },
-  ],
+  journey: [],
+  sections: {
+    journey: { visible: false },
+  },
   faqs: [
     {
       id: "arrive",
@@ -188,9 +200,29 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       answer: "On-site parking is available at both venues. Attendants will guide you on arrival.",
     },
     {
+      id: "album",
+      question: "How do I share photos from the day?",
+      answer:
+        "Find the Album on this invitation. Scan the QR or open the lens to upload photos and video — everyone can enjoy them together in the shared album.",
+    },
+    {
       id: "contact",
       question: "Who can I contact for assistance?",
       answer: "Reach the couple through the contact details on your invitation if anything is unclear.",
     },
   ],
+};
+
+/** Independent defaults for Seraphine — customising this never rewrites Aurelia. */
+export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
+  ...AURELIA_WEDDING_DEFAULTS,
+  partnerOneName: "Efua",
+  partnerTwoName: "Yaw",
+  monogram: "E & Y",
+  familyIntro: "Together with their families",
+  marriedLine: "Are getting married",
+  heroTagline: "The Promise",
+  storyEyebrow: "Our Chapter",
+  storySignature: "Efua & Yaw",
+  countdownTitle: "Until We Say I Do",
 };

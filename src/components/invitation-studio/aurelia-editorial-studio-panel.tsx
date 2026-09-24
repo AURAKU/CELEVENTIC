@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AURELIA_WEDDING_DEFAULTS,
+  SERAPHINE_WEDDING_DEFAULTS,
+  aureliaFamilyDefaults,
   mergeAureliaWedding,
   type AureliaSectionId,
   type AureliaWeddingConfig,
@@ -16,6 +18,7 @@ const SECTION_LABELS: Array<[AureliaSectionId, string]> = [
   ["venues", "Venues"],
   ["dress", "Dress code"],
   ["journey", "Our Journey"],
+  ["album", "Album"],
   ["rsvp", "RSVP"],
   ["gifts", "Gifts"],
   ["faq", "Questions"],
@@ -23,15 +26,18 @@ const SECTION_LABELS: Array<[AureliaSectionId, string]> = [
 
 export function AureliaEditorialStudioPanel({
   value,
+  layout,
   onChange,
 }: {
   value?: Partial<AureliaWeddingConfig>;
+  layout?: string | null;
   onChange: (next: AureliaWeddingConfig) => void;
 }) {
-  const wedding = mergeAureliaWedding(value);
+  const base = aureliaFamilyDefaults(layout);
+  const wedding = mergeAureliaWedding(value, base);
 
   function patch(partial: Partial<AureliaWeddingConfig>) {
-    onChange(mergeAureliaWedding({ ...wedding, ...partial }));
+    onChange(mergeAureliaWedding({ ...wedding, ...partial }, base));
   }
 
   return (
@@ -155,4 +161,4 @@ export function AureliaEditorialStudioPanel({
   );
 }
 
-export { AURELIA_WEDDING_DEFAULTS };
+export { AURELIA_WEDDING_DEFAULTS, SERAPHINE_WEDDING_DEFAULTS };

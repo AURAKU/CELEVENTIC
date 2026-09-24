@@ -2,8 +2,22 @@ import { Suspense } from "react";
 import { HeaderShell } from "@/components/layout/header-shell";
 import { Footer } from "@/components/layout/footer";
 import { CatalogueClient } from "./catalogue-client";
+import { getSession, isAdminRole } from "@/lib/auth";
+import {
+  loadCatalogVisibilityOverlay,
+  getVisibleBrowseCatalogTemplates,
+} from "@/lib/invitation-mvp/catalog-visibility";
+import { isCatalogTemplatePubliclyListed } from "@/lib/invitation-mvp/catalogue";
 
-export default function CataloguePage() {
+export default async function CataloguePage() {
+  const session = await getSession();
+  const isAdmin = isAdminRole(session?.user?.role);
+  const overlay = await loadCatalogVisibilityOverlay();
+  const templates = getVisibleBrowseCatalogTemplates(overlay, { includeHidden: isAdmin });
+  const hiddenSlugs = templates
+    .filter((template) => !isCatalogTemplatePubliclyListed(template, overlay))
+    .map((template) => template.slug);
+
   return (
     <>
       <HeaderShell />
@@ -17,7 +31,7 @@ export default function CataloguePage() {
             </p>
           </div>
           <Suspense>
-            <CatalogueClient />
+            <CatalogueClient templates={templates} isAdmin={isAdmin} hiddenSlugs={hiddenSlugs} />
           </Suspense>
         </div>
       </main>

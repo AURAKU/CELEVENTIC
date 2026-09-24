@@ -34,6 +34,7 @@ export const INVITATION_STYLES = [
   "Cinematic",
   "Editorial",
   "Ivory",
+  "Champagne",
   "Solemn",
   "Homegoing",
   "Vigil",
@@ -115,6 +116,12 @@ export interface CatalogTemplate {
   };
   /** Godtier: this template's button family */
   buttonStyle?: string;
+  /**
+   * When false, guests never see this SKU in browse / landing / templates.
+   * Direct `/invitations/templates/[slug]` and live invite links still work.
+   * Admin hide/unhide can override this via InvitationCatalogTemplate.isActive.
+   */
+  listed?: boolean;
 }
 
 /**
@@ -565,7 +572,7 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
     isPremium: true,
     isNew: true,
     mood: "Romantic",
-    features: ["RSVP", "Countdown", "Maps", "Dress Code", "Story", "Music", "Share"],
+    features: ["RSVP", "Countdown", "Maps", "Dress Code", "Story", "Album", "Music", "Share"],
     tier: "premium",
     tags: ["Wedding", "Editorial", "Ivory", "Ceremony"],
     colorFamily: "ivory-terracotta",
@@ -592,6 +599,47 @@ export const CATALOG_TEMPLATES: CatalogTemplate[] = [
       countdownStyle: "circular",
     },
     buttonStyle: "pearl",
+  },
+  {
+    slug: "seraphine-champagne-wedding",
+    name: "Seraphine Champagne Wedding",
+    description:
+      "Champagne editorial wedding. The same two day veil invitation as Aurelia, ready to customise as its own celebration.",
+    category: "Wedding",
+    style: "Champagne",
+    layoutSlug: "seraphine-champagne-wedding",
+    previewGradient: "from-amber-50 via-stone-50 to-orange-100",
+    isPremium: true,
+    isNew: true,
+    listed: false,
+    mood: "Classic",
+    features: ["Album", "RSVP", "Countdown", "Maps", "Dress Code", "Story", "Music", "Share"],
+    tier: "premium",
+    tags: ["Wedding", "Editorial", "Champagne", "Ceremony"],
+    colorFamily: "champagne-terracotta",
+    hasParallax: false,
+    motionProfileId: "still",
+    performanceClass: "standard",
+    creativeBrief: {
+      creativeConcept:
+        "Seraphine Champagne Wedding — champagne veil intro into a photography-led two day wedding invitation",
+      emotionalTone: "champagne-romance",
+      visualLanguage:
+        "champagne paper, terracotta script, gold rules, espresso countdown, dress palettes, journey stills",
+      revealMechanic: "champagne veil tap",
+      audioMood: "garden piano seraphine",
+      outroType: "see you there",
+    },
+    experienceOverrides: {
+      introVariant: "seraphine-ivory-veil",
+      openingExperience: "seraphine-champagne-wedding",
+      sceneTransition: "book",
+      outroExperience: "thank-you-fade",
+      typographyPackId: "classic",
+      slideshowStyle: "magazine",
+      countdownStyle: "classic",
+    },
+    buttonStyle: "paper-tab",
   },
   {
     slug: "floral-garden-romance",
@@ -2085,10 +2133,32 @@ function browseDedupeKey(t: CatalogTemplate): string {
   return BROWSE_FAMILY_BY_SLUG[t.slug] ?? t.layoutSlug;
 }
 
-export function getBrowseCatalogTemplates(): CatalogTemplate[] {
+export type BrowseCatalogOptions = {
+  /** Slugs an admin has hidden from public browse. Direct links still resolve. */
+  hiddenSlugs?: Iterable<string>;
+  /** Slugs an admin has unhidden, even if the SKU defaults to listed: false. */
+  revealedSlugs?: Iterable<string>;
+  /** Admin catalogue preview: include hidden SKUs. */
+  includeHidden?: boolean;
+};
+
+export function isCatalogTemplatePubliclyListed(
+  template: CatalogTemplate,
+  options?: BrowseCatalogOptions
+): boolean {
+  const revealed = new Set(options?.revealedSlugs);
+  const hidden = new Set(options?.hiddenSlugs);
+  if (options?.includeHidden) return true;
+  if (revealed.has(template.slug)) return true;
+  if (hidden.has(template.slug)) return false;
+  return template.listed !== false;
+}
+
+export function getBrowseCatalogTemplates(options?: BrowseCatalogOptions): CatalogTemplate[] {
   const bestByFamily = new Map<string, CatalogTemplate>();
 
   for (const template of CATALOG_TEMPLATES) {
+    if (!isCatalogTemplatePubliclyListed(template, options)) continue;
     const key = browseDedupeKey(template);
     const current = bestByFamily.get(key);
     const nextRank = browseRank(template);

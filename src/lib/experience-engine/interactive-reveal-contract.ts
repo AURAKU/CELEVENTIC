@@ -262,6 +262,14 @@ export const REVEAL_MECHANIC_CONTRACTS: Record<RevealMechanicId, InteractiveReve
     gestureHint: "Tap the ivory veil to open",
     keyboardLabel: "Open invitation",
   },
+  "seraphine-champagne-wedding": {
+    mechanic: "seraphine-champagne-wedding",
+    openingExperience: "seraphine-champagne-wedding",
+    supportsKeyboardFallback: true,
+    supportsReducedMotion: true,
+    gestureHint: "Tap the champagne veil to open",
+    keyboardLabel: "Open invitation",
+  },
   none: {
     mechanic: "none",
     openingExperience: "none",
@@ -315,6 +323,7 @@ const OPENING_TO_MECHANIC: Partial<Record<OpeningExperienceId, RevealMechanicId>
   "blush-gate": "blush-gate",
   "luxury-fashion-flagship": "luxury-fashion-flagship",
   "aurelia-editorial-wedding": "aurelia-editorial-wedding",
+  "seraphine-champagne-wedding": "seraphine-champagne-wedding",
   none: "none",
 };
 

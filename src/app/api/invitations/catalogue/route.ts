@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { queryCatalog } from "@/lib/invitation-mvp/catalogue-query";
+import {
+  applyCatalogVisibility,
+  loadCatalogVisibilityOverlay,
+} from "@/lib/invitation-mvp/catalog-visibility";
 
 /**
  * Cursor-paginated invitation catalogue (Studio 2.0 gallery contract):
@@ -11,6 +15,7 @@ export async function GET(req: Request) {
   const limitRaw = Number(searchParams.get("limit") ?? 12);
   const limit = Number.isInteger(limitRaw) ? Math.min(Math.max(limitRaw, 1), 48) : 12;
 
+  const overlay = await loadCatalogVisibilityOverlay();
   const result = queryCatalog(
     {
       category: searchParams.get("category") ?? undefined,
@@ -23,7 +28,8 @@ export async function GET(req: Request) {
       search: searchParams.get("search") ?? undefined,
     },
     searchParams.get("cursor"),
-    limit
+    limit,
+    applyCatalogVisibility(overlay)
   );
 
   return NextResponse.json({ success: true, data: result });

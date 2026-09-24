@@ -54,9 +54,10 @@ const upsertSchema = z.object({
 });
 
 const actionSchema = z.object({
-  action: z.enum(["duplicate", "archive", "restore", "hard-delete", "creative-override"]),
+  action: z.enum(["duplicate", "archive", "restore", "hard-delete", "creative-override", "set-visibility"]),
   id: z.string().optional(),
   slug: z.string().optional(),
+  visible: z.boolean().optional(),
   override: z
     .object({
       catalogSlug: z.string(),
@@ -101,6 +102,14 @@ export async function POST(req: Request) {
       if (body.action === "hard-delete" && body.id) {
         const result = await invitationAdminService.hardDeleteCatalogTemplate(body.id, adminId);
         return NextResponse.json({ success: true, data: result });
+      }
+      if (body.action === "set-visibility" && body.slug) {
+        const template = await invitationAdminService.setCatalogVisibility(
+          body.slug,
+          body.visible !== false,
+          adminId
+        );
+        return NextResponse.json({ success: true, data: template });
       }
       if (body.action === "creative-override" && body.override) {
         const saved = upsertAdminCreativeOverride(body.override as never);

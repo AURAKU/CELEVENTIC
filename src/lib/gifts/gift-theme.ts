@@ -80,8 +80,33 @@ const MEMORIAL_GIFT_THEME: GiftTheme = {
   ornament: "none",
 };
 
+const AURELIA_GIFT_THEME: GiftTheme = {
+  id: "aurelia-editorial-wedding",
+  name: "Aurelia Editorial",
+  colors: {
+    primary: "#352019",
+    accent: "#B65A37",
+    accentSoft: "#DDA8A0",
+    surface: "#F8F4EA",
+    surfaceAlt: "#EFE7D5",
+    ink: "#3B2A25",
+    inkMuted: "#5A453C",
+    border: "#D8C09C",
+    onAccent: "#F8F4EA",
+  },
+  fonts: {
+    display: '"Cinzel", "Playfair Display", Georgia, serif',
+    body: '"Cormorant Garamond", Georgia, serif',
+    script: '"Great Vibes", cursive',
+  },
+  radius: 0,
+  ornament: "gilded",
+};
+
 export const GIFT_THEME_PRESETS: Record<string, GiftTheme> = {
   "forever-afaris-wedding": FOREVER_AFARIS_GIFT_THEME,
+  "aurelia-editorial-wedding": AURELIA_GIFT_THEME,
+  "seraphine-champagne-wedding": AURELIA_GIFT_THEME,
   "memorial-candle-tribute": MEMORIAL_GIFT_THEME,
 };
 

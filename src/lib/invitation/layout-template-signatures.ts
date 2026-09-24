@@ -37,6 +37,7 @@ export const LAYOUT_ENABLED_TABS: Record<string, HubTabId[]> = {
   "corporate-prestige-summit": ["invitation", "timeline", "venue", "rsvp", "seating", "gallery"],
   "luxury-fashion-flagship": ["invitation", "gallery", "countdown", "venue", "rsvp"],
   "aurelia-editorial-wedding": ["invitation", "countdown", "story", "venue", "gallery", "rsvp", "gifts"],
+  "seraphine-champagne-wedding": ["invitation", "countdown", "story", "venue", "gallery", "rsvp", "gifts"],
   "custom-media": ["invitation", "gallery", "rsvp", "memory", "venue", "gifts"],
 };
 
@@ -88,6 +89,13 @@ export const LAYOUT_SIGNATURE_FEATURES: Record<string, string[]> = {
     "Ivory veil opening",
     "Two ceremony cards",
     "Dress palette swatches",
+    "Editorial story and journey",
+    "Joyful RSVP",
+  ],
+  "seraphine-champagne-wedding": [
+    "Champagne veil opening",
+    "Two ceremony cards",
+    "Dress palette and album",
     "Editorial story and journey",
     "Joyful RSVP",
   ],

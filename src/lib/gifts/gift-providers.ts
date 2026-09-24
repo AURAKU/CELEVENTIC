@@ -73,7 +73,8 @@ export const GIFT_PAYMENT_METHODS: readonly GiftPaymentMethod[] = [
     channel: "CARD",
     prefixes: [],
     accentClass: "gift-network-card",
-    enabled: true,
+    /** Guest pickers are mobile money only. Card remains for existing records. */
+    enabled: false,
   },
 ] as const;
 

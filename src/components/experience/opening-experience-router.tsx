@@ -37,7 +37,11 @@ import { LuxuryFashionOpeningExperience } from "@/components/experience/luxury-f
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion";
 import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 import { AureliaEditorialOpening } from "@/components/experience/aurelia-editorial/aurelia-editorial-opening";
-import { mergeAureliaWedding } from "@/lib/experience/aurelia-editorial";
+import {
+  aureliaFamilyDefaults,
+  isAureliaFamilyOpening,
+  mergeAureliaWedding,
+} from "@/lib/experience/aurelia-editorial";
 import type { AureliaWeddingConfig } from "@/lib/experience/aurelia-editorial";
 import { ReducedMotionGate, RevealKeyboardFallback } from "@/components/experience/reveal-accessibility";
 import { useReducedMotion } from "framer-motion";
@@ -118,7 +122,7 @@ export function OpeningExperienceRouter({
   /** Owns a reduced-motion path internally (short, dignified open). */
   const isBlushGate = resolvedExperienceId === "blush-gate";
   const isFashionFlagship = resolvedExperienceId === "luxury-fashion-flagship";
-  const isAureliaOpening = resolvedExperienceId === "aurelia-editorial-wedding";
+  const isAureliaOpening = isAureliaFamilyOpening(resolvedExperienceId);
 
   function complete() {
     setRevealed(true);
@@ -263,8 +267,11 @@ export function OpeningExperienceRouter({
     );
   }
 
-  if (resolvedExperienceId === "aurelia-editorial-wedding") {
-    const wedding = mergeAureliaWedding(aureliaWedding);
+  if (isAureliaFamilyOpening(resolvedExperienceId)) {
+    const wedding = mergeAureliaWedding(
+      aureliaWedding,
+      aureliaFamilyDefaults(resolvedExperienceId)
+    );
     return (
       <div className={embedded ? "absolute inset-0 z-20" : "pointer-events-auto fixed inset-0 z-[70]"}>
         <AureliaEditorialOpening
