@@ -376,11 +376,10 @@
   text-align: center;
   font-size: 0.82rem;
   letter-spacing: 0.32em;
+  transform: translateY(-0.95rem);
 }
 
 .heroName,
-.heroMeta,
-.heroDate,
 .heroTagline,
 .hero .eyebrow {
   text-shadow: 0 2px 18px rgba(16, 8, 4, 0.45);
@@ -409,6 +408,7 @@
 
 .heroNameTwo {
   letter-spacing: clamp(0.1em, 1.8vw, 0.22em);
+  margin-top: 0.45rem;
 }
 
 .ampersand {
@@ -418,24 +418,56 @@
   color: var(--wedding-champagne);
 }
 
-.heroMeta {
-  margin-top: 1.15rem;
+.heroDate {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.72rem;
+  padding: 0.58rem 1.15rem 0.52rem;
+  max-width: 100%;
   font-family: var(--aurelia-display);
-  letter-spacing: 0.34em;
-  text-indent: 0.34em;
+  font-size: clamp(1.18rem, 4.6cqi, 1.78rem);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-indent: 0;
   text-transform: uppercase;
-  font-size: 0.72rem;
+  line-height: 1.25;
+  text-align: center;
+  color: #f7edd4;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #3d261c 62%, transparent),
+    color-mix(in srgb, #1a0f0b 78%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 82%, #f8f4ea);
+  box-shadow:
+    0 10px 28px rgba(16, 8, 4, 0.4),
+    inset 0 0 0 1px color-mix(in srgb, #f8f4ea 18%, transparent);
+  text-shadow: 0 1px 2px rgba(16, 8, 4, 0.7);
 }
 
-.heroDate {
-  margin-top: 0.95rem;
+.heroMeta {
+  display: block;
+  margin-top: 1.05rem;
+  padding: 0;
+  max-width: 100%;
   font-family: var(--aurelia-display);
-  letter-spacing: 0.28em;
-  text-indent: 0.28em;
+  font-size: clamp(0.92rem, 3.2cqi, 1.12rem);
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-indent: 0.26em;
   text-transform: uppercase;
-  font-size: clamp(1.28rem, 4.6vw, 1.62rem);
-  line-height: 1.2;
-  color: color-mix(in srgb, #f8f4ea 55%, var(--wedding-champagne));
+  line-height: 1.35;
+  text-align: center;
+  color: #f8f4ea;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  text-shadow:
+    0 1px 1px rgba(16, 8, 4, 0.9),
+    0 2px 12px rgba(16, 8, 4, 0.72),
+    0 0 22px rgba(16, 8, 4, 0.5);
 }
 
 .heroTagline {
@@ -550,12 +582,11 @@
 .storyImage {
   width: 100%;
   max-width: none;
-  height: min(100svh, 56rem);
-  height: min(100dvh, 56rem);
+  height: auto;
   margin: 0;
   display: block;
-  object-fit: cover;
-  object-position: center 32%;
+  object-fit: contain;
+  object-position: center;
   border: 0;
 }
 
@@ -1393,10 +1424,15 @@
   }
 
   .hero .eyebrow,
-  .heroMeta,
-  .heroDate {
+  .heroMeta {
     letter-spacing: 0.16em;
     text-indent: 0.08em;
+  }
+
+  .heroDate {
+    letter-spacing: 0.1em;
+    padding-inline: 0.72rem;
+    font-size: clamp(1.05rem, 5.6cqi, 1.28rem);
   }
 
   .btnOutline,

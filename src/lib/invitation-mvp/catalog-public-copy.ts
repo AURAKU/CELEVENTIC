@@ -412,7 +412,7 @@ export const CATALOG_DEMO_IDENTITIES: Record<string, DemoIdentity> = {
     invitationName: "Elorm & Dansowaa Editorial",
     venueName: "TLPCI, Solution Centre",
     landmark: "Accra",
-    dressCode: "Palette for Friday, elegant formal for Saturday",
+    dressCode: "Palette for Thursday, elegant formal for Saturday",
     sealInitials: "E & D",
   },
   "seraphine-champagne-wedding": {
@@ -422,7 +422,7 @@ export const CATALOG_DEMO_IDENTITIES: Record<string, DemoIdentity> = {
     invitationName: "Efua & Yaw Seraphine",
     venueName: "TLPCI, Solution Centre",
     landmark: "Accra",
-    dressCode: "Palette for Friday, elegant formal for Saturday",
+    dressCode: "Palette for Thursday, elegant formal for Saturday",
     sealInitials: "E & Y",
   },
   "floral-garden-romance": {

@@ -34,7 +34,7 @@ import {
   AURELIA_TRADITIONAL_PALETTE,
 } from "@/lib/experience/aurelia-editorial/preset";
 
-const FORBIDDEN = /kofi|kamilia|\bk\s*&\s*k\b|october\s*2026|anagkazo|bride'?s home|lovable\.app/i;
+const FORBIDDEN = /kofi|kamilia|\bk\s*&\s*k\b|anagkazo|bride'?s home|lovable\.app/i;
 
 test("Aurelia couple, dates and venues stay original", () => {
   assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Elorm");
@@ -45,9 +45,21 @@ test("Aurelia couple, dates and venues stay original", () => {
   assert.equal(AURELIA_WEDDING_DEFAULTS.storyTitle, "Our Story");
   assert.match(AURELIA_WEDDING_DEFAULTS.storyParagraphs[0] ?? "", /unexpected ways/);
   assert.equal(AURELIA_WEDDING_DEFAULTS.storySignature, "Elorm & Dansowaa");
-  assert.match(AURELIA_WEDDING_DEFAULTS.dateDisplay, /April 2027/);
+  assert.equal(AURELIA_WEDDING_DEFAULTS.dateDisplay, "22 & 24 October 2026");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.rsvpByLabel, "Kindly respond by 22 September 2026");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[0]?.weekday, "Thursday");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[0]?.dateLabel, "22 October 2026");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[0]?.timeLabel, "11:00 AM");
   assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[0]?.venueName, "TLPCI, Solution Centre");
-  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[1]?.venueName, "Ultimate Christian Ministry");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[0]?.startAtIso, "2026-10-22T11:00:00+00:00");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[1]?.weekday, "Saturday");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[1]?.dateLabel, "24 October 2026");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[1]?.timeLabel, "1:00 PM");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[1]?.venueName, "Ultimate Christian Ministry Tse-Addo");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[1]?.startAtIso, "2026-10-24T13:00:00+00:00");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.venues[1]?.venueName, "Ultimate Christian Ministry Tse-Addo");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.dressCodes[0]?.dateLabel, "Thursday, 22 October");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.dressCodes[1]?.dateLabel, "Saturday, 24 October");
   assert.match(AURELIA_TRADITIONAL_MAPS, /^https:\/\/maps\.app\.goo\.gl\//);
   assert.match(AURELIA_WHITE_MAPS, /^https:\/\/maps\.app\.goo\.gl\//);
   assert.ok(buildDirectionsUrl({ mapsLink: AURELIA_TRADITIONAL_MAPS }));
@@ -166,7 +178,7 @@ test("Aurelia hero prefers host photo and falls back to dummy photograph", () =>
   const heroStat = statSync("public/templates/aurelia/hero.jpg");
   const storyStat = statSync("public/templates/aurelia/story.jpg");
   assert.ok(heroStat.size > 250_000, "hero photograph must be HD");
-  assert.ok(storyStat.size > 250_000, "story photograph must be HD");
+  assert.equal(storyStat.size, 139599, "story photograph must stay the original unprocessed file");
   for (const name of ["journey-01.jpg", "journey-02.jpg", "journey-03.jpg", "journey-04.jpg"]) {
     assert.ok(statSync(`public/templates/aurelia/${name}`).size > 150_000);
   }

@@ -40,9 +40,9 @@ export const AURELIA_JOURNEY_FALLBACKS = [
   "/templates/aurelia/journey-04.jpg",
 ] as const;
 
-export const AURELIA_TRADITIONAL_ISO = "2027-04-09T10:00:00+00:00";
-export const AURELIA_WHITE_ISO = "2027-04-10T14:00:00+00:00";
-export const AURELIA_RSVP_BY_ISO = "2027-03-10T23:59:00+00:00";
+export const AURELIA_TRADITIONAL_ISO = "2026-10-22T11:00:00+00:00";
+export const AURELIA_WHITE_ISO = "2026-10-24T13:00:00+00:00";
+export const AURELIA_RSVP_BY_ISO = "2026-09-22T23:59:00+00:00";
 
 export const AURELIA_TRADITIONAL_MAPS =
   "https://maps.app.goo.gl/yMfDDtTU6BgxPrUaA?g_st=iwb";
@@ -55,13 +55,13 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   monogram: "E & D",
   familyIntro: "Together with their families",
   marriedLine: "Are getting married",
-  dateDisplay: "April 2027",
+  dateDisplay: "22 & 24 October 2026",
   heroTagline: "The Covenant",
   heroImageUrl: AURELIA_HERO_FALLBACK,
   heroOverlay: 0.26,
   celebrationCta: "Our celebration",
   rsvpCta: "RSVP",
-  rsvpByLabel: "Kindly respond by 10 March 2027",
+  rsvpByLabel: "Kindly respond by 22 September 2026",
   storyEyebrow: "Our Beginning",
   storyTitle: "Our Story",
   storyImageUrl: AURELIA_STORY_FALLBACK,
@@ -116,9 +116,9 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       id: "traditional",
       kicker: "Ceremony one",
       title: "The Traditional Ceremony",
-      weekday: "Friday",
-      dateLabel: "9 April 2027",
-      timeLabel: "10:00 AM",
+      weekday: "Thursday",
+      dateLabel: "22 October 2026",
+      timeLabel: "11:00 AM",
       venueName: "TLPCI, Solution Centre",
       address: "",
       mapsUrl: AURELIA_TRADITIONAL_MAPS,
@@ -129,10 +129,10 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       kicker: "Ceremony two",
       title: "The White Wedding",
       weekday: "Saturday",
-      dateLabel: "10 April 2027",
-      timeLabel: "2:00 PM",
-      venueName: "Ultimate Christian Ministry",
-      address: "Tse Addo",
+      dateLabel: "24 October 2026",
+      timeLabel: "1:00 PM",
+      venueName: "Ultimate Christian Ministry Tse-Addo",
+      address: "",
       mapsUrl: AURELIA_WHITE_MAPS,
       startAtIso: AURELIA_WHITE_ISO,
     },
@@ -148,8 +148,8 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     {
       id: "white",
       eventLabel: "The White Wedding",
-      venueName: "Ultimate Christian Ministry",
-      address: "Tse Addo",
+      venueName: "Ultimate Christian Ministry Tse-Addo",
+      address: "",
       mapsUrl: AURELIA_WHITE_MAPS,
     },
   ],
@@ -157,7 +157,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     {
       id: "traditional",
       eventLabel: "Traditional Wedding",
-      dateLabel: "Friday, 9 April",
+      dateLabel: "Thursday, 22 October",
       title: "Traditional Wedding",
       palette: [...AURELIA_TRADITIONAL_PALETTE],
       variant: "light",
@@ -165,7 +165,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     {
       id: "white",
       eventLabel: "White Wedding",
-      dateLabel: "Saturday, 10 April",
+      dateLabel: "Saturday, 24 October",
       title: "White Wedding",
       scriptLine: "Elegant & Formal",
       note: "Formal attire is encouraged. Kindly reserve white and ivory for the couple.",

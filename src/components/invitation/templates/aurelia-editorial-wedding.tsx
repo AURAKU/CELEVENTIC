@@ -295,8 +295,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               className={styles.storyImage}
               src={config.storyImageUrl}
               alt={`${config.partnerOneName} and ${config.partnerTwoName}`}
-              width={1825}
-              height={2560}
+              width={730}
+              height={1024}
               sizes="100vw"
               decoding="async"
             />
