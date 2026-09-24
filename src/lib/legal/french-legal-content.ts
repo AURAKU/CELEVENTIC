@@ -26,7 +26,7 @@ Vous devez fournir des informations exactes et protéger vos identifiants. Celev
 ## 4. Commandes d'invitation
 Le parcours d'invitation fonctionne ainsi :
 
-1. Choisir un modèle et un forfait (Starter, Celebration, Signature, Prestige ou Bespoke)
+1. Choisir un modèle et un forfait (Starter, Classic, Signature ou Ultimate Experience)
 2. Ajouter les détails de l'événement, les blocs et les options
 3. Vérifier le prix au paiement en GHS (avec références USD/GBP)
 4. Payer via Paystack le cas échéant
@@ -117,11 +117,10 @@ Celeventic fournit des invitations numériques personnalisées via InvitationOS.
 
 | Forfait | Prix (GHS) | Révisions incluses |
 |---------|------------|-------------------|
-| Starter | Gratuit | 1 |
-| Celebration | 199 | 2 |
-| Signature | 499 | 3 |
-| Prestige | 999 | 5 |
-| Bespoke | 2 499 | 10 |
+| Starter | 450 | 1 |
+| Classic | 800 | 2 |
+| Signature | 1 500 | 3 |
+| Ultimate Experience | À partir de 2 950 (sur devis) | 3 |
 
 ## Remboursement intégral — avant production
 Remboursement possible si annulation avant le début de la production et dans les 48 heures suivant le paiement.
@@ -180,11 +179,10 @@ Chaque forfait Celeventic inclut un nombre défini de tours de révision de desi
 
 | Forfait | Révisions | Livraison |
 |---------|-----------|-----------|
-| Starter | 1 | 1 jour |
-| Celebration | 2 | 2 jours |
-| Signature | 3 | 3 jours |
-| Prestige | 5 | 5 jours |
-| Bespoke | 10 | Sur mesure |
+| Starter | 1 | 2 jours |
+| Classic | 2 | 3 jours |
+| Signature | 3 | 4 jours |
+| Ultimate Experience | 3 | Sur devis |
 
 ## Changements mineurs vs majeurs
 
