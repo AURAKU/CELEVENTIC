@@ -6,6 +6,12 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Button } from "@/components/ui/button";
+import {
+  getInvitationPackage,
+  invitationPackageContactMessage,
+  isQuoteOnlyInvitationPackage,
+} from "@/lib/invitation-mvp/packages";
+import { GUIDE_SUPPORT_CONTACT, guideSupportWhatsAppUrl } from "@/lib/celeventic-guide/support-contact";
 
 export default function CreateStartPage() {
   return (
@@ -37,6 +43,16 @@ function CreateStartPageInner() {
     }
     if (!template || !packageSlug) {
       setError("Missing template or package");
+      return;
+    }
+
+    if (isQuoteOnlyInvitationPackage(packageSlug)) {
+      const pkg = getInvitationPackage(packageSlug);
+      if (pkg) {
+        window.location.assign(guideSupportWhatsAppUrl(invitationPackageContactMessage(pkg)));
+      } else {
+        window.location.assign(`mailto:${GUIDE_SUPPORT_CONTACT.email}`);
+      }
       return;
     }
 

@@ -88,7 +88,7 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "invitations", key: "loved_by", enValue: "Loved by Organizers", frValue: "Adoré par les organisateurs" },
   { namespace: "invitations", key: "faq_title", enValue: "FAQ", frValue: "Questions fréquentes" },
   { namespace: "invitations", key: "ready_title", enValue: "Ready to create your invitation?", frValue: "Prêt à créer votre invitation ?" },
-  { namespace: "invitations", key: "ready_subtitle", enValue: "Start free or choose a premium package. your guests will feel the difference.", frValue: "Commencez gratuitement ou choisissez un forfait premium. vos invités sentiront la différence." },
+  { namespace: "invitations", key: "ready_subtitle", enValue: "Choose a package that fits your celebration. your guests will feel the difference.", frValue: "Choisissez le forfait qui convient à votre célébration. vos invités sentiront la différence." },
   { namespace: "invitations", key: "start_invitation", enValue: "Start My Invitation", frValue: "Créer mon invitation" },
   { namespace: "invitations", key: "choose_package", enValue: "Choose Your Package", frValue: "Choisissez votre forfait" },
   { namespace: "invitations", key: "start_my_invitation", enValue: "Start My Invitation", frValue: "Créer mon invitation" },
@@ -107,14 +107,14 @@ export const DEFAULT_TRANSLATIONS: TranslationSeed[] = [
   { namespace: "invitations", key: "step4_desc", enValue: "Guests view, RSVP, get directions, and receive QR admission.", frValue: "Les invités consultent, confirment, obtiennent l'itinéraire et reçoivent leur QR." },
 
   // FAQ
-  { namespace: "invitations", key: "faq_q1", enValue: "Can I start for free?", frValue: "Puis-je commencer gratuitement ?" },
-  { namespace: "invitations", key: "faq_a1", enValue: "Yes. the Starter package lets you publish a digital invitation at no cost.", frValue: "Oui. le forfait Starter vous permet de publier une invitation numérique gratuitement." },
+  { namespace: "invitations", key: "faq_q1", enValue: "How much do invitation packages cost?", frValue: "Combien coûtent les forfaits d'invitation ?" },
+  { namespace: "invitations", key: "faq_a1", enValue: "Starter is GHS 450, Classic is GHS 800, Signature is GHS 1,500, and Ultimate Experience starts from GHS 2,950 with a custom quotation.", frValue: "Starter : 450 GHS, Classic : 800 GHS, Signature : 1 500 GHS, et Ultimate Experience à partir de 2 950 GHS sur devis." },
   { namespace: "invitations", key: "faq_q2", enValue: "Do guests need an account?", frValue: "Les invités ont-ils besoin d'un compte ?" },
   { namespace: "invitations", key: "faq_a2", enValue: "No. Guests open your link, RSVP, and interact without signing up.", frValue: "Non. Les invités ouvrent votre lien, confirment et interagissent sans inscription." },
   { namespace: "invitations", key: "faq_q3", enValue: "Which payments are supported?", frValue: "Quels paiements sont acceptés ?" },
-  { namespace: "invitations", key: "faq_a3", enValue: "Paystack in GHS with USD and GBP display references on packages.", frValue: "Paystack en GHS avec affichage USD et GBP sur les forfaits." },
+  { namespace: "invitations", key: "faq_a3", enValue: "Paystack in GHS for Starter, Classic, and Signature. Ultimate Experience is quoted separately.", frValue: "Paystack en GHS pour Starter, Classic et Signature. Ultimate Experience est facturé sur devis." },
   { namespace: "invitations", key: "faq_q4", enValue: "Can I get designer help?", frValue: "Puis-je obtenir l'aide d'un designer ?" },
-  { namespace: "invitations", key: "faq_a4", enValue: "Signature, Prestige, and Bespoke packages include designer-assisted production.", frValue: "Les forfaits Signature, Prestige et Bespoke incluent une production assistée par designer." },
+  { namespace: "invitations", key: "faq_a4", enValue: "Signature includes interactive production. Ultimate Experience adds full designer-assisted setup and event-day admission support.", frValue: "Signature inclut une production interactive. Ultimate Experience ajoute une mise en place assistée par designer et le soutien d'admission le jour J." },
 
   // Included items
   { namespace: "invitations", key: "inc_mobile", enValue: "Mobile-first luxury layouts", frValue: "Mises en page luxe mobile-first" },

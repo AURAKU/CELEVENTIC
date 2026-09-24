@@ -10,6 +10,7 @@ import { productionWorkflowService } from "@/services/invitations/production-wor
 import { invitationAnalyticsService } from "@/services/invitation-os/invitation-analytics.service";
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
 import { isAdminCommerceBypass } from "@/lib/access/package-access";
+import { isQuoteOnlyInvitationPackage } from "@/lib/invitation-mvp/packages";
 
 export async function POST(
   req: Request,
@@ -45,6 +46,16 @@ export async function POST(
     const displayCurrency = (dc ?? order.displayCurrency ?? "GHS") as DisplayCurrency;
     const addonSlugs = (order.addonSlugs as string[] | null) ?? [];
     const pricing = await pricingService.calculateOrderPricing(order.packageSlug, addonSlugs, displayCurrency);
+    if (isQuoteOnlyInvitationPackage(order.packageSlug)) {
+      return NextResponse.json(
+        {
+          error:
+            "Ultimate Experience is quotation-based. Contact Celeventic for a custom quote rather than paying a fixed checkout amount.",
+          quoteOnly: true,
+        },
+        { status: 400 }
+      );
+    }
     const amount = adminBypass ? 0 : pricing.totalGhs;
 
     await prisma.invitationOrder.update({

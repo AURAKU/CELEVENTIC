@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { currencyService } from "@/services/commerce/currency.service";
+import { INVITATION_PACKAGES } from "@/lib/invitation-mvp/packages";
 
 const ALL_EVENTS = [
   "WEDDING",
@@ -36,107 +37,29 @@ const PREMIUM_EVENTS = [
   "FESTIVAL",
 ];
 
-const PACKAGES = [
-  {
-    slug: "starter",
-    name: "Essential",
-    tagline: "Best for simple events",
-    bestFor: "Simple gatherings, quick digital invites",
-    priceGhs: 0,
-    revisions: 1,
-    deliveryDays: 1,
-    designerAssist: false,
-    paymentRequiredToPublish: false,
-    eventTypes: ALL_EVENTS,
-    features: [
-      "Digital invitation link",
-      "Basic RSVP",
-      "Maps & calendar",
-      "Core sections",
-      "1 revision",
-    ],
-  },
-  {
-    slug: "celebration",
-    name: "Premium",
-    tagline: "Best for weddings, birthdays, family events",
-    bestFor: "Weddings, birthdays, family celebrations",
-    priceGhs: 199,
-    revisions: 2,
-    deliveryDays: 2,
-    designerAssist: false,
-    paymentRequiredToPublish: true,
-    eventTypes: CELEBRATION_EVENTS,
-    features: [
-      "Everything in Essential",
-      "Animated intro",
-      "Photo story & gallery",
-      "Travel and stay",
-      "Dress code & menu",
-      "2 revisions",
-    ],
-  },
-  {
-    slug: "signature",
-    name: "Signature",
-    tagline: "Best for premium weddings and formal events",
-    bestFor: "Premium weddings, formal events",
-    priceGhs: 499,
-    revisions: 3,
-    deliveryDays: 3,
-    designerAssist: true,
-    paymentRequiredToPublish: true,
-    eventTypes: PREMIUM_EVENTS,
-    features: [
-      "Everything in Premium",
-      "Custom monogram option",
-      "Custom illustration option",
-      "QR guest pass",
-      "Custom domain option",
-      "3 revisions",
-    ],
-  },
-  {
-    slug: "prestige",
-    name: "Prestige",
-    tagline: "Best for luxury celebrations",
-    bestFor: "Luxury weddings and high-end events",
-    priceGhs: 999,
-    revisions: 5,
-    deliveryDays: 5,
-    designerAssist: true,
-    paymentRequiredToPublish: true,
-    eventTypes: PREMIUM_EVENTS,
-    features: [
-      "Everything in Signature",
-      "Designer-assisted customization",
-      "Advanced gallery & video",
-      "Multi-language invitation",
-      "Priority support",
-      "Extended Memory Vault",
-    ],
-  },
-  {
-    slug: "bespoke",
-    name: "Bespoke",
-    tagline: "Custom pricing",
-    bestFor: "Fully custom luxury experiences",
-    priceGhs: 2499,
-    revisions: 10,
-    deliveryDays: 7,
-    designerAssist: true,
-    paymentRequiredToPublish: true,
-    eventTypes: ALL_EVENTS,
-    features: [
-      "Fully custom invitation",
-      "Advanced animation",
-      "Custom illustration",
-      "Custom domain",
-      "Dedicated designer",
-      "Full collaborator access",
-    ],
-  },
-];
+const EVENT_TYPES_BY_SLUG: Record<string, string[]> = {
+  starter: ALL_EVENTS,
+  celebration: CELEBRATION_EVENTS,
+  signature: PREMIUM_EVENTS,
+  prestige: PREMIUM_EVENTS,
+  bespoke: ALL_EVENTS,
+};
+
+const PACKAGES = INVITATION_PACKAGES.map((pkg) => ({
+  slug: pkg.slug,
+  name: pkg.name,
+  tagline: pkg.description,
+  bestFor: pkg.description,
+  priceGhs: pkg.priceGhs,
+  revisions: pkg.revisions,
+  deliveryDays: pkg.deliveryDays,
+  designerAssist: pkg.designerAssist,
+  paymentRequiredToPublish: pkg.paymentRequiredToPublish !== false,
+  eventTypes: EVENT_TYPES_BY_SLUG[pkg.slug] ?? ALL_EVENTS,
+  features: pkg.features,
+  isPopular: pkg.popular === true,
+  isActive: pkg.catalogVisible !== false || pkg.slug === "prestige",
+}));
 
 const ADDONS = [
   { slug: "express-delivery", name: "Express Delivery", description: "Priority 24-hour production", category: "delivery", priceGhs: 149, deliveryImpactDays: -1, eligibility: ["celebration", "signature", "prestige", "bespoke"] },
@@ -176,6 +99,8 @@ export async function seedCommerceEngine() {
         eventTypes: p.eventTypes,
         designerAssist: p.designerAssist,
         paymentRequiredToPublish: p.paymentRequiredToPublish,
+        isPopular: p.isPopular,
+        isActive: p.isActive,
         sortOrder: i,
       },
       create: {
@@ -191,6 +116,8 @@ export async function seedCommerceEngine() {
         eventTypes: p.eventTypes,
         designerAssist: p.designerAssist,
         paymentRequiredToPublish: p.paymentRequiredToPublish,
+        isPopular: p.isPopular,
+        isActive: p.isActive,
         sortOrder: i,
       },
     });
