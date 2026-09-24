@@ -13,6 +13,10 @@ import {
   fashionHouseNameplate,
   fashionTokenStyleFromColors,
 } from "@/lib/experience/luxury-fashion";
+import {
+  AURELIA_LAYOUT_SLUG,
+  AURELIA_THEME_DEFAULTS,
+} from "@/lib/experience/aurelia-editorial";
 import { FEED_LIMIT } from "@/lib/pagination";
 import {
   viewerCanDeleteWish,
@@ -21,6 +25,7 @@ import {
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import cb from "./condolence-book.module.css";
 import fw from "./fashion-guest-wishes.module.css";
+import aw from "./aurelia-guest-wishes.module.css";
 import { FashionHouseLogoMark, FashionQuillMark, FashionSalonMark } from "./fashion-wish-marks";
 
 export interface GuestWishItem {
@@ -85,6 +90,22 @@ function formatWishTime(iso: string): string {
   }
 }
 
+function aureliaWishTokenStyle(
+  colors?: GuestWishesCardProps["colors"]
+): CSSProperties {
+  return {
+    "--wedding-ivory": colors?.background || AURELIA_THEME_DEFAULTS.ivory,
+    "--wedding-cream": AURELIA_THEME_DEFAULTS.cream,
+    "--wedding-champagne": AURELIA_THEME_DEFAULTS.champagne,
+    "--wedding-terracotta": colors?.accent || AURELIA_THEME_DEFAULTS.terracotta,
+    "--wedding-gold": colors?.secondary || AURELIA_THEME_DEFAULTS.gold,
+    "--wedding-espresso": AURELIA_THEME_DEFAULTS.espresso,
+    "--wedding-brown": AURELIA_THEME_DEFAULTS.brown,
+    "--wedding-text": colors?.text || AURELIA_THEME_DEFAULTS.text,
+    "--wish-accent": colors?.accent || AURELIA_THEME_DEFAULTS.terracotta,
+  } as CSSProperties;
+}
+
 function fashionSalonTokenStyle(
   colors?: GuestWishesCardProps["colors"]
 ): CSSProperties {
@@ -122,6 +143,7 @@ export function GuestWishesCard({
   const dark = variant === "dark";
   const memorial = tone === "memorial";
   const fashion = !memorial && layout === LUXURY_FASHION_LAYOUT_SLUG;
+  const aurelia = !memorial && !fashion && layout === AURELIA_LAYOUT_SLUG;
   const resolvedHouseName = houseName ?? fashionHouse?.houseName ?? null;
   const houseLogoSrc = fashion
     ? fashionHouseLogoSrc({
@@ -176,6 +198,25 @@ export function GuestWishesCard({
           nounMany: "notes",
           loadMore: "Read further notes",
         }
+      : aurelia
+        ? {
+            title: "Guest Wishes",
+            kicker: "With love",
+            lead: "Leave a blessing for the couple.",
+            leadModerator: " As organizer or admin, you can edit or remove any wish.",
+            leadGuest: " Kind notes are shared with every guest invited to this celebration.",
+            nameLabel: "Your name",
+            namePlaceholder: "e.g. Ama Serwaa",
+            messageLabel: "Your blessing",
+            placeholder: "Write a wish, prayer, or blessing…",
+            submit: "Share your blessing",
+            loading: "Gathering blessings…",
+            empty: "Be the first to leave a blessing for this celebration.",
+            success: "Your blessing was shared with everyone invited.",
+            nounOne: "blessing",
+            nounMany: "blessings",
+            loadMore: "Read more blessings",
+          }
       : {
           title: "Guest Wishes",
           kicker: "",
@@ -241,9 +282,18 @@ export function GuestWishesCard({
           credentials: "same-origin",
           cache: "no-store",
         });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          const items = (data.data.items ?? []) as GuestWishItem[];
+        const data = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          data?: {
+            items?: GuestWishItem[];
+            total?: number;
+            hasMore?: boolean;
+            pages?: number;
+            canModerate?: boolean;
+          };
+        } | null;
+        if (res.ok && data?.success) {
+          const items = (data.data?.items ?? []) as GuestWishItem[];
           setWishes((prev) => {
             if (append) {
               const seen = new Set(prev.map((w) => w.id));
@@ -263,10 +313,10 @@ export function GuestWishesCard({
             }
             return items;
           });
-          setTotal(data.data.total ?? 0);
-          setHasMore(Boolean(data.data.hasMore ?? pageNum < (data.data.pages ?? 1)));
+          setTotal(data.data?.total ?? 0);
+          setHasMore(Boolean(data.data?.hasMore ?? pageNum < (data.data?.pages ?? 1)));
           setPage(pageNum);
-          setCanModerate(Boolean(data.data.canModerate));
+          setCanModerate(Boolean(data.data?.canModerate));
         } else if (!append && !opts?.silent) {
           setCanModerate(false);
           setWishes([]);
@@ -306,8 +356,8 @@ export function GuestWishesCard({
     if (guestName?.trim()) setAuthorName(guestName.trim());
   }, [guestName]);
 
-  const canModerateWish = viewerCanDeleteWish({ canModerate });
-  const canEditWish = viewerCanEditWish(canModerate);
+  const canModerateWish = viewerCanDeleteWish({ canModerate, allowAuthorSelfManage: false });
+  const canEditWish = viewerCanEditWish(canModerate, { allowAuthorSelfManage: false });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -673,6 +723,209 @@ export function GuestWishesCard({
             </p>
           )}
         </div>
+      </div>
+    );
+  }
+
+  if (aurelia) {
+    return (
+      <div
+        className={`${invitationFontVars} ${aw.card}`}
+        style={aureliaWishTokenStyle(colors)}
+        data-testid="aurelia-guest-wishes"
+      >
+        {!hideHeader && (
+          <header className={aw.header}>
+            <span className={aw.kicker}>{copy.kicker}</span>
+            <h3 className={aw.title}>{copy.title}</h3>
+            <div className={aw.rule} />
+            {total > 0 ? (
+              <span className={aw.count}>
+                {total} {total === 1 ? copy.nounOne : copy.nounMany}
+              </span>
+            ) : null}
+            <p className={aw.lede}>
+              {copy.lead}
+              {canModerate ? copy.leadModerator : copy.leadGuest}
+            </p>
+          </header>
+        )}
+        {hideHeader && total > 0 ? (
+          <p className={aw.count}>
+            {total} {total === 1 ? copy.nounOne : copy.nounMany}
+          </p>
+        ) : null}
+
+        <form onSubmit={(e) => void submit(e)} className={aw.form} noValidate>
+          <div>
+            <label htmlFor="aurelia-guest-wish-name" className={aw.label}>
+              {copy.nameLabel}
+            </label>
+            <Input
+              id="aurelia-guest-wish-name"
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              placeholder={copy.namePlaceholder}
+              required
+              autoComplete="name"
+              maxLength={80}
+              className={aw.field}
+            />
+          </div>
+          <div>
+            <label htmlFor="aurelia-guest-wish-message" className={aw.label}>
+              {copy.messageLabel}
+            </label>
+            <Textarea
+              id="aurelia-guest-wish-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={copy.placeholder}
+              required
+              minLength={2}
+              rows={4}
+              maxLength={1000}
+              className={`${aw.field} ${aw.letter}`}
+            />
+          </div>
+          {error ? (
+            <p className={aw.error} role="alert">
+              {error}
+            </p>
+          ) : null}
+          {success ? (
+            <p className={aw.success} role="status">
+              {success}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={submitting || !authorName.trim() || message.trim().length < 2}
+            className={aw.submit}
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" strokeWidth={1.6} />}
+            {copy.submit}
+          </button>
+        </form>
+
+        <div className={aw.feed} aria-live="polite" data-testid="aurelia-wish-feed">
+          {loading ? (
+            <p className={aw.status}>{copy.loading}</p>
+          ) : wishes.length === 0 ? (
+            <p className={aw.status}>{copy.empty}</p>
+          ) : (
+            wishes.map((w) => {
+              const isEditing = editingId === w.id;
+              return (
+                <article key={w.id} className={aw.entry}>
+                  {isEditing ? (
+                    <div className={aw.editStack}>
+                      <Input
+                        value={editAuthorName}
+                        onChange={(e) => setEditAuthorName(e.target.value)}
+                        maxLength={80}
+                        aria-label="Edit author name"
+                        className={aw.field}
+                      />
+                      <Textarea
+                        value={editMessage}
+                        onChange={(e) => setEditMessage(e.target.value)}
+                        rows={3}
+                        maxLength={1000}
+                        aria-label="Edit wish message"
+                        className={`${aw.field} ${aw.letter}`}
+                      />
+                      <div className={aw.editRow}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={
+                            savingEdit || !editAuthorName.trim() || editMessage.trim().length < 2
+                          }
+                          onClick={() => void saveEdit(w.id)}
+                          className={aw.saveBtn}
+                        >
+                          {savingEdit ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={savingEdit}
+                          onClick={cancelEdit}
+                          className={aw.cancelBtn}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {canModerate ? (
+                        <div className={aw.actions}>
+                          {canEditWish ? (
+                            <button
+                              type="button"
+                              onClick={() => beginEdit(w)}
+                              disabled={deletingId === w.id}
+                              aria-label={`Edit wish from ${w.authorName}`}
+                              title="Edit"
+                              className={aw.actionBtn}
+                            >
+                              <Pencil className="h-3.5 w-3.5" strokeWidth={1.6} />
+                            </button>
+                          ) : null}
+                          {canModerateWish ? (
+                            <button
+                              type="button"
+                              onClick={() => void removeWish(w)}
+                              disabled={deletingId === w.id}
+                              aria-label={`Delete wish from ${w.authorName}`}
+                              title="Delete"
+                              className={aw.actionBtn}
+                            >
+                              {deletingId === w.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.6} />
+                              )}
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      <p className={aw.quote}>
+                        <span className={aw.quoteMark} aria-hidden>
+                          “
+                        </span>
+                        {w.message}
+                      </p>
+                      <div className={aw.meta}>
+                        <p className={aw.author}>{w.authorName}</p>
+                        <span className={aw.time}>{formatWishTime(w.createdAt)}</span>
+                      </div>
+                    </>
+                  )}
+                </article>
+              );
+            })
+          )}
+          {hasMore && !loading ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={aw.loadMore}
+              disabled={loadingMore}
+              onClick={() => void fetchPage(page + 1, true)}
+            >
+              {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : copy.loadMore}
+            </Button>
+          ) : null}
+        </div>
+
+        {memoryVaultEnabled && !suppressMemoryHint ? (
+          <p className={aw.hint}>Find the Album — share a photograph from the day</p>
+        ) : null}
       </div>
     );
   }

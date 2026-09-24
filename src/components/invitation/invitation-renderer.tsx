@@ -13,6 +13,7 @@ import { FloralGardenTemplate } from "./templates/floral-garden";
 import { TraditionalMarriageCeremonyTemplate } from "./templates/traditional-marriage-ceremony";
 import { ForeverAfarisWeddingTemplate } from "./templates/forever-afaris-wedding";
 import { LuxuryFashionFlagshipTemplate } from "./templates/luxury-fashion-flagship";
+import { AureliaEditorialWeddingTemplate } from "./templates/aurelia-editorial-wedding";
 import { CinematicTemplate, isCinematicLayout } from "./templates/cinematic-template";
 import { InvitationMediaProvider } from "./invitation-media-context";
 import { ManualGateCodeReveal } from "@/components/qr/manual-gate-code-reveal";
@@ -30,6 +31,14 @@ export type InvitationRendererProps = InvitationRenderProps & {
   hasTimelineSection?: boolean;
   /** Guest-facing gallery URLs for templates that render their own gallery */
   galleryUrls?: string[];
+  /** Live Gift Wallet placement, when the event has an active campaign. */
+  giftUrl?: string | null;
+  giftQrImageUrl?: string | null;
+  giftTitle?: string | null;
+  giftSubtitle?: string | null;
+  giftCtaLabel?: string | null;
+  giftPrivacyNote?: string | null;
+  guestQrToken?: string | null;
 };
 
 export function InvitationRenderer({ interactiveMedia = false, ...props }: InvitationRendererProps) {
@@ -46,6 +55,8 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
         return <ForeverAfarisWeddingTemplate {...props} />;
       case "luxury-fashion-flagship":
         return <LuxuryFashionFlagshipTemplate {...props} />;
+      case "aurelia-editorial-wedding":
+        return <AureliaEditorialWeddingTemplate {...props} />;
       case "passport-luxe":
         return <PassportLuxeTemplate {...props} />;
       case "glass-acrylic":

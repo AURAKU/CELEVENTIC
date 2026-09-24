@@ -44,30 +44,52 @@ export default async function PublicTemplatesPage({
 
   const where = { approvalStatus: "APPROVED" as const, isActive: true };
 
-  const [designRows, total] = await Promise.all([
-    prisma.designTemplate.findMany({
-      where,
-      orderBy: [{ isFeatured: "desc" }, { popularity: "desc" }, { createdAt: "desc" }],
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        category: true,
-        style: true,
-        description: true,
-        productType: true,
-        isPremium: true,
-        isFeatured: true,
-        thumbnailUrl: true,
-        previewUrl: true,
-        canvas: true,
-        blocks: true,
-      },
-    }),
-    prisma.designTemplate.count({ where }),
-  ]);
+  let designRows: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    category: string;
+    style: string | null;
+    description: string | null;
+    productType: string;
+    isPremium: boolean;
+    isFeatured: boolean;
+    thumbnailUrl: string | null;
+    previewUrl: string | null;
+    canvas: unknown;
+    blocks: unknown;
+  }> = [];
+  let total = 0;
+  try {
+    [designRows, total] = await Promise.all([
+      prisma.designTemplate.findMany({
+        where,
+        orderBy: [{ isFeatured: "desc" }, { popularity: "desc" }, { createdAt: "desc" }],
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          category: true,
+          style: true,
+          description: true,
+          productType: true,
+          isPremium: true,
+          isFeatured: true,
+          thumbnailUrl: true,
+          previewUrl: true,
+          canvas: true,
+          blocks: true,
+        },
+      }),
+      prisma.designTemplate.count({ where }),
+    ]);
+  } catch (error) {
+    console.warn("[templates] catalogue falling back to bundled layouts", error);
+    designRows = [];
+    total = 0;
+  }
 
   const designTemplates: PublicDesignStudioItem[] = designRows.map((t) => ({
     id: t.id,

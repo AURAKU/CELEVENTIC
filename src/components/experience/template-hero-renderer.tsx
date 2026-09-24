@@ -294,6 +294,17 @@ export function renderTemplateHero(ctx: TemplateHeroContext) {
         </HeroShell>
       );
 
+    case "aurelia-editorial-wedding":
+      return (
+        <HeroShell className="max-w-xl">
+          <p className="text-[10px] uppercase tracking-[0.38em] mb-4" style={{ color: secondary }}>{intro || "Together with their families"}</p>
+          <h1 className="font-[family-name:var(--font-playfair)] text-4xl sm:text-5xl" style={{ color: primary }}>
+            {name1}{name2 && <> & {name2}</>}
+          </h1>
+          <p className="mt-6 text-sm tracking-[0.2em] uppercase" style={{ color: secondary }}>{dateLine}</p>
+        </HeroShell>
+      );
+
     default:
       return (
         <HeroShell>

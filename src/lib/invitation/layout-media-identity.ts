@@ -514,6 +514,19 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
       "/templates/femmora/look-pearl-gown.jpg",
     ],
   },
+  "aurelia-editorial-wedding": {
+    hero: "/templates/aurelia/hero.jpg",
+    background: "/templates/aurelia/hero.jpg",
+    gallery: [
+      "/templates/aurelia/hero.jpg",
+      "/templates/aurelia/story.jpg",
+      u("1522413452208-996ff3f3e740"),
+      u("1606800052052-a08af7148866"),
+      u("1523438885200-e635ba2c371e"),
+      u("1519225421980-715cb0215aed"),
+    ],
+    video: "https://assets.mixkit.co/videos/preview/mixkit-golden-bokeh-particles-4552-large.mp4",
+  },
 };
 
 /** Prefer catalogue SKU pack, then layout pack. */

@@ -22,7 +22,8 @@ export type InvitationLayoutSlug =
   | "corporate-prestige-summit"
   | "luxury-fashion-flagship"
   | "traditional-marriage-ceremony"
-  | "forever-afaris-wedding";
+  | "forever-afaris-wedding"
+  | "aurelia-editorial-wedding";
 
 export type MediaType = "image" | "video" | "pdf";
 

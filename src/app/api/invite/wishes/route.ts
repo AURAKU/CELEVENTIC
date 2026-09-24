@@ -17,6 +17,7 @@ import {
   previewWishWallKey,
   previewWishesEnabled,
 } from "@/lib/invitation/preview-wish-wall";
+import { roleCanModerateWishes } from "@/lib/invitation/guest-wish-permissions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -39,6 +40,32 @@ const createSchema = z
     message: "Invitation link required",
   });
 
+function wishFeedResponse(
+  items: Array<{ id: string; authorName: string; message: string; createdAt: string }>,
+  canModerate: boolean
+) {
+  return NextResponse.json(
+    {
+      success: true,
+      data: {
+        items,
+        total: items.length,
+        page: 1,
+        limit: Math.max(items.length, 1),
+        pages: 1,
+        hasMore: false,
+        canModerate,
+        canEdit: canModerate,
+      },
+    },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } }
+  );
+}
+
+function isPreviewGuestWall(link?: string | null, invitationId?: string | null): string | null {
+  return previewWishWallKey(link, invitationId);
+}
+
 async function resolveInviteAccess(params: {
   eventId?: string | null;
   link?: string | null;
@@ -48,6 +75,7 @@ async function resolveInviteAccess(params: {
   invitationId?: string;
   invitationStatus?: string;
 } | null> {
+  try {
   if (params.link) {
     const select = { id: true, eventId: true, status: true };
     let invitation = await prisma.invitation.findUnique({
@@ -98,104 +126,123 @@ async function resolveInviteAccess(params: {
   }
 
   return null;
+  } catch (error) {
+    console.warn("[invite/wishes] invitation lookup skipped", error);
+    return null;
+  }
 }
 
 export async function GET(req: Request) {
+  try {
   const url = new URL(req.url);
   const link = url.searchParams.get("link");
   const invitationId = url.searchParams.get("invitationId");
-  const resolved = await resolveInviteAccess({
-    eventId: url.searchParams.get("eventId"),
-    link,
-    invitationId,
-  });
+  const previewKey = isPreviewGuestWall(link, invitationId);
+  if (previewKey) {
+    let canModerate = false;
+    try {
+      const session = await getServerSession(authOptions);
+      canModerate = roleCanModerateWishes(session?.user?.role);
+    } catch {
+      canModerate = false;
+    }
+    const items = previewWishesEnabled() ? listPreviewWishes(previewKey) : [];
+    return wishFeedResponse(items, canModerate);
+  }
+
+  let resolved: Awaited<ReturnType<typeof resolveInviteAccess>> = null;
+  try {
+    resolved = await resolveInviteAccess({
+      eventId: url.searchParams.get("eventId"),
+      link,
+      invitationId,
+    });
+  } catch (error) {
+    console.warn("[invite/wishes] GET lookup failed", error);
+    return wishFeedResponse([], false);
+  }
 
   if (!resolved) {
-    const previewKey = previewWishWallKey(link, invitationId);
-    if (previewKey) {
-      const items = previewWishesEnabled() ? listPreviewWishes(previewKey) : [];
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            items,
-            total: items.length,
-            page: 1,
-            limit: Math.max(items.length, 1),
-            pages: 1,
-            hasMore: false,
-            canModerate: false,
-            canEdit: false,
-          },
-        },
-        { headers: { "Cache-Control": "private, no-store, max-age=0" } }
-      );
-    }
     return NextResponse.json({ error: "eventId or invite link required" }, { status: 400 });
   }
 
-  const session = await getServerSession(authOptions);
-  const canModerate = await isWishEventModerator(
-    resolved.eventId,
-    session?.user?.id,
-    session?.user?.role as UserRole | undefined
-  );
+  let session = null as Awaited<ReturnType<typeof getServerSession>>;
+  try {
+    session = await getServerSession(authOptions);
+  } catch {
+    session = null;
+  }
 
-  // Guests must prove invitation access via link / invitationId.
-  // Organizers may list event-wide without an invitation.
-  if (!resolved.invitationId && !canModerate) {
-    return NextResponse.json(
-      { error: "Invite link or invitationId required" },
-      { status: 400 }
+  try {
+    const canModerate = await isWishEventModerator(
+      resolved.eventId,
+      session?.user?.id,
+      session?.user?.role as UserRole | undefined
     );
-  }
 
-  if (
-    resolved.invitationId &&
-    !canModerate &&
-    resolved.invitationStatus === "EXPIRED"
-  ) {
-    return NextResponse.json({ error: "Invitation is no longer active" }, { status: 403 });
-  }
-
-  const { page, limit } = parsePaginationFromUrl(req.url);
-  const data = await guestWishService.listForEvent(
-    resolved.eventId,
-    page,
-    Math.min(limit, 25),
-    {
-      // Authorized via invitation link above — feed itself is event-wide approved wishes.
-      publicOnly: !canModerate,
-      includeHidden: canModerate,
+    // Guests must prove invitation access via link / invitationId.
+    // Organizers may list event-wide without an invitation.
+    if (!resolved.invitationId && !canModerate) {
+      return NextResponse.json(
+        { error: "Invite link or invitationId required" },
+        { status: 400 }
+      );
     }
-  );
 
-  return NextResponse.json(
-    {
-      success: true,
-      data: {
-        ...data,
-        items: data.items.map((item) => ({
-          ...item,
-          createdAt:
-            item.createdAt instanceof Date
-              ? item.createdAt.toISOString()
-              : item.createdAt,
-          editedAt:
-            item.editedAt instanceof Date
-              ? item.editedAt.toISOString()
-              : item.editedAt ?? null,
-        })),
-        canModerate,
-        canEdit: canModerate,
-      },
-    },
-    {
-      headers: {
-        "Cache-Control": "private, no-store, max-age=0",
-      },
+    if (
+      resolved.invitationId &&
+      !canModerate &&
+      resolved.invitationStatus === "EXPIRED"
+    ) {
+      return NextResponse.json({ error: "Invitation is no longer active" }, { status: 403 });
     }
-  );
+
+    const { page, limit } = parsePaginationFromUrl(req.url);
+    const data = await guestWishService.listForEvent(
+      resolved.eventId,
+      page,
+      Math.min(limit, 25),
+      {
+        // Authorized via invitation link above — feed itself is event-wide approved wishes.
+        publicOnly: !canModerate,
+        includeHidden: canModerate,
+      }
+    );
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          ...data,
+          items: data.items.map((item) => ({
+            ...item,
+            createdAt:
+              item.createdAt instanceof Date
+                ? item.createdAt.toISOString()
+                : item.createdAt,
+            editedAt:
+              item.editedAt instanceof Date
+                ? item.editedAt.toISOString()
+                : item.editedAt ?? null,
+          })),
+          canModerate,
+          canEdit: canModerate,
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "private, no-store, max-age=0",
+        },
+      }
+    );
+  } catch (error) {
+    console.warn("[invite/wishes] GET listing failed", error);
+    return wishFeedResponse([], false);
+  }
+  } catch (error) {
+    console.warn("[invite/wishes] GET failed", error);
+    return wishFeedResponse([], false);
+  }
 }
 
 export async function POST(req: Request) {

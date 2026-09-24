@@ -995,9 +995,14 @@ export function PremiumInviteWrapper({
               sealStyle={sealStyle}
               openingCopy={openingCopy}
               fashionHouse={experience?.fashionHouse}
+              aureliaWedding={experience?.aureliaWedding}
               embedded={Boolean(embedded)}
               autoOpen={envelopeAutoOpen}
-              allowSkip={Boolean(embedded) && openingExperience === "luxury-fashion-flagship"}
+              allowSkip={
+                Boolean(embedded) &&
+                (openingExperience === "luxury-fashion-flagship" ||
+                  openingExperience === "aurelia-editorial-wedding")
+              }
               ceremonialDoves={isFuneralExperience}
               onBegin={() => {
                 void startAudio();

@@ -80,6 +80,12 @@ export const PUBLIC_CATALOG_COPY: Record<string, PublicCatalogCopy> = {
       "Luxury cinematic wedding with blush floral envelope, champagne wax seal and golden gate reveal.",
     style: "European",
   },
+  "aurelia-editorial-wedding": {
+    name: "Aurelia Editorial Wedding",
+    description:
+      "Ivory editorial wedding. Tap the veil to open two ceremony days, dress palettes, RSVP and maps.",
+    style: "Ivory",
+  },
   "floral-garden-romance": {
     name: "Petal Promise",
     description: "Living garden romance. Floral logo bloom into petal reveal and floating frames.",
@@ -392,6 +398,16 @@ export const CATALOG_DEMO_IDENTITIES: Record<string, DemoIdentity> = {
     venueName: "Aurora Garden Pavilion",
     landmark: "East Legon, Accra",
     dressCode: "Formal · Soft neutrals and gold",
+  },
+  "aurelia-editorial-wedding": {
+    title: "The Wedding of Elorm & Dansowaa",
+    hostName: "Elorm & Dansowaa",
+    message: "Together with their families, Elorm and Dansowaa invite you to celebrate their wedding.",
+    invitationName: "Elorm & Dansowaa Editorial",
+    venueName: "TLPCI, Solution Centre",
+    landmark: "Accra",
+    dressCode: "Palette for Friday, elegant formal for Saturday",
+    sealInitials: "E & D",
   },
   "floral-garden-romance": {
     title: "The Engagement of Hannah & David",

@@ -3,11 +3,19 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import type { UserRole } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
-import { resolveWishCapabilities } from "@/lib/invitation/guest-wish-permissions";
+import {
+  resolveWishCapabilities,
+  roleCanModerateWishes,
+} from "@/lib/invitation/guest-wish-permissions";
 import {
   guestWishService,
   isWishEventModerator,
 } from "@/services/invitations/guest-wish.service";
+import {
+  deletePreviewWish,
+  previewWishesEnabled,
+  updatePreviewWish,
+} from "@/lib/invitation/preview-wish-wall";
 
 const updateSchema = z
   .object({
@@ -18,6 +26,9 @@ const updateSchema = z
     message: "Nothing to update",
   });
 
+const FORBIDDEN =
+  "Forbidden — only the event organizer or a platform admin can change guest wishes";
+
 async function resolveModeratorForWish(eventId: string): Promise<boolean> {
   const session = await getServerSession(authOptions);
   return isWishEventModerator(
@@ -25,6 +36,20 @@ async function resolveModeratorForWish(eventId: string): Promise<boolean> {
     session?.user?.id,
     session?.user?.role as UserRole | undefined
   );
+}
+
+async function resolvePreviewModerator(): Promise<boolean> {
+  if (!previewWishesEnabled()) return false;
+  try {
+    const session = await getServerSession(authOptions);
+    return roleCanModerateWishes(session?.user?.role);
+  } catch {
+    return false;
+  }
+}
+
+function isPreviewWishId(id: string): boolean {
+  return id.startsWith("preview-wish-");
 }
 
 /**
@@ -42,6 +67,19 @@ export async function DELETE(
     return NextResponse.json({ error: "Wish id required" }, { status: 400 });
   }
 
+  if (isPreviewWishId(id)) {
+    if (!(await resolvePreviewModerator())) {
+      return NextResponse.json({ error: FORBIDDEN }, { status: 403 });
+    }
+    if (!deletePreviewWish(id)) {
+      return NextResponse.json({ error: "Wish not found" }, { status: 404 });
+    }
+    return NextResponse.json({
+      success: true,
+      data: { id, deletedBy: "moderator" },
+    });
+  }
+
   const wish = await guestWishService.getById(id);
   if (!wish) {
     return NextResponse.json({ error: "Wish not found" }, { status: 404 });
@@ -53,13 +91,7 @@ export async function DELETE(
   });
 
   if (!caps.canDelete) {
-    return NextResponse.json(
-      {
-        error:
-          "Forbidden — only the event organizer or a platform admin can delete wishes",
-      },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: FORBIDDEN }, { status: 403 });
   }
 
   try {
@@ -89,6 +121,28 @@ export async function PATCH(
     return NextResponse.json({ error: "Wish id required" }, { status: 400 });
   }
 
+  if (isPreviewWishId(id)) {
+    if (!(await resolvePreviewModerator())) {
+      return NextResponse.json({ error: FORBIDDEN }, { status: 403 });
+    }
+    try {
+      const body = updateSchema.parse(await req.json());
+      const updated = updatePreviewWish(id, body);
+      if (!updated) {
+        return NextResponse.json({ error: "Wish not found" }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, data: updated });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+      }
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Failed to update wish" },
+        { status: 400 }
+      );
+    }
+  }
+
   const wish = await guestWishService.getById(id);
   if (!wish) {
     return NextResponse.json({ error: "Wish not found" }, { status: 404 });
@@ -100,10 +154,7 @@ export async function PATCH(
   });
 
   if (!caps.canEdit) {
-    return NextResponse.json(
-      { error: "Forbidden — only the event organizer or a platform admin can edit wishes" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: FORBIDDEN }, { status: 403 });
   }
 
   try {

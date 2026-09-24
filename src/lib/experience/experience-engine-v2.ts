@@ -476,6 +476,23 @@ const DNA: Record<InvitationLayoutSlug, TemplateExperienceDNA> = {
     typographyPackId: "editorial",
     backgroundPackId: "paper",
   },
+  "aurelia-editorial-wedding": {
+    collectionId: "luxury-white",
+    openingExperience: "aurelia-editorial-wedding",
+    outroExperience: "see-you-soon",
+    defaultAudioCategory: "piano",
+    defaultAudioTrackId: "layout-aurelia-editorial-wedding",
+    buttonStyle: "pearl",
+    hubMode: "scroll",
+    countdownStyle: "circular",
+    sceneTransition: "fade",
+    heroLayout: "editorial-split",
+    slideshowStyle: "grid-reveal",
+    pacing: "slow",
+    slideDurationMs: 7800,
+    typographyPackId: "elegant",
+    backgroundPackId: "paper",
+  },
 };
 
 export function getTemplateExperienceDNA(layout: InvitationLayoutSlug | string): TemplateExperienceDNA {
@@ -591,6 +608,7 @@ export function enrichDesignWithExperienceDNA(design: InvitationDesignConfig): I
       collectionId: userExp.collectionId ?? dnaExperience.collectionId,
       enableRevealSounds: userExp.enableRevealSounds ?? dnaExperience.enableRevealSounds,
       fashionHouse: userExp.fashionHouse,
+      aureliaWedding: userExp.aureliaWedding,
       viralFooterEnabled: userExp.viralFooterEnabled,
     },
   };

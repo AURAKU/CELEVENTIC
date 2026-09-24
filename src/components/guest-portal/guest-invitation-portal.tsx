@@ -298,7 +298,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
   const templateOwnsJourney =
     isTraditionalMarriage ||
     props.design.layout === "forever-afaris-wedding" ||
-    props.design.layout === "luxury-fashion-flagship";
+    props.design.layout === "luxury-fashion-flagship" ||
+    props.design.layout === "aurelia-editorial-wedding";
   const fashionOwnsPaper = props.design.layout === "luxury-fashion-flagship";
   const fashionPaperFill =
     "radial-gradient(120% 90% at 50% 0%, #fffdf8 0%, #fbf7f0 48%, #f4ede1 100%)";
@@ -448,8 +449,14 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           galleryUrls={templateOwnsJourney ? props.galleryUrls : undefined}
           contactEmail={templateOwnsJourney ? props.contactEmail : undefined}
           hasGiftsSection={isTraditionalMarriage && hubTabs.includes("gifts")}
-          // Portal schedule is suppressed for journey-owning templates, don't deep-link to a missing #schedule.
           hasTimelineSection={false}
+          giftUrl={props.giftUrl}
+          giftQrImageUrl={props.giftQrImageUrl}
+          giftTitle={props.giftTitle}
+          giftSubtitle={props.giftSubtitle}
+          giftCtaLabel={props.giftCtaLabel}
+          giftPrivacyNote={props.giftPrivacyNote}
+          guestQrToken={props.guestQrToken}
         />
 
         {/* Journey-owning templates supply their own chrome, hide the duplicate action rail */}
@@ -817,7 +824,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             />
           </PortalSection>
 
-          {(hubTabs.includes("gifts") || props.giftUrl) && (
+          {props.design.layout !== "aurelia-editorial-wedding" &&
+            (props.giftUrl || hubTabs.includes("gifts")) && (
           <PortalSection delay={420} id="gifts">
             {props.giftUrl ? (
               <GiftInviteCard

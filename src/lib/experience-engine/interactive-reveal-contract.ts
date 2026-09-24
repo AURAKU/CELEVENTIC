@@ -254,6 +254,14 @@ export const REVEAL_MECHANIC_CONTRACTS: Record<RevealMechanicId, InteractiveReve
     gestureHint: "Draw the silk, then open the house",
     keyboardLabel: "Unveil and enter",
   },
+  "aurelia-editorial-wedding": {
+    mechanic: "aurelia-editorial-wedding",
+    openingExperience: "aurelia-editorial-wedding",
+    supportsKeyboardFallback: true,
+    supportsReducedMotion: true,
+    gestureHint: "Tap the ivory veil to open",
+    keyboardLabel: "Open invitation",
+  },
   none: {
     mechanic: "none",
     openingExperience: "none",
@@ -306,6 +314,7 @@ const OPENING_TO_MECHANIC: Partial<Record<OpeningExperienceId, RevealMechanicId>
   "petal-fall": "petal-fall",
   "blush-gate": "blush-gate",
   "luxury-fashion-flagship": "luxury-fashion-flagship",
+  "aurelia-editorial-wedding": "aurelia-editorial-wedding",
   none: "none",
 };
 

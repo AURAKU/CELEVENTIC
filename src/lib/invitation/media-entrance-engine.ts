@@ -57,6 +57,7 @@ const LAYOUT_ENTRANCE: Record<InvitationLayoutSlug, MediaEntranceId> = {
   "neon-celebration-party": "neon-pop",
   "corporate-prestige-summit": "grid-stagger",
   "luxury-fashion-flagship": "curtain-unveil",
+  "aurelia-editorial-wedding": "gentle-fade",
 };
 
 export function getMediaEntranceForLayout(layout: string): MediaEntranceId {

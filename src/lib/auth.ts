@@ -123,17 +123,23 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (token.id && !token.invalid) {
-        const synced = await syncUserTokenFromDb(token.id);
-        if (!synced) {
-          authLog("jwt_invalidated", { userId: token.id, reason: "missing_or_suspended" });
-          return invalidateAuthToken(token);
+        try {
+          const synced = await syncUserTokenFromDb(token.id);
+          if (!synced) {
+            authLog("jwt_invalidated", { userId: token.id, reason: "missing_or_suspended" });
+            return invalidateAuthToken(token);
+          }
+          if (isTokenIssuedBeforeInvalidation(token.iat as number | undefined, synced.sessionInvalidatedAt)) {
+            authLog("jwt_invalidated", { userId: token.id, reason: "force_logout" });
+            return invalidateAuthToken(token);
+          }
+          authLog("jwt_sync", { userId: token.id, role: synced.role });
+          return applySyncedUserToToken(token, synced);
+        } catch (error) {
+          // Missing DATABASE_URL must not take down every page that reads a session.
+          console.warn("[auth] jwt sync skipped", error);
+          return token;
         }
-        if (isTokenIssuedBeforeInvalidation(token.iat as number | undefined, synced.sessionInvalidatedAt)) {
-          authLog("jwt_invalidated", { userId: token.id, reason: "force_logout" });
-          return invalidateAuthToken(token);
-        }
-        authLog("jwt_sync", { userId: token.id, role: synced.role });
-        return applySyncedUserToToken(token, synced);
       }
 
       return token;

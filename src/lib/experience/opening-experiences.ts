@@ -329,6 +329,12 @@ export const OPENING_EXPERIENCES: OpeningExperienceMeta[] = [
     description: "Tap to open a couture envelope — the invitation card rises, then becomes the live house",
     category: "interactive",
   },
+  {
+    id: "aurelia-editorial-wedding",
+    label: "Ivory veil opening",
+    description: "Ivory editorial veil — tap to open into the live wedding invitation",
+    category: "interactive",
+  },
   { id: "none", label: "Instant", description: "Skip opening ceremony", category: "instant" },
 ];
 
@@ -355,7 +361,7 @@ export function mapOpeningToLegacyRevealMode(id: OpeningExperienceId): RevealMod
   if (id === "passport" || id === "investor-pass") return "passport";
   if (id === "glass" || id === "swipe-reveal" || id === "petal-fall") return "glass";
   if (id === "scroll-unroll" || id === "briefing-folder" || id === "letter-unfold") return "scroll-unroll";
-  if (id === "none" || id === "film-countdown") return "none";
+  if (id === "none" || id === "film-countdown" || id === "aurelia-editorial-wedding") return "none";
   if (id === "pop-reveal" || id === "confetti-burst" || id === "balloon-burst" || id === "launch-pulse")
     return "scratch";
   if (id === "flip-reveal" || id === "zoom-reveal" || id === "magazine-page-turn" || id === "ring-box" || id === "agenda-flip")
@@ -550,6 +556,11 @@ const OPENING_TAP_COPY: Partial<Record<OpeningExperienceId, PreviewTapCopy>> = {
     label: "Tap to open",
     subtitle: "Play the opening exactly as your guests will see it",
     steps: ["Envelope opens", "Invitation opens"],
+  },
+  "aurelia-editorial-wedding": {
+    label: "Tap to open",
+    subtitle: "Play the opening exactly as your guests will see it",
+    steps: ["Ivory veil lifts", "Invitation opens"],
   },
 };
 

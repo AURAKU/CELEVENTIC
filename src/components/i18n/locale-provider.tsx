@@ -78,10 +78,17 @@ export function LocaleProvider({
     let cancelled = false;
     setLoading(true);
     fetch("/api/i18n/bootstrap", { cache: "no-store" })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const contentType = r.headers.get("content-type") ?? "";
+        if (!r.ok || !contentType.includes("application/json")) return null;
+        return r.json();
+      })
       .then((d) => {
-        if (cancelled || !d.success) return;
+        if (cancelled || !d?.success || !d.data?.messages) return;
         setMessages((prev) => mergeMessageDictionaries(prev, d.data.messages));
+      })
+      .catch(() => {
+        /* Bundled dictionaries already cover first paint. */
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -95,9 +102,13 @@ export function LocaleProvider({
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.id) return;
     fetch("/api/i18n/preferences")
-      .then((r) => r.json())
+      .then(async (r) => {
+        const contentType = r.headers.get("content-type") ?? "";
+        if (!r.ok || !contentType.includes("application/json")) return null;
+        return r.json();
+      })
       .then((d) => {
-        if (d.success && isAppLocale(d.data.languageCode)) {
+        if (d?.success && isAppLocale(d.data.languageCode)) {
           setLocaleState((current) => {
             if (current === d.data.languageCode) return current;
             storageSet(LOCALE_STORAGE_KEY, d.data.languageCode);
@@ -106,6 +117,9 @@ export function LocaleProvider({
             return d.data.languageCode;
           });
         }
+      })
+      .catch(() => {
+        /* Keep the current locale when preferences are unavailable. */
       });
   }, [status, session?.user?.id]);
 

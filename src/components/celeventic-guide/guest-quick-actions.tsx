@@ -1,11 +1,13 @@
 "use client";
 
-import { type ComponentType } from "react";
+import { type ComponentType, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   BookOpen,
   Camera,
+  ChevronDown,
+  ChevronUp,
   Compass,
   Heart,
   HelpCircle,
@@ -80,9 +82,12 @@ export function GuestQuickActions({
   );
 }
 
+const GUIDE_GLASS =
+  "bg-white/55 backdrop-blur-xl border border-white/80 shadow-[0_8px_28px_rgba(15,23,42,0.16),inset_0_1px_0_rgba(255,255,255,0.9)]";
+
 /**
- * Invitation footer: Celeventic logo opens the Guest Guide so guests can
- * learn how to navigate the invitation and the rest of the platform.
+ * Invitation footer: glassy Celeventic Guide pill. Guests can tuck it away
+ * and bring it back from a slim tab — the guide link itself is unchanged.
  */
 export function InviteGuestHelpFab({
   className,
@@ -94,6 +99,8 @@ export function InviteGuestHelpFab({
   /** Fashion flagship: keep the FAB off the campaign masthead and CTAs. */
   alignEnd?: boolean;
 }) {
+  const [hidden, setHidden] = useState(false);
+
   return (
     <div
       className={cn(
@@ -101,43 +108,70 @@ export function InviteGuestHelpFab({
         alignEnd
           ? "justify-end pr-[max(0.75rem,env(safe-area-inset-right))] pl-3"
           : "justify-center",
-        "pb-[max(1rem,env(safe-area-inset-bottom))] pt-3",
+        hidden ? "pb-0 pt-0" : "pb-[max(1rem,env(safe-area-inset-bottom))] pt-3",
         className
       )}
+      data-guest-guide-tray={hidden ? "hidden" : "open"}
     >
-      <Link
-        href={guideHref}
-        onClick={() =>
-          trackGuideEvent("guide_context_help", { action: "open-guest-guide", surface: "invite-fab" })
-        }
-        className={cn(
-          "pointer-events-auto group inline-flex flex-col items-center gap-1.5",
-          alignEnd ? "min-h-11 min-w-11 rounded-full px-2.5 py-2" : "min-h-[3.5rem] rounded-full px-5 py-2.5",
-          "bg-white/95 backdrop-blur-md border border-[#0B8A83]/25",
-          "shadow-[0_8px_28px_rgba(11,138,131,0.22),0_2px_8px_rgba(15,23,42,0.08)]",
-          "hover:border-[#0B8A83]/45 hover:shadow-[0_10px_32px_rgba(11,138,131,0.28)]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2",
-          "transition-[transform,box-shadow,border-color] duration-200",
-          "active:scale-[0.98]"
-        )}
-        aria-label={`${APP_NAME} Guest Guide — learn how to navigate the invitation`}
-      >
-        <span className="inline-flex items-center gap-2.5">
-          <Image
-            src={BRAND_LOGO_FULL}
-            alt={BRAND_LOGO_ALT}
-            width={120}
-            height={36}
-            className={alignEnd ? "h-6 w-auto object-contain" : "h-8 w-auto object-contain sm:h-9"}
-            priority={false}
-          />
-        </span>
-        {alignEnd ? null : (
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#0B8A83]">
-            Guest guide
-          </span>
-        )}
-      </Link>
+      {hidden ? (
+        <button
+          type="button"
+          onClick={() => setHidden(false)}
+          className={cn(
+            "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full",
+            GUIDE_GLASS,
+            "text-[#0B8A83] transition-transform duration-200 active:scale-[0.98]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2"
+          )}
+          aria-label="Show guide"
+        >
+          <ChevronUp className="h-5 w-5" strokeWidth={2.4} aria-hidden />
+        </button>
+      ) : (
+        <div
+          className={cn(
+            "pointer-events-auto relative flex items-center gap-1.5 rounded-full",
+            GUIDE_GLASS,
+            "transition-[transform,box-shadow] duration-200",
+            alignEnd ? "h-11 pl-2 pr-1" : "h-12 pl-3 pr-1.5"
+          )}
+        >
+          <Link
+            href={guideHref}
+            onClick={() =>
+              trackGuideEvent("guide_context_help", { action: "open-guest-guide", surface: "invite-fab" })
+            }
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full",
+              alignEnd ? "h-9 px-1.5" : "h-10 pl-0.5 pr-1",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2"
+            )}
+            aria-label={`${APP_NAME} Guide — learn how to navigate the invitation`}
+          >
+            <Image
+              src={BRAND_LOGO_FULL}
+              alt={BRAND_LOGO_ALT}
+              width={120}
+              height={36}
+              className={alignEnd ? "h-6 w-auto object-contain" : "h-7 w-auto object-contain"}
+              priority={false}
+            />
+            {alignEnd ? null : (
+              <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#0B8A83]">
+                Guide
+              </span>
+            )}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setHidden(true)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#0B8A83]/25 bg-white/80 text-[#0B8A83] shadow-[0_1px_4px_rgba(11,138,131,0.18)] transition-colors hover:bg-white hover:border-[#0B8A83]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83]"
+            aria-label="Hide guide"
+          >
+            <ChevronDown className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -75,6 +75,10 @@ function introVisualFamily(variant: IntroVariantId): IntroVariantId {
       return "engine-grid";
     case "aurora-rise":
       return "constellation";
+    case "silk-whisper":
+      return "fabric-unfold";
+    case "aurelia-ivory-veil":
+      return "gold-foil";
     default:
       return variant;
   }
