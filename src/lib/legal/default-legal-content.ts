@@ -40,7 +40,7 @@ You must provide accurate registration information and keep credentials secure. 
 ## 4. Invitation Orders
 The invitation flow works as follows:
 
-1. Choose a template and package (Starter, Celebration, Signature, Prestige, or Bespoke)
+1. Choose a template and package (Starter, Classic, Signature, or Ultimate Experience)
 2. Add event details, blocks, and optional add-ons
 3. Review checkout pricing in GHS (with USD/GBP display references)
 4. Pay via Paystack where applicable
@@ -195,13 +195,12 @@ Celeventic provides custom digital invitation and design production through Invi
 
 | Package | Price (GHS) | Included Revisions |
 |---------|-------------|-------------------|
-| Starter | Free | 1 |
-| Celebration | 199 | 2 |
-| Signature | 499 | 3 |
-| Prestige | 999 | 5 |
-| Bespoke | 2,499 | 10 |
+| Starter | 450 | 1 |
+| Classic | 800 | 2 |
+| Signature | 1,500 | 3 |
+| Ultimate Experience | From 2,950 (quoted) | 3 |
 
-Paid packages are subject to the refund rules below. Free Starter orders have no payment to refund.
+Paid self-serve packages (Starter, Classic, Signature) are subject to the refund rules below. Ultimate Experience is quotation-based and is not charged as a fixed checkout amount.
 
 ## Full Refund — Before Production Starts
 You may request a full refund if:
@@ -312,11 +311,10 @@ Every Celeventic invitation package includes a defined number of design revision
 
 | Package | Included Revisions | Delivery |
 |---------|-------------------|----------|
-| Starter | 1 | 1 day |
-| Celebration | 2 | 2 days |
-| Signature | 3 | 3 days |
-| Prestige | 5 | 5 days |
-| Bespoke | 10 | Custom |
+| Starter | 1 | 2 days |
+| Classic | 2 | 3 days |
+| Signature | 3 | 4 days |
+| Ultimate Experience | 3 | Custom quotation |
 
 A revision round covers consolidated feedback on layout, colours, typography, and content placement within your selected template style.
 
@@ -359,7 +357,7 @@ After revisions, we may request your explicit approval before publishing your gu
 ## Contact
 ${email} | ${phone}`,
     contentFr: `## Révisions incluses
-De 1 (Starter) à 10 (Bespoke) selon le forfait.
+De 1 (Starter) à 3 (Signature et Ultimate Experience) selon le forfait.
 
 ## Changements mineurs vs majeurs
 Date, heure, lieu — souvent sans utiliser une révision. Changements de thème ou mise en page — comptent comme révision.
@@ -409,8 +407,8 @@ Templates in the invitation catalogue and admin template library are licensed fo
 ## VendorOS Content
 Vendors retain rights in their uploaded portfolio media. By publishing a vendor profile, vendors grant Celeventic a licence to display their content in the marketplace directory.
 
-## Bespoke Engagements
-Custom bespoke design ownership may be negotiated separately in writing for premium engagements. Default terms apply unless otherwise agreed.
+## Ultimate Experience / custom quotation
+Custom Ultimate Experience and designer-assisted ownership terms may be negotiated separately in writing. Default terms apply unless otherwise agreed.
 
 ## Restrictions
 You may not copy, resell, scrape, or redistribute Celeventic templates, code, or design systems. You may share your published invitation link (\`/invite/[link]\`) with intended guests.

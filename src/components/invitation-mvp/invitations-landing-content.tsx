@@ -9,6 +9,7 @@ import { useLocale } from "@/components/i18n/locale-provider";
 import { getBrowseCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
 import { INVITATION_REVIEWS } from "@/lib/invitation-mvp/reviews";
 import type { InvitationPackageDef } from "@/lib/invitation-mvp/packages";
+import { formatInvitationPriceGhs } from "@/lib/invitation-mvp/packages";
 
 interface Props {
   packages: InvitationPackageDef[];
@@ -119,16 +120,22 @@ export function InvitationsLandingContent({ packages }: Props) {
               ))}
             </ul>
           </div>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {packages.slice(0, 4).map((pkg) => (
               <div key={pkg.slug} className="rounded-2xl border border-slate-200/80 p-5 bg-[#FAF8F4]">
                 <p className="font-semibold text-[#0F172A]">{pkg.name}</p>
                 <p className="text-2xl font-bold text-[#0B8A83] mt-1">
-                  {pkg.priceGhs === 0 ? t("common.free") : `₵${pkg.priceGhs}`}
+                  {formatInvitationPriceGhs(pkg)}
                 </p>
+                {pkg.popular ? (
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-[#D4A63A]">Most Popular</p>
+                ) : null}
               </div>
             ))}
           </div>
+          <p className="mt-4 text-xs text-slate-500">
+            Additional staffing, extra event hours, travel/logistics and custom requests are quoted separately.
+          </p>
         </div>
       </section>
 

@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { currencyService } from "@/services/commerce/currency.service";
 import type { DisplayCurrency } from "@/lib/commerce/constants";
+import {
+  getInvitationPackage,
+  isQuoteOnlyInvitationPackage,
+  resolveInvitationPackageSlug,
+} from "@/lib/invitation-mvp/packages";
 
 export interface OrderPricing {
   packageAmountGhs: number;
@@ -15,13 +20,19 @@ export interface OrderPricing {
 
 export class PricingService {
   async getPackagePriceGhs(packageSlug: string): Promise<number> {
-    const pkg = await prisma.invitationProductPackage.findUnique({
-      where: { slug: packageSlug },
-      include: { prices: { where: { isActive: true }, orderBy: { createdAt: "desc" }, take: 1 } },
-    });
-    if (!pkg) return 0;
-    const activePrice = pkg.prices[0];
-    return Number(activePrice?.amountGhs ?? pkg.priceGhs);
+    const canonical = resolveInvitationPackageSlug(packageSlug) ?? packageSlug;
+    const bundled = getInvitationPackage(canonical);
+    try {
+      const pkg = await prisma.invitationProductPackage.findUnique({
+        where: { slug: canonical },
+        include: { prices: { where: { isActive: true }, orderBy: { createdAt: "desc" }, take: 1 } },
+      });
+      if (!pkg) return bundled?.priceGhs ?? 0;
+      const activePrice = pkg.prices[0];
+      return bundled?.priceGhs ?? Number(activePrice?.amountGhs ?? pkg.priceGhs);
+    } catch {
+      return bundled?.priceGhs ?? 0;
+    }
   }
 
   async getAddonPriceGhs(addonSlug: string): Promise<number> {
@@ -34,12 +45,20 @@ export class PricingService {
     addonSlugs: string[],
     displayCurrency: DisplayCurrency = "GHS"
   ): Promise<OrderPricing> {
-    const pkg = await prisma.invitationProductPackage.findUnique({ where: { slug: packageSlug } });
-    const packageAmountGhs = await this.getPackagePriceGhs(packageSlug);
+    const canonical = resolveInvitationPackageSlug(packageSlug) ?? packageSlug;
+    const bundled = getInvitationPackage(canonical);
+    let pkg: { name: string } | null = bundled ? { name: bundled.name } : null;
+    try {
+      const row = await prisma.invitationProductPackage.findUnique({ where: { slug: canonical } });
+      if (row) pkg = { name: bundled?.name ?? row.name };
+    } catch {
+      /* bundled name is sufficient */
+    }
+    const packageAmountGhs = await this.getPackagePriceGhs(canonical);
 
     const lineItems: OrderPricing["lineItems"] = [];
     if (pkg) {
-      lineItems.push({ slug: packageSlug, name: pkg.name, amountGhs: packageAmountGhs });
+      lineItems.push({ slug: canonical, name: pkg.name, amountGhs: packageAmountGhs });
     }
 
     let addonsAmountGhs = 0;
@@ -67,11 +86,23 @@ export class PricingService {
   }
 
   async isPaymentRequired(packageSlug: string): Promise<boolean> {
-    const pkg = await prisma.invitationProductPackage.findUnique({ where: { slug: packageSlug } });
-    if (!pkg) return true;
-    const price = await this.getPackagePriceGhs(packageSlug);
-    if (price <= 0) return false;
-    return pkg.paymentRequiredToPublish;
+    if (isQuoteOnlyInvitationPackage(packageSlug)) return false;
+    const canonical = resolveInvitationPackageSlug(packageSlug) ?? packageSlug;
+    const bundled = getInvitationPackage(canonical);
+    try {
+      const pkg = await prisma.invitationProductPackage.findUnique({ where: { slug: canonical } });
+      const price = await this.getPackagePriceGhs(canonical);
+      if (price <= 0) return false;
+      if (!pkg) return bundled?.paymentRequiredToPublish !== false;
+      return pkg.paymentRequiredToPublish;
+    } catch {
+      const price = bundled?.priceGhs ?? 0;
+      return price > 0 && bundled?.paymentRequiredToPublish !== false;
+    }
+  }
+
+  isQuoteOnly(packageSlug: string): boolean {
+    return isQuoteOnlyInvitationPackage(packageSlug);
   }
 }
 

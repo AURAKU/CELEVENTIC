@@ -51,9 +51,9 @@ export class AiDesignAdvisorService {
       .slice(0, 4);
 
     let pkgSlug = "celebration";
-    if (input.eventType === "FUNERAL" || input.guestCount && input.guestCount > 300) pkgSlug = "signature";
-    if ((input.budgetGhs ?? 0) > 1500) pkgSlug = "bespoke";
-    if ((input.budgetGhs ?? 0) < 100) pkgSlug = "starter";
+    if (input.eventType === "FUNERAL" || (input.guestCount && input.guestCount > 150)) pkgSlug = "signature";
+    if ((input.budgetGhs ?? 0) >= 2950) pkgSlug = "bespoke";
+    if ((input.budgetGhs ?? 0) > 0 && (input.budgetGhs ?? 0) < 800) pkgSlug = "starter";
     const pkg = packages.find((p: { slug: string }) => p.slug === pkgSlug) ?? packages[0];
 
     const suggestedAddons = addons

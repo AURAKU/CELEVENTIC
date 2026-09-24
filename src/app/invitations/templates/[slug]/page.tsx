@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { catalogService } from "@/services/commerce/catalog.service";
+import { getCatalogInvitationPackages } from "@/lib/invitation-mvp/packages";
 import { EVENT_TYPES } from "@/lib/constants";
 import {
   eventTypesForCatalogCategory,
@@ -31,7 +32,7 @@ export default async function TemplateDetailPage({
   const eventType = resolveOrderEventType(template.category, eventTypeParam);
   const allowedEventTypes = new Set(eventTypesForCatalogCategory(template.category));
   const eventTypeChoices = EVENT_TYPES.filter((et) => allowedEventTypes.has(et.value));
-  const packages = await catalogService.getActivePackages(eventType);
+  const packages = await catalogService.getActivePackages(eventType).catch(() => getCatalogInvitationPackages());
 
   return (
     <>
@@ -80,14 +81,17 @@ export default async function TemplateDetailPage({
           </div>
 
           <TemplatePackageHeading />
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <p className="text-sm text-slate-500 mb-6 -mt-3">
+            Additional staffing, extra event hours, travel/logistics and custom requests are quoted separately.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {packages.map((pkg) => (
               <PackageCard
                 key={pkg.slug}
                 pkg={pkg}
                 templateSlug={slug}
                 eventType={eventType}
-                popular={pkg.slug === "signature"}
+                popular={pkg.popular}
               />
             ))}
           </div>

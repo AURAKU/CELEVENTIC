@@ -12,6 +12,13 @@ import { useCurrency } from "@/components/commerce/currency-provider";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { formatCurrency } from "@/lib/utils";
 import { hasFullPackageAccess } from "@/lib/access/package-access";
+import {
+  formatInvitationPriceGhs,
+  getInvitationPackage,
+  invitationPackageContactMessage,
+  isQuoteOnlyInvitationPackage,
+} from "@/lib/invitation-mvp/packages";
+import { GUIDE_SUPPORT_CONTACT, guideSupportWhatsAppUrl } from "@/lib/celeventic-guide/support-contact";
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -92,8 +99,11 @@ export default function CheckoutPage() {
     return <PageLoader label={t("checkout.loading")} className="min-h-screen" />;
   }
 
-  const amountGhs = adminBypass ? 0 : pricing.totalGhs;
+  const quoteOnly = isQuoteOnlyInvitationPackage(String(order.packageSlug ?? ""));
+  const bundledPkg = getInvitationPackage(String(order.packageSlug ?? ""));
+  const amountGhs = adminBypass ? 0 : quoteOnly ? 0 : pricing.totalGhs;
   const pkg = order.package as { name?: string; revisions?: number; deliveryDays?: number } | null;
+  const contactHref = bundledPkg ? guideSupportWhatsAppUrl(invitationPackageContactMessage(bundledPkg)) : `mailto:${GUIDE_SUPPORT_CONTACT.email}`;
 
   return (
     <MvpShell step={4} title={t("checkout.title")} subtitle={t("checkout.subtitle")}>
@@ -115,16 +125,29 @@ export default function CheckoutPage() {
               <div key={item.name} className="flex justify-between">
                 <span className="text-slate-500">{item.name}</span>
                 <span className="font-medium">
-                  {adminBypass ? t("common.free") : format(item.amountGhs)}
+                  {adminBypass
+                    ? t("common.free")
+                    : quoteOnly && bundledPkg
+                      ? formatInvitationPriceGhs(bundledPkg)
+                      : format(item.amountGhs)}
                 </span>
               </div>
             ))}
             <div className="flex justify-between border-t pt-3">
               <span className="font-semibold">{t("checkout.you_pay")}</span>
               <span className="text-lg font-bold text-[#0B8A83]">
-                {amountGhs === 0 ? t("common.free") : format(amountGhs)}
+                {quoteOnly && bundledPkg
+                  ? formatInvitationPriceGhs(bundledPkg)
+                  : amountGhs === 0
+                    ? t("common.free")
+                    : format(amountGhs)}
               </span>
             </div>
+            {quoteOnly ? (
+              <p className="text-xs text-slate-500">
+                Ultimate Experience is quoted separately. Additional staffing, extra event hours, travel/logistics and custom requests are not a fixed checkout price.
+              </p>
+            ) : null}
             {currency !== "GHS" && amountGhs > 0 && (
               <p className="text-center text-xs text-slate-400">
                 {t("checkout.charged_detail", {
@@ -177,23 +200,38 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          <Button
-            className="mt-6 w-full bg-[#0B8A83] hover:bg-[#097068]"
-            size="lg"
-            onClick={() => void handlePay()}
-            disabled={loading || (!acceptTerms && !adminBypass)}
-          >
-            {loading
-              ? t("checkout.processing")
-              : adminBypass || amountGhs === 0
-                ? "Unlock Studio & Continue"
-                : t("checkout.pay_now")}
-          </Button>
-          <p className="mt-3 text-center text-xs text-slate-400">
-            {adminBypass
-              ? "Admin unlock · Customize in Studio, then publish when ready."
-              : "Secure payment · After payment you customize in Studio, then publish when ready."}
-          </p>
+          {quoteOnly && !adminBypass ? (
+            <>
+              <Button className="mt-6 w-full bg-[#0B8A83] hover:bg-[#097068]" size="lg" asChild>
+                <a href={contactHref} target="_blank" rel="noreferrer">
+                  Contact us
+                </a>
+              </Button>
+              <p className="mt-3 text-center text-xs text-slate-400">
+                Quotation required · we confirm staffing, hours and logistics before any payment.
+              </p>
+            </>
+          ) : (
+            <>
+              <Button
+                className="mt-6 w-full bg-[#0B8A83] hover:bg-[#097068]"
+                size="lg"
+                onClick={() => void handlePay()}
+                disabled={loading || (!acceptTerms && !adminBypass)}
+              >
+                {loading
+                  ? t("checkout.processing")
+                  : adminBypass || amountGhs === 0
+                    ? "Unlock Studio & Continue"
+                    : t("checkout.pay_now")}
+              </Button>
+              <p className="mt-3 text-center text-xs text-slate-400">
+                {adminBypass
+                  ? "Admin unlock · Customize in Studio, then publish when ready."
+                  : "Secure payment · After payment you customize in Studio, then publish when ready."}
+              </p>
+            </>
+          )}
         </div>
 
         <OrderSummaryRail
