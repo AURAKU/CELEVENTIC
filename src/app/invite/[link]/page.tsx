@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
