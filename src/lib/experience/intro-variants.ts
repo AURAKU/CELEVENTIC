@@ -293,6 +293,12 @@ export const INTRO_VARIANTS: Record<IntroVariantId, IntroVariantMeta> = {
     tagline: "A quiet house is about to unveil…",
     showHud: false,
   },
+  "aurelia-ivory-veil": {
+    id: "aurelia-ivory-veil",
+    label: "Ivory Veil",
+    tagline: "An ivory chapter is about to open…",
+    showHud: false,
+  },
 };
 
 export const INTRO_VARIANT_OPTIONS = Object.values(INTRO_VARIANTS);
@@ -319,6 +325,7 @@ export function defaultIntroVariantFor(options: {
 
   const match = (...terms: string[]) => terms.some((t) => haystack.includes(t));
 
+  if (match("aurelia", "ivory-veil")) return "aurelia-ivory-veil";
   if (match("memorial", "funeral", "tribute", "candle", "mourning")) return "spotlight";
   if (match("kente", "heritage", "adinkra", "traditional")) return "ink-reveal";
   if (match("floral", "garden", "boho", "bloom", "romance")) return "logo-bloom";

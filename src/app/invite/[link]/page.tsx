@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
-import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
+import { isAureliaEditorialLayout } from "@/lib/experience/aurelia-editorial";
 import { resolveLiveRevealConfiguration, logLiveInviteRevealDiagnostic } from "@/lib/experience/live-envelope-contract";
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
 import { seatingService } from "@/services/seating/seating.service";
@@ -534,6 +534,8 @@ export default async function InvitePage({
       fullScreen={design.studio?.fullScreen ?? true}
       skipSoftIntro={false}
       skipIntro={false}
+      skipTapGate={isAureliaEditorialLayout(design.layout)}
+      skipReveal={isAureliaEditorialLayout(design.layout)}
       invitation={{
         id: invitation.id,
         name: invitation.name,

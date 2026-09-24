@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   resolveWishCapabilities,
+  roleCanModerateWishes,
   viewerCanDeleteWish,
   viewerCanEditWish,
 } from "../guest-wish-permissions";
@@ -31,5 +32,15 @@ describe("guest wish permissions", () => {
   it("reserves edit UI for organizers and platform admins", () => {
     assert.equal(viewerCanEditWish(false), false);
     assert.equal(viewerCanEditWish(true), true);
+  });
+
+  it("treats only admin and organizer roles as wish moderators", () => {
+    assert.equal(roleCanModerateWishes(null), false);
+    assert.equal(roleCanModerateWishes("GUEST"), false);
+    assert.equal(roleCanModerateWishes("USER"), false);
+    assert.equal(roleCanModerateWishes("VENDOR"), false);
+    assert.equal(roleCanModerateWishes("ORGANIZER"), true);
+    assert.equal(roleCanModerateWishes("ADMIN"), true);
+    assert.equal(roleCanModerateWishes("SUPER_ADMIN"), true);
   });
 });

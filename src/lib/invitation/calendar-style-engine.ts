@@ -42,6 +42,7 @@ const LAYOUT_CALENDAR_STYLE: Partial<Record<InvitationLayoutSlug, CalendarStyleI
   "neon-celebration-party": "neon-grid",
   "corporate-prestige-summit": "summit-ticket",
   "luxury-fashion-flagship": "luxury-foil",
+  "aurelia-editorial-wedding": "classic-3d",
 };
 
 const COLLECTION_FALLBACK: Partial<Record<ExperienceCollectionId, CalendarStyleId>> = {

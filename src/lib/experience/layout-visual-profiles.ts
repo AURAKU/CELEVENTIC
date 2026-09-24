@@ -166,6 +166,13 @@ const PROFILES: Record<InvitationLayoutSlug, LayoutVisualProfile> = {
     vignette: "soft",
     overlayGradient: "from-amber-50/20 via-transparent to-stone-100/40",
   },
+  "aurelia-editorial-wedding": {
+    background: "linear-gradient(180deg, #F8F4EA 0%, #EFE7D5 48%, #D8C09C 100%)",
+    accentGlow: "rgba(182,154,99,0.32)",
+    environment: "none",
+    vignette: "soft",
+    overlayGradient: "from-amber-50/25 via-transparent to-stone-100/30",
+  },
 };
 
 export function getLayoutVisualProfile(layout: string): LayoutVisualProfile {

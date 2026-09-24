@@ -19,6 +19,23 @@ function interpolate(template: string, params?: Record<string, string | number>)
   return template.replace(/\{(\w+)\}/g, (_, k: string) => String(params[k] ?? `{${k}}`));
 }
 
+/** Bundled dictionaries when Prisma/DB is unavailable (local preview, missing DATABASE_URL). */
+function staticBootstrapPayload() {
+  const staticBase = buildStaticMessageDictionaries();
+  return {
+    languages: [
+      { code: "en", name: "English", enabled: true, isDefault: true },
+      { code: "fr", name: "French", enabled: true, isDefault: false },
+    ],
+    messages: staticBase,
+    defaultLocale: DEFAULT_LOCALE,
+  };
+}
+
+function canUseDatabase() {
+  return Boolean(process.env.DATABASE_URL?.trim());
+}
+
 /** One seed per process — never re-upsert hundreds of rows on every page load. */
 let translationsSeedPromise: Promise<void> | null = null;
 
@@ -67,26 +84,31 @@ export class TranslationService {
   }
 
   async getBootstrapPayload() {
-    await this.seedTranslations();
-    const [languages, rows] = await Promise.all([
-      languageService.getEnabledLanguages(),
-      prisma.translation.findMany({ orderBy: [{ namespace: "asc" }, { key: "asc" }] }),
-    ]);
+    if (!canUseDatabase()) return staticBootstrapPayload();
+    try {
+      await this.seedTranslations();
+      const [languages, rows] = await Promise.all([
+        languageService.getEnabledLanguages(),
+        prisma.translation.findMany({ orderBy: [{ namespace: "asc" }, { key: "asc" }] }),
+      ]);
 
-    const staticBase = buildStaticMessageDictionaries();
-    const en: MessageDictionary = { ...staticBase.en };
-    const fr: MessageDictionary = { ...staticBase.fr };
-    for (const row of rows) {
-      const fk = fullKey(row.namespace, row.key);
-      en[fk] = row.enValue;
-      fr[fk] = row.frValue ?? row.enValue;
+      const staticBase = buildStaticMessageDictionaries();
+      const en: MessageDictionary = { ...staticBase.en };
+      const fr: MessageDictionary = { ...staticBase.fr };
+      for (const row of rows) {
+        const fk = fullKey(row.namespace, row.key);
+        en[fk] = row.enValue;
+        fr[fk] = row.frValue ?? row.enValue;
+      }
+
+      return {
+        languages,
+        messages: mergeMessageDictionaries(staticBase, { en, fr }),
+        defaultLocale: DEFAULT_LOCALE,
+      };
+    } catch {
+      return staticBootstrapPayload();
     }
-
-    return {
-      languages,
-      messages: mergeMessageDictionaries(staticBase, { en, fr }),
-      defaultLocale: DEFAULT_LOCALE,
-    };
   }
 
   t(locale: AppLocale, namespace: string, key: string, params?: Record<string, string | number>) {

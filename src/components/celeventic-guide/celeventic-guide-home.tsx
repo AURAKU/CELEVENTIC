@@ -24,14 +24,29 @@ export async function CeleventicGuideHome({
 }: {
   showClassicFaq?: boolean;
 }) {
-  const existing = await listPublicGuides();
+  const existing = await listPublicGuides().catch((error) => {
+    console.warn("[celeventic-guide] listPublicGuides unavailable", error);
+    return [];
+  });
   if (existing.length === 0) {
-    await seedCeleventicGuides();
+    await seedCeleventicGuides().catch((error) => {
+      console.warn("[celeventic-guide] seed skipped", error);
+    });
   }
 
-  const session = await getServerSession(authOptions);
-  const preferredRole = roleFromUserRole(session?.user?.role as string | undefined);
-  const guides = await listPublicGuides({ viewerRole: session?.user?.role as string | undefined });
+  let preferredRole = null as ReturnType<typeof roleFromUserRole>;
+  let viewerRole: string | undefined;
+  try {
+    const session = await getServerSession(authOptions);
+    viewerRole = session?.user?.role as string | undefined;
+    preferredRole = roleFromUserRole(viewerRole);
+  } catch (error) {
+    console.warn("[celeventic-guide] session unavailable", error);
+  }
+  const guides = await listPublicGuides({ viewerRole }).catch((error) => {
+    console.warn("[celeventic-guide] listPublicGuides unavailable", error);
+    return existing;
+  });
 
   return (
     <div className="relative min-h-app-viewport">

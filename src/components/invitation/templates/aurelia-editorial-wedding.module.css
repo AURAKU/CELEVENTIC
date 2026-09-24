@@ -1,0 +1,1139 @@
+.root {
+  --wedding-ivory: #f8f4ea;
+  --wedding-cream: #efe7d5;
+  --wedding-champagne: #d8c09c;
+  --wedding-terracotta: #b65a37;
+  --wedding-blush: #dda8a0;
+  --wedding-espresso: #352019;
+  --wedding-brown: #5a453c;
+  --wedding-gold: #b69a63;
+  --wedding-text: #3b2a25;
+  --aurelia-display: var(--font-cinzel), "Cinzel", "Times New Roman", serif;
+  --aurelia-serif: var(--font-playfair), "Playfair Display", "Times New Roman", serif;
+  --aurelia-body: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --aurelia-script: var(--font-great-vibes), "Great Vibes", cursive;
+  background: var(--wedding-ivory);
+  color: var(--wedding-text);
+  font-family: var(--aurelia-body);
+  min-height: 100dvh;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(0.78rem + env(safe-area-inset-top, 0px)) 4.75rem 0.78rem 1.15rem;
+  background: color-mix(in srgb, var(--wedding-ivory) 92%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--wedding-gold) 42%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.headerOnHero {
+  background: transparent;
+  border-bottom-color: transparent;
+  color: #f8f4ea;
+}
+
+.monogram {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-height: 2.85rem;
+  padding: 0.4rem 1.18rem 0.36rem;
+  border: 1px solid var(--wedding-gold);
+  border-radius: 999px;
+  color: var(--wedding-espresso);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--wedding-ivory) 92%, white) 0%,
+      color-mix(in srgb, var(--wedding-cream) 78%, var(--wedding-champagne)) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--wedding-ivory) 78%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--wedding-gold) 58%, transparent),
+    0 12px 26px rgba(53, 32, 25, 0.16);
+  line-height: 1;
+}
+
+.monogram::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 48%, transparent);
+  pointer-events: none;
+}
+
+.monogramLetter {
+  font-family: var(--aurelia-display);
+  font-size: 1.28rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-indent: 0.1em;
+  text-transform: uppercase;
+}
+
+.monogramAmp {
+  font-family: var(--aurelia-script);
+  font-size: 1.92rem;
+  line-height: 0.62;
+  color: var(--wedding-gold);
+  transform: translateY(0.1rem);
+}
+
+.headerOnHero .monogram {
+  color: #f8f4ea;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #24140f 58%, transparent) 0%,
+      color-mix(in srgb, #0d0705 76%, transparent) 100%
+    );
+  border-color: #ead6a0;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ead6a0 28%, transparent),
+    0 0 0 1px color-mix(in srgb, #160c08 70%, transparent),
+    0 0 0 4px color-mix(in srgb, #ead6a0 72%, transparent),
+    0 14px 30px rgba(8, 4, 2, 0.48);
+  backdrop-filter: blur(16px);
+  text-shadow: 0 1px 12px rgba(8, 4, 2, 0.5);
+}
+
+.headerOnHero .monogramAmp {
+  color: #ead6a0;
+  text-shadow: 0 0 18px rgba(234, 214, 160, 0.5);
+}
+
+.finale .monogram {
+  margin: 0 auto 0.55rem;
+  min-height: 3.2rem;
+  padding: 0.5rem 1.4rem 0.46rem;
+}
+
+.finale .monogramLetter {
+  font-size: 1.42rem;
+}
+
+.finale .monogramAmp {
+  font-size: 2.15rem;
+}
+
+.menuButton {
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.menuButton:focus-visible {
+  outline: 2px solid var(--wedding-gold);
+  outline-offset: 3px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--wedding-ivory) 96%, white);
+  padding: calc(1.2rem + env(safe-area-inset-top, 0px)) 4.75rem 2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.overlayClose {
+  align-self: flex-end;
+  margin-right: 0.35rem;
+  border: 0;
+  background: none;
+  font-family: var(--aurelia-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--wedding-brown);
+}
+
+.overlayNav {
+  margin: auto 0;
+  display: grid;
+  gap: 1.05rem;
+}
+
+.overlayLink {
+  display: flex;
+  gap: 0.85rem;
+  align-items: baseline;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--wedding-espresso);
+  font-family: var(--aurelia-serif);
+  font-size: clamp(1.35rem, 5vw, 1.85rem);
+  font-weight: 500;
+}
+
+.overlayIndex {
+  font-family: var(--aurelia-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--wedding-terracotta);
+}
+
+.hero {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #f8f4ea;
+  text-align: center;
+  padding: 5.5rem 1.25rem 6.5rem;
+  scroll-margin-top: 0;
+  background: #3b2418;
+}
+
+.heroImage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 28%;
+  filter: saturate(0.98) contrast(1.04) brightness(0.96);
+}
+
+.heroGrade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: #6b4228;
+  mix-blend-mode: multiply;
+}
+
+.heroScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(28, 16, 10, 0.38) 0%,
+      rgba(36, 20, 12, 0.16) 34%,
+      rgba(28, 16, 10, 0.2) 58%,
+      rgba(16, 8, 6, 0.52) 100%
+    );
+}
+
+.heroRing {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid color-mix(in srgb, #ead6a0 55%, transparent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.eyebrow {
+  display: block;
+  font-family: var(--aurelia-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: var(--wedding-terracotta);
+  margin-bottom: 0.85rem;
+}
+
+.hero .eyebrow {
+  color: color-mix(in srgb, #f8f4ea 88%, var(--wedding-champagne));
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  text-align: center;
+  font-size: 0.82rem;
+  letter-spacing: 0.32em;
+}
+
+.heroName,
+.heroMeta,
+.heroDate,
+.heroTagline,
+.hero .eyebrow {
+  text-shadow: 0 2px 18px rgba(16, 8, 4, 0.45);
+}
+
+.heroNames {
+  display: grid;
+  gap: 0.05rem;
+  width: 100%;
+  justify-items: center;
+  align-self: center;
+  text-align: center;
+}
+
+.heroName {
+  font-family: var(--aurelia-display);
+  font-size: clamp(2.55rem, 12vw, 3.85rem);
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-indent: 0;
+  text-transform: uppercase;
+  line-height: 1.08;
+}
+
+.heroNameTwo {
+  letter-spacing: clamp(0.1em, 1.8vw, 0.22em);
+}
+
+.ampersand {
+  font-family: var(--aurelia-script);
+  font-size: clamp(1.85rem, 6vw, 2.45rem);
+  line-height: 0.8;
+  color: var(--wedding-champagne);
+}
+
+.heroMeta {
+  margin-top: 1.15rem;
+  font-family: var(--aurelia-display);
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.heroDate {
+  margin-top: 0.95rem;
+  font-family: var(--aurelia-display);
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  text-transform: uppercase;
+  font-size: clamp(1.28rem, 4.6vw, 1.62rem);
+  line-height: 1.2;
+  color: color-mix(in srgb, #f8f4ea 55%, var(--wedding-champagne));
+}
+
+.heroTagline {
+  margin-top: 0.95rem;
+  font-family: var(--aurelia-script);
+  font-size: clamp(1.7rem, 6vw, 2.15rem);
+  color: var(--wedding-champagne);
+}
+
+.heroActions {
+  margin-top: 1.8rem;
+  display: grid;
+  gap: 0.75rem;
+  width: min(22rem, 100%);
+}
+
+.btnOutline,
+.btnFill {
+  font-family: var(--aurelia-display);
+  min-height: 3rem;
+  padding: 0.85rem 1.1rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.btnOutline {
+  border: 1px solid color-mix(in srgb, #f8f4ea 78%, transparent);
+  background: transparent;
+  color: inherit;
+}
+
+.btnFill {
+  border: 1px solid var(--wedding-terracotta);
+  background: var(--wedding-terracotta);
+  color: #f8f4ea;
+}
+
+.section,
+.countdown,
+.rsvpBand,
+.finale {
+  scroll-margin-top: 4.5rem;
+}
+
+.section {
+  padding: 3.2rem 1.25rem 3.4rem;
+}
+
+.sectionNarrow {
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.goldRule {
+  width: 3.4rem;
+  height: 1px;
+  margin: 0.85rem auto 1.35rem;
+  background: linear-gradient(90deg, transparent, var(--wedding-gold), transparent);
+}
+
+.heading {
+  font-family: var(--aurelia-serif);
+  font-size: clamp(2.05rem, 7vw, 2.75rem);
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.lede,
+.bodyCopy {
+  text-align: center;
+  font-size: 1.08rem;
+  line-height: 1.7;
+  color: var(--wedding-brown);
+}
+
+.bodyCopy {
+  font-size: clamp(1.22rem, 4.4vw, 1.38rem);
+  line-height: 1.82;
+  padding-inline: 0.2rem;
+}
+
+.bodyCopy p + p {
+  margin-top: 1.3rem;
+}
+
+.signature {
+  display: block;
+  margin-top: 1.6rem;
+  text-align: center;
+  font-family: var(--aurelia-script);
+  font-size: 2.05rem;
+  color: var(--wedding-terracotta);
+}
+
+.storySection {
+  padding: 0;
+}
+
+.storyImage {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  margin: 0;
+  display: block;
+  object-fit: cover;
+  object-position: center 32%;
+  border: 0;
+}
+
+.storyCopy {
+  padding: 3.2rem 1.55rem 3.4rem;
+}
+
+.countdown {
+  background: var(--wedding-espresso);
+  color: #f3e8d8;
+  padding: 3.4rem 1.15rem 3.6rem;
+  text-align: center;
+}
+
+.countdown .eyebrow,
+.countdown .heading {
+  color: #f3e8d8;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 22rem;
+  margin: 1.6rem auto 0;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 55%, transparent);
+}
+
+.cell {
+  padding: 1.15rem 0.5rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 35%, transparent);
+}
+
+.cellNum {
+  font-family: var(--aurelia-serif);
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  color: var(--wedding-champagne);
+}
+
+.cellLabel {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: var(--aurelia-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.card {
+  background: color-mix(in srgb, var(--wedding-ivory) 70%, var(--wedding-cream));
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 55%, transparent);
+  padding: 1.55rem 1.25rem 1.4rem;
+  margin-top: 1.25rem;
+}
+
+.cardKicker {
+  font-family: var(--aurelia-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--wedding-terracotta);
+}
+
+.cardTitle {
+  font-family: var(--aurelia-serif);
+  font-size: 1.7rem;
+  font-weight: 500;
+  margin: 0.45rem 0 0.7rem;
+}
+
+.metaRow {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0.55rem 0;
+  font-size: 1.02rem;
+  color: var(--wedding-brown);
+}
+
+.mapPreview {
+  display: block;
+  margin-top: 1.05rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.mapFrame {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  min-height: 10.75rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 70%, transparent);
+  background: var(--wedding-cream);
+}
+
+.mapIframe {
+  position: absolute;
+  top: -22%;
+  left: -16%;
+  width: 132%;
+  height: 144%;
+  border: 0;
+  pointer-events: none;
+  filter: saturate(0.68) contrast(1.06) sepia(0.22);
+}
+
+.mapVeil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--wedding-ivory) 28%, transparent) 0%,
+      transparent 32%,
+      transparent 58%,
+      color-mix(in srgb, var(--wedding-espresso) 22%, transparent) 100%
+    );
+}
+
+.mapBadge {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.7rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.62rem 0.32rem 0.48rem;
+  background: color-mix(in srgb, var(--wedding-ivory) 92%, white);
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 60%, transparent);
+  color: var(--wedding-espresso);
+  font-family: var(--aurelia-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.directions {
+  display: block;
+  width: 100%;
+  margin-top: 1.2rem;
+  min-height: 3rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 70%, transparent);
+  text-align: center;
+  font-family: var(--aurelia-display);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  padding: 0.9rem 0.6rem;
+  color: var(--wedding-espresso);
+  text-decoration: none;
+}
+
+.reminder {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.reminder :global(a),
+.reminder :global(button) {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  height: auto !important;
+  min-height: 3rem;
+  padding: 0.9rem 1rem !important;
+  border: 1px solid var(--wedding-terracotta) !important;
+  border-radius: 0 !important;
+  background: var(--wedding-terracotta) !important;
+  color: #f8f4ea !important;
+  font-family: var(--aurelia-display);
+  font-size: 0.66rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.reminder :global(a:hover),
+.reminder :global(button:hover) {
+  background: color-mix(in srgb, var(--wedding-terracotta) 86%, var(--wedding-espresso)) !important;
+  border-color: var(--wedding-espresso) !important;
+}
+
+.reminder :global(a:focus-visible),
+.reminder :global(button:focus-visible) {
+  outline: 2px solid var(--wedding-gold);
+  outline-offset: 3px;
+  box-shadow: none !important;
+}
+
+.reminder :global(svg) {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+}
+
+.reminder :global(p.text-slate-500),
+.reminder :global(p.text-white\/70) {
+  display: none !important;
+}
+
+.dressLight,
+.dressDark {
+  padding: 1.6rem 1.2rem 1.5rem;
+  margin-top: 1.2rem;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 50%, transparent);
+}
+
+.dressDark {
+  background: var(--wedding-espresso);
+  color: #f3e8d8;
+  border-color: transparent;
+}
+
+.dressDark .lede {
+  color: color-mix(in srgb, #faf6ee 90%, var(--wedding-champagne));
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.1rem 1.3rem;
+  margin-top: 1.3rem;
+}
+
+.swatch {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+}
+
+.swatchDot {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 55%, transparent);
+}
+
+.swatchName {
+  font-family: var(--aurelia-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.scriptLine {
+  font-family: var(--aurelia-script);
+  font-size: 1.9rem;
+  color: var(--wedding-champagne);
+  margin: 0.45rem 0 0.9rem;
+}
+
+.journeyItem {
+  margin: 2rem 0 2.4rem;
+}
+
+.journeyTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-family: var(--aurelia-serif);
+  font-size: 1.45rem;
+  margin: 0 0 0.9rem;
+}
+
+.journeyTitle::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--wedding-gold) 70%, transparent);
+}
+
+.journeyImage {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+}
+
+.rsvpBand {
+  background: var(--wedding-espresso);
+  color: #f3e8d8;
+  padding: 3rem 1.15rem 3.2rem;
+}
+
+.rsvpBand .eyebrow,
+.rsvpBand .heading {
+  color: #f3e8d8;
+}
+
+.rsvpBand :global([data-rsvp-root]) {
+  color: inherit;
+}
+
+.rsvpPanel {
+  margin-top: 1.6rem;
+}
+
+.rsvpPanel :global(input) {
+  height: auto !important;
+  min-height: 3rem;
+  border-radius: 0 !important;
+  border-color: color-mix(in srgb, var(--wedding-gold) 48%, transparent) !important;
+  background: color-mix(in srgb, #f3e8d8 8%, transparent) !important;
+  color: #f3e8d8 !important;
+  font-family: var(--aurelia-body);
+  font-size: 1.05rem !important;
+  padding: 0.85rem 1rem !important;
+  box-shadow: none !important;
+}
+
+.rsvpPanel :global(input::placeholder) {
+  color: color-mix(in srgb, #f3e8d8 58%, transparent) !important;
+}
+
+.rsvpPanel :global(input:focus-visible) {
+  outline: 2px solid var(--wedding-gold);
+  outline-offset: 2px;
+  border-color: var(--wedding-gold) !important;
+  box-shadow: none !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2) {
+  display: grid !important;
+  grid-template-columns: 1fr;
+  gap: 0.7rem !important;
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button) {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  height: auto !important;
+  min-height: 3rem;
+  width: 100%;
+  padding: 0.85rem 0.85rem !important;
+  border-radius: 0 !important;
+  font-family: var(--aurelia-display);
+  font-size: 0.64rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button svg) {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: 0 !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(1)) {
+  background: var(--wedding-terracotta) !important;
+  border: 1px solid var(--wedding-terracotta) !important;
+  color: #f8f4ea !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(1):hover) {
+  background: color-mix(in srgb, var(--wedding-terracotta) 84%, var(--wedding-espresso)) !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(2)) {
+  background: transparent !important;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 62%, transparent) !important;
+  color: #f3e8d8 !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(2):hover) {
+  background: color-mix(in srgb, #f3e8d8 10%, transparent) !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(3)) {
+  background: color-mix(in srgb, var(--wedding-champagne) 12%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--wedding-champagne) 48%, transparent) !important;
+  color: var(--wedding-champagne) !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(3):hover) {
+  background: color-mix(in srgb, var(--wedding-champagne) 20%, transparent) !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button:focus-visible) {
+  outline: 2px solid var(--wedding-gold);
+  outline-offset: 3px;
+  box-shadow: none !important;
+}
+
+.rsvpPanel :global(.flex.flex-wrap.gap-2 > button:disabled) {
+  opacity: 0.55;
+}
+
+@media (min-width: 540px) {
+  .rsvpPanel :global(.flex.flex-wrap.gap-2) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rsvpPanel :global(.flex.flex-wrap.gap-2 > button:first-child) {
+    grid-column: 1 / -1;
+  }
+}
+
+.accordion {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--wedding-gold) 40%, transparent);
+  background: none;
+  text-align: left;
+  padding: 1rem 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  font-size: 1.08rem;
+  color: inherit;
+}
+
+.faqAnswer {
+  padding: 0 0 1.1rem;
+  color: var(--wedding-brown);
+  line-height: 1.65;
+}
+
+.giftCheckout {
+  margin-top: 1.35rem;
+  padding: 1.35rem 1.15rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 55%, transparent);
+  background: color-mix(in srgb, var(--wedding-ivory) 78%, var(--wedding-cream));
+  text-align: left;
+}
+
+.giftToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--wedding-terracotta);
+  background: var(--wedding-terracotta);
+  color: #f8f4ea;
+  font-family: var(--aurelia-display);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.giftToggle:hover {
+  background: color-mix(in srgb, var(--wedding-terracotta) 86%, var(--wedding-espresso));
+  border-color: var(--wedding-espresso);
+}
+
+.giftToggle:focus-visible {
+  outline: 2px solid var(--wedding-gold);
+  outline-offset: 3px;
+}
+
+.giftToggle span {
+  flex: 1;
+  text-align: center;
+}
+
+.giftChevron,
+.giftChevronOpen {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.giftChevronOpen {
+  transform: rotate(180deg);
+}
+
+.giftPanel {
+  margin-top: 1.2rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--wedding-gold) 40%, transparent);
+}
+
+.giftKicker {
+  font-family: var(--aurelia-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--wedding-terracotta);
+  margin: 0 0 0.55rem;
+}
+
+.giftNote,
+.giftLede,
+.giftStatus {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--wedding-brown);
+  margin: 0 0 1rem;
+}
+
+.giftLabel {
+  display: block;
+  margin: 1.1rem 0 0.55rem;
+  font-family: var(--aurelia-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--wedding-espresso);
+}
+
+.giftAmounts,
+.giftMethods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.giftAmount,
+.giftAmountSelected,
+.giftMethod,
+.giftMethodSelected {
+  min-height: 3rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 60%, transparent);
+  background: transparent;
+  color: var(--wedding-espresso);
+  font-family: var(--aurelia-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.giftAmountSelected,
+.giftMethodSelected {
+  background: var(--wedding-terracotta);
+  border-color: var(--wedding-terracotta);
+  color: #f8f4ea;
+}
+
+.giftField {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  font-family: var(--aurelia-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--wedding-brown);
+}
+
+.giftField input,
+.giftField textarea {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 50%, transparent);
+  background: color-mix(in srgb, white 55%, var(--wedding-ivory));
+  color: var(--wedding-espresso);
+  font-family: var(--aurelia-body);
+  font-size: 1.05rem;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0.75rem 0.9rem;
+}
+
+.giftField input:focus-visible,
+.giftField textarea:focus-visible,
+.giftAmount:focus-visible,
+.giftMethod:focus-visible,
+.giftPay:focus-visible {
+  outline: 2px solid var(--wedding-gold);
+  outline-offset: 2px;
+}
+
+.giftPay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 1.25rem;
+  border: 1px solid var(--wedding-terracotta);
+  background: var(--wedding-terracotta);
+  color: #f8f4ea;
+  font-family: var(--aurelia-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.giftPay:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--wedding-terracotta) 86%, var(--wedding-espresso));
+}
+
+.giftPay:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.giftSpin {
+  width: 0.95rem;
+  height: 0.95rem;
+  animation: aurelia-spin 0.8s linear infinite;
+}
+
+@keyframes aurelia-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.giftError {
+  margin-top: 0.75rem;
+  color: #9b2c2c;
+  font-size: 0.92rem;
+}
+
+.giftQr {
+  margin-top: 1.25rem;
+  text-align: center;
+}
+
+.giftQr img {
+  width: 7rem;
+  height: 7rem;
+  background: white;
+  padding: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 50%, transparent);
+}
+
+.giftQr p,
+.giftPrivacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  font-size: 0.78rem;
+  color: var(--wedding-brown);
+}
+
+.finale {
+  padding: 3.4rem 1.25rem 5.5rem;
+  text-align: center;
+}
+
+.finaleLine {
+  font-family: var(--aurelia-display);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  margin-top: 1.1rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 40rem;
+  }
+  .sectionNarrow {
+    max-width: 40rem;
+  }
+  .heroActions {
+    width: min(40rem, 100%);
+  }
+  .storySplit {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

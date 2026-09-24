@@ -21,7 +21,11 @@ import { safeSessionStorage } from "@/lib/browser/safe-storage";
 const STALE_ASSET_ERROR =
   /ChunkLoadError|Loading chunk \S+ failed|Loading CSS chunk|Failed to fetch dynamically imported module|Importing a module script failed/i;
 
+const RECOVERABLE_RENDER_ERROR =
+  /PrismaClientInitializationError|DATABASE_URL|unsupported type was passed to use\(|An unsupported type was passed to use\(|Minified React error|Hydration failed/i;
+
 const RELOAD_ONCE_KEY = "celeventic:stale-asset-reload";
+const RECOVER_ONCE_KEY = "celeventic:recoverable-error-reload";
 
 function recoverFromStaleAssets(error: Error): boolean {
   if (!STALE_ASSET_ERROR.test(`${error.name} ${error.message}`)) return false;
@@ -38,6 +42,23 @@ function recoverFromStaleAssets(error: Error): boolean {
   return true;
 }
 
+function recoverFromTransientRender(error: Error & { digest?: string }): boolean {
+  const blob = `${error.name} ${error.message}`;
+  const looksRecoverable =
+    RECOVERABLE_RENDER_ERROR.test(blob) || Boolean(error.digest);
+  if (!looksRecoverable) return false;
+  const session = safeSessionStorage();
+  if (!session) return false;
+  try {
+    if (session.getItem(RECOVER_ONCE_KEY)) return false;
+    session.setItem(RECOVER_ONCE_KEY, "1");
+  } catch {
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
+
 export default function Error({
   error,
   reset,
@@ -47,7 +68,8 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error("[route-error]", error);
-    recoverFromStaleAssets(error);
+    if (recoverFromStaleAssets(error)) return;
+    recoverFromTransientRender(error);
   }, [error]);
 
   return (
@@ -64,7 +86,18 @@ export default function Error({
           <p className="mt-3 font-mono text-[11px] text-slate-400">Ref {error.digest}</p>
         )}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          <Button type="button" onClick={() => reset()} className="gap-2">
+          <Button
+            type="button"
+            onClick={() => {
+              try {
+                reset();
+              } catch {
+                /* reset can rethrow the same tree */
+              }
+              window.location.reload();
+            }}
+            className="gap-2"
+          >
             <RefreshCw className="h-4 w-4" /> Try again
           </Button>
           <Button type="button" variant="outline" asChild>

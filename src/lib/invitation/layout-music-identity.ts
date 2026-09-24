@@ -295,6 +295,17 @@ export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProf
     fadeInSec: 2.2,
     fadeOutSec: 1.4,
   },
+  "aurelia-editorial-wedding": {
+    trackId: "layout-aurelia-editorial-wedding",
+    title: "Ivory Editorial Prelude",
+    category: "piano",
+    bundledFile: "piano-garden",
+    startSec: 4,
+    endSec: 68,
+    volume: 0.42,
+    fadeInSec: 2,
+    fadeOutSec: 1.3,
+  },
 };
 
 export function getLayoutMusicProfile(layout: string): LayoutMusicProfile {

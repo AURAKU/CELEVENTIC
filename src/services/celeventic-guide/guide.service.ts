@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { HelpGuide, GuideStep, HelpGuideRole, HelpGuideStatus, HelpGuideCategory, HelpGuideReviewStatus } from "@prisma/client";
-import { CELEVENTIC_GUIDE_CATALOG } from "@/lib/celeventic-guide/catalog";
+import { CELEVENTIC_GUIDE_CATALOG, getCatalogBySlug } from "@/lib/celeventic-guide/catalog";
 import {
   parseJsonStringArray,
   sanitizeGuideSlug,
@@ -51,6 +51,159 @@ function mapDbToSearchShape(g: HelpGuide): GuideCatalogEntry {
     sortOrder: g.sortOrder,
     steps: [],
   };
+}
+
+function isCatalogPublic(entry: GuideCatalogEntry) {
+  return isGuidePubliclyVisible({
+    status: entry.status ?? "PUBLISHED",
+    adminOnly: !!entry.adminOnly,
+  });
+}
+
+type PublicGuideCard = {
+  slug: string;
+  title: string;
+  summary: string;
+  role: HelpGuideRole;
+  category: HelpGuideCategory;
+  featured: boolean;
+  posterUrl: string | null;
+  hasVideo: boolean;
+  stepCount: number;
+};
+
+function publicCardFromCatalog(entry: GuideCatalogEntry): PublicGuideCard {
+  return {
+    slug: entry.slug,
+    title: entry.title,
+    summary: entry.summary,
+    role: entry.role as HelpGuideRole,
+    category: entry.category as HelpGuideCategory,
+    featured: !!entry.featured,
+    posterUrl: entry.posterUrl ?? null,
+    hasVideo: !!(entry.videoUrl || entry.mp4Url || entry.webmUrl || entry.mobileVideoUrl),
+    stepCount: entry.steps.length,
+  };
+}
+
+function listCatalogPublicGuides(opts?: {
+  role?: GuideRole | null;
+  category?: string | null;
+  q?: string | null;
+  viewerRole?: string | null;
+}): PublicGuideCard[] {
+  let rows = CELEVENTIC_GUIDE_CATALOG.filter(isCatalogPublic);
+  if (opts?.role) rows = rows.filter((g) => g.role === opts.role);
+  if (opts?.category) rows = rows.filter((g) => g.category === opts.category);
+
+  const preferred = opts?.role ?? roleFromUserRole(opts?.viewerRole ?? null);
+
+  if (opts?.q?.trim()) {
+    const hits = searchGuides(opts.q, { role: preferred, catalog: rows });
+    const bySlug = new Map(rows.map((r) => [r.slug, r]));
+    return hits.map((h) => bySlug.get(h.slug)).filter(Boolean).map((g) => publicCardFromCatalog(g!));
+  }
+
+  if (preferred && preferred !== "ADMIN") {
+    rows = [...rows].sort((a, b) => {
+      const ar = a.role === preferred ? 0 : 1;
+      const br = b.role === preferred ? 0 : 1;
+      if (ar !== br) return ar - br;
+      if (!!a.featured !== !!b.featured) return a.featured ? -1 : 1;
+      return a.sortOrder - b.sortOrder;
+    });
+  } else {
+    rows = [...rows].sort((a, b) => {
+      if (!!a.featured !== !!b.featured) return a.featured ? -1 : 1;
+      return a.sortOrder - b.sortOrder || a.title.localeCompare(b.title);
+    });
+  }
+
+  return rows.map(publicCardFromCatalog);
+}
+
+function catalogToGuideWithSteps(entry: GuideCatalogEntry): HelpGuideWithSteps {
+  const now = new Date();
+  const id = `catalog:${entry.slug}`;
+  return {
+    id,
+    slug: entry.slug,
+    title: entry.title,
+    summary: entry.summary,
+    body: entry.body ?? entry.summary,
+    role: entry.role as HelpGuideRole,
+    category: entry.category as HelpGuideCategory,
+    status: (entry.status ?? "PUBLISHED") as HelpGuideStatus,
+    sortOrder: entry.sortOrder,
+    featured: !!entry.featured,
+    adminOnly: !!entry.adminOnly,
+    posterUrl: entry.posterUrl ?? null,
+    thumbnailUrl: entry.thumbnailUrl ?? entry.posterUrl ?? null,
+    videoUrl: entry.videoUrl ?? null,
+    mp4Url: entry.mp4Url ?? null,
+    webmUrl: entry.webmUrl ?? null,
+    mobileVideoUrl: entry.mobileVideoUrl ?? null,
+    desktopVideoUrl: entry.desktopVideoUrl ?? null,
+    durationSec: entry.durationSec ?? null,
+    captionsEnUrl: entry.captionsEnUrl ?? null,
+    captionsFrUrl: entry.captionsFrUrl ?? null,
+    voiceoverEnUrl: entry.voiceoverEnUrl ?? null,
+    voiceoverFrUrl: entry.voiceoverFrUrl ?? null,
+    storyboardKey: entry.storyboardKey ?? entry.slug,
+    transcript: entry.transcript ?? "",
+    narrationScript: entry.narrationScript ?? entry.transcript ?? "",
+    a11yDescription: entry.a11yDescription ?? entry.summary,
+    videoProductionRequired: entry.videoProductionRequired !== false,
+    featureKey: entry.featureKey ?? null,
+    lastVerifiedAt: null,
+    verifiedAgainstBuild: null,
+    verifiedAgainstFeatureVersion: null,
+    reviewStatus: (entry.reviewStatus ?? "CURRENT") as HelpGuideReviewStatus,
+    synonyms: toJsonStringArray(entry.synonyms ?? []),
+    contextRoutes: toJsonStringArray(entry.contextRoutes ?? []),
+    ogTitle: entry.ogTitle ?? entry.title,
+    ogDescription: entry.ogDescription ?? entry.summary,
+    relatedSlugs: toJsonStringArray(entry.relatedSlugs ?? []),
+    analyticsEvents: toJsonStringArray(entry.analyticsEvents ?? []),
+    isNew: !!entry.isNew,
+    newUntil: entry.newUntil ? new Date(entry.newUntil) : null,
+    scheduledPublishAt: null,
+    viewCount: 0,
+    helpfulYes: 0,
+    helpfulNo: 0,
+    publishedAt: now,
+    createdAt: now,
+    updatedAt: now,
+    steps: entry.steps.map((step, index) => ({
+      id: `${id}:${index}`,
+      guideId: id,
+      sortOrder: index,
+      title: step.title,
+      body: step.body,
+      stepType: step.stepType ?? "motion",
+      mediaUrl: null,
+      motionKey: step.motionKey ?? null,
+      durationMs: step.durationMs ?? null,
+      createdAt: now,
+      updatedAt: now,
+    })),
+    feedback: [],
+    versions: [],
+  } as HelpGuideWithSteps;
+}
+
+function catalogGuideBySlug(slug: string, opts?: { viewerIsAdmin?: boolean }) {
+  const entry = getCatalogBySlug(sanitizeGuideSlug(slug));
+  if (!entry) return null;
+  const visible = isGuidePubliclyVisible({
+    status: entry.status ?? "PUBLISHED",
+    adminOnly: !!entry.adminOnly,
+  });
+  if (!visible) {
+    if (opts?.viewerIsAdmin && entry.adminOnly) return catalogToGuideWithSteps(entry);
+    return null;
+  }
+  return catalogToGuideWithSteps(entry);
 }
 
 export async function seedCeleventicGuides(options?: { forceUpdate?: boolean }) {
@@ -138,83 +291,93 @@ export async function listPublicGuides(opts?: {
   q?: string | null;
   viewerRole?: string | null;
 }) {
-  const rows = await prisma.helpGuide.findMany({
-    where: {
-      status: "PUBLISHED",
-      adminOnly: false,
-      ...(opts?.role ? { role: opts.role as HelpGuideRole } : {}),
-      ...(opts?.category ? { category: opts.category as HelpGuideCategory } : {}),
-    },
-    include: { steps: { select: { id: true }, orderBy: { sortOrder: "asc" } } },
-    orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { title: "asc" }],
-  });
-
-  const preferred = opts?.role ?? roleFromUserRole(opts?.viewerRole ?? null);
-
-  if (opts?.q?.trim()) {
-    const hits = searchGuides(opts.q, {
-      role: preferred,
-      catalog: rows.map(mapDbToSearchShape),
+  try {
+    const rows = await prisma.helpGuide.findMany({
+      where: {
+        status: "PUBLISHED",
+        adminOnly: false,
+        ...(opts?.role ? { role: opts.role as HelpGuideRole } : {}),
+        ...(opts?.category ? { category: opts.category as HelpGuideCategory } : {}),
+      },
+      include: { steps: { select: { id: true }, orderBy: { sortOrder: "asc" } } },
+      orderBy: [{ featured: "desc" }, { sortOrder: "asc" }, { title: "asc" }],
     });
-    const bySlug = new Map(rows.map((r) => [r.slug, r]));
-    return hits
-      .map((h) => bySlug.get(h.slug))
-      .filter(Boolean)
-      .map((g) => ({
-        slug: g!.slug,
-        title: g!.title,
-        summary: g!.summary,
-        role: g!.role,
-        category: g!.category,
-        featured: g!.featured,
-        posterUrl: g!.posterUrl,
-        hasVideo: !!g!.videoUrl,
-        stepCount: g!.steps.length,
-      }));
-  }
 
-  let sorted = rows;
-  if (preferred && preferred !== "ADMIN") {
-    sorted = [...rows].sort((a, b) => {
-      const ar = a.role === preferred ? 0 : 1;
-      const br = b.role === preferred ? 0 : 1;
-      if (ar !== br) return ar - br;
-      if (a.featured !== b.featured) return a.featured ? -1 : 1;
-      return a.sortOrder - b.sortOrder;
-    });
-  }
+    const preferred = opts?.role ?? roleFromUserRole(opts?.viewerRole ?? null);
 
-  return sorted.map((g) => ({
-    slug: g.slug,
-    title: g.title,
-    summary: g.summary,
-    role: g.role,
-    category: g.category,
-    featured: g.featured,
-    posterUrl: g.posterUrl,
-    hasVideo: !!g.videoUrl,
-    stepCount: g.steps.length,
-  }));
+    if (opts?.q?.trim()) {
+      const hits = searchGuides(opts.q, {
+        role: preferred,
+        catalog: rows.map(mapDbToSearchShape),
+      });
+      const bySlug = new Map(rows.map((r) => [r.slug, r]));
+      return hits
+        .map((h) => bySlug.get(h.slug))
+        .filter(Boolean)
+        .map((g) => ({
+          slug: g!.slug,
+          title: g!.title,
+          summary: g!.summary,
+          role: g!.role,
+          category: g!.category,
+          featured: g!.featured,
+          posterUrl: g!.posterUrl,
+          hasVideo: !!g!.videoUrl,
+          stepCount: g!.steps.length,
+        }));
+    }
+
+    let sorted = rows;
+    if (preferred && preferred !== "ADMIN") {
+      sorted = [...rows].sort((a, b) => {
+        const ar = a.role === preferred ? 0 : 1;
+        const br = b.role === preferred ? 0 : 1;
+        if (ar !== br) return ar - br;
+        if (a.featured !== b.featured) return a.featured ? -1 : 1;
+        return a.sortOrder - b.sortOrder;
+      });
+    }
+
+    return sorted.map((g) => ({
+      slug: g.slug,
+      title: g.title,
+      summary: g.summary,
+      role: g.role,
+      category: g.category,
+      featured: g.featured,
+      posterUrl: g.posterUrl,
+      hasVideo: !!g.videoUrl,
+      stepCount: g.steps.length,
+    }));
+  } catch (error) {
+    console.warn("[celeventic-guide] listPublicGuides falling back to catalog", error);
+    return listCatalogPublicGuides(opts);
+  }
 }
 
 export async function getPublicGuideBySlug(slug: string, opts?: { viewerIsAdmin?: boolean }) {
-  const guide = await prisma.helpGuide.findUnique({
-    where: { slug: sanitizeGuideSlug(slug) },
-    include: { steps: { orderBy: { sortOrder: "asc" } } },
-  });
-  if (!guide) return null;
+  try {
+    const guide = await prisma.helpGuide.findUnique({
+      where: { slug: sanitizeGuideSlug(slug) },
+      include: { steps: { orderBy: { sortOrder: "asc" } } },
+    });
+    if (!guide) return catalogGuideBySlug(slug, opts);
 
-  const visible = isGuidePubliclyVisible({
-    status: guide.status,
-    adminOnly: guide.adminOnly,
-  });
+    const visible = isGuidePubliclyVisible({
+      status: guide.status,
+      adminOnly: guide.adminOnly,
+    });
 
-  if (!visible) {
-    if (opts?.viewerIsAdmin && guide.adminOnly) return guide;
-    return null;
+    if (!visible) {
+      if (opts?.viewerIsAdmin && guide.adminOnly) return guide;
+      return null;
+    }
+
+    return guide;
+  } catch (error) {
+    console.warn("[celeventic-guide] getPublicGuideBySlug falling back to catalog", error);
+    return catalogGuideBySlug(slug, opts);
   }
-
-  return guide;
 }
 
 export async function getRelatedPublicGuides(guide: HelpGuide, limit = 4) {
@@ -225,34 +388,37 @@ export async function getRelatedPublicGuides(guide: HelpGuide, limit = 4) {
     role: guide.role as GuideRole,
     category: guide.category as GuideCatalogCategory,
   };
-  // Use DB when possible
-  const candidates = await prisma.helpGuide.findMany({
-    where: { status: "PUBLISHED", adminOnly: false, slug: { not: guide.slug } },
-    orderBy: [{ featured: "desc" }, { sortOrder: "asc" }],
-    take: 40,
-  });
+  try {
+    const candidates = await prisma.helpGuide.findMany({
+      where: { status: "PUBLISHED", adminOnly: false, slug: { not: guide.slug } },
+      orderBy: [{ featured: "desc" }, { sortOrder: "asc" }],
+      take: 40,
+    });
 
-  const picked: HelpGuide[] = [];
-  const seen = new Set<string>();
-  for (const slug of relatedSlugs) {
-    const hit = candidates.find((c) => c.slug === slug);
-    if (hit && !seen.has(hit.slug)) {
-      picked.push(hit);
-      seen.add(hit.slug);
+    const picked: HelpGuide[] = [];
+    const seen = new Set<string>();
+    for (const relatedSlug of relatedSlugs) {
+      const hit = candidates.find((c) => c.slug === relatedSlug);
+      if (hit && !seen.has(hit.slug)) {
+        picked.push(hit);
+        seen.add(hit.slug);
+      }
+      if (picked.length >= limit) return picked;
     }
-    if (picked.length >= limit) return picked;
-  }
-  for (const c of candidates) {
-    if (seen.has(c.slug)) continue;
-    if (c.role === guide.role || c.category === guide.category) {
-      picked.push(c);
-      seen.add(c.slug);
+    for (const c of candidates) {
+      if (seen.has(c.slug)) continue;
+      if (c.role === guide.role || c.category === guide.category) {
+        picked.push(c);
+        seen.add(c.slug);
+      }
+      if (picked.length >= limit) break;
     }
-    if (picked.length >= limit) break;
+    void catalogShape;
+    return picked;
+  } catch (error) {
+    console.warn("[celeventic-guide] getRelatedPublicGuides falling back to catalog", error);
+    return resolveRelatedGuides(catalogShape, CELEVENTIC_GUIDE_CATALOG, limit).map(catalogToGuideWithSteps);
   }
-  void catalogShape;
-  void resolveRelatedGuides;
-  return picked;
 }
 
 type GuideCatalogCategory = HelpGuide["category"];

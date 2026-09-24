@@ -1,0 +1,306 @@
+/* Aurelia editorial guest wishes — ivory paper, gold hairline, wedding type. */
+
+.card {
+  --aw-display: var(--font-cinzel), "Cinzel", "Times New Roman", serif;
+  --aw-serif: var(--font-playfair), "Playfair Display", "Times New Roman", serif;
+  --aw-body: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --aw-script: var(--font-great-vibes), "Great Vibes", cursive;
+  --aw-ivory: var(--wedding-ivory, #f8f4ea);
+  --aw-cream: var(--wedding-cream, #efe7d5);
+  --aw-champagne: var(--wedding-champagne, #d8c09c);
+  --aw-terracotta: var(--wedding-terracotta, #b65a37);
+  --aw-gold: var(--wedding-gold, #b69a63);
+  --aw-espresso: var(--wedding-espresso, #352019);
+  --aw-brown: var(--wedding-brown, #5a453c);
+  --aw-text: var(--wedding-text, #3b2a25);
+
+  position: relative;
+  width: 100%;
+  padding: 1.7rem 1.3rem 1.55rem;
+  color: var(--aw-text);
+  background: color-mix(in srgb, var(--aw-ivory) 72%, var(--aw-cream));
+  border: 1px solid color-mix(in srgb, var(--aw-gold) 58%, transparent);
+  font-family: var(--aw-body);
+}
+
+.header {
+  text-align: center;
+}
+
+.kicker {
+  display: block;
+  font-family: var(--aw-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--aw-terracotta);
+}
+
+.title {
+  margin: 0.45rem 0 0;
+  font-family: var(--aw-serif);
+  font-size: clamp(1.7rem, 6vw, 2.15rem);
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--aw-espresso);
+}
+
+.rule {
+  width: 3.4rem;
+  height: 1px;
+  margin: 0.85rem auto 1.15rem;
+  background: linear-gradient(90deg, transparent, var(--aw-gold), transparent);
+}
+
+.count {
+  display: block;
+  margin: -0.35rem 0 0.85rem;
+  font-family: var(--aw-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--aw-brown) 70%, var(--aw-gold));
+}
+
+.lede {
+  margin: 0 auto 1.45rem;
+  max-width: 28rem;
+  text-align: center;
+  font-size: 1.08rem;
+  line-height: 1.7;
+  color: var(--aw-brown);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-family: var(--aw-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--aw-terracotta);
+}
+
+.field {
+  width: 100%;
+  height: 2.85rem !important;
+  border: 1px solid color-mix(in srgb, var(--aw-gold) 55%, transparent) !important;
+  border-radius: 0 !important;
+  background: color-mix(in srgb, var(--aw-ivory) 88%, #fff) !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  padding: 0.7rem 0.9rem !important;
+  color: var(--aw-espresso) !important;
+  font-family: var(--aw-body) !important;
+  font-size: 1.08rem !important;
+}
+
+.letter {
+  min-height: 7rem !important;
+  height: auto !important;
+  resize: vertical;
+}
+
+.field::placeholder,
+.letter::placeholder {
+  color: color-mix(in srgb, var(--aw-brown) 55%, var(--aw-cream)) !important;
+  font-style: italic;
+}
+
+.field:focus-visible,
+.letter:focus-visible {
+  outline: none !important;
+  border-color: var(--aw-terracotta) !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aw-gold) 28%, transparent) !important;
+}
+
+.error,
+.success {
+  margin: 0;
+  text-align: center;
+  font-size: 0.98rem;
+}
+
+.error {
+  color: #8b2e2e;
+}
+
+.success {
+  color: var(--aw-terracotta);
+}
+
+.submit {
+  appearance: none;
+  width: 100%;
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  border: 1px solid var(--aw-terracotta);
+  background: var(--aw-terracotta);
+  color: #f8f4ea;
+  font-family: var(--aw-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.1rem;
+}
+
+.submit:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.submit:focus-visible {
+  outline: 2px solid var(--aw-gold);
+  outline-offset: 3px;
+}
+
+.submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.status {
+  margin: 0;
+  padding: 1.4rem 0.5rem 0.4rem;
+  text-align: center;
+  font-family: var(--aw-script);
+  font-size: 1.55rem;
+  line-height: 1.3;
+  color: var(--aw-terracotta);
+}
+
+.entry {
+  position: relative;
+  padding: 1.05rem 1.1rem 0.95rem;
+  background: color-mix(in srgb, var(--aw-ivory) 82%, #fff);
+  border: 1px solid color-mix(in srgb, var(--aw-gold) 45%, transparent);
+}
+
+.quote {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.6;
+  color: var(--aw-espresso);
+}
+
+.quoteMark {
+  margin-right: 0.12em;
+  font-family: var(--aw-script);
+  font-size: 1.45em;
+  line-height: 0;
+  color: var(--aw-gold);
+}
+
+.meta {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.75rem;
+}
+
+.author {
+  margin: 0;
+  font-family: var(--aw-script);
+  font-size: 1.45rem;
+  color: var(--aw-terracotta);
+}
+
+.time {
+  font-family: var(--aw-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--aw-brown) 72%, var(--aw-gold));
+}
+
+.actions {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.35rem;
+  display: flex;
+  gap: 0.1rem;
+}
+
+.actionBtn {
+  border: 0;
+  background: transparent;
+  padding: 0.35rem;
+  color: color-mix(in srgb, var(--aw-brown) 70%, transparent);
+  cursor: pointer;
+}
+
+.actionBtn:hover:not(:disabled) {
+  color: var(--aw-espresso);
+}
+
+.actionBtn:focus-visible {
+  outline: 2px solid var(--aw-gold);
+  outline-offset: 2px;
+}
+
+.editStack {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.editRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.saveBtn,
+.cancelBtn,
+.loadMore {
+  font-family: var(--aw-display) !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  font-size: 0.62rem !important;
+  border-radius: 0 !important;
+}
+
+.saveBtn {
+  background: var(--aw-terracotta) !important;
+  color: #f8f4ea !important;
+  border: 1px solid var(--aw-terracotta) !important;
+}
+
+.cancelBtn,
+.loadMore {
+  border: 1px solid color-mix(in srgb, var(--aw-gold) 70%, transparent) !important;
+  color: var(--aw-espresso) !important;
+  background: transparent !important;
+}
+
+.loadMore {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.hint {
+  margin: 1.1rem 0 0;
+  text-align: center;
+  font-size: 0.98rem;
+  color: var(--aw-brown);
+}

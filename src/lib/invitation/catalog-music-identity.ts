@@ -318,6 +318,17 @@ export const CATALOG_MUSIC_IDENTITY: Record<string, LayoutMusicProfile> = {
     fadeInSec: 1.8,
     fadeOutSec: 1.6,
   },
+  "aurelia-editorial-wedding": {
+    trackId: "catalog-aurelia-editorial-wedding",
+    title: "Ivory Editorial Prelude",
+    category: "piano",
+    bundledFile: "piano-garden",
+    startSec: 8,
+    endSec: 64,
+    volume: 0.4,
+    fadeInSec: 1.9,
+    fadeOutSec: 1.2,
+  },
 };
 
 export function getCatalogMusicProfile(catalogSlug: string | null | undefined): LayoutMusicProfile | null {

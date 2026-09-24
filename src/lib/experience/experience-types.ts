@@ -46,6 +46,7 @@ export type OpeningExperienceId =
   | "petal-fall"
   | "blush-gate"
   | "luxury-fashion-flagship"
+  | "aurelia-editorial-wedding"
   | "none";
 
 export type OutroExperienceId =
@@ -205,7 +206,8 @@ export type IntroVariantId =
   | "keynote-beam"
   | "launch-orbit"
   | "investor-ledger"
-  | "silk-whisper";
+  | "silk-whisper"
+  | "aurelia-ivory-veil";
 
 export interface JourneyChapter {
   id: string;
@@ -316,6 +318,11 @@ export interface EventExperienceConfig {
    * ceremonies — only consumed by the fashion opening + layout.
    */
   fashionHouse?: import("@/lib/experience/luxury-fashion/types").LuxuryFashionHouseConfig;
+  /**
+   * Aurelia editorial wedding DNA. Isolated from Forever Afaris / fashion
+   * ceremonies — only consumed by the Aurelia opening + layout.
+   */
+  aureliaWedding?: import("@/lib/experience/aurelia-editorial/types").AureliaWeddingConfig;
   /**
    * Closing "Create your own invitation with Celeventic" growth CTA.
    * Unset keeps current product default (on for non-funeral). Femmora

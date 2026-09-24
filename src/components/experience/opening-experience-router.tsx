@@ -36,6 +36,9 @@ import {
 import { LuxuryFashionOpeningExperience } from "@/components/experience/luxury-fashion/luxury-fashion-opening-experience";
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion";
 import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
+import { AureliaEditorialOpening } from "@/components/experience/aurelia-editorial/aurelia-editorial-opening";
+import { mergeAureliaWedding } from "@/lib/experience/aurelia-editorial";
+import type { AureliaWeddingConfig } from "@/lib/experience/aurelia-editorial";
 import { ReducedMotionGate, RevealKeyboardFallback } from "@/components/experience/reveal-accessibility";
 import { useReducedMotion } from "framer-motion";
 import { useState } from "react";
@@ -58,6 +61,8 @@ interface OpeningExperienceRouterProps {
   openingCopy?: BlushGateOpeningCopy;
   /** Organizer fashion-house DNA for the silk flagship opening. */
   fashionHouse?: LuxuryFashionHouseConfig;
+  /** Organizer Aurelia wedding DNA for the ivory veil opening. */
+  aureliaWedding?: AureliaWeddingConfig;
   onComplete: () => void;
   /** Fires on the reveal start gesture (e.g. curtain tap / envelope open) for audio unlock. */
   onBegin?: () => void;
@@ -92,6 +97,7 @@ export function OpeningExperienceRouter({
   sealStyle,
   openingCopy,
   fashionHouse,
+  aureliaWedding,
   onComplete,
   onBegin,
   embedded = false,
@@ -112,6 +118,7 @@ export function OpeningExperienceRouter({
   /** Owns a reduced-motion path internally (short, dignified open). */
   const isBlushGate = resolvedExperienceId === "blush-gate";
   const isFashionFlagship = resolvedExperienceId === "luxury-fashion-flagship";
+  const isAureliaOpening = resolvedExperienceId === "aurelia-editorial-wedding";
 
   function complete() {
     setRevealed(true);
@@ -124,7 +131,7 @@ export function OpeningExperienceRouter({
 
   // Curtain + envelope ceremonies handle reduced-motion internally (short dignified open).
   // All other ceremonies collapse to a static keyboard-first gate.
-  if (reducedMotion && !isCurtain && !isEnvelope && !isBlushGate && !isFashionFlagship) {
+  if (reducedMotion && !isCurtain && !isEnvelope && !isBlushGate && !isFashionFlagship && !isAureliaOpening) {
     return <ReducedMotionGate eventTitle={eventTitle} guestName={guestName} onComplete={complete} />;
   }
 
@@ -245,6 +252,27 @@ export function OpeningExperienceRouter({
       <div className={embedded ? "absolute inset-0 z-20" : "pointer-events-auto fixed inset-0 z-[70]"}>
         <LuxuryFashionOpeningExperience
           house={house}
+          eventTitle={eventTitle}
+          guestName={guestName}
+          embedded={embedded}
+          allowSkip={allowSkip}
+          onBegin={onBegin}
+          onComplete={complete}
+        />
+      </div>
+    );
+  }
+
+  if (resolvedExperienceId === "aurelia-editorial-wedding") {
+    const wedding = mergeAureliaWedding(aureliaWedding);
+    return (
+      <div className={embedded ? "absolute inset-0 z-20" : "pointer-events-auto fixed inset-0 z-[70]"}>
+        <AureliaEditorialOpening
+          monogram={
+            openingCopy?.monogram?.trim() ||
+            sealInitials?.trim() ||
+            wedding.monogram
+          }
           eventTitle={eventTitle}
           guestName={guestName}
           embedded={embedded}

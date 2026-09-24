@@ -240,15 +240,20 @@ function toPlans(
 
 export const getActivePricingPlans = unstable_cache(
   async () => {
-    const packages = await prisma.eventPackage.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: "asc" },
-      include: {
-        packageFeatures: { select: { featureKey: true, isIncluded: true } },
-      },
-    });
-    return toPlans(packages);
+    try {
+      const packages = await prisma.eventPackage.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: "asc" },
+        include: {
+          packageFeatures: { select: { featureKey: true, isIncluded: true } },
+        },
+      });
+      return toPlans(packages);
+    } catch (error) {
+      console.warn("[packages] using fallback pricing plans", error);
+      return FALLBACK_PLANS;
+    }
   },
-  ["active-pricing-plans-v14-enterprise-5k-tickets"],
+  ["active-pricing-plans-v15-db-fallback"],
   { revalidate: 60, tags: ["pricing-plans"] }
 );

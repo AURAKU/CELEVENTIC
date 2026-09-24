@@ -92,6 +92,7 @@ import { MusicPreferenceEditor } from "@/components/music/music-preference-edito
 import { WeddingBoardStudioPanel } from "@/components/invitation-studio/wedding-board-studio-panel";
 import { VisionBoardStudioPanel } from "@/components/invitation-studio/vision-board-studio-panel";
 import { FashionHouseStudioPanel } from "@/components/invitation-studio/fashion-house-studio-panel";
+import { AureliaEditorialStudioPanel } from "@/components/invitation-studio/aurelia-editorial-studio-panel";
 import { mergeFashionHouse } from "@/lib/experience/luxury-fashion";
 import { syncDesignMediaHero } from "@/lib/invitation/studio-media-utils";
 import type { MusicSelection } from "@/lib/music/music-types";
@@ -1797,6 +1798,14 @@ export const InvitationStudioHub = forwardRef<
                     }
                     onChange={(fashionHouse) =>
                       patchExperience({ fashionHouse, experienceCustomized: true })
+                    }
+                  />
+                )}
+                {design.layout === "aurelia-editorial-wedding" && (
+                  <AureliaEditorialStudioPanel
+                    value={experience.aureliaWedding}
+                    onChange={(aureliaWedding) =>
+                      patchExperience({ aureliaWedding, experienceCustomized: true })
                     }
                   />
                 )}

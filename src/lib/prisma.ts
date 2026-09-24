@@ -10,6 +10,19 @@ function createPrismaClient() {
   });
 }
 
+/** True when Prisma cannot start (missing DATABASE_URL, unreachable server). */
+export function isPrismaUnavailableError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const name = "name" in error ? String((error as { name?: unknown }).name) : "";
+  const message = "message" in error ? String((error as { message?: unknown }).message) : "";
+  return (
+    name === "PrismaClientInitializationError" ||
+    message.includes("Environment variable not found: DATABASE_URL") ||
+    message.includes("Can't reach database server") ||
+    message.includes("Invalid `prisma.")
+  );
+}
+
 /**
  * Always reuse one PrismaClient across hot reloads and production workers.
  * Recreating clients on every import (previous production behavior) multiplies

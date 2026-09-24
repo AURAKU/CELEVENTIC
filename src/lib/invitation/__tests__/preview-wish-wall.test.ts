@@ -3,13 +3,19 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   addPreviewWish,
+  deletePreviewWish,
   listPreviewWishes,
   previewWishWallKey,
+  updatePreviewWish,
 } from "@/lib/invitation/preview-wish-wall";
 
 test("preview wish walls are keyed only by preview invitation ids", () => {
   assert.equal(previewWishWallKey("preview-femmora-flagship", null), "preview-femmora-flagship");
   assert.equal(previewWishWallKey(null, "preview-maison-vale"), "preview-maison-vale");
+  assert.equal(
+    previewWishWallKey("preview-aurelia-editorial-wedding", "preview-aurelia-editorial-wedding"),
+    "preview-aurelia-editorial-wedding"
+  );
   assert.equal(previewWishWallKey("live-guest-link-abc", "clxyz123"), null);
 });
 
@@ -36,4 +42,26 @@ test("wishes POST no longer requires a client eventId when the invite link is pr
   assert.match(route, /previewWishWallKey/);
   assert.match(route, /addPreviewWish/);
   assert.match(route, /Invitation link required/);
+  assert.match(route, /roleCanModerateWishes/);
+});
+
+test("preview wish edit and delete are staff-only helpers", () => {
+  const key = `preview-wish-mod-${Date.now()}`;
+  const created = addPreviewWish(key, {
+    authorName: "Alex Mensah",
+    message: "this union is blesss",
+  });
+  const updated = updatePreviewWish(created.id, { message: "this union is blessed" });
+  assert.equal(updated?.message, "this union is blessed");
+  assert.equal(updated?.authorName, "Alex Mensah");
+  assert.equal(deletePreviewWish(created.id), true);
+  assert.equal(listPreviewWishes(key).length, 0);
+  assert.equal(deletePreviewWish("preview-wish-missing"), false);
+});
+
+test("wish id route requires an organizer or admin before mutating preview wishes", () => {
+  const route = readFileSync("src/app/api/invite/wishes/[id]/route.ts", "utf8");
+  assert.match(route, /isPreviewWishId/);
+  assert.match(route, /roleCanModerateWishes/);
+  assert.match(route, /only the event organizer or a platform admin/);
 });

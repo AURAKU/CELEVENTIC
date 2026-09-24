@@ -16,6 +16,7 @@ import {
   LUXURY_FASHION_LAYOUT_SLUG,
 } from "@/lib/experience/luxury-fashion/femmora-preset";
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion/house-defaults";
+import { AURELIA_LAYOUT_SLUG, AURELIA_WEDDING_DEFAULTS, mergeAureliaWedding } from "@/lib/experience/aurelia-editorial";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -315,6 +316,41 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
       },
     },
   },
+  {
+    slug: "aurelia-editorial-wedding",
+    name: "Aurelia Editorial Wedding",
+    description:
+      "Ivory editorial wedding. Tap the veil to open two ceremony days, dress palettes, RSVP and maps",
+    category: "wedding",
+    preview: { gradient: "from-stone-50 via-amber-50 to-orange-50", accent: "#B69A63" },
+    config: {
+      layout: "aurelia-editorial-wedding",
+      colors: {
+        primary: "#3B2A25",
+        secondary: "#B69A63",
+        accent: "#B65A37",
+        background: "#F8F4EA",
+        text: "#3B2A25",
+      },
+      fonts: {
+        heading: "Cinzel",
+        script: "Great Vibes",
+        body: "Cormorant Garamond",
+        eyebrow: "Cinzel",
+      },
+      animation: "fade",
+      ornament: "gold-frame",
+      introText: "Together with their families",
+      studio: {
+        revealMode: "none",
+        buttonStyle: "pearl",
+        fullScreen: true,
+        headingSize: 26,
+        bodySize: 15,
+        scriptSize: 28,
+      },
+    },
+  },
 ];
 
 export function getTemplatePreset(slug: string): InvitationTemplatePreset | undefined {
@@ -396,17 +432,20 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
           identityExperience?.fashionHouse
         )
       : identityExperience?.fashionHouse;
+  const aureliaWedding =
+    layoutSlug === AURELIA_LAYOUT_SLUG
+      ? mergeAureliaWedding(identityExperience?.aureliaWedding ?? AURELIA_WEDDING_DEFAULTS)
+      : identityExperience?.aureliaWedding;
   const identified: InvitationDesignConfig = {
     ...enriched,
-    experience: fashionHouse
-      ? {
-          ...identityExperience,
-          fashionHouse,
-          ...(layoutSlug === LUXURY_FASHION_LAYOUT_SLUG
-            ? { viralFooterEnabled: identityExperience?.viralFooterEnabled ?? false }
-            : {}),
-        }
-      : identityExperience,
+    experience: {
+      ...identityExperience,
+      ...(fashionHouse ? { fashionHouse } : {}),
+      ...(aureliaWedding ? { aureliaWedding } : {}),
+      ...(layoutSlug === LUXURY_FASHION_LAYOUT_SLUG
+        ? { viralFooterEnabled: identityExperience?.viralFooterEnabled ?? false }
+        : {}),
+    },
     studio: identityStudio,
   };
 

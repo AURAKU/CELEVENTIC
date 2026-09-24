@@ -50,12 +50,19 @@ export default async function GuideTutorialPage({ params }: Props) {
   const { slug } = await params;
   let guide = await getPublicGuideBySlug(slug);
   if (!guide) {
-    await seedCeleventicGuides();
+    await seedCeleventicGuides().catch((error) => {
+      console.warn("[celeventic-guide] seed skipped", error);
+    });
     guide = await getPublicGuideBySlug(slug);
   }
 
-  const session = await getServerSession(authOptions);
-  const viewerIsAdmin = canAccessAdminPanel(session?.user?.role as never);
+  let viewerIsAdmin = false;
+  try {
+    const session = await getServerSession(authOptions);
+    viewerIsAdmin = canAccessAdminPanel(session?.user?.role as never);
+  } catch (error) {
+    console.warn("[celeventic-guide] session unavailable", error);
+  }
   if (!guide) {
     guide = await getPublicGuideBySlug(slug, { viewerIsAdmin });
   }
