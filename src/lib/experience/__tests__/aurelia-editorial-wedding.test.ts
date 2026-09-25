@@ -42,14 +42,14 @@ import {
 const FORBIDDEN = /kofi|kamilia|\bk\s*&\s*k\b|anagkazo|bride'?s home|lovable\.app/i;
 
 test("Aurelia couple, dates and venues stay original", () => {
-  assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Elorm");
-  assert.equal(AURELIA_WEDDING_DEFAULTS.partnerTwoName, "Dansowaa");
-  assert.equal(AURELIA_WEDDING_DEFAULTS.monogram, "E & D");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Enock");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.partnerTwoName, "Ruth");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.monogram, "E & R");
   assert.equal(AURELIA_WEDDING_DEFAULTS.heroTagline, "");
   assert.equal(AURELIA_WEDDING_DEFAULTS.storyEyebrow, "Our Beginning");
   assert.equal(AURELIA_WEDDING_DEFAULTS.storyTitle, "Our Story");
   assert.match(AURELIA_WEDDING_DEFAULTS.storyParagraphs[0] ?? "", /unexpected ways/);
-  assert.equal(AURELIA_WEDDING_DEFAULTS.storySignature, "Elorm & Dansowaa");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.storySignature, "Enock & Ruth");
   assert.equal(AURELIA_WEDDING_DEFAULTS.dateDisplay, "October 2026");
   assert.equal(AURELIA_WEDDING_DEFAULTS.rsvpByLabel, "");
   assert.deepEqual(
@@ -86,6 +86,10 @@ test("Aurelia keeps October 2026 ceremony details even if stored copy says 2027"
   const merged = mergeAureliaWedding({
     dateDisplay: "APRIL 2027",
     heroTagline: "The Covenant",
+    partnerOneName: "Elorm",
+    partnerTwoName: "Dansowaa",
+    monogram: "E & D",
+    storySignature: "Elorm & Dansowaa",
     ceremonies: [
       {
         id: "traditional",
@@ -158,6 +162,10 @@ test("Aurelia keeps October 2026 ceremony details even if stored copy says 2027"
   assert.doesNotMatch(JSON.stringify(merged.ceremonies), /2027/);
   assert.doesNotMatch(merged.dateDisplay, /2027/);
   assert.equal(merged.heroTagline, "");
+  assert.equal(merged.partnerOneName, "Enock");
+  assert.equal(merged.partnerTwoName, "Ruth");
+  assert.equal(merged.monogram, "E & R");
+  assert.equal(merged.storySignature, "Enock & Ruth");
   const inviteSrc = readFileSync(
     "src/components/invitation/templates/aurelia-editorial-wedding.tsx",
     "utf8"
@@ -182,7 +190,7 @@ test("Aurelia resolver hides empty sections and keeps defaults", () => {
   assert.equal(aureliaSectionVisible(hidden, "celebrations"), false);
   assert.equal(aureliaSectionVisible(hidden, "gifts"), false);
   const merged = mergeAureliaWedding({ partnerOneName: "  " });
-  assert.equal(merged.partnerOneName, "Elorm");
+  assert.equal(merged.partnerOneName, "Enock");
   assert.equal(merged.ceremonies.length, 2);
   assert.equal(aureliaSectionVisible(mergeAureliaWedding(), "venues"), false);
   assert.equal(aureliaSectionVisible(mergeAureliaWedding(), "journey"), false);
@@ -224,12 +232,12 @@ test("Aurelia catalog DNA is unique and wired into default design", () => {
   assert.equal(dna.openingExperience, AURELIA_OPENING_ID);
   const design = getDefaultDesignConfig(AURELIA_CATALOG_SLUG);
   assert.equal(design.layout, AURELIA_LAYOUT_SLUG);
-  assert.equal(design.experience?.aureliaWedding?.partnerOneName, "Elorm");
+  assert.equal(design.experience?.aureliaWedding?.partnerOneName, "Enock");
   assert.equal(design.experience?.introVariant, AURELIA_INTRO_ID);
   assert.equal(design.experience?.openingExperience, AURELIA_OPENING_ID);
   const demo = CATALOG_DEMO_IDENTITIES[AURELIA_CATALOG_SLUG];
-  assert.match(demo.hostName, /Elorm/);
-  assert.match(demo.hostName, /Dansowaa/);
+  assert.match(demo.hostName, /Enock/);
+  assert.match(demo.hostName, /Ruth/);
   assert.equal(FORBIDDEN.test(JSON.stringify(demo)), false);
 });
 
@@ -398,8 +406,8 @@ test("Seraphine is an isolated Aurelia-family duplicate", () => {
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerTwoName, "Yaw");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.monogram, "E & Y");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.heroTagline, "");
-  assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Elorm");
-  assert.equal(AURELIA_WEDDING_DEFAULTS.monogram, "E & D");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Enock");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.monogram, "E & R");
   assert.notEqual(AURELIA_WEDDING_DEFAULTS.storyEyebrow, SERAPHINE_WEDDING_DEFAULTS.storyEyebrow);
 
   const catalog = getCatalogTemplate(SERAPHINE_CATALOG_SLUG);
@@ -414,7 +422,7 @@ test("Seraphine is an isolated Aurelia-family duplicate", () => {
   assert.equal(seraphineDesign.layout, SERAPHINE_LAYOUT_SLUG);
   assert.equal(aureliaDesign.layout, AURELIA_LAYOUT_SLUG);
   assert.equal(seraphineDesign.experience?.aureliaWedding?.partnerOneName, "Efua");
-  assert.equal(aureliaDesign.experience?.aureliaWedding?.partnerOneName, "Elorm");
+  assert.equal(aureliaDesign.experience?.aureliaWedding?.partnerOneName, "Enock");
   assert.equal(seraphineDesign.experience?.introVariant, SERAPHINE_INTRO_ID);
   assert.equal(seraphineDesign.experience?.openingExperience, SERAPHINE_OPENING_ID);
   assert.equal(aureliaDesign.experience?.introVariant, AURELIA_INTRO_ID);

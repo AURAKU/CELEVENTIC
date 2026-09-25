@@ -277,9 +277,10 @@ export function mergeAureliaWedding(
   return sanitizeAureliaGuestCopy({
     ...base,
     ...stored,
-    partnerOneName: trim(stored.partnerOneName) || base.partnerOneName,
-    partnerTwoName: trim(stored.partnerTwoName) || base.partnerTwoName,
-    monogram: trim(stored.monogram) || base.monogram,
+    partnerOneName: base.partnerOneName,
+    partnerTwoName: base.partnerTwoName,
+    monogram: base.monogram,
+    storySignature: base.storySignature,
     dateDisplay: base.dateDisplay,
     heroTagline: "",
     albumEyebrow: trim(stored.albumEyebrow) || base.albumEyebrow,

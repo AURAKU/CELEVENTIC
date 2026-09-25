@@ -452,10 +452,10 @@
   padding: 0;
   max-width: 100%;
   font-family: var(--aurelia-display);
-  font-size: clamp(0.78rem, 2.6cqi, 0.94rem);
+  font-size: clamp(0.62rem, 2.05cqi, 0.76rem);
   font-weight: 500;
-  letter-spacing: 0.26em;
-  text-indent: 0.26em;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
   text-transform: uppercase;
   line-height: 1.35;
   text-align: center;

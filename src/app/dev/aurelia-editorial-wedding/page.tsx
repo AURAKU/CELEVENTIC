@@ -20,7 +20,7 @@ export default async function AureliaEditorialRuntimePage({
     notFound();
   }
   const params = await searchParams;
-  const memory = await ensureDemoMemoryLinks("Elorm & Dansowaa").catch(() => null);
+  const memory = await ensureDemoMemoryLinks("Enock & Ruth").catch(() => null);
   return (
     <AureliaEditorialRuntimeClient
       skipIntro={params.skipIntro === "1"}
@@ -29,7 +29,7 @@ export default async function AureliaEditorialRuntimePage({
       memoryAlbumUrl={memory?.albumUrl ?? null}
       memoryUploadQrImageUrl={withAureliaAlbumQrCenter(memory?.uploadQrImageUrl)}
       memoryEventId={memory?.eventId ?? null}
-      memoryAlbumTitle={memory?.eventTitle ?? "Elorm & Dansowaa"}
+      memoryAlbumTitle={memory?.eventTitle ?? "Enock & Ruth"}
     />
   );
 }
