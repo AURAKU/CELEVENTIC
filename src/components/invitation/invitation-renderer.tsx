@@ -21,6 +21,7 @@ import { GuestEntryPass } from "@/components/admission/guest-entry-pass";
 import { PartyAdmissionSwitch } from "@/components/admission/party-admission-switch";
 import { PlaceCard } from "@/components/invitation/place-card";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
+import { isAureliaEditorialLayout } from "@/lib/experience/aurelia-editorial";
 
 export type InvitationRendererProps = InvitationRenderProps & {
   interactiveMedia?: boolean;
@@ -45,6 +46,7 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
   const templatePlacesCardAfterHero =
     props.design.layout === "traditional-marriage-ceremony" ||
     props.design.layout === "forever-afaris-wedding";
+  const templateOmitsSharedPlaceCard = isAureliaEditorialLayout(props.design.layout);
   const content = isCinematicLayout(props.design.layout) ? (
     <CinematicTemplate {...props} />
   ) : (() => {
@@ -95,7 +97,7 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
       </ClientErrorBoundary>
       {/* Templates with a defined hero boundary mount this immediately below
           that hero. Other layouts retain the safe pre-entry-pass fallback. */}
-      {props.placeCard && !templatePlacesCardAfterHero && (
+      {props.placeCard && !templatePlacesCardAfterHero && !templateOmitsSharedPlaceCard && (
         <ClientErrorBoundary fallback={null}>
           <PlaceCard
             config={props.placeCard.config}

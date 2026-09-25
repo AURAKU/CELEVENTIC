@@ -152,6 +152,13 @@ test("Aurelia files never import Forever Afaris or screenshot assets", () => {
   }
 });
 
+test("Aurelia guest invitations omit the shared place card", () => {
+  const src = readFileSync("src/components/invitation/invitation-renderer.tsx", "utf8");
+  assert.match(src, /isAureliaEditorialLayout/);
+  assert.match(src, /templateOmitsSharedPlaceCard/);
+  assert.match(src, /!templateOmitsSharedPlaceCard/);
+});
+
 test("Aurelia hero prefers host photo and falls back to dummy photograph", () => {
   assert.match(AURELIA_WEDDING_DEFAULTS.heroImageUrl ?? "", /\/templates\/aurelia\/hero\.jpg$/);
   assert.equal(
