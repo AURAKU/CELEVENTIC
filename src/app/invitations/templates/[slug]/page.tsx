@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Check } from "lucide-react";
@@ -11,11 +12,51 @@ import { Badge } from "@/components/ui/badge";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { catalogService } from "@/services/commerce/catalog.service";
 import { getCatalogInvitationPackages } from "@/lib/invitation-mvp/packages";
-import { EVENT_TYPES } from "@/lib/constants";
+import { APP_NAME, EVENT_TYPES } from "@/lib/constants";
 import {
   eventTypesForCatalogCategory,
   resolveOrderEventType,
 } from "@/lib/invitation/catalog-event-type";
+import { getServerAppUrl } from "@/lib/app-url";
+import {
+  resolveAureliaShareOgImageForInvitation,
+  shareOgImageToOpenGraph,
+} from "@/lib/social/share-image";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const template = getCatalogTemplate(slug);
+  if (!template) return { title: "Invitation template" };
+  const appUrl = await getServerAppUrl();
+  const image = resolveAureliaShareOgImageForInvitation({
+    appUrl,
+    catalogSlug: template.slug,
+    layoutSlug: template.layoutSlug,
+  });
+  const title = `${template.name} · ${APP_NAME}`;
+  const description = template.description;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: APP_NAME,
+      ...(image ? { images: [shareOgImageToOpenGraph(image, template.name)] } : {}),
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(image ? { images: [image.url] } : {}),
+    },
+  };
+}
 
 export default async function TemplateDetailPage({
   params,

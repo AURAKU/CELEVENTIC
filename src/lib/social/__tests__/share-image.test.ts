@@ -11,6 +11,7 @@ import {
 } from "@/lib/experience/luxury-fashion";
 import {
   FEMMORA_SHARE_PLACECARD_TYPE,
+  resolveAureliaShareOgImageForInvitation,
   resolveFashionShareOgImageForInvitation,
   shareOgImageToOpenGraph,
 } from "../share-image";
@@ -74,6 +75,42 @@ describe("resolveFashionShareOgImageForInvitation", () => {
       catalogSlug: LUXURY_FASHION_LAYOUT_SLUG,
       layoutSlug: LUXURY_FASHION_LAYOUT_SLUG,
       fashionHouse: undefined,
+    });
+    assert.equal(image, null);
+  });
+});
+
+describe("resolveAureliaShareOgImageForInvitation", () => {
+  it("uses the couple hero photograph for the Aurelia SKU", () => {
+    const image = resolveAureliaShareOgImageForInvitation({
+      appUrl: APP,
+      catalogSlug: "aurelia-editorial-wedding",
+      layoutSlug: "aurelia-editorial-wedding",
+    });
+    assert.ok(image);
+    assert.equal(image?.url, `${APP}/templates/aurelia/hero.jpg`);
+    assert.equal(image?.width, 731);
+    assert.equal(image?.height, 1024);
+    assert.equal(image?.type, "image/jpeg");
+    const og = shareOgImageToOpenGraph(image!, "Aurelia");
+    assert.equal(og.type, "image/jpeg");
+  });
+
+  it("uses a Studio replacement instead of the default hero", () => {
+    const image = resolveAureliaShareOgImageForInvitation({
+      appUrl: APP,
+      catalogSlug: "aurelia-editorial-wedding",
+      mediaHeroUrl: "https://cdn.example.com/custom-hero.jpg",
+    });
+    assert.equal(image?.url, "https://cdn.example.com/custom-hero.jpg");
+    assert.equal(image?.width, undefined);
+  });
+
+  it("does not attach the Aurelia hero to unrelated layouts", () => {
+    const image = resolveAureliaShareOgImageForInvitation({
+      appUrl: APP,
+      catalogSlug: "forever-afaris-wedding",
+      layoutSlug: "forever-afaris-wedding",
     });
     assert.equal(image, null);
   });
