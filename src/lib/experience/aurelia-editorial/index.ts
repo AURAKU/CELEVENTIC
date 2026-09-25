@@ -15,6 +15,7 @@ export type {
   AureliaDressCode,
   AureliaFaqItem,
   AureliaJourneyItem,
+  AureliaRsvpContact,
   AureliaSectionId,
   AureliaThemeTokens,
   AureliaVenueCard,
@@ -40,10 +41,13 @@ export {
 export {
   aureliaDistinctVenues,
   aureliaFamilyDefaults,
+  aureliaGuestPhoneLinks,
   aureliaNavItems,
   aureliaSectionVisible,
   aureliaTokenStyle,
   isAureliaDummyHero,
   mergeAureliaWedding,
   resolveAureliaHeroImage,
+  withAureliaAlbumQrCenter,
+  withoutInvitationPauseDashes,
 } from "./resolve-aurelia-wedding";

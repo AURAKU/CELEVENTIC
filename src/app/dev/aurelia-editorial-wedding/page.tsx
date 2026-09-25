@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { AureliaEditorialRuntimeClient } from "./aurelia-editorial-runtime-client";
 import { ensureDemoMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
+import { withAureliaAlbumQrCenter } from "@/lib/experience/aurelia-editorial";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function AureliaEditorialRuntimePage({
       reduced={params.reduced === "1"}
       memoryUploadUrl={memory?.uploadUrl ?? null}
       memoryAlbumUrl={memory?.albumUrl ?? null}
-      memoryUploadQrImageUrl={memory?.uploadQrImageUrl ?? null}
+      memoryUploadQrImageUrl={withAureliaAlbumQrCenter(memory?.uploadQrImageUrl)}
       memoryEventId={memory?.eventId ?? null}
       memoryAlbumTitle={memory?.eventTitle ?? "Elorm & Dansowaa"}
     />

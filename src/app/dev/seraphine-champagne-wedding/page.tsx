@@ -6,6 +6,7 @@ import {
   SERAPHINE_CATALOG_SLUG,
   SERAPHINE_LAYOUT_SLUG,
   SERAPHINE_OPENING_ID,
+  withAureliaAlbumQrCenter,
 } from "@/lib/experience/aurelia-editorial";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ export default async function SeraphineChampagneRuntimePage({
       testId="seraphine-runtime"
       memoryUploadUrl={memory?.uploadUrl ?? null}
       memoryAlbumUrl={memory?.albumUrl ?? null}
-      memoryUploadQrImageUrl={memory?.uploadQrImageUrl ?? null}
+      memoryUploadQrImageUrl={withAureliaAlbumQrCenter(memory?.uploadQrImageUrl)}
       memoryEventId={memory?.eventId ?? null}
       memoryAlbumTitle={memory?.eventTitle ?? "Efua & Yaw"}
     />

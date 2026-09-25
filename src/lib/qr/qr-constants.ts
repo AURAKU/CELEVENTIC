@@ -69,6 +69,59 @@ export function parseQrDisplayMode(raw: unknown): QrDisplayMode {
   return "brand";
 }
 
+/** Optional `logoSize` query. Unknown / missing values return null so event branding stays. */
+export function parseQrLogoSizeQuery(raw: unknown): QrLogoSizePreset | null {
+  if (raw === "subtle" || raw === "balanced" || raw === "bold") return raw;
+  return null;
+}
+
+/**
+ * Same-origin public image paths only. Album QRs may pin `/templates/aurelia/hero.jpg`
+ * without allowing arbitrary remote URLs (SSRF) or path traversal.
+ */
+const PUBLIC_QR_CENTER_RE =
+  /^\/(?:templates|brand|uploads|api\/uploads)\/[A-Za-z0-9._/-]+\.(?:jpe?g|png|webp)$/;
+
+export function toSafePublicQrCenterPath(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  let value = raw.trim();
+  if (!value) return null;
+  try {
+    if (/^https?:\/\//i.test(value)) {
+      value = new URL(value).pathname;
+    }
+  } catch {
+    return null;
+  }
+  if (
+    value.includes("\\") ||
+    value.includes("..") ||
+    value.includes("%") ||
+    value.includes("?") ||
+    value.includes("#") ||
+    value.includes("//")
+  ) {
+    return null;
+  }
+  return PUBLIC_QR_CENTER_RE.test(value) ? value : null;
+}
+
+/** Pin a public center mark on a `/api/qr/image` URL without rewriting event QR branding. */
+export function withPublicQrCenter(
+  qrImageUrl: string,
+  centerPath: string,
+  logoSize?: QrLogoSizePreset
+): string {
+  const safe = toSafePublicQrCenterPath(centerPath);
+  if (!safe) return qrImageUrl;
+  const q = qrImageUrl.indexOf("?");
+  const path = q >= 0 ? qrImageUrl.slice(0, q) : qrImageUrl;
+  const params = new URLSearchParams(q >= 0 ? qrImageUrl.slice(q + 1) : "");
+  params.set("center", safe);
+  if (logoSize) params.set("logoSize", logoSize);
+  return `${path}?${params.toString()}`;
+}
+
 /** Minimum on-screen pass QR size (px) for reliable phone-to-phone scanning */
 export const QR_PASS_DISPLAY_MIN_PX = 280;
 

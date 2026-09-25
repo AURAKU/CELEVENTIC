@@ -96,6 +96,11 @@ export interface AureliaFaqItem {
   answer: string;
 }
 
+export interface AureliaRsvpContact {
+  name: string;
+  phone: string;
+}
+
 export interface AureliaSectionCopy {
   visible?: boolean;
   eyebrow?: string;
@@ -116,6 +121,8 @@ export interface AureliaWeddingConfig {
   celebrationCta: string;
   rsvpCta: string;
   rsvpByLabel?: string;
+  rsvpContactsEyebrow?: string;
+  rsvpContacts?: AureliaRsvpContact[];
   storyEyebrow: string;
   storyTitle: string;
   storyImageUrl?: string | null;

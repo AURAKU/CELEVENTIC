@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useMemo, useState } from "react";
-import { Calendar, Clock, MapPin, Menu, X } from "lucide-react";
+import { Calendar, Clock, MapPin, Menu, MessageCircle, Phone, X } from "lucide-react";
 import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import { useCountdown } from "@/hooks/use-countdown";
@@ -11,6 +11,7 @@ import {
   AURELIA_WHITE_ISO,
   aureliaDistinctVenues,
   aureliaFamilyDefaults,
+  aureliaGuestPhoneLinks,
   aureliaNavItems,
   aureliaSectionVisible,
   aureliaTokenStyle,
@@ -502,7 +503,6 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       {aureliaSectionVisible(config, "rsvp") ? (
         <section className={styles.rsvpBand} id="aurelia-rsvp" data-rsvp-root="true">
           <div className={styles.sectionNarrow}>
-            {config.rsvpByLabel ? <span className={styles.eyebrow}>{config.rsvpByLabel}</span> : null}
             <h2 className={styles.heading}>{config.rsvpTitle}</h2>
             <div className={styles.goldRule} />
             <div className={styles.rsvpPanel}>
@@ -523,6 +523,45 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                 }}
               />
             </div>
+            {(config.rsvpContacts ?? []).length > 0 ? (
+              <div className={styles.rsvpContacts}>
+                <p className={styles.rsvpContactsEyebrow}>
+                  {config.rsvpContactsEyebrow || "Call or WhatsApp"}
+                </p>
+                <ul className={styles.rsvpContactList}>
+                  {(config.rsvpContacts ?? []).map((contact) => {
+                    const message = `Hello ${contact.name}, I would like to RSVP for ${config.partnerOneName} and ${config.partnerTwoName}.`;
+                    const links = aureliaGuestPhoneLinks(contact.phone, message);
+                    if (!links) return null;
+                    return (
+                      <li key={`${contact.name}-${contact.phone}`} className={styles.rsvpContact}>
+                        <div className={styles.rsvpContactCopy}>
+                          <span className={styles.rsvpContactName}>{contact.name}</span>
+                          <a className={styles.rsvpContactPhone} href={links.telHref}>
+                            {links.display}
+                          </a>
+                        </div>
+                        <div className={styles.rsvpContactActions}>
+                          <a className={styles.rsvpCall} href={links.telHref}>
+                            <Phone aria-hidden size={14} strokeWidth={1.75} />
+                            Call
+                          </a>
+                          <a
+                            className={styles.rsvpWhatsApp}
+                            href={links.whatsAppHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <MessageCircle aria-hidden size={14} strokeWidth={1.75} />
+                            WhatsApp
+                          </a>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
           </div>
         </section>
       ) : null}

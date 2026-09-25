@@ -11,36 +11,9 @@ import styles from "./aurelia-editorial-wedding.module.css";
 
 type Panel = "idle" | "lens" | "album";
 
-function useAlbumQr(targetUrl: string | null) {
-  const [src, setSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!targetUrl) {
-      setSrc(null);
-      return;
-    }
-    let cancelled = false;
-    void import("qrcode")
-      .then((QRCode) =>
-        QRCode.toDataURL(targetUrl, {
-          errorCorrectionLevel: "M",
-          margin: 2,
-          width: 296,
-          color: { dark: "#352019", light: "#ffffff" },
-        })
-      )
-      .then((url) => {
-        if (!cancelled) setSrc(url);
-      })
-      .catch(() => {
-        if (!cancelled) setSrc(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [targetUrl]);
-
-  return src;
+function aureliaHeroQrSrc(targetUrl: string | null) {
+  if (!targetUrl) return null;
+  return `/api/qr/image?data=${encodeURIComponent(targetUrl)}&size=512&center=${encodeURIComponent("/templates/aurelia/hero.jpg")}&logoSize=bold`;
 }
 
 export function AureliaMemoryAlbum({
@@ -75,8 +48,7 @@ export function AureliaMemoryAlbum({
       ? resolvedUpload
       : `${origin}${resolvedUpload.startsWith("/") ? resolvedUpload : `/${resolvedUpload}`}`
     : null;
-  const generatedQr = useAlbumQr(staticPreview ? null : qrTarget);
-  const qrSrc = uploadQrImageUrl || generatedQr;
+  const qrSrc = uploadQrImageUrl || (staticPreview ? null : aureliaHeroQrSrc(qrTarget));
   const useVaultLinks = Boolean(uploadUrl && albumUrl);
   const liveReady = Boolean(invitationId) && !staticPreview;
 

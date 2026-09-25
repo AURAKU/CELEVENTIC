@@ -1,3 +1,4 @@
+import { withPublicQrCenter } from "@/lib/qr/qr-constants";
 import { AURELIA_HERO_FALLBACK, AURELIA_THEME_DEFAULTS, AURELIA_WEDDING_DEFAULTS, SERAPHINE_WEDDING_DEFAULTS } from "./preset";
 import { SERAPHINE_LAYOUT_SLUG } from "./types";
 import type {
@@ -6,6 +7,7 @@ import type {
   AureliaFaqItem,
   AureliaJourneyItem,
   AureliaPaletteSwatch,
+  AureliaRsvpContact,
   AureliaSectionId,
   AureliaThemeTokens,
   AureliaVenueCard,
@@ -14,6 +16,122 @@ import type {
 
 function trim(value: string | null | undefined): string {
   return value?.trim() ?? "";
+}
+
+/**
+ * Remove pause dashes (em dash, en dash, spaced hyphen) from guest-facing copy.
+ * Keep compound hyphens such as Tse-Addo, turn-by-turn, and On-site.
+ */
+export function withoutInvitationPauseDashes(value: string): string {
+  return value
+    .replace(/\s*[—–‒―]\s*/g, ". ")
+    .replace(/(\w)\s+-\s+(\w)/g, "$1. $2")
+    .replace(/\.\s*\./g, ".")
+    .replace(/\. ([a-z])/g, (_match, ch: string) => `. ${ch.toUpperCase()}`)
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+\./g, ".")
+    .trim();
+}
+
+function copy(value: string): string {
+  return withoutInvitationPauseDashes(trim(value));
+}
+
+function copyOptional(value: string | null | undefined): string | undefined {
+  if (value == null) return value ?? undefined;
+  return withoutInvitationPauseDashes(trim(value));
+}
+
+function sanitizeAureliaGuestCopy(config: AureliaWeddingConfig): AureliaWeddingConfig {
+  return {
+    ...config,
+    familyIntro: copy(config.familyIntro),
+    marriedLine: copy(config.marriedLine),
+    dateDisplay: copy(config.dateDisplay),
+    heroTagline: copy(config.heroTagline),
+    celebrationCta: copy(config.celebrationCta),
+    rsvpCta: copy(config.rsvpCta),
+    rsvpByLabel: "",
+    rsvpContactsEyebrow: copyOptional(config.rsvpContactsEyebrow),
+    rsvpContacts: (config.rsvpContacts ?? []).map((item) => ({
+      name: copy(item.name),
+      phone: trim(item.phone),
+    })).filter((item) => item.name && item.phone),
+    storyEyebrow: copy(config.storyEyebrow),
+    storyTitle: copy(config.storyTitle),
+    storyParagraphs: config.storyParagraphs.map(copy),
+    storySignature: copy(config.storySignature),
+    celebrationsEyebrow: copy(config.celebrationsEyebrow),
+    celebrationsTitle: copy(config.celebrationsTitle),
+    celebrationsLede: copy(config.celebrationsLede),
+    venuesEyebrow: copy(config.venuesEyebrow),
+    venuesTitle: copy(config.venuesTitle),
+    venuesLede: copy(config.venuesLede),
+    privateAddressCopy: copy(config.privateAddressCopy),
+    dressEyebrow: copy(config.dressEyebrow),
+    dressTitle: copy(config.dressTitle),
+    dressLede: copy(config.dressLede),
+    journeyEyebrow: copy(config.journeyEyebrow),
+    journeyTitle: copy(config.journeyTitle),
+    journeyLede: copy(config.journeyLede),
+    albumEyebrow: copy(config.albumEyebrow),
+    albumTitle: copy(config.albumTitle),
+    albumLede: copy(config.albumLede),
+    albumUploadCta: copy(config.albumUploadCta),
+    albumViewCta: copy(config.albumViewCta),
+    rsvpEyebrow: copyOptional(config.rsvpEyebrow),
+    rsvpTitle: copy(config.rsvpTitle),
+    giftsEyebrow: copy(config.giftsEyebrow),
+    giftsTitle: copy(config.giftsTitle),
+    giftsLede: copy(config.giftsLede),
+    giftsDetails: copyOptional(config.giftsDetails),
+    faqEyebrow: copy(config.faqEyebrow),
+    faqTitle: copy(config.faqTitle),
+    finaleScript: copy(config.finaleScript),
+    finaleLine: copy(config.finaleLine),
+    countdownTitle: copy(config.countdownTitle),
+    ceremonies: config.ceremonies.map((item) => ({
+      ...item,
+      kicker: copy(item.kicker),
+      title: copy(item.title),
+      weekday: copy(item.weekday),
+      dateLabel: copy(item.dateLabel),
+      timeLabel: copy(item.timeLabel),
+      venueName: copy(item.venueName),
+      address: copy(item.address),
+      description: copyOptional(item.description),
+    })),
+    venues: config.venues.map((item) => ({
+      ...item,
+      eventLabel: copy(item.eventLabel),
+      venueName: copy(item.venueName),
+      address: copyOptional(item.address),
+    })),
+    dressCodes: config.dressCodes.map((item) => ({
+      ...item,
+      eventLabel: copy(item.eventLabel),
+      dateLabel: copy(item.dateLabel),
+      title: copy(item.title),
+      scriptLine: copyOptional(item.scriptLine),
+      note: copyOptional(item.note),
+    })),
+    journey: config.journey.map((item) => ({
+      ...item,
+      title: copy(item.title),
+      caption: copyOptional(item.caption),
+    })),
+    faqs: config.faqs.map((item) => ({
+      ...item,
+      question: copy(item.question),
+      answer: copy(item.answer),
+    })),
+  };
+}
+
+/** Album QR on Aurelia/Seraphine invitations uses the standing-couple hero, not event branding. */
+export function withAureliaAlbumQrCenter(qrImageUrl?: string | null): string | null {
+  if (!qrImageUrl) return null;
+  return withPublicQrCenter(qrImageUrl, AURELIA_HERO_FALLBACK, "bold");
 }
 
 function mergeTheme(
@@ -67,6 +185,37 @@ function mergeFaqs(
   return stored.filter((item) => trim(item.question) && trim(item.answer));
 }
 
+function mergeRsvpContacts(
+  stored: AureliaRsvpContact[] | null | undefined,
+  base: AureliaWeddingConfig
+): AureliaRsvpContact[] {
+  if (stored == null || stored.length === 0) return base.rsvpContacts ?? [];
+  return stored.filter((item) => trim(item.name) && trim(item.phone));
+}
+
+/** Ghana-local numbers (024…) become E.164 tel and WhatsApp links. */
+export function aureliaGuestPhoneLinks(
+  phone: string,
+  message = ""
+): { display: string; telHref: string; whatsAppHref: string } | null {
+  const display = trim(phone);
+  const digits = display.replace(/\D/g, "");
+  if (digits.length < 9) return null;
+  const e164 = digits.startsWith("233")
+    ? digits
+    : digits.startsWith("0")
+      ? `233${digits.slice(1)}`
+      : digits;
+  const encoded = encodeURIComponent(message);
+  return {
+    display,
+    telHref: `tel:+${e164}`,
+    whatsAppHref: encoded
+      ? `https://wa.me/${e164}?text=${encoded}`
+      : `https://wa.me/${e164}`,
+  };
+}
+
 export function aureliaFamilyDefaults(layout?: string | null): AureliaWeddingConfig {
   return layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_WEDDING_DEFAULTS : AURELIA_WEDDING_DEFAULTS;
 }
@@ -75,8 +224,8 @@ export function mergeAureliaWedding(
   stored?: Partial<AureliaWeddingConfig> | null,
   base: AureliaWeddingConfig = AURELIA_WEDDING_DEFAULTS
 ): AureliaWeddingConfig {
-  if (!stored) return base;
-  return {
+  if (!stored) return sanitizeAureliaGuestCopy(base);
+  return sanitizeAureliaGuestCopy({
     ...base,
     ...stored,
     partnerOneName: trim(stored.partnerOneName) || base.partnerOneName,
@@ -95,8 +244,10 @@ export function mergeAureliaWedding(
     dressCodes: mergeDress(stored.dressCodes, base),
     journey: mergeJourney(stored.journey, base),
     faqs: mergeFaqs(stored.faqs, base),
+    rsvpByLabel: "",
+    rsvpContacts: mergeRsvpContacts(stored.rsvpContacts, base),
     sections: { ...base.sections, ...stored.sections },
-  };
+  });
 }
 
 export function aureliaVenueKey(item: {
