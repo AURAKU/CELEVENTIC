@@ -23,7 +23,16 @@ export interface ServerI18nState {
  */
 export async function getServerI18nState(): Promise<ServerI18nState> {
   const staticMessages = buildStaticMessageDictionaries();
-  let locale = parseLocaleCookie((await cookies()).get(LOCALE_COOKIE_NAME)?.value);
+  let locale: AppLocale = DEFAULT_LOCALE;
+  try {
+    locale = parseLocaleCookie((await cookies()).get(LOCALE_COOKIE_NAME)?.value);
+  } catch {
+    locale = DEFAULT_LOCALE;
+  }
+
+  if (!process.env.DATABASE_URL) {
+    return { locale, messages: staticMessages };
+  }
 
   try {
     const session = await getSession();
@@ -54,4 +63,16 @@ export async function getServerI18nState(): Promise<ServerI18nState> {
   }
 
   return { locale, messages };
+}
+
+export async function getSafeServerI18nState(): Promise<ServerI18nState> {
+  try {
+    return await getServerI18nState();
+  } catch (error) {
+    console.warn("[i18n] using static dictionaries", error);
+    return {
+      locale: DEFAULT_LOCALE,
+      messages: buildStaticMessageDictionaries(),
+    };
+  }
 }

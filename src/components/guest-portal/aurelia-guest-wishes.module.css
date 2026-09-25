@@ -299,8 +299,15 @@
 }
 
 .hint {
+  display: block;
   margin: 1.1rem 0 0;
   text-align: center;
   font-size: 0.98rem;
   color: var(--aw-brown);
+  text-decoration: none;
+}
+
+a.hint:hover {
+  color: var(--aw-terracotta);
+  text-decoration: underline;
 }

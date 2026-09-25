@@ -4,7 +4,7 @@ import { Providers } from "@/components/providers";
 import { APP_NAME, APP_TAGLINE, BRAND, BRAND_MOTTO } from "@/lib/constants";
 import { DEFAULT_PRODUCTION_URL } from "@/lib/app-url";
 import { INSPECTOR_ATTR_GUARD_SCRIPT } from "@/lib/dev/inspector-attr-guard";
-import { getServerI18nState } from "@/lib/i18n/server-locale";
+import { getSafeServerI18nState } from "@/lib/i18n/server-locale";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -43,7 +43,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { locale, messages } = await getServerI18nState();
+  const { locale, messages } = await getSafeServerI18nState();
 
   return (
     <html lang={locale} suppressHydrationWarning>

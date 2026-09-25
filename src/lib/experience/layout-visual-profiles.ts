@@ -173,6 +173,13 @@ const PROFILES: Record<InvitationLayoutSlug, LayoutVisualProfile> = {
     vignette: "soft",
     overlayGradient: "from-amber-50/25 via-transparent to-stone-100/30",
   },
+  "seraphine-champagne-wedding": {
+    background: "linear-gradient(180deg, #F8F4EA 0%, #EFE7D5 48%, #D8C09C 100%)",
+    accentGlow: "rgba(182,90,55,0.28)",
+    environment: "none",
+    vignette: "soft",
+    overlayGradient: "from-orange-50/20 via-transparent to-stone-100/30",
+  },
 };
 
 export function getLayoutVisualProfile(layout: string): LayoutVisualProfile {

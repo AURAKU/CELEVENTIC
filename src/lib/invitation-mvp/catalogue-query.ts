@@ -1,4 +1,4 @@
-import { getBrowseCatalogTemplates, type CatalogTemplate } from "./catalogue";
+import { getBrowseCatalogTemplates, type BrowseCatalogOptions, type CatalogTemplate } from "./catalogue";
 
 /**
  * Pure catalogue query with cursor pagination — shared by the public API
@@ -62,9 +62,10 @@ export interface CatalogQueryResult {
 export function queryCatalog(
   filters: CatalogQueryFilters,
   cursor?: string | null,
-  limit = 12
+  limit = 12,
+  options?: BrowseCatalogOptions
 ): CatalogQueryResult {
-  const matched = getBrowseCatalogTemplates().filter((t) => matchesCatalogFilters(t, filters));
+  const matched = getBrowseCatalogTemplates(options).filter((t) => matchesCatalogFilters(t, filters));
   const start = decodeCatalogCursor(cursor);
   const end = Math.min(start + limit, matched.length);
   return {

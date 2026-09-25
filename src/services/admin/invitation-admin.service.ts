@@ -10,6 +10,10 @@ function sanitizeOrderShareUrl<T extends { shareUrl?: string | null }>(order: T)
   return { ...order, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) };
 }
 
+function catalogVirtualSlug(id: string): string | null {
+  return id.startsWith("catalog:") ? id.slice("catalog:".length) : null;
+}
+
 export class InvitationAdminService {
   async getInvitationAnalytics() {
     const [
@@ -240,12 +244,86 @@ export class InvitationAdminService {
   }
 
   async listCatalogTemplates(page = 1, limit = 20) {
+    const { CATALOG_TEMPLATES } = await import("@/lib/invitation-mvp/catalogue");
+    const dbRows = await prisma.invitationCatalogTemplate.findMany();
+    const dbBySlug = new Map(dbRows.map((row) => [row.slug, row]));
+    const merged = CATALOG_TEMPLATES.map((template, index) => {
+      const row = dbBySlug.get(template.slug);
+      if (row) return row;
+      return {
+        id: `catalog:${template.slug}`,
+        slug: template.slug,
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        style: template.style,
+        layoutSlug: template.layoutSlug,
+        previewGradient: template.previewGradient,
+        previewImageUrl: null,
+        previewVideoUrl: null,
+        backgroundImageUrl: null,
+        backgroundVideoUrl: null,
+        motionReferenceUrl: null,
+        inspirationMediaUrl: null,
+        defaultGalleryUrls: null,
+        eventTypes: null,
+        packageSlugs: null,
+        priceGhs: null,
+        languages: null,
+        isPremium: template.isPremium,
+        isFeatured: false,
+        isActive: template.listed !== false,
+        sortOrder: index,
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      };
+    });
+    for (const row of dbRows) {
+      if (!merged.some((item) => item.slug === row.slug)) merged.push(row);
+    }
+    merged.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+    const total = merged.length;
     const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      prisma.invitationCatalogTemplate.findMany({ orderBy: { sortOrder: "asc" }, skip, take: limit }),
-      prisma.invitationCatalogTemplate.count(),
-    ]);
-    return paginatedResult(items, total, page, limit);
+    return paginatedResult(merged.slice(skip, skip + limit), total, page, limit);
+  }
+
+  async setCatalogVisibility(slug: string, visible: boolean, adminUserId: string) {
+    const { getCatalogTemplate, CATALOG_TEMPLATES } = await import("@/lib/invitation-mvp/catalogue");
+    const catalog = getCatalogTemplate(slug);
+    const existing = await prisma.invitationCatalogTemplate.findUnique({ where: { slug } });
+    if (!catalog && !existing) {
+      throw new Error("Unknown catalogue template");
+    }
+    const template = existing
+      ? await prisma.invitationCatalogTemplate.update({
+          where: { slug },
+          data: { isActive: visible, ...(visible ? {} : { isFeatured: false }) },
+        })
+      : await prisma.invitationCatalogTemplate.create({
+          data: {
+            slug,
+            name: catalog?.name ?? slug,
+            description: catalog?.description,
+            category: catalog?.category ?? "Wedding",
+            style: catalog?.style ?? "Luxury",
+            layoutSlug: catalog?.layoutSlug ?? slug,
+            previewGradient: catalog?.previewGradient,
+            isPremium: catalog?.isPremium ?? false,
+            isActive: visible,
+            sortOrder: Math.max(
+              0,
+              CATALOG_TEMPLATES.findIndex((item) => item.slug === slug)
+            ),
+          },
+        });
+    await createAuditLog({
+      userId: adminUserId,
+      action: "UPDATE",
+      entity: "invitation_catalog_template",
+      entityId: template.id,
+      details: { action: visible ? "show-in-catalogue" : "hide-from-catalogue", slug },
+    });
+    return template;
   }
 
   async upsertCatalogTemplate(data: {
@@ -308,6 +386,9 @@ export class InvitationAdminService {
   }
 
   async deleteCatalogTemplate(id: string) {
+    if (catalogVirtualSlug(id)) {
+      throw new Error("Hide this catalogue SKU with Public/Hidden instead of deleting the admin row.");
+    }
     return prisma.invitationCatalogTemplate.update({
       where: { id },
       data: { isActive: false },
@@ -316,6 +397,10 @@ export class InvitationAdminService {
 
   /** Soft-archive (isActive=false). Does not delete published invitation designConfig. */
   async archiveCatalogTemplate(id: string, adminUserId: string) {
+    const virtualSlug = catalogVirtualSlug(id);
+    if (virtualSlug) {
+      return this.setCatalogVisibility(virtualSlug, false, adminUserId);
+    }
     const template = await prisma.invitationCatalogTemplate.update({
       where: { id },
       data: { isActive: false, isFeatured: false },
@@ -331,6 +416,10 @@ export class InvitationAdminService {
   }
 
   async restoreCatalogTemplate(id: string, adminUserId: string) {
+    const virtualSlug = catalogVirtualSlug(id);
+    if (virtualSlug) {
+      return this.setCatalogVisibility(virtualSlug, true, adminUserId);
+    }
     const template = await prisma.invitationCatalogTemplate.update({
       where: { id },
       data: { isActive: true },
@@ -346,6 +435,9 @@ export class InvitationAdminService {
   }
 
   async duplicateCatalogTemplate(id: string, adminUserId: string) {
+    if (catalogVirtualSlug(id)) {
+      throw new Error("This catalogue SKU is code-defined. Hide or reveal it instead of duplicating the admin row.");
+    }
     const source = await prisma.invitationCatalogTemplate.findUnique({ where: { id } });
     if (!source) throw new Error("Template not found");
     const baseSlug = `${source.slug}-copy`;
@@ -400,6 +492,9 @@ export class InvitationAdminService {
   }
 
   async hardDeleteCatalogTemplate(id: string, adminUserId: string) {
+    if (catalogVirtualSlug(id)) {
+      throw new Error("This catalogue SKU is code-defined. Hide it from the public catalogue instead of deleting it.");
+    }
     const existing = await prisma.invitationCatalogTemplate.findUnique({ where: { id } });
     if (!existing) throw new Error("Template not found");
     const orderCount = await prisma.invitationOrder.count({ where: { templateSlug: existing.slug } });

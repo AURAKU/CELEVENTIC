@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   GIFT_PAYMENT_METHODS,
@@ -61,8 +62,23 @@ test("the picker pre-selects the network from the guest's number", () => {
 test("checkout is restricted to the channel the guest picked", () => {
   assert.deepEqual(paystackChannelsFor("MTN_MOMO"), ["mobile_money"]);
   assert.deepEqual(paystackChannelsFor("CARD"), ["card"]);
-  assert.ok(listEnabledGiftPaymentMethods().length > 0);
-  assert.ok(listEnabledGiftPaymentMethods().every((m) => m.enabled));
+  const enabled = listEnabledGiftPaymentMethods();
+  assert.deepEqual(
+    enabled.map((m) => m.id),
+    ["MTN_MOMO", "TELECEL_CASH", "AIRTELTIGO_MONEY"]
+  );
+  assert.equal(enabled.some((m) => m.id === "CARD"), false);
+  assert.ok(enabled.every((m) => m.enabled));
+});
+
+test("gift network marks use official MTN, Telecel and AT lockups", () => {
+  const src = readFileSync("src/components/gifts/gift-network-logo.tsx", "utf8");
+  assert.match(src, /aria-label="MTN"/);
+  assert.match(src, /aria-label="Telecel"/);
+  assert.match(src, /aria-label="AT"/);
+  assert.match(src, /#FFCC00/);
+  assert.match(src, /#E30613/);
+  assert.match(src, /#ED1C24/);
 });
 
 test("celebratory default copy never uses fundraising language", () => {

@@ -1,7 +1,7 @@
 import type { InvitationDesignConfig, InvitationLayoutSlug, MediaType } from "@/types/invitation-design";
 import { CINEMATIC_THEMES, CINEMATIC_LAYOUT_SLUGS } from "@/lib/invitation/cinematic-themes";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
-import { CATALOG_TEMPLATES, getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
+import { CATALOG_TEMPLATES, getCatalogTemplate, isCatalogTemplatePubliclyListed, type BrowseCatalogOptions } from "@/lib/invitation-mvp/catalogue";
 import { getInvitationTheme } from "@/lib/invitation-theme/theme-registry";
 import { applyThemeToDesign } from "@/lib/invitation-theme/theme-compat";
 import {
@@ -16,7 +16,7 @@ import {
   LUXURY_FASHION_LAYOUT_SLUG,
 } from "@/lib/experience/luxury-fashion/femmora-preset";
 import { LUXURY_FASHION_HOUSE_DEFAULTS, mergeFashionHouse } from "@/lib/experience/luxury-fashion/house-defaults";
-import { AURELIA_LAYOUT_SLUG, AURELIA_WEDDING_DEFAULTS, mergeAureliaWedding } from "@/lib/experience/aurelia-editorial";
+import { aureliaFamilyDefaults, isAureliaEditorialLayout, mergeAureliaWedding } from "@/lib/experience/aurelia-editorial";
 
 export interface InvitationTemplatePreset {
   slug: InvitationLayoutSlug;
@@ -355,15 +355,22 @@ export const INVITATION_TEMPLATE_PRESETS: InvitationTemplatePreset[] = [
 
 export function getTemplatePreset(slug: string): InvitationTemplatePreset | undefined {
   const resolved = getCatalogTemplate(slug)?.layoutSlug ?? slug;
-  return INVITATION_TEMPLATE_PRESETS.find((t) => t.slug === resolved);
+  return (
+    INVITATION_TEMPLATE_PRESETS.find((t) => t.slug === resolved) ??
+    (isAureliaEditorialLayout(resolved)
+      ? INVITATION_TEMPLATE_PRESETS.find((t) => t.slug === "aurelia-editorial-wedding")
+      : undefined)
+  );
 }
 
 /** One picker entry per catalogue template — no duplicate layouts or titles */
-export function getUniqueTemplatePresets(): InvitationTemplatePreset[] {
+export function getUniqueTemplatePresets(options?: BrowseCatalogOptions): InvitationTemplatePreset[] {
   // Wave 1 paged templates (themeId set) reuse legacy layout slugs as static
   // fallbacks; keep them out of the legacy preset picker to avoid duplicates —
   // they surface through the catalogue gallery + preview flow instead.
-  return CATALOG_TEMPLATES.filter((catalog) => !catalog.themeId).map((catalog) => {
+  return CATALOG_TEMPLATES.filter(
+    (catalog) => !catalog.themeId && isCatalogTemplatePubliclyListed(catalog, options)
+  ).map((catalog) => {
     const preset = getTemplatePreset(catalog.layoutSlug);
     const gradient = catalog.previewGradient.includes("from-")
       ? catalog.previewGradient
@@ -400,8 +407,10 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
   const preset = layoutSlug ? getTemplatePreset(layoutSlug) : INVITATION_TEMPLATE_PRESETS[0];
   const base = preset?.config ?? INVITATION_TEMPLATE_PRESETS[0].config;
   const { experience: _strip, ...baseWithoutStaleExperience } = base;
+  const resolvedLayout = (layoutSlug as InvitationLayoutSlug) ?? base.layout;
   const enriched = enrichDesignWithExperienceDNA({
     ...baseWithoutStaleExperience,
+    layout: resolvedLayout,
     studio: { fullScreen: true, ...base.studio },
   });
 
@@ -432,12 +441,12 @@ export function getDefaultDesignConfig(templateSlug?: string): InvitationDesignC
           identityExperience?.fashionHouse
         )
       : identityExperience?.fashionHouse;
-  const aureliaWedding =
-    layoutSlug === AURELIA_LAYOUT_SLUG
-      ? mergeAureliaWedding(identityExperience?.aureliaWedding ?? AURELIA_WEDDING_DEFAULTS)
-      : identityExperience?.aureliaWedding;
+  const aureliaWedding = isAureliaEditorialLayout(layoutSlug)
+    ? mergeAureliaWedding(identityExperience?.aureliaWedding, aureliaFamilyDefaults(layoutSlug))
+    : identityExperience?.aureliaWedding;
   const identified: InvitationDesignConfig = {
     ...enriched,
+    layout: resolvedLayout,
     experience: {
       ...identityExperience,
       ...(fashionHouse ? { fashionHouse } : {}),

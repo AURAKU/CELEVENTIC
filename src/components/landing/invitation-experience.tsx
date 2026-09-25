@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Heart, Sparkles, Palette, Globe2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getBrowseCatalogTemplates } from "@/lib/invitation-mvp/catalogue";
+import { getBrowseCatalogTemplates, type CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { LiveTemplatePreview } from "@/components/invitation/safe-live-template-preview";
 import { getLayoutSignatureFeatures } from "@/lib/invitation/layout-template-signatures";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -16,10 +16,14 @@ const HIGHLIGHT_KEYS = [
   { icon: Shield, title: "landing.invite_h4", desc: "landing.f13_desc" },
 ] as const;
 
-export function InvitationExperience() {
+export function InvitationExperience({
+  templates,
+}: {
+  templates?: CatalogTemplate[];
+}) {
   const { t } = useLocale();
   // Browse-deduped winners only, never raw CATALOG_TEMPLATES.slice (hides lites / shows flagships).
-  const featured = getBrowseCatalogTemplates().slice(0, 6);
+  const featured = (templates ?? getBrowseCatalogTemplates()).slice(0, 6);
 
   return (
     <section id="invitations" className="py-28 bg-white relative overflow-hidden">

@@ -17,6 +17,7 @@ import { resetInviteScrollToCover } from "@/components/invitation-paged/use-acti
 import { isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import type { MusicSelection } from "@/lib/music/music-types";
 import type { OpeningExperienceId } from "@/lib/experience/experience-types";
+import { isAureliaFamilyOpening } from "@/lib/experience/aurelia-editorial";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
@@ -496,8 +497,15 @@ export function PremiumInviteWrapper({
     // skipped, not on first visit, not on a return visit. A returning
     // guest can use the visible "Skip intro" control on that beat; the
     // ceremony itself always continues normally from here.
-    setPhase(phaseAfterSoftIntro(pipelineFlags), "soft-intro-complete");
-  }, [pipelineFlags, setPhase]);
+    const next = phaseAfterSoftIntro(pipelineFlags);
+    // Aurelia-style pipelines skip tap + envelope, so the film hands
+    // straight to the invitation. Start the template score now — the
+    // Open Invitation gesture already armed the element silently.
+    if (next === "portal") {
+      void startAudio();
+    }
+    setPhase(next, "soft-intro-complete");
+  }, [pipelineFlags, setPhase, startAudio]);
 
   const afterReveal = useCallback(() => {
     // Unlock BEFORE portal paints — never hand the guest a locked viewport.
@@ -1001,7 +1009,7 @@ export function PremiumInviteWrapper({
               allowSkip={
                 Boolean(embedded) &&
                 (openingExperience === "luxury-fashion-flagship" ||
-                  openingExperience === "aurelia-editorial-wedding")
+                  isAureliaFamilyOpening(openingExperience))
               }
               ceremonialDoves={isFuneralExperience}
               onBegin={() => {

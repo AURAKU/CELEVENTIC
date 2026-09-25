@@ -78,6 +78,7 @@ function introVisualFamily(variant: IntroVariantId): IntroVariantId {
     case "silk-whisper":
       return "fabric-unfold";
     case "aurelia-ivory-veil":
+    case "seraphine-ivory-veil":
       return "gold-foil";
     default:
       return variant;

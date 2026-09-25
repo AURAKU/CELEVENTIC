@@ -244,7 +244,13 @@ export function buildLivePreviewProps(
   const fashionHouse = baseDesign.experience?.fashionHouse;
   const fashionStartIso = fashionHouse?.startAtIso?.trim() || (isFemmoraSku ? FEMMORA_START_ISO : "");
   const fashionStart = fashionStartIso ? new Date(fashionStartIso) : FUTURE_DATE;
-  const eventInstantIso = isFashionFlagship && fashionStartIso ? fashionStart.toISOString() : FUTURE_DATE.toISOString();
+  const aureliaStartIso = enriched.experience?.aureliaWedding?.ceremonies?.find(
+    (ceremony) => ceremony.startAtIso
+  )?.startAtIso;
+  const eventInstantIso =
+    isFashionFlagship && fashionStartIso
+      ? fashionStart.toISOString()
+      : aureliaStartIso || FUTURE_DATE.toISOString();
   const contactPhone = "+233 25 766 0734";
   const demoIdentity = {
     title: demo.title,
@@ -336,7 +342,7 @@ export function buildLivePreviewProps(
           hour: "numeric",
           minute: "2-digit",
         })
-      : formatDemoDate(FUTURE_DATE),
+      : formatDemoDate(new Date(eventInstantIso)),
     startDateRaw: eventInstantIso,
     venueName: demo.venueName,
     landmark: demo.landmark,

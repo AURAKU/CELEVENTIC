@@ -17,6 +17,7 @@ import {
   INVITATION_MOODS,
   getCatalogTemplate,
   getBrowseCatalogTemplates,
+  type CatalogTemplate,
 } from "@/lib/invitation-mvp/catalogue";
 import { weddingBrowseCategoriesForEventType } from "@/lib/invitation/wedding-families";
 
@@ -45,7 +46,15 @@ const TIER_CHIPS = [
  *, shareable, back-button safe. Mobile: infinite scroll in batches of 12 with
  * an explicit "Load more" gate after 3 auto-batches. Desktop: numbered pages.
  */
-export function CatalogueClient() {
+export function CatalogueClient({
+  templates,
+  isAdmin = false,
+  hiddenSlugs = [],
+}: {
+  templates?: CatalogTemplate[];
+  isAdmin?: boolean;
+  hiddenSlugs?: string[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -107,11 +116,12 @@ export function CatalogueClient() {
   }, []);
 
   const highlightTemplate = highlightSlug ? getCatalogTemplate(highlightSlug) : undefined;
+  const hidden = new Set(hiddenSlugs);
 
   const filtered = useMemo(() => {
     const weddingCategories = weddingBrowseCategoriesForEventType(eventType);
     const eventCategory = EVENT_TYPE_TO_CATEGORY[eventType];
-    return getBrowseCatalogTemplates().filter((t) => {
+    return (templates ?? getBrowseCatalogTemplates()).filter((t) => {
       if (weddingCategories.length > 0) {
         if (!weddingCategories.includes(t.category)) return false;
       } else if (eventCategory && t.category !== eventCategory) {
@@ -126,7 +136,7 @@ export function CatalogueClient() {
         search: urlSearch,
       });
     });
-  }, [category, style, mood, tier, parallaxOnly, urlSearch, eventType]);
+  }, [templates, category, style, mood, tier, parallaxOnly, urlSearch, eventType]);
 
   // Mobile infinite scroll / desktop numbered pagination
   const [isMobile, setIsMobile] = useState(false);
@@ -323,7 +333,16 @@ export function CatalogueClient() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {gridItems.map((t) => <TemplateCard key={t.slug} template={t} />)}
+          {gridItems.map((t) => (
+            <div key={t.slug} className="relative">
+              {isAdmin && hidden.has(t.slug) ? (
+                <span className="absolute z-10 left-3 top-3 rounded-full bg-slate-900/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                  Hidden from public
+                </span>
+              ) : null}
+              <TemplateCard template={t} />
+            </div>
+          ))}
         </div>
       )}
 

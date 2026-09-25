@@ -1,5 +1,10 @@
 import type { InvitationLayoutSlug } from "@/types/invitation-design";
 import type { MusicSelection } from "@/lib/music/music-types";
+import {
+  AURELIA_INVITE_MUSIC,
+  AURELIA_INVITE_MUSIC_DURATION_SEC,
+  AURELIA_INVITE_MUSIC_TITLE,
+} from "@/lib/experience/aurelia-editorial/preset";
 
 /**
  * Bundled MP3 filenames in public/music/ (without extension).
@@ -297,14 +302,29 @@ export const LAYOUT_MUSIC_IDENTITY: Record<InvitationLayoutSlug, LayoutMusicProf
   },
   "aurelia-editorial-wedding": {
     trackId: "layout-aurelia-editorial-wedding",
-    title: "Ivory Editorial Prelude",
-    category: "piano",
+    title: AURELIA_INVITE_MUSIC_TITLE,
+    category: "wedding",
     bundledFile: "piano-garden",
-    startSec: 4,
-    endSec: 68,
+    url: AURELIA_INVITE_MUSIC,
+    startSec: 0,
+    endSec: AURELIA_INVITE_MUSIC_DURATION_SEC,
+    originalDurationSec: AURELIA_INVITE_MUSIC_DURATION_SEC,
     volume: 0.42,
     fadeInSec: 2,
-    fadeOutSec: 1.3,
+    fadeOutSec: 1.6,
+  },
+  "seraphine-champagne-wedding": {
+    trackId: "layout-seraphine-champagne-wedding",
+    title: AURELIA_INVITE_MUSIC_TITLE,
+    category: "wedding",
+    bundledFile: "piano-garden",
+    url: AURELIA_INVITE_MUSIC,
+    startSec: 0,
+    endSec: AURELIA_INVITE_MUSIC_DURATION_SEC,
+    originalDurationSec: AURELIA_INVITE_MUSIC_DURATION_SEC,
+    volume: 0.4,
+    fadeInSec: 2.1,
+    fadeOutSec: 1.5,
   },
 };
 

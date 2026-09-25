@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { getUniqueTemplatePresets } from "@/lib/invitation-templates";
 import { paginatedResult, parsePaginationFromUrl } from "@/lib/pagination";
+import {
+  applyCatalogVisibility,
+  loadCatalogVisibilityOverlay,
+} from "@/lib/invitation-mvp/catalog-visibility";
 
 /** Paginated template library for studio and marketplace consumers */
 export async function GET(req: Request) {
   const { page, limit, skip } = parsePaginationFromUrl(req.url);
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category")?.toLowerCase();
+  const overlay = await loadCatalogVisibilityOverlay();
 
-  let items = getUniqueTemplatePresets().map((t) => ({
+  let items = getUniqueTemplatePresets(applyCatalogVisibility(overlay)).map((t) => ({
     slug: t.slug,
     name: t.name,
     description: t.description,

@@ -1,4 +1,5 @@
-import { AURELIA_HERO_FALLBACK, AURELIA_THEME_DEFAULTS, AURELIA_WEDDING_DEFAULTS } from "./preset";
+import { AURELIA_HERO_FALLBACK, AURELIA_THEME_DEFAULTS, AURELIA_WEDDING_DEFAULTS, SERAPHINE_WEDDING_DEFAULTS } from "./preset";
+import { SERAPHINE_LAYOUT_SLUG } from "./types";
 import type {
   AureliaCeremony,
   AureliaDressCode,
@@ -21,18 +22,27 @@ function mergeTheme(
   return { ...AURELIA_THEME_DEFAULTS, ...stored };
 }
 
-function mergeCeremonies(stored?: AureliaCeremony[] | null): AureliaCeremony[] {
-  if (stored == null) return AURELIA_WEDDING_DEFAULTS.ceremonies;
+function mergeCeremonies(
+  stored: AureliaCeremony[] | null | undefined,
+  base: AureliaWeddingConfig
+): AureliaCeremony[] {
+  if (stored == null) return base.ceremonies;
   return stored.filter((item) => trim(item.title) || trim(item.venueName));
 }
 
-function mergeVenues(stored?: AureliaVenueCard[] | null): AureliaVenueCard[] {
-  if (stored == null) return AURELIA_WEDDING_DEFAULTS.venues;
+function mergeVenues(
+  stored: AureliaVenueCard[] | null | undefined,
+  base: AureliaWeddingConfig
+): AureliaVenueCard[] {
+  if (stored == null) return base.venues;
   return stored.filter((item) => trim(item.venueName) || trim(item.eventLabel));
 }
 
-function mergeDress(stored?: AureliaDressCode[] | null): AureliaDressCode[] {
-  if (stored == null) return AURELIA_WEDDING_DEFAULTS.dressCodes;
+function mergeDress(
+  stored: AureliaDressCode[] | null | undefined,
+  base: AureliaWeddingConfig
+): AureliaDressCode[] {
+  if (stored == null) return base.dressCodes;
   return stored.map((item) => ({
     ...item,
     palette: (item.palette ?? []).filter(
@@ -41,20 +51,30 @@ function mergeDress(stored?: AureliaDressCode[] | null): AureliaDressCode[] {
   }));
 }
 
-function mergeJourney(stored?: AureliaJourneyItem[] | null): AureliaJourneyItem[] {
-  if (stored == null) return AURELIA_WEDDING_DEFAULTS.journey;
+function mergeJourney(
+  stored: AureliaJourneyItem[] | null | undefined,
+  base: AureliaWeddingConfig
+): AureliaJourneyItem[] {
+  if (stored == null) return base.journey;
   return stored.filter((item) => trim(item.title) || trim(item.imageUrl));
 }
 
-function mergeFaqs(stored?: AureliaFaqItem[] | null): AureliaFaqItem[] {
-  if (stored == null) return AURELIA_WEDDING_DEFAULTS.faqs;
+function mergeFaqs(
+  stored: AureliaFaqItem[] | null | undefined,
+  base: AureliaWeddingConfig
+): AureliaFaqItem[] {
+  if (stored == null) return base.faqs;
   return stored.filter((item) => trim(item.question) && trim(item.answer));
 }
 
+export function aureliaFamilyDefaults(layout?: string | null): AureliaWeddingConfig {
+  return layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_WEDDING_DEFAULTS : AURELIA_WEDDING_DEFAULTS;
+}
+
 export function mergeAureliaWedding(
-  stored?: Partial<AureliaWeddingConfig> | null
+  stored?: Partial<AureliaWeddingConfig> | null,
+  base: AureliaWeddingConfig = AURELIA_WEDDING_DEFAULTS
 ): AureliaWeddingConfig {
-  const base = AURELIA_WEDDING_DEFAULTS;
   if (!stored) return base;
   return {
     ...base,
@@ -62,14 +82,19 @@ export function mergeAureliaWedding(
     partnerOneName: trim(stored.partnerOneName) || base.partnerOneName,
     partnerTwoName: trim(stored.partnerTwoName) || base.partnerTwoName,
     monogram: trim(stored.monogram) || base.monogram,
+    albumEyebrow: trim(stored.albumEyebrow) || base.albumEyebrow,
+    albumTitle: trim(stored.albumTitle) || base.albumTitle,
+    albumLede: trim(stored.albumLede) || base.albumLede,
+    albumUploadCta: trim(stored.albumUploadCta) || base.albumUploadCta,
+    albumViewCta: trim(stored.albumViewCta) || base.albumViewCta,
     storyParagraphs:
       stored.storyParagraphs?.map((p) => trim(p)).filter(Boolean) ?? base.storyParagraphs,
     theme: mergeTheme(stored.theme),
-    ceremonies: mergeCeremonies(stored.ceremonies),
-    venues: mergeVenues(stored.venues),
-    dressCodes: mergeDress(stored.dressCodes),
-    journey: mergeJourney(stored.journey),
-    faqs: mergeFaqs(stored.faqs),
+    ceremonies: mergeCeremonies(stored.ceremonies, base),
+    venues: mergeVenues(stored.venues, base),
+    dressCodes: mergeDress(stored.dressCodes, base),
+    journey: mergeJourney(stored.journey, base),
+    faqs: mergeFaqs(stored.faqs, base),
     sections: { ...base.sections, ...stored.sections },
   };
 }
@@ -107,6 +132,10 @@ export function aureliaSectionVisible(
       return config.faqs.length > 0;
     case "gifts":
       return Boolean(trim(config.giftsTitle) || trim(config.giftsLede) || trim(config.giftsDetails));
+    case "album":
+      return Boolean(
+        trim(config.albumTitle) || trim(config.albumLede) || trim(config.albumEyebrow)
+      );
     default:
       return true;
   }
@@ -123,6 +152,7 @@ export function aureliaNavItems(config: AureliaWeddingConfig): Array<{
     ["venues", "Venues"],
     ["dress", "Dress Code"],
     ["journey", "Our Journey"],
+    ["album", "Album"],
     ["rsvp", "RSVP"],
   ];
   for (const [id, label] of rest) {

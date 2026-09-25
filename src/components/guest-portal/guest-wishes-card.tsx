@@ -14,8 +14,8 @@ import {
   fashionTokenStyleFromColors,
 } from "@/lib/experience/luxury-fashion";
 import {
-  AURELIA_LAYOUT_SLUG,
   AURELIA_THEME_DEFAULTS,
+  isAureliaEditorialLayout,
 } from "@/lib/experience/aurelia-editorial";
 import { FEED_LIMIT } from "@/lib/pagination";
 import {
@@ -143,7 +143,7 @@ export function GuestWishesCard({
   const dark = variant === "dark";
   const memorial = tone === "memorial";
   const fashion = !memorial && layout === LUXURY_FASHION_LAYOUT_SLUG;
-  const aurelia = !memorial && !fashion && layout === AURELIA_LAYOUT_SLUG;
+  const aurelia = !memorial && !fashion && isAureliaEditorialLayout(layout);
   const resolvedHouseName = houseName ?? fashionHouse?.houseName ?? null;
   const houseLogoSrc = fashion
     ? fashionHouseLogoSrc({
@@ -923,7 +923,7 @@ export function GuestWishesCard({
           ) : null}
         </div>
 
-        {memoryVaultEnabled && !suppressMemoryHint ? (
+        {aurelia ? null : memoryVaultEnabled && !suppressMemoryHint ? (
           <p className={aw.hint}>Find the Album — share a photograph from the day</p>
         ) : null}
       </div>

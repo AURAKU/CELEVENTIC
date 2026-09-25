@@ -295,6 +295,7 @@ export function renderTemplateHero(ctx: TemplateHeroContext) {
       );
 
     case "aurelia-editorial-wedding":
+    case "seraphine-champagne-wedding":
       return (
         <HeroShell className="max-w-xl">
           <p className="text-[10px] uppercase tracking-[0.38em] mb-4" style={{ color: secondary }}>{intro || "Together with their families"}</p>

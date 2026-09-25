@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { AureliaEditorialRuntimeClient } from "./aurelia-editorial-runtime-client";
+import { ensureDemoMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +19,16 @@ export default async function AureliaEditorialRuntimePage({
     notFound();
   }
   const params = await searchParams;
+  const memory = await ensureDemoMemoryLinks("Elorm & Dansowaa").catch(() => null);
   return (
     <AureliaEditorialRuntimeClient
       skipIntro={params.skipIntro === "1"}
       reduced={params.reduced === "1"}
+      memoryUploadUrl={memory?.uploadUrl ?? null}
+      memoryAlbumUrl={memory?.albumUrl ?? null}
+      memoryUploadQrImageUrl={memory?.uploadQrImageUrl ?? null}
+      memoryEventId={memory?.eventId ?? null}
+      memoryAlbumTitle={memory?.eventTitle ?? "Elorm & Dansowaa"}
     />
   );
 }

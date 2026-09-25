@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useState } from "react";
 import { Calendar, Clock, MapPin, Menu, X } from "lucide-react";
 import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
@@ -10,6 +10,7 @@ import {
   AURELIA_HERO_FALLBACK,
   AURELIA_WHITE_ISO,
   aureliaDistinctVenues,
+  aureliaFamilyDefaults,
   aureliaNavItems,
   aureliaSectionVisible,
   aureliaTokenStyle,
@@ -23,6 +24,7 @@ import { invitationFontVars } from "@/lib/invitation-fonts";
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import { AureliaGiftCheckout } from "./aurelia-gift-checkout";
+import { AureliaMemoryAlbum } from "./aurelia-memory-album";
 import styles from "./aurelia-editorial-wedding.module.css";
 
 function pad(value: number) {
@@ -100,8 +102,12 @@ function AureliaLocationPreview({
 
 export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) {
   const config = useMemo(
-    () => mergeAureliaWedding(props.design.experience?.aureliaWedding),
-    [props.design.experience?.aureliaWedding]
+    () =>
+      mergeAureliaWedding(
+        props.design.experience?.aureliaWedding,
+        aureliaFamilyDefaults(props.design.layout)
+      ),
+    [props.design.experience?.aureliaWedding, props.design.layout]
   );
   const nav = useMemo(() => aureliaNavItems(config), [config]);
   const [monoOne, monoTwo] = useMemo(() => splitMonogram(config.monogram), [config.monogram]);
@@ -131,6 +137,10 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
   useEffect(() => {
     setHeroSrc(resolvedHero);
   }, [resolvedHero]);
+
+  useLayoutEffect(() => {
+    document.getElementById("aurelia-journey")?.remove();
+  }, []);
 
   useEffect(() => {
     const hero = document.getElementById("aurelia-home");
@@ -165,7 +175,13 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
     });
 
   return (
-    <div className={`${styles.root} ${invitationFontVars}`} style={aureliaTokenStyle(config.theme)} data-aurelia-template="true" data-testid="aurelia-editorial-wedding">
+    <div
+      className={`${styles.root} ${invitationFontVars}`}
+      style={aureliaTokenStyle(config.theme)}
+      data-aurelia-template="true"
+      data-aurelia-journey="off"
+      data-testid="aurelia-editorial-wedding"
+    >
       <header className={`${styles.header} ${heroMode ? styles.headerOnHero : ""}`}>
         <span className={styles.monogram} aria-label={config.monogram}>
           <span className={styles.monogramLetter}>{monoOne}</span>
@@ -215,6 +231,11 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           className={styles.heroImage}
           src={heroSrc}
           alt=""
+          width={1828}
+          height={2560}
+          sizes="100vw"
+          decoding="async"
+          fetchPriority="high"
           draggable={false}
           onError={() => {
             if (heroSrc !== AURELIA_HERO_FALLBACK) setHeroSrc(AURELIA_HERO_FALLBACK);
@@ -274,6 +295,10 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               className={styles.storyImage}
               src={config.storyImageUrl}
               alt={`${config.partnerOneName} and ${config.partnerTwoName}`}
+              width={730}
+              height={1024}
+              sizes="100vw"
+              decoding="async"
             />
           ) : null}
           <div className={`${styles.sectionNarrow} ${styles.storyCopy}`}>
@@ -296,6 +321,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <h2 className={styles.heading}>{config.celebrationsTitle}</h2>
           <div className={styles.goldRule} />
           <p className={styles.lede}>{config.celebrationsLede}</p>
+          <div className={styles.cardDeck}>
           {config.ceremonies.map((ceremony) => {
             const href = mapsHref(ceremony.mapsUrl, ceremony.venueName, ceremony.address);
             return (
@@ -365,6 +391,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               </article>
             );
           })}
+          </div>
         </section>
       ) : null}
 
@@ -374,6 +401,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <h2 className={styles.heading}>{config.venuesTitle}</h2>
           <div className={styles.goldRule} />
           <p className={styles.lede}>{config.venuesLede}</p>
+          <div className={styles.cardDeck}>
           {aureliaDistinctVenues(config).map((venue) => {
             const href = mapsHref(venue.mapsUrl, venue.venueName, venue.address);
             return (
@@ -413,6 +441,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               </article>
             );
           })}
+          </div>
         </section>
       ) : null}
 
@@ -422,6 +451,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <h2 className={styles.heading}>{config.dressTitle}</h2>
           <div className={styles.goldRule} />
           <p className={styles.lede}>{config.dressLede}</p>
+          <div className={styles.cardDeck}>
           {config.dressCodes.map((dress) => (
             <article
               key={dress.id}
@@ -443,25 +473,29 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               ) : null}
             </article>
           ))}
+          </div>
         </section>
       ) : null}
 
-      {aureliaSectionVisible(config, "journey") ? (
-        <section className={styles.section} id="aurelia-journey">
-          <div className={styles.sectionNarrow}>
-            <span className={styles.eyebrow}>{config.journeyEyebrow}</span>
-            <h2 className={styles.heading}>{config.journeyTitle}</h2>
-            <div className={styles.goldRule} />
-            <p className={styles.lede}>{config.journeyLede}</p>
-          </div>
-          {config.journey.map((item) => (
-            <article className={styles.journeyItem} key={item.id}>
-              <h3 className={styles.journeyTitle}>{item.title}</h3>
-              {item.imageUrl ? (
-                <img className={styles.journeyImage} src={item.imageUrl} alt="" loading="lazy" />
-              ) : null}
-            </article>
-          ))}
+      {aureliaSectionVisible(config, "album") ? (
+        <section
+          className={`${styles.section} ${styles.sectionNarrow}`}
+          id="aurelia-album"
+          data-testid="aurelia-album"
+        >
+          <span className={styles.eyebrow}>{config.albumEyebrow}</span>
+          <h2 className={styles.heading}>{config.albumTitle}</h2>
+          <div className={styles.goldRule} />
+          <p className={styles.lede}>{config.albumLede}</p>
+          <AureliaMemoryAlbum
+            eventTitle={props.event.title}
+            invitationId={props.invitation.id}
+            uploadUrl={props.memoryUploadUrl}
+            albumUrl={props.memoryAlbumUrl}
+            uploadQrImageUrl={props.memoryUploadQrImageUrl}
+            uploadCta={config.albumUploadCta}
+            viewCta={config.albumViewCta}
+          />
         </section>
       ) : null}
 
@@ -481,6 +515,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                 initialAttendingCount={props.initialAttendingCount}
                 variant="dark"
                 accentColor={config.theme.terracotta}
+                showEmail={false}
                 choiceLabels={{
                   accepted: "Joyfully accept",
                   declined: "Regretfully decline",
