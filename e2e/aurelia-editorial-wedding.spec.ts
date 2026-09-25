@@ -31,7 +31,7 @@ async function dismissCookieBanner(page: import("@playwright/test").Page) {
 }
 
 test.describe("Aurelia editorial wedding", () => {
-  test("opens straight into Elorm and Dansowaa invitation", async ({ browser }) => {
+  test("opens straight into Enock and Ruth invitation", async ({ browser }) => {
     test.setTimeout(90_000);
     const context = await browser.newContext(devices["iPhone 13"]);
     await prepareContext(context);
@@ -43,8 +43,10 @@ test.describe("Aurelia editorial wedding", () => {
     await expect(body).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole("button", { name: /tap to begin/i })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /tap to open/i })).toHaveCount(0);
-    await expect(body.getByText("Elorm").first()).toBeVisible();
-    await expect(body.getByText("Dansowaa").first()).toBeVisible();
+    await expect(body.getByText("Enock").first()).toBeVisible();
+    await expect(body.getByText("Ruth").first()).toBeVisible();
+    await expect(body.getByText(/Elorm/i)).toHaveCount(0);
+    await expect(body.getByText(/Dansowaa/i)).toHaveCount(0);
     await expect(body.getByText("The Covenant")).toHaveCount(0);
     await expect(body.getByText("October 2026").first()).toBeVisible();
     await expect(body.getByText("22 October 2026").first()).toBeVisible();

@@ -50,9 +50,9 @@ export const AURELIA_WHITE_MAPS =
   "https://maps.app.goo.gl/F7wWqsUF7aH2efU96?g_st=iwb";
 
 export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
-  partnerOneName: "Elorm",
-  partnerTwoName: "Dansowaa",
-  monogram: "E & D",
+  partnerOneName: "Enock",
+  partnerTwoName: "Ruth",
+  monogram: "E & R",
   familyIntro: "Together with their families",
   marriedLine: "Are getting married",
   dateDisplay: "October 2026",
@@ -83,7 +83,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     "And now, we begin our greatest chapter yet.",
     "Forever starts here.",
   ],
-  storySignature: "Elorm & Dansowaa",
+  storySignature: "Enock & Ruth",
   celebrationsEyebrow: "Two days of joy",
   celebrationsTitle: "Celebrate With Us",
   celebrationsLede:

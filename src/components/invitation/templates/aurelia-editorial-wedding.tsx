@@ -33,13 +33,18 @@ function pad(value: number) {
   return String(value).padStart(2, "0");
 }
 
-function splitMonogram(value: string): [string, string] {
+function splitMonogram(value: string, partnerOne = "", partnerTwo = ""): [string, string] {
+  const fromOne = partnerOne.trim().charAt(0);
+  const fromTwo = partnerTwo.trim().charAt(0);
+  if (fromOne && fromTwo) {
+    return [fromOne.toUpperCase(), fromTwo.toUpperCase()];
+  }
   const parts = value
     .split(/\s*&\s*/)
     .map((part) => part.trim())
     .filter(Boolean);
-  const one = (parts[0] || "E").slice(0, 2);
-  const two = (parts[1] || one).slice(0, 2);
+  const one = (parts[0] || "E").charAt(0).toUpperCase() || "E";
+  const two = (parts[1] || one).charAt(0).toUpperCase() || one;
   return [one, two];
 }
 
@@ -112,7 +117,11 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
     [props.design.experience?.aureliaWedding, props.design.layout]
   );
   const nav = useMemo(() => aureliaNavItems(config), [config]);
-  const [monoOne, monoTwo] = useMemo(() => splitMonogram(config.monogram), [config.monogram]);
+  const [monoOne, monoTwo] = useMemo(
+    () => splitMonogram(config.monogram, config.partnerOneName, config.partnerTwoName),
+    [config.monogram, config.partnerOneName, config.partnerTwoName]
+  );
+  const monogramLabel = `${monoOne} & ${monoTwo}`;
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroMode, setHeroMode] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(config.faqs[0]?.id ?? null);
@@ -185,7 +194,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       data-testid="aurelia-editorial-wedding"
     >
       <header className={`${styles.header} ${heroMode ? styles.headerOnHero : ""}`}>
-        <span className={styles.monogram} aria-label={config.monogram}>
+        <span className={styles.monogram} aria-label={monogramLabel}>
           <span className={styles.monogramLetter}>{monoOne}</span>
           <span className={styles.monogramAmp} aria-hidden>
             &amp;
@@ -311,7 +320,9 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                 <p key={paragraph.slice(0, 24)}>{paragraph}</p>
               ))}
             </div>
-            <span className={styles.signature}>{config.storySignature}</span>
+            <span className={styles.signature}>
+              {config.partnerOneName} &amp; {config.partnerTwoName}
+            </span>
           </div>
         </section>
       ) : null}
@@ -621,7 +632,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       ) : null}
 
       <footer className={styles.finale}>
-        <p className={styles.monogram} aria-label={config.monogram}>
+        <p className={styles.monogram} aria-label={monogramLabel}>
           <span className={styles.monogramLetter}>{monoOne}</span>
           <span className={styles.monogramAmp} aria-hidden>
             &amp;
