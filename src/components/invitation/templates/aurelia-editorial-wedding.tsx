@@ -231,8 +231,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           className={styles.heroImage}
           src={heroSrc}
           alt=""
-          width={1828}
-          height={2560}
+          width={731}
+          height={1024}
           sizes="100vw"
           decoding="async"
           fetchPriority="high"
