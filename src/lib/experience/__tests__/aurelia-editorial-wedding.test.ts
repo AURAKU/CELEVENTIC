@@ -184,7 +184,7 @@ test("Aurelia hero prefers host photo and falls back to dummy photograph", () =>
   );
   const heroStat = statSync("public/templates/aurelia/hero.jpg");
   const storyStat = statSync("public/templates/aurelia/story.jpg");
-  assert.ok(heroStat.size > 250_000, "hero photograph must be HD");
+  assert.equal(heroStat.size, 112938, "hero photograph must stay the original unprocessed file");
   assert.equal(storyStat.size, 139599, "story photograph must stay the original unprocessed file");
   for (const name of ["journey-01.jpg", "journey-02.jpg", "journey-03.jpg", "journey-04.jpg"]) {
     assert.ok(statSync(`public/templates/aurelia/${name}`).size > 150_000);
