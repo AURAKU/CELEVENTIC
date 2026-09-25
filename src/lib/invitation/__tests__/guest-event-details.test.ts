@@ -52,6 +52,13 @@ describe("resolveGuestFacingEventInstant", () => {
       eventStartDate.toISOString()
     );
   });
+
+  it("uses the Aurelia traditional ceremony instead of a 2027 Event start", () => {
+    const resolved = resolveGuestFacingEventInstant("2027-03-10T09:00:00.000Z", {
+      layout: "aurelia-editorial-wedding",
+    });
+    assert.equal(resolved.toISOString(), "2026-10-22T11:00:00.000Z");
+  });
 });
 
 describe("resolveGuestFacingVenue", () => {
@@ -61,5 +68,19 @@ describe("resolveGuestFacingVenue", () => {
     assert.equal(resolveGuestFacingVenue(null, design), "Ceremony Gardens");
     assert.equal(resolveGuestFacingVenue("Event Hall", design), "Event Hall");
     assert.equal(resolveGuestFacingVenue(null, { layout: "classic-gold" }), null);
+  });
+
+  it("uses the Aurelia traditional venue instead of a stale Event venue", () => {
+    assert.equal(
+      resolveGuestFacingVenue("Placeholder Hall 2027", {
+        layout: "aurelia-editorial-wedding",
+        experience: {
+          aureliaWedding: {
+            ceremonies: [{ id: "traditional", venueName: "TLPCI, Solution Centre" }],
+          },
+        },
+      } as Pick<InvitationDesignConfig, "layout" | "studio" | "experience">),
+      "TLPCI, Solution Centre"
+    );
   });
 });

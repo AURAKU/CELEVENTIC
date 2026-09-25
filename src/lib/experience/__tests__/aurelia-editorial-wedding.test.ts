@@ -6,8 +6,10 @@ import {
   AURELIA_INTRO_ID,
   AURELIA_LAYOUT_SLUG,
   AURELIA_OPENING_ID,
+  AURELIA_TRADITIONAL_ISO,
   AURELIA_TRADITIONAL_MAPS,
   AURELIA_WEDDING_DEFAULTS,
+  AURELIA_WHITE_ISO,
   AURELIA_WHITE_MAPS,
   SERAPHINE_CATALOG_SLUG,
   SERAPHINE_INTRO_ID,
@@ -43,12 +45,12 @@ test("Aurelia couple, dates and venues stay original", () => {
   assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Elorm");
   assert.equal(AURELIA_WEDDING_DEFAULTS.partnerTwoName, "Dansowaa");
   assert.equal(AURELIA_WEDDING_DEFAULTS.monogram, "E & D");
-  assert.equal(AURELIA_WEDDING_DEFAULTS.heroTagline, "The Covenant");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.heroTagline, "");
   assert.equal(AURELIA_WEDDING_DEFAULTS.storyEyebrow, "Our Beginning");
   assert.equal(AURELIA_WEDDING_DEFAULTS.storyTitle, "Our Story");
   assert.match(AURELIA_WEDDING_DEFAULTS.storyParagraphs[0] ?? "", /unexpected ways/);
   assert.equal(AURELIA_WEDDING_DEFAULTS.storySignature, "Elorm & Dansowaa");
-  assert.equal(AURELIA_WEDDING_DEFAULTS.dateDisplay, "22 & 24 October 2026");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.dateDisplay, "October 2026");
   assert.equal(AURELIA_WEDDING_DEFAULTS.rsvpByLabel, "");
   assert.deepEqual(
     (AURELIA_WEDDING_DEFAULTS.rsvpContacts ?? []).map((item) => [item.name, item.phone]),
@@ -78,6 +80,89 @@ test("Aurelia couple, dates and venues stay original", () => {
     /output=embed/
   );
   assert.equal(FORBIDDEN.test(JSON.stringify(AURELIA_WEDDING_DEFAULTS)), false);
+});
+
+test("Aurelia keeps October 2026 ceremony details even if stored copy says 2027", () => {
+  const merged = mergeAureliaWedding({
+    dateDisplay: "APRIL 2027",
+    heroTagline: "The Covenant",
+    ceremonies: [
+      {
+        id: "traditional",
+        kicker: "Ceremony one",
+        title: "The Traditional Ceremony",
+        weekday: "Wednesday",
+        dateLabel: "10 March 2027",
+        timeLabel: "9:00 AM",
+        venueName: "Placeholder Hall",
+        address: "",
+        mapsUrl: "https://maps.google.com",
+        startAtIso: "2027-03-10T09:00:00.000Z",
+      },
+      {
+        id: "white",
+        kicker: "Ceremony two",
+        title: "The White Wedding",
+        weekday: "Friday",
+        dateLabel: "12 March 2027",
+        timeLabel: "4:00 PM",
+        venueName: "Placeholder Chapel",
+        address: "",
+        mapsUrl: "https://maps.google.com",
+        startAtIso: "2027-03-12T16:00:00.000Z",
+      },
+    ],
+    venues: [
+      {
+        id: "white",
+        eventLabel: "White Wedding",
+        venueName: "Placeholder Chapel",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    dressCodes: [
+      {
+        id: "traditional",
+        eventLabel: "Traditional Wedding",
+        dateLabel: "Wednesday, 10 March",
+        title: "Traditional Wedding",
+        palette: [
+          { name: "Champagne", hex: "#D8C09C" },
+          { name: "Blush", hex: "#DDA8A0" },
+          { name: "Terracotta", hex: "#B65A37" },
+        ],
+      },
+    ],
+  });
+  assert.equal(merged.dateDisplay, "October 2026");
+  assert.equal(merged.ceremonies[0]?.dateLabel, "22 October 2026");
+  assert.equal(merged.ceremonies[0]?.timeLabel, "11:00 AM");
+  assert.equal(merged.ceremonies[0]?.venueName, "TLPCI, Solution Centre");
+  assert.equal(merged.ceremonies[0]?.startAtIso, AURELIA_TRADITIONAL_ISO);
+  assert.match(merged.ceremonies[0]?.mapsUrl ?? "", /yMfDDtTU6BgxPrUaA/);
+  assert.equal(merged.ceremonies[1]?.dateLabel, "24 October 2026");
+  assert.equal(merged.ceremonies[1]?.timeLabel, "1:00 PM");
+  assert.equal(merged.ceremonies[1]?.venueName, "Ultimate Christian Ministry Tse-Addo");
+  assert.equal(merged.ceremonies[1]?.startAtIso, AURELIA_WHITE_ISO);
+  assert.match(merged.ceremonies[1]?.mapsUrl ?? "", /F7wWqsUF7aH2efU96/);
+  assert.equal(merged.venues[0]?.venueName, "Ultimate Christian Ministry Tse-Addo");
+  assert.equal(merged.dressCodes[0]?.dateLabel, "Thursday, 22 October");
+  assert.deepEqual(
+    (merged.dressCodes[0]?.palette ?? []).map((swatch) => swatch.name),
+    ["Chamoisee", "Kobicha", "Black Bean", "Licorice", "Smoky Black"]
+  );
+  assert.equal(
+    (merged.dressCodes[0]?.palette ?? []).some((swatch) => /champagne|blush|terracotta/i.test(swatch.name)),
+    false
+  );
+  assert.doesNotMatch(JSON.stringify(merged.ceremonies), /2027/);
+  assert.doesNotMatch(merged.dateDisplay, /2027/);
+  assert.equal(merged.heroTagline, "");
+  const inviteSrc = readFileSync(
+    "src/components/invitation/templates/aurelia-editorial-wedding.tsx",
+    "utf8"
+  );
+  assert.doesNotMatch(inviteSrc, /heroTagline/);
 });
 
 test("Aurelia resolver hides empty sections and keeps defaults", () => {
@@ -250,6 +335,25 @@ test("Aurelia traditional color option uses the approved brown palette", () => {
     palette.map((swatch) => swatch.hex.toUpperCase()),
     ["#A7795E", "#6E3C19", "#34170D", "#230F08", "#110703"]
   );
+  const mergedPalette = mergeAureliaWedding({
+    dressCodes: [
+      {
+        id: "traditional",
+        eventLabel: "Traditional Wedding",
+        dateLabel: "Friday, 9 April",
+        title: "Traditional Wedding",
+        palette: [
+          { name: "Champagne", hex: "#D8C09C" },
+          { name: "Blush", hex: "#DDA8A0" },
+          { name: "Terracotta", hex: "#B65A37" },
+        ],
+      },
+    ],
+  }).dressCodes[0]?.palette ?? [];
+  assert.deepEqual(
+    mergedPalette.map((swatch) => swatch.name),
+    ["Chamoisee", "Kobicha", "Black Bean", "Licorice", "Smoky Black"]
+  );
 });
 
 test("Aurelia invitation hosts Memory Vault as The Album", () => {
@@ -293,10 +397,10 @@ test("Seraphine is an isolated Aurelia-family duplicate", () => {
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerOneName, "Efua");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerTwoName, "Yaw");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.monogram, "E & Y");
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.heroTagline, "The Promise");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.heroTagline, "");
   assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Elorm");
   assert.equal(AURELIA_WEDDING_DEFAULTS.monogram, "E & D");
-  assert.notEqual(AURELIA_WEDDING_DEFAULTS.heroTagline, SERAPHINE_WEDDING_DEFAULTS.heroTagline);
+  assert.notEqual(AURELIA_WEDDING_DEFAULTS.storyEyebrow, SERAPHINE_WEDDING_DEFAULTS.storyEyebrow);
 
   const catalog = getCatalogTemplate(SERAPHINE_CATALOG_SLUG);
   assert.ok(catalog);
@@ -395,6 +499,22 @@ test("Aurelia RSVP drops the deadline line and lists Call or WhatsApp contacts",
   assert.doesNotMatch(src, /config\.rsvpByLabel/);
   assert.match(src, /rsvpContacts/);
   assert.match(src, /aureliaGuestPhoneLinks/);
+  assert.doesNotMatch(src, /links\.display/);
+  assert.doesNotMatch(src, /rsvpContactPhone/);
+  assert.match(src, /aria-label=\{`Call \$\{contact\.name\}`\}/);
   assert.match(merged.faqs.find((item) => item.id === "contact")?.answer ?? "", /Ohene/);
   assert.match(merged.faqs.find((item) => item.id === "contact")?.answer ?? "", /Prince/);
+  assert.doesNotMatch(merged.faqs.find((item) => item.id === "contact")?.answer ?? "", /\d{7,}/);
+  assert.equal(
+    mergeAureliaWedding({
+      faqs: [
+        {
+          id: "contact",
+          question: "Who can I contact for assistance?",
+          answer: "Call or WhatsApp Ohene on 0246502998 or Prince on 0242547213.",
+        },
+      ],
+    }).faqs.find((item) => item.id === "contact")?.answer,
+    "Call or WhatsApp Ohene or Prince."
+  );
 });

@@ -68,10 +68,6 @@ export function AureliaEditorialStudioPanel({
         <Input value={wedding.dateDisplay} onChange={(e) => patch({ dateDisplay: e.target.value })} />
       </div>
       <div className="grid gap-2">
-        <Label>Hero tagline</Label>
-        <Input value={wedding.heroTagline} onChange={(e) => patch({ heroTagline: e.target.value })} />
-      </div>
-      <div className="grid gap-2">
         <Label>Our story</Label>
         <Textarea
           rows={6}

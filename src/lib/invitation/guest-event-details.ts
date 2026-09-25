@@ -1,5 +1,7 @@
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import { mergeWeddingBoard } from "@/lib/invitation/wedding-board";
+import { isAureliaEditorialLayout } from "@/lib/experience/aurelia-editorial";
+import { AURELIA_TRADITIONAL_ISO } from "@/lib/experience/aurelia-editorial/preset";
 
 const FOREVER_AFARIS_LAYOUT = "forever-afaris-wedding";
 
@@ -11,9 +13,16 @@ const FOREVER_AFARIS_LAYOUT = "forever-afaris-wedding";
  */
 export function resolveGuestFacingEventInstant(
   eventStartDate: Date | string,
-  design?: Pick<InvitationDesignConfig, "layout" | "studio"> | null
+  design?: Pick<InvitationDesignConfig, "layout" | "studio" | "experience"> | null
 ): Date {
   const fallback = toValidDate(eventStartDate);
+
+  if (isAureliaEditorialLayout(design?.layout)) {
+    const iso =
+      design?.experience?.aureliaWedding?.ceremonies?.find((item) => item.startAtIso)?.startAtIso?.trim() ||
+      AURELIA_TRADITIONAL_ISO;
+    return toValidDateOrNull(iso) ?? fallback;
+  }
 
   if (design?.layout !== FOREVER_AFARIS_LAYOUT) return fallback;
 
@@ -25,8 +34,14 @@ export function resolveGuestFacingEventInstant(
 /** Prefer the Forever Afaris wedding-board venue when Event venue is absent. */
 export function resolveGuestFacingVenue(
   eventVenueName: string | null | undefined,
-  design?: Pick<InvitationDesignConfig, "layout" | "studio"> | null
+  design?: Pick<InvitationDesignConfig, "layout" | "studio" | "experience"> | null
 ): string | null {
+  if (isAureliaEditorialLayout(design?.layout)) {
+    const ceremonyVenue = design?.experience?.aureliaWedding?.ceremonies
+      ?.find((item) => item.venueName?.trim())
+      ?.venueName?.trim();
+    if (ceremonyVenue) return ceremonyVenue;
+  }
   const eventVenue = eventVenueName?.trim();
   if (eventVenue) return eventVenue;
   if (design?.layout !== FOREVER_AFARIS_LAYOUT) return null;

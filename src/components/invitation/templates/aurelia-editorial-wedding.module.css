@@ -380,7 +380,6 @@
 }
 
 .heroName,
-.heroTagline,
 .hero .eyebrow {
   text-shadow: 0 2px 18px rgba(16, 8, 4, 0.45);
 }
@@ -453,7 +452,7 @@
   padding: 0;
   max-width: 100%;
   font-family: var(--aurelia-display);
-  font-size: clamp(0.92rem, 3.2cqi, 1.12rem);
+  font-size: clamp(0.78rem, 2.6cqi, 0.94rem);
   font-weight: 500;
   letter-spacing: 0.26em;
   text-indent: 0.26em;
@@ -468,13 +467,6 @@
     0 1px 1px rgba(16, 8, 4, 0.9),
     0 2px 12px rgba(16, 8, 4, 0.72),
     0 0 22px rgba(16, 8, 4, 0.5);
-}
-
-.heroTagline {
-  margin-top: 0.95rem;
-  font-family: var(--aurelia-script);
-  font-size: clamp(1.7rem, 6vw, 2.15rem);
-  color: var(--wedding-champagne);
 }
 
 .heroActions {
@@ -558,12 +550,16 @@
 
 .bodyCopy {
   font-size: clamp(1.12rem, 3.6cqi, 1.38rem);
-  line-height: 1.82;
+  line-height: 1.7;
   padding-inline: 0.2rem;
 }
 
+.bodyCopy p {
+  margin: 0;
+}
+
 .bodyCopy p + p {
-  margin-top: 1.3rem;
+  margin-top: 0.55rem;
 }
 
 .signature {
@@ -1030,19 +1026,6 @@
   color: #f8f4ea;
 }
 
-.rsvpContactPhone {
-  font-family: var(--aurelia-body);
-  font-size: 1.05rem;
-  color: var(--wedding-champagne);
-  text-decoration: none;
-}
-
-.rsvpContactPhone:hover,
-.rsvpContactPhone:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: 0.18em;
-}
-
 .rsvpContactActions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1073,6 +1056,13 @@
   border: 1px solid var(--wedding-terracotta);
   background: var(--wedding-terracotta);
   color: #f8f4ea;
+}
+
+.rsvpWhatsAppLogo {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  display: block;
 }
 
 .rsvpCall:hover,
