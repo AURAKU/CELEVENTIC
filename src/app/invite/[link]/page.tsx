@@ -116,6 +116,7 @@ export async function generateMetadata({
     productionOrder?.template?.slug ??
     invitation.template?.slug ??
     null;
+  const liveDesign = productionDesign ?? stored;
   const ogImage = await resolveInvitationShareOgImage({
     eventId: event.id,
     appUrl,
@@ -124,6 +125,11 @@ export async function generateMetadata({
       productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null,
     fashionHouse:
       productionDesign?.experience?.fashionHouse ?? stored?.experience?.fashionHouse,
+    heroImageUrl:
+      productionDesign?.experience?.aureliaWedding?.heroImageUrl ??
+      stored?.experience?.aureliaWedding?.heroImageUrl,
+    coverImageUrl: event.coverImageUrl,
+    mediaHeroUrl: liveDesign?.media?.find((asset) => asset.role === "hero")?.url,
   });
 
   return {
