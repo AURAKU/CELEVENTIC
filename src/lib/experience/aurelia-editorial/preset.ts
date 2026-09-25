@@ -55,8 +55,8 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   monogram: "E & D",
   familyIntro: "Together with their families",
   marriedLine: "Are getting married",
-  dateDisplay: "22 & 24 October 2026",
-  heroTagline: "The Covenant",
+  dateDisplay: "October 2026",
+  heroTagline: "",
   heroImageUrl: AURELIA_HERO_FALLBACK,
   heroOverlay: 0.26,
   celebrationCta: "Our celebration",
@@ -213,7 +213,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     {
       id: "contact",
       question: "Who can I contact for assistance?",
-      answer: "Call or WhatsApp Ohene on 0246502998 or Prince on 0242547213.",
+      answer: "Call or WhatsApp Ohene or Prince.",
     },
   ],
 };
@@ -226,7 +226,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   monogram: "E & Y",
   familyIntro: "Together with their families",
   marriedLine: "Are getting married",
-  heroTagline: "The Promise",
+  heroTagline: "",
   storyEyebrow: "Our Chapter",
   storySignature: "Efua & Yaw",
   countdownTitle: "Until We Say I Do",

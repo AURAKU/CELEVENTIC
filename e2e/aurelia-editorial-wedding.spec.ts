@@ -45,8 +45,8 @@ test.describe("Aurelia editorial wedding", () => {
     await expect(page.getByRole("button", { name: /tap to open/i })).toHaveCount(0);
     await expect(body.getByText("Elorm").first()).toBeVisible();
     await expect(body.getByText("Dansowaa").first()).toBeVisible();
-    await expect(body.getByText("The Covenant").first()).toBeVisible();
-    await expect(body.getByText("22 & 24 October 2026").first()).toBeVisible();
+    await expect(body.getByText("The Covenant")).toHaveCount(0);
+    await expect(body.getByText("October 2026").first()).toBeVisible();
     await expect(body.getByText("22 October 2026").first()).toBeVisible();
     await expect(body.getByText("11:00 AM").first()).toBeVisible();
     await expect(body.getByText(/TLPCI/i).first()).toBeVisible();

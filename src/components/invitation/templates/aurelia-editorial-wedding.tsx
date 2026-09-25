@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useMemo, useState } from "react";
-import { Calendar, Clock, MapPin, Menu, MessageCircle, Phone, X } from "lucide-react";
+import { Calendar, Clock, MapPin, Menu, Phone, X } from "lucide-react";
 import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import { useCountdown } from "@/hooks/use-countdown";
 import { trackInviteEvent } from "@/lib/analytics/invite-events";
+import { WhatsAppIcon } from "@/components/memory/icons/social-brand-icons";
 import {
   AURELIA_HERO_FALLBACK,
   AURELIA_WHITE_ISO,
@@ -258,7 +259,6 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           </div>
           <p className={styles.heroMeta}>{config.marriedLine}</p>
           <p className={styles.heroDate}>{config.dateDisplay}</p>
-          <p className={styles.heroTagline}>{config.heroTagline}</p>
           <div className={styles.heroActions}>
             <button type="button" className={styles.btnOutline} onClick={() => jump("celebrations")}>
               {config.celebrationCta}
@@ -537,12 +537,13 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                       <li key={`${contact.name}-${contact.phone}`} className={styles.rsvpContact}>
                         <div className={styles.rsvpContactCopy}>
                           <span className={styles.rsvpContactName}>{contact.name}</span>
-                          <a className={styles.rsvpContactPhone} href={links.telHref}>
-                            {links.display}
-                          </a>
                         </div>
                         <div className={styles.rsvpContactActions}>
-                          <a className={styles.rsvpCall} href={links.telHref}>
+                          <a
+                            className={styles.rsvpCall}
+                            href={links.telHref}
+                            aria-label={`Call ${contact.name}`}
+                          >
                             <Phone aria-hidden size={14} strokeWidth={1.75} />
                             Call
                           </a>
@@ -551,8 +552,9 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                             href={links.whatsAppHref}
                             target="_blank"
                             rel="noopener noreferrer"
+                            aria-label={`WhatsApp ${contact.name}`}
                           >
-                            <MessageCircle aria-hidden size={14} strokeWidth={1.75} />
+                            <WhatsAppIcon title="" className={styles.rsvpWhatsAppLogo} />
                             WhatsApp
                           </a>
                         </div>

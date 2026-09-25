@@ -145,7 +145,24 @@ function mergeCeremonies(
   base: AureliaWeddingConfig
 ): AureliaCeremony[] {
   if (stored == null) return base.ceremonies;
-  return stored.filter((item) => trim(item.title) || trim(item.venueName));
+  if (stored.length === 0) return [];
+  const canonicalById = new Map(base.ceremonies.map((item) => [item.id, item]));
+  return stored
+    .filter((item) => trim(item.title) || trim(item.venueName) || canonicalById.has(item.id))
+    .map((item) => {
+      const canonical = canonicalById.get(item.id);
+      if (!canonical) return item;
+      return {
+        ...item,
+        weekday: canonical.weekday,
+        dateLabel: canonical.dateLabel,
+        timeLabel: canonical.timeLabel,
+        venueName: canonical.venueName,
+        address: canonical.address,
+        mapsUrl: canonical.mapsUrl,
+        startAtIso: canonical.startAtIso,
+      };
+    });
 }
 
 function mergeVenues(
@@ -153,7 +170,20 @@ function mergeVenues(
   base: AureliaWeddingConfig
 ): AureliaVenueCard[] {
   if (stored == null) return base.venues;
-  return stored.filter((item) => trim(item.venueName) || trim(item.eventLabel));
+  const canonicalById = new Map(base.venues.map((item) => [item.id, item]));
+  return stored
+    .filter((item) => trim(item.venueName) || trim(item.eventLabel))
+    .map((item) => {
+      const canonical = canonicalById.get(item.id);
+      if (!canonical) return item;
+      return {
+        ...item,
+        eventLabel: canonical.eventLabel,
+        venueName: canonical.venueName,
+        address: canonical.address,
+        mapsUrl: canonical.mapsUrl,
+      };
+    });
 }
 
 function mergeDress(
@@ -161,12 +191,22 @@ function mergeDress(
   base: AureliaWeddingConfig
 ): AureliaDressCode[] {
   if (stored == null) return base.dressCodes;
-  return stored.map((item) => ({
-    ...item,
-    palette: (item.palette ?? []).filter(
-      (swatch: AureliaPaletteSwatch) => trim(swatch.hex)
-    ).slice(0, 6),
-  }));
+  if (stored.length === 0) return [];
+  return base.dressCodes.map((canonical) => {
+    const extra = stored.find((item) => item.id === canonical.id);
+    if (!extra) return canonical;
+    return {
+      ...canonical,
+      title: trim(extra.title) || canonical.title,
+      note: trim(extra.note) || canonical.note,
+      scriptLine: trim(extra.scriptLine) || canonical.scriptLine,
+      palette: canonical.palette.length
+        ? canonical.palette.map((swatch) => ({ ...swatch }))
+        : (extra.palette ?? [])
+            .filter((swatch: AureliaPaletteSwatch) => trim(swatch.hex))
+            .slice(0, 6),
+    };
+  });
 }
 
 function mergeJourney(
@@ -182,7 +222,16 @@ function mergeFaqs(
   base: AureliaWeddingConfig
 ): AureliaFaqItem[] {
   if (stored == null) return base.faqs;
-  return stored.filter((item) => trim(item.question) && trim(item.answer));
+  const canonicalById = new Map(base.faqs.map((item) => [item.id, item]));
+  return stored
+    .filter((item) => trim(item.question) && trim(item.answer))
+    .map((item) => {
+      const canonical = canonicalById.get(item.id);
+      if (item.id === "contact" && canonical) {
+        return { ...canonical };
+      }
+      return item;
+    });
 }
 
 function mergeRsvpContacts(
@@ -231,6 +280,8 @@ export function mergeAureliaWedding(
     partnerOneName: trim(stored.partnerOneName) || base.partnerOneName,
     partnerTwoName: trim(stored.partnerTwoName) || base.partnerTwoName,
     monogram: trim(stored.monogram) || base.monogram,
+    dateDisplay: base.dateDisplay,
+    heroTagline: "",
     albumEyebrow: trim(stored.albumEyebrow) || base.albumEyebrow,
     albumTitle: trim(stored.albumTitle) || base.albumTitle,
     albumLede: trim(stored.albumLede) || base.albumLede,
