@@ -6,6 +6,8 @@ import {
   QR_EXPORT_SIZES,
   QR_DEFAULT_SIZE,
   parseQrDisplayMode,
+  parseQrLogoSizeQuery,
+  toSafePublicQrCenterPath,
   type QrExportSize,
 } from "@/lib/qr/qr-constants";
 import { prisma } from "@/lib/prisma";
@@ -59,16 +61,23 @@ export async function GET(req: Request) {
 
     if (rawData) {
       const url = rawData.startsWith("http") ? rawData : buildVerifyUrl(rawData);
+      const requestedCenter = toSafePublicQrCenterPath(searchParams.get("center"));
+      const requestedLogoSize = parseQrLogoSizeQuery(searchParams.get("logoSize"));
       // Guide mode: no center logo — guest phone cameras need every module intact.
+      // `center` query is allowlisted public paths only (Aurelia album QR hero).
       const center =
         mode === "guide"
           ? null
-          : eventId
-            ? await qrBrandingService.resolveCenterImageUrl(eventId)
-            : await qrBrandingService.getAdminDefaultLogoUrl();
-      const logoSize = eventId
-        ? await qrBrandingService.resolveLogoSize(eventId)
-        : await qrBrandingService.getAdminDefaultLogoSize();
+          : requestedCenter
+            ? requestedCenter
+            : eventId
+              ? await qrBrandingService.resolveCenterImageUrl(eventId)
+              : await qrBrandingService.getAdminDefaultLogoUrl();
+      const logoSize =
+        requestedLogoSize ??
+        (eventId
+          ? await qrBrandingService.resolveLogoSize(eventId)
+          : await qrBrandingService.getAdminDefaultLogoSize());
 
       if (format === "svg") {
         const { generateBrandedQrSvg } = await import("@/lib/qr/branded-qr-generator");

@@ -4,7 +4,7 @@ import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-
 import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
-import { isAureliaEditorialLayout } from "@/lib/experience/aurelia-editorial";
+import { isAureliaEditorialLayout, withAureliaAlbumQrCenter } from "@/lib/experience/aurelia-editorial";
 import { resolveLiveRevealConfiguration, logLiveInviteRevealDiagnostic } from "@/lib/experience/live-envelope-contract";
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
 import { seatingService } from "@/services/seating/seating.service";
@@ -594,7 +594,11 @@ export default async function InvitePage({
       memoryVaultEnabled={memoryVault}
       memoryUploadUrl={memoryLinks?.uploadUrl ?? null}
       memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
-      memoryUploadQrImageUrl={resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl) || null}
+      memoryUploadQrImageUrl={
+        (isAureliaEditorialLayout(design.layout)
+          ? withAureliaAlbumQrCenter(memoryLinks?.uploadQrImageUrl)
+          : resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl)) || null
+      }
       memoryAlbumTitle={memoryLinks?.eventTitle ?? null}
       giftUrl={giftPlacement?.giftUrl ?? null}
       giftQrImageUrl={resolvePublicMediaUrl(giftPlacement?.qrImageUrl) || null}

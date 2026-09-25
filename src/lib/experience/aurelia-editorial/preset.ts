@@ -61,7 +61,12 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   heroOverlay: 0.26,
   celebrationCta: "Our celebration",
   rsvpCta: "RSVP",
-  rsvpByLabel: "Kindly respond by 22 September 2026",
+  rsvpByLabel: "",
+  rsvpContactsEyebrow: "Call or WhatsApp",
+  rsvpContacts: [
+    { name: "Ohene", phone: "0246502998" },
+    { name: "Prince", phone: "0242547213" },
+  ],
   storyEyebrow: "Our Beginning",
   storyTitle: "Our Story",
   storyImageUrl: AURELIA_STORY_FALLBACK,
@@ -89,14 +94,14 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   privateAddressCopy: "Address shared privately with guests",
   dressEyebrow: "Dress code",
   dressTitle: "Dress to Celebrate",
-  dressLede: "Come dressed to be photographed — we would love the day to look as beautiful as it feels.",
+  dressLede: "Come dressed to be photographed. We would love the day to look as beautiful as it feels.",
   journeyEyebrow: "Moments",
   journeyTitle: "Our Journey",
-  journeyLede: "From our earliest memories to the promise of forever — every chapter led us here.",
+  journeyLede: "From our earliest memories to the promise of forever. Every chapter led us here.",
   albumEyebrow: "From your lens",
   albumTitle: "The Album",
   albumLede:
-    "Share the day as you see it. Scan the QR or open the lens to add photos and video — then find them together in the shared album.",
+    "Share the day as you see it. Scan the QR or open the lens to add photos and video. Then find them together in the shared album.",
   albumUploadCta: "Open the lens",
   albumViewCta: "View the album",
   rsvpTitle: "Will You Celebrate With Us?",
@@ -192,7 +197,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     {
       id: "dress",
       question: "Is there a dress code?",
-      answer: "Yes — please see Dress to Celebrate for each ceremony, including palette guidance.",
+      answer: "Yes. Please see Dress to Celebrate for each ceremony, including palette guidance.",
     },
     {
       id: "park",
@@ -203,12 +208,12 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       id: "album",
       question: "How do I share photos from the day?",
       answer:
-        "Find the Album on this invitation. Scan the QR or open the lens to upload photos and video — everyone can enjoy them together in the shared album.",
+        "Find the Album on this invitation. Scan the QR or open the lens to upload photos and video. Everyone can enjoy them together in the shared album.",
     },
     {
       id: "contact",
       question: "Who can I contact for assistance?",
-      answer: "Reach the couple through the contact details on your invitation if anything is unclear.",
+      answer: "Call or WhatsApp Ohene on 0246502998 or Prince on 0242547213.",
     },
   ],
 };

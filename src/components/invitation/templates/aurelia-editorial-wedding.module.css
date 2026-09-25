@@ -987,6 +987,121 @@
   opacity: 0.55;
 }
 
+.rsvpContacts {
+  margin-top: 1.85rem;
+  padding-top: 1.45rem;
+  border-top: 1px solid color-mix(in srgb, var(--wedding-gold) 36%, transparent);
+}
+
+.rsvpContactsEyebrow {
+  margin: 0 0 0.85rem;
+  font-family: var(--aurelia-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--wedding-champagne);
+}
+
+.rsvpContactList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.rsvpContact {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 42%, transparent);
+}
+
+.rsvpContactCopy {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.rsvpContactName {
+  font-family: var(--aurelia-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #f8f4ea;
+}
+
+.rsvpContactPhone {
+  font-family: var(--aurelia-body);
+  font-size: 1.05rem;
+  color: var(--wedding-champagne);
+  text-decoration: none;
+}
+
+.rsvpContactPhone:hover,
+.rsvpContactPhone:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.rsvpContactActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.rsvpCall,
+.rsvpWhatsApp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.7rem;
+  padding: 0.55rem 0.7rem;
+  font-family: var(--aurelia-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.rsvpCall {
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 62%, transparent);
+  color: #f3e8d8;
+}
+
+.rsvpWhatsApp {
+  border: 1px solid var(--wedding-terracotta);
+  background: var(--wedding-terracotta);
+  color: #f8f4ea;
+}
+
+.rsvpCall:hover,
+.rsvpCall:focus-visible {
+  background: color-mix(in srgb, #f3e8d8 10%, transparent);
+}
+
+.rsvpWhatsApp:hover,
+.rsvpWhatsApp:focus-visible {
+  background: color-mix(in srgb, var(--wedding-terracotta) 84%, var(--wedding-espresso));
+}
+
+.rsvpCall:focus-visible,
+.rsvpWhatsApp:focus-visible {
+  outline: 2px solid var(--wedding-gold);
+  outline-offset: 2px;
+}
+
+@media (min-width: 540px) {
+  .rsvpContact {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .rsvpContactActions {
+    min-width: 15.5rem;
+  }
+}
+
 @media (min-width: 540px) {
   .rsvpPanel :global(.flex.flex-wrap.gap-2) {
     grid-template-columns: 1fr 1fr;

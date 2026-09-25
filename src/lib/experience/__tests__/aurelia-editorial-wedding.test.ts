@@ -14,10 +14,13 @@ import {
   SERAPHINE_LAYOUT_SLUG,
   SERAPHINE_OPENING_ID,
   SERAPHINE_WEDDING_DEFAULTS,
+  aureliaGuestPhoneLinks,
   aureliaNavItems,
   aureliaSectionVisible,
   mergeAureliaWedding,
   resolveAureliaHeroImage,
+  withAureliaAlbumQrCenter,
+  withoutInvitationPauseDashes,
 } from "@/lib/experience/aurelia-editorial";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { getDefaultDesignConfig } from "@/lib/invitation-templates";
@@ -46,7 +49,14 @@ test("Aurelia couple, dates and venues stay original", () => {
   assert.match(AURELIA_WEDDING_DEFAULTS.storyParagraphs[0] ?? "", /unexpected ways/);
   assert.equal(AURELIA_WEDDING_DEFAULTS.storySignature, "Elorm & Dansowaa");
   assert.equal(AURELIA_WEDDING_DEFAULTS.dateDisplay, "22 & 24 October 2026");
-  assert.equal(AURELIA_WEDDING_DEFAULTS.rsvpByLabel, "Kindly respond by 22 September 2026");
+  assert.equal(AURELIA_WEDDING_DEFAULTS.rsvpByLabel, "");
+  assert.deepEqual(
+    (AURELIA_WEDDING_DEFAULTS.rsvpContacts ?? []).map((item) => [item.name, item.phone]),
+    [
+      ["Ohene", "0246502998"],
+      ["Prince", "0242547213"],
+    ]
+  );
   assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[0]?.weekday, "Thursday");
   assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[0]?.dateLabel, "22 October 2026");
   assert.equal(AURELIA_WEDDING_DEFAULTS.ceremonies[0]?.timeLabel, "11:00 AM");
@@ -271,6 +281,7 @@ test("Aurelia invitation hosts Memory Vault as The Album", () => {
   );
   assert.doesNotMatch(albumSrc, /forever-afaris/);
   assert.match(albumSrc, /liveAlbumPaths/);
+  assert.match(albumSrc, /templates\/aurelia\/hero\.jpg/);
   assert.doesNotMatch(albumSrc, /Album QR activates when this invitation is published/);
   assert.doesNotMatch(
     readFileSync("src/components/guest-portal/guest-wishes-card.tsx", "utf8"),
@@ -310,4 +321,80 @@ test("Seraphine is an isolated Aurelia-family duplicate", () => {
   assert.match(demo.hostName, /Yaw Boateng/);
   assert.equal(FORBIDDEN.test(JSON.stringify(demo)), false);
   assert.equal(FORBIDDEN.test(JSON.stringify(SERAPHINE_WEDDING_DEFAULTS)), false);
+});
+
+test("Aurelia guest copy has no pause dashes between clauses", () => {
+  const merged = mergeAureliaWedding();
+  assert.equal(
+    merged.dressLede,
+    "Come dressed to be photographed. We would love the day to look as beautiful as it feels."
+  );
+  assert.equal(
+    merged.journeyLede,
+    "From our earliest memories to the promise of forever. Every chapter led us here."
+  );
+  assert.match(merged.albumLede, /video\. Then find them together/i);
+  assert.equal(
+    merged.faqs.find((item) => item.id === "dress")?.answer,
+    "Yes. Please see Dress to Celebrate for each ceremony, including palette guidance."
+  );
+  assert.match(
+    merged.faqs.find((item) => item.id === "album")?.answer ?? "",
+    /video\. Everyone can enjoy them/i
+  );
+  assert.equal(merged.ceremonies[1]?.venueName, "Ultimate Christian Ministry Tse-Addo");
+  assert.match(merged.venuesLede, /turn-by-turn/);
+  assert.match(merged.faqs.find((item) => item.id === "park")?.answer ?? "", /On-site/);
+  assert.equal(merged.dressLede.includes("—"), false);
+  assert.equal(merged.dressLede.includes(" – "), false);
+  assert.equal(
+    mergeAureliaWedding({
+      dressLede: "Come dressed to be photographed — we would love the day to look as beautiful as it feels.",
+    }).dressLede,
+    "Come dressed to be photographed. We would love the day to look as beautiful as it feels."
+  );
+  assert.equal(
+    withoutInvitationPauseDashes("Yes - please see Dress to Celebrate."),
+    "Yes. Please see Dress to Celebrate."
+  );
+});
+
+test("Aurelia album QR pins the hero photograph as the center mark", () => {
+  const url = withAureliaAlbumQrCenter(
+    "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload%2Ftok&eventId=evt_1&size=512"
+  );
+  assert.ok(url);
+  const parsed = new URL(url!, "https://www.celeventic.com");
+  assert.equal(parsed.searchParams.get("center"), "/templates/aurelia/hero.jpg");
+  assert.equal(parsed.searchParams.get("logoSize"), "bold");
+  assert.equal(parsed.searchParams.get("eventId"), "evt_1");
+  const inviteSrc = readFileSync("src/app/invite/[link]/page.tsx", "utf8");
+  assert.match(inviteSrc, /withAureliaAlbumQrCenter/);
+  const routeSrc = readFileSync("src/app/api/qr/image/route.ts", "utf8");
+  assert.match(routeSrc, /toSafePublicQrCenterPath/);
+  assert.match(routeSrc, /requestedCenter/);
+});
+
+test("Aurelia RSVP drops the deadline line and lists Call or WhatsApp contacts", () => {
+  const merged = mergeAureliaWedding({
+    rsvpByLabel: "Kindly respond by 10 March 2027",
+  });
+  assert.equal(merged.rsvpByLabel, "");
+  assert.equal(merged.rsvpContactsEyebrow, "Call or WhatsApp");
+  assert.equal(merged.rsvpContacts?.[0]?.name, "Ohene");
+  assert.equal(merged.rsvpContacts?.[0]?.phone, "0246502998");
+  assert.equal(merged.rsvpContacts?.[1]?.name, "Prince");
+  assert.equal(merged.rsvpContacts?.[1]?.phone, "0242547213");
+  const ohene = aureliaGuestPhoneLinks("0246502998", "Hello Ohene");
+  const prince = aureliaGuestPhoneLinks("0242547213");
+  assert.equal(ohene?.telHref, "tel:+233246502998");
+  assert.equal(ohene?.whatsAppHref, "https://wa.me/233246502998?text=Hello%20Ohene");
+  assert.equal(prince?.telHref, "tel:+233242547213");
+  assert.equal(prince?.whatsAppHref, "https://wa.me/233242547213");
+  const src = readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.tsx", "utf8");
+  assert.doesNotMatch(src, /config\.rsvpByLabel/);
+  assert.match(src, /rsvpContacts/);
+  assert.match(src, /aureliaGuestPhoneLinks/);
+  assert.match(merged.faqs.find((item) => item.id === "contact")?.answer ?? "", /Ohene/);
+  assert.match(merged.faqs.find((item) => item.id === "contact")?.answer ?? "", /Prince/);
 });
