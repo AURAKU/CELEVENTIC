@@ -181,6 +181,12 @@ export class InvitationOrderService {
     const template = getCatalogTemplate(input.templateSlug);
     const pkg = await catalogService.getPackageBySlug(input.packageSlug);
     if (!template || !pkg) throw new Error("Invalid template or package");
+    if (pkg.quoteOnly) {
+      throw new Error(
+        "Ultimate Experience is quotation-based. Contact Celeventic for a custom event-day quote."
+      );
+    }
+    const packageSlug = pkg.slug;
 
     // Pass the catalog slug (not layoutSlug) so Studio 2.0 templates resolve
     // their own theme/blueprint instead of the legacy entry sharing the layout.
@@ -198,7 +204,7 @@ export class InvitationOrderService {
       };
     }
 
-    const workflowType = productionWorkflowService.inferWorkflowType(input.packageSlug);
+    const workflowType = productionWorkflowService.inferWorkflowType(packageSlug);
     const eventType = mapEventType(
       resolveOrderEventType(template.category, input.eventType)
     );
@@ -207,7 +213,7 @@ export class InvitationOrderService {
       data: {
         userId: input.userId,
         templateSlug: template.slug,
-        packageSlug: input.packageSlug,
+        packageSlug,
         eventType,
         status: "DRAFT",
         productionStatus: "NOT_STARTED",

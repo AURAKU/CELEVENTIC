@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { seedCommerceEngine } from "@/services/commerce/commerce-seed.service";
-import { INVITATION_PACKAGES, type InvitationPackageDef } from "@/lib/invitation-mvp/packages";
+import {
+  getCatalogInvitationPackages,
+  getInvitationPackage,
+  resolveInvitationPackageSlug,
+  type InvitationPackageDef,
+} from "@/lib/invitation-mvp/packages";
 import { INVITATION_ADDONS } from "@/lib/invitation-mvp/addons";
 
 export interface CommerceAddon {
@@ -14,7 +19,7 @@ export interface CommerceAddon {
 }
 
 function fallbackPackages(eventType?: string): InvitationPackageDef[] {
-  return INVITATION_PACKAGES.filter((pkg) =>
+  return getCatalogInvitationPackages().filter((pkg) =>
     packageMatchesEventType(pkg.eventTypes ?? null, eventType)
   );
 }
@@ -73,11 +78,16 @@ function mapPackage(pkg: {
   const rawFeatures = Array.isArray(pkg.features)
     ? (pkg.features as unknown[]).filter((f): f is string => typeof f === "string" && f.trim().length > 0)
     : [];
-  const bundled = INVITATION_PACKAGES.find((item) => item.slug === pkg.slug);
+  const fallbackBySlug: Record<string, string[]> = Object.fromEntries(
+    getCatalogInvitationPackages().map((pkg) => [pkg.slug, pkg.features])
+  );
+  const bundled = getInvitationPackage(pkg.slug);
   const features =
-    rawFeatures.length > 0
-      ? rawFeatures
-      : bundled?.features ?? ["Digital invitation", "RSVP", "Guest list"];
+    bundled?.features?.length
+      ? bundled.features
+      : rawFeatures.length > 0
+        ? rawFeatures
+        : (fallbackBySlug[pkg.slug] ?? ["Digital invitation", "RSVP", "Guest list"]);
   return {
     slug: pkg.slug,
     name: bundled?.name ?? pkg.name,
@@ -88,6 +98,17 @@ function mapPackage(pkg: {
     features,
     designerAssist: bundled?.designerAssist ?? pkg.designerAssist,
     eventTypes: asEventTypes(pkg.eventTypes),
+    guestCapacity: bundled?.guestCapacity,
+    admissionSupportGuests: bundled?.admissionSupportGuests,
+    includedStaff: bundled?.includedStaff,
+    includedSupportHours: bundled?.includedSupportHours,
+    priceFrom: bundled?.priceFrom,
+    popular: bundled?.popular,
+    quoteOnly: bundled?.quoteOnly,
+    catalogVisible: bundled?.catalogVisible,
+    ctaLabel: bundled?.ctaLabel,
+    paymentRequiredToPublish: bundled?.paymentRequiredToPublish,
+    includesLabel: bundled?.includesLabel,
   };
 }
 
@@ -102,6 +123,7 @@ export class CatalogService {
       });
       const mapped = packages
         .map(mapPackage)
+        .filter((pkg) => pkg.catalogVisible !== false)
         .filter((pkg) => packageMatchesEventType(pkg.eventTypes ?? null, eventType));
       return mapped.length > 0 ? mapped : fallbackPackages(eventType);
     } catch (error) {
@@ -111,17 +133,18 @@ export class CatalogService {
   }
 
   async getPackageBySlug(slug: string): Promise<InvitationPackageDef | null> {
+    const canonical = resolveInvitationPackageSlug(slug) ?? slug;
     try {
       await ensureSeeded();
       const pkg = await prisma.invitationProductPackage.findUnique({
-        where: { slug },
+        where: { slug: canonical },
         include: { prices: { where: { isActive: true }, orderBy: { createdAt: "desc" }, take: 1 } },
       });
       if (pkg?.isActive) return mapPackage(pkg);
     } catch (error) {
       console.warn("[catalog] package lookup falling back to bundled catalogue", error);
     }
-    return INVITATION_PACKAGES.find((pkg) => pkg.slug === slug) ?? null;
+    return getInvitationPackage(canonical) ?? null;
   }
 
   async getActiveAddons(packageSlug?: string): Promise<CommerceAddon[]> {
