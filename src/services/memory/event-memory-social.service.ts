@@ -32,6 +32,21 @@ export async function isMemoryEventModerator(
   return Boolean(collab);
 }
 
+/** Hard-delete photos/videos: platform admin or the event organizer only. */
+export async function canRemoveEventMemoryMedia(
+  eventId: string,
+  userId: string | undefined,
+  role: UserRole | undefined
+): Promise<boolean> {
+  if (!userId || !role) return false;
+  if (isPlatformAdmin(role)) return true;
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { organizerId: true },
+  });
+  return event?.organizerId === userId;
+}
+
 function sanitizeMessage(message: string, maxLength: number): string {
   return message
     .replace(/<[^>]*>/g, "")
@@ -233,17 +248,12 @@ export class EventMemorySocialService {
   }) {
     const memory = await prisma.eventMemoryUpload.findFirst({
       where: { id: input.memoryId, eventId: input.eventId },
-      select: { id: true, uploaderGuestKey: true },
+      select: { id: true },
     });
     if (!memory) throw new Error("Memory not found");
 
-    const isOwner = Boolean(
-      input.guestKeyHash &&
-        memory.uploaderGuestKey &&
-        memory.uploaderGuestKey === input.guestKeyHash
-    );
-    if (!viewerCanDeleteMemoryMedia({ canModerate: input.isModerator, isOwner })) {
-      throw new Error("You can only delete your own memories");
+    if (!viewerCanDeleteMemoryMedia({ canModerate: input.isModerator })) {
+      throw new Error("Only an admin or the organizer can remove photos and videos");
     }
 
     await prisma.eventMemoryUpload.delete({ where: { id: memory.id } });
@@ -263,7 +273,7 @@ export class EventMemorySocialService {
       uploaderGuestKey?: string | null;
     }>,
     guestKeyHash: string | null,
-    options?: { canModerate?: boolean }
+    options?: { canModerate?: boolean; canRemoveMedia?: boolean }
   ) {
     if (items.length === 0) return [];
     const ids = items.map((i) => i.id);
@@ -289,7 +299,7 @@ export class EventMemorySocialService {
     const likeMap = new Map(likeGroups.map((g) => [g.memoryId, g._count._all]));
     const commentMap = new Map(commentGroups.map((g) => [g.memoryId, g._count._all]));
     const likedSet = new Set(likedRows.map((r) => r.memoryId));
-    const canModerate = Boolean(options?.canModerate);
+    const canRemoveMedia = Boolean(options?.canRemoveMedia);
 
     return items.map((item) => {
       const isOwner = Boolean(
@@ -308,7 +318,7 @@ export class EventMemorySocialService {
         commentCount: commentMap.get(item.id) ?? 0,
         likedByViewer: likedSet.has(item.id),
         ownedByViewer: isOwner,
-        canDelete: viewerCanDeleteMemoryMedia({ canModerate, isOwner }),
+        canDelete: viewerCanDeleteMemoryMedia({ canModerate: canRemoveMedia, isOwner }),
       };
     });
   }

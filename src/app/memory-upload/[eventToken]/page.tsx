@@ -12,7 +12,7 @@ export default function MemoryUploadPage() {
   const token = params.eventToken as string;
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
-    event: { title: string; hostName: string; slug: string };
+    event: { title: string; hostName: string; slug: string; subtitle?: string | null };
     invitationLink: string | null;
     viewToken?: string;
     hasConsent?: boolean;
@@ -59,6 +59,7 @@ export default function MemoryUploadPage() {
         token={token}
         eventTitle={data.event.title}
         hostName={data.event.hostName}
+        subtitle={data.event.subtitle}
         maxPhotosPerGuest={data.settings.maxPhotosPerGuest}
         maxVideosPerGuest={data.settings.maxVideosPerGuest}
         maxImageSizeMb={data.settings.maxImageSizeMb}

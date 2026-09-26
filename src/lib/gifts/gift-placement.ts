@@ -105,3 +105,19 @@ export function isGuestScopedToCampaignEvent(
 ): boolean {
   return Boolean(guest && guest.eventId === campaignEventId);
 }
+
+/**
+ * Invitation gift wallets stay DRAFT until a host opens Gift Wallet, which left
+ * Aurelia's in-invite Paystack form looking ready while `giftUrl` was null.
+ * Auto-open creates or activates a campaign; it never un-pauses or reopens one
+ * the host already closed.
+ */
+export type InvitationGiftAutoOpenAction = "create" | "activate" | "keep";
+
+export function invitationGiftAutoOpenAction(
+  campaign: { status: string } | null | undefined
+): InvitationGiftAutoOpenAction {
+  if (!campaign) return "create";
+  if (campaign.status === "DRAFT") return "activate";
+  return "keep";
+}

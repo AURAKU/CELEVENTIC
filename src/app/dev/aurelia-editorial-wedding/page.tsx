@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AureliaEditorialRuntimeClient } from "./aurelia-editorial-runtime-client";
 import { ensureDemoMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { withAureliaAlbumQrCenter } from "@/lib/experience/aurelia-editorial";
+import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,11 @@ export default async function AureliaEditorialRuntimePage({
   }
   const params = await searchParams;
   const memory = await ensureDemoMemoryLinks("Enock & Ruth").catch(() => null);
+  const giftPlacement = memory?.eventId
+    ? await giftCampaignService
+        .resolveInvitePlacement(memory.eventId, { autoOpen: true })
+        .catch(() => null)
+    : null;
   return (
     <AureliaEditorialRuntimeClient
       skipIntro={params.skipIntro === "1"}
@@ -30,6 +36,12 @@ export default async function AureliaEditorialRuntimePage({
       memoryUploadQrImageUrl={withAureliaAlbumQrCenter(memory?.uploadQrImageUrl)}
       memoryEventId={memory?.eventId ?? null}
       memoryAlbumTitle={memory?.eventTitle ?? "Enock & Ruth"}
+      giftUrl={giftPlacement?.giftUrl ?? null}
+      giftQrImageUrl={giftPlacement?.qrImageUrl ?? null}
+      giftTitle={giftPlacement?.title ?? null}
+      giftSubtitle={giftPlacement?.subtitle ?? null}
+      giftCtaLabel={giftPlacement?.ctaLabel ?? null}
+      giftPrivacyNote={giftPlacement?.privacyNote ?? null}
     />
   );
 }

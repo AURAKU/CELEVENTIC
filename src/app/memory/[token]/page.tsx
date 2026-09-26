@@ -22,7 +22,7 @@ export default function MemoryTokenGalleryPage() {
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<{
-    event: { title: string; hostName: string };
+    event: { title: string; hostName: string; eyebrow?: string | null; subtitle?: string | null };
     allowDownloads: boolean;
     canModerate?: boolean;
     viewToken?: string;
@@ -66,6 +66,8 @@ export default function MemoryTokenGalleryPage() {
     <PublicMemoriesGallery
       eventTitle={data.event.title}
       hostName={data.event.hostName}
+      eyebrow={data.event.eyebrow}
+      subtitle={data.event.subtitle}
       items={data.memories.items}
       page={data.memories.page}
       pages={data.memories.pages}

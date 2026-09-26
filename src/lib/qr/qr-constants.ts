@@ -22,10 +22,16 @@ export const QR_LOGO_SIZE_PRESETS = {
   bold: 0.22,
 } as const;
 
-export type QrLogoSizePreset = keyof typeof QR_LOGO_SIZE_PRESETS;
+export type QrDashboardLogoSize = keyof typeof QR_LOGO_SIZE_PRESETS;
+/**
+ * `hero` is album-only: a couple photograph filling the inset.
+ * Framed size stays ≤ ~30% so error-correction H can still recover the code.
+ */
+export const QR_HERO_LOGO_RATIO = 0.24;
+export type QrLogoSizePreset = QrDashboardLogoSize | "hero";
 
 /** Default inset — visible brand mark with safe padding for full-logo contain */
-export const QR_DEFAULT_LOGO_SIZE: QrLogoSizePreset = "balanced";
+export const QR_DEFAULT_LOGO_SIZE: QrDashboardLogoSize = "balanced";
 
 /** Max safe logo mark ratio (bold preset) */
 export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
@@ -39,7 +45,7 @@ export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
  * `guide` mode — pure black modules, wide quiet zone, no center logo — so
  * iPhone / Android / tablet cameras decode printed and on-screen codes reliably.
  */
-export const QR_COMPOSITE_CACHE_VERSION = "v7-guide-scan";
+export const QR_COMPOSITE_CACHE_VERSION = "v8-hero-cover";
 
 /** Preferred preview size for Event Guide QRs in the admin Signs tab. */
 export const QR_GUIDE_PREVIEW_SIZE: QrExportSize = 1024;
@@ -52,13 +58,13 @@ export const CELEVENTIC_OFFICIAL_LOGO = "/brand/logo-full.png";
 /** Square brand mark fallback used by the generator when logo-full is missing */
 export const CELEVENTIC_LOGO_MARK = "/brand/logo-mark.png";
 
-export const QR_LOGO_SIZE_LABELS: Record<QrLogoSizePreset, string> = {
+export const QR_LOGO_SIZE_LABELS: Record<QrDashboardLogoSize, string> = {
   subtle: "Subtle",
   balanced: "Balanced",
   bold: "Bold",
 };
 
-export function parseQrLogoSize(raw: unknown): QrLogoSizePreset {
+export function parseQrLogoSize(raw: unknown): QrDashboardLogoSize {
   if (raw === "subtle" || raw === "balanced" || raw === "bold") return raw;
   return QR_DEFAULT_LOGO_SIZE;
 }
@@ -71,7 +77,7 @@ export function parseQrDisplayMode(raw: unknown): QrDisplayMode {
 
 /** Optional `logoSize` query. Unknown / missing values return null so event branding stays. */
 export function parseQrLogoSizeQuery(raw: unknown): QrLogoSizePreset | null {
-  if (raw === "subtle" || raw === "balanced" || raw === "bold") return raw;
+  if (raw === "subtle" || raw === "balanced" || raw === "bold" || raw === "hero") return raw;
   return null;
 }
 

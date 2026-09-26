@@ -128,14 +128,14 @@ export class EventQrHubService {
     assets.push({
       kind: "MEMORY_UPLOAD",
       title: "Memory Upload",
-      purpose: "Share photos and videos from your view.",
+      purpose: "Share photos from your view.",
       enabled: Boolean(memory),
       statusLabel: memory ? "ACTIVE" : "UNAVAILABLE",
       url: memory?.uploadUrl ?? null,
       qrPreviewUrl: memory?.uploadQrImageUrl ?? null,
       openStudioHref: `/dashboard/memory?eventId=${eventId}`,
       printHeading: "Share a Moment",
-      printSupporting: "Share photos and videos from your view.",
+      printSupporting: "Share photos from your view.",
     });
     assets.push({
       kind: "MEMORY_ALBUM",

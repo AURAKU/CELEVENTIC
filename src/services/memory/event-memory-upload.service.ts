@@ -2,6 +2,10 @@ import { prisma } from "@/lib/prisma";
 import type { EventMemoryUploadStatus } from "@prisma/client";
 import { paginatedResult, parsePaginationInput } from "@/lib/pagination";
 import { eventMemorySettingsService } from "@/services/memory/event-memory-settings.service";
+import {
+  MEMORY_VAULT_VIDEO_UPLOADS_ENABLED,
+  memoryVaultPhotosOnlyMessage,
+} from "@/lib/memory/memory-vault-policy";
 
 export interface CreateGuestUploadInput {
   eventId: string;
@@ -37,8 +41,13 @@ export class EventMemoryUploadService {
     if (input.mediaType === "image" && counts.photos >= settings.maxPhotosPerGuest) {
       throw new Error(`Photo limit reached (${settings.maxPhotosPerGuest} per guest)`);
     }
-    if (input.mediaType === "video" && counts.videos >= settings.maxVideosPerGuest) {
-      throw new Error(`Video limit reached (${settings.maxVideosPerGuest} per guest)`);
+    if (input.mediaType === "video") {
+      if (!MEMORY_VAULT_VIDEO_UPLOADS_ENABLED) {
+        throw new Error(memoryVaultPhotosOnlyMessage());
+      }
+      if (counts.videos >= settings.maxVideosPerGuest) {
+        throw new Error(`Video limit reached (${settings.maxVideosPerGuest} per guest)`);
+      }
     }
 
     if (settings.guestOnlyMode && !input.guestId && !input.uploaderPhone) {

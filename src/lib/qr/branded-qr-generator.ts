@@ -7,7 +7,9 @@ import {
   CELEVENTIC_OFFICIAL_LOGO,
   QR_DEFAULT_LOGO_SIZE,
   QR_DEFAULT_SIZE,
+  QR_HERO_LOGO_RATIO,
   QR_LOGO_SIZE_PRESETS,
+  type QrDashboardLogoSize,
   type QrDisplayMode,
   type QrExportSize,
   type QrLogoSizePreset,
@@ -27,11 +29,14 @@ const FRAME_PAD_RATIO = 0.12;
 const FRAME_RADIUS_RATIO = 0.14;
 /**
  * Extra inset past the geometric corner-clearance so contain-fitted marks
- * never kiss the rounded stroke.
+ * never kiss the rounded stroke. Photograph centers (`hero`) use a thinner
+ * ring so the couple fills more of the inset while the white pad still
+ * separates faces from QR modules.
  */
 const LOGO_CORNER_CLEARANCE_RATIO = 0.02;
 /** Minimum pad as a fraction of the white frame (keeps a visible white ring) */
 const LOGO_MIN_PAD_RATIO = 0.06;
+const HERO_PAD_RATIO = 0.045;
 
 const BRAND_DARK = "#0B8A83";
 const BRAND_LIGHT = "#FFFFFF";
@@ -47,7 +52,7 @@ const PASS_MARGIN = 6;
  * = logoRatio × ~1.24 stays ≤ ~24% width even at bold — still phone-scannable.
  * (Previous 0.10–0.12 made couple photos look like a speck.)
  */
-const PASS_LOGO_RATIOS: Record<QrLogoSizePreset, number> = {
+const PASS_LOGO_RATIOS: Record<QrDashboardLogoSize, number> = {
   subtle: 0.14,
   balanced: 0.17,
   bold: 0.19,
@@ -65,6 +70,7 @@ const GUIDE_MARGIN = 8;
 
 function resolveLogoRatio(mode: QrDisplayMode, logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE): number {
   if (mode === "guide") return 0;
+  if (logoSize === "hero") return mode === "pass" ? 0.2 : QR_HERO_LOGO_RATIO;
   if (mode === "pass") return PASS_LOGO_RATIOS[logoSize];
   return QR_LOGO_SIZE_PRESETS[logoSize];
 }
@@ -135,17 +141,18 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-/** Geometry for the white inset + contained logo (shared by PNG + SVG). */
-function logoInsetLayout(qrSize: number, logoRatio: number) {
+/** Geometry for the white inset + center mark (shared by PNG + SVG). */
+function logoInsetLayout(qrSize: number, logoRatio: number, photograph: boolean) {
   const logoSizePx = Math.round(qrSize * logoRatio);
   const frameSize = Math.round(logoSizePx * (1 + FRAME_PAD_RATIO * 2));
   const radius = Math.max(4, Math.round(frameSize * FRAME_RADIUS_RATIO));
   // Square marks need pad ≥ R(1 − 1/√2) so corners stay inside the rounded disc.
-  // Using full R wasted white space and made contain-fitted logos look clipped/tiny.
   const cornerClear = Math.ceil(
     radius * (1 - 1 / Math.SQRT2) + frameSize * LOGO_CORNER_CLEARANCE_RATIO
   );
-  const pad = Math.max(cornerClear, Math.round(frameSize * LOGO_MIN_PAD_RATIO));
+  const pad = photograph
+    ? Math.max(2, Math.round(frameSize * HERO_PAD_RATIO))
+    : Math.max(cornerClear, Math.round(frameSize * LOGO_MIN_PAD_RATIO));
   const innerLogo = Math.max(8, frameSize - 2 * pad);
   return { logoSizePx, frameSize, radius, pad, innerLogo };
 }
@@ -243,14 +250,20 @@ export async function loadCenterImageBuffer(imageUrl?: string | null): Promise<B
 }
 
 /**
- * Fit the full uploaded mark inside a square with letterboxing (never crop).
- * Output is always `innerLogo × innerLogo` PNG with transparent padding.
+ * Fit a mark into the inset square.
+ * Logos stay contain (never cropped). Couple photographs (`hero`) cover-fill
+ * the square so faces read at a glance without growing the overlay past ECC H.
  */
-async function containLogoPng(logoSource: Buffer, innerLogo: number): Promise<Buffer> {
+async function fitCenterMarkPng(
+  logoSource: Buffer,
+  innerLogo: number,
+  photograph: boolean
+): Promise<Buffer> {
   return sharp(logoSource)
     .ensureAlpha()
     .resize(innerLogo, innerLogo, {
-      fit: "contain",
+      fit: photograph ? "cover" : "contain",
+      position: "centre",
       background: { r: 255, g: 255, b: 255, alpha: 0 },
       withoutEnlargement: false,
     })
@@ -265,8 +278,9 @@ async function buildLogoOverlay(
   logoSize: QrLogoSizePreset = QR_DEFAULT_LOGO_SIZE
 ) {
   const { logoRatio } = colorsForMode(mode, logoSize);
+  const photograph = logoSize === "hero";
   const logoSource = await loadCenterImageBuffer(centerImageUrl);
-  const { frameSize, radius, pad, innerLogo } = logoInsetLayout(size, logoRatio);
+  const { frameSize, radius, pad, innerLogo } = logoInsetLayout(size, logoRatio, photograph);
   const passMode = mode === "pass";
   // Pass mode: no soft shadow / grey stroke — those halos confuse phone scanners.
   const shadowBlur = passMode ? 0 : Math.max(4, Math.round(frameSize * 0.04));
@@ -275,7 +289,7 @@ async function buildLogoOverlay(
   const stroke = passMode ? "none" : "#E2E8F0";
   const strokeWidth = passMode ? 0 : 2;
 
-  const resizedLogo = await containLogoPng(logoSource, innerLogo);
+  const resizedLogo = await fitCenterMarkPng(logoSource, innerLogo, photograph);
 
   const frameSvg = Buffer.from(
     passMode
@@ -313,7 +327,7 @@ async function buildLogoOverlay(
 /**
  * Generate a branded QR PNG with centered logo in a white rounded-square frame.
  * Always uses error-correction H so larger center logos remain scannable.
- * Uploaded marks are always object-fit: contain (never cropped) inside the inset.
+ * Brand marks stay object-fit: contain. Album `hero` photographs cover-fill.
  */
 export async function generateBrandedQrPng(
   targetUrl: string,
@@ -360,14 +374,14 @@ export async function generateBrandedQrSvg(
   }
 
   const logoSource = await loadCenterImageBuffer(centerImageUrl);
-  const { frameSize, radius, pad, innerLogo } = logoInsetLayout(size, logoRatio);
+  const photograph = logoSize === "hero";
+  const { frameSize, radius, pad, innerLogo } = logoInsetLayout(size, logoRatio, photograph);
   const frameX = Math.round((size - frameSize) / 2);
   const frameY = frameX;
   const logoX = frameX + pad;
   const logoY = frameY + pad;
-  // Same contain pipeline as PNG — never embed a raw JPEG as image/png.
-  const contained = await containLogoPng(logoSource, innerLogo);
-  const logoB64 = contained.toString("base64");
+  const fitted = await fitCenterMarkPng(logoSource, innerLogo, photograph);
+  const logoB64 = fitted.toString("base64");
   const passMode = mode === "pass";
   const frameAttrs = passMode
     ? `fill="#FFFFFF"`

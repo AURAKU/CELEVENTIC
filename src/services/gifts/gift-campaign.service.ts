@@ -16,6 +16,7 @@ import { resolveGiftTheme, type GiftTheme } from "@/lib/gifts/gift-theme";
 import type { PublicGiftCampaignView } from "@/lib/gifts/gift-privacy";
 import {
   buildCompanionGiftUrl,
+  invitationGiftAutoOpenAction,
   isCampaignPlaceable,
   isGuestScopedToCampaignEvent,
 } from "@/lib/gifts/gift-placement";
@@ -293,16 +294,58 @@ export class GiftCampaignService {
   }
 
   /**
+   * Open the invitation gift wallet so guests can pay through Paystack.
+   * Creates an ACTIVE campaign when none exists, or activates a DRAFT.
+   * Paused / closed campaigns stay paused / closed.
+   */
+  async ensureActiveInvitationCampaign(
+    eventId: string,
+    options: { invitationId?: string | null; createdById?: string | null } = {}
+  ): Promise<EventGiftCampaign> {
+    const existing = await this.getByEvent(eventId);
+    const action = invitationGiftAutoOpenAction(existing);
+
+    if (action === "create") {
+      return this.ensureCampaign(eventId, {
+        invitationId: options.invitationId,
+        createdById: options.createdById,
+        activate: true,
+      });
+    }
+
+    if (action === "activate" && existing) {
+      return prisma.eventGiftCampaign.update({
+        where: { id: existing.id },
+        data: {
+          status: "ACTIVE",
+          showOnInvitation: true,
+          invitationId: existing.invitationId ?? options.invitationId ?? undefined,
+        },
+      });
+    }
+
+    return existing!;
+  }
+
+  /**
    * What the digital invitation needs to show a gift section, or null when the
    * event has no live campaign. Returning null is the feature flag: an event
    * that has never opened gifting renders exactly as it does today.
+   *
+   * Pass `autoOpen: true` for invitation layouts that already render an in-page
+   * checkout (Aurelia / Seraphine) so guests receive a Paystack link instead of
+   * a disabled form.
    *
    * A personalised QR mode appends the guest's token so the gift page can
    * prefill their name without the guest typing it again.
    */
   async resolveInvitePlacement(
     eventId: string,
-    options: { guestQrToken?: string | null } = {}
+    options: {
+      guestQrToken?: string | null;
+      autoOpen?: boolean;
+      invitationId?: string | null;
+    } = {}
   ): Promise<{
     giftUrl: string;
     qrImageUrl: string;
@@ -311,6 +354,12 @@ export class GiftCampaignService {
     ctaLabel: string;
     privacyNote: string;
   } | null> {
+    if (options.autoOpen) {
+      await this.ensureActiveInvitationCampaign(eventId, {
+        invitationId: options.invitationId,
+      });
+    }
+
     const campaign = await this.getByEvent(eventId);
     if (!campaign) return null;
     if (!isCampaignPlaceable(campaign, "invitation")) return null;

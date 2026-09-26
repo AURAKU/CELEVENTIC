@@ -5,14 +5,14 @@ import {
   QR_DEFAULT_LOGO_SIZE,
   QR_LOGO_SIZE_LABELS,
   QR_LOGO_SIZE_PRESETS,
-  type QrLogoSizePreset,
+  type QrDashboardLogoSize,
 } from "@/lib/qr/qr-constants";
 
-const PRESETS = Object.keys(QR_LOGO_SIZE_PRESETS) as QrLogoSizePreset[];
+const PRESETS = Object.keys(QR_LOGO_SIZE_PRESETS) as QrDashboardLogoSize[];
 
 interface QrLogoSizeControlProps {
-  value: QrLogoSizePreset;
-  onChange: (value: QrLogoSizePreset) => void;
+  value: QrDashboardLogoSize;
+  onChange: (value: QrDashboardLogoSize) => void;
   disabled?: boolean;
   className?: string;
 }

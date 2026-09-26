@@ -162,6 +162,14 @@ export function AureliaGiftCheckout({
       return;
     }
     if (amountMinor === null || amountError || !method) return;
+    if (campaign?.requireGuestName !== false && !guestName.trim()) {
+      setError("Please tell the couple who the gift is from.");
+      return;
+    }
+    if (campaign?.requireGuestContact !== false && !guestPhone.trim()) {
+      setError("Please add a mobile money number for your receipt.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -192,7 +200,19 @@ export function AureliaGiftCheckout({
     }
   }
 
-  const canPay = Boolean(token && amountMinor && !amountError && method && !submitting && !closed);
+  const needsName = campaign?.requireGuestName !== false;
+  const needsContact = campaign?.requireGuestContact !== false;
+  const canPay = Boolean(
+    token &&
+      amountMinor &&
+      !amountError &&
+      method &&
+      !submitting &&
+      !closed &&
+      !loadError &&
+      (!needsName || guestName.trim()) &&
+      (!needsContact || guestPhone.trim())
+  );
   const cta = giftCtaLabel || campaign?.ctaLabel || "Send a gift";
 
   if (closed) {
@@ -218,6 +238,12 @@ export function AureliaGiftCheckout({
               campaign?.subtitle ||
               "A contribution is entirely optional and received with love."}
           </p>
+
+          {!token ? (
+            <p className={styles.giftStatus} role="status">
+              The gift wallet is not open on this invitation yet.
+            </p>
+          ) : null}
 
           {loadError ? (
             <p className={styles.giftError} role="alert">

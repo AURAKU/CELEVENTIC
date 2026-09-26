@@ -52,7 +52,7 @@ export function InvitationMemoryAlbumCard({
           Share the event through your eyes.
         </p>
         <p className="text-sm text-[#5C3D2E]/80 leading-relaxed">
-          Scan the QR code at the event or tap below to upload photos and videos as the celebration
+          Scan the QR code at the event or tap below to upload photos as the celebration
           happens.
         </p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -123,7 +123,7 @@ export function InvitationMemoryAlbumCard({
           className="relative mt-5 font-[family-name:var(--font-cormorant)] text-sm leading-relaxed max-w-md mx-auto"
           style={{ color: TM_PALETTE.dress }}
         >
-          Scan the QR code at the event or tap below to upload photos and videos as the celebration
+          Scan the QR code at the event or tap below to upload photos as the celebration
           happens. Guests can view the shared album for this event and enjoy the memories together.
         </p>
 
@@ -131,7 +131,7 @@ export function InvitationMemoryAlbumCard({
           <Link
             href={uploadUrl!}
             className="relative mt-5 inline-flex flex-col items-center gap-2 group"
-            aria-label="Open album upload, take or share photos and videos"
+            aria-label="Open album upload, take or share photos"
           >
             <span
               className="rounded-sm bg-white p-2 border shadow-sm transition-colors"
@@ -150,7 +150,7 @@ export function InvitationMemoryAlbumCard({
               className="text-[11px] uppercase tracking-[0.16em] font-semibold group-hover:underline"
               style={{ color: TM_PALETTE.bronzeDeep }}
             >
-              Tap QR to upload photos &amp; videos
+              Tap QR to upload photos
             </span>
           </Link>
         ) : uploadQrImageUrl && staticPreview ? (
@@ -230,7 +230,7 @@ export function InvitationMemoryAlbumCard({
         Share the event through your eyes.
       </p>
       <p className="text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
-        Scan the QR code at the event or tap below to upload photos and videos as the celebration
+        Scan the QR code at the event or tap below to upload photos as the celebration
         happens. Guests can view the shared album for this event and enjoy the memories together.
       </p>
 
@@ -238,7 +238,7 @@ export function InvitationMemoryAlbumCard({
         <Link
           href={uploadUrl!}
           className="mt-5 inline-flex flex-col items-center gap-2 group"
-          aria-label="Open album upload, take or share photos and videos"
+          aria-label="Open album upload, take or share photos"
         >
           <span className="rounded-xl bg-white p-2 border border-slate-200 shadow-sm group-hover:border-slate-400 transition-colors">
             <Image
@@ -251,7 +251,7 @@ export function InvitationMemoryAlbumCard({
             />
           </span>
           <span className="text-[11px] uppercase tracking-[0.16em] text-slate-600 font-semibold group-hover:underline">
-            Tap QR to upload photos &amp; videos
+            Tap QR to upload photos
           </span>
         </Link>
       ) : uploadQrImageUrl && staticPreview ? (

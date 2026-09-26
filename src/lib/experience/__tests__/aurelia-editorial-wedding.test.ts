@@ -445,14 +445,14 @@ test("Aurelia guest copy has no pause dashes between clauses", () => {
     merged.journeyLede,
     "From our earliest memories to the promise of forever. Every chapter led us here."
   );
-  assert.match(merged.albumLede, /video\. Then find them together/i);
+  assert.match(merged.albumLede, /photos\. Then find them together/i);
   assert.equal(
     merged.faqs.find((item) => item.id === "dress")?.answer,
     "Yes. Please see Dress to Celebrate for each ceremony, including palette guidance."
   );
   assert.match(
     merged.faqs.find((item) => item.id === "album")?.answer ?? "",
-    /video\. Everyone can enjoy them/i
+    /photos\. Everyone can enjoy them/i
   );
   assert.equal(merged.ceremonies[1]?.venueName, "Ultimate Christian Ministry Tse-Addo");
   assert.match(merged.venuesLede, /turn-by-turn/);
@@ -478,7 +478,7 @@ test("Aurelia album QR pins the hero photograph as the center mark", () => {
   assert.ok(url);
   const parsed = new URL(url!, "https://www.celeventic.com");
   assert.equal(parsed.searchParams.get("center"), "/templates/aurelia/hero.jpg");
-  assert.equal(parsed.searchParams.get("logoSize"), "bold");
+  assert.equal(parsed.searchParams.get("logoSize"), "hero");
   assert.equal(parsed.searchParams.get("eventId"), "evt_1");
   const inviteSrc = readFileSync("src/app/invite/[link]/page.tsx", "utf8");
   assert.match(inviteSrc, /withAureliaAlbumQrCenter/);

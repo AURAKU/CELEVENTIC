@@ -101,7 +101,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   albumEyebrow: "From your lens",
   albumTitle: "The Album",
   albumLede:
-    "Share the day as you see it. Scan the QR or open the lens to add photos and video. Then find them together in the shared album.",
+    "Share the day as you see it. Scan the QR or open the lens to add photos. Then find them together in the shared album.",
   albumUploadCta: "Open the lens",
   albumViewCta: "View the album",
   rsvpTitle: "Will You Celebrate With Us?",
@@ -208,7 +208,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       id: "album",
       question: "How do I share photos from the day?",
       answer:
-        "Find the Album on this invitation. Scan the QR or open the lens to upload photos and video. Everyone can enjoy them together in the shared album.",
+        "Find the Album on this invitation. Scan the QR or open the lens to upload photos. Everyone can enjoy them together in the shared album.",
     },
     {
       id: "contact",

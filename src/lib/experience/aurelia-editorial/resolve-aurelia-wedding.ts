@@ -131,7 +131,7 @@ function sanitizeAureliaGuestCopy(config: AureliaWeddingConfig): AureliaWeddingC
 /** Album QR on Aurelia/Seraphine invitations uses the standing-couple hero, not event branding. */
 export function withAureliaAlbumQrCenter(qrImageUrl?: string | null): string | null {
   if (!qrImageUrl) return null;
-  return withPublicQrCenter(qrImageUrl, AURELIA_HERO_FALLBACK, "bold");
+  return withPublicQrCenter(qrImageUrl, AURELIA_HERO_FALLBACK, "hero");
 }
 
 function mergeTheme(

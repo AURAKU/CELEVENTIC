@@ -13,7 +13,7 @@ type Panel = "idle" | "lens" | "album";
 
 function aureliaHeroQrSrc(targetUrl: string | null) {
   if (!targetUrl) return null;
-  return `/api/qr/image?data=${encodeURIComponent(targetUrl)}&size=512&center=${encodeURIComponent("/templates/aurelia/hero.jpg")}&logoSize=bold`;
+  return `/api/qr/image?data=${encodeURIComponent(targetUrl)}&size=512&center=${encodeURIComponent("/templates/aurelia/hero.jpg")}&logoSize=hero`;
 }
 
 export function AureliaMemoryAlbum({

@@ -4,6 +4,10 @@ import { processVideoFile } from "@/lib/video/video-processor";
 import { sniffVideoContainer } from "@/lib/video/container-sniff";
 import { ALLOWED_VIDEO_MIME_TYPES, ALLOWED_VIDEO_EXTENSIONS } from "@/lib/video/constants";
 import { extractExtension } from "@/lib/video/validation";
+import {
+  MEMORY_VAULT_VIDEO_UPLOADS_ENABLED,
+  memoryVaultPhotosOnlyMessage,
+} from "@/lib/memory/memory-vault-policy";
 
 const ALLOWED_IMAGE = new Set([
   "image/jpeg",
@@ -55,19 +59,29 @@ export function validateMemoryFile(
     return {
       valid: false,
       reason:
-        "That file type isn’t supported. Try any common photo (JPEG, HEIC, PNG, WebP) or a video (MP4/MOV).",
+        "That file type isn’t supported. Try any common photo (JPEG, HEIC, PNG, WebP).",
     };
   }
-  const maxBytes = (isImage ? maxImageMb : maxVideoMb) * 1024 * 1024;
+  // iPhone photos often arrive as application/octet-stream, which is also in the
+  // video MIME allow-list. Prefer image when either path matches.
+  if (isImage) {
+    const maxBytes = maxImageMb * 1024 * 1024;
+    if (sizeBytes > maxBytes) {
+      return {
+        valid: false,
+        reason: `That photo is still too large after optimization (max ${maxImageMb}MB). Try another shot or export a smaller copy.`,
+      };
+    }
+    return { valid: true, mediaType: "image" };
+  }
+  if (!MEMORY_VAULT_VIDEO_UPLOADS_ENABLED) {
+    return { valid: false, reason: memoryVaultPhotosOnlyMessage() };
+  }
+  const maxBytes = maxVideoMb * 1024 * 1024;
   if (sizeBytes > maxBytes) {
-    return {
-      valid: false,
-      reason: isImage
-        ? `That photo is still too large after optimization (max ${maxImageMb}MB). Try another shot or export a smaller copy.`
-        : `File too large. Max ${maxVideoMb}MB.`,
-    };
+    return { valid: false, reason: `File too large. Max ${maxVideoMb}MB.` };
   }
-  return { valid: true, mediaType: isImage ? "image" : "video" };
+  return { valid: true, mediaType: "video" };
 }
 
 /**
@@ -107,10 +121,17 @@ export async function storeMemoryFile(
   const buffer = Buffer.from(await file.arrayBuffer());
   // Source filename extension (no leading dot), used only for type detection.
   const sourceExt = extractExtension(file.name);
+  const isImageUpload =
+    ALLOWED_IMAGE.has(file.type) || (!!sourceExt && IMAGE_EXTENSIONS.includes(sourceExt));
   const isVideoUpload =
-    ALLOWED_VIDEO.has(file.type) ||
-    file.type.startsWith("video/") ||
-    (!!sourceExt && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(sourceExt));
+    !isImageUpload &&
+    (ALLOWED_VIDEO.has(file.type) ||
+      file.type.startsWith("video/") ||
+      (!!sourceExt && (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(sourceExt)));
+
+  if (isVideoUpload && !MEMORY_VAULT_VIDEO_UPLOADS_ENABLED) {
+    throw new Error(memoryVaultPhotosOnlyMessage());
+  }
 
   if (isVideoUpload) {
     const sniff = sniffVideoContainer(buffer.subarray(0, 262_144));

@@ -59,6 +59,7 @@ describe("public QR center allowlist", () => {
     assert.equal(parseQrLogoSizeQuery("bold"), "bold");
     assert.equal(parseQrLogoSizeQuery("balanced"), "balanced");
     assert.equal(parseQrLogoSizeQuery("subtle"), "subtle");
+    assert.equal(parseQrLogoSizeQuery("hero"), "hero");
     assert.equal(parseQrLogoSizeQuery("huge"), null);
     assert.equal(parseQrLogoSizeQuery(null), null);
   });
