@@ -34,7 +34,6 @@ function publicTokenFromGiftUrl(url?: string | null): string | null {
 
 export function AureliaGiftCheckout({
   giftUrl,
-  giftQrImageUrl,
   giftTitle,
   giftSubtitle,
   giftCtaLabel,
@@ -45,7 +44,6 @@ export function AureliaGiftCheckout({
   detailsNote,
 }: {
   giftUrl?: string | null;
-  giftQrImageUrl?: string | null;
   giftTitle?: string | null;
   giftSubtitle?: string | null;
   giftCtaLabel?: string | null;
@@ -356,14 +354,6 @@ export function AureliaGiftCheckout({
             {submitting ? <Loader2 className={styles.giftSpin} aria-hidden /> : <Gift size={15} aria-hidden />}
             {submitting ? "Opening Paystack…" : cta}
           </button>
-
-          {giftQrImageUrl ? (
-            <div className={styles.giftQr}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={giftQrImageUrl} alt="QR code to send a gift" width={112} height={112} />
-              <p>Scan to open on another device</p>
-            </div>
-          ) : null}
 
           <p className={styles.giftPrivacy}>
             <Lock size={12} aria-hidden />

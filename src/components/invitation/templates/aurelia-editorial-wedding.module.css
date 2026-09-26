@@ -1492,20 +1492,6 @@
   color: var(--wedding-terracotta);
 }
 
-.giftQr {
-  margin-top: 1.25rem;
-  text-align: center;
-}
-
-.giftQr img {
-  width: 7rem;
-  height: 7rem;
-  background: white;
-  padding: 0.4rem;
-  border: 1px solid color-mix(in srgb, var(--wedding-gold) 50%, transparent);
-}
-
-.giftQr p,
 .giftPrivacy {
   display: flex;
   align-items: center;
