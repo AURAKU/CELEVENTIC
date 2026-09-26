@@ -218,16 +218,162 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   ],
 };
 
+export const SERAPHINE_HERO_FALLBACK = "/templates/seraphine/hero.jpg";
+export const SERAPHINE_MONOGRAM = "/templates/seraphine/monogram-lockup.jpg";
+export const SERAPHINE_MONOGRAM_PNG = "/templates/seraphine/monogram-qr.png";
+export const SERAPHINE_TRADITIONAL_ISO = "2026-11-13T10:00:00+00:00";
+
+/** Traditional ceremony colour mood — tropical celebration, not Aurelia brown. */
+export const SERAPHINE_TROPICAL_PALETTE = [
+  { name: "Deep Leafy Green", hex: "#1F4D32" },
+  { name: "Berry Wine", hex: "#8B1E4A" },
+  { name: "Vibrant Pink", hex: "#E23E7A" },
+  { name: "Vivid Orange", hex: "#F05A14" },
+  { name: "Soft Peach", hex: "#F4C4A0" },
+] as const;
+
+/** White wedding colour direction — sage and ivory, kept to the dress section. */
+export const SERAPHINE_SAGE_PALETTE = [
+  { name: "Sage", hex: "#8BA888" },
+  { name: "Muted Sage", hex: "#A8C0A0" },
+  { name: "Soft White", hex: "#FAFAF5" },
+  { name: "Warm Cream", hex: "#F5F0E4" },
+  { name: "Pale Moss", hex: "#C0C8A8" },
+] as const;
+
 /** Independent defaults for Seraphine — customising this never rewrites Aurelia. */
 export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   ...AURELIA_WEDDING_DEFAULTS,
-  partnerOneName: "Efua",
-  partnerTwoName: "Yaw",
-  monogram: "E & Y",
+  partnerOneName: "Kojo",
+  partnerTwoName: "Fafa",
+  monogram: "K & F",
+  monogramImageUrl: SERAPHINE_MONOGRAM,
   familyIntro: "Together with their families",
   marriedLine: "Are getting married",
+  dateDisplay: "14 November 2026",
   heroTagline: "",
+  heroImageUrl: SERAPHINE_HERO_FALLBACK,
+  heroOverlay: 0.28,
+  rsvpCta: "RSVP",
+  rsvpByLabel: "",
+  rsvpContactsEyebrow: "Call or WhatsApp",
+  rsvpContacts: [{ name: "Esther", phone: "0549436196" }],
+  rsvpShowPhone: false,
   storyEyebrow: "Our Chapter",
-  storySignature: "Efua & Yaw",
+  storyTitle: "Our Story",
+  storyImageUrl: "",
+  storyParagraphs: [
+    "We met at a friend’s wedding, paired together as groomsman and bridesmaid. What started with a simple “Give me your number” became the beginning of something beautiful.",
+    "Since then, our story has been filled with laughter, friendship, faith, countless memories, and plenty of love. Through every season, the Good Lord has been good to us, guiding our steps and bringing us to this special moment.",
+    "And now, here we are—ready to say “I do.” We would love for you to be there as we begin this new chapter together.",
+  ],
+  storySignature: "Kojo & Fafa 🤍",
+  celebrationsEyebrow: "Two days of joy",
+  celebrationsTitle: "Celebrate With Us",
+  celebrationsLede:
+    "We would be honoured to have you present as we begin this new chapter together.",
+  venuesEyebrow: "Venues",
+  venuesTitle: "Find Your Way",
+  venuesLede: "",
+  dressEyebrow: "Attire",
+  dressTitle: "Dress to Celebrate",
+  dressLede:
+    "Tropical elegance for the traditional ceremony, and bright, airy romance for the wedding day.",
+  rsvpTitle: "RSVP",
+  giftsEyebrow: "",
+  giftsTitle: "",
+  giftsLede: "",
+  giftsDetails: "",
+  faqEyebrow: "Good to know",
+  faqTitle: "Questions & Answers",
+  finaleScript: "Ready to say I do",
+  finaleLine: "Kojo & Fafa",
   countdownTitle: "Until We Say I Do",
+  ceremonies: [
+    {
+      id: "traditional",
+      kicker: "Ceremony one",
+      title: "Traditional Ceremony",
+      weekday: "Friday",
+      dateLabel: "13 November 2026",
+      timeLabel: "10:00 AM",
+      venueName: "Westville Homes",
+      address: "20 Onyasia Street, West Legon",
+      startAtIso: SERAPHINE_TRADITIONAL_ISO,
+    },
+    {
+      id: "white",
+      kicker: "Ceremony two",
+      title: "The White Wedding",
+      weekday: "Saturday",
+      dateLabel: "14 November 2026",
+      timeLabel: "Details to be announced",
+      venueName: "Details to be announced",
+      address: "",
+    },
+  ],
+  venues: [
+    {
+      id: "traditional",
+      eventLabel: "Traditional Ceremony",
+      venueName: "Westville Homes",
+      address: "20 Onyasia Street, West Legon",
+    },
+  ],
+  dressCodes: [
+    {
+      id: "traditional",
+      eventLabel: "Traditional Ceremony",
+      dateLabel: "Friday, 13 November",
+      title: "Traditional Dress Code",
+      scriptLine: "Tropical Theme",
+      note: "Tropical elegance in vibrant celebration colours. Guests are kindly encouraged to wear Kente, or white with a touch of green.",
+      palette: [...SERAPHINE_TROPICAL_PALETTE],
+      variant: "light",
+    },
+    {
+      id: "white",
+      eventLabel: "White Wedding",
+      dateLabel: "Saturday, 14 November",
+      title: "Wedding Colour Theme",
+      scriptLine: "Soft, airy, romantic",
+      note: "Sage, cream, and pale moss for a calm, refined wedding day.",
+      palette: [...SERAPHINE_SAGE_PALETTE],
+      variant: "light",
+    },
+    {
+      id: "outfits",
+      eventLabel: "White Wedding",
+      dateLabel: "Saturday, 14 November",
+      title: "Wedding Guest Outfits",
+      scriptLine: "Bright colours, airy fabrics, and a touch of whimsical romance.",
+      note: "Come dressed in bright colours, airy fabrics, and a touch of whimsical romance. Ladies may complete their look with a fascinator. Men are invited in polished formal looks in refined complementary colours.",
+      palette: [],
+      variant: "light",
+    },
+  ],
+  journey: [],
+  faqs: [
+    {
+      id: "dress",
+      question: "Is there a dress code?",
+      answer:
+        "Yes. Please see Traditional Dress Code and Wedding Guest Outfits for each celebration.",
+    },
+    {
+      id: "contact",
+      question: "Who can I contact for assistance?",
+      answer: "Call or WhatsApp Esther.",
+    },
+    {
+      id: "album",
+      question: "How do I share photos from the day?",
+      answer:
+        "Find the Album on this invitation. Scan the QR or open the lens to upload photos. Everyone can enjoy them together in the shared album.",
+    },
+  ],
+  sections: {
+    journey: { visible: false },
+    gifts: { visible: false },
+  },
 };

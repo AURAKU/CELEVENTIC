@@ -56,6 +56,7 @@ export interface AureliaDressCode {
   note?: string;
   palette: AureliaPaletteSwatch[];
   variant?: "light" | "dark";
+  imageUrl?: string | null;
 }
 
 export interface AureliaCeremony {
@@ -112,6 +113,7 @@ export interface AureliaWeddingConfig {
   partnerOneName: string;
   partnerTwoName: string;
   monogram: string;
+  monogramImageUrl?: string | null;
   familyIntro: string;
   marriedLine: string;
   dateDisplay: string;
@@ -123,6 +125,7 @@ export interface AureliaWeddingConfig {
   rsvpByLabel?: string;
   rsvpContactsEyebrow?: string;
   rsvpContacts?: AureliaRsvpContact[];
+  rsvpShowPhone?: boolean;
   storyEyebrow: string;
   storyTitle: string;
   storyImageUrl?: string | null;

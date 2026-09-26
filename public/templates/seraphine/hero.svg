@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1800" viewBox="0 0 1200 1800" role="img" aria-label="Champagne studio backdrop">
+  <defs>
+    <linearGradient id="seraphineField" x1="0.2" y1="0" x2="0.85" y2="1">
+      <stop offset="0%" stop-color="#D7B98A"/>
+      <stop offset="42%" stop-color="#C4A36F"/>
+      <stop offset="100%" stop-color="#A88758"/>
+    </linearGradient>
+    <radialGradient id="seraphineVignette" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#E8D3A8" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#6E542F" stop-opacity="0.22"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="1800" fill="url(#seraphineField)"/>
+  <rect width="1200" height="1800" fill="url(#seraphineVignette)"/>
+</svg>

@@ -7,6 +7,8 @@ import {
   isAureliaEditorialLayout,
   resolveAureliaHeroImage,
   SERAPHINE_CATALOG_SLUG,
+  SERAPHINE_HERO_FALLBACK,
+  SERAPHINE_LAYOUT_SLUG,
 } from "@/lib/experience/aurelia-editorial";
 import {
   FEMMORA_CATALOG_SLUG,
@@ -117,6 +119,10 @@ export function resolveAureliaShareOgImageForInvitation(input: {
     heroImageUrl: input.heroImageUrl,
     coverImageUrl: input.coverImageUrl,
     mediaHeroUrl: input.mediaHeroUrl,
+    fallback:
+      input.layoutSlug === SERAPHINE_LAYOUT_SLUG || input.catalogSlug === SERAPHINE_CATALOG_SLUG
+        ? SERAPHINE_HERO_FALLBACK
+        : AURELIA_HERO_FALLBACK,
   });
   return decorateShareImage(input.appUrl, hero);
 }

@@ -14,6 +14,7 @@ import {
   SERAPHINE_CATALOG_SLUG,
   SERAPHINE_INTRO_ID,
   SERAPHINE_LAYOUT_SLUG,
+  SERAPHINE_MONOGRAM_PNG,
   SERAPHINE_OPENING_ID,
   SERAPHINE_WEDDING_DEFAULTS,
   aureliaGuestPhoneLinks,
@@ -285,6 +286,14 @@ test("Aurelia hero prefers host photo and falls back to dummy photograph", () =>
     }),
     "/templates/aurelia/hero.jpg"
   );
+  assert.equal(
+    resolveAureliaHeroImage({
+      heroImageUrl: "/templates/seraphine/hero.jpg",
+      coverImageUrl: "/templates/aurelia/hero.jpg",
+      fallback: "/templates/seraphine/hero.jpg",
+    }),
+    "/templates/seraphine/hero.jpg"
+  );
   const heroStat = statSync("public/templates/aurelia/hero.jpg");
   const storyStat = statSync("public/templates/aurelia/story.jpg");
   assert.equal(heroStat.size, 112938, "hero photograph must stay the original unprocessed file");
@@ -401,14 +410,41 @@ test("Aurelia invitation hosts Memory Vault as The Album", () => {
   );
 });
 
-test("Seraphine is an isolated Aurelia-family duplicate", () => {
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerOneName, "Efua");
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerTwoName, "Yaw");
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.monogram, "E & Y");
+test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () => {
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerOneName, "Kojo");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerTwoName, "Fafa");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.monogram, "K & F");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dateDisplay, "14 November 2026");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.heroTagline, "");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpTitle, "RSVP");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpContacts?.[0]?.name, "Esther");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpContacts?.[0]?.phone, "0549436196");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpShowPhone, false);
+  assert.equal(
+    mergeAureliaWedding({ rsvpShowPhone: true }, SERAPHINE_WEDDING_DEFAULTS).rsvpShowPhone,
+    false
+  );
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.title, "Traditional Ceremony");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.weekday, "Friday");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.dateLabel, "13 November 2026");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.timeLabel, "10:00 AM");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.venueName, "Westville Homes");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.address, "20 Onyasia Street, West Legon");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.mapsUrl, undefined);
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.dateLabel, "14 November 2026");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.timeLabel, "Details to be announced");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.venueName, "Details to be announced");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[0]?.title, "Traditional Dress Code");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[0]?.scriptLine, "Tropical Theme");
+  assert.deepEqual(
+    SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.palette.map((swatch) => swatch.hex.toUpperCase()),
+    ["#8BA888", "#A8C0A0", "#FAFAF5", "#F5F0E4", "#C0C8A8"]
+  );
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[2]?.title, "Wedding Guest Outfits");
   assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Enock");
   assert.equal(AURELIA_WEDDING_DEFAULTS.monogram, "E & R");
   assert.notEqual(AURELIA_WEDDING_DEFAULTS.storyEyebrow, SERAPHINE_WEDDING_DEFAULTS.storyEyebrow);
+  assert.equal(aureliaSectionVisible(mergeAureliaWedding(null, SERAPHINE_WEDDING_DEFAULTS), "gifts"), false);
 
   const catalog = getCatalogTemplate(SERAPHINE_CATALOG_SLUG);
   assert.ok(catalog);
@@ -421,7 +457,7 @@ test("Seraphine is an isolated Aurelia-family duplicate", () => {
   const aureliaDesign = getDefaultDesignConfig(AURELIA_CATALOG_SLUG);
   assert.equal(seraphineDesign.layout, SERAPHINE_LAYOUT_SLUG);
   assert.equal(aureliaDesign.layout, AURELIA_LAYOUT_SLUG);
-  assert.equal(seraphineDesign.experience?.aureliaWedding?.partnerOneName, "Efua");
+  assert.equal(seraphineDesign.experience?.aureliaWedding?.partnerOneName, "Kojo");
   assert.equal(aureliaDesign.experience?.aureliaWedding?.partnerOneName, "Enock");
   assert.equal(seraphineDesign.experience?.introVariant, SERAPHINE_INTRO_ID);
   assert.equal(seraphineDesign.experience?.openingExperience, SERAPHINE_OPENING_ID);
@@ -429,10 +465,23 @@ test("Seraphine is an isolated Aurelia-family duplicate", () => {
   assert.equal(aureliaDesign.experience?.openingExperience, AURELIA_OPENING_ID);
 
   const demo = CATALOG_DEMO_IDENTITIES[SERAPHINE_CATALOG_SLUG];
-  assert.match(demo.hostName, /Efua Asante/);
-  assert.match(demo.hostName, /Yaw Boateng/);
+  assert.match(demo.hostName, /Kojo/);
+  assert.match(demo.hostName, /Fafa/);
   assert.equal(FORBIDDEN.test(JSON.stringify(demo)), false);
   assert.equal(FORBIDDEN.test(JSON.stringify(SERAPHINE_WEDDING_DEFAULTS)), false);
+  assert.doesNotMatch(JSON.stringify(SERAPHINE_WEDDING_DEFAULTS), /Enock|Ruth|TLPCI|Tse-Addo|Ohene|Prince/i);
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.monogramImageUrl, "/templates/seraphine/monogram-lockup.jpg");
+  assert.equal(
+    mergeAureliaWedding(
+      { monogramImageUrl: "/templates/seraphine/monogram.svg" },
+      SERAPHINE_WEDDING_DEFAULTS
+    ).monogramImageUrl,
+    "/templates/seraphine/monogram-lockup.jpg"
+  );
+  assert.equal(existsSync("public/templates/seraphine/monogram-lockup.jpg"), true);
+  assert.equal(existsSync("public/templates/seraphine/monogram-qr.png"), true);
+  assert.equal(existsSync("public/templates/seraphine/hero.jpg"), true);
+  assert.equal(SERAPHINE_MONOGRAM_PNG, "/templates/seraphine/monogram-qr.png");
 });
 
 test("Aurelia guest copy has no pause dashes between clauses", () => {
@@ -480,6 +529,13 @@ test("Aurelia album QR pins the hero photograph as the center mark", () => {
   assert.equal(parsed.searchParams.get("center"), "/templates/aurelia/hero.jpg");
   assert.equal(parsed.searchParams.get("logoSize"), "hero");
   assert.equal(parsed.searchParams.get("eventId"), "evt_1");
+  const seraphine = withAureliaAlbumQrCenter(
+    "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload%2Ftok&size=512",
+    SERAPHINE_MONOGRAM_PNG
+  );
+  const seraphineParsed = new URL(seraphine!, "https://www.celeventic.com");
+  assert.equal(seraphineParsed.searchParams.get("center"), "/templates/seraphine/monogram-qr.png");
+  assert.equal(seraphineParsed.searchParams.get("logoSize"), "hero");
   const inviteSrc = readFileSync("src/app/invite/[link]/page.tsx", "utf8");
   assert.match(inviteSrc, /withAureliaAlbumQrCenter/);
   const routeSrc = readFileSync("src/app/api/qr/image/route.ts", "utf8");

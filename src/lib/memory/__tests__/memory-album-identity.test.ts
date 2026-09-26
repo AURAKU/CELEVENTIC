@@ -34,7 +34,7 @@ test("Seraphine album chrome stays on its own couple names", () => {
     design: { layout: SERAPHINE_LAYOUT_SLUG },
   });
 
-  assert.equal(identity.title, "Efua & Yaw");
+  assert.equal(identity.title, "Kojo & Fafa");
 });
 
 test("non-invitation albums keep the event title and hosted-by line", () => {

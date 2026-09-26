@@ -5,6 +5,7 @@ import { ensureDemoMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import {
   SERAPHINE_CATALOG_SLUG,
   SERAPHINE_LAYOUT_SLUG,
+  SERAPHINE_MONOGRAM_PNG,
   SERAPHINE_OPENING_ID,
   withAureliaAlbumQrCenter,
 } from "@/lib/experience/aurelia-editorial";
@@ -25,7 +26,7 @@ export default async function SeraphineChampagneRuntimePage({
     notFound();
   }
   const params = await searchParams;
-  const memory = await ensureDemoMemoryLinks("Efua & Yaw").catch(() => null);
+  const memory = await ensureDemoMemoryLinks("Kojo & Fafa").catch(() => null);
   return (
     <AureliaEditorialRuntimeClient
       skipIntro={params.skipIntro === "1"}
@@ -37,9 +38,9 @@ export default async function SeraphineChampagneRuntimePage({
       testId="seraphine-runtime"
       memoryUploadUrl={memory?.uploadUrl ?? null}
       memoryAlbumUrl={memory?.albumUrl ?? null}
-      memoryUploadQrImageUrl={withAureliaAlbumQrCenter(memory?.uploadQrImageUrl)}
+      memoryUploadQrImageUrl={withAureliaAlbumQrCenter(memory?.uploadQrImageUrl, SERAPHINE_MONOGRAM_PNG)}
       memoryEventId={memory?.eventId ?? null}
-      memoryAlbumTitle={memory?.eventTitle ?? "Efua & Yaw"}
+      memoryAlbumTitle={memory?.eventTitle ?? "Kojo & Fafa"}
     />
   );
 }
