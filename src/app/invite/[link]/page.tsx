@@ -9,6 +9,8 @@ import {
   aureliaSectionVisible,
   isAureliaEditorialLayout,
   mergeAureliaWedding,
+  SERAPHINE_LAYOUT_SLUG,
+  SERAPHINE_MONOGRAM_PNG,
   withAureliaAlbumQrCenter,
 } from "@/lib/experience/aurelia-editorial";
 import { resolveLiveRevealConfiguration, logLiveInviteRevealDiagnostic } from "@/lib/experience/live-envelope-contract";
@@ -620,7 +622,10 @@ export default async function InvitePage({
       memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
       memoryUploadQrImageUrl={
         (isAureliaEditorialLayout(design.layout)
-          ? withAureliaAlbumQrCenter(memoryLinks?.uploadQrImageUrl)
+          ? withAureliaAlbumQrCenter(
+              memoryLinks?.uploadQrImageUrl,
+              design.layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_MONOGRAM_PNG : undefined
+            )
           : resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl)) || null
       }
       memoryAlbumTitle={albumIdentity.title}

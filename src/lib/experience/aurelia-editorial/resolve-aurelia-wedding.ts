@@ -1,5 +1,10 @@
 import { withPublicQrCenter } from "@/lib/qr/qr-constants";
-import { AURELIA_HERO_FALLBACK, AURELIA_THEME_DEFAULTS, AURELIA_WEDDING_DEFAULTS, SERAPHINE_WEDDING_DEFAULTS } from "./preset";
+import {
+  AURELIA_HERO_FALLBACK,
+  AURELIA_THEME_DEFAULTS,
+  AURELIA_WEDDING_DEFAULTS,
+  SERAPHINE_WEDDING_DEFAULTS,
+} from "./preset";
 import { SERAPHINE_LAYOUT_SLUG } from "./types";
 import type {
   AureliaCeremony,
@@ -128,10 +133,13 @@ function sanitizeAureliaGuestCopy(config: AureliaWeddingConfig): AureliaWeddingC
   };
 }
 
-/** Album QR on Aurelia/Seraphine invitations uses the standing-couple hero, not event branding. */
-export function withAureliaAlbumQrCenter(qrImageUrl?: string | null): string | null {
+/** Album QR on Aurelia/Seraphine invitations uses the couple mark, not event branding. */
+export function withAureliaAlbumQrCenter(
+  qrImageUrl?: string | null,
+  centerImageUrl: string = AURELIA_HERO_FALLBACK
+): string | null {
   if (!qrImageUrl) return null;
-  return withPublicQrCenter(qrImageUrl, AURELIA_HERO_FALLBACK, "hero");
+  return withPublicQrCenter(qrImageUrl, centerImageUrl, "hero");
 }
 
 function mergeTheme(
@@ -172,7 +180,11 @@ function mergeVenues(
   if (stored == null) return base.venues;
   const canonicalById = new Map(base.venues.map((item) => [item.id, item]));
   return stored
-    .filter((item) => trim(item.venueName) || trim(item.eventLabel))
+    .filter((item) => {
+      if (!(trim(item.venueName) || trim(item.eventLabel))) return false;
+      if (canonicalById.has(item.id)) return true;
+      return item.id !== "traditional" && item.id !== "white";
+    })
     .map((item) => {
       const canonical = canonicalById.get(item.id);
       if (!canonical) return item;
@@ -200,6 +212,7 @@ function mergeDress(
       title: trim(extra.title) || canonical.title,
       note: trim(extra.note) || canonical.note,
       scriptLine: trim(extra.scriptLine) || canonical.scriptLine,
+      imageUrl: trim(extra.imageUrl) || canonical.imageUrl,
       palette: canonical.palette.length
         ? canonical.palette.map((swatch) => ({ ...swatch }))
         : (extra.palette ?? [])
@@ -280,9 +293,21 @@ export function mergeAureliaWedding(
     partnerOneName: base.partnerOneName,
     partnerTwoName: base.partnerTwoName,
     monogram: base.monogram,
+    monogramImageUrl: isSeraphinePlaceholderMonogram(stored.monogramImageUrl)
+      ? trim(base.monogramImageUrl) || null
+      : trim(base.monogramImageUrl) || stored.monogramImageUrl,
     storySignature: base.storySignature,
     dateDisplay: base.dateDisplay,
     heroTagline: "",
+    heroImageUrl: isAureliaDummyHero(stored.heroImageUrl)
+      ? base.heroImageUrl
+      : trim(stored.heroImageUrl) || base.heroImageUrl,
+    storyImageUrl: /\/templates\/aurelia\//i.test(trim(stored.storyImageUrl))
+      ? base.storyImageUrl
+      : stored.storyImageUrl !== undefined
+        ? stored.storyImageUrl
+        : base.storyImageUrl,
+    rsvpShowPhone: base.rsvpShowPhone === true,
     albumEyebrow: trim(stored.albumEyebrow) || base.albumEyebrow,
     albumTitle: trim(stored.albumTitle) || base.albumTitle,
     albumLede: trim(stored.albumLede) || base.albumLede,
@@ -364,9 +389,21 @@ export function aureliaNavItems(config: AureliaWeddingConfig): Array<{
   return items;
 }
 
+export function isSeraphinePlaceholderMonogram(url?: string | null): boolean {
+  return /\/templates\/seraphine\/monogram\.svg(\?|$)/i.test(url?.trim() ?? "");
+}
+
 export function isAureliaDummyHero(url?: string | null): boolean {
   const value = url?.trim() ?? "";
   return !value || /\/templates\/aurelia\/hero\.(svg|jpg|jpeg|webp)(\?|$)/i.test(value);
+}
+
+export function isAureliaFamilyPlaceholderHero(url?: string | null): boolean {
+  const value = url?.trim() ?? "";
+  return (
+    !value ||
+    /\/templates\/(?:aurelia|seraphine)\/hero\.(svg|jpg|jpeg|webp)(\?|$)/i.test(value)
+  );
 }
 
 export function resolveAureliaHeroImage(input: {
@@ -374,15 +411,17 @@ export function resolveAureliaHeroImage(input: {
   coverImageUrl?: string | null;
   mediaHeroUrl?: string | null;
   heroCleared?: boolean;
+  fallback?: string | null;
 }): string {
-  if (input.heroCleared) return AURELIA_HERO_FALLBACK;
+  const fallback = trim(input.fallback) || AURELIA_HERO_FALLBACK;
+  if (input.heroCleared) return fallback;
   const uploaded = input.mediaHeroUrl?.trim();
   if (uploaded) return uploaded;
   const configured = input.heroImageUrl?.trim();
-  if (configured && !isAureliaDummyHero(configured)) return configured;
+  if (configured && !isAureliaFamilyPlaceholderHero(configured)) return configured;
   const cover = input.coverImageUrl?.trim();
-  if (cover) return cover;
-  return AURELIA_HERO_FALLBACK;
+  if (cover && !isAureliaFamilyPlaceholderHero(cover)) return cover;
+  return fallback;
 }
 
 export function aureliaTokenStyle(theme: AureliaThemeTokens): Record<string, string> {

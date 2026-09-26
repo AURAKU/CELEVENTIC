@@ -10,6 +10,10 @@ import { WhatsAppIcon } from "@/components/memory/icons/social-brand-icons";
 import {
   AURELIA_HERO_FALLBACK,
   AURELIA_WHITE_ISO,
+  SERAPHINE_HERO_FALLBACK,
+  SERAPHINE_LAYOUT_SLUG,
+  SERAPHINE_MONOGRAM,
+  SERAPHINE_MONOGRAM_PNG,
   aureliaDistinctVenues,
   aureliaFamilyDefaults,
   aureliaGuestPhoneLinks,
@@ -122,9 +126,13 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
     [config.monogram, config.partnerOneName, config.partnerTwoName]
   );
   const monogramLabel = `${monoOne} & ${monoTwo}`;
+  const familyMonogram =
+    props.design.layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_MONOGRAM : config.monogramImageUrl;
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroMode, setHeroMode] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(config.faqs[0]?.id ?? null);
+  const familyHero =
+    props.design.layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_HERO_FALLBACK : AURELIA_HERO_FALLBACK;
   const resolvedHero = useMemo(
     () =>
       resolveAureliaHeroImage({
@@ -134,8 +142,9 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           (asset) => asset.type === "image" && asset.role === "hero"
         )?.url,
         heroCleared: props.design.heroCleared,
+        fallback: familyHero,
       }),
-    [config.heroImageUrl, props.design.heroCleared, props.design.media, props.event.coverImageUrl]
+    [config.heroImageUrl, familyHero, props.design.heroCleared, props.design.media, props.event.coverImageUrl]
   );
   const [heroSrc, setHeroSrc] = useState(resolvedHero);
   const menuId = useId();
@@ -249,7 +258,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           fetchPriority="high"
           draggable={false}
           onError={() => {
-            if (heroSrc !== AURELIA_HERO_FALLBACK) setHeroSrc(AURELIA_HERO_FALLBACK);
+            if (heroSrc !== familyHero) setHeroSrc(familyHero);
           }}
         />
         <div
@@ -261,6 +270,16 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
         <span className={styles.heroRing} style={{ width: 180, height: 180, right: "6%", bottom: "18%" }} />
         <span className={`${styles.eyebrow} ${styles.heroFamily}`}>{config.familyIntro}</span>
         <div className={styles.heroCopy}>
+          {familyMonogram ? (
+            <img
+              className={styles.heroMonogram}
+              src={familyMonogram}
+              alt={monogramLabel}
+              width={1024}
+              height={1024}
+              decoding="async"
+            />
+          ) : null}
           <div className={styles.heroNames}>
             <span className={styles.heroName}>{config.partnerOneName}</span>
             <span className={styles.ampersand}>&amp;</span>
@@ -320,9 +339,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                 <p key={paragraph.slice(0, 24)}>{paragraph}</p>
               ))}
             </div>
-            <span className={styles.signature}>
-              {config.partnerOneName} &amp; {config.partnerTwoName}
-            </span>
+            <span className={styles.signature}>{config.storySignature}</span>
           </div>
         </section>
       ) : null}
@@ -335,7 +352,12 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <p className={styles.lede}>{config.celebrationsLede}</p>
           <div className={styles.cardDeck}>
           {config.ceremonies.map((ceremony) => {
-            const href = mapsHref(ceremony.mapsUrl, ceremony.venueName, ceremony.address);
+            const hasMaps = Boolean(ceremony.mapsUrl?.trim());
+            const href = hasMaps
+              ? mapsHref(ceremony.mapsUrl, ceremony.venueName, ceremony.address)
+              : null;
+            const hasTime = Boolean(ceremony.timeLabel?.trim());
+            const hasVenue = Boolean(ceremony.venueName?.trim() || ceremony.address?.trim());
             return (
               <article className={styles.card} key={ceremony.id}>
                 <div className={styles.cardKicker}>{ceremony.kicker}</div>
@@ -349,18 +371,22 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     {ceremony.dateLabel}
                   </span>
                 </div>
-                <div className={styles.metaRow}>
-                  <Clock size={16} />
-                  <span>{ceremony.timeLabel}</span>
-                </div>
-                <div className={styles.metaRow}>
-                  <MapPin size={16} />
-                  <span>
-                    {ceremony.venueName}
-                    {ceremony.address ? `, ${ceremony.address}` : ""}
-                  </span>
-                </div>
-                {!ceremony.addressPrivate ? (
+                {hasTime ? (
+                  <div className={styles.metaRow}>
+                    <Clock size={16} />
+                    <span>{ceremony.timeLabel}</span>
+                  </div>
+                ) : null}
+                {hasVenue ? (
+                  <div className={styles.metaRow}>
+                    <MapPin size={16} />
+                    <span>
+                      {ceremony.venueName}
+                      {ceremony.address ? `, ${ceremony.address}` : ""}
+                    </span>
+                  </div>
+                ) : null}
+                {hasMaps ? (
                   <AureliaLocationPreview
                     mapsUrl={ceremony.mapsUrl}
                     venueName={ceremony.venueName}
@@ -370,7 +396,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     invitationId={props.invitation.id}
                   />
                 ) : null}
-                {href ? (
+                {hasMaps && href ? (
                   <a
                     className={styles.directions}
                     href={href}
@@ -473,6 +499,16 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               <h3 className={styles.cardTitle}>{dress.title}</h3>
               {dress.scriptLine ? <p className={styles.scriptLine}>{dress.scriptLine}</p> : null}
               {dress.note ? <p className={styles.lede}>{dress.note}</p> : null}
+              {dress.imageUrl ? (
+                <img
+                  className={styles.dressImage}
+                  src={dress.imageUrl}
+                  alt=""
+                  width={720}
+                  height={900}
+                  decoding="async"
+                />
+              ) : null}
               {dress.palette.length ? (
                 <div className={styles.swatches}>
                   {dress.palette.map((swatch) => (
@@ -505,6 +541,11 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
             uploadUrl={props.memoryUploadUrl}
             albumUrl={props.memoryAlbumUrl}
             uploadQrImageUrl={props.memoryUploadQrImageUrl}
+            qrCenterImageUrl={
+              props.design.layout === SERAPHINE_LAYOUT_SLUG
+                ? SERAPHINE_MONOGRAM_PNG
+                : AURELIA_HERO_FALLBACK
+            }
             uploadCta={config.albumUploadCta}
             viewCta={config.albumViewCta}
           />
@@ -548,6 +589,9 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                       <li key={`${contact.name}-${contact.phone}`} className={styles.rsvpContact}>
                         <div className={styles.rsvpContactCopy}>
                           <span className={styles.rsvpContactName}>{contact.name}</span>
+                          {config.rsvpShowPhone ? (
+                            <span className={styles.rsvpContactLine}>{contact.phone}</span>
+                          ) : null}
                         </div>
                         <div className={styles.rsvpContactActions}>
                           <a
@@ -631,13 +675,19 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       ) : null}
 
       <footer className={styles.finale}>
-        <p className={styles.monogram} aria-label={monogramLabel}>
-          <span className={styles.monogramLetter}>{monoOne}</span>
-          <span className={styles.monogramAmp} aria-hidden>
-            &amp;
-          </span>
-          <span className={styles.monogramLetter}>{monoTwo}</span>
-        </p>
+        {familyMonogram ? (
+          <p className={styles.finaleMark}>
+            <img src={familyMonogram} alt={monogramLabel} width={1024} height={1024} />
+          </p>
+        ) : (
+          <p className={styles.monogram} aria-label={monogramLabel}>
+            <span className={styles.monogramLetter}>{monoOne}</span>
+            <span className={styles.monogramAmp} aria-hidden>
+              &amp;
+            </span>
+            <span className={styles.monogramLetter}>{monoTwo}</span>
+          </p>
+        )}
         <p className={styles.signature}>{config.finaleScript}</p>
         <p className={styles.finaleLine}>{config.finaleLine}</p>
       </footer>

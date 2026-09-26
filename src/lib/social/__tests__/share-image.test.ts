@@ -114,4 +114,15 @@ describe("resolveAureliaShareOgImageForInvitation", () => {
     });
     assert.equal(image, null);
   });
+
+  it("uses the Seraphine atmosphere instead of the Aurelia couple photograph", () => {
+    const image = resolveAureliaShareOgImageForInvitation({
+      appUrl: APP,
+      catalogSlug: "seraphine-champagne-wedding",
+      layoutSlug: "seraphine-champagne-wedding",
+    });
+    assert.ok(image);
+    assert.equal(image?.url, `${APP}/templates/seraphine/hero.jpg`);
+    assert.notEqual(image?.url, `${APP}/templates/aurelia/hero.jpg`);
+  });
 });

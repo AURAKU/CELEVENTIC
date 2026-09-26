@@ -11,9 +11,9 @@ import styles from "./aurelia-editorial-wedding.module.css";
 
 type Panel = "idle" | "lens" | "album";
 
-function aureliaHeroQrSrc(targetUrl: string | null) {
+function familyHeroQrSrc(targetUrl: string | null, centerImageUrl: string) {
   if (!targetUrl) return null;
-  return `/api/qr/image?data=${encodeURIComponent(targetUrl)}&size=512&center=${encodeURIComponent("/templates/aurelia/hero.jpg")}&logoSize=hero`;
+  return `/api/qr/image?data=${encodeURIComponent(targetUrl)}&size=512&center=${encodeURIComponent(centerImageUrl)}&logoSize=hero`;
 }
 
 export function AureliaMemoryAlbum({
@@ -22,6 +22,7 @@ export function AureliaMemoryAlbum({
   uploadUrl,
   albumUrl,
   uploadQrImageUrl,
+  qrCenterImageUrl = "/templates/aurelia/hero.jpg",
   uploadCta,
   viewCta,
 }: {
@@ -30,6 +31,7 @@ export function AureliaMemoryAlbum({
   uploadUrl?: string | null;
   albumUrl?: string | null;
   uploadQrImageUrl?: string | null;
+  qrCenterImageUrl?: string;
   uploadCta: string;
   viewCta: string;
 }) {
@@ -48,7 +50,9 @@ export function AureliaMemoryAlbum({
       ? resolvedUpload
       : `${origin}${resolvedUpload.startsWith("/") ? resolvedUpload : `/${resolvedUpload}`}`
     : null;
-  const qrSrc = uploadQrImageUrl || (staticPreview ? null : aureliaHeroQrSrc(qrTarget));
+  const qrSrc = staticPreview
+    ? uploadQrImageUrl ?? null
+    : familyHeroQrSrc(qrTarget, qrCenterImageUrl) || uploadQrImageUrl || null;
   const useVaultLinks = Boolean(uploadUrl && albumUrl);
   const liveReady = Boolean(invitationId) && !staticPreview;
 
