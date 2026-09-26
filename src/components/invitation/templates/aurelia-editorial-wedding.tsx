@@ -588,7 +588,6 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <ClientErrorBoundary fallback={null}>
             <AureliaGiftCheckout
               giftUrl={props.giftUrl}
-              giftQrImageUrl={props.giftQrImageUrl}
               giftTitle={props.giftTitle}
               giftSubtitle={props.giftSubtitle}
               giftCtaLabel={props.giftCtaLabel}
