@@ -36,14 +36,14 @@ describe("memory-upload-storage extension + validation", () => {
     assert.ok(bad.reason);
   });
 
-  it("accepts MP4 and MOV where supported (MIME or extension)", () => {
-    assert.equal(validateMemoryFile("video/mp4", 1024, 50, 200, "clip.mp4").valid, true);
-    assert.equal(validateMemoryFile("video/mp4", 1024, 50, 200, "clip.mp4").mediaType, "video");
-    assert.equal(validateMemoryFile("video/quicktime", 1024, 50, 200, "clip.mov").valid, true);
-    assert.equal(
-      validateMemoryFile("application/octet-stream", 1024, 50, 200, "iphone.mov").mediaType,
-      "video"
-    );
+  it("rejects MP4 and MOV while guest album is photos-only", () => {
+    const mp4 = validateMemoryFile("video/mp4", 1024, 50, 200, "clip.mp4");
+    assert.equal(mp4.valid, false);
+    assert.match(mp4.reason ?? "", /photos only/i);
+    const mov = validateMemoryFile("video/quicktime", 1024, 50, 200, "clip.mov");
+    assert.equal(mov.valid, false);
+    const octet = validateMemoryFile("application/octet-stream", 1024, 50, 200, "iphone.mov");
+    assert.equal(octet.valid, false);
   });
 
   it("rejects unknown extension when MIME is also unsupported", () => {

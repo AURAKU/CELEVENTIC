@@ -24,13 +24,12 @@ export function viewerCanDeleteMemoryComment(input: {
 }
 
 /**
- * Media delete:
- * - Organizers / platform admins: any upload
- * - Guests: only uploads they own (matching uploaderGuestKey / guest identity)
+ * Photo / video delete is staff-only.
+ * Guests cannot remove uploads they contributed, even with a matching guest key.
  */
 export function viewerCanDeleteMemoryMedia(input: {
   canModerate: boolean;
   isOwner?: boolean;
 }): boolean {
-  return Boolean(input.canModerate) || Boolean(input.isOwner);
+  return Boolean(input.canModerate);
 }

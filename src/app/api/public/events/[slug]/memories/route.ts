@@ -7,10 +7,12 @@ import { eventMemorySettingsService } from "@/services/memory/event-memory-setti
 import { eventMemoryThemeService } from "@/services/memory/event-memory-theme.service";
 import {
   eventMemorySocialService,
+  canRemoveEventMemoryMedia,
   isMemoryEventModerator,
 } from "@/services/memory/event-memory-social.service";
 import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
 import { parsePaginationFromUrl } from "@/lib/pagination";
+import { resolvePublicMemoryMediaType } from "@/lib/memory/memory-vault-policy";
 
 export async function GET(
   req: Request,
@@ -27,19 +29,27 @@ export async function GET(
 
   const { page, limit } = parsePaginationFromUrl(req.url);
   const url = new URL(req.url);
-  const mediaRaw = url.searchParams.get("mediaType");
-  const mediaType = mediaRaw === "image" || mediaRaw === "video" ? mediaRaw : undefined;
+  const mediaType = resolvePublicMemoryMediaType(url.searchParams.get("mediaType"));
   const rawGuestKey = url.searchParams.get("guestKey") ?? req.headers.get("x-memory-guest-key");
   const guestKeyHash = eventMemorySocialService.resolveGuestKeyHash(rawGuestKey);
 
   const session = await getServerSession(authOptions);
   const canModerate = await isMemoryEventModerator(event.id, session?.user?.id, session?.user?.role);
+  const canRemoveMedia = await canRemoveEventMemoryMedia(
+    event.id,
+    session?.user?.id,
+    session?.user?.role
+  );
 
   const memories = await eventMemoryUploadService.listApprovedPublic(event.id, page, limit, mediaType);
   const enriched = await eventMemorySocialService.enrichApprovedItems(memories.items, guestKeyHash, {
     canModerate,
+    canRemoveMedia,
   });
-  const { publicTheme } = await eventMemoryThemeService.resolveForEvent(event.id);
+  const { publicTheme, identity } = await eventMemoryThemeService.resolveForEvent(event.id, {
+    title: event.title,
+    hostName: event.hostName,
+  });
   const viewToken = await eventMemoryTokenService.getOrCreateViewToken(event.id);
 
   return NextResponse.json({
@@ -47,10 +57,12 @@ export async function GET(
     data: {
       event: {
         id: event.id,
-        title: event.title,
+        title: identity.title,
         hostName: event.hostName,
         coverImageUrl: event.coverImageUrl,
         logoUrl: event.logoUrl,
+        eyebrow: identity.eyebrow,
+        subtitle: identity.subtitle,
       },
       allowDownloads: settings.allowDownloads,
       theme: publicTheme,

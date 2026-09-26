@@ -10,7 +10,6 @@ import { liveAlbumPaths, type LiveAlbumItem } from "@/lib/memory/live-album";
 import styles from "./live-album-experience.module.css";
 
 const IMAGE_ACCEPT = "image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif,.avif";
-const MEDIA_ACCEPT = `${IMAGE_ACCEPT},video/*,.mp4,.mov,.webm`;
 
 async function prepareFile(file: File): Promise<File> {
   if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(file.name)) {
@@ -120,7 +119,7 @@ export function LiveAlbumExperience({
               <input
                 ref={cameraRef}
                 type="file"
-                accept={MEDIA_ACCEPT}
+                accept={IMAGE_ACCEPT}
                 capture="environment"
                 onChange={(e) => void onFiles(e.target.files)}
               />
@@ -130,7 +129,7 @@ export function LiveAlbumExperience({
               Choose from library
               <input
                 type="file"
-                accept={MEDIA_ACCEPT}
+                accept={IMAGE_ACCEPT}
                 multiple
                 onChange={(e) => void onFiles(e.target.files)}
               />
@@ -188,8 +187,8 @@ export function LiveAlbumPageShell({
         <h1 className={styles.title}>{eventTitle}</h1>
         <p className={styles.lede}>
           {openLens
-            ? "Open the lens to add a photograph or video. It appears in the shared album for everyone at this celebration."
-            : "Photographs and video from the celebration, gathered in one album."}
+            ? "Open the lens to add a photograph. It appears in the shared album for everyone at this celebration."
+            : "Photographs from the celebration, gathered in one album."}
         </p>
         <LiveAlbumExperience
           invitationId={invitationId}

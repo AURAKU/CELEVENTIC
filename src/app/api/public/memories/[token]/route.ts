@@ -7,9 +7,11 @@ import { eventMemorySettingsService } from "@/services/memory/event-memory-setti
 import { eventMemoryThemeService } from "@/services/memory/event-memory-theme.service";
 import {
   eventMemorySocialService,
+  canRemoveEventMemoryMedia,
   isMemoryEventModerator,
 } from "@/services/memory/event-memory-social.service";
 import { parsePaginationFromUrl } from "@/lib/pagination";
+import { resolvePublicMemoryMediaType } from "@/lib/memory/memory-vault-policy";
 
 export async function GET(
   req: Request,
@@ -28,8 +30,7 @@ export async function GET(
 
   const { page, limit } = parsePaginationFromUrl(req.url);
   const url = new URL(req.url);
-  const mediaRaw = url.searchParams.get("mediaType");
-  const mediaType = mediaRaw === "image" || mediaRaw === "video" ? mediaRaw : undefined;
+  const mediaType = resolvePublicMemoryMediaType(url.searchParams.get("mediaType"));
   const rawGuestKey = url.searchParams.get("guestKey") ?? req.headers.get("x-memory-guest-key");
   const guestKeyHash = eventMemorySocialService.resolveGuestKeyHash(rawGuestKey);
 
@@ -39,22 +40,33 @@ export async function GET(
     session?.user?.id,
     session?.user?.role
   );
+  const canRemoveMedia = await canRemoveEventMemoryMedia(
+    record.eventId,
+    session?.user?.id,
+    session?.user?.role
+  );
 
   const memories = await eventMemoryUploadService.listApprovedPublic(record.eventId, page, limit, mediaType);
   const enriched = await eventMemorySocialService.enrichApprovedItems(memories.items, guestKeyHash, {
     canModerate,
+    canRemoveMedia,
   });
-  const { publicTheme } = await eventMemoryThemeService.resolveForEvent(record.eventId);
+  const { publicTheme, identity } = await eventMemoryThemeService.resolveForEvent(record.eventId, {
+    title: record.event.title,
+    hostName: record.event.hostName,
+  });
 
   return NextResponse.json({
     success: true,
     data: {
       event: {
         id: record.eventId,
-        title: record.event.title,
+        title: identity.title,
         hostName: record.event.hostName,
         coverImageUrl: record.event.coverImageUrl,
         logoUrl: record.event.logoUrl,
+        eyebrow: identity.eyebrow,
+        subtitle: identity.subtitle,
       },
       allowDownloads: settings.allowDownloads,
       theme: publicTheme,

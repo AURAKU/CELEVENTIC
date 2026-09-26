@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { eventMemoryTokenService } from "@/services/memory/event-memory-token.service";
 import {
   eventMemorySocialService,
-  isMemoryEventModerator,
+  canRemoveEventMemoryMedia,
 } from "@/services/memory/event-memory-social.service";
 
-const bodySchema = z.object({
-  guestKey: z.string().min(8).max(200).optional(),
-});
-
 export async function DELETE(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ token: string; memoryId: string }> }
 ) {
   const { token, memoryId } = await params;
@@ -23,23 +18,17 @@ export async function DELETE(
   }
 
   const session = await getServerSession(authOptions);
-  const isModerator = await isMemoryEventModerator(
+  const canRemoveMedia = await canRemoveEventMemoryMedia(
     record.eventId,
     session?.user?.id,
     session?.user?.role
-  );
-
-  const parsed = bodySchema.safeParse(await req.json().catch(() => ({})));
-  const guestKeyHash = eventMemorySocialService.resolveGuestKeyHash(
-    parsed.success ? parsed.data.guestKey : null
   );
 
   try {
     await eventMemorySocialService.deleteMemory({
       memoryId,
       eventId: record.eventId,
-      isModerator,
-      guestKeyHash,
+      isModerator: canRemoveMedia,
     });
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
+import { MEMORY_VAULT_VIDEO_UPLOADS_ENABLED } from "@/lib/memory/memory-vault-policy";
 import { pickMemoryFullSrc, pickMemoryGridSrc, resolveMemoryPhotoSrcSet, isMemoryVideo } from "@/lib/memory/memory-media-urls";
 import {
   readOrCreateClientGuestKey,
@@ -56,6 +57,8 @@ interface CommentRow {
 interface PublicMemoriesGalleryProps {
   eventTitle: string;
   hostName: string;
+  eyebrow?: string | null;
+  subtitle?: string | null;
   items: MemoryGalleryItem[];
   page: number;
   pages: number;
@@ -94,6 +97,8 @@ function writeMutePref(muted: boolean) {
 export function PublicMemoriesGallery({
   eventTitle,
   hostName,
+  eyebrow,
+  subtitle,
   items,
   page,
   pages,
@@ -155,11 +160,19 @@ export function PublicMemoriesGallery({
     [onItemsChange]
   );
 
-  const filters: { id: MediaFilter; label: string; icon: typeof Grid3X3 }[] = [
-    { id: "all", label: "All", icon: Grid3X3 },
-    { id: "image", label: "Photos", icon: ImageIcon },
-    { id: "video", label: "Videos", icon: Video },
-  ];
+  const filters: { id: MediaFilter; label: string; icon: typeof Grid3X3 }[] = MEMORY_VAULT_VIDEO_UPLOADS_ENABLED
+    ? [
+        { id: "all", label: "All", icon: Grid3X3 },
+        { id: "image", label: "Photos", icon: ImageIcon },
+        { id: "video", label: "Videos", icon: Video },
+      ]
+    : [];
+
+  useEffect(() => {
+    if (!MEMORY_VAULT_VIDEO_UPLOADS_ENABLED && activeFilter === "video") {
+      onFilterChange?.("all");
+    }
+  }, [activeFilter, onFilterChange]);
 
   async function toggleLike(item: MemoryGalleryItem) {
     if (!viewToken) return;
@@ -283,7 +296,7 @@ export function PublicMemoriesGallery({
 
   async function deleteMemory(item: MemoryGalleryItem) {
     if (!viewToken || !item.canDelete) return;
-    if (!window.confirm("Delete this memory?")) return;
+    if (!window.confirm("Remove this photo or video from the album? Only an admin or the organizer can do this.")) return;
     const res = await fetch(`/api/public/memories/${viewToken}/media/${item.id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -357,24 +370,45 @@ export function PublicMemoriesGallery({
         <div className="px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 text-center">
           <p
             className="text-[10px] uppercase tracking-[0.35em] mb-1"
-            style={{ color: "var(--memory-color-ink-muted, #64748b)" }}
+            style={{ color: "var(--memory-color-accent, var(--memory-color-ink-muted, #64748b))" }}
           >
-            Event memories
+            {eyebrow?.trim() || "Event memories"}
           </p>
           <h1
-            className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight"
-            style={{ fontFamily: "var(--memory-font-display, Georgia, serif)" }}
+            className="text-xl sm:text-2xl md:text-3xl font-medium leading-tight tracking-[0.04em]"
+            style={{
+              fontFamily: "var(--memory-font-display, Georgia, serif)",
+              color: "var(--memory-color-primary, var(--memory-color-ink, #0F172A))",
+            }}
           >
             {eventTitle}
           </h1>
-          <p className="text-xs mt-1" style={{ color: "var(--memory-color-ink-muted, #64748b)" }}>
-            Hosted by {hostName}
-          </p>
+          {subtitle?.trim() ? (
+            <p
+              className="text-xs mt-1 tracking-[0.18em] uppercase"
+              style={{
+                color: "var(--memory-color-ink-muted, #64748b)",
+                fontFamily: "var(--memory-font-body, inherit)",
+              }}
+            >
+              {subtitle.trim()}
+            </p>
+          ) : hostName.trim() ? (
+            <p className="text-xs mt-1" style={{ color: "var(--memory-color-ink-muted, #64748b)" }}>
+              Hosted by {hostName}
+            </p>
+          ) : null}
+          <div
+            aria-hidden
+            className="mx-auto mt-3 h-px w-16"
+            style={{ background: "var(--memory-color-border, #D8C09C)" }}
+          />
           <p className="text-[11px] mt-2" style={{ color: "var(--memory-color-ink-muted, #94a3b8)" }}>
             {total} {total === 1 ? "memory" : "memories"}
           </p>
         </div>
 
+        {filters.length > 0 ? (
         <div className="flex border-t" style={{ borderColor: "var(--memory-color-border, #e5e7eb)" }}>
           {filters.map(({ id, label, icon: Icon }) => (
             <button
@@ -401,6 +435,7 @@ export function PublicMemoriesGallery({
             </button>
           ))}
         </div>
+        ) : null}
       </header>
 
       <div className="px-0.5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
@@ -606,7 +641,7 @@ export function PublicMemoriesGallery({
                 <MessageCircle className="h-6 w-6" />
               </button>
               <span className="text-sm tabular-nums">{lightbox.commentCount ?? 0}</span>
-              {lightbox.canDelete || canModerate ? (
+              {lightbox.canDelete ? (
                 <button
                   type="button"
                   className="p-2 min-h-11 min-w-11 ml-auto text-rose-300"

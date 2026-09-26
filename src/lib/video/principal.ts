@@ -7,6 +7,10 @@ import { canAccessAdminPanel } from "@/lib/rbac";
 import type { VideoCategory } from "@/lib/video/constants";
 import type { VideoAsset, VideoOwnerType } from "@prisma/client";
 import { eventQuotaKey, userQuotaKey } from "@/lib/video/owner";
+import {
+  MEMORY_VAULT_VIDEO_UPLOADS_ENABLED,
+  memoryVaultPhotosOnlyMessage,
+} from "@/lib/memory/memory-vault-policy";
 
 /**
  * Who may upload — and how we identify them for DB vs quota/storage.
@@ -75,6 +79,9 @@ function userPrincipal(
 export async function resolveUploadPrincipal(input: ResolvePrincipalInput): Promise<UploadPrincipal> {
   switch (input.category) {
     case "GUESTBOOK": {
+      if (!MEMORY_VAULT_VIDEO_UPLOADS_ENABLED) {
+        throw new UploadAuthError(memoryVaultPhotosOnlyMessage(), 403);
+      }
       if (!input.guestToken) throw new UploadAuthError("Upload token required for guestbook videos.", 401);
       const record = await eventMemoryTokenService.resolveToken(input.guestToken);
       if (!record || record.type !== "UPLOAD") {

@@ -4,7 +4,13 @@ import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-
 import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
 import { qrBrandingService } from "@/services/qr/qr-branding.service";
-import { isAureliaEditorialLayout, withAureliaAlbumQrCenter } from "@/lib/experience/aurelia-editorial";
+import {
+  aureliaFamilyDefaults,
+  aureliaSectionVisible,
+  isAureliaEditorialLayout,
+  mergeAureliaWedding,
+  withAureliaAlbumQrCenter,
+} from "@/lib/experience/aurelia-editorial";
 import { resolveLiveRevealConfiguration, logLiveInviteRevealDiagnostic } from "@/lib/experience/live-envelope-contract";
 import { addonFulfillmentService } from "@/services/invitation-os/addon-fulfillment.service";
 import { seatingService } from "@/services/seating/seating.service";
@@ -23,6 +29,7 @@ import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { eventGuideService } from "@/services/event-guide/event-guide.service";
+import { resolveMemoryAlbumIdentity } from "@/lib/memory/memory-album-identity";
 import {
   resolveInvitationShareOgImage,
   shareOgImageToOpenGraph,
@@ -523,11 +530,28 @@ export default async function InvitePage({
     backgroundVideoUrl: resolvePublicMediaUrl(rawBackground.backgroundVideoUrl) || null,
   };
 
-  // Gift Wallet placement, null unless the event has a live campaign with
-  // invitation placement on, so invites without gifting are untouched.
+  // Gift Wallet placement. Aurelia already renders an in-invite Paystack
+  // checkout, so open a live campaign when that gifts section is on.
+  const aureliaGiftsOpen =
+    isAureliaEditorialLayout(design.layout) &&
+    aureliaSectionVisible(
+      mergeAureliaWedding(design.experience?.aureliaWedding, aureliaFamilyDefaults(design.layout)),
+      "gifts"
+    );
   const giftPlacement = await giftCampaignService
-    .resolveInvitePlacement(event.id, { guestQrToken })
+    .resolveInvitePlacement(event.id, {
+      guestQrToken,
+      autoOpen: aureliaGiftsOpen,
+      invitationId: invitation.id,
+    })
     .catch(() => null);
+
+  const albumIdentity = resolveMemoryAlbumIdentity({
+    eventTitle: event.title,
+    hostName: event.hostName,
+    design,
+    templateSlug: catalogSlug ?? design.layout,
+  });
 
   return (
     <PremiumInviteWrapper
@@ -599,7 +623,7 @@ export default async function InvitePage({
           ? withAureliaAlbumQrCenter(memoryLinks?.uploadQrImageUrl)
           : resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl)) || null
       }
-      memoryAlbumTitle={memoryLinks?.eventTitle ?? null}
+      memoryAlbumTitle={albumIdentity.title}
       giftUrl={giftPlacement?.giftUrl ?? null}
       giftQrImageUrl={resolvePublicMediaUrl(giftPlacement?.qrImageUrl) || null}
       giftTitle={giftPlacement?.title ?? null}

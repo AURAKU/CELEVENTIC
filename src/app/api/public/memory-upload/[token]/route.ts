@@ -17,7 +17,10 @@ export async function GET(
 
   const settings = await eventMemorySettingsService.getOrCreate(record.eventId);
   const windowOpen = eventMemorySettingsService.isUploadWindowOpen(settings);
-  const { publicTheme } = await eventMemoryThemeService.resolveForEvent(record.eventId);
+  const { publicTheme, identity } = await eventMemoryThemeService.resolveForEvent(record.eventId, {
+    title: record.event.title,
+    hostName: record.event.hostName,
+  });
 
   const url = new URL(req.url);
   const rawGuestKey = url.searchParams.get("guestKey") ?? req.headers.get("x-memory-guest-key");
@@ -32,7 +35,12 @@ export async function GET(
   return NextResponse.json({
     success: true,
     data: {
-      event: record.event,
+      event: {
+        ...record.event,
+        title: identity.title,
+        eyebrow: identity.eyebrow,
+        subtitle: identity.subtitle,
+      },
       invitationLink: null,
       viewToken: viewToken.token,
       theme: publicTheme,

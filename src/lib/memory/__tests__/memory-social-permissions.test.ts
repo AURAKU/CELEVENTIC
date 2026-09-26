@@ -29,10 +29,11 @@ describe("memory social permissions", () => {
     assert.equal(viewerCanDeleteMemoryComment({ canModerate: true }), true);
   });
 
-  it("guests may delete own media; others cannot", () => {
+  it("only admins or organizers may delete photos and videos", () => {
     assert.equal(viewerCanDeleteMemoryMedia({ canModerate: false, isOwner: false }), false);
-    assert.equal(viewerCanDeleteMemoryMedia({ canModerate: false, isOwner: true }), true);
+    assert.equal(viewerCanDeleteMemoryMedia({ canModerate: false, isOwner: true }), false);
     assert.equal(viewerCanDeleteMemoryMedia({ canModerate: true, isOwner: false }), true);
+    assert.equal(viewerCanDeleteMemoryMedia({ canModerate: true, isOwner: true }), true);
   });
 
   it("author token hash matches", () => {

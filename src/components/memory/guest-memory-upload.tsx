@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { uploadFormDataWithProgress } from "@/lib/media/upload-with-progress";
 import { MultiVideoUploader } from "@/components/media/multi-video-uploader";
 import type { UploadedVideoResult } from "@/components/media/video-uploader";
+import { MEMORY_VAULT_VIDEO_UPLOADS_ENABLED } from "@/lib/memory/memory-vault-policy";
 import {
   readLocalConsent,
   readOrCreateClientGuestKey,
@@ -37,6 +38,7 @@ interface GuestMemoryUploadProps {
   token: string;
   eventTitle: string;
   hostName: string;
+  subtitle?: string | null;
   maxPhotosPerGuest: number;
   maxVideosPerGuest: number;
   maxImageSizeMb: number;
@@ -93,6 +95,7 @@ export function GuestMemoryUpload({
   token,
   eventTitle,
   hostName,
+  subtitle,
   maxPhotosPerGuest,
   maxVideosPerGuest,
   maxImageSizeMb,
@@ -375,10 +378,11 @@ export function GuestMemoryUpload({
           className="text-2xl font-bold"
           style={{ fontFamily: "var(--memory-font-display, Georgia, serif)" }}
         >
-          Upload Your Photos & Videos
+          Upload Your Photos
         </h1>
         <p className="text-sm" style={{ color: "var(--memory-color-ink-muted, #64748b)" }}>
-          Share memories from <strong>{eventTitle}</strong> hosted by {hostName}
+          Share memories from <strong>{eventTitle}</strong>
+          {subtitle?.trim() ? ` · ${subtitle.trim()}` : hostName.trim() ? ` hosted by ${hostName}` : ""}
         </p>
       </header>
 
@@ -601,7 +605,7 @@ export function GuestMemoryUpload({
           </div>
         ) : null}
 
-        {/* Videos — MultiVideoUploader (chunked/resumable when S3 available) */}
+        {MEMORY_VAULT_VIDEO_UPLOADS_ENABLED ? (
         <div className="pt-2 border-t" style={{ borderColor: "var(--memory-color-border, #e5e7eb)" }}>
           <p className="text-xs mb-2" style={{ color: "var(--memory-color-ink-muted, #94a3b8)" }}>
             Up to {maxVideosPerGuest} · {maxVideoSizeMb}MB each
@@ -631,6 +635,7 @@ export function GuestMemoryUpload({
             }
           />
         </div>
+        ) : null}
       </div>
 
       {(memoriesUrl || invitationUrl) && (

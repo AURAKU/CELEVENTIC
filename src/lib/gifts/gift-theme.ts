@@ -95,9 +95,9 @@ const AURELIA_GIFT_THEME: GiftTheme = {
     onAccent: "#F8F4EA",
   },
   fonts: {
-    display: '"Cinzel", "Playfair Display", Georgia, serif',
-    body: '"Cormorant Garamond", Georgia, serif',
-    script: '"Great Vibes", cursive',
+    display: 'var(--font-cinzel), "Cinzel", "Times New Roman", serif',
+    body: 'var(--font-cormorant), "Cormorant Garamond", Georgia, serif',
+    script: 'var(--font-great-vibes), "Great Vibes", cursive',
   },
   radius: 0,
   ornament: "gilded",

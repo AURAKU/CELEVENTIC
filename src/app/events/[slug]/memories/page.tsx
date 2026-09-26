@@ -15,7 +15,7 @@ export default function EventMemoriesBySlugPage() {
   const [filter, setFilter] = useState<MediaFilter>("all");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<{
-    event: { title: string; hostName: string };
+    event: { title: string; hostName: string; eyebrow?: string | null; subtitle?: string | null };
     allowDownloads: boolean;
     canModerate?: boolean;
     viewToken?: string;
@@ -44,6 +44,8 @@ export default function EventMemoriesBySlugPage() {
     <PublicMemoriesGallery
       eventTitle={data.event.title}
       hostName={data.event.hostName}
+      eyebrow={data.event.eyebrow}
+      subtitle={data.event.subtitle}
       items={data.memories.items}
       page={data.memories.page}
       pages={data.memories.pages}

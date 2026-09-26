@@ -259,8 +259,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
         <div className={styles.heroScrim} />
         <span className={styles.heroRing} style={{ width: 140, height: 140, left: "8%", top: "22%" }} />
         <span className={styles.heroRing} style={{ width: 180, height: 180, right: "6%", bottom: "18%" }} />
+        <span className={`${styles.eyebrow} ${styles.heroFamily}`}>{config.familyIntro}</span>
         <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}>{config.familyIntro}</span>
           <div className={styles.heroNames}>
             <span className={styles.heroName}>{config.partnerOneName}</span>
             <span className={styles.ampersand}>&amp;</span>
@@ -268,14 +268,14 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           </div>
           <p className={styles.heroMeta}>{config.marriedLine}</p>
           <p className={styles.heroDate}>{config.dateDisplay}</p>
-          <div className={styles.heroActions}>
-            <button type="button" className={styles.btnOutline} onClick={() => jump("celebrations")}>
-              {config.celebrationCta}
-            </button>
-            <button type="button" className={styles.btnFill} onClick={() => jump("rsvp")}>
-              {config.rsvpCta}
-            </button>
-          </div>
+        </div>
+        <div className={styles.heroActions}>
+          <button type="button" className={styles.btnOutline} onClick={() => jump("celebrations")}>
+            {config.celebrationCta}
+          </button>
+          <button type="button" className={styles.btnFill} onClick={() => jump("rsvp")}>
+            {config.rsvpCta}
+          </button>
         </div>
       </section>
 

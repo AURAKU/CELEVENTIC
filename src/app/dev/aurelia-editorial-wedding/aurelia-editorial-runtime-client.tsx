@@ -17,6 +17,12 @@ export function AureliaEditorialRuntimeClient({
   memoryUploadQrImageUrl,
   memoryEventId,
   memoryAlbumTitle,
+  giftUrl,
+  giftQrImageUrl,
+  giftTitle,
+  giftSubtitle,
+  giftCtaLabel,
+  giftPrivacyNote,
   layoutSlug = AURELIA_LAYOUT_SLUG,
   catalogSlug = AURELIA_LAYOUT_SLUG,
   openingExperience = AURELIA_OPENING_ID,
@@ -30,6 +36,12 @@ export function AureliaEditorialRuntimeClient({
   memoryUploadQrImageUrl?: string | null;
   memoryEventId?: string | null;
   memoryAlbumTitle?: string | null;
+  giftUrl?: string | null;
+  giftQrImageUrl?: string | null;
+  giftTitle?: string | null;
+  giftSubtitle?: string | null;
+  giftCtaLabel?: string | null;
+  giftPrivacyNote?: string | null;
   layoutSlug?: string;
   catalogSlug?: string;
   openingExperience?: OpeningExperienceId;
@@ -81,6 +93,12 @@ export function AureliaEditorialRuntimeClient({
           memoryUploadQrImageUrl={memoryUploadQrImageUrl}
           memoryAlbumTitle={memoryAlbumTitle ?? preview.event.title}
           eventId={memoryEventId ?? undefined}
+          giftUrl={giftUrl}
+          giftQrImageUrl={giftQrImageUrl}
+          giftTitle={giftTitle}
+          giftSubtitle={giftSubtitle}
+          giftCtaLabel={giftCtaLabel}
+          giftPrivacyNote={giftPrivacyNote}
         />
       </ClientErrorBoundary>
     </div>

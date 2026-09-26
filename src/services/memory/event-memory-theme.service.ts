@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { LIVE_PRODUCTION_ORDER_STATUSES } from "@/lib/invitation/studio-access";
+import { isAureliaEditorialLayout } from "@/lib/experience/aurelia-editorial";
+import {
+  invitationLayoutSlug,
+  resolveMemoryAlbumIdentity,
+  type MemoryAlbumIdentity,
+} from "@/lib/memory/memory-album-identity";
 import {
   resolveMemoryTheme,
   serializeMemoryTheme,
@@ -8,10 +14,14 @@ import {
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 
 export class EventMemoryThemeService {
-  async resolveForEvent(eventId: string): Promise<{
+  async resolveForEvent(
+    eventId: string,
+    event: { title: string; hostName: string } = { title: "", hostName: "" }
+  ): Promise<{
     theme: MemoryTheme;
     templateSlug: string | null;
     publicTheme: ReturnType<typeof serializeMemoryTheme>;
+    identity: MemoryAlbumIdentity;
   }> {
     const order = await prisma.invitationOrder.findFirst({
       where: {
@@ -28,21 +38,35 @@ export class EventMemoryThemeService {
     let design = (order?.designConfig as InvitationDesignConfig | null) ?? null;
     let templateSlug = order?.templateSlug ?? null;
 
+    const invitation = await prisma.invitation.findFirst({
+      where: { eventId, status: "ACTIVE" },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        designConfig: true,
+        template: { select: { slug: true } },
+      },
+    });
+    const invitationDesign = (invitation?.designConfig as InvitationDesignConfig | null) ?? null;
     if (!design) {
-      const invitation = await prisma.invitation.findFirst({
-        where: { eventId, status: "ACTIVE" },
-        orderBy: { updatedAt: "desc" },
-        select: {
-          designConfig: true,
-          template: { select: { slug: true } },
-        },
-      });
-      design = (invitation?.designConfig as InvitationDesignConfig | null) ?? null;
-      templateSlug = templateSlug ?? invitation?.template?.slug ?? null;
+      design = invitationDesign;
+    } else if (
+      isAureliaEditorialLayout(invitationDesign?.layout) &&
+      !isAureliaEditorialLayout(design.layout)
+    ) {
+      design = invitationDesign;
     }
+    templateSlug =
+      templateSlug ??
+      invitationLayoutSlug(design, invitation?.template?.slug ?? null);
 
     const theme = resolveMemoryTheme({ design, templateSlug });
-    return { theme, templateSlug, publicTheme: serializeMemoryTheme(theme) };
+    const identity = resolveMemoryAlbumIdentity({
+      eventTitle: event.title,
+      hostName: event.hostName,
+      design,
+      templateSlug,
+    });
+    return { theme, templateSlug, publicTheme: serializeMemoryTheme(theme), identity };
   }
 }
 

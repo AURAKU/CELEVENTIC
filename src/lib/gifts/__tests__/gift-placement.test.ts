@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildCompanionGiftUrl,
   detectGiftVerificationMismatch,
+  invitationGiftAutoOpenAction,
   isCampaignPlaceable,
   isGuestScopedToCampaignEvent,
   sanitizeCompanionReturnUrl,
@@ -152,4 +153,12 @@ test("wedding companion teaser and copy stay celebratory", () => {
   assert.match(companionGiftTeaser("WEDDING_GIFT"), /presence/i);
   assert.doesNotMatch(companionGiftTeaser("WEDDING_GIFT"), /donate|donation|goal|raised/i);
   assert.match(companionGiftTeaser("FUNERAL_SUPPORT"), /support/i);
+});
+
+test("invitation auto-open creates or activates drafts, never un-pauses closed wallets", () => {
+  assert.equal(invitationGiftAutoOpenAction(null), "create");
+  assert.equal(invitationGiftAutoOpenAction({ status: "DRAFT" }), "activate");
+  assert.equal(invitationGiftAutoOpenAction({ status: "ACTIVE" }), "keep");
+  assert.equal(invitationGiftAutoOpenAction({ status: "PAUSED" }), "keep");
+  assert.equal(invitationGiftAutoOpenAction({ status: "CLOSED" }), "keep");
 });
