@@ -1,6 +1,9 @@
 import React from "react";
 import type { SocialPlaceCardVariant } from "@/lib/social/social-place-card";
-import { SOCIAL_PLACE_CARD_PHRASE } from "@/lib/social/social-place-card";
+import {
+  SOCIAL_PLACE_CARD_KICKER,
+  SOCIAL_PLACE_CARD_PHRASE,
+} from "@/lib/social/social-place-card";
 
 export type SocialPlaceCardVisual = {
   variant: SocialPlaceCardVariant;
@@ -9,6 +12,8 @@ export type SocialPlaceCardVisual = {
   phrase?: string | null;
   heroSrc?: string | null;
   unavailable?: boolean;
+  kicker?: string | null;
+  guestGreeting?: string | null;
 };
 
 const PALETTES = {
@@ -30,11 +35,11 @@ const PALETTES = {
   },
 } as const;
 
-function titleSize(title: string): number {
-  if (title.length > 42) return 42;
-  if (title.length > 28) return 50;
-  if (title.length > 18) return 58;
-  return 68;
+function titleSize(title: string, personalized: boolean): number {
+  if (title.length > 42) return personalized ? 38 : 42;
+  if (title.length > 28) return personalized ? 46 : 50;
+  if (title.length > 18) return personalized ? 52 : 58;
+  return personalized ? 60 : 68;
 }
 
 export function SocialPlaceCardMarkup({
@@ -44,13 +49,19 @@ export function SocialPlaceCardMarkup({
   phrase,
   heroSrc,
   unavailable = false,
+  kicker,
+  guestGreeting,
 }: SocialPlaceCardVisual) {
   const palette = PALETTES[variant];
+  const greeting = unavailable ? null : guestGreeting?.trim() || null;
   const displayTitle = unavailable ? "This invitation is no longer available" : title;
   const displayPhrase = unavailable
     ? "The celebration link is closed."
     : phrase?.trim() || SOCIAL_PLACE_CARD_PHRASE;
-  const size = unavailable ? 44 : titleSize(displayTitle);
+  const displayKicker = unavailable
+    ? SOCIAL_PLACE_CARD_KICKER
+    : kicker?.trim() || SOCIAL_PLACE_CARD_KICKER;
+  const size = unavailable ? 44 : titleSize(displayTitle, Boolean(greeting));
 
   return (
     <div
@@ -114,23 +125,38 @@ export function SocialPlaceCardMarkup({
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: "64px 56px 56px 36px",
+          padding: greeting ? "56px 56px 48px 36px" : "64px 56px 56px 36px",
           background: palette.panel,
         }}
       >
         <div
           style={{
             display: "flex",
-            fontSize: 18,
-            letterSpacing: "0.42em",
+            fontSize: 15,
+            letterSpacing: "0.38em",
             textTransform: "uppercase",
             color: palette.gold,
             fontFamily: "Helvetica, Arial, sans-serif",
-            marginBottom: 22,
+            marginBottom: greeting ? 16 : 22,
           }}
         >
-          YOU&apos;RE INVITED
+          {displayKicker}
         </div>
+        {greeting ? (
+          <div
+            style={{
+              display: "flex",
+              color: palette.muted,
+              fontSize: 26,
+              fontStyle: "italic",
+              lineHeight: 1.2,
+              marginBottom: 14,
+              maxWidth: "500px",
+            }}
+          >
+            {greeting}
+          </div>
+        ) : null}
         <div
           style={{
             display: "flex",
@@ -143,12 +169,24 @@ export function SocialPlaceCardMarkup({
         >
           {displayTitle}
         </div>
+        <div
+          style={{
+            display: "flex",
+            marginTop: greeting ? 18 : 28,
+            fontSize: greeting ? 22 : 24,
+            lineHeight: 1.35,
+            color: palette.muted,
+            maxWidth: "460px",
+          }}
+        >
+          {displayPhrase}
+        </div>
         {!unavailable && dateLabel ? (
           <div
             style={{
               display: "flex",
-              marginTop: 22,
-              fontSize: 20,
+              marginTop: greeting ? 16 : 22,
+              fontSize: 18,
               letterSpacing: "0.28em",
               textTransform: "uppercase",
               color: palette.gold,
@@ -161,20 +199,8 @@ export function SocialPlaceCardMarkup({
         <div
           style={{
             display: "flex",
-            marginTop: 28,
-            fontSize: 24,
-            lineHeight: 1.35,
-            color: palette.muted,
-            maxWidth: "460px",
-          }}
-        >
-          {displayPhrase}
-        </div>
-        <div
-          style={{
-            display: "flex",
             flexDirection: "column",
-            marginTop: 40,
+            marginTop: greeting ? 32 : 40,
             color: palette.mark,
             fontFamily: "Helvetica, Arial, sans-serif",
           }}

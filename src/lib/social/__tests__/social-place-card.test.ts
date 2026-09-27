@@ -112,11 +112,68 @@ describe("Aurelia / Seraphine share surface", () => {
       surface.description,
       "You're invited to celebrate Kojo & Fafa on Saturday, 14 November 2026."
     );
+    assert.equal(surface.guestGreeting, null);
+    assert.doesNotMatch(surface.description, /Dear /);
     assert.doesNotMatch(
       `${surface.title} ${surface.shareTitle} ${surface.description}`,
       /Seraphine|seraphine-champagne/i
     );
     assert.equal(surface.dateLabel, "14 NOVEMBER 2026");
+    assert.doesNotMatch(surface.image.url, /guest=/);
+  });
+
+  it("personalizes Aurelia and Seraphine cards with isolated guest cache URLs", () => {
+    const ama = buildAureliaFamilyShareSurface({
+      appUrl: APP,
+      uniqueLink: "enock-ruth",
+      catalogSlug: "aurelia-editorial-wedding",
+      layoutSlug: "aurelia-editorial-wedding",
+      eventTitle: "AURELIA",
+      hostName: "Enock & Ruth",
+      guestDisplayName: "Ama",
+      guestToken: "ama-token",
+      versionParts: ["hero"],
+    });
+    const esther = buildAureliaFamilyShareSurface({
+      appUrl: APP,
+      uniqueLink: "kojo-fafa",
+      catalogSlug: "seraphine-champagne-wedding",
+      layoutSlug: "seraphine-champagne-wedding",
+      eventTitle: "Seraphine Champagne",
+      hostName: "Kojo & Fafa",
+      guestDisplayName: "Esther",
+      guestToken: "esther-token",
+      dateDisplay: "14 November 2026",
+      weekday: "Saturday",
+      versionParts: ["hero"],
+    });
+    const kofi = buildAureliaFamilyShareSurface({
+      appUrl: APP,
+      uniqueLink: "enock-ruth",
+      catalogSlug: "aurelia-editorial-wedding",
+      layoutSlug: "aurelia-editorial-wedding",
+      eventTitle: "AURELIA",
+      hostName: "Enock & Ruth",
+      guestDisplayName: "Kofi",
+      guestToken: "kofi-token",
+      versionParts: ["hero"],
+    });
+
+    assert.equal(ama.shareTitle, "Enock & Ruth · You're invited");
+    assert.equal(ama.guestGreeting, "Dear Ama,");
+    assert.match(ama.description, /^Dear Ama, Enock & Ruth invite you/);
+    assert.match(ama.image.url, /guest=ama-token/);
+    assert.doesNotMatch(`${ama.shareTitle} ${ama.description}`, /Aurelia/i);
+
+    assert.equal(esther.shareTitle, "Kojo & Fafa · You're invited");
+    assert.equal(esther.guestGreeting, "Dear Esther,");
+    assert.match(esther.description, /^Dear Esther, Kojo & Fafa invite you/);
+    assert.match(esther.image.url, /guest=esther-token/);
+    assert.doesNotMatch(`${esther.shareTitle} ${esther.description}`, /Seraphine/i);
+
+    assert.match(kofi.image.url, /guest=kofi-token/);
+    assert.notEqual(ama.image.url, kofi.image.url);
+    assert.notEqual(ama.image.url, esther.image.url);
   });
 
   it("keeps the version stable for the same inputs and changes when the title changes", () => {
@@ -164,6 +221,35 @@ describe("social place-card markup", () => {
     const text = collectText(tree);
     assert.match(text, /no longer available/i);
     assert.doesNotMatch(text, /Seraphine/i);
+  });
+
+  it("renders a personalized greeting without making the guest the event title", () => {
+    const tree = SocialPlaceCardMarkup({
+      variant: "seraphine",
+      title: "Kojo & Fafa",
+      dateLabel: "14 NOVEMBER 2026",
+      guestGreeting: "Dear Ama,",
+      kicker: "PRIVATE INVITATION",
+      phrase: "invite you to celebrate with them",
+    });
+    const text = collectText(tree);
+    assert.match(text, /Dear Ama,/);
+    assert.match(text, /PRIVATE INVITATION/);
+    assert.match(text, /Kojo & Fafa/);
+    assert.match(text, /invite you to celebrate with them/);
+    assert.doesNotMatch(text, /Aurelia|Seraphine|ama@|0246|guest_/i);
+  });
+
+  it("does not show a guest greeting on a general invitation card", () => {
+    const tree = SocialPlaceCardMarkup({
+      variant: "aurelia",
+      title: "Enock & Ruth",
+      phrase: "Join us for this special celebration.",
+    });
+    const text = collectText(tree);
+    assert.match(text, /YOU'RE INVITED|YOU&apos;RE INVITED/);
+    assert.doesNotMatch(text, /Dear /);
+    assert.doesNotMatch(text, /PRIVATE INVITATION/);
   });
 
   it("wraps a long event title without leaking internal identifiers", () => {

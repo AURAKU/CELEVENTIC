@@ -131,6 +131,35 @@ describe("social invite copy", () => {
     );
   });
 
+  it("puts the guest name in the description, never in the metadata title", () => {
+    const title = resolveSocialEventTitle({
+      eventTitle: "Seraphine Champagne",
+      hostName: "Kojo & Fafa",
+    }).title;
+    assert.equal(buildSocialInviteShareTitle(title), "Kojo & Fafa · You're invited");
+    const description = buildSocialInviteDescription({
+      title,
+      hostName: "Kojo & Fafa",
+      guestDisplayName: "Ama",
+    });
+    assert.equal(
+      description,
+      "Dear Ama, Kojo & Fafa invite you to celebrate with them — tap to open your invitation."
+    );
+    assert.doesNotMatch(buildSocialInviteShareTitle(title), /Ama/);
+    assert.doesNotMatch(description, /Seraphine|Aurelia|ama@|0246/i);
+  });
+
+  it("omits a Dear line when the guest name is an email or phone", () => {
+    const description = buildSocialInviteDescription({
+      title: "Kojo & Fafa",
+      hostName: "Kojo & Fafa",
+      guestDisplayName: "ama@example.com",
+    });
+    assert.doesNotMatch(description, /Dear |@example|0246/i);
+    assert.match(description, /Kojo & Fafa invite you to celebrate with them/);
+  });
+
   it("does not invent a calendar date from a month-only label", () => {
     assert.equal(formatSocialDescriptionDate({ dateLabel: "October 2026" }), null);
     assert.equal(formatSocialDateCardLabel("14 November 2026"), "14 NOVEMBER 2026");

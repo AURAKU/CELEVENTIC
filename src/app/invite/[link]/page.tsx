@@ -38,8 +38,9 @@ import {
   EXPIRED_INVITE_METADATA,
   buildInviteOpenGraphMetadata,
 } from "@/lib/social/invitation-share-metadata";
-import { buildAureliaFamilyShareSurface, resolveSocialPlaceCardVariant } from "@/lib/social/social-place-card";
+import { resolveSocialPlaceCardVariant, buildAureliaFamilyShareSurface } from "@/lib/social/social-place-card";
 import { resolveCeremonyWeekdayForDate } from "@/lib/social/social-event-title";
+import { resolveSocialInvitationGuest } from "@/lib/social/social-guest";
 import { getInvitationPassView } from "@/services/admission/guest-pass.service";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import {
@@ -99,10 +100,14 @@ export const revalidate = 0;
  */
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ link: string }>;
+  searchParams: Promise<{ guest?: string }>;
 }): Promise<Metadata> {
   const { link } = await params;
+  const query = await searchParams;
+  const guestToken = query.guest;
   const invitation = await invitationService.getInvitationByLink(link);
   if (!invitation || invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") {
     return EXPIRED_INVITE_METADATA;
@@ -112,10 +117,10 @@ export async function generateMetadata({
   const appUrl = await getServerAppUrl();
   const stored = invitation.designConfig as InvitationDesignConfig | null;
   const templateConfig = invitation.template?.config as { layout?: string } | null;
-  const productionResolution = await resolveProductionOrderForLiveInvitation(
-    invitation.id,
-    event.id
-  );
+  const [productionResolution, tokenGuest] = await Promise.all([
+    resolveProductionOrderForLiveInvitation(invitation.id, event.id),
+    guestToken ? invitationService.getGuestForInvitation(invitation.id, guestToken) : Promise.resolve(null),
+  ]);
   const productionOrder = productionResolution.order;
   const productionDesign = productionOrder ? buildPublishedDesignConfig(productionOrder) : null;
   const catalogSlug =
@@ -128,6 +133,14 @@ export async function generateMetadata({
     productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null;
   const canonicalUrl = `${appUrl.replace(/\/$/, "")}/invite/${encodeURIComponent(invitation.uniqueLink)}`;
   const familyVariant = resolveSocialPlaceCardVariant({ catalogSlug, layoutSlug });
+  const socialGuest = resolveSocialInvitationGuest({
+    guestToken,
+    tokenGuest,
+    invitationName: invitation.name,
+    isGeneralPass: invitation.isGeneralPass,
+    eventTitle: event.title,
+    guests: invitation.guests,
+  });
 
   if (familyVariant) {
     const wedding = mergeAureliaWedding(
@@ -149,6 +162,9 @@ export async function generateMetadata({
         dateDisplay: wedding.dateDisplay,
         ceremonies: wedding.ceremonies,
       }),
+      guestDisplayName: socialGuest?.displayName,
+      guestToken: socialGuest?.guestToken,
+      includeGuestInCanonicalUrl: Boolean(guestToken && socialGuest),
       versionParts: [
         invitation.updatedAt?.toISOString?.(),
         event.updatedAt?.toISOString?.(),

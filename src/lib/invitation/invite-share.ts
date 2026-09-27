@@ -24,24 +24,27 @@ export type InviteShareChannel =
   | "email"
   | "copy";
 
-/** Canonical public invite URL (no hash / guest query noise). */
+/** Canonical public invite URL. Personalized links keep `?guest=`. */
 export function resolveInviteShareUrl(input: {
   uniqueLink?: string | null;
   origin?: string;
   fallbackHref?: string;
+  guestToken?: string | null;
 }): string {
   const origin =
     input.origin?.replace(/\/$/, "") ||
     (typeof window !== "undefined" ? window.location.origin : "");
   const link = input.uniqueLink?.trim();
+  const guest = input.guestToken?.trim();
   if (origin && link) {
-    return `${origin}/invite/${encodeURIComponent(link)}`;
+    const base = `${origin}/invite/${encodeURIComponent(link)}`;
+    return guest ? `${base}?guest=${encodeURIComponent(guest)}` : base;
   }
   if (input.fallbackHref) {
     try {
       const u = new URL(input.fallbackHref, origin || "https://celeventic.com");
       u.hash = "";
-      // Keep guest token if present — personalised invites should stay personal.
+      if (guest) u.searchParams.set("guest", guest);
       return u.toString();
     } catch {
       return input.fallbackHref.split("#")[0] || input.fallbackHref;
@@ -61,11 +64,14 @@ export function buildInviteSharePayload(input: {
   invitationName?: string | null;
   partnerOneName?: string | null;
   partnerTwoName?: string | null;
+  guestDisplayName?: string | null;
+  guestToken?: string | null;
 }): InviteSharePayload {
   const url = resolveInviteShareUrl({
     uniqueLink: input.uniqueLink,
     origin: input.origin,
     fallbackHref: input.fallbackHref,
+    guestToken: input.guestToken,
   });
 
   if (input.category === "funeral") {
@@ -87,7 +93,7 @@ export function buildInviteSharePayload(input: {
     }).title;
     return {
       title,
-      text: buildSocialInviteShareText(title),
+      text: buildSocialInviteShareText(title, input.guestDisplayName),
       url,
     };
   }

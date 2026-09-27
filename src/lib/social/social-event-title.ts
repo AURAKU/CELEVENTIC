@@ -1,4 +1,5 @@
 import { truncateForShare } from "@/lib/social/share-description";
+import { sanitizeSocialGuestDisplayName } from "@/lib/social/social-guest";
 import {
   AURELIA_CATALOG_SLUG,
   AURELIA_LAYOUT_SLUG,
@@ -182,11 +183,22 @@ export function buildSocialInviteDescription(input: {
   title: string;
   hostName?: string | null;
   descriptionDate?: string | null;
+  guestDisplayName?: string | null;
 }): string {
   const title = input.title.trim();
   const host = sanitizeGuestFacingTitle(input.hostName);
   const dated = input.descriptionDate?.trim();
+  const guest = sanitizeSocialGuestDisplayName(input.guestDisplayName);
 
+  if (guest && host) {
+    const verb = host.includes("&") ? "invite" : "invites";
+    return truncateForShare(
+      `Dear ${guest}, ${host} ${verb} you to celebrate with them — tap to open your invitation.`
+    );
+  }
+  if (guest) {
+    return truncateForShare(`Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`);
+  }
   if (dated) {
     return truncateForShare(`You're invited to celebrate ${title} on ${dated}.`);
   }
@@ -203,6 +215,8 @@ export function buildSocialInviteShareTitle(title: string): string {
   return `${title} · You're invited`;
 }
 
-export function buildSocialInviteShareText(title: string): string {
+export function buildSocialInviteShareText(title: string, guestDisplayName?: string | null): string {
+  const guest = sanitizeSocialGuestDisplayName(guestDisplayName);
+  if (guest) return `Dear ${guest}, you're invited to ${title}.`;
   return `You're invited to ${title}.`;
 }

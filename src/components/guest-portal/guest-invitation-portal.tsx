@@ -26,6 +26,7 @@ import {
   mergeAureliaWedding,
 } from "@/lib/experience/aurelia-editorial";
 import { buildSocialInviteShareText, resolveSocialEventTitle } from "@/lib/social/social-event-title";
+import { sanitizeSocialGuestDisplayName } from "@/lib/social/social-guest";
 import { PagedInvitationViewer } from "@/components/invitation-paged/paged-invitation-viewer";
 import { categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
@@ -168,11 +169,13 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
       partnerOneName: wedding.partnerOneName,
       partnerTwoName: wedding.partnerTwoName,
     }).title;
+    const guestDisplayName = sanitizeSocialGuestDisplayName(props.guestName);
     return {
       title,
-      text: buildSocialInviteShareText(title),
+      text: buildSocialInviteShareText(title, guestDisplayName),
       url: resolveInviteShareUrl({
         uniqueLink: props.invitation.uniqueLink,
+        guestToken: guestDisplayName ? props.guestQrToken : null,
         fallbackHref: typeof window !== "undefined" ? window.location.href : undefined,
       }),
     };
@@ -182,6 +185,8 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     displayInvitation.name,
     props.design,
     props.invitation.uniqueLink,
+    props.guestName,
+    props.guestQrToken,
   ]);
 
   const {

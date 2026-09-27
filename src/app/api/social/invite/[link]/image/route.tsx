@@ -18,11 +18,15 @@ import {
   SERAPHINE_LAYOUT_SLUG,
 } from "@/lib/experience/aurelia-editorial";
 import { formatSocialDateCardLabel, resolveSocialEventTitle } from "@/lib/social/social-event-title";
+import { formatSocialGuestGreeting, resolveSocialInvitationGuest } from "@/lib/social/social-guest";
 import {
   isSocialPlaceCardUnavailable,
   resolveSocialPlaceCardVariant,
   SOCIAL_PLACE_CARD_HEIGHT,
+  SOCIAL_PLACE_CARD_KICKER,
+  SOCIAL_PLACE_CARD_PERSONAL_PHRASE,
   SOCIAL_PLACE_CARD_PHRASE,
+  SOCIAL_PLACE_CARD_PRIVATE_KICKER,
   SOCIAL_PLACE_CARD_WIDTH,
 } from "@/lib/social/social-place-card";
 import { SocialPlaceCardMarkup } from "@/lib/social/social-place-card-image";
@@ -82,11 +86,12 @@ function pngResponse(element: ReactElement, cacheSeconds = 300) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ link: string }> }
 ) {
   try {
     const { link } = await context.params;
+    const guestToken = new URL(request.url).searchParams.get("guest");
     const invitation = await invitationService.getInvitationByLink(link);
     const origin = await getServerAppUrl();
 
@@ -135,6 +140,19 @@ export async function GET(
       partnerTwoName: wedding.partnerTwoName,
     }).title;
 
+    const tokenGuest = guestToken
+      ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
+      : null;
+    const socialGuest = resolveSocialInvitationGuest({
+      guestToken,
+      tokenGuest,
+      invitationName: invitation.name,
+      isGeneralPass: invitation.isGeneralPass,
+      eventTitle: invitation.event.title,
+      guests: invitation.guests,
+    });
+    const guestGreeting = formatSocialGuestGreeting(socialGuest?.displayName);
+
     if (unavailable) {
       return pngResponse(
         <SocialPlaceCardMarkup variant={variant} title={title} unavailable />,
@@ -158,7 +176,9 @@ export async function GET(
         variant={variant}
         title={title}
         dateLabel={formatSocialDateCardLabel(wedding.dateDisplay)}
-        phrase={SOCIAL_PLACE_CARD_PHRASE}
+        phrase={guestGreeting ? SOCIAL_PLACE_CARD_PERSONAL_PHRASE : SOCIAL_PLACE_CARD_PHRASE}
+        kicker={guestGreeting ? SOCIAL_PLACE_CARD_PRIVATE_KICKER : SOCIAL_PLACE_CARD_KICKER}
+        guestGreeting={guestGreeting}
         heroSrc={heroSrc}
       />
     );

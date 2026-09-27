@@ -72,6 +72,11 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
         invitationName: invitation.name,
         partnerOneName: familyWedding?.partnerOneName,
         partnerTwoName: familyWedding?.partnerTwoName,
+        guestDisplayName: context.guestName,
+        guestToken:
+          typeof window !== "undefined"
+            ? new URLSearchParams(window.location.search).get("guest")
+            : null,
       }),
     [
       category,
@@ -80,6 +85,7 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
       invitation.name,
       context.templateSlug,
       context.design?.layout,
+      context.guestName,
       familyWedding?.partnerOneName,
       familyWedding?.partnerTwoName,
     ]

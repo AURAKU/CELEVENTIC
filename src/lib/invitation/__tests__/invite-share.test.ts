@@ -112,6 +112,33 @@ describe("invite share", () => {
     assert.doesNotMatch(`${payload.title} ${payload.text}`, /Seraphine|Champagne/i);
   });
 
+  it("preserves the personalized invitation URL and Dear copy in the native share payload", () => {
+    const payload = buildInviteSharePayload({
+      category: "wedding",
+      uniqueLink: "kojo-fafa",
+      origin: "https://celeventic.com",
+      catalogSlug: "seraphine-champagne-wedding",
+      layoutSlug: "seraphine-champagne-wedding",
+      guestDisplayName: "Ama",
+      guestToken: "ama-token",
+      event: {
+        title: "Seraphine Champagne",
+        hostName: "Kojo & Fafa",
+        description: null,
+        startDate: "",
+        venueName: null,
+        landmark: null,
+        mapsLink: null,
+        contactPhone: null,
+        dressCode: null,
+      },
+    });
+    assert.equal(payload.title, "Kojo & Fafa");
+    assert.equal(payload.text, "Dear Ama, you're invited to Kojo & Fafa.");
+    assert.equal(payload.url, "https://celeventic.com/invite/kojo-fafa?guest=ama-token");
+    assert.doesNotMatch(`${payload.title} ${payload.text} ${payload.url}`, /Seraphine|Aurelia/i);
+  });
+
   it("builds WhatsApp and email channel hrefs", () => {
     const payload = {
       title: "In loving memory of Madam Vida",
