@@ -20,6 +20,11 @@ import {
   type InviteShareChannel,
 } from "@/lib/invitation/invite-share";
 import type { PageRenderContext } from "@/lib/invite-blueprints/blueprint-types";
+import {
+  aureliaFamilyDefaults,
+  isAureliaEditorialLayout,
+  mergeAureliaWedding,
+} from "@/lib/experience/aurelia-editorial";
 
 interface PersistentActionBarProps {
   context: PageRenderContext;
@@ -48,6 +53,12 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const { invitation, guestId, event, category } = context;
+  const familyWedding = isAureliaEditorialLayout(context.design?.layout)
+    ? mergeAureliaWedding(
+        context.design.experience?.aureliaWedding,
+        aureliaFamilyDefaults(context.design.layout)
+      )
+    : null;
 
   const payload = useMemo(
     () =>
@@ -56,8 +67,22 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
         event,
         uniqueLink: invitation.uniqueLink,
         fallbackHref: typeof window !== "undefined" ? window.location.href : undefined,
+        catalogSlug: context.templateSlug,
+        layoutSlug: context.design?.layout,
+        invitationName: invitation.name,
+        partnerOneName: familyWedding?.partnerOneName,
+        partnerTwoName: familyWedding?.partnerTwoName,
       }),
-    [category, event, invitation.uniqueLink]
+    [
+      category,
+      event,
+      invitation.uniqueLink,
+      invitation.name,
+      context.templateSlug,
+      context.design?.layout,
+      familyWedding?.partnerOneName,
+      familyWedding?.partnerTwoName,
+    ]
   );
 
   useEffect(() => {
@@ -89,14 +114,7 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
     setBusy(true);
     track("action_bar_share");
 
-    const sharePayload = buildInviteSharePayload({
-      category,
-      event,
-      uniqueLink: invitation.uniqueLink,
-      fallbackHref: window.location.href,
-    });
-
-    const result = await tryNativeInviteShare(sharePayload);
+    const result = await tryNativeInviteShare(payload);
     setBusy(false);
 
     if (result === "shared") {

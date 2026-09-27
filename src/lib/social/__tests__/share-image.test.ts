@@ -81,7 +81,42 @@ describe("resolveFashionShareOgImageForInvitation", () => {
 });
 
 describe("resolveAureliaShareOgImageForInvitation", () => {
-  it("uses the couple hero photograph for the Aurelia SKU", () => {
+  it("uses the generated 1200×630 social place card for a published Aurelia invite", () => {
+    const image = resolveAureliaShareOgImageForInvitation({
+      appUrl: APP,
+      catalogSlug: "aurelia-editorial-wedding",
+      layoutSlug: "aurelia-editorial-wedding",
+      uniqueLink: "enock-ruth",
+      versionParts: ["/templates/aurelia/hero.jpg", "Enock & Ruth"],
+      heroImageUrl: "/templates/aurelia/hero.jpg",
+    });
+    assert.ok(image);
+    assert.match(image?.url ?? "", /\/api\/social\/invite\/enock-ruth\/image\?v=/);
+    assert.equal(image?.width, 1200);
+    assert.equal(image?.height, 630);
+    assert.equal(image?.type, "image/png");
+    const og = shareOgImageToOpenGraph(image!, "Enock & Ruth");
+    assert.equal(og.width, 1200);
+    assert.equal(og.height, 630);
+    assert.doesNotMatch(og.alt ?? "", /Aurelia/i);
+  });
+
+  it("uses the generated social place card for a published Seraphine invite", () => {
+    const image = resolveAureliaShareOgImageForInvitation({
+      appUrl: APP,
+      catalogSlug: "seraphine-champagne-wedding",
+      layoutSlug: "seraphine-champagne-wedding",
+      uniqueLink: "kojo-fafa",
+      heroImageUrl: "/templates/seraphine/hero.jpg",
+    });
+    assert.ok(image);
+    assert.match(image?.url ?? "", /\/api\/social\/invite\/kojo-fafa\/image\?v=/);
+    assert.notEqual(image?.url, `${APP}/templates/aurelia/hero.jpg`);
+    assert.equal(image?.width, 1200);
+    assert.equal(image?.height, 630);
+  });
+
+  it("falls back to the couple hero photograph when no guest link is available", () => {
     const image = resolveAureliaShareOgImageForInvitation({
       appUrl: APP,
       catalogSlug: "aurelia-editorial-wedding",
@@ -92,11 +127,9 @@ describe("resolveAureliaShareOgImageForInvitation", () => {
     assert.equal(image?.width, 731);
     assert.equal(image?.height, 1024);
     assert.equal(image?.type, "image/jpeg");
-    const og = shareOgImageToOpenGraph(image!, "Aurelia");
-    assert.equal(og.type, "image/jpeg");
   });
 
-  it("uses a Studio replacement instead of the default hero", () => {
+  it("uses a Studio replacement hero when no guest link is available", () => {
     const image = resolveAureliaShareOgImageForInvitation({
       appUrl: APP,
       catalogSlug: "aurelia-editorial-wedding",
@@ -115,7 +148,7 @@ describe("resolveAureliaShareOgImageForInvitation", () => {
     assert.equal(image, null);
   });
 
-  it("uses the Seraphine atmosphere instead of the Aurelia couple photograph", () => {
+  it("uses the Seraphine atmosphere instead of the Aurelia couple photograph without a guest link", () => {
     const image = resolveAureliaShareOgImageForInvitation({
       appUrl: APP,
       catalogSlug: "seraphine-champagne-wedding",

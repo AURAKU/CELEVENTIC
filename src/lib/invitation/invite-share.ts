@@ -2,6 +2,11 @@ import { copyText } from "@/lib/clipboard";
 import { resolveDeceasedName } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import type { InviteCategory } from "@/lib/invite-blueprints/blueprint-types";
 import type { InvitationEventData } from "@/types/invitation-design";
+import { resolveSocialPlaceCardVariant } from "@/lib/social/social-place-card";
+import {
+  buildSocialInviteShareText,
+  resolveSocialEventTitle,
+} from "@/lib/social/social-event-title";
 
 export type InviteSharePayload = {
   title: string;
@@ -51,6 +56,11 @@ export function buildInviteSharePayload(input: {
   uniqueLink?: string | null;
   origin?: string;
   fallbackHref?: string;
+  catalogSlug?: string | null;
+  layoutSlug?: string | null;
+  invitationName?: string | null;
+  partnerOneName?: string | null;
+  partnerTwoName?: string | null;
 }): InviteSharePayload {
   const url = resolveInviteShareUrl({
     uniqueLink: input.uniqueLink,
@@ -63,6 +73,21 @@ export function buildInviteSharePayload(input: {
     return {
       title: `In loving memory of ${name}`,
       text: `You're invited to the memorial service for ${name}. Open the invitation:`,
+      url,
+    };
+  }
+
+  if (resolveSocialPlaceCardVariant({ catalogSlug: input.catalogSlug, layoutSlug: input.layoutSlug })) {
+    const title = resolveSocialEventTitle({
+      eventTitle: input.event.title,
+      hostName: input.event.hostName,
+      invitationName: input.invitationName,
+      partnerOneName: input.partnerOneName,
+      partnerTwoName: input.partnerTwoName,
+    }).title;
+    return {
+      title,
+      text: buildSocialInviteShareText(title),
       url,
     };
   }

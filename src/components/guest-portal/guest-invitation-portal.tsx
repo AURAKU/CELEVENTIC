@@ -19,6 +19,13 @@ import { GiftInviteCard } from "@/components/gifts/gift-invite-card";
 import { InvitationMemoryAlbumCard } from "@/components/guest-portal/invitation-memory-album-card";
 import { useGuestPortalActions } from "@/hooks/use-guest-portal-actions";
 import { buildWhatsAppUrl, buildEmailUrl, isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
+import { resolveInviteShareUrl } from "@/lib/invitation/invite-share";
+import {
+  aureliaFamilyDefaults,
+  isAureliaEditorialLayout,
+  mergeAureliaWedding,
+} from "@/lib/experience/aurelia-editorial";
+import { buildSocialInviteShareText, resolveSocialEventTitle } from "@/lib/social/social-event-title";
 import { PagedInvitationViewer } from "@/components/invitation-paged/paged-invitation-viewer";
 import { categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
@@ -148,6 +155,35 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     [displayEvent, props.event.startDateRaw, props.event.startDate]
   );
 
+  const familyShare = useMemo(() => {
+    if (!isAureliaEditorialLayout(props.design?.layout)) return null;
+    const wedding = mergeAureliaWedding(
+      props.design.experience?.aureliaWedding,
+      aureliaFamilyDefaults(props.design.layout)
+    );
+    const title = resolveSocialEventTitle({
+      eventTitle: displayEvent.title,
+      hostName: displayEvent.hostName,
+      invitationName: displayInvitation.name,
+      partnerOneName: wedding.partnerOneName,
+      partnerTwoName: wedding.partnerTwoName,
+    }).title;
+    return {
+      title,
+      text: buildSocialInviteShareText(title),
+      url: resolveInviteShareUrl({
+        uniqueLink: props.invitation.uniqueLink,
+        fallbackHref: typeof window !== "undefined" ? window.location.href : undefined,
+      }),
+    };
+  }, [
+    displayEvent.hostName,
+    displayEvent.title,
+    displayInvitation.name,
+    props.design,
+    props.invitation.uniqueLink,
+  ]);
+
   const {
     primaryActions,
     runAction,
@@ -177,7 +213,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     registryUrl: props.registryUrl,
     eventId: props.eventId,
     calendarEvent,
-    shareTitle: displayEvent.title,
+    shareTitle: familyShare?.title ?? displayEvent.title,
+    shareText: familyShare?.text,
+    shareUrl: familyShare?.url,
     hubTabs,
     hasCalendarDate: Boolean(props.event.startDateRaw),
     buttonActions: experience?.buttonActions,

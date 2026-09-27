@@ -32,12 +32,14 @@ import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { eventGuideService } from "@/services/event-guide/event-guide.service";
 import { resolveMemoryAlbumIdentity } from "@/lib/memory/memory-album-identity";
-import {
-  resolveInvitationShareOgImage,
-  shareOgImageToOpenGraph,
-} from "@/lib/social/share-image";
+import { resolveInvitationShareOgImage } from "@/lib/social/share-image";
 import { buildShareDescription } from "@/lib/social/share-description";
-import { APP_NAME } from "@/lib/constants";
+import {
+  EXPIRED_INVITE_METADATA,
+  buildInviteOpenGraphMetadata,
+} from "@/lib/social/invitation-share-metadata";
+import { buildAureliaFamilyShareSurface, resolveSocialPlaceCardVariant } from "@/lib/social/social-place-card";
+import { resolveCeremonyWeekdayForDate } from "@/lib/social/social-event-title";
 import { getInvitationPassView } from "@/services/admission/guest-pass.service";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import {
@@ -90,10 +92,10 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
- * Share-card preview: Femmora uses the physical invitation placecard
- * (`shareOgImageUrl` / SKU default). Other houses keep their own image or the
- * branded QR / Celeventic logo fallback — never the Femmora card. Guest
- * unique links (`?guest=`) share this same metadata.
+ * Share-card preview: Femmora keeps the physical invitation placecard.
+ * Aurelia and Seraphine use a generated 1200×630 social place card branded
+ * with the event — never the template name. Other invitations keep their
+ * existing image or the branded QR / Celeventic logo fallback.
  */
 export async function generateMetadata({
   params,
@@ -103,14 +105,10 @@ export async function generateMetadata({
   const { link } = await params;
   const invitation = await invitationService.getInvitationByLink(link);
   if (!invitation || invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") {
-    return { title: "Invitation" };
+    return EXPIRED_INVITE_METADATA;
   }
 
   const event = invitation.event;
-  const title = `${event.title} · You're invited`;
-  // Always lead with the couple/host name rather than `event.description`
-  // (the host's free-form "our story" text), see `buildShareDescription`.
-  const description = buildShareDescription({ hostName: event.hostName, title: event.title });
   const appUrl = await getServerAppUrl();
   const stored = invitation.designConfig as InvitationDesignConfig | null;
   const templateConfig = invitation.template?.config as { layout?: string } | null;
@@ -126,12 +124,58 @@ export async function generateMetadata({
     invitation.template?.slug ??
     null;
   const liveDesign = productionDesign ?? stored;
+  const layoutSlug =
+    productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null;
+  const canonicalUrl = `${appUrl.replace(/\/$/, "")}/invite/${encodeURIComponent(invitation.uniqueLink)}`;
+  const familyVariant = resolveSocialPlaceCardVariant({ catalogSlug, layoutSlug });
+
+  if (familyVariant) {
+    const wedding = mergeAureliaWedding(
+      liveDesign?.experience?.aureliaWedding,
+      aureliaFamilyDefaults(layoutSlug)
+    );
+    const surface = buildAureliaFamilyShareSurface({
+      appUrl,
+      uniqueLink: invitation.uniqueLink,
+      catalogSlug,
+      layoutSlug,
+      eventTitle: event.title,
+      hostName: event.hostName,
+      invitationName: invitation.name,
+      partnerOneName: wedding.partnerOneName,
+      partnerTwoName: wedding.partnerTwoName,
+      dateDisplay: wedding.dateDisplay,
+      weekday: resolveCeremonyWeekdayForDate({
+        dateDisplay: wedding.dateDisplay,
+        ceremonies: wedding.ceremonies,
+      }),
+      versionParts: [
+        invitation.updatedAt?.toISOString?.(),
+        event.updatedAt?.toISOString?.(),
+        productionOrder && "updatedAt" in productionOrder
+          ? String((productionOrder as { updatedAt?: Date | string }).updatedAt ?? "")
+          : "",
+        wedding.heroImageUrl,
+        event.coverImageUrl,
+        liveDesign?.media?.find((asset) => asset.role === "hero")?.url,
+      ],
+    });
+    return buildInviteOpenGraphMetadata({
+      title: surface.shareTitle,
+      description: surface.description,
+      canonicalUrl: surface.canonicalUrl,
+      image: surface.image,
+      imageAlt: surface.imageAlt,
+    });
+  }
+
+  const title = `${event.title} · You're invited`;
+  const description = buildShareDescription({ hostName: event.hostName, title: event.title });
   const ogImage = await resolveInvitationShareOgImage({
     eventId: event.id,
     appUrl,
     catalogSlug,
-    layoutSlug:
-      productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null,
+    layoutSlug,
     fashionHouse:
       productionDesign?.experience?.fashionHouse ?? stored?.experience?.fashionHouse,
     heroImageUrl:
@@ -141,23 +185,13 @@ export async function generateMetadata({
     mediaHeroUrl: liveDesign?.media?.find((asset) => asset.role === "hero")?.url,
   });
 
-  return {
+  return buildInviteOpenGraphMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      siteName: APP_NAME,
-      images: [shareOgImageToOpenGraph(ogImage, event.title)],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [ogImage.url],
-    },
-  };
+    canonicalUrl,
+    image: ogImage,
+    imageAlt: event.title,
+  });
 }
 
 export default async function InvitePage({
