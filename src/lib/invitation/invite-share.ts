@@ -2,11 +2,9 @@ import { copyText } from "@/lib/clipboard";
 import { resolveDeceasedName } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import type { InviteCategory } from "@/lib/invite-blueprints/blueprint-types";
 import type { InvitationEventData } from "@/types/invitation-design";
-import { resolveSocialPlaceCardVariant } from "@/lib/social/social-place-card";
-import {
-  buildSocialInviteShareText,
-  resolveSocialEventTitle,
-} from "@/lib/social/social-event-title";
+import { resolveSocialEventKind } from "@/lib/social/social-category";
+import { socialNativeShareText } from "@/lib/social/social-copy";
+import { resolveSocialEventTitle } from "@/lib/social/social-event-title";
 
 export type InviteSharePayload = {
   title: string;
@@ -66,6 +64,7 @@ export function buildInviteSharePayload(input: {
   partnerTwoName?: string | null;
   guestDisplayName?: string | null;
   guestToken?: string | null;
+  eventType?: string | null;
 }): InviteSharePayload {
   const url = resolveInviteShareUrl({
     uniqueLink: input.uniqueLink,
@@ -73,34 +72,33 @@ export function buildInviteSharePayload(input: {
     fallbackHref: input.fallbackHref,
     guestToken: input.guestToken,
   });
-
-  if (input.category === "funeral") {
-    const name = resolveDeceasedName(input.event);
-    return {
-      title: `In loving memory of ${name}`,
-      text: `You're invited to the memorial service for ${name}. Open the invitation:`,
-      url,
-    };
-  }
-
-  if (resolveSocialPlaceCardVariant({ catalogSlug: input.catalogSlug, layoutSlug: input.layoutSlug })) {
-    const title = resolveSocialEventTitle({
-      eventTitle: input.event.title,
-      hostName: input.event.hostName,
-      invitationName: input.invitationName,
-      partnerOneName: input.partnerOneName,
-      partnerTwoName: input.partnerTwoName,
-    }).title;
-    return {
-      title,
-      text: buildSocialInviteShareText(title, input.guestDisplayName),
-      url,
-    };
-  }
+  const kind =
+    input.category === "funeral"
+      ? "funeral"
+      : resolveSocialEventKind({
+          catalogSlug: input.catalogSlug,
+          layoutSlug: input.layoutSlug,
+          eventType: input.eventType,
+        });
+  const deceasedName =
+    kind === "funeral" ? resolveDeceasedName(input.event, input.invitationName) : input.event.deceasedName;
+  const title = resolveSocialEventTitle({
+    eventTitle: input.event.title,
+    hostName: input.event.hostName,
+    invitationName: input.invitationName,
+    partnerOneName: input.partnerOneName,
+    partnerTwoName: input.partnerTwoName,
+    deceasedName,
+    kind,
+  }).title;
 
   return {
-    title: input.event.title,
-    text: `You're invited — ${input.event.title}. Open the invitation:`,
+    title,
+    text: socialNativeShareText({
+      kind,
+      title,
+      guestDisplayName: input.guestDisplayName,
+    }),
     url,
   };
 }

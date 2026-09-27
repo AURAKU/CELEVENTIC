@@ -17,7 +17,7 @@ describe("invite share", () => {
     );
   });
 
-  it("builds funeral memorial share copy", () => {
+  it("builds funeral memorial share copy without celebration language", () => {
     const payload = buildInviteSharePayload({
       category: "funeral",
       uniqueLink: "abc123",
@@ -35,8 +35,9 @@ describe("invite share", () => {
         deceasedName: "OBAAPANIN VIDA SERWAA A.K.A MADAM VIDA",
       },
     });
-    assert.match(payload.title, /loving memory/i);
-    assert.match(payload.text, /memorial/i);
+    assert.match(payload.title, /OBAAPANIN VIDA SERWAA/i);
+    assert.match(payload.text, /honour/i);
+    assert.doesNotMatch(payload.text, /celebrate/i);
     assert.equal(payload.url, "https://celeventic.com/invite/abc123");
   });
 

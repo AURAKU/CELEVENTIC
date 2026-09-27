@@ -30,7 +30,7 @@ function collectText(node: unknown): string {
 }
 
 describe("resolveSocialPlaceCardVariant", () => {
-  it("selects Aurelia without treating Femmora or generic layouts as family cards", () => {
+  it("selects family palettes for Aurelia/Seraphine and platform for every other SKU", () => {
     assert.equal(
       resolveSocialPlaceCardVariant({
         catalogSlug: "aurelia-editorial-wedding",
@@ -50,14 +50,14 @@ describe("resolveSocialPlaceCardVariant", () => {
         catalogSlug: FEMMORA_CATALOG_SLUG,
         layoutSlug: LUXURY_FASHION_LAYOUT_SLUG,
       }),
-      null
+      "platform"
     );
     assert.equal(
       resolveSocialPlaceCardVariant({
         catalogSlug: "forever-afaris-wedding",
         layoutSlug: "forever-afaris-wedding",
       }),
-      null
+      "platform"
     );
   });
 });
@@ -187,6 +187,7 @@ describe("Aurelia / Seraphine share surface", () => {
   it("marks expired and cancelled invitations unavailable", () => {
     assert.equal(isSocialPlaceCardUnavailable({ invitationStatus: "EXPIRED" }), true);
     assert.equal(isSocialPlaceCardUnavailable({ eventStatus: "CANCELLED" }), true);
+    assert.equal(isSocialPlaceCardUnavailable({ invitationStatus: "DRAFT" }), true);
     assert.equal(isSocialPlaceCardUnavailable({ invitationStatus: "ACTIVE", eventStatus: "PUBLISHED" }), false);
   });
 });

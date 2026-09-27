@@ -81,10 +81,11 @@ describe("resolveSocialEventTitle", () => {
     assert.equal(resolved.source, "couple");
   });
 
-  it("uses a neutral wedding fallback when nothing guest-facing exists", () => {
+  it("uses a category-aware fallback when nothing guest-facing exists", () => {
     const resolved = resolveSocialEventTitle({
       eventTitle: "Aurelia",
       hostName: "Seraphine",
+      kind: "wedding",
     });
     assert.equal(resolved.title, "Wedding Celebration");
     assert.equal(resolved.source, "fallback");

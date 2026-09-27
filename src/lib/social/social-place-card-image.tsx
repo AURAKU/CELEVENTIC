@@ -1,39 +1,20 @@
 import React from "react";
 import type { SocialPlaceCardVariant } from "@/lib/social/social-place-card";
-import {
-  SOCIAL_PLACE_CARD_KICKER,
-  SOCIAL_PLACE_CARD_PHRASE,
-} from "@/lib/social/social-place-card";
+import { SOCIAL_PLACE_CARD_KICKER, SOCIAL_PLACE_CARD_PHRASE } from "@/lib/social/social-copy";
+import { resolveSocialVisualTheme, type SocialVisualTheme } from "@/lib/social/social-theme";
 
 export type SocialPlaceCardVisual = {
-  variant: SocialPlaceCardVariant;
+  variant?: SocialPlaceCardVariant | null;
+  theme?: SocialVisualTheme | null;
   title: string;
   dateLabel?: string | null;
   phrase?: string | null;
   heroSrc?: string | null;
   unavailable?: boolean;
+  unavailablePhrase?: string | null;
   kicker?: string | null;
   guestGreeting?: string | null;
 };
-
-const PALETTES = {
-  aurelia: {
-    panel: "linear-gradient(165deg, #0B241C 0%, #102E24 42%, #17382C 100%)",
-    veil: "linear-gradient(90deg, rgba(8, 24, 18, 0) 0%, rgba(8, 24, 18, 0.28) 55%, rgba(11, 36, 28, 0.92) 100%)",
-    ivory: "#F4EFE4",
-    gold: "#C9B07A",
-    muted: "rgba(244, 239, 228, 0.72)",
-    mark: "rgba(201, 176, 122, 0.88)",
-  },
-  seraphine: {
-    panel: "linear-gradient(165deg, #2C261C 0%, #3A3226 38%, #4A3F30 100%)",
-    veil: "linear-gradient(90deg, rgba(44, 38, 28, 0) 0%, rgba(58, 50, 38, 0.22) 52%, rgba(58, 50, 38, 0.94) 100%)",
-    ivory: "#F7F1E6",
-    gold: "#D7C4A0",
-    muted: "rgba(247, 241, 230, 0.74)",
-    mark: "rgba(168, 186, 154, 0.92)",
-  },
-} as const;
 
 function titleSize(title: string, personalized: boolean): number {
   if (title.length > 42) return personalized ? 38 : 42;
@@ -44,19 +25,26 @@ function titleSize(title: string, personalized: boolean): number {
 
 export function SocialPlaceCardMarkup({
   variant,
+  theme,
   title,
   dateLabel,
   phrase,
   heroSrc,
   unavailable = false,
+  unavailablePhrase,
   kicker,
   guestGreeting,
 }: SocialPlaceCardVisual) {
-  const palette = PALETTES[variant];
+  const palette =
+    theme ??
+    resolveSocialVisualTheme({
+      kind: "wedding",
+      layoutSlug: variant === "seraphine" ? "seraphine-champagne-wedding" : variant === "aurelia" ? "aurelia-editorial-wedding" : null,
+    });
   const greeting = unavailable ? null : guestGreeting?.trim() || null;
   const displayTitle = unavailable ? "This invitation is no longer available" : title;
   const displayPhrase = unavailable
-    ? "The celebration link is closed."
+    ? unavailablePhrase?.trim() || "This invitation is no longer available."
     : phrase?.trim() || SOCIAL_PLACE_CARD_PHRASE;
   const displayKicker = unavailable
     ? SOCIAL_PLACE_CARD_KICKER
@@ -83,10 +71,7 @@ export function SocialPlaceCardMarkup({
           width: "58%",
           height: "630px",
           display: "flex",
-          background:
-            variant === "aurelia"
-              ? "radial-gradient(circle at 30% 30%, #245544 0%, #0B241C 70%)"
-              : "radial-gradient(circle at 30% 24%, #8BA888 0%, #3A3226 72%)",
+          background: palette.heroWash,
         }}
       >
         {heroSrc ? (
@@ -207,7 +192,11 @@ export function SocialPlaceCardMarkup({
         >
           <div style={{ display: "flex", fontSize: 13, letterSpacing: "0.38em" }}>CELEVENTIC</div>
           <div style={{ display: "flex", marginTop: 6, fontSize: 14, letterSpacing: "0.08em", opacity: 0.8 }}>
-            Celebrate with Celeventic
+            {unavailable
+              ? "Celeventic"
+              : (phrase ?? "").toLowerCase().includes("honour")
+                ? "Remember with Celeventic"
+                : "Celebrate with Celeventic"}
           </div>
         </div>
       </div>

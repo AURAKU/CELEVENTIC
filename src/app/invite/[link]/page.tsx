@@ -32,15 +32,13 @@ import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { eventGuideService } from "@/services/event-guide/event-guide.service";
 import { resolveMemoryAlbumIdentity } from "@/lib/memory/memory-album-identity";
-import { resolveInvitationShareOgImage } from "@/lib/social/share-image";
-import { buildShareDescription } from "@/lib/social/share-description";
 import {
   EXPIRED_INVITE_METADATA,
   buildInviteOpenGraphMetadata,
 } from "@/lib/social/invitation-share-metadata";
-import { resolveSocialPlaceCardVariant, buildAureliaFamilyShareSurface } from "@/lib/social/social-place-card";
-import { resolveCeremonyWeekdayForDate } from "@/lib/social/social-event-title";
+import { buildSocialInvitationSurface } from "@/lib/social/social-place-card";
 import { resolveSocialInvitationGuest } from "@/lib/social/social-guest";
+import { buildLiveSocialInvitationInput } from "@/lib/social/social-live-input";
 import { getInvitationPassView } from "@/services/admission/guest-pass.service";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import {
@@ -93,10 +91,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
- * Share-card preview: Femmora keeps the physical invitation placecard.
- * Aurelia and Seraphine use a generated 1200×630 social place card branded
- * with the event — never the template name. Other invitations keep their
- * existing image or the branded QR / Celeventic logo fallback.
+ * Share-card preview: every published Celeventic invitation inherits the
+ * platform Social Invitation Engine. Template names never appear in OG copy.
  */
 export async function generateMetadata({
   params,
@@ -109,7 +105,12 @@ export async function generateMetadata({
   const query = await searchParams;
   const guestToken = query.guest;
   const invitation = await invitationService.getInvitationByLink(link);
-  if (!invitation || invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") {
+  if (
+    !invitation ||
+    invitation.status === "EXPIRED" ||
+    invitation.status === "DRAFT" ||
+    invitation.event.status === "CANCELLED"
+  ) {
     return EXPIRED_INVITE_METADATA;
   }
 
@@ -131,8 +132,6 @@ export async function generateMetadata({
   const liveDesign = productionDesign ?? stored;
   const layoutSlug =
     productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null;
-  const canonicalUrl = `${appUrl.replace(/\/$/, "")}/invite/${encodeURIComponent(invitation.uniqueLink)}`;
-  const familyVariant = resolveSocialPlaceCardVariant({ catalogSlug, layoutSlug });
   const socialGuest = resolveSocialInvitationGuest({
     guestToken,
     tokenGuest,
@@ -141,72 +140,26 @@ export async function generateMetadata({
     eventTitle: event.title,
     guests: invitation.guests,
   });
-
-  if (familyVariant) {
-    const wedding = mergeAureliaWedding(
-      liveDesign?.experience?.aureliaWedding,
-      aureliaFamilyDefaults(layoutSlug)
-    );
-    const surface = buildAureliaFamilyShareSurface({
+  const surface = buildSocialInvitationSurface(
+    buildLiveSocialInvitationInput({
       appUrl,
-      uniqueLink: invitation.uniqueLink,
+      invitation,
+      liveDesign,
       catalogSlug,
       layoutSlug,
-      eventTitle: event.title,
-      hostName: event.hostName,
-      invitationName: invitation.name,
-      partnerOneName: wedding.partnerOneName,
-      partnerTwoName: wedding.partnerTwoName,
-      dateDisplay: wedding.dateDisplay,
-      weekday: resolveCeremonyWeekdayForDate({
-        dateDisplay: wedding.dateDisplay,
-        ceremonies: wedding.ceremonies,
-      }),
+      productionOrder,
       guestDisplayName: socialGuest?.displayName,
       guestToken: socialGuest?.guestToken,
       includeGuestInCanonicalUrl: Boolean(guestToken && socialGuest),
-      versionParts: [
-        invitation.updatedAt?.toISOString?.(),
-        event.updatedAt?.toISOString?.(),
-        productionOrder && "updatedAt" in productionOrder
-          ? String((productionOrder as { updatedAt?: Date | string }).updatedAt ?? "")
-          : "",
-        wedding.heroImageUrl,
-        event.coverImageUrl,
-        liveDesign?.media?.find((asset) => asset.role === "hero")?.url,
-      ],
-    });
-    return buildInviteOpenGraphMetadata({
-      title: surface.shareTitle,
-      description: surface.description,
-      canonicalUrl: surface.canonicalUrl,
-      image: surface.image,
-      imageAlt: surface.imageAlt,
-    });
-  }
-
-  const title = `${event.title} · You're invited`;
-  const description = buildShareDescription({ hostName: event.hostName, title: event.title });
-  const ogImage = await resolveInvitationShareOgImage({
-    eventId: event.id,
-    appUrl,
-    catalogSlug,
-    layoutSlug,
-    fashionHouse:
-      productionDesign?.experience?.fashionHouse ?? stored?.experience?.fashionHouse,
-    heroImageUrl:
-      productionDesign?.experience?.aureliaWedding?.heroImageUrl ??
-      stored?.experience?.aureliaWedding?.heroImageUrl,
-    coverImageUrl: event.coverImageUrl,
-    mediaHeroUrl: liveDesign?.media?.find((asset) => asset.role === "hero")?.url,
-  });
+    })
+  );
 
   return buildInviteOpenGraphMetadata({
-    title,
-    description,
-    canonicalUrl,
-    image: ogImage,
-    imageAlt: event.title,
+    title: surface.shareTitle,
+    description: surface.description,
+    canonicalUrl: surface.canonicalUrl,
+    image: surface.image,
+    imageAlt: surface.imageAlt,
   });
 }
 

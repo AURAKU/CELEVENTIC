@@ -117,7 +117,8 @@ export function resolveAureliaShareOgImageForInvitation(input: {
   coverImageUrl?: string | null;
   mediaHeroUrl?: string | null;
 }): ResolvedShareOgImage | null {
-  if (!resolveSocialPlaceCardVariant(input)) return null;
+  const variant = resolveSocialPlaceCardVariant(input);
+  if (variant !== "aurelia" && variant !== "seraphine") return null;
 
   const uniqueLink = input.uniqueLink?.trim();
   if (uniqueLink) {
@@ -143,6 +144,32 @@ export function resolveAureliaShareOgImageForInvitation(input: {
         : AURELIA_HERO_FALLBACK,
   });
   return decorateShareImage(input.appUrl, hero);
+}
+
+export function resolvePlatformShareOgImageForInvitation(input: {
+  appUrl: string;
+  uniqueLink?: string | null;
+  guestToken?: string | null;
+  versionParts?: Array<string | number | null | undefined>;
+  catalogSlug?: string | null;
+  layoutSlug?: string | null;
+  heroImageUrl?: string | null;
+  coverImageUrl?: string | null;
+  mediaHeroUrl?: string | null;
+}): ResolvedShareOgImage | null {
+  const uniqueLink = input.uniqueLink?.trim();
+  if (!uniqueLink) return null;
+  const version = buildSocialPlaceCardVersion(
+    input.versionParts ?? [
+      input.heroImageUrl,
+      input.coverImageUrl,
+      input.mediaHeroUrl,
+      input.catalogSlug,
+      input.layoutSlug,
+      input.guestToken,
+    ]
+  );
+  return decorateSocialPlaceCardImage(input.appUrl, uniqueLink, version, input.guestToken);
 }
 
 export function shareOgImageToOpenGraph(image: ResolvedShareOgImage, alt: string) {
@@ -193,11 +220,14 @@ export async function resolveInvitationShareOgImage(input: {
   layoutSlug?: string | null;
   fashionHouse?: Partial<LuxuryFashionHouseConfig> | null;
   uniqueLink?: string | null;
+  guestToken?: string | null;
   versionParts?: Array<string | number | null | undefined>;
   heroImageUrl?: string | null;
   coverImageUrl?: string | null;
   mediaHeroUrl?: string | null;
 }): Promise<ResolvedShareOgImage> {
+  const generated = resolvePlatformShareOgImageForInvitation(input);
+  if (generated) return generated;
   const fashion = resolveFashionShareOgImageForInvitation(input);
   if (fashion) return fashion;
   const aurelia = resolveAureliaShareOgImageForInvitation(input);

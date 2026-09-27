@@ -8,28 +8,15 @@ import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-temp
 import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { resolveProductionOrderForLiveInvitation } from "@/services/invitations/production-invitation-source.service";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
+import { resolveSocialInvitationGuest } from "@/lib/social/social-guest";
 import {
-  AURELIA_HERO_FALLBACK,
-  aureliaFamilyDefaults,
-  mergeAureliaWedding,
-  resolveAureliaHeroImage,
-  SERAPHINE_CATALOG_SLUG,
-  SERAPHINE_HERO_FALLBACK,
-  SERAPHINE_LAYOUT_SLUG,
-} from "@/lib/experience/aurelia-editorial";
-import { formatSocialDateCardLabel, resolveSocialEventTitle } from "@/lib/social/social-event-title";
-import { formatSocialGuestGreeting, resolveSocialInvitationGuest } from "@/lib/social/social-guest";
-import {
+  buildSocialInvitationSurface,
   isSocialPlaceCardUnavailable,
-  resolveSocialPlaceCardVariant,
   SOCIAL_PLACE_CARD_HEIGHT,
-  SOCIAL_PLACE_CARD_KICKER,
-  SOCIAL_PLACE_CARD_PERSONAL_PHRASE,
-  SOCIAL_PLACE_CARD_PHRASE,
-  SOCIAL_PLACE_CARD_PRIVATE_KICKER,
   SOCIAL_PLACE_CARD_WIDTH,
 } from "@/lib/social/social-place-card";
 import { SocialPlaceCardMarkup } from "@/lib/social/social-place-card-image";
+import { buildLiveSocialInvitationInput } from "@/lib/social/social-live-input";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,8 +34,8 @@ function resolveDesign(invitation: {
   return mergeDesignConfig(base, templateConfig as Partial<InvitationDesignConfig> | undefined);
 }
 
-async function heroToImageSrc(hero: string, origin: string): Promise<string | null> {
-  const value = hero.trim();
+async function heroToImageSrc(hero: string | null | undefined, origin: string): Promise<string | null> {
+  const value = hero?.trim();
   if (!value) return null;
   if (value.startsWith("data:")) return value;
   if (value.startsWith("/") && !value.startsWith("//")) {
@@ -85,6 +72,15 @@ function pngResponse(element: ReactElement, cacheSeconds = 300) {
   });
 }
 
+function fallbackCard() {
+  return (
+    <SocialPlaceCardMarkup
+      title="You're invited"
+      phrase="Open your Celeventic invitation."
+    />
+  );
+}
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ link: string }> }
@@ -96,22 +92,15 @@ export async function GET(
     const origin = await getServerAppUrl();
 
     if (!invitation) {
-      return pngResponse(
-        <SocialPlaceCardMarkup
-          variant="aurelia"
-          title="You're invited"
-          phrase="Open your Celeventic invitation."
-        />,
-        60
-      );
+      return pngResponse(fallbackCard(), 60);
     }
 
     const stored = invitation.designConfig as InvitationDesignConfig | null;
     const templateConfig = invitation.template?.config as { layout?: string } | null;
-    const productionResolution = await resolveProductionOrderForLiveInvitation(
-      invitation.id,
-      invitation.event.id
-    );
+    const [productionResolution, tokenGuest] = await Promise.all([
+      resolveProductionOrderForLiveInvitation(invitation.id, invitation.event.id),
+      guestToken ? invitationService.getGuestForInvitation(invitation.id, guestToken) : Promise.resolve(null),
+    ]);
     const productionOrder = productionResolution.order;
     const productionDesign = productionOrder ? buildPublishedDesignConfig(productionOrder) : null;
     const catalogSlug =
@@ -122,27 +111,6 @@ export async function GET(
     const liveDesign = productionDesign ?? stored ?? resolveDesign(invitation);
     const layoutSlug =
       productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? liveDesign.layout ?? null;
-    const variant = resolveSocialPlaceCardVariant({ catalogSlug, layoutSlug }) ?? "aurelia";
-    const unavailable = isSocialPlaceCardUnavailable({
-      invitationStatus: invitation.status,
-      eventStatus: invitation.event.status,
-    });
-
-    const wedding = mergeAureliaWedding(
-      liveDesign.experience?.aureliaWedding,
-      aureliaFamilyDefaults(layoutSlug)
-    );
-    const title = resolveSocialEventTitle({
-      eventTitle: invitation.event.title,
-      hostName: invitation.event.hostName,
-      invitationName: invitation.name,
-      partnerOneName: wedding.partnerOneName,
-      partnerTwoName: wedding.partnerTwoName,
-    }).title;
-
-    const tokenGuest = guestToken
-      ? await invitationService.getGuestForInvitation(invitation.id, guestToken)
-      : null;
     const socialGuest = resolveSocialInvitationGuest({
       guestToken,
       tokenGuest,
@@ -151,45 +119,50 @@ export async function GET(
       eventTitle: invitation.event.title,
       guests: invitation.guests,
     });
-    const guestGreeting = formatSocialGuestGreeting(socialGuest?.displayName);
+    const surface = buildSocialInvitationSurface(
+      buildLiveSocialInvitationInput({
+        appUrl: origin,
+        invitation,
+        liveDesign,
+        catalogSlug,
+        layoutSlug,
+        productionOrder,
+        guestDisplayName: socialGuest?.displayName,
+        guestToken: socialGuest?.guestToken,
+        includeGuestInCanonicalUrl: Boolean(guestToken && socialGuest),
+      })
+    );
+    const unavailable = isSocialPlaceCardUnavailable({
+      invitationStatus: invitation.status,
+      eventStatus: invitation.event.status,
+    });
 
     if (unavailable) {
       return pngResponse(
-        <SocialPlaceCardMarkup variant={variant} title={title} unavailable />,
+        <SocialPlaceCardMarkup
+          theme={surface.theme}
+          title={surface.title}
+          unavailable
+          unavailablePhrase={surface.unavailablePhrase}
+        />,
         120
       );
     }
 
-    const heroPath = resolveAureliaHeroImage({
-      heroImageUrl: liveDesign.experience?.aureliaWedding?.heroImageUrl ?? wedding.heroImageUrl,
-      coverImageUrl: invitation.event.coverImageUrl,
-      mediaHeroUrl: liveDesign.media?.find((asset) => asset.role === "hero")?.url,
-      fallback:
-        layoutSlug === SERAPHINE_LAYOUT_SLUG || catalogSlug === SERAPHINE_CATALOG_SLUG
-          ? SERAPHINE_HERO_FALLBACK
-          : AURELIA_HERO_FALLBACK,
-    });
-    const heroSrc = await heroToImageSrc(heroPath, origin);
-
+    const heroSrc = await heroToImageSrc(surface.heroUrl, origin);
     return pngResponse(
       <SocialPlaceCardMarkup
-        variant={variant}
-        title={title}
-        dateLabel={formatSocialDateCardLabel(wedding.dateDisplay)}
-        phrase={guestGreeting ? SOCIAL_PLACE_CARD_PERSONAL_PHRASE : SOCIAL_PLACE_CARD_PHRASE}
-        kicker={guestGreeting ? SOCIAL_PLACE_CARD_PRIVATE_KICKER : SOCIAL_PLACE_CARD_KICKER}
-        guestGreeting={guestGreeting}
+        theme={surface.theme}
+        variant={surface.variant}
+        title={surface.title}
+        dateLabel={surface.dateLabel}
+        phrase={surface.phrase}
+        kicker={surface.kicker}
+        guestGreeting={surface.guestGreeting}
         heroSrc={heroSrc}
       />
     );
   } catch {
-    return pngResponse(
-      <SocialPlaceCardMarkup
-        variant="aurelia"
-        title="You're invited"
-        phrase="Open your Celeventic invitation."
-      />,
-      30
-    );
+    return pngResponse(fallbackCard(), 30);
   }
 }

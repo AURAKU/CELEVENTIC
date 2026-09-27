@@ -13,6 +13,8 @@ import {
   FEMMORA_SHARE_PLACECARD_TYPE,
   resolveAureliaShareOgImageForInvitation,
   resolveFashionShareOgImageForInvitation,
+  resolveInvitationShareOgImage,
+  resolvePlatformShareOgImageForInvitation,
   shareOgImageToOpenGraph,
 } from "../share-image";
 
@@ -157,5 +159,29 @@ describe("resolveAureliaShareOgImageForInvitation", () => {
     assert.ok(image);
     assert.equal(image?.url, `${APP}/templates/seraphine/hero.jpg`);
     assert.notEqual(image?.url, `${APP}/templates/aurelia/hero.jpg`);
+  });
+});
+
+describe("resolvePlatformShareOgImageForInvitation", () => {
+  it("generates a 1200×630 card for any published catalogue invitation", async () => {
+    const generated = resolvePlatformShareOgImageForInvitation({
+      appUrl: APP,
+      catalogSlug: "forever-afaris-wedding",
+      uniqueLink: "akosua-yaw",
+      versionParts: ["hero-v1"],
+    });
+    assert.ok(generated);
+    assert.match(generated?.url ?? "", /\/api\/social\/invite\/akosua-yaw\/image\?v=/);
+    assert.equal(generated?.width, 1200);
+    assert.equal(generated?.height, 630);
+
+    const birthday = await resolveInvitationShareOgImage({
+      eventId: "evt_1",
+      appUrl: APP,
+      catalogSlug: "gold-glam-milestone",
+      uniqueLink: "ama-30",
+    });
+    assert.match(birthday.url, /\/api\/social\/invite\/ama-30\/image\?v=/);
+    assert.equal(birthday.width, 1200);
   });
 });
