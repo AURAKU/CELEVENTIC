@@ -39,6 +39,7 @@ export interface UseGuestPortalActionsInput {
   eventId?: string;
   calendarEvent: CalendarEventInput;
   shareTitle: string;
+  shareText?: string;
   shareUrl?: string;
   hubTabs?: HubTabId[];
   hasCalendarDate?: boolean;
@@ -75,7 +76,12 @@ export function useGuestPortalActions(input: UseGuestPortalActionsInput) {
     setLoadingKey("SHARE");
     try {
       if (navigator.share) {
-        await navigator.share({ title: input.shareTitle, url: shareUrl });
+        const payload: ShareData = {
+          title: input.shareTitle,
+          url: shareUrl,
+        };
+        if (input.shareText) payload.text = input.shareText;
+        await navigator.share(payload);
       } else {
         await navigator.clipboard.writeText(shareUrl);
         setShareState("copied");
@@ -95,7 +101,7 @@ export function useGuestPortalActions(input: UseGuestPortalActionsInput) {
       }
     }
     setLoadingKey(null);
-  }, [input.shareTitle, shareUrl]);
+  }, [input.shareTitle, input.shareText, shareUrl]);
 
   const copyLink = useCallback(async () => {
     setLoadingKey("COPY_LINK");

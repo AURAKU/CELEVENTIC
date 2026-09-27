@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { verifyEventAccess } from "@/lib/event-access";
+import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
 
 function parseSize(raw: string | null): QrExportSize {
   const n = parseInt(raw ?? String(QR_DEFAULT_SIZE), 10);
@@ -63,21 +64,26 @@ export async function GET(req: Request) {
       const url = rawData.startsWith("http") ? rawData : buildVerifyUrl(rawData);
       const requestedCenter = toSafePublicQrCenterPath(searchParams.get("center"));
       const requestedLogoSize = parseQrLogoSizeQuery(searchParams.get("logoSize"));
+      const uploadedCenter =
+        requestedCenter && isOrganizerUploadedQrCenter(requestedCenter) ? requestedCenter : null;
       // Guide mode: no center logo — guest phone cameras need every module intact.
-      // `center` query is allowlisted public paths only (Aurelia album QR hero).
-      const center =
-        mode === "guide"
-          ? null
-          : requestedCenter
-            ? requestedCenter
-            : eventId
-              ? await qrBrandingService.resolveCenterImageUrl(eventId)
-              : await qrBrandingService.getAdminDefaultLogoUrl();
-      const logoSize =
-        requestedLogoSize ??
-        (eventId
-          ? await qrBrandingService.resolveLogoSize(eventId)
-          : await qrBrandingService.getAdminDefaultLogoSize());
+      // `center` query is allowlisted public paths only.
+      let center = mode === "guide" ? null : uploadedCenter;
+      let logoSize = requestedLogoSize;
+      if (mode !== "guide" && !center) {
+        if (eventId) {
+          const mark = await qrBrandingService.resolveCenterMark(eventId);
+          center = mark.url;
+          logoSize = logoSize ?? mark.logoSize;
+        } else {
+          center = await qrBrandingService.getAdminDefaultLogoUrl();
+          logoSize = logoSize ?? (await qrBrandingService.getAdminDefaultLogoSize());
+        }
+      } else if (!logoSize) {
+        logoSize = eventId
+          ? (await qrBrandingService.resolveCenterMark(eventId)).logoSize
+          : await qrBrandingService.getAdminDefaultLogoSize();
+      }
 
       if (format === "svg") {
         const { generateBrandedQrSvg } = await import("@/lib/qr/branded-qr-generator");

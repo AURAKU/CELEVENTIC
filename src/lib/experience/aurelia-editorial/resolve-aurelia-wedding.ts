@@ -1,4 +1,5 @@
-import { withPublicQrCenter } from "@/lib/qr/qr-constants";
+import { CELEVENTIC_OFFICIAL_LOGO, withPublicQrCenter } from "@/lib/qr/qr-constants";
+import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
 import {
   AURELIA_HERO_FALLBACK,
   AURELIA_THEME_DEFAULTS,
@@ -133,13 +134,15 @@ function sanitizeAureliaGuestCopy(config: AureliaWeddingConfig): AureliaWeddingC
   };
 }
 
-/** Album QR on Aurelia/Seraphine invitations uses the couple mark, not event branding. */
+/** Album QR uses an uploaded couple/hero photo, otherwise the Celeventic logo. */
 export function withAureliaAlbumQrCenter(
   qrImageUrl?: string | null,
-  centerImageUrl: string = AURELIA_HERO_FALLBACK
+  centerImageUrl?: string | null
 ): string | null {
   if (!qrImageUrl) return null;
-  return withPublicQrCenter(qrImageUrl, centerImageUrl, "hero");
+  const uploaded = isOrganizerUploadedQrCenter(centerImageUrl);
+  const center = uploaded ? centerImageUrl!.trim() : CELEVENTIC_OFFICIAL_LOGO;
+  return withPublicQrCenter(qrImageUrl, center, uploaded ? "hero" : "balanced");
 }
 
 function mergeTheme(

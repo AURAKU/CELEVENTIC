@@ -50,13 +50,14 @@ export async function GET(req: Request) {
   }
 
   try {
-    const [appUrl, centerImage, logoSize] = await Promise.all([
+    const [appUrl, mark] = await Promise.all([
       getServerAppUrl(),
-      qrBrandingService.resolveCenterImageUrl(pass.eventId),
-      qrBrandingService.resolveLogoSize(pass.eventId),
+      qrBrandingService.resolveCenterMark(pass.eventId),
     ]);
     const target = buildPassUrl(appUrl, token);
     const filename = `celeventic-entry-pass-${pass.code}`;
+    const centerImage = mark.url;
+    const logoSize = mark.logoSize;
 
     if (format === "svg") {
       const svg = await generateBrandedQrSvg(target, centerImage, size, mode, logoSize);

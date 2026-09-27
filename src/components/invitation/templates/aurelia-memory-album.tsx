@@ -7,13 +7,16 @@ import { useInvitationStaticPreview } from "@/components/invitation/invitation-s
 import { LiveAlbumExperience } from "@/components/memory/live-album-experience";
 import { trackInviteEvent } from "@/lib/analytics/invite-events";
 import { liveAlbumPaths } from "@/lib/memory/live-album";
+import { CELEVENTIC_OFFICIAL_LOGO } from "@/lib/qr/qr-constants";
+import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
 import styles from "./aurelia-editorial-wedding.module.css";
 
 type Panel = "idle" | "lens" | "album";
 
 function familyHeroQrSrc(targetUrl: string | null, centerImageUrl: string) {
   if (!targetUrl) return null;
-  return `/api/qr/image?data=${encodeURIComponent(targetUrl)}&size=512&center=${encodeURIComponent(centerImageUrl)}&logoSize=hero`;
+  const logoSize = isOrganizerUploadedQrCenter(centerImageUrl) ? "hero" : "balanced";
+  return `/api/qr/image?data=${encodeURIComponent(targetUrl)}&size=512&center=${encodeURIComponent(centerImageUrl)}&logoSize=${logoSize}`;
 }
 
 export function AureliaMemoryAlbum({
@@ -22,7 +25,7 @@ export function AureliaMemoryAlbum({
   uploadUrl,
   albumUrl,
   uploadQrImageUrl,
-  qrCenterImageUrl = "/templates/aurelia/hero.jpg",
+  qrCenterImageUrl = CELEVENTIC_OFFICIAL_LOGO,
   uploadCta,
   viewCta,
 }: {

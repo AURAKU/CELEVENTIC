@@ -15,12 +15,12 @@ import { QrLogoSizeControl } from "@/components/qr/qr-logo-size-control";
 import {
   QR_DEFAULT_LOGO_SIZE,
   parseQrLogoSize,
-  type QrLogoSizePreset,
+  type QrDashboardLogoSize,
 } from "@/lib/qr/qr-constants";
 
 export function AdminQrBrandingCard() {
   const [url, setUrl] = useState<string | null>(null);
-  const [logoSize, setLogoSize] = useState<QrLogoSizePreset>(QR_DEFAULT_LOGO_SIZE);
+  const [logoSize, setLogoSize] = useState<QrDashboardLogoSize>(QR_DEFAULT_LOGO_SIZE);
   const [savingSize, setSavingSize] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -36,7 +36,7 @@ export function AdminQrBrandingCard() {
       });
   }, []);
 
-  async function saveLogoSize(next: QrLogoSizePreset) {
+  async function saveLogoSize(next: QrDashboardLogoSize) {
     setLogoSize(next);
     setSavingSize(true);
     setError("");

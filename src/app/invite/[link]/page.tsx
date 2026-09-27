@@ -3,14 +3,11 @@ import type { Metadata } from "next";
 import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
-import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import {
   aureliaFamilyDefaults,
   aureliaSectionVisible,
   isAureliaEditorialLayout,
   mergeAureliaWedding,
-  SERAPHINE_LAYOUT_SLUG,
-  SERAPHINE_MONOGRAM_PNG,
   withAureliaAlbumQrCenter,
 } from "@/lib/experience/aurelia-editorial";
 import { resolveLiveRevealConfiguration, logLiveInviteRevealDiagnostic } from "@/lib/experience/live-envelope-contract";
@@ -27,17 +24,19 @@ import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import { resolveBackgroundMedia } from "@/lib/invitation/studio-media-utils";
 import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
+import { extractDesignQrPhotoSources, resolveQrCenterMark } from "@/lib/qr/qr-center-resolution";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 import { eventGuideService } from "@/services/event-guide/event-guide.service";
 import { resolveMemoryAlbumIdentity } from "@/lib/memory/memory-album-identity";
 import {
-  resolveInvitationShareOgImage,
-  shareOgImageToOpenGraph,
-} from "@/lib/social/share-image";
-import { buildShareDescription } from "@/lib/social/share-description";
-import { APP_NAME } from "@/lib/constants";
+  EXPIRED_INVITE_METADATA,
+  buildInviteOpenGraphMetadata,
+} from "@/lib/social/invitation-share-metadata";
+import { buildSocialInvitationSurface } from "@/lib/social/social-place-card";
+import { resolveSocialInvitationGuest } from "@/lib/social/social-guest";
+import { buildLiveSocialInvitationInput } from "@/lib/social/social-live-input";
 import { getInvitationPassView } from "@/services/admission/guest-pass.service";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import {
@@ -90,34 +89,37 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
- * Share-card preview: Femmora uses the physical invitation placecard
- * (`shareOgImageUrl` / SKU default). Other houses keep their own image or the
- * branded QR / Celeventic logo fallback — never the Femmora card. Guest
- * unique links (`?guest=`) share this same metadata.
+ * Share-card preview: every published Celeventic invitation inherits the
+ * platform Social Invitation Engine. Template names never appear in OG copy.
  */
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ link: string }>;
+  searchParams: Promise<{ guest?: string }>;
 }): Promise<Metadata> {
   const { link } = await params;
+  const query = await searchParams;
+  const guestToken = query.guest;
   const invitation = await invitationService.getInvitationByLink(link);
-  if (!invitation || invitation.status === "EXPIRED" || invitation.event.status === "CANCELLED") {
-    return { title: "Invitation" };
+  if (
+    !invitation ||
+    invitation.status === "EXPIRED" ||
+    invitation.status === "DRAFT" ||
+    invitation.event.status === "CANCELLED"
+  ) {
+    return EXPIRED_INVITE_METADATA;
   }
 
   const event = invitation.event;
-  const title = `${event.title} · You're invited`;
-  // Always lead with the couple/host name rather than `event.description`
-  // (the host's free-form "our story" text), see `buildShareDescription`.
-  const description = buildShareDescription({ hostName: event.hostName, title: event.title });
   const appUrl = await getServerAppUrl();
   const stored = invitation.designConfig as InvitationDesignConfig | null;
   const templateConfig = invitation.template?.config as { layout?: string } | null;
-  const productionResolution = await resolveProductionOrderForLiveInvitation(
-    invitation.id,
-    event.id
-  );
+  const [productionResolution, tokenGuest] = await Promise.all([
+    resolveProductionOrderForLiveInvitation(invitation.id, event.id),
+    guestToken ? invitationService.getGuestForInvitation(invitation.id, guestToken) : Promise.resolve(null),
+  ]);
   const productionOrder = productionResolution.order;
   const productionDesign = productionOrder ? buildPublishedDesignConfig(productionOrder) : null;
   const catalogSlug =
@@ -126,38 +128,39 @@ export async function generateMetadata({
     invitation.template?.slug ??
     null;
   const liveDesign = productionDesign ?? stored;
-  const ogImage = await resolveInvitationShareOgImage({
-    eventId: event.id,
-    appUrl,
-    catalogSlug,
-    layoutSlug:
-      productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null,
-    fashionHouse:
-      productionDesign?.experience?.fashionHouse ?? stored?.experience?.fashionHouse,
-    heroImageUrl:
-      productionDesign?.experience?.aureliaWedding?.heroImageUrl ??
-      stored?.experience?.aureliaWedding?.heroImageUrl,
-    coverImageUrl: event.coverImageUrl,
-    mediaHeroUrl: liveDesign?.media?.find((asset) => asset.role === "hero")?.url,
-  });
+  const layoutSlug =
+    productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null;
+  const socialGuest = guestToken
+    ? resolveSocialInvitationGuest({
+        guestToken,
+        tokenGuest,
+        invitationName: invitation.name,
+        isGeneralPass: invitation.isGeneralPass,
+        eventTitle: event.title,
+        guests: invitation.guests,
+      })
+    : null;
+  const surface = buildSocialInvitationSurface(
+    buildLiveSocialInvitationInput({
+      appUrl,
+      invitation,
+      liveDesign,
+      catalogSlug,
+      layoutSlug,
+      productionOrder,
+      guestDisplayName: socialGuest?.displayName,
+      guestToken: socialGuest?.guestToken,
+      includeGuestInCanonicalUrl: Boolean(guestToken && socialGuest),
+    })
+  );
 
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      siteName: APP_NAME,
-      images: [shareOgImageToOpenGraph(ogImage, event.title)],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [ogImage.url],
-    },
-  };
+  return buildInviteOpenGraphMetadata({
+    title: surface.shareTitle,
+    description: surface.description,
+    canonicalUrl: surface.canonicalUrl,
+    image: surface.image,
+    imageAlt: surface.imageAlt,
+  });
 }
 
 export default async function InvitePage({
@@ -329,6 +332,15 @@ export default async function InvitePage({
         : asset.thumbnailUrl,
     })),
   };
+  const designQrPhotos = extractDesignQrPhotoSources(design);
+  const qrCenterMark = resolveQrCenterMark({
+    heroImageUrl: designQrPhotos.heroImageUrl,
+    introImageUrl: designQrPhotos.introImageUrl,
+    coverImageUrl,
+    galleryUrls,
+    mediaUrls: designQrPhotos.mediaUrls,
+    qrCenterImageUrl: event.qrCenterImageUrl,
+  });
   const guestFacingStartDate = resolveGuestFacingEventInstant(event.startDate, design);
   const guestFacingVenue = resolveGuestFacingVenue(event.venueName, design);
   const blocks = productionOrder
@@ -407,16 +419,12 @@ export default async function InvitePage({
       seatTable = assignment.assignment.tableNumber;
       seatLabel = assignment.assignment.seatLabel;
       if (seatingPlan) {
-        const [center, logoSize] = await Promise.all([
-          qrBrandingService.resolveCenterImageUrl(event.id),
-          qrBrandingService.resolveLogoSize(event.id),
-        ]);
         seatQrDataUrl = await generateBrandedQrDataUrl(
           seatLookupUrl,
-          center,
+          qrCenterMark.url,
           undefined,
           "brand",
-          logoSize
+          qrCenterMark.logoSize
         );
       }
     }
@@ -624,7 +632,7 @@ export default async function InvitePage({
         (isAureliaEditorialLayout(design.layout)
           ? withAureliaAlbumQrCenter(
               memoryLinks?.uploadQrImageUrl,
-              design.layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_MONOGRAM_PNG : undefined
+              qrCenterMark.url
             )
           : resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl)) || null
       }

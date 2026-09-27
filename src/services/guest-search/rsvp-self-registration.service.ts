@@ -5,8 +5,8 @@ import { cleanName, nameKey } from "@/lib/guest-import/name";
 import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact";
 import { findActiveGuestDuplicates } from "@/lib/guest-search/duplicate-guests";
 import type { DuplicateWarning } from "@/lib/guest-search/types";
-import { looksLikeEventTitle } from "@/lib/invitation-features/place-card";
 import { clampPartySize } from "@/lib/guest-search/party-allowance";
+import { isOpenHostInvitation } from "@/lib/guest-search/open-host-invitation";
 import {
   createQuickInvitation,
   buildQrImageUrl,
@@ -20,24 +20,7 @@ import {
 } from "@/services/invitations/personalised-invitation";
 import { ensureInvitationPass } from "@/services/admission/guest-pass.service";
 
-/**
- * Open / general template invitations are the published ceremony link that
- * anyone can RSVP on. They must stay guestless (or only briefly hold guests
- * pending promotion) so each self-registered person gets their own CRM card
- * and shareable invite URL.
- */
-export function isOpenHostInvitation(input: {
-  name: string;
-  isGeneralPass?: boolean | null;
-  eventTitle: string;
-  guests: Array<{ name: string }>;
-}): boolean {
-  if (input.isGeneralPass) return false;
-  if (looksLikeEventTitle(input.name)) return true;
-  if (nameKey(input.name) === nameKey(input.eventTitle)) return true;
-  if (input.guests.length === 0) return true;
-  return !input.guests.some((guest) => nameKey(guest.name) === nameKey(input.name));
-}
+export { isOpenHostInvitation } from "@/lib/guest-search/open-host-invitation";
 
 export async function notifyOrganizersOfDuplicateGuest(input: {
   eventId: string;

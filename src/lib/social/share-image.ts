@@ -2,9 +2,7 @@ import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import { resolveMediaUrl } from "@/lib/uploads/media-url";
 import { CELEVENTIC_OFFICIAL_LOGO } from "@/lib/qr/qr-constants";
 import {
-  AURELIA_CATALOG_SLUG,
   AURELIA_HERO_FALLBACK,
-  isAureliaEditorialLayout,
   resolveAureliaHeroImage,
   SERAPHINE_CATALOG_SLUG,
   SERAPHINE_HERO_FALLBACK,
@@ -21,6 +19,11 @@ import {
   mergeFashionHouse,
   type LuxuryFashionHouseConfig,
 } from "@/lib/experience/luxury-fashion";
+import {
+  buildSocialPlaceCardVersion,
+  decorateSocialPlaceCardImage,
+  resolveSocialPlaceCardVariant,
+} from "@/lib/social/social-place-card";
 
 export const FEMMORA_SHARE_PLACECARD_TYPE = "image/jpeg";
 export const AURELIA_SHARE_HERO_WIDTH = 731;
@@ -100,20 +103,36 @@ export function resolveFashionShareOgImageForInvitation(input: {
 }
 
 /**
- * Aurelia-family link preview. WhatsApp / iMessage / social crawlers show the
- * couple hero photograph attached to the invitation URL.
+ * Aurelia-family link preview. Published guest links use a generated 1200×630
+ * social place card. Callers without a unique link keep the couple hero so
+ * Studio / unpublished surfaces still have an image.
  */
 export function resolveAureliaShareOgImageForInvitation(input: {
   appUrl: string;
   catalogSlug?: string | null;
   layoutSlug?: string | null;
+  uniqueLink?: string | null;
+  versionParts?: Array<string | number | null | undefined>;
   heroImageUrl?: string | null;
   coverImageUrl?: string | null;
   mediaHeroUrl?: string | null;
 }): ResolvedShareOgImage | null {
-  const slug = input.catalogSlug?.trim() || "";
-  const isAureliaSku = slug === AURELIA_CATALOG_SLUG || slug === SERAPHINE_CATALOG_SLUG;
-  if (!isAureliaSku && !isAureliaEditorialLayout(input.layoutSlug)) return null;
+  const variant = resolveSocialPlaceCardVariant(input);
+  if (variant !== "aurelia" && variant !== "seraphine") return null;
+
+  const uniqueLink = input.uniqueLink?.trim();
+  if (uniqueLink) {
+    const version = buildSocialPlaceCardVersion(
+      input.versionParts ?? [
+        input.heroImageUrl,
+        input.coverImageUrl,
+        input.mediaHeroUrl,
+        input.catalogSlug,
+        input.layoutSlug,
+      ]
+    );
+    return decorateSocialPlaceCardImage(input.appUrl, uniqueLink, version);
+  }
 
   const hero = resolveAureliaHeroImage({
     heroImageUrl: input.heroImageUrl,
@@ -125,6 +144,32 @@ export function resolveAureliaShareOgImageForInvitation(input: {
         : AURELIA_HERO_FALLBACK,
   });
   return decorateShareImage(input.appUrl, hero);
+}
+
+export function resolvePlatformShareOgImageForInvitation(input: {
+  appUrl: string;
+  uniqueLink?: string | null;
+  guestToken?: string | null;
+  versionParts?: Array<string | number | null | undefined>;
+  catalogSlug?: string | null;
+  layoutSlug?: string | null;
+  heroImageUrl?: string | null;
+  coverImageUrl?: string | null;
+  mediaHeroUrl?: string | null;
+}): ResolvedShareOgImage | null {
+  const uniqueLink = input.uniqueLink?.trim();
+  if (!uniqueLink) return null;
+  const version = buildSocialPlaceCardVersion(
+    input.versionParts ?? [
+      input.heroImageUrl,
+      input.coverImageUrl,
+      input.mediaHeroUrl,
+      input.catalogSlug,
+      input.layoutSlug,
+      input.guestToken,
+    ]
+  );
+  return decorateSocialPlaceCardImage(input.appUrl, uniqueLink, version, input.guestToken);
 }
 
 export function shareOgImageToOpenGraph(image: ResolvedShareOgImage, alt: string) {
@@ -174,10 +219,15 @@ export async function resolveInvitationShareOgImage(input: {
   catalogSlug?: string | null;
   layoutSlug?: string | null;
   fashionHouse?: Partial<LuxuryFashionHouseConfig> | null;
+  uniqueLink?: string | null;
+  guestToken?: string | null;
+  versionParts?: Array<string | number | null | undefined>;
   heroImageUrl?: string | null;
   coverImageUrl?: string | null;
   mediaHeroUrl?: string | null;
 }): Promise<ResolvedShareOgImage> {
+  const generated = resolvePlatformShareOgImageForInvitation(input);
+  if (generated) return generated;
   const fashion = resolveFashionShareOgImageForInvitation(input);
   if (fashion) return fashion;
   const aurelia = resolveAureliaShareOgImageForInvitation(input);

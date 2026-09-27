@@ -3,8 +3,6 @@ import { TemplateDetailLivePreviewClient } from "@/components/invitation-mvp/tem
 import type { CatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import {
   isAureliaEditorialLayout,
-  SERAPHINE_LAYOUT_SLUG,
-  SERAPHINE_MONOGRAM_PNG,
   withAureliaAlbumQrCenter,
 } from "@/lib/experience/aurelia-editorial";
 
@@ -19,10 +17,7 @@ export async function TemplateDetailLivePreview({ template }: { template: Catalo
       memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
       memoryUploadQrImageUrl={
         isAureliaEditorialLayout(template.layoutSlug)
-          ? withAureliaAlbumQrCenter(
-              memoryLinks?.uploadQrImageUrl,
-              template.layoutSlug === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_MONOGRAM_PNG : undefined
-            )
+          ? withAureliaAlbumQrCenter(memoryLinks?.uploadQrImageUrl)
           : memoryLinks?.uploadQrImageUrl ?? null
       }
       memoryEventId={memoryLinks?.eventId ?? null}

@@ -2,6 +2,9 @@ import { copyText } from "@/lib/clipboard";
 import { resolveDeceasedName } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import type { InviteCategory } from "@/lib/invite-blueprints/blueprint-types";
 import type { InvitationEventData } from "@/types/invitation-design";
+import { resolveSocialEventKind } from "@/lib/social/social-category";
+import { socialNativeShareText } from "@/lib/social/social-copy";
+import { resolveSocialEventTitle } from "@/lib/social/social-event-title";
 
 export type InviteSharePayload = {
   title: string;
@@ -19,24 +22,27 @@ export type InviteShareChannel =
   | "email"
   | "copy";
 
-/** Canonical public invite URL (no hash / guest query noise). */
+/** Canonical public invite URL. Personalized links keep `?guest=`. */
 export function resolveInviteShareUrl(input: {
   uniqueLink?: string | null;
   origin?: string;
   fallbackHref?: string;
+  guestToken?: string | null;
 }): string {
   const origin =
     input.origin?.replace(/\/$/, "") ||
     (typeof window !== "undefined" ? window.location.origin : "");
   const link = input.uniqueLink?.trim();
+  const guest = input.guestToken?.trim();
   if (origin && link) {
-    return `${origin}/invite/${encodeURIComponent(link)}`;
+    const base = `${origin}/invite/${encodeURIComponent(link)}`;
+    return guest ? `${base}?guest=${encodeURIComponent(guest)}` : base;
   }
   if (input.fallbackHref) {
     try {
       const u = new URL(input.fallbackHref, origin || "https://celeventic.com");
       u.hash = "";
-      // Keep guest token if present — personalised invites should stay personal.
+      if (guest) u.searchParams.set("guest", guest);
       return u.toString();
     } catch {
       return input.fallbackHref.split("#")[0] || input.fallbackHref;
@@ -51,25 +57,48 @@ export function buildInviteSharePayload(input: {
   uniqueLink?: string | null;
   origin?: string;
   fallbackHref?: string;
+  catalogSlug?: string | null;
+  layoutSlug?: string | null;
+  invitationName?: string | null;
+  partnerOneName?: string | null;
+  partnerTwoName?: string | null;
+  guestDisplayName?: string | null;
+  guestToken?: string | null;
+  eventType?: string | null;
 }): InviteSharePayload {
   const url = resolveInviteShareUrl({
     uniqueLink: input.uniqueLink,
     origin: input.origin,
     fallbackHref: input.fallbackHref,
+    guestToken: input.guestToken,
   });
-
-  if (input.category === "funeral") {
-    const name = resolveDeceasedName(input.event);
-    return {
-      title: `In loving memory of ${name}`,
-      text: `You're invited to the memorial service for ${name}. Open the invitation:`,
-      url,
-    };
-  }
+  const kind =
+    input.category === "funeral"
+      ? "funeral"
+      : resolveSocialEventKind({
+          catalogSlug: input.catalogSlug,
+          layoutSlug: input.layoutSlug,
+          eventType: input.eventType,
+        });
+  const deceasedName =
+    kind === "funeral" ? resolveDeceasedName(input.event, input.invitationName) : input.event.deceasedName;
+  const title = resolveSocialEventTitle({
+    eventTitle: input.event.title,
+    hostName: input.event.hostName,
+    invitationName: input.invitationName,
+    partnerOneName: input.partnerOneName,
+    partnerTwoName: input.partnerTwoName,
+    deceasedName,
+    kind,
+  }).title;
 
   return {
-    title: input.event.title,
-    text: `You're invited — ${input.event.title}. Open the invitation:`,
+    title,
+    text: socialNativeShareText({
+      kind,
+      title,
+      guestDisplayName: input.guestDisplayName,
+    }),
     url,
   };
 }
