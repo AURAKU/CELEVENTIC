@@ -9,6 +9,7 @@ import {
   QR_DEFAULT_LOGO_SIZE,
   QR_DEFAULT_SIZE,
   parseQrLogoSize,
+  type QrDashboardLogoSize,
   type QrDisplayMode,
   type QrExportSize,
   type QrLogoSizePreset,
@@ -47,7 +48,7 @@ export class QrBrandingService {
     return readAdminLogoUrl(row?.value) ?? CELEVENTIC_OFFICIAL_LOGO;
   }
 
-  async getAdminDefaultLogoSize(): Promise<QrLogoSizePreset> {
+  async getAdminDefaultLogoSize(): Promise<QrDashboardLogoSize> {
     const sizeRow = await prisma.adminSetting.findUnique({ where: { key: ADMIN_LOGO_SIZE_KEY } });
     if (sizeRow?.value != null) {
       if (typeof sizeRow.value === "string") return parseQrLogoSize(sizeRow.value);
@@ -147,7 +148,7 @@ export class QrBrandingService {
   }
 
   /** Event override → admin platform default → balanced */
-  async resolveLogoSize(eventId: string): Promise<QrLogoSizePreset> {
+  async resolveLogoSize(eventId: string): Promise<QrDashboardLogoSize> {
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       select: { qrLogoSize: true },

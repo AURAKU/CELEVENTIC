@@ -31,8 +31,10 @@ export type SocialPlaceCardImage = {
 export const SOCIAL_PLACE_CARD_WIDTH = 1200;
 export const SOCIAL_PLACE_CARD_HEIGHT = 630;
 export const SOCIAL_PLACE_CARD_TYPE = "image/png";
-export const SOCIAL_PLACE_CARD_PHRASE = "Join us for this special celebration.";
-export const SOCIAL_PLACE_CARD_PERSONAL_PHRASE = "invite you to celebrate with them";
+export {
+  SOCIAL_PLACE_CARD_PHRASE,
+  SOCIAL_PLACE_CARD_PERSONAL_PHRASE,
+} from "@/lib/social/social-copy";
 
 export type SocialPlaceCardVariant = "aurelia" | "seraphine" | "platform";
 
@@ -61,6 +63,24 @@ export function buildSocialPlaceCardPath(
   if (guest) params.set("guest", guest);
   params.set("v", version);
   return `/api/social/invite/${encodeURIComponent(link)}/image?${params.toString()}`;
+}
+
+/**
+ * Personalized place cards are capability URLs (`?guest=`). Shared public
+ * CDN cache MUST NOT reuse one guest's PNG for another, including proxies
+ * that strip query strings. Generic versioned cards may be cached publicly.
+ */
+export function socialPlaceCardCacheControl(input: {
+  personalized: boolean;
+  unavailable?: boolean;
+}): string {
+  if (input.personalized) {
+    return "private, no-store, max-age=0, must-revalidate";
+  }
+  if (input.unavailable) {
+    return "public, max-age=120, s-maxage=300, stale-while-revalidate=600";
+  }
+  return "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
 }
 
 export function decorateSocialPlaceCardImage(

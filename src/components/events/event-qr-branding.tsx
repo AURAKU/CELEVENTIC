@@ -16,7 +16,7 @@ import { QrLogoSizeControl } from "@/components/qr/qr-logo-size-control";
 import {
   QR_DEFAULT_LOGO_SIZE,
   parseQrLogoSize,
-  type QrLogoSizePreset,
+  type QrDashboardLogoSize,
 } from "@/lib/qr/qr-constants";
 
 interface EventQrBrandingProps {
@@ -31,7 +31,7 @@ export function EventQrBranding({
   initialLogoSize,
 }: EventQrBrandingProps) {
   const [url, setUrl] = useState(initialUrl ?? null);
-  const [logoSize, setLogoSize] = useState<QrLogoSizePreset>(
+  const [logoSize, setLogoSize] = useState<QrDashboardLogoSize>(
     parseQrLogoSize(initialLogoSize ?? QR_DEFAULT_LOGO_SIZE)
   );
   const [loading, setLoading] = useState(false);
@@ -86,7 +86,7 @@ export function EventQrBranding({
     setLoading(false);
   }
 
-  async function saveLogoSize(next: QrLogoSizePreset) {
+  async function saveLogoSize(next: QrDashboardLogoSize) {
     setLogoSize(next);
     setSavingSize(true);
     setError("");

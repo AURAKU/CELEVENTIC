@@ -8,6 +8,7 @@ export {
   buildSocialPlaceCardVersion,
   buildSocialPlaceCardPath,
   decorateSocialPlaceCardImage,
+  socialPlaceCardCacheControl,
   buildInviteCanonicalUrl,
   resolveSocialPlaceCardVariant,
   buildSocialInvitationSurface,

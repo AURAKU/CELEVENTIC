@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createAuditLog } from "@/lib/audit";
 import { getServerAppUrl } from "@/lib/app-url";
-import { cleanName } from "@/lib/guest-import/name";
+import { cleanName, nameKey } from "@/lib/guest-import/name";
 import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact";
 import { findActiveGuestDuplicates } from "@/lib/guest-search/duplicate-guests";
 import type { DuplicateWarning } from "@/lib/guest-search/types";

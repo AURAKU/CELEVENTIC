@@ -12,6 +12,7 @@ import { resolveSocialInvitationGuest } from "@/lib/social/social-guest";
 import {
   buildSocialInvitationSurface,
   isSocialPlaceCardUnavailable,
+  socialPlaceCardCacheControl,
   SOCIAL_PLACE_CARD_HEIGHT,
   SOCIAL_PLACE_CARD_WIDTH,
 } from "@/lib/social/social-place-card";
@@ -61,14 +62,26 @@ async function heroToImageSrc(hero: string | null | undefined, origin: string): 
   return null;
 }
 
-function pngResponse(element: ReactElement, cacheSeconds = 300) {
+function pngResponse(
+  element: ReactElement,
+  options: { personalized?: boolean; unavailable?: boolean } = {}
+) {
+  const personalized = Boolean(options.personalized);
+  const unavailable = Boolean(options.unavailable);
+  const headers: Record<string, string> = {
+    "Cache-Control": socialPlaceCardCacheControl({ personalized, unavailable }),
+    "Content-Type": "image/png",
+    Vary: "Accept",
+  };
+  if (personalized) {
+    headers["CDN-Cache-Control"] = "no-store";
+    headers["Surrogate-Control"] = "no-store";
+    headers.Pragma = "no-cache";
+  }
   return new ImageResponse(element, {
     width: SOCIAL_PLACE_CARD_WIDTH,
     height: SOCIAL_PLACE_CARD_HEIGHT,
-    headers: {
-      "Cache-Control": `public, max-age=${cacheSeconds}, s-maxage=86400, stale-while-revalidate=604800`,
-      "Content-Type": "image/png",
-    },
+    headers,
   });
 }
 
@@ -92,7 +105,7 @@ export async function GET(
     const origin = await getServerAppUrl();
 
     if (!invitation) {
-      return pngResponse(fallbackCard(), 60);
+      return pngResponse(fallbackCard(), { unavailable: true });
     }
 
     const stored = invitation.designConfig as InvitationDesignConfig | null;
@@ -111,14 +124,16 @@ export async function GET(
     const liveDesign = productionDesign ?? stored ?? resolveDesign(invitation);
     const layoutSlug =
       productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? liveDesign.layout ?? null;
-    const socialGuest = resolveSocialInvitationGuest({
-      guestToken,
-      tokenGuest,
-      invitationName: invitation.name,
-      isGeneralPass: invitation.isGeneralPass,
-      eventTitle: invitation.event.title,
-      guests: invitation.guests,
-    });
+    const socialGuest = guestToken
+      ? resolveSocialInvitationGuest({
+          guestToken,
+          tokenGuest,
+          invitationName: invitation.name,
+          isGeneralPass: invitation.isGeneralPass,
+          eventTitle: invitation.event.title,
+          guests: invitation.guests,
+        })
+      : null;
     const surface = buildSocialInvitationSurface(
       buildLiveSocialInvitationInput({
         appUrl: origin,
@@ -145,7 +160,7 @@ export async function GET(
           unavailable
           unavailablePhrase={surface.unavailablePhrase}
         />,
-        120
+        { unavailable: true }
       );
     }
 
@@ -160,9 +175,10 @@ export async function GET(
         kicker={surface.kicker}
         guestGreeting={surface.guestGreeting}
         heroSrc={heroSrc}
-      />
+      />,
+      { personalized: Boolean(socialGuest) }
     );
   } catch {
-    return pngResponse(fallbackCard(), 30);
+    return pngResponse(fallbackCard(), { unavailable: true });
   }
 }

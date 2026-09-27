@@ -65,9 +65,13 @@ function isArchivedGuest(guest: SocialGuestRecord): boolean {
 }
 
 /**
- * Canonical social personalization. Mirrors `/invite/[link]` guest locking:
- * a valid `?guest=` token wins; a single assigned guest can personalize a
- * closed invitation; open/general hosts never inherit a roster name.
+ * Guest locking for invitation surfaces.
+ * A valid `?guest=` token wins. HTML RSVP may still sole-assign a closed
+ * invitation without a query. Open/general hosts never inherit a roster name.
+ *
+ * Social OG metadata and `/api/social/invite/[link]/image` MUST only call
+ * this when an explicit `?guest=` query is present so a sole assigned guest
+ * cannot leak into public crawler cards or image URLs.
  *
  * Personalization is derived only from URL + invitation records — never
  * cookies, localStorage, or the current browser session.

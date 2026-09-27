@@ -14,6 +14,7 @@ import {
   decorateSocialPlaceCardImage,
   isSocialPlaceCardUnavailable,
   resolveSocialPlaceCardVariant,
+  socialPlaceCardCacheControl,
 } from "../social-place-card";
 import { buildInviteOpenGraphMetadata, EXPIRED_INVITE_METADATA } from "../invitation-share-metadata";
 
@@ -192,6 +193,35 @@ describe("Aurelia / Seraphine share surface", () => {
   });
 });
 
+describe("social place-card cache control", () => {
+  it("never shares personalized guest cards on a public CDN", () => {
+    const personalized = socialPlaceCardCacheControl({ personalized: true });
+    assert.match(personalized, /private/i);
+    assert.match(personalized, /no-store/i);
+    assert.doesNotMatch(personalized, /s-maxage/i);
+    assert.doesNotMatch(personalized, /public/i);
+  });
+
+  it("allows public caching of generic versioned cards", () => {
+    const generic = socialPlaceCardCacheControl({ personalized: false });
+    assert.match(generic, /public/i);
+    assert.match(generic, /s-maxage=86400/);
+  });
+
+  it("keeps unavailable cards briefly cacheable without storing guest identity", () => {
+    const unavailable = socialPlaceCardCacheControl({ personalized: false, unavailable: true });
+    assert.match(unavailable, /public/i);
+    assert.match(unavailable, /s-maxage=300/);
+    assert.doesNotMatch(unavailable, /s-maxage=86400/);
+  });
+
+  it("does not let personalized win over privacy even if also marked unavailable", () => {
+    const both = socialPlaceCardCacheControl({ personalized: true, unavailable: true });
+    assert.match(both, /private/i);
+    assert.match(both, /no-store/i);
+  });
+});
+
 describe("social place-card markup", () => {
   it("renders the couple image, event title, and Celeventic mark without template names", () => {
     const tree = SocialPlaceCardMarkup({
@@ -275,7 +305,7 @@ describe("Open Graph / Twitter metadata", () => {
       image,
       imageAlt: "Enock & Ruth",
     });
-    assert.equal(metadata.openGraph?.type, "website");
+    assert.equal((metadata.openGraph as { type?: string } | undefined)?.type, "website");
     assert.equal(metadata.openGraph?.siteName, "Celeventic");
     assert.equal(metadata.openGraph?.url, `${APP}/invite/enock-ruth`);
     const ogImage = Array.isArray(metadata.openGraph?.images)
@@ -285,7 +315,7 @@ describe("Open Graph / Twitter metadata", () => {
     assert.equal((ogImage as { width?: number }).width, 1200);
     assert.equal((ogImage as { height?: number }).height, 630);
     assert.equal((ogImage as { type?: string }).type, "image/png");
-    assert.equal(metadata.twitter?.card, "summary_large_image");
+    assert.equal((metadata.twitter as { card?: string } | undefined)?.card, "summary_large_image");
     assert.equal(metadata.alternates?.canonical, `${APP}/invite/enock-ruth`);
   });
 

@@ -130,14 +130,16 @@ export async function generateMetadata({
   const liveDesign = productionDesign ?? stored;
   const layoutSlug =
     productionDesign?.layout ?? stored?.layout ?? templateConfig?.layout ?? null;
-  const socialGuest = resolveSocialInvitationGuest({
-    guestToken,
-    tokenGuest,
-    invitationName: invitation.name,
-    isGeneralPass: invitation.isGeneralPass,
-    eventTitle: event.title,
-    guests: invitation.guests,
-  });
+  const socialGuest = guestToken
+    ? resolveSocialInvitationGuest({
+        guestToken,
+        tokenGuest,
+        invitationName: invitation.name,
+        isGeneralPass: invitation.isGeneralPass,
+        eventTitle: event.title,
+        guests: invitation.guests,
+      })
+    : null;
   const surface = buildSocialInvitationSurface(
     buildLiveSocialInvitationInput({
       appUrl,

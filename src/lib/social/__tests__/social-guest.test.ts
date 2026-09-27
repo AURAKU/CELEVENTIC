@@ -128,6 +128,20 @@ describe("resolveSocialInvitationGuest", () => {
     assert.equal(resolved?.guestToken, "ama-token");
   });
 
+  it("does not treat a mismatched token as another guest on the same invitation", () => {
+    const resolved = resolveSocialInvitationGuest({
+      guestToken: "ama-token",
+      tokenGuest: { name: "Kofi", qrToken: "kofi-token" },
+      invitationName: "Ama",
+      eventTitle: "AURELIA",
+      guests: [
+        { name: "Ama", qrToken: "ama-token" },
+        { name: "Kofi", qrToken: "kofi-token" },
+      ],
+    });
+    assert.equal(resolved, null);
+  });
+
   it("never uses cookies, session, or browser state — only URL and invitation records", () => {
     const params = [
       "guestToken",

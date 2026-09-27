@@ -30,6 +30,17 @@ describe("QR center resolution", () => {
     assert.equal(mark.source, "couple");
   });
 
+  it("uses an explicit organizer-uploaded QR-center photograph when hero and gallery are absent", () => {
+    const mark = resolveQrCenterMark({
+      heroImageUrl: "/templates/aurelia/hero.jpg",
+      galleryUrls: ["/templates/seraphine/hero.jpg"],
+      qrCenterImageUrl: "/uploads/events/qr-center.jpg",
+    });
+    assert.equal(mark.url, "/uploads/events/qr-center.jpg");
+    assert.equal(mark.source, "qr-upload");
+    assert.equal(mark.logoSize, "hero");
+  });
+
   it("falls back to the official Celeventic logo when nothing was uploaded", () => {
     const mark = resolveQrCenterMark({
       heroImageUrl: "/templates/aurelia/hero.jpg",

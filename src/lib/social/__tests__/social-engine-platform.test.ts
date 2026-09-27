@@ -5,7 +5,12 @@ import { FEMMORA_CATALOG_SLUG, FEMMORA_SHARE_PLACECARD } from "@/lib/experience/
 import { buildInviteSharePayload } from "@/lib/invitation/invite-share";
 import { resolveSocialEventKind } from "../social-category";
 import { socialCopyForKind } from "../social-copy";
-import { buildSocialInvitationSurface, SOCIAL_PLACE_CARD_HEIGHT, SOCIAL_PLACE_CARD_WIDTH } from "../social-engine";
+import {
+  buildSocialInvitationSurface,
+  SOCIAL_PLACE_CARD_HEIGHT,
+  SOCIAL_PLACE_CARD_WIDTH,
+  type SocialInvitationInput,
+} from "../social-engine";
 import { isInternalTemplateTitle, resolveSocialEventTitle } from "../social-event-title";
 import { resolveSocialHeroImage } from "../social-hero";
 import { SocialPlaceCardMarkup } from "../social-place-card-image";
@@ -26,12 +31,17 @@ function collectText(node: unknown): string {
   return "";
 }
 
-function surfaceFor(input: Parameters<typeof buildSocialInvitationSurface>[0]) {
+function surfaceFor(
+  input: Omit<SocialInvitationInput, "appUrl" | "uniqueLink" | "versionParts"> & {
+    uniqueLink?: string;
+  }
+) {
+  const { uniqueLink, ...rest } = input;
   return buildSocialInvitationSurface({
     appUrl: APP,
-    uniqueLink: "share-link",
+    uniqueLink: uniqueLink ?? "share-link",
     versionParts: ["v1"],
-    ...input,
+    ...rest,
   });
 }
 
@@ -169,6 +179,32 @@ describe("platform personalization", () => {
     assert.doesNotMatch(surface.image.url, /guest=/);
     assert.doesNotMatch(surface.canonicalUrl, /guest=/);
   });
+
+  it("does not leak a guest token into public OG when social callers omit the guest query", () => {
+    const generic = surfaceFor({
+      uniqueLink: "enock-ruth",
+      eventTitle: "Enock & Ruth",
+      hostName: "Enock & Ruth",
+    });
+    assert.doesNotMatch(generic.image.url, /guest=/);
+    assert.doesNotMatch(generic.canonicalUrl, /guest=/);
+    assert.doesNotMatch(generic.imageAlt, /token|guest=/i);
+    assert.equal(generic.guestToken, null);
+  });
+
+  it("keeps the public canonical generic when includeGuestInCanonicalUrl is false", () => {
+    const surface = surfaceFor({
+      uniqueLink: "enock-ruth",
+      eventTitle: "Enock & Ruth",
+      guestDisplayName: "Ama",
+      guestToken: "ama-token",
+      includeGuestInCanonicalUrl: false,
+    });
+    assert.match(surface.image.url, /guest=ama-token/);
+    assert.equal(surface.canonicalUrl, `${APP}/invite/enock-ruth`);
+    assert.equal(surface.imageAlt, "Enock & Ruth");
+    assert.doesNotMatch(surface.imageAlt, /ama-token/);
+  });
 });
 
 describe("public event-title resolver — catalogue identity", () => {
@@ -270,9 +306,9 @@ describe("privacy, OG, share, unicode, wrap", () => {
       image: surface.image,
       imageAlt: surface.imageAlt,
     });
-    assert.equal(metadata.openGraph?.type, "website");
+    assert.equal((metadata.openGraph as { type?: string } | undefined)?.type, "website");
     assert.equal(metadata.openGraph?.siteName, "Celeventic");
-    assert.equal(metadata.twitter?.card, "summary_large_image");
+    assert.equal((metadata.twitter as { card?: string } | undefined)?.card, "summary_large_image");
     assert.equal(metadata.alternates?.canonical, `${APP}/invite/kojo-fafa`);
   });
 

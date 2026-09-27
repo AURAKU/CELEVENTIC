@@ -3,6 +3,8 @@ import { isMemorialSocialKind } from "@/lib/social/social-category";
 
 export const SOCIAL_PLACE_CARD_KICKER = "YOU'RE INVITED";
 export const SOCIAL_PLACE_CARD_PRIVATE_KICKER = "PRIVATE INVITATION";
+export const SOCIAL_PLACE_CARD_PHRASE = "Join us for this special celebration.";
+export const SOCIAL_PLACE_CARD_PERSONAL_PHRASE = "invite you to celebrate with them";
 
 type KindCopy = {
   fallbackTitle: string;
