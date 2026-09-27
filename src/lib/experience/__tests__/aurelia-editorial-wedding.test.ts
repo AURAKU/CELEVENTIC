@@ -402,7 +402,8 @@ test("Aurelia invitation hosts Memory Vault as The Album", () => {
   );
   assert.doesNotMatch(albumSrc, /forever-afaris/);
   assert.match(albumSrc, /liveAlbumPaths/);
-  assert.match(albumSrc, /templates\/aurelia\/hero\.jpg/);
+  assert.match(albumSrc, /CELEVENTIC_OFFICIAL_LOGO/);
+  assert.doesNotMatch(albumSrc, /templates\/aurelia\/hero\.jpg/);
   assert.doesNotMatch(albumSrc, /Album QR activates when this invitation is published/);
   assert.doesNotMatch(
     readFileSync("src/components/guest-portal/guest-wishes-card.tsx", "utf8"),
@@ -520,27 +521,33 @@ test("Aurelia guest copy has no pause dashes between clauses", () => {
   );
 });
 
-test("Aurelia album QR pins the hero photograph as the center mark", () => {
+test("Aurelia album QR pins an uploaded couple photo, otherwise the Celeventic logo", () => {
   const url = withAureliaAlbumQrCenter(
     "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload%2Ftok&eventId=evt_1&size=512"
   );
   assert.ok(url);
   const parsed = new URL(url!, "https://www.celeventic.com");
-  assert.equal(parsed.searchParams.get("center"), "/templates/aurelia/hero.jpg");
-  assert.equal(parsed.searchParams.get("logoSize"), "hero");
+  assert.equal(parsed.searchParams.get("center"), "/brand/logo-full.png");
+  assert.equal(parsed.searchParams.get("logoSize"), "balanced");
   assert.equal(parsed.searchParams.get("eventId"), "evt_1");
-  const seraphine = withAureliaAlbumQrCenter(
+  const uploaded = withAureliaAlbumQrCenter(
+    "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload%2Ftok&size=512",
+    "/uploads/events/kojo-fafa.jpg"
+  );
+  const uploadedParsed = new URL(uploaded!, "https://www.celeventic.com");
+  assert.equal(uploadedParsed.searchParams.get("center"), "/uploads/events/kojo-fafa.jpg");
+  assert.equal(uploadedParsed.searchParams.get("logoSize"), "hero");
+  const stockIgnored = withAureliaAlbumQrCenter(
     "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload%2Ftok&size=512",
     SERAPHINE_MONOGRAM_PNG
   );
-  const seraphineParsed = new URL(seraphine!, "https://www.celeventic.com");
-  assert.equal(seraphineParsed.searchParams.get("center"), "/templates/seraphine/monogram-qr.png");
-  assert.equal(seraphineParsed.searchParams.get("logoSize"), "hero");
+  const stockParsed = new URL(stockIgnored!, "https://www.celeventic.com");
+  assert.equal(stockParsed.searchParams.get("center"), "/brand/logo-full.png");
   const inviteSrc = readFileSync("src/app/invite/[link]/page.tsx", "utf8");
   assert.match(inviteSrc, /withAureliaAlbumQrCenter/);
   const routeSrc = readFileSync("src/app/api/qr/image/route.ts", "utf8");
   assert.match(routeSrc, /toSafePublicQrCenterPath/);
-  assert.match(routeSrc, /requestedCenter/);
+  assert.match(routeSrc, /uploadedCenter/);
 });
 
 test("Aurelia RSVP drops the deadline line and lists Call or WhatsApp contacts", () => {

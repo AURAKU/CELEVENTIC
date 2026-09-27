@@ -45,7 +45,7 @@ export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
  * `guide` mode — pure black modules, wide quiet zone, no center logo — so
  * iPhone / Android / tablet cameras decode printed and on-screen codes reliably.
  */
-export const QR_COMPOSITE_CACHE_VERSION = "v8-hero-cover";
+export const QR_COMPOSITE_CACHE_VERSION = "v9-guide-hero-or-logo";
 
 /** Preferred preview size for Event Guide QRs in the admin Signs tab. */
 export const QR_GUIDE_PREVIEW_SIZE: QrExportSize = 1024;

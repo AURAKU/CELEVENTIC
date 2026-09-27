@@ -31,8 +31,9 @@ export class EventQrPackService {
     const overview = await eventQrHubService.overview(input.eventId, input.actorId);
     const selected = overview.assets.filter((a) => input.kinds.includes(a.kind) && a.url);
     const slug = slugify(overview.event.title);
-    const centerImage = await qrBrandingService.resolveCenterImageUrl(input.eventId);
-    const logoSize = await qrBrandingService.resolveLogoSize(input.eventId);
+    const mark = await qrBrandingService.resolveCenterMark(input.eventId);
+    const centerImage = mark.url;
+    const logoSize = mark.logoSize;
     const size = input.size ?? 1024;
     const dir = await mkdtemp(join(tmpdir(), "cele-qr-pack-"));
 
@@ -78,8 +79,9 @@ export class EventQrPackService {
     const overview = await eventQrHubService.overview(input.eventId, input.actorId);
     const selected = overview.assets.filter((a) => input.kinds.includes(a.kind) && a.url);
     const slug = slugify(overview.event.title);
-    const centerImage = await qrBrandingService.resolveCenterImageUrl(input.eventId);
-    const logoSize = await qrBrandingService.resolveLogoSize(input.eventId);
+    const mark = await qrBrandingService.resolveCenterMark(input.eventId);
+    const centerImage = mark.url;
+    const logoSize = mark.logoSize;
     const pdf = await PDFDocument.create();
     const font = await pdf.embedFont(StandardFonts.HelveticaBold);
     const body = await pdf.embedFont(StandardFonts.Helvetica);

@@ -13,7 +13,6 @@ import {
   SERAPHINE_HERO_FALLBACK,
   SERAPHINE_LAYOUT_SLUG,
   SERAPHINE_MONOGRAM,
-  SERAPHINE_MONOGRAM_PNG,
   aureliaDistinctVenues,
   aureliaFamilyDefaults,
   aureliaGuestPhoneLinks,
@@ -31,6 +30,7 @@ import type { InvitationRendererProps } from "@/components/invitation/invitation
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import { AureliaGiftCheckout } from "./aurelia-gift-checkout";
 import { AureliaMemoryAlbum } from "./aurelia-memory-album";
+import { resolveQrCenterMark } from "@/lib/qr/qr-center-resolution";
 import styles from "./aurelia-editorial-wedding.module.css";
 
 function pad(value: number) {
@@ -542,9 +542,15 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
             albumUrl={props.memoryAlbumUrl}
             uploadQrImageUrl={props.memoryUploadQrImageUrl}
             qrCenterImageUrl={
-              props.design.layout === SERAPHINE_LAYOUT_SLUG
-                ? SERAPHINE_MONOGRAM_PNG
-                : AURELIA_HERO_FALLBACK
+              resolveQrCenterMark({
+                heroImageUrl: resolvedHero,
+                coverImageUrl: props.event.coverImageUrl,
+                galleryUrls: props.galleryUrls,
+                introImageUrl: props.design.media?.find((asset) => asset.role === "intro")?.url,
+                mediaUrls: props.design.media
+                  ?.filter((asset) => asset.type === "image")
+                  .map((asset) => asset.url),
+              }).url
             }
             uploadCta={config.albumUploadCta}
             viewCta={config.albumViewCta}

@@ -3,14 +3,11 @@ import type { Metadata } from "next";
 import { PremiumInviteWrapper } from "@/components/invitation-os/premium-invite-wrapper";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { qrService } from "@/services/qr/qr.service";
-import { qrBrandingService } from "@/services/qr/qr-branding.service";
 import {
   aureliaFamilyDefaults,
   aureliaSectionVisible,
   isAureliaEditorialLayout,
   mergeAureliaWedding,
-  SERAPHINE_LAYOUT_SLUG,
-  SERAPHINE_MONOGRAM_PNG,
   withAureliaAlbumQrCenter,
 } from "@/lib/experience/aurelia-editorial";
 import { resolveLiveRevealConfiguration, logLiveInviteRevealDiagnostic } from "@/lib/experience/live-envelope-contract";
@@ -27,6 +24,7 @@ import { resolveInvitationMusic } from "@/lib/music/resolve-invitation-music";
 import { resolveBackgroundMedia } from "@/lib/invitation/studio-media-utils";
 import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
 import { generateBrandedQrDataUrl } from "@/lib/qr/branded-qr-generator";
+import { extractDesignQrPhotoSources, resolveQrCenterMark } from "@/lib/qr/qr-center-resolution";
 import { getServerAppUrl } from "@/lib/app-url";
 import { ensureEventMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
@@ -332,6 +330,15 @@ export default async function InvitePage({
         : asset.thumbnailUrl,
     })),
   };
+  const designQrPhotos = extractDesignQrPhotoSources(design);
+  const qrCenterMark = resolveQrCenterMark({
+    heroImageUrl: designQrPhotos.heroImageUrl,
+    introImageUrl: designQrPhotos.introImageUrl,
+    coverImageUrl,
+    galleryUrls,
+    mediaUrls: designQrPhotos.mediaUrls,
+    qrCenterImageUrl: event.qrCenterImageUrl,
+  });
   const guestFacingStartDate = resolveGuestFacingEventInstant(event.startDate, design);
   const guestFacingVenue = resolveGuestFacingVenue(event.venueName, design);
   const blocks = productionOrder
@@ -410,16 +417,12 @@ export default async function InvitePage({
       seatTable = assignment.assignment.tableNumber;
       seatLabel = assignment.assignment.seatLabel;
       if (seatingPlan) {
-        const [center, logoSize] = await Promise.all([
-          qrBrandingService.resolveCenterImageUrl(event.id),
-          qrBrandingService.resolveLogoSize(event.id),
-        ]);
         seatQrDataUrl = await generateBrandedQrDataUrl(
           seatLookupUrl,
-          center,
+          qrCenterMark.url,
           undefined,
           "brand",
-          logoSize
+          qrCenterMark.logoSize
         );
       }
     }
@@ -627,7 +630,7 @@ export default async function InvitePage({
         (isAureliaEditorialLayout(design.layout)
           ? withAureliaAlbumQrCenter(
               memoryLinks?.uploadQrImageUrl,
-              design.layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_MONOGRAM_PNG : undefined
+              qrCenterMark.url
             )
           : resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl)) || null
       }

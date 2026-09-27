@@ -20,6 +20,10 @@ import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-temp
 import { buildPublishedDesignConfig } from "@/lib/invitation/published-design";
 import { hasFullPackageAccess } from "@/lib/access/package-access";
 import { isVideoUrl } from "@/lib/invitation/theme-media-assets";
+import {
+  extractDesignQrPhotoSources,
+  resolveQrCenterMark,
+} from "@/lib/qr/qr-center-resolution";
 import type { Prisma } from "@prisma/client";
 import { getAppUrlFromEnv, sanitizePublicUrl } from "@/lib/app-url";
 import { Prisma as PrismaClient } from "@prisma/client";
@@ -34,16 +38,21 @@ function sanitizeOrderShareUrl<T extends { shareUrl?: string | null }>(order: T)
   return { ...order, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) };
 }
 
-/** Studio's dedicated pre-invite welcome photo (`design.media` role `"intro"`), if any. */
-function extractIntroImageUrl(designConfig: unknown): string | null {
-  if (!designConfig || typeof designConfig !== "object") return null;
-  const media = (designConfig as { media?: unknown }).media;
-  if (!Array.isArray(media)) return null;
-  const shot = media.find(
-    (m) => Boolean(m) && typeof m === "object" && (m as { role?: unknown }).role === "intro"
-  ) as { url?: unknown } | undefined;
-  const url = shot?.url;
-  return typeof url === "string" && url.trim() ? url.trim() : null;
+/** Uploaded hero / first couple photograph for QR insets. Template stock is ignored. */
+function extractUploadedQrPhoto(
+  designConfig: unknown,
+  galleryUrls?: unknown
+): string | null {
+  const photos = extractDesignQrPhotoSources(designConfig);
+  const gallery = Array.isArray(galleryUrls) ? (galleryUrls as string[]) : [];
+  const mark = resolveQrCenterMark({
+    heroImageUrl: photos.heroImageUrl,
+    introImageUrl: photos.introImageUrl,
+    galleryUrls: gallery,
+    mediaUrls: photos.mediaUrls,
+    coverImageUrl: gallery[0] ?? null,
+  });
+  return mark.source === "logo" ? null : mark.url;
 }
 
 /** Order fields that change what a guest sees under "event details". */
@@ -321,9 +330,11 @@ export class InvitationOrderService {
       await productionWorkflowService.onAddonsSelected(orderId, addonSlugs);
     }
 
-    if (data.designConfig !== undefined && order.eventId) {
-      const previousIntro = extractIntroImageUrl(order.designConfig);
-      const nextIntro = extractIntroImageUrl(data.designConfig);
+    if (order.eventId && (data.designConfig !== undefined || data.galleryUrls !== undefined)) {
+      const design = data.designConfig !== undefined ? data.designConfig : order.designConfig;
+      const gallery = data.galleryUrls !== undefined ? data.galleryUrls : order.galleryUrls;
+      const previousIntro = extractUploadedQrPhoto(order.designConfig, order.galleryUrls);
+      const nextIntro = extractUploadedQrPhoto(design, gallery);
       if (nextIntro !== previousIntro) {
         await this.syncIntroImageToEventQr(order.eventId, previousIntro, nextIntro);
       }
@@ -454,7 +465,7 @@ export class InvitationOrderService {
 
     const designConfig = buildPublishedDesignConfig(order);
     const gallery = (order.galleryUrls as string[] | null) ?? [];
-    const introImageUrl = extractIntroImageUrl(designConfig);
+    const introImageUrl = extractUploadedQrPhoto(designConfig, gallery);
 
     const hostName =
       order.coupleName1 && order.coupleName2
@@ -484,9 +495,9 @@ export class InvitationOrderService {
         dressCode: order.dressCode,
         contactPhone: order.contactPhone,
         coverImageUrl: gallery[0] ?? null,
-        // Mirror the welcome photo onto the branded QR center mark, sized up to
-        // the largest safely-scannable preset. Empty stays on the Celeventic
-        // default logo (see qrBrandingService.resolveCenterImageUrl).
+        // Mirror uploaded hero / first couple photograph onto the QR inset.
+        // Template stock stays off this field so the official Celeventic logo
+        // remains the default (see qrBrandingService.resolveCenterMark).
         qrCenterImageUrl: introImageUrl,
         qrLogoSize: introImageUrl ? "bold" : null,
         isPublic: true,

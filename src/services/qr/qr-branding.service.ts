@@ -15,6 +15,10 @@ import {
 } from "@/lib/qr/qr-constants";
 import { getCachedQrPng, setCachedQrPng } from "@/lib/qr/qr-cache";
 import { buildVerifyUrl } from "@/lib/qr/parse-qr-payload";
+import {
+  extractDesignQrPhotoSources,
+  resolveQrCenterMark,
+} from "@/lib/qr/qr-center-resolution";
 
 const ADMIN_DEFAULT_KEY = "qr_default_logo_url";
 const ADMIN_LOGO_SIZE_KEY = "qr_default_logo_size";
@@ -94,22 +98,52 @@ export class QrBrandingService {
 
   /**
    * Resolve center image priority:
-   * 1. Event QR center upload (explicit host/admin branding — always wins)
-   * 2. Admin platform default → Celeventic official (`/brand/logo-full.png`)
+   * 1. Uploaded invitation hero
+   * 2. First uploaded couple / gallery photograph
+   * 3. Explicit QR-center upload (only if it is a real photo, not stock art)
+   * 4. Official Celeventic logo (`/brand/logo-full.png`)
    *
-   * Do not fall back to event cover / gallery photos — those look aggressively
-   * cropped in the QR inset and are not intentional center marks. When nothing
-   * is uploaded, guests always see the Celeventic brand logo (contain-fitted).
+   * Template stock (Aurelia/Seraphine heroes, crests, WhatsApp marks) never
+   * counts as an uploaded photograph.
    */
   async resolveCenterImageUrl(eventId: string): Promise<string> {
+    const mark = await this.resolveCenterMark(eventId);
+    return mark.url;
+  }
+
+  async resolveCenterMark(eventId: string) {
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      select: { qrCenterImageUrl: true },
+      select: {
+        qrCenterImageUrl: true,
+        coverImageUrl: true,
+        media: {
+          orderBy: { sortOrder: "asc" },
+          select: { url: true, type: true },
+          take: 12,
+        },
+        invitations: {
+          orderBy: { updatedAt: "desc" },
+          take: 1,
+          select: { designConfig: true },
+        },
+      },
     });
 
-    const uploaded = event?.qrCenterImageUrl?.trim();
-    if (uploaded) return uploaded;
-    return this.getAdminDefaultLogoUrl();
+    const designSources = extractDesignQrPhotoSources(event?.invitations[0]?.designConfig);
+    const galleryUrls =
+      event?.media
+        ?.filter((item) => item.type !== "video")
+        .map((item) => item.url) ?? [];
+
+    return resolveQrCenterMark({
+      heroImageUrl: designSources.heroImageUrl,
+      introImageUrl: designSources.introImageUrl,
+      coverImageUrl: event?.coverImageUrl,
+      galleryUrls,
+      mediaUrls: designSources.mediaUrls,
+      qrCenterImageUrl: event?.qrCenterImageUrl,
+    });
   }
 
   /** Event override → admin platform default → balanced */
@@ -140,8 +174,9 @@ export class QrBrandingService {
       select: { eventId: true },
     });
     const targetUrl = buildVerifyUrl(token);
-    const centerImage = qr ? await this.resolveCenterImageUrl(qr.eventId) : await this.getAdminDefaultLogoUrl();
-    const logoSize = qr ? await this.resolveLogoSize(qr.eventId) : await this.getAdminDefaultLogoSize();
+    const mark = qr ? await this.resolveCenterMark(qr.eventId) : null;
+    const centerImage = mark?.url ?? (await this.getAdminDefaultLogoUrl());
+    const logoSize = mark?.logoSize ?? (await this.getAdminDefaultLogoSize());
 
     if (format === "png" && mode === "brand") {
       const cached = await getCachedQrPng(token, size, centerImage, logoSize);
@@ -177,9 +212,8 @@ export class QrBrandingService {
     size: QrExportSize = QR_DEFAULT_SIZE,
     mode: QrDisplayMode = "brand"
   ): Promise<string> {
-    const centerImage = await this.resolveCenterImageUrl(eventId);
-    const logoSize = await this.resolveLogoSize(eventId);
-    return generateBrandedQrDataUrl(buildVerifyUrl(token), centerImage, size, mode, logoSize);
+    const mark = await this.resolveCenterMark(eventId);
+    return generateBrandedQrDataUrl(buildVerifyUrl(token), mark.url, size, mode, mark.logoSize);
   }
 
   validateUpload(file: File): string | null {
