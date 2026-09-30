@@ -1,27 +1,69 @@
 .wrap {
-  --live-ivory: #f8f4ea;
-  --live-terracotta: #b65a37;
-  --live-espresso: #352019;
-  --live-brown: #5a453c;
-  --live-gold: #b69a63;
+  --live-ivory: var(--memory-color-surface, #f8f4ea);
+  --live-terracotta: var(--memory-color-accent, #b65a37);
+  --live-espresso: var(--memory-color-ink, #352019);
+  --live-brown: var(--memory-color-ink-muted, #5a453c);
+  --live-gold: var(--memory-color-border, #b69a63);
+  --live-on-accent: var(--memory-color-on-accent, #f8f4ea);
   color: var(--live-espresso);
-  font-family: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  font-family: var(--memory-font-body, var(--font-cormorant), "Cormorant Garamond", Georgia, serif);
 }
 
 .page {
   min-height: 100dvh;
-  background: var(--live-ivory);
+  background:
+    linear-gradient(
+      180deg,
+      var(--memory-color-surface-alt, var(--live-ivory)) 0%,
+      var(--live-ivory) 42%,
+      var(--live-ivory) 100%
+    );
   padding: 2.4rem 1.15rem 3.5rem;
 }
 
 .pageInner {
   width: min(40rem, 100%);
   margin: 0 auto;
+  text-align: center;
+}
+
+.brand {
+  width: 5.75rem;
+  height: 5.75rem;
+  margin: 0 auto 1.2rem;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--live-gold) 72%, transparent);
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--memory-color-surface-alt, var(--live-ivory)) 88%, transparent);
+  background: var(--memory-color-surface-alt, var(--live-ivory));
+}
+
+.brand img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.seraphine .brand img {
+  object-fit: contain;
+  padding: 8%;
+  background: var(--memory-color-surface-alt, #f5f0e4);
+}
+
+.brandLetters {
+  margin: 0 0 0.9rem;
+  font-family: var(--memory-font-display, var(--font-cinzel), Cinzel, serif);
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--live-terracotta);
 }
 
 .eyebrow {
   display: block;
-  font-family: var(--font-cinzel), Cinzel, serif;
+  font-family: var(--memory-font-display, var(--font-cinzel), Cinzel, serif);
   font-size: 0.62rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
@@ -30,9 +72,22 @@
 
 .title {
   margin: 0.35rem 0 0;
-  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-family: var(--memory-font-display, var(--font-playfair), "Playfair Display", serif);
   font-size: clamp(1.7rem, 4vw, 2.4rem);
   font-weight: 400;
+}
+
+.dateLine {
+  margin: 0.4rem 0 0;
+  font-size: 1.05rem;
+  color: var(--live-brown);
+}
+
+.rule {
+  width: 3.2rem;
+  height: 1px;
+  margin: 0.85rem auto 0.1rem;
+  background: color-mix(in srgb, var(--live-gold) 85%, transparent);
 }
 
 .lede {
@@ -109,7 +164,7 @@
 .fill {
   border: 1px solid var(--live-terracotta);
   background: var(--live-terracotta);
-  color: #f8f4ea;
+  color: var(--live-on-accent);
 }
 
 .ghost {
@@ -163,8 +218,8 @@
   bottom: 0;
   padding: 0.35rem 0.4rem;
   font-size: 0.72rem;
-  color: #f8f4ea;
-  background: linear-gradient(transparent, rgba(53, 32, 25, 0.78));
+  color: var(--live-on-accent);
+  background: linear-gradient(transparent, color-mix(in srgb, var(--live-espresso) 78%, transparent));
 }
 
 .busy {

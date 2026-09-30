@@ -38,7 +38,7 @@ function sanitizeOrderShareUrl<T extends { shareUrl?: string | null }>(order: T)
   return { ...order, shareUrl: sanitizePublicUrl(order.shareUrl, getAppUrlFromEnv()) };
 }
 
-/** Uploaded hero / first couple photograph for QR insets. Template stock is ignored. */
+/** Uploaded hero / cover photograph for QR insets. Template stock, intro, and gallery dumps are ignored. */
 function extractUploadedQrPhoto(
   designConfig: unknown,
   galleryUrls?: unknown
@@ -47,9 +47,6 @@ function extractUploadedQrPhoto(
   const gallery = Array.isArray(galleryUrls) ? (galleryUrls as string[]) : [];
   const mark = resolveQrCenterMark({
     heroImageUrl: photos.heroImageUrl,
-    introImageUrl: photos.introImageUrl,
-    galleryUrls: gallery,
-    mediaUrls: photos.mediaUrls,
     coverImageUrl: gallery[0] ?? null,
   });
   return mark.source === "logo" ? null : mark.url;
@@ -333,10 +330,10 @@ export class InvitationOrderService {
     if (order.eventId && (data.designConfig !== undefined || data.galleryUrls !== undefined)) {
       const design = data.designConfig !== undefined ? data.designConfig : order.designConfig;
       const gallery = data.galleryUrls !== undefined ? data.galleryUrls : order.galleryUrls;
-      const previousIntro = extractUploadedQrPhoto(order.designConfig, order.galleryUrls);
-      const nextIntro = extractUploadedQrPhoto(design, gallery);
-      if (nextIntro !== previousIntro) {
-        await this.syncIntroImageToEventQr(order.eventId, previousIntro, nextIntro);
+      const previousPhoto = extractUploadedQrPhoto(order.designConfig, order.galleryUrls);
+      const nextPhoto = extractUploadedQrPhoto(design, gallery);
+      if (nextPhoto !== previousPhoto) {
+        await this.syncIntroImageToEventQr(order.eventId, previousPhoto, nextPhoto);
       }
     }
 
@@ -355,11 +352,9 @@ export class InvitationOrderService {
   }
 
   /**
-   * Mirror the Studio "welcome photo" (soft-intro / BEGIN screen) onto the
-   * event's branded QR center logo, sized up to the largest preset that stays
-   * safely scannable. Only follows the sync while the QR mark still matches
-   * what we last pushed here — a manual upload on the dedicated QR branding
-   * page always wins and stops future auto-sync from overwriting it.
+   * Mirror the uploaded invitation hero onto the event QR center while the mark
+   * still matches what we last pushed here. A manual upload on Event QR branding
+   * always wins and stops future auto-sync from overwriting it.
    */
   private async syncIntroImageToEventQr(
     eventId: string,
@@ -465,7 +460,7 @@ export class InvitationOrderService {
 
     const designConfig = buildPublishedDesignConfig(order);
     const gallery = (order.galleryUrls as string[] | null) ?? [];
-    const introImageUrl = extractUploadedQrPhoto(designConfig, gallery);
+    const qrPhotoUrl = extractUploadedQrPhoto(designConfig, gallery);
 
     const hostName =
       order.coupleName1 && order.coupleName2
@@ -498,8 +493,8 @@ export class InvitationOrderService {
         // Mirror uploaded hero / first couple photograph onto the QR inset.
         // Template stock stays off this field so the official Celeventic logo
         // remains the default (see qrBrandingService.resolveCenterMark).
-        qrCenterImageUrl: introImageUrl,
-        qrLogoSize: introImageUrl ? "bold" : null,
+        qrCenterImageUrl: qrPhotoUrl,
+        qrLogoSize: qrPhotoUrl ? "bold" : null,
         isPublic: true,
         status: "PUBLISHED",
         organizerId: order.userId,

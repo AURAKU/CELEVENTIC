@@ -1,5 +1,4 @@
 import { createHash } from "crypto";
-import { truncateForShare } from "@/lib/social/share-description";
 import { sanitizeSocialGuestDisplayName, formatSocialGuestGreeting } from "@/lib/social/social-guest";
 import { resolveSocialEventKind, type SocialEventKind } from "@/lib/social/social-category";
 import {
@@ -17,7 +16,7 @@ import {
   resolveSocialEventTitle,
   formatSocialDateCardLabel,
   formatSocialDescriptionDate,
-  sanitizeGuestFacingTitle,
+  buildSocialInviteDescription,
 } from "@/lib/social/social-event-title";
 import type { LuxuryFashionHouseConfig } from "@/lib/experience/luxury-fashion";
 
@@ -31,6 +30,7 @@ export type SocialPlaceCardImage = {
 export const SOCIAL_PLACE_CARD_WIDTH = 1200;
 export const SOCIAL_PLACE_CARD_HEIGHT = 630;
 export const SOCIAL_PLACE_CARD_TYPE = "image/png";
+export const SOCIAL_PLACE_CARD_ART_VERSION = "orbital-1";
 export {
   SOCIAL_PLACE_CARD_PHRASE,
   SOCIAL_PLACE_CARD_PERSONAL_PHRASE,
@@ -221,14 +221,12 @@ export function buildSocialInvitationSurface(input: SocialInvitationInput): Soci
     dateLabel: input.dateDisplay,
     weekday: input.weekday,
   });
-  const host = sanitizeGuestFacingTitle(input.hostName);
-  const description = truncateForShare(
-    guestDisplayName
-      ? copy.personalDescription(resolved.title, host, guestDisplayName)
-      : kind === "wedding" && descriptionDate && !guestDisplayName
-        ? `You're invited to celebrate ${resolved.title} on ${descriptionDate}.`
-        : copy.description(resolved.title, host)
-  );
+  const description = buildSocialInviteDescription({
+    title: resolved.title,
+    descriptionDate,
+    guestDisplayName,
+    kind,
+  });
   const theme = resolveSocialVisualTheme({
     kind,
     catalogSlug: input.catalogSlug,
@@ -255,6 +253,7 @@ export function buildSocialInvitationSurface(input: SocialInvitationInput): Soci
     guestDisplayName,
     hero.url,
     theme.panel,
+    SOCIAL_PLACE_CARD_ART_VERSION,
   ]);
   const image = decorateSocialPlaceCardImage(input.appUrl, input.uniqueLink, version, guestToken);
   return {

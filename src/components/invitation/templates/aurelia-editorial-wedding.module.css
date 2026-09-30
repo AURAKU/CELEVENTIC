@@ -113,6 +113,25 @@
   transform: translateY(0.1rem);
 }
 
+.monogramMark {
+  display: block;
+  width: 2.95rem;
+  height: 2.95rem;
+  overflow: hidden;
+  border-radius: 0.62rem;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--wedding-gold) 78%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--wedding-gold) 42%, transparent),
+    0 10px 22px rgba(16, 8, 4, 0.22);
+}
+
+.monogramMark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .headerOnHero .monogram {
   color: #f8f4ea;
   background:
@@ -134,6 +153,13 @@
 .headerOnHero .monogramAmp {
   color: #ead6a0;
   text-shadow: 0 0 18px rgba(234, 214, 160, 0.5);
+}
+
+.headerOnHero .monogramMark {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #ead6a0 82%, transparent),
+    0 0 0 4px color-mix(in srgb, #ead6a0 48%, transparent),
+    0 12px 26px rgba(8, 4, 2, 0.45);
 }
 
 .finale .monogram {
@@ -725,6 +751,16 @@
   background: var(--wedding-cream);
 }
 
+.mapStatic {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+
 .mapIframe {
   position: absolute;
   top: -22%;
@@ -863,6 +899,66 @@
   margin: 1.15rem auto 0;
   border: 1px solid color-mix(in srgb, var(--wedding-gold) 42%, transparent);
   object-fit: cover;
+}
+
+.outfitBoard {
+  overflow: hidden;
+}
+
+.outfitLookbook {
+  margin: 1.25rem 0 0;
+  padding: 0;
+}
+
+.outfitMat {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin: 0.85rem 0 0;
+  padding: 0.85rem 0.7rem 0.7rem;
+  background: color-mix(in srgb, var(--wedding-ivory) 88%, white);
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 48%, transparent);
+  box-shadow: none;
+}
+
+.outfitImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center top;
+  background: #fafaf5;
+}
+
+.outfitLegend {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0.65rem 0.2rem 0;
+  padding: 0 0.85rem;
+}
+
+.outfitLegend span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.45rem;
+  padding: 0.22rem 0.15rem 0.12rem;
+  color: var(--wedding-text);
+  font-family: var(--aurelia-display);
+  font-size: 0.55rem;
+  letter-spacing: 0.26em;
+  text-indent: 0.12em;
+  text-transform: uppercase;
+}
+
+.outfitCaption {
+  margin: 0.72rem 0 0;
+  font-family: var(--aurelia-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--wedding-brown);
 }
 
 .swatches {
@@ -1550,6 +1646,301 @@
   text-transform: uppercase;
   font-size: 0.72rem;
   margin-top: 1.1rem;
+}
+
+/* Sage and White — Seraphine only. Bottom-weighted veil so faces stay open. */
+.seraphine {
+  --wedding-ivory: #fafaf5;
+  --wedding-cream: #f5f0e4;
+  --wedding-champagne: #c0c8a8;
+  --wedding-terracotta: #5f7a58;
+  --wedding-blush: #a8c0a0;
+  --wedding-espresso: #2c3a2e;
+  --wedding-brown: #3f5344;
+  --wedding-gold: #c5b48a;
+  --wedding-text: #2f3d32;
+}
+
+.seraphine .header {
+  background: color-mix(in srgb, var(--wedding-ivory) 90%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--wedding-gold) 38%, var(--wedding-blush));
+}
+
+.seraphine .headerOnHero {
+  background: transparent;
+  border-bottom-color: transparent;
+  color: #fafaf5;
+}
+
+.seraphine .headerOnHero .monogram {
+  color: #fafaf5;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #3f5344 42%, transparent) 0%,
+      color-mix(in srgb, #2c3a2e 62%, transparent) 100%
+    );
+  border-color: #c5b48a;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #c5b48a 28%, transparent),
+    0 0 0 1px color-mix(in srgb, #2c3a2e 48%, transparent),
+    0 0 0 4px color-mix(in srgb, #c5b48a 58%, transparent),
+    0 14px 30px rgba(44, 58, 46, 0.28);
+  text-shadow: 0 1px 10px rgba(44, 58, 46, 0.45);
+}
+
+.seraphine .headerOnHero .monogramAmp {
+  color: #c5b48a;
+  text-shadow: 0 0 16px rgba(197, 180, 138, 0.42);
+}
+
+.seraphine .headerOnHero .monogramMark {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #c5b48a 82%, transparent),
+    0 0 0 4px color-mix(in srgb, #c5b48a 42%, transparent),
+    0 12px 26px rgba(44, 58, 46, 0.32);
+}
+
+.seraphine .hero {
+  background: #8ba888;
+  color: #fafaf5;
+}
+
+.seraphine .heroImage {
+  object-position: center 12%;
+}
+
+.seraphine .heroGrade {
+  background: radial-gradient(
+    ellipse 92% 74% at 50% 38%,
+    transparent 64%,
+    color-mix(in srgb, #3f5344 28%, transparent) 100%
+  );
+}
+
+.seraphine .heroScrim {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #2c3a2e 16%, transparent) 0%,
+      transparent 12%,
+      transparent 58%,
+      color-mix(in srgb, #3f5344 8%, transparent) 74%,
+      color-mix(in srgb, #2c3a2e 54%, transparent) 100%
+    );
+}
+
+.seraphine .heroRing {
+  border-color: color-mix(in srgb, #c5b48a 48%, transparent);
+}
+
+.seraphine .hero .eyebrow {
+  color: color-mix(in srgb, #fafaf5 90%, #c0c8a8);
+}
+
+.seraphine .heroName,
+.seraphine .hero .eyebrow {
+  text-shadow:
+    0 1px 2px rgba(44, 58, 46, 0.55),
+    0 2px 16px rgba(44, 58, 46, 0.38);
+}
+
+.seraphine .ampersand {
+  color: #c5b48a;
+}
+
+.seraphine .heroDate {
+  color: #fafaf5;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #4a6350 58%, transparent),
+    color-mix(in srgb, #2c3a2e 72%, transparent)
+  );
+  border-color: color-mix(in srgb, #c5b48a 86%, #fafaf5);
+  box-shadow:
+    0 10px 26px rgba(44, 58, 46, 0.28),
+    inset 0 0 0 1px color-mix(in srgb, #fafaf5 16%, transparent);
+  text-shadow: 0 1px 2px rgba(44, 58, 46, 0.65);
+}
+
+.seraphine .heroMeta {
+  color: #fafaf5;
+  text-shadow:
+    0 1px 1px rgba(44, 58, 46, 0.82),
+    0 2px 12px rgba(44, 58, 46, 0.58),
+    0 0 18px rgba(44, 58, 46, 0.36);
+}
+
+.seraphine .heroMonogram {
+  width: min(6.8rem, 30vw);
+  margin-bottom: 0.28rem;
+  filter: drop-shadow(0 10px 18px rgba(44, 58, 46, 0.28));
+}
+
+.seraphine .countdown {
+  background: #4a6350;
+  color: #fafaf5;
+}
+
+.seraphine .countdown .eyebrow,
+.seraphine .countdown .heading {
+  color: #fafaf5;
+}
+
+.seraphine .cellNum {
+  color: #fafaf5;
+}
+
+.seraphine .scriptLine {
+  color: #5f7a58;
+}
+
+.seraphine .eyebrow {
+  color: #5f7a58;
+}
+
+.seraphine .btnOutline {
+  border-color: color-mix(in srgb, #fafaf5 82%, transparent);
+  color: #fafaf5;
+}
+
+.seraphine .btnFill {
+  border-color: #4a6350;
+  background: #4a6350;
+  color: #fafaf5;
+}
+
+.seraphine .rsvpBand {
+  background: #4a6350;
+  color: #fafaf5;
+}
+
+.seraphine .rsvpBand .eyebrow,
+.seraphine .rsvpBand .heading {
+  color: #fafaf5;
+}
+
+.seraphine .rsvpPanel :global(input) {
+  background: color-mix(in srgb, #fafaf5 10%, transparent) !important;
+  color: #fafaf5 !important;
+  border-color: color-mix(in srgb, #c5b48a 52%, transparent) !important;
+}
+
+.seraphine .rsvpPanel :global(input::placeholder) {
+  color: color-mix(in srgb, #fafaf5 72%, transparent) !important;
+}
+
+.seraphine .rsvpPanel :global([data-testid="rsvp-capacity"]) {
+  color: #fafaf5 !important;
+}
+
+.seraphine .rsvpCall {
+  color: #fafaf5;
+}
+
+.seraphine .rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(2)) {
+  color: #fafaf5 !important;
+}
+
+.seraphine .rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(3)) {
+  color: #fafaf5 !important;
+  border-color: color-mix(in srgb, #c5b48a 72%, transparent) !important;
+}
+
+.seraphine .outfitMat {
+  background: #fafaf5;
+  border-color: color-mix(in srgb, #c5b48a 52%, #c0c8a8);
+  box-shadow: none;
+}
+
+.seraphine .outfitLegend span {
+  color: #2f3d32;
+}
+
+.seraphine .outfitCaption {
+  color: #3f5344;
+}
+
+.seraphine .giftCheckout {
+  background: color-mix(in srgb, #fafaf5 86%, #f5f0e4);
+  border-color: color-mix(in srgb, #c5b48a 58%, #c0c8a8);
+}
+
+.seraphine .giftKicker,
+.seraphine .giftLabel {
+  color: #4a6350;
+}
+
+.seraphine .giftNote,
+.seraphine .giftLede,
+.seraphine .giftStatus,
+.seraphine .giftField,
+.seraphine .giftPrivacy {
+  color: #3f5344;
+}
+
+.seraphine .giftField input,
+.seraphine .giftField textarea {
+  background: #fafaf5;
+  border-color: color-mix(in srgb, #c5b48a 50%, transparent);
+  color: #2f3d32;
+}
+
+.seraphine .giftAmount,
+.seraphine .giftMethod {
+  border-color: color-mix(in srgb, #c5b48a 55%, #c0c8a8);
+  color: #2f3d32;
+  background: #fafaf5;
+}
+
+.seraphine .giftToggle,
+.seraphine .giftPay,
+.seraphine .giftAmountSelected,
+.seraphine .giftMethodSelected {
+  border-color: #4a6350;
+  background: #4a6350;
+  color: #fafaf5;
+}
+
+.seraphine .giftToggle:hover,
+.seraphine .giftPay:hover:not(:disabled) {
+  background: color-mix(in srgb, #4a6350 86%, #2c3a2e);
+  border-color: #2c3a2e;
+}
+
+.seraphine .mapFrame {
+  border-color: color-mix(in srgb, #c5b48a 58%, #c0c8a8);
+  background: #f5f0e4;
+}
+
+.seraphine .mapStatic {
+  filter: saturate(0.86) contrast(1.03);
+}
+
+.seraphine .mapIframe {
+  filter: saturate(0.78) contrast(1.04) sepia(0.08);
+}
+
+.seraphine .mapVeil {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #fafaf5 22%, transparent) 0%,
+      transparent 34%,
+      transparent 62%,
+      color-mix(in srgb, #2c3a2e 18%, transparent) 100%
+    );
+}
+
+.seraphine .mapBadge {
+  background: #fafaf5;
+  border-color: color-mix(in srgb, #c5b48a 55%, transparent);
+  color: #2f3d32;
+}
+
+.seraphine .directions {
+  color: #2f3d32;
+  border-color: color-mix(in srgb, #c5b48a 58%, #c0c8a8);
 }
 
 @media (max-height: 520px) {

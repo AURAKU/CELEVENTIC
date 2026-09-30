@@ -45,7 +45,7 @@ export const QR_MAX_SAFE_LOGO_RATIO = QR_LOGO_SIZE_PRESETS.bold;
  * `guide` mode — pure black modules, wide quiet zone, no center logo — so
  * iPhone / Android / tablet cameras decode printed and on-screen codes reliably.
  */
-export const QR_COMPOSITE_CACHE_VERSION = "v9-guide-hero-or-logo";
+export const QR_COMPOSITE_CACHE_VERSION = "v10-guide-hero-or-logo";
 
 /** Preferred preview size for Event Guide QRs in the admin Signs tab. */
 export const QR_GUIDE_PREVIEW_SIZE: QrExportSize = 1024;
@@ -82,11 +82,11 @@ export function parseQrLogoSizeQuery(raw: unknown): QrLogoSizePreset | null {
 }
 
 /**
- * Same-origin public image paths only. Album QRs may pin `/templates/aurelia/hero.jpg`
- * without allowing arbitrary remote URLs (SSRF) or path traversal.
+ * Same-origin public image paths only. Album QRs may pin an uploaded photograph
+ * or the official Celeventic logo — never catalogue template stock.
  */
 const PUBLIC_QR_CENTER_RE =
-  /^\/(?:templates|brand|uploads|api\/uploads)\/[A-Za-z0-9._/-]+\.(?:jpe?g|png|webp)$/;
+  /^\/(?:brand|uploads|api\/uploads)\/[A-Za-z0-9._/-]+\.(?:jpe?g|png|webp)$/;
 
 export function toSafePublicQrCenterPath(raw: unknown): string | null {
   if (typeof raw !== "string") return null;

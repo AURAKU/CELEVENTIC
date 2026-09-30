@@ -7,8 +7,8 @@ import {
 } from "../qr-constants";
 
 describe("public QR center allowlist", () => {
-  it("accepts template, brand, and upload image paths", () => {
-    assert.equal(toSafePublicQrCenterPath("/templates/aurelia/hero.jpg"), "/templates/aurelia/hero.jpg");
+  it("accepts brand and upload image paths, not catalogue stock", () => {
+    assert.equal(toSafePublicQrCenterPath("/templates/aurelia/hero.jpg"), null);
     assert.equal(toSafePublicQrCenterPath("/brand/logo-full.png"), "/brand/logo-full.png");
     assert.equal(toSafePublicQrCenterPath("/uploads/event/hero.webp"), "/uploads/event/hero.webp");
     assert.equal(
@@ -19,8 +19,12 @@ describe("public QR center allowlist", () => {
 
   it("strips same-origin absolute URLs down to the pathname", () => {
     assert.equal(
-      toSafePublicQrCenterPath("https://www.celeventic.com/templates/aurelia/hero.jpg"),
-      "/templates/aurelia/hero.jpg"
+      toSafePublicQrCenterPath("https://www.celeventic.com/brand/logo-full.png"),
+      "/brand/logo-full.png"
+    );
+    assert.equal(
+      toSafePublicQrCenterPath("https://www.celeventic.com/uploads/event/hero.jpg"),
+      "/uploads/event/hero.jpg"
     );
   });
 
@@ -32,20 +36,20 @@ describe("public QR center allowlist", () => {
     assert.equal(toSafePublicQrCenterPath("/etc/passwd"), null);
     assert.equal(
       toSafePublicQrCenterPath("https://evil.example/templates/aurelia/hero.jpg"),
-      "/templates/aurelia/hero.jpg"
+      null
     );
   });
 
   it("pins center and logo size onto an existing QR image URL", () => {
     const next = withPublicQrCenter(
       "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload&eventId=evt_1&size=512",
-      "/templates/aurelia/hero.jpg",
-      "bold"
+      "/uploads/events/enock-ruth-hero.jpg",
+      "hero"
     );
     const parsed = new URL(next, "https://www.celeventic.com");
     assert.equal(parsed.pathname, "/api/qr/image");
-    assert.equal(parsed.searchParams.get("center"), "/templates/aurelia/hero.jpg");
-    assert.equal(parsed.searchParams.get("logoSize"), "bold");
+    assert.equal(parsed.searchParams.get("center"), "/uploads/events/enock-ruth-hero.jpg");
+    assert.equal(parsed.searchParams.get("logoSize"), "hero");
     assert.equal(parsed.searchParams.get("eventId"), "evt_1");
     assert.equal(parsed.searchParams.get("size"), "512");
   });

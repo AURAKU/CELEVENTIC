@@ -3,18 +3,19 @@ import { describe, it } from "node:test";
 import { buildShareDescription, truncateForShare } from "../share-description";
 
 describe("buildShareDescription", () => {
-  it("leads with couple names instead of dumping story text", () => {
+  it("leads with the event title instead of dumping story text or an organizer name", () => {
     const description = buildShareDescription({
       hostName: "JEFFERY OWURAKU AFARI & FRANCISCA CHELSY SERWAAH OPOKU",
       title: "Jeffery & Francisca's Wedding",
     });
-    assert.match(description, /^JEFFERY OWURAKU AFARI & FRANCISCA CHELSY SERWAAH OPOKU invite you/);
-    assert.doesNotMatch(description, /our story|met in|fell in love/i);
+    assert.match(description, /You're invited to Jeffery & Francisca's Wedding/);
+    assert.doesNotMatch(description, /invite you|JEFFERY OWURAKU|our story|met in|fell in love/i);
   });
 
-  it("uses singular verb agreement for a single host name", () => {
-    const description = buildShareDescription({ hostName: "Ama Serwaa", title: "Ama's Birthday" });
-    assert.match(description, /^Ama Serwaa invites you/);
+  it("never names a single organizer or RSVP contact", () => {
+    const description = buildShareDescription({ hostName: "Prince", title: "Enock & Ruth" });
+    assert.equal(description, "You're invited to Enock & Ruth.");
+    assert.doesNotMatch(description, /Prince|invites you/i);
   });
 
   it("falls back to a generic invite line when no host name is set", () => {

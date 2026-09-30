@@ -63,6 +63,7 @@ export function SetReminderButton({
     event.venue,
     event.description,
     event.timeZone,
+    event.allDay,
   ]);
 
   useEffect(() => {

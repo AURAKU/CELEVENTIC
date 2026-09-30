@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Camera, ImagePlus, Loader2 } from "lucide-react";
 import {
   MEMORY_VAULT_IMAGE_COMPRESSION,
   smartCompressImage,
 } from "@/lib/image/smart-compress";
+import { SERAPHINE_LAYOUT_SLUG } from "@/lib/experience/aurelia-editorial";
 import { liveAlbumPaths, type LiveAlbumItem } from "@/lib/memory/live-album";
 import styles from "./live-album-experience.module.css";
 
@@ -175,24 +176,55 @@ export function LiveAlbumPageShell({
   invitationId,
   eventTitle,
   openLens,
+  identity,
+  cssVars,
 }: {
   invitationId: string;
   eventTitle: string;
   openLens: boolean;
+  identity?: {
+    title?: string | null;
+    eyebrow?: string | null;
+    subtitle?: string | null;
+    lede?: string | null;
+    logoUrl?: string | null;
+    monogram?: string | null;
+    layout?: string | null;
+  } | null;
+  cssVars?: CSSProperties;
 }) {
+  const title = identity?.title?.trim() || eventTitle;
+  const eyebrow = identity?.eyebrow?.trim() || "Shared album";
+  const lede =
+    identity?.lede?.trim() ||
+    (openLens
+      ? "Open the lens to add a photograph. It appears in the shared album for everyone at this celebration."
+      : "Photographs from the celebration, gathered in one album.");
+  const isSeraphine = identity?.layout === SERAPHINE_LAYOUT_SLUG;
+
   return (
-    <div className={`${styles.wrap} ${styles.page}`}>
+    <div
+      className={`${styles.wrap} ${styles.page} ${isSeraphine ? styles.seraphine : ""}`}
+      style={cssVars}
+      data-album-layout={identity?.layout || undefined}
+    >
       <div className={styles.pageInner}>
-        <span className={styles.eyebrow}>Shared album</span>
-        <h1 className={styles.title}>{eventTitle}</h1>
-        <p className={styles.lede}>
-          {openLens
-            ? "Open the lens to add a photograph. It appears in the shared album for everyone at this celebration."
-            : "Photographs from the celebration, gathered in one album."}
-        </p>
+        {identity?.logoUrl ? (
+          <div className={styles.brand}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={identity.logoUrl} alt={identity.monogram?.trim() || title} />
+          </div>
+        ) : identity?.monogram ? (
+          <p className={styles.brandLetters}>{identity.monogram}</p>
+        ) : null}
+        <span className={styles.eyebrow}>{eyebrow}</span>
+        <h1 className={styles.title}>{title}</h1>
+        {identity?.subtitle ? <p className={styles.dateLine}>{identity.subtitle}</p> : null}
+        <div className={styles.rule} aria-hidden />
+        <p className={styles.lede}>{lede}</p>
         <LiveAlbumExperience
           invitationId={invitationId}
-          eventTitle={eventTitle}
+          eventTitle={title}
           showLens={openLens}
           showGallery
         />

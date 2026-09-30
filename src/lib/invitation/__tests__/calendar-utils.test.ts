@@ -63,6 +63,26 @@ describe("calendar reminders", () => {
     assert.equal(toGoogleCalendarDates("garbage"), "");
     assert.equal(buildGoogleCalendarUrl({ title: "x", startDateRaw: "not-a-date" }), "");
   });
+
+  it("builds an all-day save-the-date when the clock time is pending", () => {
+    const event = {
+      title: "Kojo & Fafa · Wedding Ceremony",
+      startDateRaw: "2026-11-14T00:00:00+00:00",
+      venue: "The Forest Grove Event",
+      timeZone: "Africa/Accra",
+      allDay: true,
+      description: "Time details to be announced.",
+    };
+    assert.deepEqual(defaultReminderMinutes(event), [1440]);
+    assert.equal(toGoogleCalendarDates(event.startDateRaw, undefined, { allDay: true }), "20261114/20261115");
+    const google = buildGoogleCalendarUrl(event);
+    assert.match(google, /dates=20261114%2F20261115/);
+    assert.match(google, /Time\+details/);
+    const ics = buildIcsContent(event);
+    assert.match(ics, /DTSTART;VALUE=DATE:20261114/);
+    assert.match(ics, /DTEND;VALUE=DATE:20261115/);
+    assert.doesNotMatch(ics, /DTSTART:20261114T000000Z/);
+  });
 });
 
 describe("maps embed URLs", () => {

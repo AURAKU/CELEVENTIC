@@ -100,12 +100,11 @@ export class QrBrandingService {
   /**
    * Resolve center image priority:
    * 1. Uploaded invitation hero
-   * 2. First uploaded couple / gallery photograph
-   * 3. Explicit QR-center upload (only if it is a real photo, not stock art)
+   * 2. Event cover photograph
+   * 3. Explicit QR-center upload (real photo only)
    * 4. Official Celeventic logo (`/brand/logo-full.png`)
    *
-   * Template stock (Aurelia/Seraphine heroes, crests, WhatsApp marks) never
-   * counts as an uploaded photograph.
+   * Template stock, intro art, and gallery dumps never count as the inset.
    */
   async resolveCenterImageUrl(eventId: string): Promise<string> {
     const mark = await this.resolveCenterMark(eventId);
@@ -118,11 +117,6 @@ export class QrBrandingService {
       select: {
         qrCenterImageUrl: true,
         coverImageUrl: true,
-        media: {
-          orderBy: { sortOrder: "asc" },
-          select: { url: true, type: true },
-          take: 12,
-        },
         invitations: {
           orderBy: { updatedAt: "desc" },
           take: 1,
@@ -132,17 +126,10 @@ export class QrBrandingService {
     });
 
     const designSources = extractDesignQrPhotoSources(event?.invitations[0]?.designConfig);
-    const galleryUrls =
-      event?.media
-        ?.filter((item) => item.type !== "video")
-        .map((item) => item.url) ?? [];
 
     return resolveQrCenterMark({
       heroImageUrl: designSources.heroImageUrl,
-      introImageUrl: designSources.introImageUrl,
       coverImageUrl: event?.coverImageUrl,
-      galleryUrls,
-      mediaUrls: designSources.mediaUrls,
       qrCenterImageUrl: event?.qrCenterImageUrl,
     });
   }

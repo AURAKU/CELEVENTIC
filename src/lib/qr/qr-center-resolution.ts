@@ -1,4 +1,9 @@
-import { CELEVENTIC_OFFICIAL_LOGO, type QrLogoSizePreset } from "@/lib/qr/qr-constants";
+import { isUploadedMediaUrl } from "@/lib/uploads/media-url";
+import {
+  CELEVENTIC_LOGO_MARK,
+  CELEVENTIC_OFFICIAL_LOGO,
+  type QrLogoSizePreset,
+} from "@/lib/qr/qr-constants";
 
 export type QrCenterSource = "hero" | "couple" | "qr-upload" | "logo";
 
@@ -34,17 +39,28 @@ export function isStockQrCenter(value?: string | null): boolean {
   return STOCK_CENTER_RE.test(pathnameOf(url));
 }
 
-/** Organizer-uploaded photograph (Studio hero, gallery, cover, QR branding). */
+/** Official Celeventic wordmark / square mark — the only non-photo QR inset. */
+export function isOfficialCeleventicQrCenter(value?: string | null): boolean {
+  const url = trimUrl(value);
+  if (!url) return false;
+  const path = pathnameOf(url);
+  return path === CELEVENTIC_OFFICIAL_LOGO || path === CELEVENTIC_LOGO_MARK || path.startsWith("/brand/");
+}
+
+/**
+ * Organizer-uploaded photograph (Studio hero, cover, or QR branding).
+ * Unsplash / template / demo scenery URLs never count.
+ */
 export function isOrganizerUploadedQrCenter(value?: string | null): boolean {
   const url = trimUrl(value);
   if (!url || isStockQrCenter(url)) return false;
   if (url.startsWith("data:image/")) return true;
-  if (/^https?:\/\//i.test(url)) return true;
-  return (
-    url.startsWith("/uploads/") ||
-    url.startsWith("/api/uploads/") ||
-    url.startsWith("/api/media/")
-  );
+  return isUploadedMediaUrl(url);
+}
+
+/** A `center=` query may pin an uploaded photo or the official logo — never stock art. */
+export function isPinnedQrCenterAllowed(value?: string | null): boolean {
+  return isOrganizerUploadedQrCenter(value) || isOfficialCeleventicQrCenter(value);
 }
 
 function firstUploaded(values: Array<string | null | undefined>): string | null {
@@ -66,21 +82,19 @@ export type QrCenterResolutionInput = {
 /**
  * Guest-facing QR inset.
  * 1. Uploaded invitation hero
- * 2. First uploaded couple / gallery photograph
- * 3. Explicit QR-center upload (only if it is a real photo, not stock art)
+ * 2. Event cover photograph (hero equivalent)
+ * 3. Explicit QR-center upload (real photo only — not stock, not intro/gallery dump)
  * 4. Official Celeventic logo
  */
 export function resolveQrCenterMark(input: QrCenterResolutionInput): QrCenterMark {
-  const hero = firstUploaded([input.heroImageUrl]);
-  if (hero) return { url: hero, source: "hero", logoSize: "hero" };
-
-  const couple = firstUploaded([
-    input.coverImageUrl,
-    input.introImageUrl,
-    ...(input.galleryUrls ?? []),
-    ...(input.mediaUrls ?? []),
-  ]);
-  if (couple) return { url: couple, source: "couple", logoSize: "hero" };
+  const hero = firstUploaded([input.heroImageUrl, input.coverImageUrl]);
+  if (hero) {
+    return {
+      url: hero,
+      source: input.heroImageUrl && isOrganizerUploadedQrCenter(input.heroImageUrl) ? "hero" : "couple",
+      logoSize: "hero",
+    };
+  }
 
   const qrUpload = firstUploaded([input.qrCenterImageUrl]);
   if (qrUpload) return { url: qrUpload, source: "qr-upload", logoSize: "hero" };

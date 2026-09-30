@@ -4,6 +4,7 @@ export {
   SOCIAL_PLACE_CARD_TYPE,
   SOCIAL_PLACE_CARD_PHRASE,
   SOCIAL_PLACE_CARD_PERSONAL_PHRASE,
+  SOCIAL_PLACE_CARD_ART_VERSION,
   isSocialPlaceCardUnavailable,
   buildSocialPlaceCardVersion,
   buildSocialPlaceCardPath,

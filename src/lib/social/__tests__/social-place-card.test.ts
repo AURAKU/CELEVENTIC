@@ -80,7 +80,8 @@ describe("Aurelia / Seraphine share surface", () => {
     assert.equal(surface.variant, "aurelia");
     assert.equal(surface.title, "Enock & Ruth");
     assert.equal(surface.shareTitle, "Enock & Ruth · You're invited");
-    assert.match(surface.description, /Enock & Ruth invite you to celebrate with them/);
+    assert.match(surface.description, /You're invited to Enock & Ruth/);
+    assert.doesNotMatch(surface.description, /Prince|invites you to celebrate with them/i);
     assert.doesNotMatch(surface.shareTitle + surface.description, /AURELIA|Aurelia Editorial/i);
     assert.equal(surface.image.width, SOCIAL_PLACE_CARD_WIDTH);
     assert.equal(surface.image.height, SOCIAL_PLACE_CARD_HEIGHT);
@@ -162,13 +163,13 @@ describe("Aurelia / Seraphine share surface", () => {
 
     assert.equal(ama.shareTitle, "Enock & Ruth · You're invited");
     assert.equal(ama.guestGreeting, "Dear Ama,");
-    assert.match(ama.description, /^Dear Ama, Enock & Ruth invite you/);
+    assert.match(ama.description, /^Dear Ama, you're invited to Enock & Ruth/);
     assert.match(ama.image.url, /guest=ama-token/);
     assert.doesNotMatch(`${ama.shareTitle} ${ama.description}`, /Aurelia/i);
 
     assert.equal(esther.shareTitle, "Kojo & Fafa · You're invited");
     assert.equal(esther.guestGreeting, "Dear Esther,");
-    assert.match(esther.description, /^Dear Esther, Kojo & Fafa invite you/);
+    assert.match(esther.description, /^Dear Esther, you're invited to celebrate Kojo & Fafa/);
     assert.match(esther.image.url, /guest=esther-token/);
     assert.doesNotMatch(`${esther.shareTitle} ${esther.description}`, /Seraphine/i);
 

@@ -13,6 +13,8 @@ import {
   SERAPHINE_HERO_FALLBACK,
   SERAPHINE_LAYOUT_SLUG,
   SERAPHINE_MONOGRAM,
+  SERAPHINE_TRADITIONAL_MAP_IMAGE,
+  SERAPHINE_WHITE_MAP_IMAGE,
   aureliaDistinctVenues,
   aureliaFamilyDefaults,
   aureliaGuestPhoneLinks,
@@ -59,6 +61,7 @@ function AureliaLocationPreview({
   href,
   label,
   invitationId,
+  previewImageUrl,
 }: {
   mapsUrl?: string | null;
   venueName?: string;
@@ -66,21 +69,31 @@ function AureliaLocationPreview({
   href?: string | null;
   label: string;
   invitationId: string;
+  previewImageUrl?: string;
 }) {
   const query = [venueName, address].filter(Boolean).join(", ");
   const embedUrl = toMapsEmbedUrl(mapsUrl || href, query || venueName);
-  if (!embedUrl) return null;
+  if (!embedUrl && !previewImageUrl) return null;
 
   const frame = (
     <div className={styles.mapFrame}>
-      <iframe
-        title={`Map of ${label}`}
-        src={embedUrl}
-        className={styles.mapIframe}
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        tabIndex={-1}
-      />
+      {previewImageUrl ? (
+        <img
+          src={previewImageUrl}
+          alt=""
+          className={styles.mapStatic}
+          draggable={false}
+        />
+      ) : embedUrl ? (
+        <iframe
+          title={`Map of ${label}`}
+          src={embedUrl}
+          className={styles.mapIframe}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          tabIndex={-1}
+        />
+      ) : null}
       <span className={styles.mapVeil} aria-hidden />
       <span className={styles.mapBadge}>
         <MapPin size={13} aria-hidden />
@@ -131,8 +144,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroMode, setHeroMode] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(config.faqs[0]?.id ?? null);
-  const familyHero =
-    props.design.layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_HERO_FALLBACK : AURELIA_HERO_FALLBACK;
+  const isSeraphine = props.design.layout === SERAPHINE_LAYOUT_SLUG;
+  const familyHero = isSeraphine ? SERAPHINE_HERO_FALLBACK : AURELIA_HERO_FALLBACK;
   const resolvedHero = useMemo(
     () =>
       resolveAureliaHeroImage({
@@ -193,23 +206,34 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       venueName,
       landmark: address,
     });
+  const seraphineMapPreview: Record<string, string> = {
+    traditional: SERAPHINE_TRADITIONAL_MAP_IMAGE,
+    white: SERAPHINE_WHITE_MAP_IMAGE,
+  };
 
   return (
     <div
-      className={`${styles.root} ${invitationFontVars}`}
+      className={`${styles.root} ${isSeraphine ? styles.seraphine : ""} ${invitationFontVars}`}
       style={aureliaTokenStyle(config.theme)}
       data-aurelia-template="true"
       data-aurelia-journey="off"
       data-testid="aurelia-editorial-wedding"
     >
       <header className={`${styles.header} ${heroMode ? styles.headerOnHero : ""}`}>
-        <span className={styles.monogram} aria-label={monogramLabel}>
-          <span className={styles.monogramLetter}>{monoOne}</span>
-          <span className={styles.monogramAmp} aria-hidden>
-            &amp;
+        {familyMonogram ? (
+          <span className={styles.monogramMark} aria-label={monogramLabel}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={familyMonogram} alt="" width={160} height={160} />
           </span>
-          <span className={styles.monogramLetter}>{monoTwo}</span>
-        </span>
+        ) : (
+          <span className={styles.monogram} aria-label={monogramLabel}>
+            <span className={styles.monogramLetter}>{monoOne}</span>
+            <span className={styles.monogramAmp} aria-hidden>
+              &amp;
+            </span>
+            <span className={styles.monogramLetter}>{monoTwo}</span>
+          </span>
+        )}
         <button
           type="button"
           className={styles.menuButton}
@@ -263,7 +287,11 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
         />
         <div
           className={styles.heroGrade}
-          style={{ opacity: Math.min(0.55, Math.max(0.12, config.heroOverlay ?? 0.26)) }}
+          style={{
+            opacity: isSeraphine
+              ? Math.min(0.22, Math.max(0.08, config.heroOverlay ?? 0.16))
+              : Math.min(0.55, Math.max(0.12, config.heroOverlay ?? 0.26)),
+          }}
         />
         <div className={styles.heroScrim} />
         <span className={styles.heroRing} style={{ width: 140, height: 140, left: "8%", top: "22%" }} />
@@ -352,12 +380,13 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <p className={styles.lede}>{config.celebrationsLede}</p>
           <div className={styles.cardDeck}>
           {config.ceremonies.map((ceremony) => {
-            const hasMaps = Boolean(ceremony.mapsUrl?.trim());
-            const href = hasMaps
-              ? mapsHref(ceremony.mapsUrl, ceremony.venueName, ceremony.address)
-              : null;
+            const href = mapsHref(ceremony.mapsUrl, ceremony.venueName, ceremony.address);
+            const hasMaps = Boolean(
+              href && (ceremony.mapsUrl?.trim() || ceremony.address?.trim())
+            );
             const hasTime = Boolean(ceremony.timeLabel?.trim());
             const hasVenue = Boolean(ceremony.venueName?.trim() || ceremony.address?.trim());
+            const timePending = /to be announced|tba|\btbd\b/i.test(ceremony.timeLabel ?? "");
             return (
               <article className={styles.card} key={ceremony.id}>
                 <div className={styles.cardKicker}>{ceremony.kicker}</div>
@@ -394,6 +423,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     href={href}
                     label={ceremony.venueName}
                     invitationId={props.invitation.id}
+                    previewImageUrl={isSeraphine ? seraphineMapPreview[ceremony.id] : undefined}
                   />
                 ) : null}
                 {hasMaps && href ? (
@@ -423,6 +453,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                       startDateRaw: ceremony.startAtIso,
                       venue: ceremony.venueName,
                       timeZone: EVENT_TIME_ZONE,
+                      allDay: timePending,
+                      description: timePending ? "Time details to be announced." : undefined,
                     }}
                   />
                 ) : null}
@@ -490,16 +522,41 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <div className={styles.goldRule} />
           <p className={styles.lede}>{config.dressLede}</p>
           <div className={styles.cardDeck}>
-          {config.dressCodes.map((dress) => (
+          {config.dressCodes.map((dress) => {
+            const outfitLookbook = isSeraphine && dress.id === "outfits" && Boolean(dress.imageUrl);
+            return (
             <article
               key={dress.id}
-              className={dress.variant === "dark" ? styles.dressDark : styles.dressLight}
+              className={`${dress.variant === "dark" ? styles.dressDark : styles.dressLight}${
+                outfitLookbook ? ` ${styles.outfitBoard}` : ""
+              }`}
             >
               <div className={styles.cardKicker}>{dress.dateLabel}</div>
               <h3 className={styles.cardTitle}>{dress.title}</h3>
               {dress.scriptLine ? <p className={styles.scriptLine}>{dress.scriptLine}</p> : null}
               {dress.note ? <p className={styles.lede}>{dress.note}</p> : null}
-              {dress.imageUrl ? (
+              {outfitLookbook ? (
+                <figure className={styles.outfitLookbook}>
+                  <div className={styles.outfitMat}>
+                    <img
+                      className={styles.outfitImage}
+                      src={dress.imageUrl ?? ""}
+                      alt="Lookbook of bright guest dresses and complementary suits"
+                      width={864}
+                      height={1152}
+                      decoding="async"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className={styles.outfitLegend}>
+                    <span>Ladies</span>
+                    <span>Gentlemen</span>
+                  </div>
+                  <figcaption className={styles.outfitCaption}>
+                    A lookbook for colour and mood. Not a uniform.
+                  </figcaption>
+                </figure>
+              ) : dress.imageUrl ? (
                 <img
                   className={styles.dressImage}
                   src={dress.imageUrl}
@@ -520,7 +577,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                 </div>
               ) : null}
             </article>
-          ))}
+            );
+          })}
           </div>
         </section>
       ) : null}
@@ -545,16 +603,43 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               resolveQrCenterMark({
                 heroImageUrl: resolvedHero,
                 coverImageUrl: props.event.coverImageUrl,
-                galleryUrls: props.galleryUrls,
-                introImageUrl: props.design.media?.find((asset) => asset.role === "intro")?.url,
-                mediaUrls: props.design.media
-                  ?.filter((asset) => asset.type === "image")
-                  .map((asset) => asset.url),
+                qrCenterImageUrl: props.event.qrCenterImageUrl,
               }).url
             }
             uploadCta={config.albumUploadCta}
             viewCta={config.albumViewCta}
           />
+        </section>
+      ) : null}
+
+      {aureliaSectionVisible(config, "gifts") ? (
+        <section
+          className={`${styles.section} ${styles.sectionNarrow}`}
+          id="aurelia-gifts"
+          data-testid="aurelia-gifts"
+        >
+          <span className={styles.eyebrow}>{config.giftsEyebrow}</span>
+          <h2 className={styles.heading}>{config.giftsTitle}</h2>
+          <div className={styles.goldRule} />
+          <p className={styles.lede}>{config.giftsLede}</p>
+          <ClientErrorBoundary fallback={null}>
+            <AureliaGiftCheckout
+              giftUrl={props.giftUrl}
+              giftQrImageUrl={props.giftQrImageUrl}
+              giftTitle={props.giftTitle}
+              giftSubtitle={props.giftSubtitle}
+              giftCtaLabel={props.giftCtaLabel}
+              giftPrivacyNote={props.giftPrivacyNote}
+              guestName={props.guestName}
+              guestQrToken={props.guestQrToken}
+              returnPath={
+                props.invitation.uniqueLink
+                  ? `/invite/${props.invitation.uniqueLink}#aurelia-gifts`
+                  : null
+              }
+              detailsNote={config.giftsDetails}
+            />
+          </ClientErrorBoundary>
         </section>
       ) : null}
 
@@ -626,32 +711,6 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               </div>
             ) : null}
           </div>
-        </section>
-      ) : null}
-
-      {aureliaSectionVisible(config, "gifts") ? (
-        <section className={`${styles.section} ${styles.sectionNarrow}`} id="aurelia-gifts">
-          <span className={styles.eyebrow}>{config.giftsEyebrow}</span>
-          <h2 className={styles.heading}>{config.giftsTitle}</h2>
-          <div className={styles.goldRule} />
-          <p className={styles.lede}>{config.giftsLede}</p>
-          <ClientErrorBoundary fallback={null}>
-            <AureliaGiftCheckout
-              giftUrl={props.giftUrl}
-              giftTitle={props.giftTitle}
-              giftSubtitle={props.giftSubtitle}
-              giftCtaLabel={props.giftCtaLabel}
-              giftPrivacyNote={props.giftPrivacyNote}
-              guestName={props.guestName}
-              guestQrToken={props.guestQrToken}
-              returnPath={
-                props.invitation.uniqueLink
-                  ? `/invite/${props.invitation.uniqueLink}#aurelia-gifts`
-                  : null
-              }
-              detailsNote={config.giftsDetails}
-            />
-          </ClientErrorBoundary>
         </section>
       ) : null}
 

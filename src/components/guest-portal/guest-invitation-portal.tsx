@@ -525,7 +525,13 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           </div>
         )}
 
-        <div className="mx-auto max-w-2xl px-4 py-6 invite-content-pad space-y-8">
+        <div
+          className={
+            isAureliaEditorialLayout(props.design.layout)
+              ? "mx-auto w-full max-w-[40rem] px-[clamp(1rem,4.2vw,2.25rem)] pb-10 pt-1 invite-content-pad space-y-8"
+              : "mx-auto max-w-2xl px-4 py-6 invite-content-pad space-y-8"
+          }
+        >
           {lifecyclePhase === "event-day" && (
             <PortalSection id="event-day">
               <EventDayBanner

@@ -14,8 +14,10 @@ import {
   fashionTokenStyleFromColors,
 } from "@/lib/experience/luxury-fashion";
 import {
-  AURELIA_THEME_DEFAULTS,
+  aureliaFamilyDefaults,
+  aureliaTokenStyle,
   isAureliaEditorialLayout,
+  SERAPHINE_LAYOUT_SLUG,
 } from "@/lib/experience/aurelia-editorial";
 import { FEED_LIMIT } from "@/lib/pagination";
 import {
@@ -90,20 +92,8 @@ function formatWishTime(iso: string): string {
   }
 }
 
-function aureliaWishTokenStyle(
-  colors?: GuestWishesCardProps["colors"]
-): CSSProperties {
-  return {
-    "--wedding-ivory": colors?.background || AURELIA_THEME_DEFAULTS.ivory,
-    "--wedding-cream": AURELIA_THEME_DEFAULTS.cream,
-    "--wedding-champagne": AURELIA_THEME_DEFAULTS.champagne,
-    "--wedding-terracotta": colors?.accent || AURELIA_THEME_DEFAULTS.terracotta,
-    "--wedding-gold": colors?.secondary || AURELIA_THEME_DEFAULTS.gold,
-    "--wedding-espresso": AURELIA_THEME_DEFAULTS.espresso,
-    "--wedding-brown": AURELIA_THEME_DEFAULTS.brown,
-    "--wedding-text": colors?.text || AURELIA_THEME_DEFAULTS.text,
-    "--wish-accent": colors?.accent || AURELIA_THEME_DEFAULTS.terracotta,
-  } as CSSProperties;
+function aureliaWishTokenStyle(layout?: string | null): CSSProperties {
+  return aureliaTokenStyle(aureliaFamilyDefaults(layout).theme) as CSSProperties;
 }
 
 function fashionSalonTokenStyle(
@@ -730,8 +720,10 @@ export function GuestWishesCard({
   if (aurelia) {
     return (
       <div
-        className={`${invitationFontVars} ${aw.card}`}
-        style={aureliaWishTokenStyle(colors)}
+        className={`${invitationFontVars} ${aw.card}${
+          layout === SERAPHINE_LAYOUT_SLUG ? ` ${aw.seraphine}` : ""
+        }`}
+        style={aureliaWishTokenStyle(layout)}
         data-testid="aurelia-guest-wishes"
       >
         {!hideHeader && (

@@ -18,26 +18,13 @@ export function truncateForShare(text: string, maxLength = MAX_SHARE_DESCRIPTION
  * Builds the guest-facing share description used for `og:description` /
  * `twitter:description` on invite and event-site link previews.
  *
- * Hosts fill `Event.description` / `InvitationOrder.story` with a long
- * personal narrative meant to be read *inside* the invitation experience —
- * never as the link-preview blurb. Surfacing that text verbatim in
- * `generateMetadata` meant WhatsApp/social previews dumped a paragraph of
- * story-entry-field prose next to the couple's photo instead of telling the
- * guest who's inviting them. This always leads with the couple/host name
- * (`Event.hostName`, already formatted as `"Name1 & Name2"` for weddings by
- * `PublishedInvitationSyncService`) so the preview reads like an invitation
- * teaser that sets up the experience ahead, and is length-capped for
- * WhatsApp's compact preview card.
+ * Never names an organizer, RSVP contact, or CRM host. WhatsApp already
+ * shows the event title — this line only restates the invitation.
  */
 export function buildShareDescription(params: {
   hostName?: string | null;
   title: string;
 }): string {
-  const host = params.hostName?.trim();
-  if (!host) {
-    return truncateForShare(`You're invited to ${params.title} on Celeventic — tap to open your invitation.`);
-  }
-
-  const verb = host.includes("&") ? "invite" : "invites";
-  return truncateForShare(`${host} ${verb} you — tap to open your invitation and step into the celebration.`);
+  const title = params.title?.trim() || "this celebration";
+  return truncateForShare(`You're invited to ${title}.`);
 }

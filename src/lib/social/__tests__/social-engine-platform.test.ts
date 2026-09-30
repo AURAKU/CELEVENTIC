@@ -169,6 +169,19 @@ describe("platform personalization", () => {
     assert.doesNotMatch(b.description, /Dear Ama/);
   });
 
+  it("never names an organizer or RSVP contact in public share copy", () => {
+    const surface = surfaceFor({
+      uniqueLink: "enock-ruth",
+      catalogSlug: "aurelia-editorial-wedding",
+      eventTitle: "Enock & Ruth",
+      hostName: "Prince",
+    });
+    assert.equal(surface.title, "Enock & Ruth");
+    assert.match(surface.description, /You're invited to Enock & Ruth/);
+    assert.doesNotMatch(surface.description, /Prince|RSVP|invites you/i);
+    assert.doesNotMatch(surface.shareText, /Prince/i);
+  });
+
   it("keeps an open/general invitation generic when no guest is supplied", () => {
     const surface = surfaceFor({
       eventTitle: "Kojo & Fafa",
@@ -176,6 +189,7 @@ describe("platform personalization", () => {
     });
     assert.equal(surface.guestGreeting, null);
     assert.doesNotMatch(surface.description, /Dear /);
+    assert.doesNotMatch(surface.description, /Prince|invites you to celebrate with them/i);
     assert.doesNotMatch(surface.image.url, /guest=/);
     assert.doesNotMatch(surface.canonicalUrl, /guest=/);
   });

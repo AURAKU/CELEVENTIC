@@ -9,6 +9,7 @@ import {
   SERAPHINE_OPENING_ID,
   withAureliaAlbumQrCenter,
 } from "@/lib/experience/aurelia-editorial";
+import { giftCampaignService } from "@/services/gifts/gift-campaign.service";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,14 @@ export default async function SeraphineChampagneRuntimePage({
   }
   const params = await searchParams;
   const memory = await ensureDemoMemoryLinks("Kojo & Fafa").catch(() => null);
+  const giftPlacement = memory?.eventId
+    ? await giftCampaignService
+        .resolveInvitePlacement(memory.eventId, { autoOpen: true })
+        .catch((error) => {
+          console.error("[seraphine] gift wallet auto-open failed", error);
+          return null;
+        })
+    : null;
   return (
     <AureliaEditorialRuntimeClient
       skipIntro={params.skipIntro === "1"}
@@ -41,6 +50,12 @@ export default async function SeraphineChampagneRuntimePage({
       memoryUploadQrImageUrl={withAureliaAlbumQrCenter(memory?.uploadQrImageUrl, SERAPHINE_MONOGRAM_PNG)}
       memoryEventId={memory?.eventId ?? null}
       memoryAlbumTitle={memory?.eventTitle ?? "Kojo & Fafa"}
+      giftUrl={giftPlacement?.giftUrl ?? null}
+      giftQrImageUrl={giftPlacement?.qrImageUrl ?? null}
+      giftTitle={giftPlacement?.title ?? null}
+      giftSubtitle={giftPlacement?.subtitle ?? null}
+      giftCtaLabel={giftPlacement?.ctaLabel ?? null}
+      giftPrivacyNote={giftPlacement?.privacyNote ?? null}
     />
   );
 }

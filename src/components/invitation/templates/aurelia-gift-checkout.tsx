@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, Gift, Loader2, Lock, ShieldCheck } from "lucide-react";
+import { Gift, Loader2, Lock, ShieldCheck } from "lucide-react";
 import type { PublicGiftCampaignView } from "@/lib/gifts/gift-privacy";
 import {
   detectMethodFromPhone,
@@ -34,8 +34,9 @@ function publicTokenFromGiftUrl(url?: string | null): string | null {
 
 export function AureliaGiftCheckout({
   giftUrl,
+  giftQrImageUrl,
   giftTitle,
-  giftSubtitle,
+  giftSubtitle: _giftSubtitle,
   giftCtaLabel,
   giftPrivacyNote,
   guestName: initialGuestName,
@@ -44,6 +45,7 @@ export function AureliaGiftCheckout({
   detailsNote,
 }: {
   giftUrl?: string | null;
+  giftQrImageUrl?: string | null;
   giftTitle?: string | null;
   giftSubtitle?: string | null;
   giftCtaLabel?: string | null;
@@ -76,16 +78,6 @@ export function AureliaGiftCheckout({
   const [method, setMethod] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const syncHash = () => {
-      if (window.location.hash === "#aurelia-gifts") setOpen(true);
-    };
-    syncHash();
-    window.addEventListener("hashchange", syncHash);
-    return () => window.removeEventListener("hashchange", syncHash);
-  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -211,7 +203,10 @@ export function AureliaGiftCheckout({
       (!needsName || guestName.trim()) &&
       (!needsContact || guestPhone.trim())
   );
-  const cta = giftCtaLabel || campaign?.ctaLabel || "Send a gift";
+  const cta = giftCtaLabel || campaign?.ctaLabel || "Send a Cash Gift";
+  const qrSrc =
+    giftQrImageUrl ||
+    (giftUrl ? `/api/qr/image?data=${encodeURIComponent(giftUrl)}&size=512` : null);
 
   if (closed) {
     return (
@@ -223,26 +218,13 @@ export function AureliaGiftCheckout({
   }
 
   const form = (
-    <div className={styles.giftPanel} id="aurelia-gift-panel">
+    <div className={styles.giftPanel} id="aurelia-gift-panel" aria-label={giftTitle || campaign?.title || "Send a cash gift"}>
       {loading ? (
         <p className={styles.giftStatus} aria-busy="true">
           Opening the gift wallet…
         </p>
       ) : (
         <>
-          <p className={styles.giftKicker}>{giftTitle || campaign?.title || "Send a gift"}</p>
-          <p className={styles.giftLede}>
-            {giftSubtitle ||
-              campaign?.subtitle ||
-              "A contribution is entirely optional and received with love."}
-          </p>
-
-          {!token ? (
-            <p className={styles.giftStatus} role="status">
-              The gift wallet is not open on this invitation yet.
-            </p>
-          ) : null}
-
           {loadError ? (
             <p className={styles.giftError} role="alert">
               {loadError}
@@ -371,18 +353,19 @@ export function AureliaGiftCheckout({
   return (
     <div className={styles.giftCheckout}>
       {detailsNote ? <p className={styles.giftNote}>{detailsNote}</p> : null}
-      <button
-        type="button"
-        className={styles.giftToggle}
-        aria-expanded={open}
-        aria-controls="aurelia-gift-panel"
-        onClick={() => setOpen((value) => !value)}
-      >
-        <Gift size={15} aria-hidden />
-        <span>{open ? "Hide gift details" : cta}</span>
-        <ChevronDown className={open ? styles.giftChevronOpen : styles.giftChevron} size={18} aria-hidden />
-      </button>
-      {open ? form : null}
+      {qrSrc ? (
+        <a
+          className={styles.albumQr}
+          href={giftUrl || "#aurelia-gifts"}
+          target={giftUrl ? "_blank" : undefined}
+          rel={giftUrl ? "noopener noreferrer" : undefined}
+          aria-label="Scan to send a cash gift"
+        >
+          <img src={qrSrc} alt="" width={512} height={512} decoding="async" />
+          <p>Scan to send a cash gift</p>
+        </a>
+      ) : null}
+      {form}
     </div>
   );
 }
