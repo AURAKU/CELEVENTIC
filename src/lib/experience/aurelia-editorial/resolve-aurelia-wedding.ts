@@ -4,6 +4,7 @@ import {
   AURELIA_HERO_FALLBACK,
   AURELIA_THEME_DEFAULTS,
   AURELIA_WEDDING_DEFAULTS,
+  AURELIA_WHITE_ISO,
   SERAPHINE_WEDDING_DEFAULTS,
 } from "./preset";
 import { SERAPHINE_LAYOUT_SLUG } from "./types";
@@ -381,6 +382,23 @@ export function aureliaVenueKey(item: {
 export function aureliaDistinctVenues(config: AureliaWeddingConfig): AureliaVenueCard[] {
   const ceremonyKeys = new Set(config.ceremonies.map(aureliaVenueKey));
   return config.venues.filter((venue) => !ceremonyKeys.has(aureliaVenueKey(venue)));
+}
+
+/** Count down to the first celebration day, not a later ceremony. */
+export function resolveAureliaCountdownIso(
+  ceremonies: Array<{ startAtIso?: string | null }>,
+  fallback?: string | null
+): string {
+  const dated = ceremonies
+    .map((item) => item.startAtIso?.trim())
+    .filter((iso): iso is string => Boolean(iso))
+    .map((iso) => ({ iso, time: Date.parse(iso) }))
+    .filter((item) => Number.isFinite(item.time))
+    .sort((a, b) => a.time - b.time);
+  if (dated[0]) return dated[0].iso;
+  const fallbackIso = fallback?.trim();
+  if (fallbackIso && Number.isFinite(Date.parse(fallbackIso))) return fallbackIso;
+  return AURELIA_WHITE_ISO;
 }
 
 export function aureliaSectionVisible(

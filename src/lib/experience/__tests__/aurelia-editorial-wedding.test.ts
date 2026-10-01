@@ -18,6 +18,7 @@ import {
   SERAPHINE_MONOGRAM_PNG,
   SERAPHINE_OPENING_ID,
   SERAPHINE_THEME_DEFAULTS,
+  SERAPHINE_TRADITIONAL_ISO,
   SERAPHINE_TRADITIONAL_MAP_IMAGE,
   SERAPHINE_TRADITIONAL_MAPS,
   SERAPHINE_WEDDING_DEFAULTS,
@@ -28,6 +29,7 @@ import {
   aureliaNavItems,
   aureliaSectionVisible,
   mergeAureliaWedding,
+  resolveAureliaCountdownIso,
   resolveAureliaHeroImage,
   withAureliaAlbumQrCenter,
   withoutInvitationPauseDashes,
@@ -413,6 +415,14 @@ test("Aurelia invitation hosts Memory Vault as The Album", () => {
   );
   assert.doesNotMatch(albumSrc, /forever-afaris/);
   assert.match(albumSrc, /liveAlbumPaths/);
+  assert.match(albumSrc, /resolvedAlbum/);
+  assert.match(albumSrc, /live\.album/);
+  assert.match(albumSrc, /href=\{resolvedAlbum\}/);
+  assert.match(albumSrc, /<a\s+className=\{styles\.albumGhost\}/);
+  assert.match(albumSrc, /target="_top"/);
+  assert.match(albumSrc, /window\.open\(resolvedAlbum, "_self"\)/);
+  assert.doesNotMatch(albumSrc, /openAlbum/);
+  assert.doesNotMatch(albumSrc, /className=\{styles\.albumGhost\}[\s\S]*aria-expanded/);
   assert.match(albumSrc, /CELEVENTIC_OFFICIAL_LOGO/);
   assert.doesNotMatch(albumSrc, /templates\/aurelia\/hero\.jpg/);
   assert.doesNotMatch(albumSrc, /Album QR activates when this invitation is published/);
@@ -420,13 +430,46 @@ test("Aurelia invitation hosts Memory Vault as The Album", () => {
     readFileSync("src/components/guest-portal/guest-wishes-card.tsx", "utf8"),
     /#aurelia-album/
   );
+  const liveAlbumUi = readFileSync("src/components/memory/live-album-experience.tsx", "utf8");
+  assert.match(liveAlbumUi, /canModerate/);
+  assert.match(liveAlbumUi, /method: "DELETE"/);
+  assert.match(liveAlbumUi, /\{canModerate \?/);
+  assert.match(liveAlbumUi, /setOpenId\(item\.id\)/);
+  assert.match(liveAlbumUi, /Close photograph/);
+  assert.match(liveAlbumUi, /role="dialog"/);
+  assert.match(
+    readFileSync("src/components/memory/live-album-experience.module.css", "utf8"),
+    /minmax\(9\.75rem, 1fr\)/
+  );
+  const liveAlbumRoute = readFileSync("src/app/api/memory/live-album/[key]/[itemId]/route.ts", "utf8");
+  assert.match(liveAlbumRoute, /canRemoveLiveAlbumMedia/);
+  assert.match(liveAlbumRoute, /Only an admin or the organizer/);
+  assert.match(
+    readFileSync("src/lib/memory/live-album-store.ts", "utf8"),
+    /storeUploadFile\("memory-live"/
+  );
 });
 
 test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () => {
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerOneName, "Kojo");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.partnerTwoName, "Fafa");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.monogram, "K & F");
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dateDisplay, "14 November 2026");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dateDisplay, "13 | 14 November 2026");
+  assert.equal(
+    resolveAureliaCountdownIso(SERAPHINE_WEDDING_DEFAULTS.ceremonies, SERAPHINE_WHITE_ISO),
+    SERAPHINE_TRADITIONAL_ISO
+  );
+  assert.equal(
+    resolveAureliaCountdownIso(
+      [
+        SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]!,
+        SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]!,
+      ],
+      SERAPHINE_WHITE_ISO
+    ),
+    SERAPHINE_TRADITIONAL_ISO
+  );
+  assert.equal(SERAPHINE_TRADITIONAL_ISO, "2026-11-13T10:00:00+00:00");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.heroTagline, "");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpTitle, "RSVP");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpContacts?.[0]?.name, "Esther");
@@ -535,6 +578,10 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.match(
     readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.tsx", "utf8"),
     /SetReminderButton/
+  );
+  assert.match(
+    readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.tsx", "utf8"),
+    /countdownDates[\s\S]*13[\s\S]*14 November 2026/
   );
   assert.equal(
     mergeAureliaWedding(
@@ -689,11 +736,15 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   );
   assert.match(templateSrc, /monogramMark/);
   assert.match(templateSrc, /familyMonogram/);
+  assert.doesNotMatch(templateSrc, /styles\.heroMonogram/);
   assert.match(templateSrc, /styles\.seraphine/);
   assert.match(templateSrc, /outfitLookbook/);
+  assert.match(templateSrc, /outfitToggle/);
+  assert.match(templateSrc, /View the lookbook/);
   assert.match(templateSrc, /outfitBoard/);
   assert.match(templateSrc, /id="aurelia-gifts"/);
   assert.match(templateSrc, /AureliaGiftCheckout/);
+  assert.match(templateSrc, /AureliaCoupleAlbum/);
   assert.doesNotMatch(
     readFileSync("public/templates/seraphine/monogram.svg", "utf8"),
     /Kojo and Fafa|14\.11\.2026/i
@@ -733,6 +784,10 @@ test("Seraphine invitation chrome is Sage and White, not Aurelia brown", () => {
   assert.match(css, /#8ba888|#8BA888/);
   assert.match(css, /#4a6350|#4A6350/);
   assert.doesNotMatch(css, /\.seraphine \.heroScrim[\s\S]{0,280}#24150d/);
+  assert.match(css, /--aurelia-readable: var\(--font-eb-garamond\)/);
+  assert.match(css, /\.metaPrimary \{\n  font-family: var\(--aurelia-readable\);/);
+  assert.match(css, /\.metaSecondary \{\n  font-family: var\(--aurelia-readable\);/);
+  assert.doesNotMatch(css, /\.metaPrimary \{\n  font-family: var\(--aurelia-serif\);/);
 });
 
 test("Aurelia guest copy has no pause dashes between clauses", () => {

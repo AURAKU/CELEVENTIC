@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { liveAlbumKey } from "@/lib/memory/live-album";
+import { canRemoveLiveAlbumMedia } from "@/lib/memory/live-album-access";
 import { addLiveAlbumFile, listLiveAlbum } from "@/lib/memory/live-album-store";
 
 export const dynamic = "force-dynamic";
+
+async function viewerCanModerate(key: string) {
+  const session = await getServerSession(authOptions).catch(() => null);
+  return canRemoveLiveAlbumMedia(key, session?.user?.id, session?.user?.role);
+}
 
 export async function GET(
   _req: Request,
@@ -11,8 +19,8 @@ export async function GET(
 ) {
   const { key: raw } = await params;
   const key = liveAlbumKey(raw);
-  const items = await listLiveAlbum(key);
-  return NextResponse.json({ success: true, data: { key, items } });
+  const [items, canModerate] = await Promise.all([listLiveAlbum(key), viewerCanModerate(key)]);
+  return NextResponse.json({ success: true, data: { key, items, canModerate } });
 }
 
 export async function POST(

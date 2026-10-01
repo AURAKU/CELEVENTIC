@@ -328,6 +328,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
               props.memoryVaultEnabled || Boolean(props.memoryUploadUrl),
           }}
         />
+        <InviteGuestHelpFab />
       </InviteViewportShell>
     );
   }
@@ -356,7 +357,6 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
   if (cinematicMode) {
     return (
-      <div className="relative">
       <CinematicInvitationSpotlight
         {...props}
         embedded={props.embedded}
@@ -377,10 +377,6 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
         onShare={share}
         shareCopied={shareState === "copied"}
       />
-      {!props.embedded && (
-        <InviteGuestHelpFab alignEnd={props.design.layout === "luxury-fashion-flagship"} />
-      )}
-      </div>
     );
   }
 
@@ -947,9 +943,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
         </div>
 
-        {!props.embedded && (
-          <InviteGuestHelpFab alignEnd={props.design.layout === "luxury-fashion-flagship"} />
-        )}
+        <InviteGuestHelpFab />
 
         {!templateOwnsJourney &&
           !props.embedded &&

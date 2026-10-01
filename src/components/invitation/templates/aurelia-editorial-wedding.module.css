@@ -11,6 +11,7 @@
   --aurelia-display: var(--font-cinzel), "Cinzel", "Times New Roman", serif;
   --aurelia-serif: var(--font-playfair), "Playfair Display", "Times New Roman", serif;
   --aurelia-body: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --aurelia-readable: var(--font-eb-garamond), "EB Garamond", Georgia, "Times New Roman", serif;
   --aurelia-script: var(--font-great-vibes), "Great Vibes", cursive;
   --aurelia-gutter: clamp(1rem, 4.2cqi, 2.25rem);
   background: var(--wedding-ivory);
@@ -388,16 +389,6 @@
   padding-bottom: 0.35rem;
 }
 
-.heroMonogram {
-  display: block;
-  width: min(14.5rem, 62vw);
-  height: auto;
-  margin-bottom: 0.55rem;
-  object-fit: contain;
-  filter: drop-shadow(0 18px 32px rgba(16, 8, 4, 0.38));
-  pointer-events: none;
-}
-
 .eyebrow {
   display: block;
   font-family: var(--aurelia-display);
@@ -526,7 +517,7 @@
   position: absolute;
   z-index: 4;
   left: 50%;
-  bottom: calc(3.35rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -630,6 +621,15 @@
   color: var(--wedding-terracotta);
 }
 
+.storyCopy .signature {
+  font-size: clamp(2.55rem, 8.6cqi, 3.4rem);
+  line-height: 1.15;
+}
+
+.seraphine .storyCopy .signature {
+  font-size: clamp(2.75rem, 9.2cqi, 3.65rem);
+}
+
 .storySection {
   padding: 0;
 }
@@ -659,6 +659,23 @@
 .countdown .eyebrow,
 .countdown .heading {
   color: #f3e8d8;
+}
+
+.countdownDates {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  margin-bottom: 0.7rem;
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+}
+
+.countdownDateRule {
+  letter-spacing: 0;
+  opacity: 0.88;
+  color: color-mix(in srgb, var(--wedding-gold) 82%, currentColor);
 }
 
 .grid {
@@ -726,13 +743,54 @@
   margin: 0.45rem 0 0.7rem;
 }
 
+.metaList {
+  display: grid;
+  gap: 0.95rem;
+  margin: 1.05rem 0 0.2rem;
+}
+
 .metaRow {
-  display: flex;
-  gap: 0.55rem;
+  display: grid;
+  grid-template-columns: 1.45rem minmax(0, 1fr);
+  gap: 0.8rem;
   align-items: flex-start;
-  margin: 0.55rem 0;
-  font-size: 1.02rem;
-  color: var(--wedding-brown);
+  margin: 0;
+  color: var(--wedding-espresso);
+}
+
+.metaRow svg {
+  margin-top: 0.22rem;
+  color: var(--wedding-terracotta);
+  flex-shrink: 0;
+}
+
+.metaRow p {
+  margin: 0;
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.metaPrimary {
+  font-family: var(--aurelia-readable);
+  font-size: clamp(1.16rem, 3.4cqi, 1.34rem);
+  font-weight: 600;
+  line-height: 1.42;
+  letter-spacing: 0.012em;
+  font-optical-sizing: auto;
+  overflow-wrap: break-word;
+  color: var(--wedding-espresso);
+}
+
+.metaSecondary {
+  font-family: var(--aurelia-readable);
+  font-size: clamp(1.06rem, 3.1cqi, 1.2rem);
+  font-weight: 500;
+  line-height: 1.48;
+  letter-spacing: 0.01em;
+  font-optical-sizing: auto;
+  overflow-wrap: break-word;
+  color: var(--wedding-text);
 }
 
 .mapPreview {
@@ -892,6 +950,183 @@
   color: color-mix(in srgb, #faf6ee 90%, var(--wedding-champagne));
 }
 
+.coupleAlbum {
+  width: 100%;
+  margin: 0 0 1.85rem;
+  text-align: center;
+}
+
+.coupleAlbumKicker {
+  margin: 0 0 0.28rem;
+  font-family: var(--aurelia-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--wedding-terracotta);
+}
+
+.coupleAlbumLede {
+  margin: 0 0 0.85rem;
+  font-size: 1.02rem;
+  line-height: 1.5;
+  color: var(--wedding-brown);
+}
+
+.coupleReel {
+  display: block;
+  width: 100%;
+  padding: 0.15rem 0;
+}
+
+.coupleTile,
+.coupleTileGhost {
+  --couple-mat: 0.82rem;
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 72%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--wedding-ivory) 70%, var(--wedding-cream));
+  box-shadow: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.coupleTile::before,
+.coupleTileGhost::before {
+  content: "";
+  position: absolute;
+  inset: var(--couple-mat);
+  z-index: 1;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 68%, transparent);
+  pointer-events: none;
+}
+
+.coupleTile img,
+.coupleTile video {
+  position: absolute;
+  inset: calc(var(--couple-mat) + 3px);
+  width: auto;
+  height: auto;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  animation: coupleSlideIn 0.55s ease;
+}
+
+@keyframes coupleSlideIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.coupleTileGhost {
+  cursor: default;
+  background: color-mix(in srgb, var(--wedding-ivory) 70%, var(--wedding-cream));
+}
+
+.coupleStage {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: #110e0c;
+}
+
+.coupleStageBar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: calc(0.7rem + env(safe-area-inset-top, 0px)) 0.9rem 0.65rem;
+  color: #fafaf5;
+  font-family: var(--aurelia-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.coupleStageBar p {
+  margin: 0 auto 0 0;
+  opacity: 0.78;
+}
+
+.coupleStageBar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: color-mix(in srgb, white 10%, transparent);
+  color: inherit;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+}
+
+.coupleStageClose {
+  padding: 0.45rem !important;
+}
+
+.coupleStageFrame {
+  position: relative;
+  min-height: 0;
+  background: #000;
+}
+
+.coupleStageFrame img,
+.coupleStageFrame video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  background: #000;
+}
+
+.coupleDots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.42rem;
+  margin: 0.7rem 0 0;
+}
+
+.coupleDot {
+  width: 0.48rem;
+  height: 0.48rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--wedding-gold) 55%, var(--wedding-brown));
+  opacity: 0.32;
+}
+
+.coupleDotActive {
+  opacity: 1;
+  transform: scale(1.18);
+}
+
+.couplePlay {
+  position: absolute;
+  right: calc(var(--couple-mat) + 0.55rem);
+  bottom: calc(var(--couple-mat) + 0.55rem);
+  width: 2.15rem;
+  height: 2.15rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fafaf5;
+  background: color-mix(in srgb, var(--wedding-espresso) 72%, transparent);
+  box-shadow: 0 8px 16px rgba(16, 8, 4, 0.28);
+}
+
 .dressImage {
   display: block;
   width: min(100%, 22rem);
@@ -907,6 +1142,49 @@
 
 .outfitLookbook {
   margin: 1.25rem 0 0;
+  padding: 0;
+}
+
+.outfitToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 70%, transparent);
+  background: transparent;
+  color: var(--wedding-espresso);
+  font-family: var(--aurelia-display);
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.outfitToggle:hover {
+  background: color-mix(in srgb, var(--wedding-ivory) 72%, var(--wedding-cream));
+}
+
+.outfitToggle:focus-visible {
+  outline: 2px solid var(--wedding-gold);
+  outline-offset: 3px;
+}
+
+.outfitChevron,
+.outfitChevronOpen {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.outfitChevronOpen {
+  transform: rotate(180deg);
+}
+
+.outfitPanel {
+  margin: 0.85rem 0 0;
   padding: 0;
 }
 
@@ -1640,6 +1918,30 @@
   height: auto;
 }
 
+.seraphine .finaleMarkInk {
+  width: min(11.4rem, 52vw);
+  aspect-ratio: 1;
+  margin: 0 auto 0.45rem;
+  background:
+    radial-gradient(circle at 50% 42%, #6d8c66 0%, #5f7a58 58%, #3f5344 100%);
+  -webkit-mask-image: url("/templates/seraphine/monogram-crest.png");
+  mask-image: url("/templates/seraphine/monogram-crest.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  filter: drop-shadow(0 12px 20px rgba(44, 58, 46, 0.16));
+}
+
+.seraphine .finaleMarkInk img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+}
+
 .finaleLine {
   font-family: var(--aurelia-display);
   letter-spacing: 0.22em;
@@ -1672,6 +1974,27 @@
   color: #fafaf5;
 }
 
+.seraphine .monogramMark {
+  width: 3.45rem;
+  height: 3.45rem;
+  padding: 0.16rem;
+  overflow: hidden;
+  border-radius: 0.82rem;
+  background:
+    linear-gradient(180deg, #fafaf5 0%, #f5f0e4 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(250, 250, 245, 0.95),
+    0 0 0 1px #c5b48a,
+    0 0 0 4px color-mix(in srgb, #fafaf5 90%, #c5b48a),
+    0 0 0 5px #c5b48a,
+    0 12px 24px rgba(44, 58, 46, 0.28);
+}
+
+.seraphine .monogramMark img {
+  border-radius: 0.58rem;
+  object-fit: cover;
+}
+
 .seraphine .headerOnHero .monogram {
   color: #fafaf5;
   background:
@@ -1695,10 +2018,63 @@
 }
 
 .seraphine .headerOnHero .monogramMark {
+  width: 3.6rem;
+  height: 3.6rem;
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #c5b48a 82%, transparent),
-    0 0 0 4px color-mix(in srgb, #c5b48a 42%, transparent),
-    0 12px 26px rgba(44, 58, 46, 0.32);
+    inset 0 1px 0 rgba(250, 250, 245, 0.95),
+    0 0 0 1px #c5b48a,
+    0 0 0 5px color-mix(in srgb, #fafaf5 88%, #c5b48a),
+    0 0 0 6px #c5b48a,
+    0 0 18px color-mix(in srgb, #c5b48a 58%, transparent),
+    0 16px 32px rgba(44, 58, 46, 0.42);
+}
+
+.seraphine .metaRow {
+  color: #2c3a2e;
+}
+
+.seraphine .metaRow svg {
+  color: #5f7a58;
+}
+
+.seraphine .metaPrimary {
+  color: #2c3a2e;
+}
+
+.seraphine .metaSecondary {
+  color: #2f3d32;
+}
+
+.seraphine .coupleAlbumKicker {
+  color: #5f7a58;
+}
+
+.seraphine .coupleAlbumLede {
+  color: #3f5344;
+}
+
+.seraphine .coupleTile,
+.seraphine .coupleTileGhost {
+  background: color-mix(in srgb, #fafaf5 78%, #f5f0e4);
+  border-color: color-mix(in srgb, #c5b48a 82%, #5f7a58);
+  box-shadow: none;
+}
+
+.seraphine .coupleTile::before,
+.seraphine .coupleTileGhost::before {
+  border-color: color-mix(in srgb, #c5b48a 78%, #5f7a58);
+}
+
+.seraphine .coupleTileGhost {
+  background: color-mix(in srgb, #fafaf5 78%, #f5f0e4);
+}
+
+.seraphine .coupleDot {
+  background: color-mix(in srgb, #c5b48a 72%, #5f7a58);
+}
+
+.seraphine .couplePlay {
+  background: color-mix(in srgb, #2c3a2e 78%, transparent);
 }
 
 .seraphine .hero {
@@ -1751,6 +2127,8 @@
 
 .seraphine .heroDate {
   color: #fafaf5;
+  letter-spacing: 0.14em;
+  padding-inline: 1.05rem;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, #4a6350 58%, transparent),
@@ -1771,12 +2149,6 @@
     0 0 18px rgba(44, 58, 46, 0.36);
 }
 
-.seraphine .heroMonogram {
-  width: min(6.8rem, 30vw);
-  margin-bottom: 0.28rem;
-  filter: drop-shadow(0 10px 18px rgba(44, 58, 46, 0.28));
-}
-
 .seraphine .countdown {
   background: #4a6350;
   color: #fafaf5;
@@ -1785,6 +2157,10 @@
 .seraphine .countdown .eyebrow,
 .seraphine .countdown .heading {
   color: #fafaf5;
+}
+
+.seraphine .countdownDateRule {
+  color: #c5b48a;
 }
 
 .seraphine .cellNum {
@@ -1845,6 +2221,16 @@
 .seraphine .rsvpPanel :global(.flex.flex-wrap.gap-2 > button:nth-child(3)) {
   color: #fafaf5 !important;
   border-color: color-mix(in srgb, #c5b48a 72%, transparent) !important;
+}
+
+.seraphine .outfitToggle {
+  border-color: color-mix(in srgb, #c5b48a 78%, #5f7a58);
+  color: #2c3a2e;
+}
+
+.seraphine .outfitToggle:hover,
+.seraphine .outfitToggle[aria-expanded="true"] {
+  background: color-mix(in srgb, #fafaf5 70%, #c0c8a8);
 }
 
 .seraphine .outfitMat {
@@ -1960,11 +2346,6 @@
 
   .heroActions {
     bottom: calc(2.4rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  .heroMonogram {
-    width: min(11.5rem, 54vw);
-    margin-bottom: 0.3rem;
   }
 
   .hero .heroFamily {

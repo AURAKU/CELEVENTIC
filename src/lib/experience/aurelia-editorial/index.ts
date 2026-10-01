@@ -39,6 +39,7 @@ export {
   SERAPHINE_HERO_FALLBACK,
   SERAPHINE_MONOGRAM,
   SERAPHINE_MONOGRAM_PNG,
+  SERAPHINE_MONOGRAM_CREST,
   SERAPHINE_GUEST_OUTFITS,
   SERAPHINE_SAGE_PALETTE,
   SERAPHINE_THEME_DEFAULTS,
@@ -60,7 +61,14 @@ export {
   aureliaTokenStyle,
   isAureliaDummyHero,
   mergeAureliaWedding,
+  resolveAureliaCountdownIso,
   resolveAureliaHeroImage,
   withAureliaAlbumQrCenter,
   withoutInvitationPauseDashes,
 } from "./resolve-aurelia-wedding";
+export {
+  isAureliaCoupleAlbumStock,
+  orderCoupleAlbumForPlayback,
+  resolveAureliaCoupleAlbum,
+} from "./couple-album";
+export type { AureliaCoupleAlbumItem } from "./couple-album";

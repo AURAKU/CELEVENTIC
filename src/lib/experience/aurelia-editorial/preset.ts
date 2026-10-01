@@ -221,6 +221,7 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
 export const SERAPHINE_HERO_FALLBACK = "/templates/seraphine/hero.jpg";
 export const SERAPHINE_MONOGRAM = "/templates/seraphine/monogram-lockup.jpg";
 export const SERAPHINE_MONOGRAM_PNG = "/templates/seraphine/monogram-qr.png";
+export const SERAPHINE_MONOGRAM_CREST = "/templates/seraphine/monogram-crest.png";
 export const SERAPHINE_GUEST_OUTFITS = "/templates/seraphine/guest-outfits-board.jpg";
 export const SERAPHINE_TRADITIONAL_ISO = "2026-11-13T10:00:00+00:00";
 export const SERAPHINE_WHITE_ISO = "2026-11-14T00:00:00+00:00";
@@ -276,7 +277,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   monogramImageUrl: SERAPHINE_MONOGRAM,
   familyIntro: "Together with their families",
   marriedLine: "Are getting married",
-  dateDisplay: "14 November 2026",
+  dateDisplay: "13 | 14 November 2026",
   heroTagline: "",
   heroImageUrl: SERAPHINE_HERO_FALLBACK,
   heroOverlay: 0.16,
@@ -293,7 +294,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     "Since then, our story has been filled with laughter, friendship, faith, countless memories, and plenty of love. Through every season, the Good Lord has been good to us, guiding our steps and bringing us to this special moment.",
     "And now, here we are—ready to say “I do.” We would love for you to be there as we begin this new chapter together.",
   ],
-  storySignature: "Kojo & Fafa 🤍",
+  storySignature: "Kojo & Fafa",
   celebrationsEyebrow: "Two days of joy",
   celebrationsTitle: "Celebrate With Us",
   celebrationsLede:

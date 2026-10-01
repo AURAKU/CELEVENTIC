@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minimize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadedMedia } from "@/components/media/uploaded-media";
 import type { GalleryItem } from "@/components/invitation/invitation-gallery-display";
@@ -12,9 +12,15 @@ interface InvitationMediaLightboxProps {
   items: GalleryItem[];
   initialIndex?: number;
   onClose: () => void;
+  closeLabel?: string;
 }
 
-export function InvitationMediaLightbox({ items, initialIndex = 0, onClose }: InvitationMediaLightboxProps) {
+export function InvitationMediaLightbox({
+  items,
+  initialIndex = 0,
+  onClose,
+  closeLabel = "Close",
+}: InvitationMediaLightboxProps) {
   const [index, setIndex] = useState(initialIndex);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -70,28 +76,46 @@ export function InvitationMediaLightbox({ items, initialIndex = 0, onClose }: In
 
   return (
     <div
-      className="fixed inset-0 z-[200] bg-black/95 flex flex-col touch-manipulation"
+      className="fixed inset-0 z-[200] bg-black/96 flex flex-col touch-manipulation"
       role="dialog"
       aria-modal="true"
-      aria-label="Media viewer"
+      aria-label="Full screen media viewer"
+      onClick={onClose}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <div className="flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
+      <div
+        className="flex items-center justify-between gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2"
+        onClick={(e) => e.stopPropagation()}
+      >
         <p className="text-white/80 text-sm tabular-nums">
           {index + 1} / {items.length}
         </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full p-2 text-white hover:bg-white/10 transition-colors"
-          aria-label="Close"
-        >
-          <X className="h-6 w-6" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-white hover:bg-white/10 transition-colors"
+            aria-label={closeLabel}
+          >
+            <Minimize2 className="h-5 w-5" />
+            <span className="text-xs uppercase tracking-[0.16em]">{closeLabel}</span>
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-white hover:bg-white/10 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
       </div>
 
-      <div className="relative flex-1 flex items-center justify-center min-h-0 px-2">
+      <div
+        className="relative flex-1 flex items-center justify-center min-h-0"
+        onClick={(e) => e.stopPropagation()}
+      >
         {items.length > 1 && (
           <button
             type="button"
@@ -103,14 +127,16 @@ export function InvitationMediaLightbox({ items, initialIndex = 0, onClose }: In
           </button>
         )}
 
-        <div className="w-full h-full flex items-center justify-center max-h-[75vh]">
+        <div className="absolute inset-0 flex items-center justify-center">
           <UploadedMedia
             src={item.url}
             alt={item.caption ?? "Gallery media"}
-            className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg"
+            className="h-full w-full object-contain"
             video={isVideo}
             controls={isVideo}
             autoPlay={isVideo}
+            muted={!isVideo}
+            loop={false}
           />
         </div>
 
@@ -127,11 +153,16 @@ export function InvitationMediaLightbox({ items, initialIndex = 0, onClose }: In
       </div>
 
       {item.caption && (
-        <p className="px-4 py-3 text-center text-sm text-white/85">{item.caption}</p>
+        <p className="px-4 py-3 text-center text-sm text-white/85" onClick={(e) => e.stopPropagation()}>
+          {item.caption}
+        </p>
       )}
 
       {items.length > 1 && (
-        <div className="flex justify-center gap-1.5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
+        <div
+          className="flex justify-center gap-1.5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           {items.map((_, i) => (
             <button
               key={i}
@@ -146,10 +177,6 @@ export function InvitationMediaLightbox({ items, initialIndex = 0, onClose }: In
           ))}
         </div>
       )}
-
-      <p className="text-center text-[10px] text-white/40 pb-3 uppercase tracking-widest">
-        Swipe or use arrows · tap outside close
-      </p>
     </div>
   );
 }

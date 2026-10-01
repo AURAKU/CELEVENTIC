@@ -1,5 +1,6 @@
 "use client";
 
+import { GalleryUploadPanel } from "@/components/media/gallery-upload-panel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,10 +29,16 @@ export function AureliaEditorialStudioPanel({
   value,
   layout,
   onChange,
+  galleryUrls = [],
+  onGalleryChange,
+  orderId,
 }: {
   value?: Partial<AureliaWeddingConfig>;
   layout?: string | null;
   onChange: (next: AureliaWeddingConfig) => void;
+  galleryUrls?: string[];
+  onGalleryChange?: (urls: string[]) => void;
+  orderId?: string;
 }) {
   const base = aureliaFamilyDefaults(layout);
   const wedding = mergeAureliaWedding(value, base);
@@ -122,6 +129,16 @@ export function AureliaEditorialStudioPanel({
           />
         </div>
       ))}
+      {onGalleryChange ? (
+        <GalleryUploadPanel
+          urls={galleryUrls}
+          onChange={onGalleryChange}
+          orderId={orderId}
+          maxImages={24}
+          title="Couple photo & film album"
+          description="Appears under Celebrate With Us. Guests swipe through photographs and films of the couple. Separate from the hero portrait and the live guest album."
+        />
+      ) : null}
       <div className="grid gap-2">
         <Label>Gift details</Label>
         <Textarea

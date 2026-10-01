@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { Camera, ImagePlus, Loader2 } from "lucide-react";
+import { Camera, ImagePlus, Loader2, Trash2, X } from "lucide-react";
 import {
   MEMORY_VAULT_IMAGE_COMPRESSION,
   smartCompressImage,
@@ -46,20 +46,28 @@ export function LiveAlbumExperience({
   const { key, api } = liveAlbumPaths(invitationId);
   const [guestName, setGuestName] = useState("");
   const [items, setItems] = useState<LiveAlbumItem[]>([]);
+  const [canModerate, setCanModerate] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadingGallery, setLoadingGallery] = useState(showGallery);
+  const [openId, setOpenId] = useState<string | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const openItem = items.find((item) => item.id === openId) ?? null;
 
   const loadGallery = useCallback(async () => {
     if (!showGallery) return;
     setLoadingGallery(true);
     try {
-      const res = await fetch(api, { cache: "no-store" });
-      const json = (await res.json()) as { data?: { items?: LiveAlbumItem[] }; error?: string };
+      const res = await fetch(api, { cache: "no-store", credentials: "same-origin" });
+      const json = (await res.json()) as {
+        data?: { items?: LiveAlbumItem[]; canModerate?: boolean };
+        error?: string;
+      };
       if (!res.ok) throw new Error(json.error || "Could not open the album.");
       setItems(json.data?.items ?? []);
+      setCanModerate(Boolean(json.data?.canModerate));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open the album.");
     } finally {
@@ -70,6 +78,21 @@ export function LiveAlbumExperience({
   useEffect(() => {
     void loadGallery();
   }, [loadGallery]);
+
+  useEffect(() => {
+    if (!openItem) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenId(null);
+    };
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [openItem]);
 
   const onFiles = async (list: FileList | null) => {
     if (!list?.length) return;
@@ -96,6 +119,28 @@ export function LiveAlbumExperience({
     } finally {
       setBusy(false);
       if (cameraRef.current) cameraRef.current.value = "";
+    }
+  };
+
+  const removeItem = async (item: LiveAlbumItem) => {
+    if (!canModerate) return;
+    const confirmed = window.confirm(
+      "Remove this photograph from the shared album? Guests will no longer see it."
+    );
+    if (!confirmed) return;
+    setError(null);
+    try {
+      const res = await fetch(`${api}/${item.id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "Could not remove that memory.");
+      setItems((prev) => prev.filter((entry) => entry.id !== item.id));
+      setOpenId((current) => (current === item.id ? null : current));
+      setStatus("Removed from the shared album.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not remove that memory.");
     }
   };
 
@@ -156,17 +201,80 @@ export function LiveAlbumExperience({
           <div className={styles.grid} role="list">
             {items.map((item) => (
               <figure className={styles.tile} key={item.id} role="listitem">
-                {item.mediaType === "video" ? (
-                  <video src={item.url} controls preload="metadata" />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.url} alt={item.guestName ? `Memory from ${item.guestName}` : "Guest memory"} />
-                )}
+                <button
+                  type="button"
+                  className={styles.tileOpen}
+                  onClick={() => setOpenId(item.id)}
+                  aria-label={
+                    item.guestName
+                      ? `Open memory from ${item.guestName}`
+                      : "Open photograph"
+                  }
+                >
+                  {item.mediaType === "video" ? (
+                    <video src={item.url} muted playsInline preload="metadata" />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.url}
+                      alt={item.guestName ? `Memory from ${item.guestName}` : "Guest memory"}
+                    />
+                  )}
+                </button>
+                {canModerate ? (
+                  <button
+                    type="button"
+                    className={styles.remove}
+                    aria-label="Remove this photo from the album"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void removeItem(item);
+                    }}
+                  >
+                    <Trash2 size={14} aria-hidden />
+                  </button>
+                ) : null}
                 {item.guestName ? <figcaption className={styles.caption}>{item.guestName}</figcaption> : null}
               </figure>
             ))}
           </div>
         )
+      ) : null}
+
+      {openItem ? (
+        <div
+          className={styles.stage}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Guest photograph"
+          onClick={() => setOpenId(null)}
+        >
+          <button
+            ref={closeRef}
+            type="button"
+            className={styles.stageClose}
+            aria-label="Close photograph"
+            onClick={() => setOpenId(null)}
+          >
+            <X size={22} aria-hidden />
+            Close
+          </button>
+          <div
+            className={styles.stageFrame}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {openItem.mediaType === "video" ? (
+              <video src={openItem.url} controls autoPlay playsInline />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={openItem.url}
+                alt={openItem.guestName ? `Memory from ${openItem.guestName}` : "Guest memory"}
+              />
+            )}
+            {openItem.guestName ? <p className={styles.stageCaption}>{openItem.guestName}</p> : null}
+          </div>
+        </div>
       ) : null}
     </div>
   );

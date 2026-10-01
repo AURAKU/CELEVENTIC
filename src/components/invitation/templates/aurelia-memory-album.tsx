@@ -11,7 +11,7 @@ import { CELEVENTIC_OFFICIAL_LOGO } from "@/lib/qr/qr-constants";
 import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
 import styles from "./aurelia-editorial-wedding.module.css";
 
-type Panel = "idle" | "lens" | "album";
+type Panel = "idle" | "lens";
 
 function familyHeroQrSrc(targetUrl: string | null, centerImageUrl: string) {
   if (!targetUrl) return null;
@@ -56,6 +56,7 @@ export function AureliaMemoryAlbum({
   const qrSrc = staticPreview
     ? uploadQrImageUrl ?? null
     : familyHeroQrSrc(qrTarget, qrCenterImageUrl) || uploadQrImageUrl || null;
+  const resolvedAlbum = albumUrl || live.album;
   const useVaultLinks = Boolean(uploadUrl && albumUrl);
   const liveReady = Boolean(invitationId) && !staticPreview;
 
@@ -70,12 +71,6 @@ export function AureliaMemoryAlbum({
     track("memory_upload");
     if (useVaultLinks) return;
     setPanel((current) => (current === "lens" ? "idle" : "lens"));
-  };
-
-  const openAlbum = () => {
-    track("memory_album");
-    if (useVaultLinks) return;
-    setPanel((current) => (current === "album" ? "idle" : "album"));
   };
 
   return (
@@ -132,21 +127,20 @@ export function AureliaMemoryAlbum({
             <Images size={15} aria-hidden />
             {viewCta}
           </span>
-        ) : useVaultLinks && albumUrl ? (
-          <Link className={styles.albumGhost} href={albumUrl} onClick={() => track("memory_album")}>
-            <Images size={15} aria-hidden />
-            {viewCta}
-          </Link>
         ) : (
-          <button
-            type="button"
+          <a
             className={styles.albumGhost}
-            aria-expanded={panel === "album"}
-            onClick={openAlbum}
+            href={resolvedAlbum}
+            target="_top"
+            data-testid="aurelia-view-album"
+            onClick={() => {
+              track("memory_album");
+              window.open(resolvedAlbum, "_self");
+            }}
           >
             <Images size={15} aria-hidden />
             {viewCta}
-          </button>
+          </a>
         )}
       </div>
 
@@ -156,10 +150,10 @@ export function AureliaMemoryAlbum({
             invitationId={invitationId}
             eventTitle={eventTitle}
             showLens={panel === "lens"}
-            showGallery={panel === "album" || panel === "lens"}
+            showGallery={panel === "lens"}
             compact
           />
-          <Link className={styles.albumStandalone} href={panel === "lens" ? live.lens : live.album}>
+          <Link className={styles.albumStandalone} href={live.lens}>
             Open in a new page
           </Link>
         </div>
