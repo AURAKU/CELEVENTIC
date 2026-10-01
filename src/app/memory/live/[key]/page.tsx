@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LiveAlbumPageShell } from "@/components/memory/live-album-experience";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import { liveAlbumKey } from "@/lib/memory/live-album";
+import { resolveLiveAlbumPageChrome } from "@/lib/memory/live-album-chrome";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +20,15 @@ export default async function LiveAlbumPage({
 }) {
   const { key } = await params;
   const query = await searchParams;
+  const chrome = await resolveLiveAlbumPageChrome(key);
   return (
     <div className={invitationFontVars}>
       <LiveAlbumPageShell
         invitationId={liveAlbumKey(key)}
-        eventTitle="The shared album"
+        eventTitle={chrome.identity.title}
         openLens={query.lens === "1"}
+        identity={chrome.identity}
+        cssVars={chrome.cssVars}
       />
     </div>
   );

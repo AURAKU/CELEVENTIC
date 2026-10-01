@@ -13,6 +13,8 @@ export interface CalendarEventInput {
    * Applied in .ics VALARM blocks for Apple / Outlook / most calendar apps.
    */
   reminderMinutesBefore?: number[];
+  /** Date-only save-the-date when the clock time is still to be announced. */
+  allDay?: boolean;
 }
 
 function pad(n: number) {
@@ -42,12 +44,28 @@ function icsFold(line: string): string {
   return chunks.join("\r\n");
 }
 
+function utcYmdCompact(d: Date): string {
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
+}
+
+function utcYmdDashed(d: Date): string {
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+
 /** Google Calendar `dates` param (UTC). Empty when the window cannot be parsed. */
-export function toGoogleCalendarDates(startIso: string, endIso?: string): string {
+export function toGoogleCalendarDates(
+  startIso: string,
+  endIso?: string,
+  options?: { allDay?: boolean }
+): string {
   const start = new Date(startIso);
   if (Number.isNaN(start.getTime())) return "";
-  const end = endIso ? new Date(endIso) : new Date(start.getTime() + 4 * 60 * 60 * 1000);
-  if (Number.isNaN(end.getTime())) return "";
+  const fallbackMs = options?.allDay ? 24 * 60 * 60 * 1000 : 4 * 60 * 60 * 1000;
+  const end = endIso ? new Date(endIso) : new Date(start.getTime() + fallbackMs);
+  if (Number.isNaN(end.getTime()) || end.getTime() <= start.getTime()) return "";
+  if (options?.allDay) {
+    return `${utcYmdCompact(start)}/${utcYmdCompact(end)}`;
+  }
   const fmt = (d: Date) =>
     `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
   return `${fmt(start)}/${fmt(end)}`;
@@ -63,9 +81,10 @@ export function hasValidCalendarWindow(event: CalendarEventInput): boolean {
 
 export function resolveEventWindow(event: CalendarEventInput): { start: Date; end: Date } {
   const start = new Date(event.startDateRaw);
+  const fallbackMs = event.allDay ? 24 * 60 * 60 * 1000 : 4 * 60 * 60 * 1000;
   const end = event.endDateRaw
     ? new Date(event.endDateRaw)
-    : new Date(start.getTime() + 4 * 60 * 60 * 1000);
+    : new Date(start.getTime() + fallbackMs);
   return { start, end };
 }
 
@@ -73,6 +92,7 @@ export function defaultReminderMinutes(event: CalendarEventInput): number[] {
   if (event.reminderMinutesBefore?.length) {
     return event.reminderMinutesBefore.filter((m) => Number.isFinite(m) && m > 0);
   }
+  if (event.allDay) return [24 * 60];
   // Day before + morning-of so guests do not miss the service.
   return [24 * 60, 60];
 }
@@ -93,7 +113,9 @@ function reminderDescription(minutes: number[]): string {
 }
 
 export function buildGoogleCalendarUrl(event: CalendarEventInput): string {
-  const dates = toGoogleCalendarDates(event.startDateRaw, event.endDateRaw);
+  const dates = toGoogleCalendarDates(event.startDateRaw, event.endDateRaw, {
+    allDay: event.allDay,
+  });
   if (!dates || !hasValidCalendarWindow(event)) return "";
   const url = new URL("https://calendar.google.com/calendar/render");
   url.searchParams.set("action", "TEMPLATE");
@@ -119,8 +141,14 @@ export function buildOutlookCalendarUrl(event: CalendarEventInput): string {
   url.searchParams.set("path", "/calendar/action/compose");
   url.searchParams.set("rru", "addevent");
   url.searchParams.set("subject", event.title);
-  url.searchParams.set("startdt", start.toISOString());
-  url.searchParams.set("enddt", end.toISOString());
+  if (event.allDay) {
+    url.searchParams.set("startdt", utcYmdDashed(start));
+    url.searchParams.set("enddt", utcYmdDashed(end));
+    url.searchParams.set("allday", "true");
+  } else {
+    url.searchParams.set("startdt", start.toISOString());
+    url.searchParams.set("enddt", end.toISOString());
+  }
   if (event.venue) url.searchParams.set("location", event.venue);
   const reminders = defaultReminderMinutes(event);
   const body = [event.description?.trim(), reminderDescription(reminders)]
@@ -168,8 +196,12 @@ export function buildIcsContent(event: CalendarEventInput): string {
     "BEGIN:VEVENT",
     `UID:${uid}`,
     `DTSTAMP:${formatIcsUtc(new Date().toISOString())}`,
-    `DTSTART:${formatIcsUtc(start.toISOString())}`,
-    `DTEND:${formatIcsUtc(end.toISOString())}`,
+    event.allDay
+      ? `DTSTART;VALUE=DATE:${utcYmdCompact(start)}`
+      : `DTSTART:${formatIcsUtc(start.toISOString())}`,
+    event.allDay
+      ? `DTEND;VALUE=DATE:${utcYmdCompact(end)}`
+      : `DTEND:${formatIcsUtc(end.toISOString())}`,
     `SUMMARY:${icsEscape(event.title)}`,
   ];
   if (event.venue) rawLines.push(`LOCATION:${icsEscape(event.venue)}`);

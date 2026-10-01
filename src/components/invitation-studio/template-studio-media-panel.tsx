@@ -29,6 +29,7 @@ import {
 import { getMediaEntranceForLayout } from "@/lib/invitation/media-entrance-engine";
 import { MEDIA_ENTRANCE_OPTIONS } from "@/lib/invitation/media-entrance-engine";
 import { isVideoUrl } from "@/lib/invitation/demo-gallery-assets";
+import { isAureliaEditorialLayout } from "@/lib/experience/aurelia-editorial";
 import { FONT_STACKS, THANK_YOU_FONT_OPTIONS } from "@/lib/invitation-theme/fonts";
 import type { FontId } from "@/lib/invitation-theme/theme-types";
 
@@ -119,16 +120,23 @@ export function TemplateStudioMediaPanel({
   const entrance = getMediaEntranceForLayout(design.layout ?? "classic-gold");
   const entranceLabel = MEDIA_ENTRANCE_OPTIONS.find((o) => o.id === entrance)?.label ?? entrance;
   const isFashion = design.layout === "luxury-fashion-flagship";
+  const isEditorial = isAureliaEditorialLayout(design.layout);
   const heroTitle = isFashion ? "Store preview film" : "Invitation hero photo / video";
   const heroHint = isFashion
     ? "The First Look film guests play from Store Preview. Upload a clip or a still. Organizers and admins can replace this on the live invitation at any time."
     : "The arched portrait at the top of the invitation, organizers and admins set this independently of the photo gallery.";
   const heroButton = isFashion ? "Upload store still" : "Upload invitation hero";
   const heroVideoLabel = isFashion ? "Upload store preview video" : "Hero video";
-  const galleryTitle = isFashion ? "Collection looks" : "Swipe gallery";
+  const galleryTitle = isFashion
+    ? "Collection looks"
+    : isEditorial
+      ? "Couple photo & film album"
+      : "Swipe gallery";
   const galleryDescription = isFashion
     ? "Looks for View Collection and the vision-store reel. These replace the template’s bundled looks on the live invitation."
-    : "Photo and video slides for the invitation gallery only, separate from the invitation hero portrait and welcome photo above.";
+    : isEditorial
+      ? "Appears under Celebrate With Us. Guests swipe through photographs and films of the couple. Separate from the hero portrait and the live guest album."
+      : "Photo and video slides for the invitation gallery only, separate from the invitation hero portrait and welcome photo above.";
   const [error, setError] = useState("");
   const experience = design.experience ?? {};
 

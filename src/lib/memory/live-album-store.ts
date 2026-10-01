@@ -1,18 +1,27 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { storeUploadFile, getUploadRoot } from "@/lib/uploads/file-storage";
+import {
+  deleteUploadFile,
+  getUploadRoot,
+  readUploadFile,
+  storeUploadFile,
+} from "@/lib/uploads/file-storage";
 import { validateMemoryFile } from "@/lib/memory/memory-upload-storage";
 import { liveAlbumKey, type LiveAlbumItem } from "@/lib/memory/live-album";
 
 const MAX_ITEMS = 80;
+const MANIFEST_NAME = "manifest.json";
 
-function manifestPath(key: string) {
-  return path.join(getUploadRoot(), "memory-live", liveAlbumKey(key), "manifest.json");
+function manifestRelativePath(key: string) {
+  return `memory-live/${liveAlbumKey(key)}/${MANIFEST_NAME}`;
 }
 
-async function readManifest(key: string): Promise<LiveAlbumItem[]> {
+function localManifestPath(key: string) {
+  return path.join(getUploadRoot(), "memory-live", liveAlbumKey(key), MANIFEST_NAME);
+}
+
+function parseItems(raw: string): LiveAlbumItem[] {
   try {
-    const raw = await readFile(manifestPath(key), "utf8");
     const parsed = JSON.parse(raw) as { items?: LiveAlbumItem[] };
     return Array.isArray(parsed.items) ? parsed.items : [];
   } catch {
@@ -20,10 +29,27 @@ async function readManifest(key: string): Promise<LiveAlbumItem[]> {
   }
 }
 
+async function readManifest(key: string): Promise<LiveAlbumItem[]> {
+  const relative = manifestRelativePath(key);
+  const stored = await readUploadFile(relative);
+  if (stored) return parseItems(stored.toString("utf8"));
+  try {
+    return parseItems(await readFile(localManifestPath(key), "utf8"));
+  } catch {
+    return [];
+  }
+}
+
 async function writeManifest(key: string, items: LiveAlbumItem[]) {
-  const file = manifestPath(key);
-  await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(file, JSON.stringify({ items }, null, 2), "utf8");
+  const payload = Buffer.from(JSON.stringify({ items }, null, 2), "utf8");
+  await storeUploadFile("memory-live", liveAlbumKey(key), MANIFEST_NAME, payload);
+  try {
+    const file = localManifestPath(key);
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, payload);
+  } catch {
+    /* Local mirror is optional when S3 is the live backend. */
+  }
 }
 
 export async function listLiveAlbum(key: string): Promise<LiveAlbumItem[]> {
@@ -61,5 +87,20 @@ export async function addLiveAlbumFile(input: {
   };
   items.unshift(item);
   await writeManifest(key, items);
+  return item;
+}
+
+export async function removeLiveAlbumItem(key: string, itemId: string): Promise<LiveAlbumItem> {
+  const albumKey = liveAlbumKey(key);
+  const id = itemId.trim();
+  if (!id) throw new Error("Memory not found");
+  const items = await readManifest(albumKey);
+  const item = items.find((entry) => entry.id === id);
+  if (!item) throw new Error("Memory not found");
+  await deleteUploadFile(item.relativePath);
+  await writeManifest(
+    albumKey,
+    items.filter((entry) => entry.id !== id)
+  );
   return item;
 }

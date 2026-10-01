@@ -4,6 +4,7 @@ import {
   AURELIA_HERO_FALLBACK,
   AURELIA_THEME_DEFAULTS,
   AURELIA_WEDDING_DEFAULTS,
+  AURELIA_WHITE_ISO,
   SERAPHINE_WEDDING_DEFAULTS,
 } from "./preset";
 import { SERAPHINE_LAYOUT_SLUG } from "./types";
@@ -12,7 +13,6 @@ import type {
   AureliaDressCode,
   AureliaFaqItem,
   AureliaJourneyItem,
-  AureliaPaletteSwatch,
   AureliaRsvpContact,
   AureliaSectionId,
   AureliaThemeTokens,
@@ -146,9 +146,10 @@ export function withAureliaAlbumQrCenter(
 }
 
 function mergeTheme(
-  stored?: Partial<AureliaThemeTokens> | null
+  stored?: Partial<AureliaThemeTokens> | null,
+  base: AureliaThemeTokens = AURELIA_THEME_DEFAULTS
 ): AureliaThemeTokens {
-  return { ...AURELIA_THEME_DEFAULTS, ...stored };
+  return { ...base, ...stored };
 }
 
 function mergeCeremonies(
@@ -165,6 +166,8 @@ function mergeCeremonies(
       if (!canonical) return item;
       return {
         ...item,
+        title: canonical.title,
+        kicker: canonical.kicker,
         weekday: canonical.weekday,
         dateLabel: canonical.dateLabel,
         timeLabel: canonical.timeLabel,
@@ -216,11 +219,7 @@ function mergeDress(
       note: trim(extra.note) || canonical.note,
       scriptLine: trim(extra.scriptLine) || canonical.scriptLine,
       imageUrl: trim(extra.imageUrl) || canonical.imageUrl,
-      palette: canonical.palette.length
-        ? canonical.palette.map((swatch) => ({ ...swatch }))
-        : (extra.palette ?? [])
-            .filter((swatch: AureliaPaletteSwatch) => trim(swatch.hex))
-            .slice(0, 6),
+      palette: canonical.palette.map((swatch) => ({ ...swatch })),
     };
   });
 }
@@ -256,6 +255,47 @@ function mergeRsvpContacts(
 ): AureliaRsvpContact[] {
   if (stored == null || stored.length === 0) return base.rsvpContacts ?? [];
   return stored.filter((item) => trim(item.name) && trim(item.phone));
+}
+
+function mergeGiftCopy(
+  stored: Partial<AureliaWeddingConfig>,
+  base: AureliaWeddingConfig
+): Pick<AureliaWeddingConfig, "giftsEyebrow" | "giftsTitle" | "giftsLede" | "giftsDetails"> {
+  const staleHiddenGifts =
+    stored.sections?.gifts?.visible === false &&
+    !trim(stored.giftsTitle) &&
+    !trim(stored.giftsLede) &&
+    !trim(stored.giftsDetails) &&
+    Boolean(trim(base.giftsTitle)) &&
+    base.sections?.gifts?.visible !== false;
+  const take = (value: string | undefined, fallback: string) => {
+    const trimmed = trim(value);
+    if (trimmed) return trimmed;
+    if (value === undefined || staleHiddenGifts) return fallback;
+    return "";
+  };
+  return {
+    giftsEyebrow: take(stored.giftsEyebrow, base.giftsEyebrow),
+    giftsTitle: take(stored.giftsTitle, base.giftsTitle),
+    giftsLede: take(stored.giftsLede, base.giftsLede),
+    giftsDetails: take(stored.giftsDetails, base.giftsDetails ?? ""),
+  };
+}
+
+function mergeSections(
+  storedSections: AureliaWeddingConfig["sections"],
+  stored: Partial<AureliaWeddingConfig>,
+  base: AureliaWeddingConfig
+): AureliaWeddingConfig["sections"] {
+  const merged = { ...base.sections, ...storedSections };
+  const staleHiddenGifts =
+    storedSections?.gifts?.visible === false &&
+    !trim(stored.giftsTitle) &&
+    !trim(stored.giftsLede) &&
+    !trim(stored.giftsDetails) &&
+    Boolean(trim(base.giftsTitle)) &&
+    base.sections?.gifts?.visible !== false;
+  return staleHiddenGifts ? { ...merged, gifts: { visible: true } } : merged;
 }
 
 /** Ghana-local numbers (024…) become E.164 tel and WhatsApp links. */
@@ -318,7 +358,7 @@ export function mergeAureliaWedding(
     albumViewCta: trim(stored.albumViewCta) || base.albumViewCta,
     storyParagraphs:
       stored.storyParagraphs?.map((p) => trim(p)).filter(Boolean) ?? base.storyParagraphs,
-    theme: mergeTheme(stored.theme),
+    theme: mergeTheme(stored.theme, base.theme),
     ceremonies: mergeCeremonies(stored.ceremonies, base),
     venues: mergeVenues(stored.venues, base),
     dressCodes: mergeDress(stored.dressCodes, base),
@@ -326,7 +366,8 @@ export function mergeAureliaWedding(
     faqs: mergeFaqs(stored.faqs, base),
     rsvpByLabel: "",
     rsvpContacts: mergeRsvpContacts(stored.rsvpContacts, base),
-    sections: { ...base.sections, ...stored.sections },
+    ...mergeGiftCopy(stored, base),
+    sections: mergeSections(stored.sections, stored, base),
   });
 }
 
@@ -341,6 +382,23 @@ export function aureliaVenueKey(item: {
 export function aureliaDistinctVenues(config: AureliaWeddingConfig): AureliaVenueCard[] {
   const ceremonyKeys = new Set(config.ceremonies.map(aureliaVenueKey));
   return config.venues.filter((venue) => !ceremonyKeys.has(aureliaVenueKey(venue)));
+}
+
+/** Count down to the first celebration day, not a later ceremony. */
+export function resolveAureliaCountdownIso(
+  ceremonies: Array<{ startAtIso?: string | null }>,
+  fallback?: string | null
+): string {
+  const dated = ceremonies
+    .map((item) => item.startAtIso?.trim())
+    .filter((iso): iso is string => Boolean(iso))
+    .map((iso) => ({ iso, time: Date.parse(iso) }))
+    .filter((item) => Number.isFinite(item.time))
+    .sort((a, b) => a.time - b.time);
+  if (dated[0]) return dated[0].iso;
+  const fallbackIso = fallback?.trim();
+  if (fallbackIso && Number.isFinite(Date.parse(fallbackIso))) return fallbackIso;
+  return AURELIA_WHITE_ISO;
 }
 
 export function aureliaSectionVisible(
@@ -384,6 +442,7 @@ export function aureliaNavItems(config: AureliaWeddingConfig): Array<{
     ["dress", "Dress Code"],
     ["journey", "Our Journey"],
     ["album", "Album"],
+    ["gifts", "Gift"],
     ["rsvp", "RSVP"],
   ];
   for (const [id, label] of rest) {

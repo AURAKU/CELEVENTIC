@@ -3,8 +3,8 @@ import { isMemorialSocialKind } from "@/lib/social/social-category";
 
 export const SOCIAL_PLACE_CARD_KICKER = "YOU'RE INVITED";
 export const SOCIAL_PLACE_CARD_PRIVATE_KICKER = "PRIVATE INVITATION";
-export const SOCIAL_PLACE_CARD_PHRASE = "Join us for this special celebration.";
-export const SOCIAL_PLACE_CARD_PERSONAL_PHRASE = "invite you to celebrate with them";
+export const SOCIAL_PLACE_CARD_PHRASE = "A celebration awaits.";
+export const SOCIAL_PLACE_CARD_PERSONAL_PHRASE = "A celebration awaits.";
 
 type KindCopy = {
   fallbackTitle: string;
@@ -20,45 +20,32 @@ type KindCopy = {
 const KIND_COPY: Record<SocialEventKind, KindCopy> = {
   wedding: {
     fallbackTitle: "Wedding Celebration",
-    phrase: "Join us for this special celebration.",
-    personalPhrase: "invite you to celebrate with them",
+    phrase: "A celebration awaits.",
+    personalPhrase: "A celebration awaits.",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title, host) =>
-      host
-        ? `${host} ${host.includes("&") ? "invite" : "invites"} you to celebrate with them — tap to open your invitation.`
-        : `You're invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, host, guest) =>
-      host
-        ? `Dear ${guest}, ${host} ${host.includes("&") ? "invite" : "invites"} you to celebrate with them — tap to open your invitation.`
-        : `Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
     unavailablePhrase: "The celebration link is closed.",
   },
   engagement: {
     fallbackTitle: "Engagement Celebration",
-    phrase: "You're invited to celebrate this special moment.",
-    personalPhrase: "invite you to celebrate this special moment",
+    phrase: "A moment to remember.",
+    personalPhrase: "A moment to remember.",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title, host) =>
-      host
-        ? `${host} ${host.includes("&") ? "invite" : "invites"} you to celebrate this special moment — tap to open your invitation.`
-        : `You're invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, host, guest) =>
-      host
-        ? `Dear ${guest}, ${host} ${host.includes("&") ? "invite" : "invites"} you to celebrate this special moment — tap to open your invitation.`
-        : `Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
     unavailablePhrase: "The celebration link is closed.",
   },
   birthday: {
     fallbackTitle: "Birthday Celebration",
-    phrase: "Come celebrate a very special birthday.",
-    personalPhrase: "come celebrate this very special birthday",
+    phrase: "A birthday celebration awaits.",
+    personalPhrase: "A birthday celebration awaits.",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title) => `You're invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, _host, guest) =>
-      `Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
     unavailablePhrase: "The celebration link is closed.",
   },
   funeral: {
@@ -78,9 +65,8 @@ const KIND_COPY: Record<SocialEventKind, KindCopy> = {
     personalPhrase: "you're warmly invited to join us",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title) => `You're warmly invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, _host, guest) =>
-      `Dear ${guest}, you're warmly invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're warmly invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're warmly invited to ${title}.`,
     unavailablePhrase: "This invitation is no longer available.",
   },
   corporate: {
@@ -89,9 +75,8 @@ const KIND_COPY: Record<SocialEventKind, KindCopy> = {
     personalPhrase: "you're invited to join us for this special event",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title) => `You're invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, _host, guest) =>
-      `Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
     unavailablePhrase: "This invitation is no longer available.",
   },
   conference: {
@@ -100,9 +85,8 @@ const KIND_COPY: Record<SocialEventKind, KindCopy> = {
     personalPhrase: "you're invited to connect, learn and experience the event",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title) => `You're invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, _host, guest) =>
-      `Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
     unavailablePhrase: "This invitation is no longer available.",
   },
   concert: {
@@ -111,9 +95,8 @@ const KIND_COPY: Record<SocialEventKind, KindCopy> = {
     personalPhrase: "you're invited to experience it live",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title) => `You're invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, _host, guest) =>
-      `Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
     unavailablePhrase: "This invitation is no longer available.",
   },
   lunch: {
@@ -122,9 +105,8 @@ const KIND_COPY: Record<SocialEventKind, KindCopy> = {
     personalPhrase: "you're invited to this special gathering",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title) => `You're invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, _host, guest) =>
-      `Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
     unavailablePhrase: "This invitation is no longer available.",
   },
   private: {
@@ -133,9 +115,8 @@ const KIND_COPY: Record<SocialEventKind, KindCopy> = {
     personalPhrase: "you're invited to this special gathering",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
-    description: (title) => `You're invited to ${title}. Tap to open your invitation.`,
-    personalDescription: (title, _host, guest) =>
-      `Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`,
+    description: (title) => `You're invited to ${title}.`,
+    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
     unavailablePhrase: "This invitation is no longer available.",
   },
 };

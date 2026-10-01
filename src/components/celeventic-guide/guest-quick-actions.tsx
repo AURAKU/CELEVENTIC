@@ -7,7 +7,6 @@ import {
   BookOpen,
   Camera,
   ChevronDown,
-  ChevronUp,
   Compass,
   Heart,
   HelpCircle,
@@ -21,7 +20,7 @@ import { GUEST_QUICK_ACTIONS } from "@/lib/celeventic-guide/guest-zero-experienc
 import { cn } from "@/lib/utils";
 import { trackGuideEvent } from "@/lib/celeventic-guide/analytics";
 import { APP_NAME } from "@/lib/constants";
-import { BRAND_LOGO_ALT, BRAND_LOGO_FULL } from "@/lib/brand/constants";
+import { BRAND_LOGO_MARK } from "@/lib/brand/constants";
 
 /** Guest help tour video shown from the invitation Celeventic logo. */
 export const GUEST_HELP_TOUR_VIDEO = "/guides/videos/guest-help-tour.mp4";
@@ -83,20 +82,38 @@ export function GuestQuickActions({
 }
 
 const GUIDE_GLASS =
-  "bg-white/55 backdrop-blur-xl border border-white/80 shadow-[0_8px_28px_rgba(15,23,42,0.16),inset_0_1px_0_rgba(255,255,255,0.9)]";
+  "bg-white/38 backdrop-blur-2xl border border-white/70 shadow-[0_10px_28px_rgba(15,23,42,0.14),inset_0_1px_0_rgba(255,255,255,0.95)]";
+
+function GuideLogoMark({ size = 34 }: { size?: number }) {
+  return (
+    <span
+      className="relative isolate block overflow-hidden rounded-full bg-white/75 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.95)]"
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      <Image
+        src={BRAND_LOGO_MARK}
+        alt=""
+        fill
+        sizes={`${size}px`}
+        className="object-cover object-[50%_18%] scale-[1.9] origin-[center_18%]"
+      />
+    </span>
+  );
+}
 
 /**
- * Invitation footer: glassy Celeventic Guide pill. Guests can tuck it away
- * and bring it back from a slim tab — the guide link itself is unchanged.
+ * Invitation corner: compact glass Guide chip. Sits off the template so
+ * celebration CTAs stay clear. Guests can tuck it to a round mark.
  */
 export function InviteGuestHelpFab({
   className,
   guideHref = "/guide?role=GUEST",
-  alignEnd = false,
+  alignEnd: _alignEnd = false,
 }: {
   className?: string;
   guideHref?: string;
-  /** Fashion flagship: keep the FAB off the campaign masthead and CTAs. */
+  /** Kept for callers; the chip always parks bottom-right off the template. */
   alignEnd?: boolean;
 }) {
   const [hidden, setHidden] = useState(false);
@@ -104,11 +121,9 @@ export function InviteGuestHelpFab({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex",
-        alignEnd
-          ? "justify-end pr-[max(0.75rem,env(safe-area-inset-right))] pl-3"
-          : "justify-center",
-        hidden ? "pb-0 pt-0" : "pb-[max(1rem,env(safe-area-inset-bottom))] pt-3",
+        "pointer-events-none fixed z-[80]",
+        "bottom-[max(0.7rem,env(safe-area-inset-bottom))]",
+        "right-[max(0.7rem,env(safe-area-inset-right))]",
         className
       )}
       data-guest-guide-tray={hidden ? "hidden" : "open"}
@@ -120,20 +135,18 @@ export function InviteGuestHelpFab({
           className={cn(
             "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full",
             GUIDE_GLASS,
-            "text-[#0B8A83] transition-transform duration-200 active:scale-[0.98]",
+            "transition-transform duration-200 active:scale-[0.98]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2"
           )}
           aria-label="Show guide"
         >
-          <ChevronUp className="h-5 w-5" strokeWidth={2.4} aria-hidden />
+          <GuideLogoMark size={32} />
         </button>
       ) : (
         <div
           className={cn(
-            "pointer-events-auto relative flex items-center gap-1.5 rounded-full",
-            GUIDE_GLASS,
-            "transition-[transform,box-shadow] duration-200",
-            alignEnd ? "h-11 pl-2 pr-1" : "h-12 pl-3 pr-1.5"
+            "pointer-events-auto relative flex h-11 items-center gap-1 rounded-full py-1 pl-1 pr-1",
+            GUIDE_GLASS
           )}
         >
           <Link
@@ -141,34 +154,21 @@ export function InviteGuestHelpFab({
             onClick={() =>
               trackGuideEvent("guide_context_help", { action: "open-guest-guide", surface: "invite-fab" })
             }
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full",
-              alignEnd ? "h-9 px-1.5" : "h-10 pl-0.5 pr-1",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2"
-            )}
+            className="inline-flex h-9 items-center gap-2 rounded-full pl-0.5 pr-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2"
             aria-label={`${APP_NAME} Guide — learn how to navigate the invitation`}
           >
-            <Image
-              src={BRAND_LOGO_FULL}
-              alt={BRAND_LOGO_ALT}
-              width={120}
-              height={36}
-              className={alignEnd ? "h-6 w-auto object-contain" : "h-7 w-auto object-contain"}
-              priority={false}
-            />
-            {alignEnd ? null : (
-              <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#0B8A83]">
-                Guide
-              </span>
-            )}
+            <GuideLogoMark size={34} />
+            <span className="pr-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#0B8A83]/90">
+              Guide
+            </span>
           </Link>
           <button
             type="button"
             onClick={() => setHidden(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#0B8A83]/25 bg-white/80 text-[#0B8A83] shadow-[0_1px_4px_rgba(11,138,131,0.18)] transition-colors hover:bg-white hover:border-[#0B8A83]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/35 text-[#0B8A83]/80 transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83]"
             aria-label="Hide guide"
           >
-            <ChevronDown className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+            <ChevronDown className="h-4 w-4" strokeWidth={2.4} aria-hidden />
           </button>
         </div>
       )}

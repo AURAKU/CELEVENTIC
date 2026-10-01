@@ -217,31 +217,27 @@ export function buildSocialInviteDescription(input: {
   hostName?: string | null;
   descriptionDate?: string | null;
   guestDisplayName?: string | null;
+  kind?: SocialEventKind;
 }): string {
   const title = input.title.trim();
-  const host = sanitizeGuestFacingTitle(input.hostName);
   const dated = input.descriptionDate?.trim();
   const guest = sanitizeSocialGuestDisplayName(input.guestDisplayName);
+  const honour = input.kind === "funeral";
+  const verb = honour ? "honour" : "celebrate";
 
-  if (guest && host) {
-    const verb = host.includes("&") ? "invite" : "invites";
-    return truncateForShare(
-      `Dear ${guest}, ${host} ${verb} you to celebrate with them — tap to open your invitation.`
-    );
+  if (guest && dated) {
+    return truncateForShare(`Dear ${guest}, you're invited to ${verb} ${title} on ${dated}.`);
   }
   if (guest) {
-    return truncateForShare(`Dear ${guest}, you're invited to ${title}. Tap to open your invitation.`);
+    return truncateForShare(`Dear ${guest}, you're invited to ${title}.`);
   }
   if (dated) {
-    return truncateForShare(`You're invited to celebrate ${title} on ${dated}.`);
+    return truncateForShare(`You're invited to ${verb} ${title} on ${dated}.`);
   }
-  if (host) {
-    const verb = host.includes("&") ? "invite" : "invites";
-    return truncateForShare(
-      `${host} ${verb} you to celebrate with them — tap to open your invitation.`
-    );
+  if (honour) {
+    return truncateForShare(`Please join us as we honour and remember ${title}.`);
   }
-  return truncateForShare(`You're invited to ${title}. Tap to open your invitation.`);
+  return truncateForShare(`You're invited to ${title}.`);
 }
 
 export function buildSocialInviteShareTitle(title: string): string {

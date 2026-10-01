@@ -109,12 +109,9 @@ describe("social invite copy", () => {
       hostName: "Enock & Ruth",
     }).title;
     assert.equal(buildSocialInviteShareTitle(title), "Enock & Ruth · You're invited");
-    const description = buildSocialInviteDescription({
-      title,
-      hostName: "Enock & Ruth",
-    });
-    assert.match(description, /Enock & Ruth invite you to celebrate with them/);
-    assert.doesNotMatch(description, /AURELIA|Aurelia|Celeventic —/i);
+    const description = buildSocialInviteDescription({ title, hostName: "Enock & Ruth" });
+    assert.equal(description, "You're invited to Enock & Ruth.");
+    assert.doesNotMatch(description, /AURELIA|Aurelia|Celeventic —|Prince/i);
   });
 
   it("builds a dated Seraphine description from the real couple names", () => {
@@ -143,10 +140,7 @@ describe("social invite copy", () => {
       hostName: "Kojo & Fafa",
       guestDisplayName: "Ama",
     });
-    assert.equal(
-      description,
-      "Dear Ama, Kojo & Fafa invite you to celebrate with them — tap to open your invitation."
-    );
+    assert.equal(description, "Dear Ama, you're invited to Kojo & Fafa.");
     assert.doesNotMatch(buildSocialInviteShareTitle(title), /Ama/);
     assert.doesNotMatch(description, /Seraphine|Aurelia|ama@|0246/i);
   });
@@ -158,7 +152,8 @@ describe("social invite copy", () => {
       guestDisplayName: "ama@example.com",
     });
     assert.doesNotMatch(description, /Dear |@example|0246/i);
-    assert.match(description, /Kojo & Fafa invite you to celebrate with them/);
+    assert.match(description, /You're invited to Kojo & Fafa/);
+    assert.doesNotMatch(description, /invite you to celebrate with them/);
   });
 
   it("does not invent a calendar date from a month-only label", () => {

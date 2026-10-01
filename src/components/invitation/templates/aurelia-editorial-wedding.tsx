@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useMemo, useState } from "react";
-import { Calendar, Clock, MapPin, Menu, Phone, X } from "lucide-react";
+import { Calendar, ChevronDown, Clock, MapPin, Menu, Phone, X } from "lucide-react";
 import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import { useCountdown } from "@/hooks/use-countdown";
@@ -9,10 +9,12 @@ import { trackInviteEvent } from "@/lib/analytics/invite-events";
 import { WhatsAppIcon } from "@/components/memory/icons/social-brand-icons";
 import {
   AURELIA_HERO_FALLBACK,
-  AURELIA_WHITE_ISO,
   SERAPHINE_HERO_FALLBACK,
   SERAPHINE_LAYOUT_SLUG,
   SERAPHINE_MONOGRAM,
+  SERAPHINE_MONOGRAM_CREST,
+  SERAPHINE_TRADITIONAL_MAP_IMAGE,
+  SERAPHINE_WHITE_MAP_IMAGE,
   aureliaDistinctVenues,
   aureliaFamilyDefaults,
   aureliaGuestPhoneLinks,
@@ -20,7 +22,9 @@ import {
   aureliaSectionVisible,
   aureliaTokenStyle,
   mergeAureliaWedding,
+  resolveAureliaCountdownIso,
   resolveAureliaHeroImage,
+  resolveAureliaCoupleAlbum,
 } from "@/lib/experience/aurelia-editorial";
 import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
@@ -28,6 +32,7 @@ import { EVENT_TIME_ZONE } from "@/lib/constants";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
+import { AureliaCoupleAlbum } from "./aurelia-couple-album";
 import { AureliaGiftCheckout } from "./aurelia-gift-checkout";
 import { AureliaMemoryAlbum } from "./aurelia-memory-album";
 import { resolveQrCenterMark } from "@/lib/qr/qr-center-resolution";
@@ -59,6 +64,7 @@ function AureliaLocationPreview({
   href,
   label,
   invitationId,
+  previewImageUrl,
 }: {
   mapsUrl?: string | null;
   venueName?: string;
@@ -66,21 +72,31 @@ function AureliaLocationPreview({
   href?: string | null;
   label: string;
   invitationId: string;
+  previewImageUrl?: string;
 }) {
   const query = [venueName, address].filter(Boolean).join(", ");
   const embedUrl = toMapsEmbedUrl(mapsUrl || href, query || venueName);
-  if (!embedUrl) return null;
+  if (!embedUrl && !previewImageUrl) return null;
 
   const frame = (
     <div className={styles.mapFrame}>
-      <iframe
-        title={`Map of ${label}`}
-        src={embedUrl}
-        className={styles.mapIframe}
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        tabIndex={-1}
-      />
+      {previewImageUrl ? (
+        <img
+          src={previewImageUrl}
+          alt=""
+          className={styles.mapStatic}
+          draggable={false}
+        />
+      ) : embedUrl ? (
+        <iframe
+          title={`Map of ${label}`}
+          src={embedUrl}
+          className={styles.mapIframe}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          tabIndex={-1}
+        />
+      ) : null}
       <span className={styles.mapVeil} aria-hidden />
       <span className={styles.mapBadge}>
         <MapPin size={13} aria-hidden />
@@ -131,8 +147,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroMode, setHeroMode] = useState(true);
   const [openFaq, setOpenFaq] = useState<string | null>(config.faqs[0]?.id ?? null);
-  const familyHero =
-    props.design.layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_HERO_FALLBACK : AURELIA_HERO_FALLBACK;
+  const isSeraphine = props.design.layout === SERAPHINE_LAYOUT_SLUG;
+  const familyHero = isSeraphine ? SERAPHINE_HERO_FALLBACK : AURELIA_HERO_FALLBACK;
   const resolvedHero = useMemo(
     () =>
       resolveAureliaHeroImage({
@@ -147,11 +163,23 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
     [config.heroImageUrl, familyHero, props.design.heroCleared, props.design.media, props.event.coverImageUrl]
   );
   const [heroSrc, setHeroSrc] = useState(resolvedHero);
+  const coupleAlbum = useMemo(
+    () =>
+      resolveAureliaCoupleAlbum({
+        galleryUrls: props.galleryUrls,
+        media: props.design.media,
+        journey: config.journey,
+        reservedUrls: [resolvedHero, familyMonogram, config.storyImageUrl],
+      }),
+    [config.journey, config.storyImageUrl, familyMonogram, props.design.media, props.galleryUrls, resolvedHero]
+  );
   const menuId = useId();
-  const countdownIso =
-    config.ceremonies.find((c) => c.startAtIso)?.startAtIso ||
-    props.event.startDateRaw ||
-    AURELIA_WHITE_ISO;
+  const lookbookId = useId();
+  const [lookbookOpen, setLookbookOpen] = useState(false);
+  const countdownIso = resolveAureliaCountdownIso(
+    config.ceremonies,
+    props.event.startDateRaw
+  );
   const count = useCountdown(countdownIso);
 
   useEffect(() => {
@@ -193,23 +221,34 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       venueName,
       landmark: address,
     });
+  const seraphineMapPreview: Record<string, string> = {
+    traditional: SERAPHINE_TRADITIONAL_MAP_IMAGE,
+    white: SERAPHINE_WHITE_MAP_IMAGE,
+  };
 
   return (
     <div
-      className={`${styles.root} ${invitationFontVars}`}
+      className={`${styles.root} ${isSeraphine ? styles.seraphine : ""} ${invitationFontVars}`}
       style={aureliaTokenStyle(config.theme)}
       data-aurelia-template="true"
       data-aurelia-journey="off"
       data-testid="aurelia-editorial-wedding"
     >
       <header className={`${styles.header} ${heroMode ? styles.headerOnHero : ""}`}>
-        <span className={styles.monogram} aria-label={monogramLabel}>
-          <span className={styles.monogramLetter}>{monoOne}</span>
-          <span className={styles.monogramAmp} aria-hidden>
-            &amp;
+        {familyMonogram ? (
+          <span className={styles.monogramMark} aria-label={monogramLabel}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={familyMonogram} alt="" width={160} height={160} />
           </span>
-          <span className={styles.monogramLetter}>{monoTwo}</span>
-        </span>
+        ) : (
+          <span className={styles.monogram} aria-label={monogramLabel}>
+            <span className={styles.monogramLetter}>{monoOne}</span>
+            <span className={styles.monogramAmp} aria-hidden>
+              &amp;
+            </span>
+            <span className={styles.monogramLetter}>{monoTwo}</span>
+          </span>
+        )}
         <button
           type="button"
           className={styles.menuButton}
@@ -263,23 +302,17 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
         />
         <div
           className={styles.heroGrade}
-          style={{ opacity: Math.min(0.55, Math.max(0.12, config.heroOverlay ?? 0.26)) }}
+          style={{
+            opacity: isSeraphine
+              ? Math.min(0.22, Math.max(0.08, config.heroOverlay ?? 0.16))
+              : Math.min(0.55, Math.max(0.12, config.heroOverlay ?? 0.26)),
+          }}
         />
         <div className={styles.heroScrim} />
         <span className={styles.heroRing} style={{ width: 140, height: 140, left: "8%", top: "22%" }} />
         <span className={styles.heroRing} style={{ width: 180, height: 180, right: "6%", bottom: "18%" }} />
         <span className={`${styles.eyebrow} ${styles.heroFamily}`}>{config.familyIntro}</span>
         <div className={styles.heroCopy}>
-          {familyMonogram ? (
-            <img
-              className={styles.heroMonogram}
-              src={familyMonogram}
-              alt={monogramLabel}
-              width={1024}
-              height={1024}
-              decoding="async"
-            />
-          ) : null}
           <div className={styles.heroNames}>
             <span className={styles.heroName}>{config.partnerOneName}</span>
             <span className={styles.ampersand}>&amp;</span>
@@ -299,7 +332,19 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       </section>
 
       <section className={styles.countdown} aria-label="Countdown">
-        <span className={styles.eyebrow}>{config.dateDisplay.replace(/\s+/g, "  ")}</span>
+        <span className={`${styles.eyebrow} ${styles.countdownDates}`}>
+          {isSeraphine ? (
+            <>
+              <span>13</span>
+              <span className={styles.countdownDateRule} aria-hidden>
+                |
+              </span>
+              <span>14 November 2026</span>
+            </>
+          ) : (
+            config.dateDisplay
+          )}
+        </span>
         <h2 className={styles.heading}>{config.countdownTitle}</h2>
         <div className={styles.goldRule} />
         <div className={styles.grid}>
@@ -350,42 +395,54 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <h2 className={styles.heading}>{config.celebrationsTitle}</h2>
           <div className={styles.goldRule} />
           <p className={styles.lede}>{config.celebrationsLede}</p>
+          <AureliaCoupleAlbum
+            items={coupleAlbum}
+            coupleNames={`${config.partnerOneName} & ${config.partnerTwoName}`}
+          />
           <div className={styles.cardDeck}>
           {config.ceremonies.map((ceremony) => {
-            const hasMaps = Boolean(ceremony.mapsUrl?.trim());
-            const href = hasMaps
-              ? mapsHref(ceremony.mapsUrl, ceremony.venueName, ceremony.address)
-              : null;
+            const href = mapsHref(ceremony.mapsUrl, ceremony.venueName, ceremony.address);
+            const hasMaps = Boolean(
+              href && (ceremony.mapsUrl?.trim() || ceremony.address?.trim())
+            );
             const hasTime = Boolean(ceremony.timeLabel?.trim());
             const hasVenue = Boolean(ceremony.venueName?.trim() || ceremony.address?.trim());
+            const timePending = /to be announced|tba|\btbd\b/i.test(ceremony.timeLabel ?? "");
             return (
               <article className={styles.card} key={ceremony.id}>
                 <div className={styles.cardKicker}>{ceremony.kicker}</div>
                 <h3 className={styles.cardTitle}>{ceremony.title}</h3>
                 <div className={styles.goldRule} />
-                <div className={styles.metaRow}>
-                  <Calendar size={16} />
-                  <span>
-                    {ceremony.weekday}
-                    <br />
-                    {ceremony.dateLabel}
-                  </span>
+                <div className={styles.metaList}>
+                  <div className={styles.metaRow}>
+                    <Calendar size={22} strokeWidth={1.9} aria-hidden />
+                    <p>
+                      <span className={styles.metaPrimary}>{ceremony.weekday}</span>
+                      <span className={styles.metaPrimary}>{ceremony.dateLabel}</span>
+                    </p>
+                  </div>
+                  {hasTime ? (
+                    <div className={styles.metaRow}>
+                      <Clock size={22} strokeWidth={1.9} aria-hidden />
+                      <p>
+                        <span className={styles.metaPrimary}>{ceremony.timeLabel}</span>
+                      </p>
+                    </div>
+                  ) : null}
+                  {hasVenue ? (
+                    <div className={styles.metaRow}>
+                      <MapPin size={22} strokeWidth={1.9} aria-hidden />
+                      <p>
+                        {ceremony.venueName ? (
+                          <span className={styles.metaPrimary}>{ceremony.venueName}</span>
+                        ) : null}
+                        {ceremony.address ? (
+                          <span className={styles.metaSecondary}>{ceremony.address}</span>
+                        ) : null}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
-                {hasTime ? (
-                  <div className={styles.metaRow}>
-                    <Clock size={16} />
-                    <span>{ceremony.timeLabel}</span>
-                  </div>
-                ) : null}
-                {hasVenue ? (
-                  <div className={styles.metaRow}>
-                    <MapPin size={16} />
-                    <span>
-                      {ceremony.venueName}
-                      {ceremony.address ? `, ${ceremony.address}` : ""}
-                    </span>
-                  </div>
-                ) : null}
                 {hasMaps ? (
                   <AureliaLocationPreview
                     mapsUrl={ceremony.mapsUrl}
@@ -394,6 +451,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     href={href}
                     label={ceremony.venueName}
                     invitationId={props.invitation.id}
+                    previewImageUrl={isSeraphine ? seraphineMapPreview[ceremony.id] : undefined}
                   />
                 ) : null}
                 {hasMaps && href ? (
@@ -423,6 +481,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                       startDateRaw: ceremony.startAtIso,
                       venue: ceremony.venueName,
                       timeZone: EVENT_TIME_ZONE,
+                      allDay: timePending,
+                      description: timePending ? "Time details to be announced." : undefined,
                     }}
                   />
                 ) : null}
@@ -490,16 +550,58 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <div className={styles.goldRule} />
           <p className={styles.lede}>{config.dressLede}</p>
           <div className={styles.cardDeck}>
-          {config.dressCodes.map((dress) => (
+          {config.dressCodes.map((dress) => {
+            const outfitLookbook = isSeraphine && dress.id === "outfits" && Boolean(dress.imageUrl);
+            return (
             <article
               key={dress.id}
-              className={dress.variant === "dark" ? styles.dressDark : styles.dressLight}
+              className={`${dress.variant === "dark" ? styles.dressDark : styles.dressLight}${
+                outfitLookbook ? ` ${styles.outfitBoard}` : ""
+              }`}
             >
               <div className={styles.cardKicker}>{dress.dateLabel}</div>
               <h3 className={styles.cardTitle}>{dress.title}</h3>
               {dress.scriptLine ? <p className={styles.scriptLine}>{dress.scriptLine}</p> : null}
               {dress.note ? <p className={styles.lede}>{dress.note}</p> : null}
-              {dress.imageUrl ? (
+              {outfitLookbook ? (
+                <div className={styles.outfitLookbook}>
+                  <button
+                    type="button"
+                    className={styles.outfitToggle}
+                    aria-expanded={lookbookOpen}
+                    aria-controls={lookbookId}
+                    onClick={() => setLookbookOpen((open) => !open)}
+                  >
+                    <span>{lookbookOpen ? "Hide the lookbook" : "View the lookbook"}</span>
+                    <ChevronDown
+                      size={18}
+                      className={lookbookOpen ? styles.outfitChevronOpen : styles.outfitChevron}
+                      aria-hidden
+                    />
+                  </button>
+                  {lookbookOpen ? (
+                    <figure id={lookbookId} className={styles.outfitPanel}>
+                      <div className={styles.outfitMat}>
+                        <img
+                          className={styles.outfitImage}
+                          src={dress.imageUrl ?? ""}
+                          alt="Lookbook of bright guest dresses and complementary suits"
+                          width={864}
+                          height={1152}
+                          decoding="async"
+                        />
+                      </div>
+                      <div className={styles.outfitLegend}>
+                        <span>Ladies</span>
+                        <span>Gentlemen</span>
+                      </div>
+                      <figcaption className={styles.outfitCaption}>
+                        A lookbook for colour and mood. Not a uniform.
+                      </figcaption>
+                    </figure>
+                  ) : null}
+                </div>
+              ) : dress.imageUrl ? (
                 <img
                   className={styles.dressImage}
                   src={dress.imageUrl}
@@ -520,7 +622,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                 </div>
               ) : null}
             </article>
-          ))}
+            );
+          })}
           </div>
         </section>
       ) : null}
@@ -545,16 +648,43 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               resolveQrCenterMark({
                 heroImageUrl: resolvedHero,
                 coverImageUrl: props.event.coverImageUrl,
-                galleryUrls: props.galleryUrls,
-                introImageUrl: props.design.media?.find((asset) => asset.role === "intro")?.url,
-                mediaUrls: props.design.media
-                  ?.filter((asset) => asset.type === "image")
-                  .map((asset) => asset.url),
+                qrCenterImageUrl: props.event.qrCenterImageUrl,
               }).url
             }
             uploadCta={config.albumUploadCta}
             viewCta={config.albumViewCta}
           />
+        </section>
+      ) : null}
+
+      {aureliaSectionVisible(config, "gifts") ? (
+        <section
+          className={`${styles.section} ${styles.sectionNarrow}`}
+          id="aurelia-gifts"
+          data-testid="aurelia-gifts"
+        >
+          <span className={styles.eyebrow}>{config.giftsEyebrow}</span>
+          <h2 className={styles.heading}>{config.giftsTitle}</h2>
+          <div className={styles.goldRule} />
+          <p className={styles.lede}>{config.giftsLede}</p>
+          <ClientErrorBoundary fallback={null}>
+            <AureliaGiftCheckout
+              giftUrl={props.giftUrl}
+              giftQrImageUrl={props.giftQrImageUrl}
+              giftTitle={props.giftTitle}
+              giftSubtitle={props.giftSubtitle}
+              giftCtaLabel={props.giftCtaLabel}
+              giftPrivacyNote={props.giftPrivacyNote}
+              guestName={props.guestName}
+              guestQrToken={props.guestQrToken}
+              returnPath={
+                props.invitation.uniqueLink
+                  ? `/invite/${props.invitation.uniqueLink}#aurelia-gifts`
+                  : null
+              }
+              detailsNote={config.giftsDetails}
+            />
+          </ClientErrorBoundary>
         </section>
       ) : null}
 
@@ -629,32 +759,6 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
         </section>
       ) : null}
 
-      {aureliaSectionVisible(config, "gifts") ? (
-        <section className={`${styles.section} ${styles.sectionNarrow}`} id="aurelia-gifts">
-          <span className={styles.eyebrow}>{config.giftsEyebrow}</span>
-          <h2 className={styles.heading}>{config.giftsTitle}</h2>
-          <div className={styles.goldRule} />
-          <p className={styles.lede}>{config.giftsLede}</p>
-          <ClientErrorBoundary fallback={null}>
-            <AureliaGiftCheckout
-              giftUrl={props.giftUrl}
-              giftTitle={props.giftTitle}
-              giftSubtitle={props.giftSubtitle}
-              giftCtaLabel={props.giftCtaLabel}
-              giftPrivacyNote={props.giftPrivacyNote}
-              guestName={props.guestName}
-              guestQrToken={props.guestQrToken}
-              returnPath={
-                props.invitation.uniqueLink
-                  ? `/invite/${props.invitation.uniqueLink}#aurelia-gifts`
-                  : null
-              }
-              detailsNote={config.giftsDetails}
-            />
-          </ClientErrorBoundary>
-        </section>
-      ) : null}
-
       {aureliaSectionVisible(config, "faq") ? (
         <section className={`${styles.section} ${styles.sectionNarrow}`} id="aurelia-faq">
           <span className={styles.eyebrow}>{config.faqEyebrow}</span>
@@ -682,8 +786,17 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
 
       <footer className={styles.finale}>
         {familyMonogram ? (
-          <p className={styles.finaleMark}>
-            <img src={familyMonogram} alt={monogramLabel} width={1024} height={1024} />
+          <p
+            className={`${styles.finaleMark} ${isSeraphine ? styles.finaleMarkInk : ""}`}
+            aria-label={monogramLabel}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={isSeraphine ? SERAPHINE_MONOGRAM_CREST : familyMonogram}
+              alt=""
+              width={1024}
+              height={1024}
+            />
           </p>
         ) : (
           <p className={styles.monogram} aria-label={monogramLabel}>

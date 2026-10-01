@@ -35,6 +35,7 @@ import type { ResolvedGuestAction, InvitationActionKey } from "@/lib/invitation/
 import { GuestPortalQuickActions } from "@/components/guest-portal/guest-portal-action-button";
 import { resolveThankYouFontStack } from "@/lib/invitation-theme/fonts";
 import { GuestHelpChip } from "@/components/celeventic-guide/guest-contextual-help";
+import { InviteGuestHelpFab } from "@/components/celeventic-guide/guest-quick-actions";
 import { mergeFashionHouse, resolveFashionHouse } from "@/lib/experience/luxury-fashion";
 
 interface CinematicInvitationSpotlightProps extends PremiumInviteExperienceProps {
@@ -673,6 +674,7 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           </div>
         </div>
       </div>
+      <InviteGuestHelpFab />
     </InviteViewportShell>
   );
 }

@@ -595,6 +595,7 @@ export default async function InvitePage({
         contactPhone: event.contactPhone,
         dressCode: event.dressCode,
         coverImageUrl,
+        qrCenterImageUrl: event.qrCenterImageUrl ?? null,
         deceasedName:
           (productionOrder as { deceasedName?: string | null } | null)?.deceasedName ?? null,
       }}

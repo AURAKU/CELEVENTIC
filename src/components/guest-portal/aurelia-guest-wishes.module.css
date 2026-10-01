@@ -149,7 +149,7 @@
   cursor: pointer;
   border: 1px solid var(--aw-terracotta);
   background: var(--aw-terracotta);
-  color: #f8f4ea;
+  color: var(--aw-ivory);
   font-family: var(--aw-display);
   font-size: 0.68rem;
   letter-spacing: 0.28em;
@@ -282,7 +282,7 @@
 
 .saveBtn {
   background: var(--aw-terracotta) !important;
-  color: #f8f4ea !important;
+  color: var(--aw-ivory) !important;
   border: 1px solid var(--aw-terracotta) !important;
 }
 
@@ -310,4 +310,23 @@
 a.hint:hover {
   color: var(--aw-terracotta);
   text-decoration: underline;
+}
+
+.seraphine .submit,
+.seraphine .saveBtn {
+  background: #4a6350;
+  border-color: #4a6350;
+  color: #fafaf5;
+}
+
+.seraphine .saveBtn {
+  background: #4a6350 !important;
+  border-color: #4a6350 !important;
+  color: #fafaf5 !important;
+}
+
+.seraphine .field:focus-visible,
+.seraphine .letter:focus-visible {
+  border-color: #4a6350 !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #c5b48a 32%, transparent) !important;
 }

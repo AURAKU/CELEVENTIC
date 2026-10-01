@@ -221,7 +221,18 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
 export const SERAPHINE_HERO_FALLBACK = "/templates/seraphine/hero.jpg";
 export const SERAPHINE_MONOGRAM = "/templates/seraphine/monogram-lockup.jpg";
 export const SERAPHINE_MONOGRAM_PNG = "/templates/seraphine/monogram-qr.png";
+export const SERAPHINE_MONOGRAM_CREST = "/templates/seraphine/monogram-crest.png";
+export const SERAPHINE_GUEST_OUTFITS = "/templates/seraphine/guest-outfits-board.jpg";
 export const SERAPHINE_TRADITIONAL_ISO = "2026-11-13T10:00:00+00:00";
+export const SERAPHINE_WHITE_ISO = "2026-11-14T00:00:00+00:00";
+export const SERAPHINE_TRADITIONAL_MAPS =
+  "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent("Westville Homes, 20 Onyasia Street, West Legon, Accra, Ghana");
+export const SERAPHINE_TRADITIONAL_MAP_IMAGE = "/templates/seraphine/westville-homes-map.jpg";
+export const SERAPHINE_WHITE_MAPS =
+  "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent("The Forest Grove Event, adjacent to 335 Place, Dzorwulu, Accra, Ghana");
+export const SERAPHINE_WHITE_MAP_IMAGE = "/templates/seraphine/forest-grove-map.jpg";
 
 /** Traditional ceremony colour mood — tropical celebration, not Aurelia brown. */
 export const SERAPHINE_TROPICAL_PALETTE = [
@@ -232,7 +243,7 @@ export const SERAPHINE_TROPICAL_PALETTE = [
   { name: "Soft Peach", hex: "#F4C4A0" },
 ] as const;
 
-/** White wedding colour direction — sage and ivory, kept to the dress section. */
+/** White wedding colour direction — Sage and White mood board. */
 export const SERAPHINE_SAGE_PALETTE = [
   { name: "Sage", hex: "#8BA888" },
   { name: "Muted Sage", hex: "#A8C0A0" },
@@ -240,6 +251,22 @@ export const SERAPHINE_SAGE_PALETTE = [
   { name: "Warm Cream", hex: "#F5F0E4" },
   { name: "Pale Moss", hex: "#C0C8A8" },
 ] as const;
+
+/**
+ * Invitation chrome for Seraphine. Board swatches stay for dress chips;
+ * espresso/text are deepened so every phrase reads on cream and sage.
+ */
+export const SERAPHINE_THEME_DEFAULTS: AureliaThemeTokens = {
+  ivory: "#FAFAF5",
+  cream: "#F5F0E4",
+  champagne: "#C0C8A8",
+  terracotta: "#5F7A58",
+  blush: "#A8C0A0",
+  espresso: "#2C3A2E",
+  brown: "#3F5344",
+  gold: "#C5B48A",
+  text: "#2F3D32",
+};
 
 /** Independent defaults for Seraphine — customising this never rewrites Aurelia. */
 export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
@@ -250,10 +277,10 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   monogramImageUrl: SERAPHINE_MONOGRAM,
   familyIntro: "Together with their families",
   marriedLine: "Are getting married",
-  dateDisplay: "14 November 2026",
+  dateDisplay: "13 | 14 November 2026",
   heroTagline: "",
   heroImageUrl: SERAPHINE_HERO_FALLBACK,
-  heroOverlay: 0.28,
+  heroOverlay: 0.16,
   rsvpCta: "RSVP",
   rsvpByLabel: "",
   rsvpContactsEyebrow: "Call or WhatsApp",
@@ -267,7 +294,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     "Since then, our story has been filled with laughter, friendship, faith, countless memories, and plenty of love. Through every season, the Good Lord has been good to us, guiding our steps and bringing us to this special moment.",
     "And now, here we are—ready to say “I do.” We would love for you to be there as we begin this new chapter together.",
   ],
-  storySignature: "Kojo & Fafa 🤍",
+  storySignature: "Kojo & Fafa",
   celebrationsEyebrow: "Two days of joy",
   celebrationsTitle: "Celebrate With Us",
   celebrationsLede:
@@ -280,15 +307,17 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   dressLede:
     "Tropical elegance for the traditional ceremony, and bright, airy romance for the wedding day.",
   rsvpTitle: "RSVP",
-  giftsEyebrow: "",
-  giftsTitle: "",
-  giftsLede: "",
+  giftsEyebrow: "With love",
+  giftsTitle: "Gift the Couple",
+  giftsLede:
+    "Your presence is the greatest gift. If you wish to send a cash gift, you may do so securely and privately here.",
   giftsDetails: "",
   faqEyebrow: "Good to know",
   faqTitle: "Questions & Answers",
   finaleScript: "Ready to say I do",
   finaleLine: "Kojo & Fafa",
   countdownTitle: "Until We Say I Do",
+  theme: SERAPHINE_THEME_DEFAULTS,
   ceremonies: [
     {
       id: "traditional",
@@ -299,17 +328,20 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       timeLabel: "10:00 AM",
       venueName: "Westville Homes",
       address: "20 Onyasia Street, West Legon",
+      mapsUrl: SERAPHINE_TRADITIONAL_MAPS,
       startAtIso: SERAPHINE_TRADITIONAL_ISO,
     },
     {
       id: "white",
       kicker: "Ceremony two",
-      title: "The White Wedding",
+      title: "Wedding Ceremony",
       weekday: "Saturday",
       dateLabel: "14 November 2026",
       timeLabel: "Details to be announced",
-      venueName: "Details to be announced",
-      address: "",
+      venueName: "The Forest Grove Event",
+      address: "Adjacent to 335 Place, Dzorwulu",
+      mapsUrl: SERAPHINE_WHITE_MAPS,
+      startAtIso: SERAPHINE_WHITE_ISO,
     },
   ],
   venues: [
@@ -318,6 +350,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       eventLabel: "Traditional Ceremony",
       venueName: "Westville Homes",
       address: "20 Onyasia Street, West Legon",
+      mapsUrl: SERAPHINE_TRADITIONAL_MAPS,
     },
   ],
   dressCodes: [
@@ -328,12 +361,12 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       title: "Traditional Dress Code",
       scriptLine: "Tropical Theme",
       note: "Tropical elegance in vibrant celebration colours. Guests are kindly encouraged to wear Kente, or white with a touch of green.",
-      palette: [...SERAPHINE_TROPICAL_PALETTE],
+      palette: [],
       variant: "light",
     },
     {
       id: "white",
-      eventLabel: "White Wedding",
+      eventLabel: "Wedding Ceremony",
       dateLabel: "Saturday, 14 November",
       title: "Wedding Colour Theme",
       scriptLine: "Soft, airy, romantic",
@@ -343,11 +376,12 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     },
     {
       id: "outfits",
-      eventLabel: "White Wedding",
+      eventLabel: "Wedding Ceremony",
       dateLabel: "Saturday, 14 November",
       title: "Wedding Guest Outfits",
       scriptLine: "Bright colours, airy fabrics, and a touch of whimsical romance.",
       note: "Come dressed in bright colours, airy fabrics, and a touch of whimsical romance. Ladies may complete their look with a fascinator. Men are invited in polished formal looks in refined complementary colours.",
+      imageUrl: SERAPHINE_GUEST_OUTFITS,
       palette: [],
       variant: "light",
     },
@@ -374,6 +408,5 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   ],
   sections: {
     journey: { visible: false },
-    gifts: { visible: false },
   },
 };

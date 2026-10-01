@@ -2,6 +2,8 @@ import {
   aureliaFamilyDefaults,
   isAureliaEditorialLayout,
   mergeAureliaWedding,
+  SERAPHINE_LAYOUT_SLUG,
+  SERAPHINE_MONOGRAM,
 } from "@/lib/experience/aurelia-editorial";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 
@@ -11,6 +13,9 @@ export interface MemoryAlbumIdentity {
   eyebrow: string;
   subtitle: string | null;
   layout: string | null;
+  lede: string | null;
+  logoUrl: string | null;
+  monogram: string | null;
 }
 
 export function invitationLayoutSlug(
@@ -38,11 +43,18 @@ export function resolveMemoryAlbumIdentity(input: {
     );
     const one = config.partnerOneName.trim();
     const two = config.partnerTwoName.trim();
+    const logoUrl =
+      layout === SERAPHINE_LAYOUT_SLUG
+        ? SERAPHINE_MONOGRAM
+        : config.monogramImageUrl?.trim() || null;
     return {
       title: one && two ? `${one} & ${two}` : eventTitle,
       eyebrow: config.albumEyebrow.trim() || "The Album",
       subtitle: config.dateDisplay.trim() || null,
       layout,
+      lede: config.albumLede.trim() || null,
+      logoUrl,
+      monogram: config.monogram.trim() || null,
     };
   }
 
@@ -51,5 +63,8 @@ export function resolveMemoryAlbumIdentity(input: {
     eyebrow: "Event memories",
     subtitle: hostName ? `Hosted by ${hostName}` : null,
     layout,
+    lede: null,
+    logoUrl: null,
+    monogram: null,
   };
 }

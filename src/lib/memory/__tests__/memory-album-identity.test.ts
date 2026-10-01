@@ -35,6 +35,10 @@ test("Seraphine album chrome stays on its own couple names", () => {
   });
 
   assert.equal(identity.title, "Kojo & Fafa");
+  assert.equal(identity.eyebrow, "From your lens");
+  assert.equal(identity.logoUrl, "/templates/seraphine/monogram-lockup.jpg");
+  assert.match(identity.lede ?? "", /shared album/i);
+  assert.equal(identity.monogram, "K & F");
 });
 
 test("non-invitation albums keep the event title and hosted-by line", () => {
@@ -70,4 +74,16 @@ test("Aurelia memory theme keeps editorial ivory terracotta and Cinzel", () => {
   assert.equal(theme.colors.ink, "#3B2A25");
   assert.match(theme.fonts.display, /cinzel/i);
   assert.match(theme.fonts.body, /cormorant/i);
+});
+
+test("Seraphine memory theme uses sage ivory and moss, not Aurelia terracotta", () => {
+  const theme = resolveMemoryTheme({
+    templateSlug: SERAPHINE_LAYOUT_SLUG,
+    design: { layout: SERAPHINE_LAYOUT_SLUG },
+  });
+
+  assert.equal(theme.id, SERAPHINE_LAYOUT_SLUG);
+  assert.equal(theme.colors.surface, "#FAFAF5");
+  assert.equal(theme.colors.accent, "#5F7A58");
+  assert.equal(theme.colors.surfaceAlt, "#F5F0E4");
 });

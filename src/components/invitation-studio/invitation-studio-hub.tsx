@@ -1806,6 +1806,9 @@ export const InvitationStudioHub = forwardRef<
                   <AureliaEditorialStudioPanel
                     value={experience.aureliaWedding}
                     layout={design.layout}
+                    galleryUrls={galleryUrls}
+                    onGalleryChange={onGalleryChange}
+                    orderId={orderId}
                     onChange={(aureliaWedding) =>
                       patchExperience({ aureliaWedding, experienceCustomized: true })
                     }

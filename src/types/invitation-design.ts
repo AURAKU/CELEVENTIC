@@ -105,6 +105,8 @@ export interface InvitationEventData {
   contactPhone: string | null;
   dressCode: string | null;
   coverImageUrl?: string | null;
+  /** Uploaded QR-center photograph. Template stock is never stored here for guest QRs. */
+  qrCenterImageUrl?: string | null;
   /** Funeral order field — preferred memorial headline when set. */
   deceasedName?: string | null;
 }

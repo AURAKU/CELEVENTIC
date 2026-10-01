@@ -5,6 +5,7 @@ import { generateBrandedQrPng } from "@/lib/qr/branded-qr-generator";
 import {
   QR_EXPORT_SIZES,
   QR_DEFAULT_SIZE,
+  CELEVENTIC_OFFICIAL_LOGO,
   parseQrDisplayMode,
   parseQrLogoSizeQuery,
   toSafePublicQrCenterPath,
@@ -14,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { verifyEventAccess } from "@/lib/event-access";
-import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
+import { isPinnedQrCenterAllowed } from "@/lib/qr/qr-center-resolution";
 
 function parseSize(raw: string | null): QrExportSize {
   const n = parseInt(raw ?? String(QR_DEFAULT_SIZE), 10);
@@ -64,25 +65,23 @@ export async function GET(req: Request) {
       const url = rawData.startsWith("http") ? rawData : buildVerifyUrl(rawData);
       const requestedCenter = toSafePublicQrCenterPath(searchParams.get("center"));
       const requestedLogoSize = parseQrLogoSizeQuery(searchParams.get("logoSize"));
-      const uploadedCenter =
-        requestedCenter && isOrganizerUploadedQrCenter(requestedCenter) ? requestedCenter : null;
+      const pinnedCenter =
+        requestedCenter && isPinnedQrCenterAllowed(requestedCenter) ? requestedCenter : null;
       // Guide mode: no center logo — guest phone cameras need every module intact.
-      // `center` query is allowlisted public paths only.
-      let center = mode === "guide" ? null : uploadedCenter;
+      // `center` query is allowlisted public paths only (uploaded photo or official logo).
+      let center = mode === "guide" ? null : pinnedCenter;
       let logoSize = requestedLogoSize;
       if (mode !== "guide" && !center) {
-        if (eventId) {
+        if (eventId && !searchParams.has("center")) {
           const mark = await qrBrandingService.resolveCenterMark(eventId);
           center = mark.url;
           logoSize = logoSize ?? mark.logoSize;
         } else {
-          center = await qrBrandingService.getAdminDefaultLogoUrl();
-          logoSize = logoSize ?? (await qrBrandingService.getAdminDefaultLogoSize());
+          center = CELEVENTIC_OFFICIAL_LOGO;
+          logoSize = logoSize ?? "balanced";
         }
       } else if (!logoSize) {
-        logoSize = eventId
-          ? (await qrBrandingService.resolveCenterMark(eventId)).logoSize
-          : await qrBrandingService.getAdminDefaultLogoSize();
+        logoSize = isPinnedQrCenterAllowed(center) && center !== CELEVENTIC_OFFICIAL_LOGO ? "hero" : "balanced";
       }
 
       if (format === "svg") {
