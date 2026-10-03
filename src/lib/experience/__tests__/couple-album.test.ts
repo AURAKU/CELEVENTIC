@@ -24,6 +24,43 @@ test("couple album keeps organizer uploads and drops template stock", () => {
   assert.equal(items[1]?.type, "video");
 });
 
+test("couple album keeps Seraphine couple portraits and still drops hero stock", () => {
+  const items = resolveAureliaCoupleAlbum({
+    galleryUrls: [
+      "/templates/seraphine/hero.jpg",
+      "/templates/seraphine/couple/01-standing.jpg",
+      "/templates/seraphine/couple/02-gold-laugh.jpg",
+      "/templates/seraphine/monogram-lockup.jpg",
+    ],
+  });
+  assert.deepEqual(
+    items.map((item) => item.url),
+    [
+      "/templates/seraphine/couple/01-standing.jpg",
+      "/templates/seraphine/couple/02-gold-laugh.jpg",
+    ]
+  );
+});
+
+test("couple album keeps Aurelia couple portraits for Our Beginning", () => {
+  const items = resolveAureliaCoupleAlbum({
+    galleryUrls: [
+      "/templates/aurelia/hero.jpg",
+      "/templates/aurelia/story.jpg",
+      "/templates/aurelia/couple/01-standing.jpg",
+      "/templates/aurelia/couple/05-gold-gaze.jpg",
+    ],
+  });
+  assert.deepEqual(
+    items.map((item) => item.url),
+    [
+      "/templates/aurelia/story.jpg",
+      "/templates/aurelia/couple/01-standing.jpg",
+      "/templates/aurelia/couple/05-gold-gaze.jpg",
+    ]
+  );
+});
+
 test("couple album playback puts photographs first and films after the last picture", () => {
   const items = resolveAureliaCoupleAlbum({
     galleryUrls: ["/uploads/a.mp4", "/uploads/one.jpg", "/uploads/two.jpg"],

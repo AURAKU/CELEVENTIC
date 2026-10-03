@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Minimize2, Play, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minimize2, Play, X } from "lucide-react";
 import {
   orderCoupleAlbumForPlayback,
   type AureliaCoupleAlbumItem,
@@ -13,9 +13,11 @@ const PHOTO_HOLD_MS = 4200;
 export function AureliaCoupleAlbum({
   items,
   coupleNames,
+  variant = "frame",
 }: {
   items: AureliaCoupleAlbumItem[];
   coupleNames: string;
+  variant?: "frame" | "story";
 }) {
   const playlist = useMemo(() => orderCoupleAlbumForPlayback(items), [items]);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -24,10 +26,16 @@ export function AureliaCoupleAlbum({
   const current = playlist[slideIndex] ?? null;
   const stageOpen = openIndex != null;
   const inlineVideoRef = useRef<HTMLVideoElement | null>(null);
+  const isStory = variant === "story";
 
   const goNext = useCallback(() => {
     if (playlist.length < 2) return;
     setSlideIndex((currentIndex) => (currentIndex + 1) % playlist.length);
+  }, [playlist.length]);
+
+  const goPrev = useCallback(() => {
+    if (playlist.length < 2) return;
+    setSlideIndex((currentIndex) => (currentIndex - 1 + playlist.length) % playlist.length);
   }, [playlist.length]);
 
   useEffect(() => {
@@ -46,46 +54,98 @@ export function AureliaCoupleAlbum({
     if (stageOpen) inlineVideoRef.current?.pause();
   }, [stageOpen]);
 
+  const slideMedia =
+    current && current.type === "video" ? (
+      <video
+        key={current.id}
+        ref={inlineVideoRef}
+        src={current.url}
+        poster={current.posterUrl || undefined}
+        muted
+        autoPlay={!stageOpen}
+        playsInline
+        preload="metadata"
+        onEnded={goNext}
+      />
+    ) : current ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        key={current.id}
+        className={isStory ? styles.storyImage : undefined}
+        src={current.url}
+        alt={current.caption || `${coupleNames}`}
+        width={730}
+        height={1024}
+        sizes="100vw"
+        decoding="async"
+      />
+    ) : null;
+
   return (
-    <div className={styles.coupleAlbum} data-testid="aurelia-couple-album">
-      <p className={styles.coupleAlbumKicker}>Photographs &amp; films</p>
-      {filled ? (
-        <p className={styles.coupleAlbumLede}>
-          Tap the frame to open {coupleNames}. Photographs play one at a time, then any film begins.
-        </p>
-      ) : null}
+    <div
+      className={`${styles.coupleAlbum} ${isStory ? styles.storyGallery : ""}`}
+      data-testid="aurelia-couple-album"
+    >
+      {isStory ? null : (
+        <>
+          <p className={styles.coupleAlbumKicker}>Photographs &amp; films</p>
+          {filled ? (
+            <p className={styles.coupleAlbumLede}>
+              Tap the frame to open {coupleNames}. Photographs play one at a time, then any film begins.
+            </p>
+          ) : null}
+        </>
+      )}
       <div className={styles.coupleReel} role="list">
         {filled && current ? (
-          <button
-            type="button"
-            className={styles.coupleTile}
-            role="listitem"
-            aria-label={`Open ${coupleNames} photographs and films, ${slideIndex + 1} of ${playlist.length}`}
-            onClick={() => setOpenIndex(slideIndex)}
-          >
-            {current.type === "video" ? (
-              <video
-                key={current.id}
-                ref={inlineVideoRef}
-                src={current.url}
-                poster={current.posterUrl || undefined}
-                muted
-                autoPlay={!stageOpen}
-                playsInline
-                preload="metadata"
-                onEnded={goNext}
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={current.id} src={current.url} alt={current.caption || ""} />
-            )}
-            {current.type === "video" ? (
-              <span className={styles.couplePlay} aria-hidden>
-                <Play size={16} fill="currentColor" />
-              </span>
-            ) : null}
-          </button>
-        ) : (
+          isStory ? (
+            <div className={styles.storyGalleryFrame} role="listitem">
+              <button
+                type="button"
+                className={styles.storyGalleryOpen}
+                aria-label={`Open ${coupleNames} photographs, ${slideIndex + 1} of ${playlist.length}`}
+                onClick={() => setOpenIndex(slideIndex)}
+              >
+                {slideMedia}
+              </button>
+              {playlist.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.storyGalleryNav} ${styles.storyGalleryNavPrev}`}
+                    aria-label="Previous photograph"
+                    onClick={goPrev}
+                  >
+                    <ChevronLeft size={22} strokeWidth={1.75} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.storyGalleryNav} ${styles.storyGalleryNavNext}`}
+                    aria-label="Next photograph"
+                    onClick={goNext}
+                  >
+                    <ChevronRight size={22} strokeWidth={1.75} />
+                  </button>
+                </>
+              ) : null}
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={styles.coupleTile}
+              role="listitem"
+              aria-label={`Open ${coupleNames} photographs and films, ${slideIndex + 1} of ${playlist.length}`}
+              onClick={() => setOpenIndex(slideIndex)}
+            >
+              {slideMedia}
+              {current.type === "video" ? (
+                <span className={styles.couplePlay} aria-hidden>
+                  <Play size={16} fill="currentColor" />
+                </span>
+              ) : null}
+            </button>
+          )
+        ) : isStory ? null : (
           <div className={`${styles.coupleTile} ${styles.coupleTileGhost}`} role="listitem" aria-hidden />
         )}
       </div>

@@ -645,6 +645,84 @@
   border: 0;
 }
 
+.storyGallery {
+  width: 100%;
+  margin: 0;
+}
+
+.storyGalleryFrame {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.storyGalleryOpen {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.storyGalleryFrame img,
+.storyGalleryFrame video {
+  position: static;
+  inset: auto;
+  width: 100%;
+  height: min(86svh, 46rem);
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  background: color-mix(in srgb, var(--wedding-cream) 70%, var(--wedding-ivory));
+}
+
+.storyGalleryNav {
+  position: absolute;
+  top: auto;
+  bottom: 1rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 55%, rgba(255, 255, 255, 0.9));
+  background: color-mix(in srgb, #fff 92%, var(--wedding-ivory));
+  color: var(--wedding-espresso);
+  box-shadow: 0 8px 22px rgba(53, 32, 25, 0.14);
+  cursor: pointer;
+}
+
+.storyGalleryNavPrev {
+  left: 0.7rem;
+  right: auto;
+}
+
+.storyGalleryNavNext {
+  right: 0.7rem;
+}
+
+.storyGallery .coupleDots {
+  padding: 0.9rem 0 0.2rem;
+}
+
+.storyGallery .coupleDot {
+  width: 0.62rem;
+  height: 0.62rem;
+  opacity: 0.4;
+}
+
+.storyGallery .coupleDotActive {
+  opacity: 1;
+}
+
 .storyCopy {
   padding: clamp(2.4rem, 7cqi, 3.6rem) var(--aurelia-gutter) clamp(2.6rem, 7.5cqi, 3.8rem);
 }

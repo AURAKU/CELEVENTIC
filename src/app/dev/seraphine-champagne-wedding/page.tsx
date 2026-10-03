@@ -5,7 +5,6 @@ import { ensureDemoMemoryLinks } from "@/lib/memory/ensure-event-memory-links";
 import {
   SERAPHINE_CATALOG_SLUG,
   SERAPHINE_LAYOUT_SLUG,
-  SERAPHINE_MONOGRAM_PNG,
   SERAPHINE_OPENING_ID,
   withAureliaAlbumQrCenter,
 } from "@/lib/experience/aurelia-editorial";
@@ -47,7 +46,11 @@ export default async function SeraphineChampagneRuntimePage({
       testId="seraphine-runtime"
       memoryUploadUrl={memory?.uploadUrl ?? null}
       memoryAlbumUrl={memory?.albumUrl ?? null}
-      memoryUploadQrImageUrl={withAureliaAlbumQrCenter(memory?.uploadQrImageUrl, SERAPHINE_MONOGRAM_PNG)}
+      memoryUploadQrImageUrl={withAureliaAlbumQrCenter(
+        memory?.uploadQrImageUrl,
+        null,
+        SERAPHINE_LAYOUT_SLUG
+      )}
       memoryEventId={memory?.eventId ?? null}
       memoryAlbumTitle={memory?.eventTitle ?? "Kojo & Fafa"}
       giftUrl={giftPlacement?.giftUrl ?? null}

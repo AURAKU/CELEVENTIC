@@ -11,7 +11,11 @@ import {
   AURELIA_WEDDING_DEFAULTS,
   AURELIA_WHITE_ISO,
   AURELIA_WHITE_MAPS,
+  AURELIA_COUPLE_GALLERY,
+  AURELIA_QR_CENTER,
+  AURELIA_STORY_FALLBACK,
   SERAPHINE_CATALOG_SLUG,
+  SERAPHINE_COUPLE_GALLERY,
   SERAPHINE_GUEST_OUTFITS,
   SERAPHINE_INTRO_ID,
   SERAPHINE_LAYOUT_SLUG,
@@ -340,6 +344,13 @@ test("Aurelia plays Ordinary as the invitation score", () => {
   assert.equal(layout.title, AURELIA_INVITE_MUSIC_TITLE);
   assert.equal(musicProfileUrl(layout), AURELIA_INVITE_MUSIC);
   assert.equal(existsSync("public/templates/aurelia/ordinary.mp3"), true);
+  assert.equal(AURELIA_COUPLE_GALLERY.length, 6);
+  assert.equal(AURELIA_COUPLE_GALLERY[0], AURELIA_STORY_FALLBACK);
+  for (const url of AURELIA_COUPLE_GALLERY) {
+    assert.equal(existsSync(`public${url}`), true, url);
+  }
+  assert.equal(existsSync(`public${AURELIA_QR_CENTER}`), true);
+  assert.ok(statSync(`public${AURELIA_QR_CENTER}`).size > 10_000);
   assert.ok(statSync("public/templates/aurelia/ordinary.mp3").size > 1_000_000);
   assert.equal(readFileSync("public/templates/aurelia/ordinary.mp3").subarray(0, 3).toString("ascii"), "ID3");
   const runtimeSrc = readFileSync(
@@ -729,11 +740,16 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.equal(existsSync("public/templates/seraphine/monogram-lockup.jpg"), true);
   assert.equal(existsSync("public/templates/seraphine/monogram-qr.png"), true);
   assert.equal(existsSync("public/templates/seraphine/hero.jpg"), true);
+  assert.equal(SERAPHINE_COUPLE_GALLERY.length, 5);
+  for (const url of SERAPHINE_COUPLE_GALLERY) {
+    assert.equal(existsSync(`public${url}`), true, url);
+  }
   assert.equal(SERAPHINE_MONOGRAM_PNG, "/templates/seraphine/monogram-qr.png");
   const templateSrc = readFileSync(
     "src/components/invitation/templates/aurelia-editorial-wedding.tsx",
     "utf8"
   );
+  assert.match(templateSrc, /SERAPHINE_COUPLE_GALLERY/);
   assert.match(templateSrc, /monogramMark/);
   assert.match(templateSrc, /familyMonogram/);
   assert.doesNotMatch(templateSrc, /styles\.heroMonogram/);
@@ -745,6 +761,13 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.match(templateSrc, /id="aurelia-gifts"/);
   assert.match(templateSrc, /AureliaGiftCheckout/);
   assert.match(templateSrc, /AureliaCoupleAlbum/);
+  assert.match(templateSrc, /variant="story"/);
+  assert.match(templateSrc, /id="aurelia-story"/);
+  assert.match(templateSrc, /AURELIA_COUPLE_GALLERY/);
+  assert.match(
+    readFileSync("src/components/invitation/templates/aurelia-couple-album.tsx", "utf8"),
+    /storyGalleryNav/
+  );
   assert.doesNotMatch(
     readFileSync("public/templates/seraphine/monogram.svg", "utf8"),
     /Kojo and Fafa|14\.11\.2026/i
@@ -826,14 +849,14 @@ test("Aurelia guest copy has no pause dashes between clauses", () => {
   );
 });
 
-test("Aurelia album QR pins an uploaded couple photo, otherwise the Celeventic logo", () => {
+test("Aurelia album QR pins the looking-back couple portrait, unless an organizer uploaded a QR-center photo", () => {
   const url = withAureliaAlbumQrCenter(
     "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload%2Ftok&eventId=evt_1&size=512"
   );
   assert.ok(url);
   const parsed = new URL(url!, "https://www.celeventic.com");
-  assert.equal(parsed.searchParams.get("center"), "/brand/logo-full.png");
-  assert.equal(parsed.searchParams.get("logoSize"), "balanced");
+  assert.equal(parsed.searchParams.get("center"), AURELIA_QR_CENTER);
+  assert.equal(parsed.searchParams.get("logoSize"), "hero");
   assert.equal(parsed.searchParams.get("eventId"), "evt_1");
   const uploaded = withAureliaAlbumQrCenter(
     "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload%2Ftok&size=512",
@@ -847,9 +870,28 @@ test("Aurelia album QR pins an uploaded couple photo, otherwise the Celeventic l
     SERAPHINE_MONOGRAM_PNG
   );
   const stockParsed = new URL(stockIgnored!, "https://www.celeventic.com");
-  assert.equal(stockParsed.searchParams.get("center"), "/brand/logo-full.png");
+  assert.equal(stockParsed.searchParams.get("center"), AURELIA_QR_CENTER);
+  const seraphine = withAureliaAlbumQrCenter(
+    "/api/qr/image?data=https%3A%2F%2Fexample.com%2Fmemory-upload%2Ftok&size=512",
+    SERAPHINE_MONOGRAM_PNG,
+    SERAPHINE_LAYOUT_SLUG
+  );
+  const seraphineParsed = new URL(seraphine!, "https://www.celeventic.com");
+  assert.equal(seraphineParsed.searchParams.get("center"), "/brand/logo-full.png");
+  assert.equal(seraphineParsed.searchParams.get("logoSize"), "balanced");
   const inviteSrc = readFileSync("src/app/invite/[link]/page.tsx", "utf8");
   assert.match(inviteSrc, /withAureliaAlbumQrCenter/);
+  assert.match(inviteSrc, /event\.qrCenterImageUrl/);
+  assert.doesNotMatch(
+    inviteSrc.slice(inviteSrc.indexOf("memoryUploadQrImageUrl")),
+    /qrCenterMark\.url/
+  );
+  const templateSrc = readFileSync(
+    "src/components/invitation/templates/aurelia-editorial-wedding.tsx",
+    "utf8"
+  );
+  assert.match(templateSrc, /AURELIA_QR_CENTER/);
+  assert.doesNotMatch(templateSrc, /resolveQrCenterMark/);
   const routeSrc = readFileSync("src/app/api/qr/image/route.ts", "utf8");
   assert.match(routeSrc, /toSafePublicQrCenterPath/);
   assert.match(routeSrc, /isPinnedQrCenterAllowed/);

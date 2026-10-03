@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { CELEVENTIC_OFFICIAL_LOGO } from "../qr-constants";
 import {
   extractDesignQrPhotoSources,
+  isFamilyAlbumQrCenter,
   isOfficialCeleventicQrCenter,
   isOrganizerUploadedQrCenter,
   isPinnedQrCenterAllowed,
@@ -67,6 +68,10 @@ describe("QR center resolution", () => {
 
   it("never treats template stock, brand marks, Unsplash, or WhatsApp art as a couple photo", () => {
     assert.equal(isStockQrCenter("/templates/aurelia/hero.jpg"), true);
+    assert.equal(isFamilyAlbumQrCenter("/templates/aurelia/qr-center.jpg"), true);
+    assert.equal(isStockQrCenter("/templates/aurelia/qr-center.jpg"), false);
+    assert.equal(isOrganizerUploadedQrCenter("/templates/aurelia/qr-center.jpg"), false);
+    assert.equal(isPinnedQrCenterAllowed("/templates/aurelia/qr-center.jpg"), true);
     assert.equal(isStockQrCenter("/brand/logo-full.png"), true);
     assert.equal(isStockQrCenter("/icons/whatsapp.png"), true);
     assert.equal(isOrganizerUploadedQrCenter("/uploads/events/whatsapp-image-hero.jpg"), true);
