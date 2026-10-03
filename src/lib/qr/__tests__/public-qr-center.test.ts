@@ -9,6 +9,11 @@ import {
 describe("public QR center allowlist", () => {
   it("accepts brand and upload image paths, not catalogue stock", () => {
     assert.equal(toSafePublicQrCenterPath("/templates/aurelia/hero.jpg"), null);
+    assert.equal(
+      toSafePublicQrCenterPath("/templates/aurelia/qr-center.jpg"),
+      "/templates/aurelia/qr-center.jpg"
+    );
+    assert.equal(toSafePublicQrCenterPath("/templates/seraphine/hero.jpg"), null);
     assert.equal(toSafePublicQrCenterPath("/brand/logo-full.png"), "/brand/logo-full.png");
     assert.equal(toSafePublicQrCenterPath("/uploads/event/hero.webp"), "/uploads/event/hero.webp");
     assert.equal(

@@ -518,23 +518,24 @@ export const LAYOUT_MEDIA_IDENTITY: Record<string, LayoutMediaPack> = {
     hero: "/templates/aurelia/hero.jpg",
     background: "/templates/aurelia/hero.jpg",
     gallery: [
-      "/templates/aurelia/hero.jpg",
       "/templates/aurelia/story.jpg",
-      u("1522413452208-996ff3f3e740", 1600),
-      u("1606800052052-a08af7148866", 1600),
-      u("1523438885200-e635ba2c371e", 1600),
-      u("1519225421980-715cb0215aed", 1600),
+      "/templates/aurelia/couple/01-standing.jpg",
+      "/templates/aurelia/couple/02-gold-laugh.jpg",
+      "/templates/aurelia/couple/03-black-and-white.jpg",
+      "/templates/aurelia/couple/04-chair.jpg",
+      "/templates/aurelia/couple/05-gold-gaze.jpg",
     ],
-    video: "https://assets.mixkit.co/videos/preview/mixkit-golden-bokeh-particles-4552-large.mp4",
   },
   "seraphine-champagne-wedding": {
     hero: "/templates/seraphine/hero.jpg",
     background: "/templates/seraphine/hero.jpg",
     gallery: [
-      "/templates/seraphine/monogram-lockup.png",
-      "/templates/seraphine/hero.jpg",
+      "/templates/seraphine/couple/01-standing.jpg",
+      "/templates/seraphine/couple/02-gold-laugh.jpg",
+      "/templates/seraphine/couple/03-black-and-white.jpg",
+      "/templates/seraphine/couple/04-chair.jpg",
+      "/templates/seraphine/couple/05-gold-gaze.jpg",
     ],
-    video: "https://assets.mixkit.co/videos/preview/mixkit-golden-bokeh-particles-4552-large.mp4",
   },
 };
 

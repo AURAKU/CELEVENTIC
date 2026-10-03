@@ -17,7 +17,7 @@ export async function TemplateDetailLivePreview({ template }: { template: Catalo
       memoryAlbumUrl={memoryLinks?.albumUrl ?? null}
       memoryUploadQrImageUrl={
         isAureliaEditorialLayout(template.layoutSlug)
-          ? withAureliaAlbumQrCenter(memoryLinks?.uploadQrImageUrl)
+          ? withAureliaAlbumQrCenter(memoryLinks?.uploadQrImageUrl, null, template.layoutSlug)
           : memoryLinks?.uploadQrImageUrl ?? null
       }
       memoryEventId={memoryLinks?.eventId ?? null}
