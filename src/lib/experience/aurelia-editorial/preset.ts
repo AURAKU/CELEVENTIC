@@ -30,6 +30,17 @@ export const AURELIA_TRADITIONAL_PALETTE = [
 
 export const AURELIA_HERO_FALLBACK = "/templates/aurelia/hero.jpg";
 export const AURELIA_STORY_FALLBACK = "/templates/aurelia/story.jpg";
+/** Album QR inset — Enock & Ruth looking back, rust dress and ivory jacket. */
+export const AURELIA_QR_CENTER = "/templates/aurelia/qr-center.jpg";
+/** Enock & Ruth portraits for Our Beginning. Starts with the seated story photograph. */
+export const AURELIA_COUPLE_GALLERY = [
+  AURELIA_STORY_FALLBACK,
+  "/templates/aurelia/couple/01-standing.jpg",
+  "/templates/aurelia/couple/02-gold-laugh.jpg",
+  "/templates/aurelia/couple/03-black-and-white.jpg",
+  "/templates/aurelia/couple/04-chair.jpg",
+  "/templates/aurelia/couple/05-gold-gaze.jpg",
+] as const;
 export const AURELIA_INVITE_MUSIC = "/templates/aurelia/ordinary.mp3";
 export const AURELIA_INVITE_MUSIC_TITLE = "Ordinary";
 export const AURELIA_INVITE_MUSIC_DURATION_SEC = 188.21;
@@ -219,6 +230,14 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
 };
 
 export const SERAPHINE_HERO_FALLBACK = "/templates/seraphine/hero.jpg";
+/** Kojo & Fafa portraits for the invitation photograph gallery. */
+export const SERAPHINE_COUPLE_GALLERY = [
+  "/templates/seraphine/couple/01-standing.jpg",
+  "/templates/seraphine/couple/02-gold-laugh.jpg",
+  "/templates/seraphine/couple/03-black-and-white.jpg",
+  "/templates/seraphine/couple/04-chair.jpg",
+  "/templates/seraphine/couple/05-gold-gaze.jpg",
+] as const;
 export const SERAPHINE_MONOGRAM = "/templates/seraphine/monogram-lockup.jpg";
 export const SERAPHINE_MONOGRAM_PNG = "/templates/seraphine/monogram-qr.png";
 export const SERAPHINE_MONOGRAM_CREST = "/templates/seraphine/monogram-crest.png";

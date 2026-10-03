@@ -1,7 +1,12 @@
 import { CELEVENTIC_OFFICIAL_LOGO, withPublicQrCenter } from "@/lib/qr/qr-constants";
-import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
+import {
+  isFamilyAlbumQrCenter,
+  isOfficialCeleventicQrCenter,
+  isOrganizerUploadedQrCenter,
+} from "@/lib/qr/qr-center-resolution";
 import {
   AURELIA_HERO_FALLBACK,
+  AURELIA_QR_CENTER,
   AURELIA_THEME_DEFAULTS,
   AURELIA_WEDDING_DEFAULTS,
   AURELIA_WHITE_ISO,
@@ -134,15 +139,24 @@ function sanitizeAureliaGuestCopy(config: AureliaWeddingConfig): AureliaWeddingC
   };
 }
 
-/** Album QR uses an uploaded couple/hero photo, otherwise the Celeventic logo. */
+/**
+ * Album QR inset: organizer-uploaded QR-center photo, otherwise the looking-back
+ * couple portrait on Aurelia. Hero/cover/stock never win this slot. Seraphine
+ * keeps the official logo unless the organizer uploaded a QR-center photo.
+ */
 export function withAureliaAlbumQrCenter(
   qrImageUrl?: string | null,
-  centerImageUrl?: string | null
+  centerImageUrl?: string | null,
+  layout?: string | null
 ): string | null {
   if (!qrImageUrl) return null;
   const uploaded = isOrganizerUploadedQrCenter(centerImageUrl);
-  const center = uploaded ? centerImageUrl!.trim() : CELEVENTIC_OFFICIAL_LOGO;
-  return withPublicQrCenter(qrImageUrl, center, uploaded ? "hero" : "balanced");
+  const family = isFamilyAlbumQrCenter(centerImageUrl);
+  const fallback =
+    layout === SERAPHINE_LAYOUT_SLUG ? CELEVENTIC_OFFICIAL_LOGO : AURELIA_QR_CENTER;
+  const center = uploaded || family ? centerImageUrl!.trim() : fallback;
+  const photograph = !isOfficialCeleventicQrCenter(center);
+  return withPublicQrCenter(qrImageUrl, center, photograph ? "hero" : "balanced");
 }
 
 function mergeTheme(

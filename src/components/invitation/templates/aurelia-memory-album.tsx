@@ -8,14 +8,19 @@ import { LiveAlbumExperience } from "@/components/memory/live-album-experience";
 import { trackInviteEvent } from "@/lib/analytics/invite-events";
 import { liveAlbumPaths } from "@/lib/memory/live-album";
 import { CELEVENTIC_OFFICIAL_LOGO } from "@/lib/qr/qr-constants";
-import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
+import {
+  isFamilyAlbumQrCenter,
+  isOrganizerUploadedQrCenter,
+} from "@/lib/qr/qr-center-resolution";
 import styles from "./aurelia-editorial-wedding.module.css";
 
 type Panel = "idle" | "lens";
 
 function familyHeroQrSrc(targetUrl: string | null, centerImageUrl: string) {
   if (!targetUrl) return null;
-  const logoSize = isOrganizerUploadedQrCenter(centerImageUrl) ? "hero" : "balanced";
+  const photograph =
+    isOrganizerUploadedQrCenter(centerImageUrl) || isFamilyAlbumQrCenter(centerImageUrl);
+  const logoSize = photograph ? "hero" : "balanced";
   return `/api/qr/image?data=${encodeURIComponent(targetUrl)}&size=512&center=${encodeURIComponent(centerImageUrl)}&logoSize=${logoSize}`;
 }
 

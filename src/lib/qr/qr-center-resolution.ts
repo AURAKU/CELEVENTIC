@@ -32,10 +32,20 @@ function pathnameOf(value: string): string {
   return value;
 }
 
+/** Dedicated Aurelia/Seraphine album inset — Enock & Ruth looking-back portrait. */
+export function isFamilyAlbumQrCenter(value?: string | null): boolean {
+  const url = trimUrl(value);
+  if (!url) return false;
+  return /\/templates\/(?:aurelia|seraphine)\/qr-center\.(?:jpe?g|png|webp)$/i.test(
+    pathnameOf(url)
+  );
+}
+
 /** Catalogue / brand / WhatsApp art is never an organizer photo. */
 export function isStockQrCenter(value?: string | null): boolean {
   const url = trimUrl(value);
   if (!url) return true;
+  if (isFamilyAlbumQrCenter(url)) return false;
   return STOCK_CENTER_RE.test(pathnameOf(url));
 }
 
@@ -58,9 +68,13 @@ export function isOrganizerUploadedQrCenter(value?: string | null): boolean {
   return isUploadedMediaUrl(url);
 }
 
-/** A `center=` query may pin an uploaded photo or the official logo — never stock art. */
+/** A `center=` query may pin an uploaded photo, the family album portrait, or the official logo. */
 export function isPinnedQrCenterAllowed(value?: string | null): boolean {
-  return isOrganizerUploadedQrCenter(value) || isOfficialCeleventicQrCenter(value);
+  return (
+    isOrganizerUploadedQrCenter(value) ||
+    isOfficialCeleventicQrCenter(value) ||
+    isFamilyAlbumQrCenter(value)
+  );
 }
 
 function firstUploaded(values: Array<string | null | undefined>): string | null {

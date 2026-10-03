@@ -11,16 +11,20 @@ export type AureliaCoupleAlbumItem = {
   posterUrl?: string | null;
 };
 
+const FAMILY_COUPLE_PORTRAIT_RE =
+  /\/templates\/(?:aurelia|seraphine)\/(?:couple\/|story\.(?:jpe?g|png|webp)$)/i;
 const STOCK_COUPLE_ALBUM_RE =
   /\/templates\/|\/brand\/|unsplash|picsum|placeholder|lorempixel|monogram-lockup|guest-outfits/i;
 
 export function isAureliaCoupleAlbumStock(url?: string | null): boolean {
   const value = url?.trim() ?? "";
   if (!value) return true;
+  if (FAMILY_COUPLE_PORTRAIT_RE.test(value)) return false;
   return STOCK_COUPLE_ALBUM_RE.test(value);
 }
 
 function isCoupleAlbumSource(url: string): boolean {
+  if (FAMILY_COUPLE_PORTRAIT_RE.test(url)) return true;
   if (isAureliaCoupleAlbumStock(url)) return false;
   if (isUploadedMediaUrl(url)) return true;
   return url.startsWith("/uploads/") || url.startsWith("/api/uploads/");

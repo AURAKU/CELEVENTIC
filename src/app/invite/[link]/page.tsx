@@ -633,7 +633,8 @@ export default async function InvitePage({
         (isAureliaEditorialLayout(design.layout)
           ? withAureliaAlbumQrCenter(
               memoryLinks?.uploadQrImageUrl,
-              qrCenterMark.url
+              event.qrCenterImageUrl,
+              design.layout
             )
           : resolvePublicMediaUrl(memoryLinks?.uploadQrImageUrl)) || null
       }
