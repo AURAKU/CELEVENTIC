@@ -114,6 +114,55 @@ export function resolveSocialInvitationGuest(input: {
 }
 
 export function formatSocialGuestGreeting(displayName?: string | null): string | null {
-  const name = sanitizeSocialGuestDisplayName(displayName);
-  return name ? `Dear ${name},` : null;
+  const parsed = parseAssignedGuestGreeting(displayName);
+  return parsed ? `${parsed.line},` : null;
+}
+
+const GUEST_HONORIFICS: Array<{ match: RegExp; label: string }> = [
+  { match: /^(mr\.?\s*(?:and|&)\s*mrs\.?)(?=\s|$|,)/i, label: "Mr & Mrs" },
+  { match: /^(pastor)(?=\s|$|,)/i, label: "Pastor" },
+  { match: /^(mrs\.?\s*(?:and|&)\s*mr\.?)(?=\s|$|,)/i, label: "Mr & Mrs" },
+  { match: /^(miss)(?=\s|$|,)/i, label: "Miss" },
+  { match: /^(mrs\.?)(?=\s|$|,)/i, label: "Mrs" },
+  { match: /^(ms\.?)(?=\s|$|,)/i, label: "Ms" },
+  { match: /^(mr\.?)(?=\s|$|,)/i, label: "Mr" },
+  { match: /^(dr\.?)(?=\s|$|,)/i, label: "Dr" },
+  { match: /^(prof(?:essor)?\.?)(?=\s|$|,)/i, label: "Prof" },
+  { match: /^(rev(?:erend)?\.?)(?=\s|$|,)/i, label: "Rev" },
+];
+
+export type AssignedGuestGreeting = {
+  salutation: "Dear";
+  honorific: string | null;
+  name: string;
+  line: string;
+};
+
+/**
+ * Stationery greeting for an assigned invitation.
+ * Keeps an honorific the organiser already typed (Mr / Mrs / Miss / Ms / Dr).
+ * Never invents gender or a title when the stored name has none.
+ */
+export function parseAssignedGuestGreeting(raw?: string | null): AssignedGuestGreeting | null {
+  const sanitized = sanitizeSocialGuestDisplayName(raw);
+  if (!sanitized) return null;
+  const stripped = sanitized.replace(/^dear\s+/i, "").trim();
+  if (!stripped) return null;
+
+  for (const entry of GUEST_HONORIFICS) {
+    const hit = stripped.match(entry.match);
+    if (!hit) continue;
+    const rest = stripped.slice(hit[0].length).replace(/^[\s,.-]+/, "").trim();
+    if (!rest) {
+      return { salutation: "Dear", honorific: entry.label, name: "", line: `Dear ${entry.label}` };
+    }
+    return {
+      salutation: "Dear",
+      honorific: entry.label,
+      name: rest,
+      line: `Dear ${entry.label} ${rest}`,
+    };
+  }
+
+  return { salutation: "Dear", honorific: null, name: stripped, line: `Dear ${stripped}` };
 }

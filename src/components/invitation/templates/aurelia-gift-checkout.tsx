@@ -1,15 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Gift, Loader2, Lock, ShieldCheck } from "lucide-react";
-import type { PublicGiftCampaignView } from "@/lib/gifts/gift-privacy";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Gift,
+  Loader2,
+  Lock,
+  Printer,
+  RotateCw,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
+import type { EventGiftType } from "@prisma/client";
+import type { PublicGiftCampaignView, PublicGiftPaymentView } from "@/lib/gifts/gift-privacy";
 import {
   detectMethodFromPhone,
   listEnabledGiftPaymentMethods,
   type GiftPaymentMethodId,
 } from "@/lib/gifts/gift-providers";
 import { GiftNetworkLogo } from "@/components/gifts/gift-network-logo";
-import { DEFAULT_MIN_AMOUNT_MINOR, DEFAULT_SUGGESTED_AMOUNTS_MINOR } from "@/lib/gifts/gift-copy";
+import {
+  DEFAULT_MIN_AMOUNT_MINOR,
+  DEFAULT_SUGGESTED_AMOUNTS_MINOR,
+  GIFT_TYPE_LABELS,
+  getGiftCopy,
+} from "@/lib/gifts/gift-copy";
 import { formatMinor, MoneyError, toMinorUnits } from "@/lib/gifts/money";
 import styles from "./aurelia-editorial-wedding.module.css";
 
@@ -18,6 +34,10 @@ type MethodOption = {
   label: string;
   shortLabel: string;
 };
+
+type CheckoutPhase = "form" | "confirming" | "success" | "failed";
+
+const GIFT_REF_KEY = "celeventic.invite-gift.ref";
 
 function publicTokenFromGiftUrl(url?: string | null): string | null {
   if (!url) return null;
@@ -32,6 +52,67 @@ function publicTokenFromGiftUrl(url?: string | null): string | null {
   }
 }
 
+function giftReturnPath(fallback?: string | null): string | null {
+  if (typeof window !== "undefined") {
+    const { pathname, search } = window.location;
+    if (pathname.startsWith("/invite/") || pathname.startsWith("/dev/")) {
+      return `${pathname}${search}#aurelia-gifts`;
+    }
+  }
+  return fallback ?? null;
+}
+
+function readGiftReference(): string | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = (params.get("gift") || params.get("trxref") || params.get("reference") || "").trim();
+  if (fromQuery) return fromQuery;
+  try {
+    return sessionStorage.getItem(GIFT_REF_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function rememberGiftReference(reference: string) {
+  try {
+    sessionStorage.setItem(GIFT_REF_KEY, reference);
+  } catch {
+    /* private mode */
+  }
+}
+
+function forgetGiftReference() {
+  try {
+    sessionStorage.removeItem(GIFT_REF_KEY);
+  } catch {
+    /* private mode */
+  }
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("gift");
+  url.searchParams.delete("trxref");
+  url.searchParams.delete("reference");
+  const next = `${url.pathname}${url.search}#aurelia-gifts`;
+  window.history.replaceState({}, "", next);
+}
+
+async function loadGiftPayment(reference: string): Promise<PublicGiftPaymentView | null> {
+  const verify = await fetch("/api/gifts/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reference }),
+  });
+  if (verify.ok) {
+    const payload = await verify.json().catch(() => ({}));
+    return (payload.data as PublicGiftPaymentView) ?? null;
+  }
+  const status = await fetch(`/api/gifts/status/${encodeURIComponent(reference)}`);
+  if (!status.ok) return null;
+  const payload = await status.json().catch(() => ({}));
+  return (payload.data as PublicGiftPaymentView) ?? null;
+}
+
 export function AureliaGiftCheckout({
   giftUrl,
   giftQrImageUrl,
@@ -39,10 +120,10 @@ export function AureliaGiftCheckout({
   giftSubtitle: _giftSubtitle,
   giftCtaLabel,
   giftPrivacyNote,
-  guestName: initialGuestName,
   guestQrToken,
   returnPath,
   detailsNote,
+  collapsible = false,
 }: {
   giftUrl?: string | null;
   giftQrImageUrl?: string | null;
@@ -54,6 +135,7 @@ export function AureliaGiftCheckout({
   guestQrToken?: string | null;
   returnPath?: string | null;
   detailsNote?: string;
+  collapsible?: boolean;
 }) {
   const token = useMemo(() => publicTokenFromGiftUrl(giftUrl), [giftUrl]);
   const fallbackMethods = useMemo<MethodOption[]>(
@@ -72,12 +154,18 @@ export function AureliaGiftCheckout({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [amountMinor, setAmountMinor] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
-  const [guestName, setGuestName] = useState(initialGuestName?.trim() ?? "");
+  const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestMessage, setGuestMessage] = useState("");
   const [method, setMethod] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(!collapsible);
+  const [phase, setPhase] = useState<CheckoutPhase>("form");
+  const [payment, setPayment] = useState<PublicGiftPaymentView | null>(null);
+  const [checking, setChecking] = useState(false);
+  const pollCount = useRef(0);
+  const panelId = useId();
 
   useEffect(() => {
     if (!token) {
@@ -95,8 +183,6 @@ export function AureliaGiftCheckout({
         if (Array.isArray(payload.data.methods) && payload.data.methods.length) {
           setMethods(payload.data.methods.filter((item: MethodOption) => item.id !== "CARD"));
         }
-        const prefill = payload.data.campaign?.guest?.name;
-        if (typeof prefill === "string" && prefill.trim()) setGuestName(prefill.trim());
       })
       .catch((err: Error) => {
         if (!cancelled) setLoadError(err.message);
@@ -109,6 +195,90 @@ export function AureliaGiftCheckout({
     };
   }, [token, guestQrToken]);
 
+  useEffect(() => {
+    if (!collapsible) return;
+    const sync = () => {
+      if (window.location.hash === "#aurelia-gifts") setOpen(true);
+    };
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [collapsible]);
+
+  const applyPayment = useCallback((view: PublicGiftPaymentView) => {
+    setPayment(view);
+    if (view.state === "success") {
+      setPhase("success");
+      setOpen(true);
+      forgetGiftReference();
+      return;
+    }
+    if (view.state === "failed") {
+      setPhase("failed");
+      setOpen(true);
+      return;
+    }
+    setPhase("confirming");
+    setOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const reference = readGiftReference();
+    if (!reference) return;
+    let cancelled = false;
+    setPhase("confirming");
+    setOpen(true);
+    setChecking(true);
+    void loadGiftPayment(reference)
+      .then((view) => {
+        if (cancelled) return;
+        if (view) {
+          applyPayment(view);
+          return;
+        }
+        setPayment({
+          reference,
+          status: "FAILED",
+          state: "failed",
+          amountMinor: 0,
+          currency: "GHS",
+          giftType: "WEDDING_GIFT",
+          createdAt: new Date().toISOString(),
+          paidAt: null,
+          method: null,
+          guestName: null,
+          isAnonymous: false,
+          receiptUrl: null,
+          companionReturnUrl: null,
+          failureReason: "We could not find this gift. You can try sending it again.",
+        });
+        setPhase("failed");
+        setOpen(true);
+      })
+      .finally(() => {
+        if (!cancelled) setChecking(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applyPayment]);
+
+  useEffect(() => {
+    if (phase !== "confirming" || !payment?.reference) return;
+    pollCount.current = 0;
+    const timer = window.setInterval(() => {
+      pollCount.current += 1;
+      if (pollCount.current > 40) {
+        window.clearInterval(timer);
+        return;
+      }
+      void loadGiftPayment(payment.reference).then((view) => {
+        if (view) applyPayment(view);
+      });
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [phase, payment?.reference, applyPayment]);
+
   const currency = campaign?.currency ?? "GHS";
   const suggested = campaign?.suggestedAmountsMinor?.length
     ? campaign.suggestedAmountsMinor
@@ -116,6 +286,7 @@ export function AureliaGiftCheckout({
   const minAmount = campaign?.minAmountMinor ?? DEFAULT_MIN_AMOUNT_MINOR;
   const maxAmount = campaign?.maxAmountMinor ?? null;
   const closed = campaign?.status === "CLOSED";
+  const copy = getGiftCopy((campaign?.giftType as EventGiftType) || "WEDDING_GIFT");
 
   const amountError = useMemo(() => {
     if (amountMinor === null) return null;
@@ -174,7 +345,7 @@ export function AureliaGiftCheckout({
           guestPhone: guestPhone.trim() || undefined,
           guestMessage: guestMessage.trim() || undefined,
           guestToken: guestQrToken || undefined,
-          companionReturnUrl: returnPath || undefined,
+          companionReturnUrl: giftReturnPath(returnPath) || undefined,
         }),
       });
       const payload = await res.json().catch(() => ({}));
@@ -183,11 +354,28 @@ export function AureliaGiftCheckout({
         setSubmitting(false);
         return;
       }
-      window.location.href = payload.data.authorizationUrl;
+      const authorizationUrl = payload.data?.authorizationUrl as string | undefined;
+      const reference = payload.data?.reference as string | undefined;
+      if (reference) rememberGiftReference(reference);
+      if (!authorizationUrl) {
+        setError("We could not open checkout. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+      window.location.href = authorizationUrl;
     } catch {
       setError("Network problem. Please check your connection and try again.");
       setSubmitting(false);
     }
+  }
+
+  function resetToForm() {
+    forgetGiftReference();
+    setPayment(null);
+    setPhase("form");
+    setError(null);
+    setSubmitting(false);
+    setOpen(true);
   }
 
   const needsName = campaign?.requireGuestName !== false;
@@ -207,6 +395,7 @@ export function AureliaGiftCheckout({
   const qrSrc =
     giftQrImageUrl ||
     (giftUrl ? `/api/qr/image?data=${encodeURIComponent(giftUrl)}&size=512` : null);
+  const outcome = phase !== "form";
 
   if (closed) {
     return (
@@ -218,11 +407,20 @@ export function AureliaGiftCheckout({
   }
 
   const form = (
-    <div className={styles.giftPanel} id="aurelia-gift-panel" aria-label={giftTitle || campaign?.title || "Send a cash gift"}>
+    <div className={styles.giftPanel} id={panelId} aria-label={giftTitle || campaign?.title || "Send a cash gift"}>
       {loading ? (
         <p className={styles.giftStatus} aria-busy="true">
           Opening the gift wallet…
         </p>
+      ) : !token ? (
+        <div className={styles.giftOutcome}>
+          <p className={styles.giftKicker}>Almost ready</p>
+          <h3 className={styles.giftThankYou}>Gift wallet opening</h3>
+          <p className={styles.giftOutcomeCopy}>
+            The couple&apos;s gift wallet is not live on this invitation yet. As soon as
+            it is, this form connects to Paystack so your gift can be sent securely.
+          </p>
+        </div>
       ) : (
         <>
           {loadError ? (
@@ -274,7 +472,7 @@ export function AureliaGiftCheckout({
             <input
               value={guestName}
               autoComplete="name"
-              placeholder="Your name"
+              placeholder="Enter your full name"
               onChange={(event) => setGuestName(event.target.value)}
             />
           </label>
@@ -351,21 +549,221 @@ export function AureliaGiftCheckout({
   );
 
   return (
-    <div className={styles.giftCheckout}>
-      {detailsNote ? <p className={styles.giftNote}>{detailsNote}</p> : null}
-      {qrSrc ? (
-        <a
-          className={styles.albumQr}
-          href={giftUrl || "#aurelia-gifts"}
-          target={giftUrl ? "_blank" : undefined}
-          rel={giftUrl ? "noopener noreferrer" : undefined}
-          aria-label="Scan to send a cash gift"
+    <div className={`${styles.giftCheckout}${collapsible && !open ? ` ${styles.giftCheckoutFolded}` : ""}`}>
+      {detailsNote && phase === "form" ? <p className={styles.giftNote}>{detailsNote}</p> : null}
+      {collapsible && phase === "form" ? (
+        <button
+          type="button"
+          className={styles.giftToggle}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((value) => !value)}
         >
-          <img src={qrSrc} alt="" width={512} height={512} decoding="async" />
-          <p>Scan to send a cash gift</p>
-        </a>
+          <span>{open ? "Hide the gift form" : cta}</span>
+          <ChevronDown
+            size={18}
+            className={open ? styles.giftChevronOpen : styles.giftChevron}
+            aria-hidden
+          />
+        </button>
       ) : null}
-      {form}
+      {open || outcome ? (
+        <>
+          {phase === "form" && qrSrc ? (
+            <a
+              className={styles.albumQr}
+              href={giftUrl || "#aurelia-gifts"}
+              target={giftUrl ? "_blank" : undefined}
+              rel={giftUrl ? "noopener noreferrer" : undefined}
+              aria-label="Scan to send a cash gift"
+            >
+              <img src={qrSrc} alt="" width={512} height={512} decoding="async" />
+              <p>Scan to send a cash gift</p>
+            </a>
+          ) : null}
+          {phase === "form" ? form : null}
+          {phase === "confirming" ? (
+            <ConfirmingPanel
+              payment={payment}
+              checking={checking}
+              onCheck={() => {
+                if (!payment?.reference) return;
+                setChecking(true);
+                void loadGiftPayment(payment.reference)
+                  .then((view) => {
+                    if (view) applyPayment(view);
+                  })
+                  .finally(() => setChecking(false));
+              }}
+              onBack={resetToForm}
+            />
+          ) : null}
+          {phase === "success" && payment ? (
+            <SuccessPanel
+              payment={payment}
+              copy={copy}
+              eventTitle={campaign?.event.title}
+              hostName={campaign?.event.hostName}
+              methods={methods}
+            />
+          ) : null}
+          {phase === "failed" && payment ? (
+            <FailedPanel payment={payment} onRetry={resetToForm} />
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function ConfirmingPanel({
+  payment,
+  checking,
+  onCheck,
+  onBack,
+}: {
+  payment: PublicGiftPaymentView | null;
+  checking: boolean;
+  onCheck: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className={styles.giftOutcome} role="status" aria-live="polite">
+      <Loader2 className={styles.giftSpinLg} aria-hidden />
+      <p className={styles.giftKicker}>Just a moment</p>
+      <h3 className={styles.giftThankYou}>Confirming your gift</h3>
+      <p className={styles.giftOutcomeCopy}>
+        Approve any prompt on your phone if you have not already. We will show your
+        receipt the moment Paystack confirms the payment.
+      </p>
+      {payment ? (
+        <p className={styles.giftAmountHero}>
+          {formatMinor(payment.amountMinor, payment.currency)}
+        </p>
+      ) : null}
+      <button type="button" className={styles.giftSecondary} disabled={checking} onClick={onCheck}>
+        <RotateCw size={15} aria-hidden />
+        {checking ? "Checking…" : "Check again"}
+      </button>
+      <button type="button" className={styles.giftSecondary} onClick={onBack}>
+        Back to the gift form
+      </button>
+    </div>
+  );
+}
+
+function SuccessPanel({
+  payment,
+  copy,
+  eventTitle,
+  hostName,
+  methods,
+}: {
+  payment: PublicGiftPaymentView;
+  copy: ReturnType<typeof getGiftCopy>;
+  eventTitle?: string;
+  hostName?: string;
+  methods: MethodOption[];
+}) {
+  const methodLabel =
+    methods.find((item) => item.id === payment.method)?.label || payment.method || "Mobile money";
+  const giftType =
+    GIFT_TYPE_LABELS[(payment.giftType as EventGiftType) || "WEDDING_GIFT"] || "Gift";
+  const paidAt = payment.paidAt || payment.createdAt;
+
+  return (
+    <div className={styles.giftOutcome} role="status" aria-live="polite">
+      <span className={styles.giftSuccessMark} aria-hidden>
+        <CheckCircle2 size={34} />
+      </span>
+      <p className={styles.giftKicker}>Received with love</p>
+      <h3 className={styles.giftThankYou}>{copy.thankYouTitle}</h3>
+      <p className={styles.giftOutcomeCopy}>{copy.thankYouMessage}</p>
+      <p className={styles.giftAmountHero}>
+        {formatMinor(payment.amountMinor, payment.currency)}
+      </p>
+      {(hostName || eventTitle) && (
+        <p className={styles.giftOutcomeMeta}>
+          {[hostName, eventTitle].filter(Boolean).join(" · ")}
+        </p>
+      )}
+      <dl className={styles.giftReceipt}>
+        <div>
+          <dt>From</dt>
+          <dd>{payment.isAnonymous ? "Anonymous" : payment.guestName || "A guest"}</dd>
+        </div>
+        <div>
+          <dt>Gift</dt>
+          <dd>{giftType}</dd>
+        </div>
+        <div>
+          <dt>Paid with</dt>
+          <dd>{methodLabel}</dd>
+        </div>
+        <div>
+          <dt>Date</dt>
+          <dd>
+            {new Date(paidAt).toLocaleString("en-GB", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </dd>
+        </div>
+        <div>
+          <dt>Reference</dt>
+          <dd>{payment.reference}</dd>
+        </div>
+      </dl>
+      <div className={styles.giftOutcomeActions}>
+        {payment.receiptUrl ? (
+          <a className={styles.giftPay} href={payment.receiptUrl} target="_blank" rel="noopener noreferrer">
+            <Printer size={15} aria-hidden />
+            View full receipt
+          </a>
+        ) : (
+          <button type="button" className={styles.giftPay} onClick={() => window.print()}>
+            <Printer size={15} aria-hidden />
+            Save or print
+          </button>
+        )}
+      </div>
+      <p className={styles.giftPrivacy}>
+        <ShieldCheck size={12} aria-hidden />
+        This confirmation is private to you.
+      </p>
+    </div>
+  );
+}
+
+function FailedPanel({
+  payment,
+  onRetry,
+}: {
+  payment: PublicGiftPaymentView;
+  onRetry: () => void;
+}) {
+  const mismatch = payment.failureReason?.toLowerCase().includes("mismatch");
+  return (
+    <div className={styles.giftOutcome} role="alert">
+      <span className={styles.giftFailedMark} aria-hidden>
+        <XCircle size={34} />
+      </span>
+      <p className={styles.giftKicker}>Still with you</p>
+      <h3 className={styles.giftThankYou}>This gift did not go through</h3>
+      <p className={styles.giftOutcomeCopy}>
+        {mismatch
+          ? "We could not safely confirm this payment. Please try again, or use a different number."
+          : "No successful payment was recorded, so nothing was taken. You may try again whenever you are ready."}
+      </p>
+      {payment.amountMinor ? (
+        <p className={styles.giftOutcomeMeta}>
+          {formatMinor(payment.amountMinor, payment.currency)} · {payment.reference}
+        </p>
+      ) : null}
+      <button type="button" className={styles.giftPay} onClick={onRetry}>
+        <RotateCw size={15} aria-hidden />
+        Try again
+      </button>
     </div>
   );
 }

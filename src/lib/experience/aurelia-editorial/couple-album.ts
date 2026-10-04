@@ -73,7 +73,12 @@ export function resolveAureliaCoupleAlbum(input: {
     push(item.imageUrl, "image", item.caption, null, item.id);
   }
 
-  return items;
+  const firstPhoto = items.find((item) => item.type === "image")?.url ?? null;
+  return items.map((item) =>
+    item.type === "video" && !item.posterUrl && firstPhoto
+      ? { ...item, posterUrl: firstPhoto }
+      : item
+  );
 }
 
 /** Guest playback: stills first, then films, so the last picture leads into video. */

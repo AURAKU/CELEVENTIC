@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   formatSocialGuestGreeting,
+  parseAssignedGuestGreeting,
   resolveSocialInvitationGuest,
   sanitizeSocialGuestDisplayName,
 } from "../social-guest";
@@ -158,5 +159,45 @@ describe("resolveSocialInvitationGuest", () => {
     assert.ok(!params.includes("cookie"));
     assert.ok(!params.includes("localStorage"));
     assert.ok(!params.includes("session"));
+  });
+});
+
+describe("parseAssignedGuestGreeting", () => {
+  it("keeps an organiser-typed honorific and never invents one", () => {
+    assert.deepEqual(parseAssignedGuestGreeting("Mr Kwame Mensah"), {
+      salutation: "Dear",
+      honorific: "Mr",
+      name: "Kwame Mensah",
+      line: "Dear Mr Kwame Mensah",
+    });
+    assert.deepEqual(parseAssignedGuestGreeting("Mrs. Ama Serwaa"), {
+      salutation: "Dear",
+      honorific: "Mrs",
+      name: "Ama Serwaa",
+      line: "Dear Mrs Ama Serwaa",
+    });
+    assert.deepEqual(parseAssignedGuestGreeting("Miss Esther"), {
+      salutation: "Dear",
+      honorific: "Miss",
+      name: "Esther",
+      line: "Dear Miss Esther",
+    });
+    assert.deepEqual(parseAssignedGuestGreeting("Mr. & Mrs. Mensah"), {
+      salutation: "Dear",
+      honorific: "Mr & Mrs",
+      name: "Mensah",
+      line: "Dear Mr & Mrs Mensah",
+    });
+    assert.deepEqual(parseAssignedGuestGreeting("Ama"), {
+      salutation: "Dear",
+      honorific: null,
+      name: "Ama",
+      line: "Dear Ama",
+    });
+    assert.equal(parseAssignedGuestGreeting("Pastor Christopher Fiave")?.line, "Dear Pastor Christopher Fiave");
+    assert.equal(formatSocialGuestGreeting("Pastor Christopher Fiave"), "Dear Pastor Christopher Fiave,");
+    assert.equal(parseAssignedGuestGreeting("Dear Ama")?.line, "Dear Ama");
+    assert.equal(formatSocialGuestGreeting("Mrs Ama Serwaa"), "Dear Mrs Ama Serwaa,");
+    assert.equal(parseAssignedGuestGreeting("ama@example.com"), null);
   });
 });

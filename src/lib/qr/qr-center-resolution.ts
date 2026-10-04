@@ -41,6 +41,13 @@ export function isFamilyAlbumQrCenter(value?: string | null): boolean {
   );
 }
 
+/** Catalogue family hero — Kojo & Fafa (Seraphine) or Enock & Ruth (Aurelia). */
+export function isFamilyHeroQrCenter(value?: string | null): boolean {
+  const url = trimUrl(value);
+  if (!url) return false;
+  return /\/templates\/(?:aurelia|seraphine)\/hero\.(?:jpe?g|png|webp)$/i.test(pathnameOf(url));
+}
+
 /** Catalogue / brand / WhatsApp art is never an organizer photo. */
 export function isStockQrCenter(value?: string | null): boolean {
   const url = trimUrl(value);
@@ -68,12 +75,13 @@ export function isOrganizerUploadedQrCenter(value?: string | null): boolean {
   return isUploadedMediaUrl(url);
 }
 
-/** A `center=` query may pin an uploaded photo, the family album portrait, or the official logo. */
+/** A `center=` query may pin an uploaded photo, family album/hero portrait, or the official logo. */
 export function isPinnedQrCenterAllowed(value?: string | null): boolean {
   return (
     isOrganizerUploadedQrCenter(value) ||
     isOfficialCeleventicQrCenter(value) ||
-    isFamilyAlbumQrCenter(value)
+    isFamilyAlbumQrCenter(value) ||
+    isFamilyHeroQrCenter(value)
   );
 }
 

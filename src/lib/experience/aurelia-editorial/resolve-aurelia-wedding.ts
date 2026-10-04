@@ -1,6 +1,7 @@
-import { CELEVENTIC_OFFICIAL_LOGO, withPublicQrCenter } from "@/lib/qr/qr-constants";
+import { withPublicQrCenter } from "@/lib/qr/qr-constants";
 import {
   isFamilyAlbumQrCenter,
+  isFamilyHeroQrCenter,
   isOfficialCeleventicQrCenter,
   isOrganizerUploadedQrCenter,
 } from "@/lib/qr/qr-center-resolution";
@@ -10,6 +11,7 @@ import {
   AURELIA_THEME_DEFAULTS,
   AURELIA_WEDDING_DEFAULTS,
   AURELIA_WHITE_ISO,
+  SERAPHINE_HERO_FALLBACK,
   SERAPHINE_WEDDING_DEFAULTS,
 } from "./preset";
 import { SERAPHINE_LAYOUT_SLUG } from "./types";
@@ -141,8 +143,8 @@ function sanitizeAureliaGuestCopy(config: AureliaWeddingConfig): AureliaWeddingC
 
 /**
  * Album QR inset: organizer-uploaded QR-center photo, otherwise the looking-back
- * couple portrait on Aurelia. Hero/cover/stock never win this slot. Seraphine
- * keeps the official logo unless the organizer uploaded a QR-center photo.
+ * couple portrait on Aurelia and the hero photograph on Seraphine. Other
+ * catalogue stock never wins this slot.
  */
 export function withAureliaAlbumQrCenter(
   qrImageUrl?: string | null,
@@ -151,9 +153,10 @@ export function withAureliaAlbumQrCenter(
 ): string | null {
   if (!qrImageUrl) return null;
   const uploaded = isOrganizerUploadedQrCenter(centerImageUrl);
-  const family = isFamilyAlbumQrCenter(centerImageUrl);
+  const family =
+    isFamilyAlbumQrCenter(centerImageUrl) || isFamilyHeroQrCenter(centerImageUrl);
   const fallback =
-    layout === SERAPHINE_LAYOUT_SLUG ? CELEVENTIC_OFFICIAL_LOGO : AURELIA_QR_CENTER;
+    layout === SERAPHINE_LAYOUT_SLUG ? SERAPHINE_HERO_FALLBACK : AURELIA_QR_CENTER;
   const center = uploaded || family ? centerImageUrl!.trim() : fallback;
   const photograph = !isOfficialCeleventicQrCenter(center);
   return withPublicQrCenter(qrImageUrl, center, photograph ? "hero" : "balanced");
@@ -450,7 +453,7 @@ export function aureliaNavItems(config: AureliaWeddingConfig): Array<{
 }> {
   const items: Array<{ id: AureliaSectionId; label: string }> = [{ id: "home", label: "Home" }];
   const rest: Array<[AureliaSectionId, string]> = [
-    ["story", "Our Story"],
+    ["story", trim(config.storyTitle) || "Our Story"],
     ["celebrations", "Celebrations"],
     ["venues", "Venues"],
     ["dress", "Dress Code"],
@@ -492,7 +495,7 @@ export function resolveAureliaHeroImage(input: {
   const fallback = trim(input.fallback) || AURELIA_HERO_FALLBACK;
   if (input.heroCleared) return fallback;
   const uploaded = input.mediaHeroUrl?.trim();
-  if (uploaded) return uploaded;
+  if (uploaded && !isAureliaFamilyPlaceholderHero(uploaded)) return uploaded;
   const configured = input.heroImageUrl?.trim();
   if (configured && !isAureliaFamilyPlaceholderHero(configured)) return configured;
   const cover = input.coverImageUrl?.trim();

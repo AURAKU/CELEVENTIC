@@ -63,6 +63,7 @@ export {
   aureliaSectionVisible,
   aureliaTokenStyle,
   isAureliaDummyHero,
+  isAureliaFamilyPlaceholderHero,
   mergeAureliaWedding,
   resolveAureliaCountdownIso,
   resolveAureliaHeroImage,

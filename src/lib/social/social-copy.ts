@@ -4,7 +4,7 @@ import { isMemorialSocialKind } from "@/lib/social/social-category";
 export const SOCIAL_PLACE_CARD_KICKER = "YOU'RE INVITED";
 export const SOCIAL_PLACE_CARD_PRIVATE_KICKER = "PRIVATE INVITATION";
 export const SOCIAL_PLACE_CARD_PHRASE = "A celebration awaits.";
-export const SOCIAL_PLACE_CARD_PERSONAL_PHRASE = "A celebration awaits.";
+export const SOCIAL_PLACE_CARD_PERSONAL_PHRASE = "You are personally invited.";
 
 type KindCopy = {
   fallbackTitle: string;
@@ -21,11 +21,12 @@ const KIND_COPY: Record<SocialEventKind, KindCopy> = {
   wedding: {
     fallbackTitle: "Wedding Celebration",
     phrase: "A celebration awaits.",
-    personalPhrase: "A celebration awaits.",
+    personalPhrase: "You are personally invited.",
     shareText: (title) => `You're invited to ${title}.`,
     personalShareText: (title, guest) => `Dear ${guest}, you're invited to ${title}.`,
     description: (title) => `You're invited to ${title}.`,
-    personalDescription: (title, _host, guest) => `Dear ${guest}, you're invited to ${title}.`,
+    personalDescription: (_title, _host, guest) =>
+      `Dear ${guest}, you are personally invited.`,
     unavailablePhrase: "The celebration link is closed.",
   },
   engagement: {

@@ -32,6 +32,7 @@ import {
 } from "@/lib/gifts/gift-providers";
 import { giftPaymentUiState, type PublicGiftPaymentView } from "@/lib/gifts/gift-privacy";
 import {
+  buildInviteGiftCallbackUrl,
   detectGiftVerificationMismatch,
   sanitizeCompanionReturnUrl,
 } from "@/lib/gifts/gift-placement";
@@ -183,7 +184,12 @@ export class GiftPaymentService {
           email: receiptEmail,
           purpose: "EVENT_GIFT",
           channels: paystackChannelsFor(method.id),
-          callbackUrl: statusUrl,
+          callbackUrl: buildInviteGiftCallbackUrl(
+            baseUrl,
+            statusUrl,
+            companionReturnUrl,
+            reference
+          ),
           metadata: {
             giftPaymentId: gift.id,
             giftCampaignId: campaign.id,

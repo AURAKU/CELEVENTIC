@@ -5,6 +5,9 @@ import type { InvitationEventData } from "@/types/invitation-design";
 import { resolveSocialEventKind } from "@/lib/social/social-category";
 import { socialNativeShareText } from "@/lib/social/social-copy";
 import { resolveSocialEventTitle } from "@/lib/social/social-event-title";
+import { isAureliaFamilySocialLayout } from "@/lib/social/social-live-input";
+import { sanitizeSocialGuestDisplayName } from "@/lib/social/social-guest";
+import { buildPersonalInvitationShareBody, ensureSingleShareUrl } from "@/lib/invitation/whatsapp-share";
 
 export type InviteSharePayload = {
   title: string;
@@ -65,6 +68,7 @@ export function buildInviteSharePayload(input: {
   guestDisplayName?: string | null;
   guestToken?: string | null;
   eventType?: string | null;
+  admissionCode?: string | null;
 }): InviteSharePayload {
   const url = resolveInviteShareUrl({
     uniqueLink: input.uniqueLink,
@@ -92,13 +96,26 @@ export function buildInviteSharePayload(input: {
     kind,
   }).title;
 
+  const guestDisplayName = sanitizeSocialGuestDisplayName(input.guestDisplayName);
+  const familyLetter =
+    guestDisplayName &&
+    isAureliaFamilySocialLayout({
+      catalogSlug: input.catalogSlug,
+      layoutSlug: input.layoutSlug,
+    })
+      ? buildPersonalInvitationShareBody({
+          guestName: guestDisplayName,
+          admissionCode: input.admissionCode,
+        })
+      : socialNativeShareText({
+          kind,
+          title,
+          guestDisplayName,
+        });
+
   return {
     title,
-    text: socialNativeShareText({
-      kind,
-      title,
-      guestDisplayName: input.guestDisplayName,
-    }),
+    text: familyLetter,
     url,
   };
 }
@@ -145,7 +162,7 @@ export function buildInviteShareChannelHref(
   channel: Exclude<InviteShareChannel, "native" | "copy">,
   payload: InviteSharePayload
 ): string {
-  const fullMessage = `${payload.text}\n${payload.url}`;
+  const fullMessage = ensureSingleShareUrl(payload.text, payload.url);
   switch (channel) {
     case "whatsapp":
       return `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
@@ -159,7 +176,7 @@ export function buildInviteShareChannelHref(
     case "x":
       return `https://twitter.com/intent/tweet?text=${encodeURIComponent(payload.text)}&url=${encodeURIComponent(payload.url)}`;
     case "email":
-      return `mailto:?subject=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(`${payload.text}\n\n${payload.url}`)}`;
+      return `mailto:?subject=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(fullMessage)}`;
   }
 }
 

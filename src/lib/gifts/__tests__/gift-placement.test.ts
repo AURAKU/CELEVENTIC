@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildCompanionGiftUrl,
+  buildInviteGiftCallbackUrl,
   detectGiftVerificationMismatch,
   invitationGiftAutoOpenAction,
   isCampaignPlaceable,
@@ -60,6 +61,29 @@ test("companion return URLs must be relative invite paths", () => {
   assert.equal(sanitizeCompanionReturnUrl("/dashboard/gifts"), null);
   assert.equal(sanitizeCompanionReturnUrl("/invite/abc\n/evil"), null);
   assert.equal(sanitizeCompanionReturnUrl(null), null);
+  assert.equal(
+    sanitizeCompanionReturnUrl("/dev/seraphine-champagne-wedding?skipIntro=1#aurelia-gifts"),
+    "/dev/seraphine-champagne-wedding?skipIntro=1#aurelia-gifts"
+  );
+  assert.equal(sanitizeCompanionReturnUrl("/dev/../etc"), null);
+});
+
+test("in-invite Paystack callback returns to the gift section with the reference", () => {
+  const status = "https://app.celeventic.com/gift/tok/status/gft_abc";
+  const built = buildInviteGiftCallbackUrl(
+    "https://app.celeventic.com",
+    status,
+    "/invite/abc#aurelia-gifts",
+    "gft_abc"
+  );
+  assert.equal(
+    built,
+    "https://app.celeventic.com/invite/abc?gift=gft_abc#aurelia-gifts"
+  );
+  assert.equal(
+    buildInviteGiftCallbackUrl("https://app.celeventic.com", status, null, "gft_abc"),
+    status
+  );
 });
 
 test("companion gift URLs carry guest token and safe return", () => {

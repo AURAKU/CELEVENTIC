@@ -214,7 +214,7 @@ export function getDemoContentForCategory(category?: string, layoutOrCatalogSlug
 }
 
 /** Sample guest shown only in catalog / studio live previews — never used on `/invite/{link}`. */
-export const DEMO_PREVIEW_GUEST_NAME = "Alex Mensah";
+export const DEMO_PREVIEW_GUEST_NAME = "Mr Alex Mensah";
 
 export function buildLivePreviewProps(
   layoutSlug: string,

@@ -163,19 +163,47 @@ describe("Aurelia / Seraphine share surface", () => {
 
     assert.equal(ama.shareTitle, "Enock & Ruth · You're invited");
     assert.equal(ama.guestGreeting, "Dear Ama,");
-    assert.match(ama.description, /^Dear Ama, you're invited to Enock & Ruth/);
+    assert.equal(ama.description, "Dear Ama, you are personally invited.");
+    assert.match(ama.shareText, /Dear Ama,/);
+    assert.match(ama.shareText, /You are personally invited\./);
+    assert.match(ama.shareText, /Open your invitation:/);
     assert.match(ama.image.url, /guest=ama-token/);
     assert.doesNotMatch(`${ama.shareTitle} ${ama.description}`, /Aurelia/i);
 
     assert.equal(esther.shareTitle, "Kojo & Fafa · You're invited");
     assert.equal(esther.guestGreeting, "Dear Esther,");
-    assert.match(esther.description, /^Dear Esther, you're invited to celebrate Kojo & Fafa/);
+    assert.equal(esther.description, "Dear Esther, you are personally invited.");
+    assert.match(esther.shareText, /Dear Esther,/);
     assert.match(esther.image.url, /guest=esther-token/);
     assert.doesNotMatch(`${esther.shareTitle} ${esther.description}`, /Seraphine/i);
 
     assert.match(kofi.image.url, /guest=kofi-token/);
     assert.notEqual(ama.image.url, kofi.image.url);
     assert.notEqual(ama.image.url, esther.image.url);
+  });
+
+  it("uses the event's uploaded hero and keeps a stored Pastor honorific", () => {
+    const surface = buildAureliaFamilyShareSurface({
+      appUrl: APP,
+      uniqueLink: "9qsZeEvYS6k08i78n67WHelxMHK65oVE",
+      catalogSlug: "seraphine-champagne-wedding",
+      layoutSlug: "seraphine-champagne-wedding",
+      eventTitle: "Seraphine Champagne",
+      hostName: "Kojo & Fafa",
+      guestDisplayName: "Pastor Christopher Fiave",
+      guestToken: "cmusgwbyy00n0lag9ozdkhgmj",
+      heroImageUrl: "/templates/seraphine/hero.jpg",
+      mediaHeroUrl: "/templates/seraphine/hero.jpg",
+      coverImageUrl: "/uploads/events/kojo-fafa-hero.jpg",
+      versionParts: ["hero-upload"],
+    });
+    assert.equal(surface.heroUrl, "/uploads/events/kojo-fafa-hero.jpg");
+    assert.equal(surface.guestGreeting, "Dear Pastor Christopher Fiave,");
+    assert.equal(surface.phrase, "You are personally invited.");
+    assert.match(surface.shareText, /Open your invitation:/);
+    assert.doesNotMatch(surface.shareText, /https?:\/\//);
+    assert.match(surface.canonicalUrl, /guest=cmusgwbyy00n0lag9ozdkhgmj/);
+    assert.doesNotMatch(`${surface.title} ${surface.shareTitle}`, /Seraphine/i);
   });
 
   it("keeps the version stable for the same inputs and changes when the title changes", () => {

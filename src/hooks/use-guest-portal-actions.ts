@@ -10,6 +10,7 @@ import {
   type InvitationActionKey,
   type ResolvedGuestAction,
 } from "@/lib/invitation/guest-portal-actions";
+import { ensureSingleShareUrl } from "@/lib/invitation/whatsapp-share";
 import {
   pickActionsFromStudioMapping,
   resolveExperienceActions,
@@ -74,16 +75,18 @@ export function useGuestPortalActions(input: UseGuestPortalActionsInput) {
   const share = useCallback(async () => {
     setShareState("loading");
     setLoadingKey("SHARE");
+    const message = input.shareText
+      ? ensureSingleShareUrl(input.shareText, shareUrl)
+      : shareUrl;
     try {
       if (navigator.share) {
         const payload: ShareData = {
           title: input.shareTitle,
-          url: shareUrl,
+          text: message,
         };
-        if (input.shareText) payload.text = input.shareText;
         await navigator.share(payload);
       } else {
-        await navigator.clipboard.writeText(shareUrl);
+        await navigator.clipboard.writeText(message);
         setShareState("copied");
         setTimeout(() => setShareState("idle"), 2000);
         setLoadingKey(null);
@@ -92,12 +95,12 @@ export function useGuestPortalActions(input: UseGuestPortalActionsInput) {
       setShareState("idle");
     } catch {
       try {
-        await navigator.clipboard.writeText(shareUrl);
+        await navigator.clipboard.writeText(message);
         setShareState("copied");
         setTimeout(() => setShareState("idle"), 2000);
       } catch {
         setShareState("error");
-        setActionError("Could not share or copy the link.");
+        setActionError("Could not share or copy the invitation.");
       }
     }
     setLoadingKey(null);

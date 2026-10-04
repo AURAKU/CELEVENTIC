@@ -44,8 +44,10 @@ export function GiftQrBox({
         <h3 className={`font-display font-bold mb-1 ${dark ? "text-white" : "text-slate-900"}`}>Gift & Contributions</h3>
         <p className={`text-xs mb-4 ${dark ? "text-white/65" : "text-slate-600"}`}>{caption}</p>
         {qrDataUrl && (
-          <div className="rounded-xl bg-white p-3 shadow-inner inline-block">
-            <BrandedQrImage src={qrDataUrl} token={qrToken ?? undefined} size={140} showDownload={false} />
+          <div className="flex justify-center">
+            <div className="rounded-xl bg-white p-3 shadow-inner inline-block">
+              <BrandedQrImage src={qrDataUrl} token={qrToken ?? undefined} size={140} showDownload={false} />
+            </div>
           </div>
         )}
         {registryUrl && (

@@ -99,6 +99,9 @@ export function AureliaEditorialRuntimeClient({
           giftSubtitle={giftSubtitle}
           giftCtaLabel={giftCtaLabel}
           giftPrivacyNote={giftPrivacyNote}
+          partyAllowance={2}
+          admissionQrDataUrl={`/api/qr/image?data=${encodeURIComponent("https://celeventic.com/invite/preview-pass")}&size=512&mode=pass`}
+          admissionManualCode="4821"
         />
       </ClientErrorBoundary>
     </div>

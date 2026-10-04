@@ -230,13 +230,18 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
 };
 
 export const SERAPHINE_HERO_FALLBACK = "/templates/seraphine/hero.jpg";
-/** Kojo & Fafa portraits for the invitation photograph gallery. */
+/** Kojo & Fafa photographs and film for Moments / Our Journey. */
 export const SERAPHINE_COUPLE_GALLERY = [
-  "/templates/seraphine/couple/01-standing.jpg",
-  "/templates/seraphine/couple/02-gold-laugh.jpg",
-  "/templates/seraphine/couple/03-black-and-white.jpg",
-  "/templates/seraphine/couple/04-chair.jpg",
-  "/templates/seraphine/couple/05-gold-gaze.jpg",
+  "/templates/seraphine/couple/08-forehead-kiss.jpg",
+  "/templates/seraphine/couple/07-pool-lean.jpg",
+  "/templates/seraphine/couple/09-pool-stand.jpg",
+  "/templates/seraphine/couple/10-studio-stool.jpg",
+  "/templates/seraphine/couple/01-chambers.jpg",
+  "/templates/seraphine/couple/02-beach.jpg",
+  "/templates/seraphine/couple/03-dinner.jpg",
+  "/templates/seraphine/couple/04-boat.jpg",
+  "/templates/seraphine/couple/05-lounge.jpg",
+  "/templates/seraphine/couple/06-journey.mp4",
 ] as const;
 export const SERAPHINE_MONOGRAM = "/templates/seraphine/monogram-lockup.jpg";
 export const SERAPHINE_MONOGRAM_PNG = "/templates/seraphine/monogram-qr.png";
@@ -305,8 +310,8 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   rsvpContactsEyebrow: "Call or WhatsApp",
   rsvpContacts: [{ name: "Esther", phone: "0549436196" }],
   rsvpShowPhone: false,
-  storyEyebrow: "Our Chapter",
-  storyTitle: "Our Story",
+  storyEyebrow: "Moments",
+  storyTitle: "Our Journey",
   storyImageUrl: "",
   storyParagraphs: [
     "We met at a friend’s wedding, paired together as groomsman and bridesmaid. What started with a simple “Give me your number” became the beginning of something beautiful.",

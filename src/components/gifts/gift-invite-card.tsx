@@ -74,7 +74,7 @@ export function GiftInviteCard({
       </a>
 
       {qrImageUrl && (
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col items-center">
           <div className="inline-block rounded-xl bg-white p-3 shadow-inner">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

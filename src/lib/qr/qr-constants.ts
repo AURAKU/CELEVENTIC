@@ -83,13 +83,13 @@ export function parseQrLogoSizeQuery(raw: unknown): QrLogoSizePreset | null {
 
 /**
  * Same-origin public image paths only. Album QRs may pin an uploaded photograph,
- * the Aurelia/Seraphine looking-back portrait, or the official Celeventic logo —
- * never other catalogue template stock.
+ * the Aurelia looking-back portrait, the Seraphine hero, or the official
+ * Celeventic logo — never other catalogue template stock.
  */
 const PUBLIC_QR_CENTER_RE =
   /^\/(?:brand|uploads|api\/uploads)\/[A-Za-z0-9._/-]+\.(?:jpe?g|png|webp)$/;
-const FAMILY_ALBUM_QR_CENTER_RE =
-  /^\/templates\/(?:aurelia|seraphine)\/qr-center\.(?:jpe?g|png|webp)$/;
+const FAMILY_QR_CENTER_RE =
+  /^\/templates\/(?:aurelia|seraphine)\/(?:qr-center|hero)\.(?:jpe?g|png|webp)$/;
 
 export function toSafePublicQrCenterPath(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
@@ -112,7 +112,7 @@ export function toSafePublicQrCenterPath(raw: unknown): string | null {
   ) {
     return null;
   }
-  return PUBLIC_QR_CENTER_RE.test(value) || FAMILY_ALBUM_QR_CENTER_RE.test(value) ? value : null;
+  return PUBLIC_QR_CENTER_RE.test(value) || FAMILY_QR_CENTER_RE.test(value) ? value : null;
 }
 
 /** Pin a public center mark on a `/api/qr/image` URL without rewriting event QR branding. */

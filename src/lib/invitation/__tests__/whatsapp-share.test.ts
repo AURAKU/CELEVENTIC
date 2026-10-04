@@ -26,14 +26,17 @@ describe("whatsapp-share", () => {
   it("keeps the invite URL in the message exactly once", () => {
     const url = "https://www.celeventic.com/invite/abc?guest=tok";
     const text = buildInviteWhatsAppText({
-      guestName: "Kwame",
+      guestName: "Pastor Christopher Fiave",
       inviteUrl: url,
-      admissionCode: "A1B2",
-      eventTitle: "The Wedding",
+      admissionCode: "9180",
     });
     assert.equal((text.match(/https:\/\/www\.celeventic\.com\/invite\/abc/g) ?? []).length, 1);
-    assert.match(text, /admission code: A1B2/);
-    assert.match(text, /Dear Kwame/);
+    assert.match(text, /Dear Pastor Christopher Fiave,/);
+    assert.match(text, /You are personally invited\./);
+    assert.match(text, /Open your invitation:/);
+    assert.match(text, /Your admission code: 9180/);
+    assert.ok(text.indexOf("Your admission code: 9180") < text.indexOf(url));
+    assert.doesNotMatch(text, /You are personally invited to /);
   });
 
   it("ensureSingleShareUrl strips a duplicated URL already pasted in the body", () => {

@@ -135,9 +135,45 @@ describe("invite share", () => {
       },
     });
     assert.equal(payload.title, "Kojo & Fafa");
-    assert.equal(payload.text, "Dear Ama, you're invited to Kojo & Fafa.");
+    assert.match(payload.text, /Dear Ama,/);
+    assert.match(payload.text, /You are personally invited\./);
+    assert.match(payload.text, /Open your invitation:/);
+    assert.doesNotMatch(payload.text, /https?:\/\//);
     assert.equal(payload.url, "https://celeventic.com/invite/kojo-fafa?guest=ama-token");
     assert.doesNotMatch(`${payload.title} ${payload.text} ${payload.url}`, /Seraphine|Aurelia/i);
+  });
+
+  it("includes the admission code in the family share letter without duplicating the URL", () => {
+    const payload = buildInviteSharePayload({
+      category: "wedding",
+      uniqueLink: "9qsZeEvYS6k08i78n67WHelxMHK65oVE",
+      origin: "https://www.celeventic.com",
+      catalogSlug: "seraphine-champagne-wedding",
+      layoutSlug: "seraphine-champagne-wedding",
+      guestDisplayName: "Pastor Christopher Fiave",
+      guestToken: "cmusgwbyy00n0lag9ozdkhgmj",
+      admissionCode: "9180",
+      event: {
+        title: "Seraphine Champagne",
+        hostName: "Kojo & Fafa",
+        description: null,
+        startDate: "",
+        venueName: null,
+        landmark: null,
+        mapsLink: null,
+        contactPhone: null,
+        dressCode: null,
+      },
+    });
+    assert.match(payload.text, /Dear Pastor Christopher Fiave,/);
+    assert.match(payload.text, /You are personally invited\./);
+    assert.match(payload.text, /Open your invitation:/);
+    assert.match(payload.text, /Your admission code: 9180/);
+    assert.doesNotMatch(payload.text, /https?:\/\//);
+    assert.equal(
+      payload.url,
+      "https://www.celeventic.com/invite/9qsZeEvYS6k08i78n67WHelxMHK65oVE?guest=cmusgwbyy00n0lag9ozdkhgmj"
+    );
   });
 
   it("builds WhatsApp and email channel hrefs", () => {

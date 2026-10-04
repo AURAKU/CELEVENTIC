@@ -723,6 +723,70 @@
   opacity: 1;
 }
 
+.storyLookbook {
+  width: 100%;
+  padding: clamp(1.15rem, 4.4cqi, 2rem) var(--aurelia-gutter) 0.35rem;
+}
+
+.storyLookbook .storyGalleryPlate {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
+  margin: 0 auto 0.7rem;
+  max-width: 26.5rem;
+  padding: 0 0.12rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--wedding-terracotta);
+}
+
+.storyLookbook .storyGalleryFrame {
+  margin-inline: auto;
+  max-width: 26.5rem;
+  padding: 0.62rem;
+  background: linear-gradient(180deg, var(--wedding-ivory) 0%, var(--wedding-cream) 100%);
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 80%, var(--wedding-terracotta));
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--wedding-ivory) 88%, var(--wedding-gold)),
+    0 0 0 6px var(--wedding-gold),
+    0 18px 40px color-mix(in srgb, var(--wedding-espresso) 16%, transparent);
+}
+
+.storyLookbook .storyGalleryOpen {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--wedding-espresso);
+}
+
+.storyLookbook .storyGalleryFrame img,
+.storyLookbook .storyGalleryFrame video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 16%;
+  background: #1c241e;
+}
+
+.storyLookbook .storyGalleryFilm img,
+.storyLookbook .storyGalleryFilm video {
+  object-position: center;
+}
+
+.storyLookbook .storyGalleryNav {
+  bottom: 1.05rem;
+}
+
+.storyLookbook.storyGallery .coupleDots {
+  max-width: 26.5rem;
+  margin-inline: auto;
+  padding: 0.9rem 0 0.2rem;
+}
+
 .storyCopy {
   padding: clamp(2.4rem, 7cqi, 3.6rem) var(--aurelia-gutter) clamp(2.6rem, 7.5cqi, 3.8rem);
 }
@@ -1632,6 +1696,10 @@
   text-align: left;
 }
 
+.giftCheckoutFolded {
+  padding-bottom: 1.15rem;
+}
+
 .giftToggle {
   display: flex;
   align-items: center;
@@ -1842,19 +1910,149 @@
   font-size: 0.92rem;
 }
 
+.giftOutcome {
+  margin-top: 1.15rem;
+  padding: 1.5rem 0.35rem 0.4rem;
+  text-align: center;
+}
+
+.giftSuccessMark,
+.giftFailedMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 999px;
+}
+
+.giftSuccessMark {
+  color: var(--wedding-terracotta);
+  background: color-mix(in srgb, var(--wedding-terracotta) 14%, transparent);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--wedding-gold) 35%, transparent);
+}
+
+.giftFailedMark {
+  color: #9b2c2c;
+  background: color-mix(in srgb, #9b2c2c 10%, transparent);
+}
+
+.giftThankYou {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-parisienne), var(--font-great-vibes), cursive;
+  font-size: clamp(1.85rem, 6vw, 2.45rem);
+  font-weight: 400;
+  color: var(--wedding-espresso);
+  line-height: 1.15;
+}
+
+.giftOutcomeCopy {
+  margin: 0.85rem auto 0;
+  max-width: 26rem;
+  font-family: var(--font-eb-garamond), var(--font-cormorant), serif;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--wedding-brown);
+}
+
+.giftAmountHero {
+  margin: 1.15rem 0 0.2rem;
+  font-family: var(--aurelia-display);
+  font-size: clamp(1.7rem, 5vw, 2.15rem);
+  letter-spacing: 0.06em;
+  color: var(--wedding-terracotta);
+}
+
+.giftOutcomeMeta {
+  margin: 0.25rem 0 0;
+  font-family: var(--aurelia-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--wedding-brown);
+}
+
+.giftReceipt {
+  margin: 1.25rem auto 0;
+  max-width: 22rem;
+  text-align: left;
+}
+
+.giftReceipt div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--wedding-gold) 38%, transparent);
+  font-size: 0.92rem;
+}
+
+.giftReceipt dt {
+  color: var(--wedding-brown);
+}
+
+.giftReceipt dd {
+  margin: 0;
+  text-align: right;
+  color: var(--wedding-espresso);
+  font-weight: 500;
+}
+
+.giftOutcomeActions {
+  margin-top: 0.35rem;
+}
+
+.giftSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-height: 2.85rem;
+  margin-top: 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--wedding-gold) 55%, transparent);
+  background: transparent;
+  color: var(--wedding-espresso);
+  font-family: var(--aurelia-display);
+  font-size: 0.64rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.giftSecondary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.giftSpinLg {
+  width: 1.7rem;
+  height: 1.7rem;
+  margin: 0 auto 0.85rem;
+  color: var(--wedding-terracotta);
+  animation: aurelia-spin 0.9s linear infinite;
+}
+
+a.giftPay {
+  text-decoration: none;
+}
+
 .albumPanel {
   margin-top: 1.6rem;
   text-align: center;
 }
 
 .albumQr {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.55rem;
+  width: 100%;
   margin: 0.15rem auto 1.35rem;
   color: inherit;
   text-decoration: none;
+  text-align: center;
 }
 
 .albumQr img {
@@ -2151,6 +2349,39 @@
   background: color-mix(in srgb, #c5b48a 72%, #5f7a58);
 }
 
+.seraphine .storySection {
+  background:
+    linear-gradient(
+      180deg,
+      #fafaf5 0%,
+      #f5f0e4 46%,
+      color-mix(in srgb, #c0c8a8 20%, #fafaf5) 100%
+    );
+}
+
+.seraphine .storyLookbook .storyGalleryPlate {
+  color: #5f7a58;
+}
+
+.seraphine .storyLookbook .storyGalleryFrame {
+  border-color: color-mix(in srgb, #c5b48a 86%, #5f7a58);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, #fafaf5 88%, #c5b48a),
+    0 0 0 6px #c5b48a,
+    0 20px 42px rgba(44, 58, 46, 0.16);
+}
+
+.seraphine .storyLookbook .storyGalleryNav {
+  border-color: #c5b48a;
+  background: color-mix(in srgb, #fafaf5 90%, #c0c8a8);
+  color: #2c3a2e;
+  box-shadow: 0 10px 22px rgba(44, 58, 46, 0.14);
+}
+
+.seraphine .storyCopy {
+  padding-top: clamp(1.8rem, 5.5cqi, 2.6rem);
+}
+
 .seraphine .couplePlay {
   background: color-mix(in srgb, #2c3a2e 78%, transparent);
 }
@@ -2161,7 +2392,7 @@
 }
 
 .seraphine .heroImage {
-  object-position: center 12%;
+  object-position: center 32%;
 }
 
 .seraphine .heroGrade {
@@ -2176,31 +2407,48 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, #2c3a2e 16%, transparent) 0%,
-      transparent 12%,
-      transparent 58%,
-      color-mix(in srgb, #3f5344 8%, transparent) 74%,
-      color-mix(in srgb, #2c3a2e 54%, transparent) 100%
+      color-mix(in srgb, #2c3a2e 22%, transparent) 0%,
+      transparent 14%,
+      transparent 42%,
+      color-mix(in srgb, #3f5344 18%, transparent) 62%,
+      color-mix(in srgb, #2c3a2e 62%, transparent) 82%,
+      color-mix(in srgb, #2c3a2e 78%, transparent) 100%
     );
 }
 
 .seraphine .heroRing {
-  border-color: color-mix(in srgb, #c5b48a 48%, transparent);
+  display: none;
 }
 
 .seraphine .hero .eyebrow {
   color: color-mix(in srgb, #fafaf5 90%, #c0c8a8);
 }
 
+.seraphine .hero .heroFamily {
+  top: calc(6.85rem + env(safe-area-inset-top, 0px));
+  color: #2c3a2e;
+  font-weight: 500;
+  text-shadow:
+    0 0 10px rgba(250, 250, 245, 0.96),
+    0 1px 2px rgba(250, 250, 245, 0.9),
+    0 4px 18px rgba(250, 250, 245, 0.72);
+}
+
 .seraphine .heroName,
-.seraphine .hero .eyebrow {
+.seraphine .hero .eyebrow:not(.heroFamily) {
   text-shadow:
     0 1px 2px rgba(44, 58, 46, 0.55),
     0 2px 16px rgba(44, 58, 46, 0.38);
 }
 
+.seraphine .heroName {
+  font-size: clamp(2.45rem, 12.5cqi, 5.1rem);
+  letter-spacing: clamp(0.08em, 1.8cqi, 0.2em);
+}
+
 .seraphine .ampersand {
   color: #c5b48a;
+  font-size: clamp(1.85rem, 6.4cqi, 2.7rem);
 }
 
 .seraphine .heroDate {
@@ -2372,6 +2620,35 @@
   border-color: #2c3a2e;
 }
 
+.seraphine .giftThankYou {
+  color: #2c3a2e;
+}
+
+.seraphine .giftOutcomeCopy,
+.seraphine .giftOutcomeMeta,
+.seraphine .giftReceipt dt {
+  color: #3f5344;
+}
+
+.seraphine .giftAmountHero,
+.seraphine .giftSuccessMark {
+  color: #4a6350;
+}
+
+.seraphine .giftSuccessMark {
+  background: color-mix(in srgb, #4a6350 14%, transparent);
+  box-shadow: 0 0 28px color-mix(in srgb, #c5b48a 40%, transparent);
+}
+
+.seraphine .giftReceipt dd {
+  color: #2c3a2e;
+}
+
+.seraphine .giftSecondary {
+  border-color: color-mix(in srgb, #c5b48a 55%, #c0c8a8);
+  color: #2c3a2e;
+}
+
 .seraphine .mapFrame {
   border-color: color-mix(in srgb, #c5b48a 58%, #c0c8a8);
   background: #f5f0e4;
@@ -2429,12 +2706,20 @@
   .hero .heroFamily {
     top: calc(3.7rem + env(safe-area-inset-top, 0px));
   }
+
+  .seraphine .hero .heroFamily {
+    top: calc(5.05rem + env(safe-area-inset-top, 0px));
+  }
 }
 
 @container aurelia (max-width: 360px) {
   .heroName {
     font-size: clamp(1.7rem, 11cqi, 2.35rem);
     letter-spacing: 0.1em;
+  }
+
+  .seraphine .heroName {
+    font-size: clamp(2.15rem, 14cqi, 3.15rem);
   }
 
   .hero .eyebrow,

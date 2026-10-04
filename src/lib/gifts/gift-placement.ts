@@ -44,19 +44,46 @@ export function isCampaignPlaceable(
 }
 
 /**
- * Only allow returning into our own invite/companion routes after checkout.
- * Blocks open redirects via absolute URLs or protocol-relative paths.
+ * Only allow returning into our own invite, companion, or local preview routes
+ * after checkout. Blocks open redirects via absolute URLs or protocol-relative paths.
  */
 export function sanitizeCompanionReturnUrl(raw: string | null | undefined): string | null {
   if (typeof raw !== "string") return null;
   const trimmed = raw.trim();
   if (!trimmed) return null;
   if (trimmed.length > 500) return null;
-  if (!trimmed.startsWith("/invite/")) return null;
+  if (trimmed.includes("..")) return null;
+  const isInvite = trimmed.startsWith("/invite/");
+  const isDevPreview = trimmed.startsWith("/dev/");
+  if (!isInvite && !isDevPreview) return null;
   if (trimmed.startsWith("//")) return null;
   if (/[\s\\]/.test(trimmed)) return null;
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) return null;
   return trimmed;
+}
+
+/**
+ * Paystack callback for an in-invite gift. Lands the guest back on the
+ * invitation gift section with the payment reference so that surface can
+ * confirm with our API. Falls back to the dedicated status page.
+ */
+export function buildInviteGiftCallbackUrl(
+  baseUrl: string,
+  statusUrl: string,
+  companionReturnUrl: string | null | undefined,
+  reference: string
+): string {
+  const safe = sanitizeCompanionReturnUrl(companionReturnUrl);
+  const ref = reference.trim();
+  if (!safe || !ref) return statusUrl;
+  try {
+    const url = new URL(safe, baseUrl);
+    url.searchParams.set("gift", ref);
+    if (!url.hash) url.hash = "aurelia-gifts";
+    return url.toString();
+  } catch {
+    return statusUrl;
+  }
 }
 
 /**

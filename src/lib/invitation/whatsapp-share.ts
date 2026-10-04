@@ -48,6 +48,30 @@ export function ensureSingleShareUrl(text: string, url: string): string {
   return `${withoutUrls}\n\n${cleanUrl}`;
 }
 
+/**
+ * Stationery body for a personal invitation share.
+ * Keeps the stored guest name as-is (Pastor / Mr / Mrs stay if already typed).
+ * Admission code sits above the invite URL so messengers unfurl the link last.
+ */
+export function buildPersonalInvitationShareBody(params: {
+  guestName: string;
+  admissionCode?: string | null;
+}): string {
+  const guest = params.guestName.replace(/\s+/g, " ").trim();
+  const lines = [
+    `Dear ${guest},`,
+    "",
+    "You are personally invited.",
+    "",
+    "Open your invitation:",
+  ];
+  const code = params.admissionCode?.replace(/\s+/g, " ").trim();
+  if (code) {
+    lines.push("", `Your admission code: ${code}`);
+  }
+  return lines.join("\n");
+}
+
 export function buildInviteWhatsAppText(params: {
   guestName: string;
   inviteUrl: string;
@@ -55,20 +79,13 @@ export function buildInviteWhatsAppText(params: {
   eventTitle?: string | null;
 }): string {
   const url = collapseDuplicateAbsoluteUrl(params.inviteUrl);
-  const lines = [
-    `Dear ${params.guestName},`,
-    "",
-    params.eventTitle
-      ? `You are personally invited to ${params.eventTitle}.`
-      : "You are personally invited.",
-    "",
-    "Open your invitation:",
-    url,
-  ];
-  if (params.admissionCode) {
-    lines.push("", `Your admission code: ${params.admissionCode}`);
-  }
-  return ensureSingleShareUrl(lines.join("\n"), url);
+  return ensureSingleShareUrl(
+    buildPersonalInvitationShareBody({
+      guestName: params.guestName,
+      admissionCode: params.admissionCode,
+    }),
+    url
+  );
 }
 
 export function buildWhatsAppHref(text: string, phone?: string | null): string {

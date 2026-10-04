@@ -39,7 +39,6 @@ import { AureliaCoupleAlbum } from "./aurelia-couple-album";
 import { AureliaGiftCheckout } from "./aurelia-gift-checkout";
 import { AureliaMemoryAlbum } from "./aurelia-memory-album";
 import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
-import { CELEVENTIC_OFFICIAL_LOGO } from "@/lib/qr/qr-constants";
 import styles from "./aurelia-editorial-wedding.module.css";
 
 function pad(value: number) {
@@ -170,12 +169,11 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
   const coupleAlbum = useMemo(
     () =>
       resolveAureliaCoupleAlbum({
-        galleryUrls: [
-          ...(props.galleryUrls ?? []),
-          ...(isSeraphine ? SERAPHINE_COUPLE_GALLERY : AURELIA_COUPLE_GALLERY),
-        ],
-        media: props.design.media,
-        journey: config.journey,
+        galleryUrls: isSeraphine
+          ? [...SERAPHINE_COUPLE_GALLERY]
+          : [...(props.galleryUrls ?? []), ...AURELIA_COUPLE_GALLERY],
+        media: isSeraphine ? [] : props.design.media,
+        journey: isSeraphine ? [] : config.journey,
         reservedUrls: [resolvedHero, familyMonogram],
       }),
     [
@@ -377,12 +375,16 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       </section>
 
       {aureliaSectionVisible(config, "story") ? (
-        <section className={`${styles.section} ${styles.storySection}`} id="aurelia-story">
+        <section
+          className={`${styles.section} ${styles.storySection}${isSeraphine ? ` ${styles.storySplit}` : ""}`}
+          id="aurelia-story"
+        >
           {coupleAlbum.length > 0 ? (
             <AureliaCoupleAlbum
               items={coupleAlbum}
               coupleNames={`${config.partnerOneName} & ${config.partnerTwoName}`}
               variant="story"
+              look={isSeraphine ? "lookbook" : "flush"}
             />
           ) : config.storyImageUrl ? (
             <img
@@ -663,9 +665,11 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
             qrCenterImageUrl={
               isOrganizerUploadedQrCenter(props.event.qrCenterImageUrl)
                 ? props.event.qrCenterImageUrl!.trim()
-                : isSeraphine
-                  ? CELEVENTIC_OFFICIAL_LOGO
-                  : AURELIA_QR_CENTER
+                : isOrganizerUploadedQrCenter(resolvedHero)
+                  ? resolvedHero
+                  : isSeraphine
+                    ? SERAPHINE_HERO_FALLBACK
+                    : AURELIA_QR_CENTER
             }
             uploadCta={config.albumUploadCta}
             viewCta={config.albumViewCta}
@@ -699,6 +703,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                   : null
               }
               detailsNote={config.giftsDetails}
+              collapsible
             />
           </ClientErrorBoundary>
         </section>

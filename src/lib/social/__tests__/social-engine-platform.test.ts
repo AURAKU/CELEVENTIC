@@ -141,7 +141,7 @@ describe("platform personalization", () => {
       guestDisplayName: "Mr. & Mrs. Mensah",
       guestToken: "mensah-token",
     });
-    assert.equal(surface.guestGreeting, "Dear Mr. & Mrs. Mensah,");
+    assert.equal(surface.guestGreeting, "Dear Mr & Mrs Mensah,");
     assert.match(surface.description, /^Dear Mr\. & Mrs\. Mensah,/);
     assert.match(surface.image.url, /guest=mensah-token/);
     assert.match(surface.canonicalUrl, /guest=mensah-token/);

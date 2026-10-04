@@ -14,10 +14,12 @@ export function AureliaCoupleAlbum({
   items,
   coupleNames,
   variant = "frame",
+  look = "flush",
 }: {
   items: AureliaCoupleAlbumItem[];
   coupleNames: string;
   variant?: "frame" | "story";
+  look?: "flush" | "lookbook";
 }) {
   const playlist = useMemo(() => orderCoupleAlbumForPlayback(items), [items]);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -81,9 +83,13 @@ export function AureliaCoupleAlbum({
       />
     ) : null;
 
+  const isLookbook = isStory && look === "lookbook";
+  const slideCount = String(playlist.length).padStart(2, "0");
+  const slideNo = String(slideIndex + 1).padStart(2, "0");
+
   return (
     <div
-      className={`${styles.coupleAlbum} ${isStory ? styles.storyGallery : ""}`}
+      className={`${styles.coupleAlbum} ${isStory ? styles.storyGallery : ""} ${isLookbook ? styles.storyLookbook : ""}`}
       data-testid="aurelia-couple-album"
     >
       {isStory ? null : (
@@ -99,7 +105,18 @@ export function AureliaCoupleAlbum({
       <div className={styles.coupleReel} role="list">
         {filled && current ? (
           isStory ? (
-            <div className={styles.storyGalleryFrame} role="listitem">
+            <div
+              className={`${styles.storyGalleryFrame} ${current.type === "video" ? styles.storyGalleryFilm : ""}`}
+              role="listitem"
+            >
+              {isLookbook ? (
+                <p className={styles.storyGalleryPlate}>
+                  <span>{current.type === "video" ? "Film" : "Photograph"}</span>
+                  <span>
+                    {slideNo} / {slideCount}
+                  </span>
+                </p>
+              ) : null}
               <button
                 type="button"
                 className={styles.storyGalleryOpen}

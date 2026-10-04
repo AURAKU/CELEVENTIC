@@ -1,15 +1,18 @@
 import {
   aureliaFamilyDefaults,
   isAureliaEditorialLayout,
+  isAureliaFamilyPlaceholderHero,
   mergeAureliaWedding,
   SERAPHINE_CATALOG_SLUG,
   SERAPHINE_LAYOUT_SLUG,
 } from "@/lib/experience/aurelia-editorial";
 import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
+import { extractDesignQrPhotoSources } from "@/lib/qr/qr-center-resolution";
 import { resolveDeceasedName } from "@/lib/invite-blueprints/funeral-invitation-copy";
 import { resolveSocialEventKind } from "@/lib/social/social-category";
 import type { SocialInvitationInput } from "@/lib/social/social-engine";
 import { resolveCeremonyWeekdayForDate } from "@/lib/social/social-event-title";
+import { resolvePublicMediaUrl } from "@/lib/uploads/media-url";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 
 type LiveInvitationLike = {
@@ -33,6 +36,11 @@ type ProductionOrderLike = {
   deceasedName?: string | null;
   updatedAt?: Date | string | null;
 } | null;
+
+function publicMediaUrl(value?: string | null): string | null {
+  const resolved = resolvePublicMediaUrl(value);
+  return resolved || null;
+}
 
 export function isAureliaFamilySocialLayout(input: {
   catalogSlug?: string | null;
@@ -76,6 +84,14 @@ export function buildLiveSocialInvitationInput(input: {
         aureliaFamilyDefaults(layoutSlug)
       )
     : null;
+  const designPhotos = extractDesignQrPhotoSources(input.liveDesign);
+  const roleHeroUrl =
+    input.liveDesign?.media?.find((asset) => asset.role === "hero")?.url ?? null;
+  const uploadedHeroUrl = publicMediaUrl(designPhotos.heroImageUrl);
+  const roleHeroPublic = publicMediaUrl(roleHeroUrl);
+  const mediaHeroUrl =
+    uploadedHeroUrl ??
+    (roleHeroPublic && !isAureliaFamilyPlaceholderHero(roleHeroPublic) ? roleHeroPublic : null);
   const colors = input.liveDesign?.colors;
   const themeColor = input.liveDesign?.theme?.color;
   const event = input.invitation.event;
@@ -132,9 +148,11 @@ export function buildLiveSocialInvitationInput(input: {
     },
     shareOgImageUrl: input.liveDesign?.experience?.fashionHouse?.shareOgImageUrl,
     fashionHouse: input.liveDesign?.experience?.fashionHouse,
-    heroImageUrl: wedding?.heroImageUrl ?? input.liveDesign?.experience?.aureliaWedding?.heroImageUrl,
-    coverImageUrl: event.coverImageUrl,
-    mediaHeroUrl: input.liveDesign?.media?.find((asset) => asset.role === "hero")?.url,
+    heroImageUrl: publicMediaUrl(
+      wedding?.heroImageUrl ?? input.liveDesign?.experience?.aureliaWedding?.heroImageUrl
+    ),
+    coverImageUrl: publicMediaUrl(event.coverImageUrl),
+    mediaHeroUrl,
     versionParts: [
       input.invitation.updatedAt instanceof Date
         ? input.invitation.updatedAt.toISOString()
@@ -145,7 +163,8 @@ export function buildLiveSocialInvitationInput(input: {
         : input.productionOrder?.updatedAt,
       wedding?.heroImageUrl,
       event.coverImageUrl,
-      input.liveDesign?.media?.find((asset) => asset.role === "hero")?.url,
+      uploadedHeroUrl,
+      roleHeroUrl,
       input.liveDesign?.experience?.fashionHouse?.shareOgImageUrl,
       catalogSlug,
       layoutSlug,

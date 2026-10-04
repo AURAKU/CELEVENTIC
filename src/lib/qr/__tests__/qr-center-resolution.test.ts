@@ -4,6 +4,7 @@ import { CELEVENTIC_OFFICIAL_LOGO } from "../qr-constants";
 import {
   extractDesignQrPhotoSources,
   isFamilyAlbumQrCenter,
+  isFamilyHeroQrCenter,
   isOfficialCeleventicQrCenter,
   isOrganizerUploadedQrCenter,
   isPinnedQrCenterAllowed,
@@ -69,6 +70,9 @@ describe("QR center resolution", () => {
   it("never treats template stock, brand marks, Unsplash, or WhatsApp art as a couple photo", () => {
     assert.equal(isStockQrCenter("/templates/aurelia/hero.jpg"), true);
     assert.equal(isFamilyAlbumQrCenter("/templates/aurelia/qr-center.jpg"), true);
+    assert.equal(isFamilyHeroQrCenter("/templates/seraphine/hero.jpg"), true);
+    assert.equal(isFamilyHeroQrCenter("/templates/aurelia/hero.jpg"), true);
+    assert.equal(isFamilyHeroQrCenter("/templates/aurelia/qr-center.jpg"), false);
     assert.equal(isStockQrCenter("/templates/aurelia/qr-center.jpg"), false);
     assert.equal(isOrganizerUploadedQrCenter("/templates/aurelia/qr-center.jpg"), false);
     assert.equal(isPinnedQrCenterAllowed("/templates/aurelia/qr-center.jpg"), true);
@@ -87,7 +91,9 @@ describe("QR center resolution", () => {
     assert.equal(isOfficialCeleventicQrCenter("/brand/logo-full.png"), true);
     assert.equal(isPinnedQrCenterAllowed("/brand/logo-full.png"), true);
     assert.equal(isPinnedQrCenterAllowed("/uploads/events/hero.jpg"), true);
-    assert.equal(isPinnedQrCenterAllowed("/templates/aurelia/hero.jpg"), false);
+    assert.equal(isPinnedQrCenterAllowed("/templates/aurelia/hero.jpg"), true);
+    assert.equal(isPinnedQrCenterAllowed("/templates/seraphine/hero.jpg"), true);
+    assert.equal(isPinnedQrCenterAllowed("/templates/seraphine/monogram-qr.png"), false);
   });
 
   it("reads uploaded hero from published design config and ignores stock wedding art", () => {

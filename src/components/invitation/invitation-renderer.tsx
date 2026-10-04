@@ -125,9 +125,9 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
             />
           </ClientErrorBoundary>
         )}
-      {/* Closing section of every invitation. The entry pass supersedes the
-          standalone gate code, showing both would give a guest two different
-          numbers to read out at the door. */}
+      {/* Closing admission surface. GuestEntryPass and the portal Your Pass
+          card already print the 4-digit code, so this compact copy only
+          remains when nothing else will show it. */}
       {props.entryPass ? (
         <ClientErrorBoundary
           fallback={
@@ -151,13 +151,14 @@ export function InvitationRenderer({ interactiveMedia = false, ...props }: Invit
             layout={props.design.layout}
           />
         </ClientErrorBoundary>
-      ) : (
-        props.admissionManualCode && (
-          <div className="px-4 pb-6 -mt-2">
-            <ManualGateCodeReveal code={props.admissionManualCode} variant="invite" />
-          </div>
-        )
-      )}
+      ) : props.admissionManualCode &&
+        !props.admissionQrDataUrl &&
+        !props.qrDataUrl &&
+        !isAureliaEditorialLayout(props.design.layout) ? (
+        <div className="px-4 pb-6 -mt-2">
+          <ManualGateCodeReveal code={props.admissionManualCode} variant="invite" />
+        </div>
+      ) : null}
     </div>
   );
 }

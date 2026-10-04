@@ -20,6 +20,7 @@ import { InvitationMemoryAlbumCard } from "@/components/guest-portal/invitation-
 import { useGuestPortalActions } from "@/hooks/use-guest-portal-actions";
 import { buildWhatsAppUrl, buildEmailUrl, isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
 import { resolveInviteShareUrl } from "@/lib/invitation/invite-share";
+import { buildInviteWhatsAppText } from "@/lib/invitation/whatsapp-share";
 import {
   aureliaFamilyDefaults,
   isAureliaEditorialLayout,
@@ -54,6 +55,7 @@ import { resolveEventLifecycle } from "@/lib/experience/lifecycle";
 import { EventDayBanner } from "@/components/experience/event-day-banner";
 import { PostEventExperience } from "@/components/experience/post-event-experience";
 import { CinematicInvitationSpotlight } from "@/components/guest-portal/cinematic-invitation-spotlight";
+import { GuestPassCard } from "@/components/guest-portal/guest-pass-card";
 import { GuestHelpChip } from "@/components/celeventic-guide/guest-contextual-help";
 import { InviteGuestHelpFab } from "@/components/celeventic-guide/guest-quick-actions";
 import { InviteViewportShell } from "@/components/invitation/invite-viewport-shell";
@@ -170,14 +172,21 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
       partnerTwoName: wedding.partnerTwoName,
     }).title;
     const guestDisplayName = sanitizeSocialGuestDisplayName(props.guestName);
+    const url = resolveInviteShareUrl({
+      uniqueLink: props.invitation.uniqueLink,
+      guestToken: guestDisplayName ? props.guestQrToken : null,
+      fallbackHref: typeof window !== "undefined" ? window.location.href : undefined,
+    });
     return {
       title,
-      text: buildSocialInviteShareText(title, guestDisplayName),
-      url: resolveInviteShareUrl({
-        uniqueLink: props.invitation.uniqueLink,
-        guestToken: guestDisplayName ? props.guestQrToken : null,
-        fallbackHref: typeof window !== "undefined" ? window.location.href : undefined,
-      }),
+      text: guestDisplayName
+        ? buildInviteWhatsAppText({
+            guestName: guestDisplayName,
+            inviteUrl: url,
+            admissionCode: props.admissionManualCode,
+          })
+        : buildSocialInviteShareText(title, guestDisplayName),
+      url,
     };
   }, [
     displayEvent.hostName,
@@ -187,6 +196,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     props.invitation.uniqueLink,
     props.guestName,
     props.guestQrToken,
+    props.admissionManualCode,
   ]);
 
   const {
@@ -787,12 +797,22 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
             if (!showSeatPass && !showAdmissionPass && !showInviteQr) return null;
             return (
             <PortalSection delay={400} id="pass">
-              <div className="rounded-2xl border border-[#D4A63A]/30 bg-white p-6 text-center shadow-sm">
-                <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-                  <h2 className="font-display text-lg font-bold text-[#0F172A]">Your Pass</h2>
-                  <GuestHelpChip topicId="qr" />
-                  <GuestHelpChip topicId="seating" />
-                </div>
+              <GuestPassCard
+                guestName={props.guestName}
+                partyAllowance={
+                  props.partyAllowance ??
+                  props.placeCard?.party.allowance ??
+                  props.placeCard?.recipient.partySize ??
+                  1
+                }
+                layout={props.design.layout}
+                help={
+                  <>
+                    <GuestHelpChip topicId="qr" />
+                    <GuestHelpChip topicId="seating" />
+                  </>
+                }
+              >
                 {showSeatPass && props.seatQrDataUrl && props.seatLookupUrl && (
                   <div className="mb-6 rounded-xl bg-[#0B8A83]/5 border border-[#0B8A83]/20 p-4">
                     <p className="text-xs text-slate-600 mb-2 flex items-center justify-center gap-1">
@@ -836,7 +856,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
                     )}
                   </div>
                 )}
-              </div>
+              </GuestPassCard>
             </PortalSection>
             );
           })()}

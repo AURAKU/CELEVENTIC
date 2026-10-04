@@ -1,4 +1,6 @@
 import { createHash } from "crypto";
+import { buildPersonalInvitationShareBody } from "@/lib/invitation/whatsapp-share";
+import { truncateForShare } from "@/lib/social/share-description";
 import { sanitizeSocialGuestDisplayName, formatSocialGuestGreeting } from "@/lib/social/social-guest";
 import { resolveSocialEventKind, type SocialEventKind } from "@/lib/social/social-category";
 import {
@@ -30,7 +32,7 @@ export type SocialPlaceCardImage = {
 export const SOCIAL_PLACE_CARD_WIDTH = 1200;
 export const SOCIAL_PLACE_CARD_HEIGHT = 630;
 export const SOCIAL_PLACE_CARD_TYPE = "image/png";
-export const SOCIAL_PLACE_CARD_ART_VERSION = "orbital-1";
+export const SOCIAL_PLACE_CARD_ART_VERSION = "letter-1";
 export {
   SOCIAL_PLACE_CARD_PHRASE,
   SOCIAL_PLACE_CARD_PERSONAL_PHRASE,
@@ -256,17 +258,26 @@ export function buildSocialInvitationSurface(input: SocialInvitationInput): Soci
     SOCIAL_PLACE_CARD_ART_VERSION,
   ]);
   const image = decorateSocialPlaceCardImage(input.appUrl, input.uniqueLink, version, guestToken);
+  const familyCard = variant === "aurelia" || variant === "seraphine";
+  const familyShareText =
+    familyCard && guestDisplayName
+      ? buildPersonalInvitationShareBody({ guestName: guestDisplayName })
+      : socialNativeShareText({
+          kind,
+          title: resolved.title,
+          guestDisplayName,
+        });
+  const familyDescription =
+    familyCard && guestDisplayName
+      ? truncateForShare(`Dear ${guestDisplayName}, you are personally invited.`)
+      : description;
   return {
     kind,
     variant: variant ?? "platform",
     title: resolved.title,
     shareTitle: socialShareTitle(resolved.title, kind),
-    shareText: socialNativeShareText({
-      kind,
-      title: resolved.title,
-      guestDisplayName,
-    }),
-    description,
+    shareText: familyShareText,
+    description: familyDescription,
     dateLabel,
     image,
     canonicalUrl: buildInviteCanonicalUrl(

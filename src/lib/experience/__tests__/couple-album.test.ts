@@ -28,18 +28,22 @@ test("couple album keeps Seraphine couple portraits and still drops hero stock",
   const items = resolveAureliaCoupleAlbum({
     galleryUrls: [
       "/templates/seraphine/hero.jpg",
-      "/templates/seraphine/couple/01-standing.jpg",
-      "/templates/seraphine/couple/02-gold-laugh.jpg",
+      "/templates/seraphine/couple/01-chambers.jpg",
+      "/templates/seraphine/couple/02-beach.jpg",
+      "/templates/seraphine/couple/06-journey.mp4",
       "/templates/seraphine/monogram-lockup.jpg",
     ],
   });
   assert.deepEqual(
     items.map((item) => item.url),
     [
-      "/templates/seraphine/couple/01-standing.jpg",
-      "/templates/seraphine/couple/02-gold-laugh.jpg",
+      "/templates/seraphine/couple/01-chambers.jpg",
+      "/templates/seraphine/couple/02-beach.jpg",
+      "/templates/seraphine/couple/06-journey.mp4",
     ]
   );
+  assert.equal(items[2]?.type, "video");
+  assert.equal(items[2]?.posterUrl, "/templates/seraphine/couple/01-chambers.jpg");
 });
 
 test("couple album keeps Aurelia couple portraits for Our Beginning", () => {
