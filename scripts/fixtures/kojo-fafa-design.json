@@ -1,0 +1,248 @@
+{
+  "layout": "forever-afaris-wedding",
+  "colors": {
+    "primary": "#2C3A2E",
+    "secondary": "#8BA888",
+    "accent": "#C5B48A",
+    "background": "#FAFAF5",
+    "text": "#2C3A2E"
+  },
+  "fonts": {
+    "heading": "Cinzel",
+    "script": "Great Vibes",
+    "body": "Cormorant Garamond"
+  },
+  "animation": "fade",
+  "ornament": "floral",
+  "introText": "",
+  "studio": {
+    "fullScreen": true,
+    "revealMode": "envelope",
+    "buttonStyle": "wax-seal",
+    "headingSize": 26,
+    "bodySize": 13,
+    "scriptSize": 30,
+    "rsvpLabel": "R.S.V.P",
+    "weddingBoard": {
+      "openingInstruction": "Tap anywhere to open",
+      "sealMonogram": "K | F",
+      "gateWord": "#KOJOANDFAFA",
+      "envelopeAddressLine": "You are cordially invited",
+      "envelopeStyle": "champagne-botanical",
+      "gateStyle": "botanical-trellis",
+      "sealColor": "emerald",
+      "sealMotif": "monogram",
+      "haptics": true,
+      "accentColor": "#C5B48A",
+      "blushColor": "#E7EFE4",
+      "inkColor": "#2C3A2E",
+      "canvasColor": "#FAFAF5",
+      "eyebrow": "TOGETHER WITH THEIR FAMILIES",
+      "scriptTitle": "The Wedding",
+      "familyHeading": "",
+      "familyIntro": "Together with their families, Kojo and Fafa invite you to celebrate a love that began at a friend's wedding and grew through laughter, friendship, and faith.",
+      "coupleName1": "Kojo",
+      "coupleName2": "Fafa",
+      "invitationCopy": "Joyfully request the honour of your presence as they begin this new chapter together.",
+      "hashtag": "#KojoAndFafa",
+      "heroCaption": "From groomsman and bridesmaid to I do",
+      "displayDate": "NOVEMBER • 13 & 14 • 2026",
+      "weekday": "FRI · SAT",
+      "timeLabel": "10:00 AM",
+      "receptionText": "Wedding ceremony at The Forest Grove Event, Adjacent to 335 Place, Dzorwulu. Time to be announced.",
+      "accessNote": "STRICTLY BY INVITATION",
+      "venueName": "WESTVILLE HOMES",
+      "venueAddress": "20 Onyasia Street, West Legon",
+      "mapButtonLabel": "Tap here for Google Map directions",
+      "countdownHeading": "Until We Say I Do",
+      "countdownTarget": "2026-11-13T10:00:00+00:00",
+      "countdownExpiredMessage": "Today we say I do",
+      "greetingHeading": "A Note For You",
+      "greetingBody": "We would be honoured to have you present as we begin this new chapter together.",
+      "greetingFallbackName": "Our Treasured Guest",
+      "programmeHeading": "Order Of The Day",
+      "programmeItems": [
+        {
+          "id": "traditional",
+          "time": "FRI 13 NOV · 10:00 AM",
+          "title": "Traditional Ceremony",
+          "description": "Westville Homes, 20 Onyasia Street, West Legon"
+        },
+        {
+          "id": "white",
+          "time": "SAT 14 NOV",
+          "title": "Wedding Ceremony",
+          "description": "The Forest Grove Event, Adjacent to 335 Place, Dzorwulu. Time to be announced."
+        }
+      ],
+      "dressCodeHeading": "DRESS CODE",
+      "dressCodeLadies": "Traditional ceremony: tropical elegance. Kente, or white with a touch of green. Wedding day, garden soirée: elegant floral dresses with a fascinator or hat.",
+      "dressCodeGents": "Traditional ceremony: Kente, or white with a touch of green. Wedding day: a well-tailored suit, crisp shirt, and polished shoes. Ties, bow ties, and pocket squares are welcome.",
+      "guestPolicyHeading": "WHO IS THIS INVITATION FOR?",
+      "guestPolicyBody": "This celebration honours the names written on the invitation. Kindly come as invited, and we will look after you.",
+      "storyHeading": "Our Journey",
+      "storyBody": "We met at a friend's wedding, paired together as groomsman and bridesmaid. What started with a simple \"Give me your number\" became the beginning of something beautiful.\n\nSince then, our story has been filled with laughter, friendship, faith, countless memories, and plenty of love. Through every season, the Good Lord has been good to us, guiding our steps and bringing us to this special moment.\n\nAnd now, here we are, ready to say \"I do.\" We would love for you to be there as we begin this new chapter together.",
+      "galleryHeading": "Moments",
+      "scratchHeading": "A Little Secret",
+      "scratchPrompt": "Scratch to reveal",
+      "scratchMessage": "Groomsman and bridesmaid then. Husband and wife next.",
+      "rsvpHeading": "R.S.V.P",
+      "rsvpContacts": [
+        {
+          "name": "ESTHER",
+          "phone": "0549436196"
+        }
+      ],
+      "closingHeading": "With Love & Gratitude",
+      "closingMessage": "Your presence is the greatest gift. We would love for you to be there as we say I do.",
+      "closingSignature": "Kojo & Fafa",
+      "replayLabel": "Replay opening",
+      "memoryHeading": "Memory Vault",
+      "memoryBody": "Every photo and video you capture belongs in our album. Upload yours and we will treasure it forever.",
+      "memoryCta": "Add your memories",
+      "features": {
+        "guestWelcome": true,
+        "heroPortrait": true,
+        "countdown": true,
+        "greeting": true,
+        "programme": true,
+        "location": true,
+        "dressCode": true,
+        "guestPolicy": true,
+        "story": true,
+        "gallery": true,
+        "scratch": true,
+        "rsvp": true,
+        "closing": true,
+        "familyIntro": true,
+        "memory": true
+      }
+    }
+  },
+  "experience": {
+    "collectionId": "luxury-gold",
+    "openingExperience": "blush-gate",
+    "outroExperience": "golden-sparkles",
+    "defaultAudioCategory": "wedding",
+    "defaultAudioTrackId": "layout-seraphine-champagne-wedding",
+    "hubMode": "scroll",
+    "countdownStyle": "gold-royal",
+    "sceneTransition": "door",
+    "heroLayout": "garden-bloom",
+    "slideshowStyle": "luxury-frame",
+    "pacing": "medium",
+    "introEnabled": true,
+    "introDurationSec": 2,
+    "enableRevealSounds": true,
+    "enabledTabs": [
+      "invitation",
+      "countdown",
+      "timeline",
+      "venue",
+      "gallery",
+      "memory",
+      "rsvp"
+    ],
+    "introVariant": "swan-glide",
+    "typographyPackId": "luxury",
+    "backgroundPackId": "gold-foil"
+  },
+  "media": [
+    {
+      "url": "/templates/seraphine/hero.jpg",
+      "type": "image",
+      "role": "hero",
+      "name": "Kojo & Fafa"
+    },
+    {
+      "url": "/templates/seraphine/hero.jpg",
+      "type": "image",
+      "role": "intro",
+      "name": "Kojo & Fafa"
+    },
+    {
+      "url": "/templates/seraphine/couple/01-chambers.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Where it began"
+    },
+    {
+      "url": "/templates/seraphine/couple/02-beach.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "By the sea"
+    },
+    {
+      "url": "/templates/seraphine/couple/03-dinner.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Evening light"
+    },
+    {
+      "url": "/templates/seraphine/couple/04-boat.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "On the water"
+    },
+    {
+      "url": "/templates/seraphine/couple/05-lounge.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "At ease"
+    },
+    {
+      "url": "/templates/seraphine/couple/06-journey.mp4",
+      "type": "video",
+      "role": "reference",
+      "name": "Our Journey"
+    },
+    {
+      "url": "/templates/seraphine/couple/11-studio-black.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Studio portrait"
+    },
+    {
+      "url": "/templates/seraphine/couple/12-ivory-embrace.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Ivory embrace"
+    },
+    {
+      "url": "/templates/seraphine/couple/13-poolside-black.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Poolside"
+    },
+    {
+      "url": "/templates/seraphine/couple/14-ivory-spin.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Ivory spin"
+    },
+    {
+      "url": "/templates/seraphine/couple/15-pool-laugh.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Pool laugh"
+    },
+    {
+      "url": "/templates/seraphine/couple/16-ivory-steps.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Ivory steps"
+    },
+    {
+      "url": "/templates/seraphine/guest-outfits-board.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Ladies garden soirée"
+    },
+    {
+      "url": "/templates/seraphine/guest-outfits-gentlemen.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Gentlemen garden soirée"
+    }
+  ]
+}

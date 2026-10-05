@@ -137,7 +137,7 @@ describe("invite share", () => {
     assert.equal(payload.title, "Kojo & Fafa");
     assert.match(payload.text, /Dear Ama,/);
     assert.match(payload.text, /You are personally invited\./);
-    assert.match(payload.text, /Open your invitation:/);
+    assert.doesNotMatch(payload.text, /Open your invitation:/);
     assert.doesNotMatch(payload.text, /https?:\/\//);
     assert.equal(payload.url, "https://celeventic.com/invite/kojo-fafa?guest=ama-token");
     assert.doesNotMatch(`${payload.title} ${payload.text} ${payload.url}`, /Seraphine|Aurelia/i);
@@ -167,13 +167,41 @@ describe("invite share", () => {
     });
     assert.match(payload.text, /Dear Pastor Christopher Fiave,/);
     assert.match(payload.text, /You are personally invited\./);
-    assert.match(payload.text, /Open your invitation:/);
+    assert.doesNotMatch(payload.text, /Open your invitation:/);
     assert.match(payload.text, /Your admission code: 9180/);
     assert.doesNotMatch(payload.text, /https?:\/\//);
     assert.equal(
       payload.url,
       "https://www.celeventic.com/invite/9qsZeEvYS6k08i78n67WHelxMHK65oVE?guest=cmusgwbyy00n0lag9ozdkhgmj"
     );
+  });
+
+  it("uses the same letter for every template, without printing the link", () => {
+    const payload = buildInviteSharePayload({
+      category: "wedding",
+      uniqueLink: "akosua-yaw",
+      origin: "https://celeventic.com",
+      catalogSlug: "forever-afaris-wedding",
+      layoutSlug: "forever-afaris-wedding",
+      guestDisplayName: "Ama",
+      guestToken: "ama-token",
+      event: {
+        title: "Forever Afaris",
+        hostName: "Akosua & Yaw",
+        description: null,
+        startDate: "",
+        venueName: null,
+        landmark: null,
+        mapsLink: null,
+        contactPhone: null,
+        dressCode: null,
+      },
+    });
+    assert.equal(payload.title, "Akosua & Yaw");
+    assert.match(payload.text, /Dear Ama,/);
+    assert.match(payload.text, /You are personally invited\./);
+    assert.doesNotMatch(payload.text, /https?:\/\/|Open your invitation:/);
+    assert.equal(payload.url, "https://celeventic.com/invite/akosua-yaw?guest=ama-token");
   });
 
   it("builds WhatsApp and email channel hrefs", () => {

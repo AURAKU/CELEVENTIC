@@ -19,15 +19,12 @@ import { GiftInviteCard } from "@/components/gifts/gift-invite-card";
 import { InvitationMemoryAlbumCard } from "@/components/guest-portal/invitation-memory-album-card";
 import { useGuestPortalActions } from "@/hooks/use-guest-portal-actions";
 import { buildWhatsAppUrl, buildEmailUrl, isPreviewInvitationId } from "@/lib/invitation/guest-portal-actions";
-import { resolveInviteShareUrl } from "@/lib/invitation/invite-share";
-import { buildInviteWhatsAppText } from "@/lib/invitation/whatsapp-share";
+import { buildInviteSharePayload } from "@/lib/invitation/invite-share";
 import {
   aureliaFamilyDefaults,
   isAureliaEditorialLayout,
   mergeAureliaWedding,
 } from "@/lib/experience/aurelia-editorial";
-import { buildSocialInviteShareText, resolveSocialEventTitle } from "@/lib/social/social-event-title";
-import { sanitizeSocialGuestDisplayName } from "@/lib/social/social-guest";
 import { PagedInvitationViewer } from "@/components/invitation-paged/paged-invitation-viewer";
 import { categoryForBlueprint } from "@/lib/invite-blueprints/blueprint-registry";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
@@ -158,42 +155,33 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     [displayEvent, props.event.startDateRaw, props.event.startDate]
   );
 
-  const familyShare = useMemo(() => {
-    if (!isAureliaEditorialLayout(props.design?.layout)) return null;
-    const wedding = mergeAureliaWedding(
-      props.design.experience?.aureliaWedding,
-      aureliaFamilyDefaults(props.design.layout)
-    );
-    const title = resolveSocialEventTitle({
-      eventTitle: displayEvent.title,
-      hostName: displayEvent.hostName,
-      invitationName: displayInvitation.name,
-      partnerOneName: wedding.partnerOneName,
-      partnerTwoName: wedding.partnerTwoName,
-    }).title;
-    const guestDisplayName = sanitizeSocialGuestDisplayName(props.guestName);
-    const url = resolveInviteShareUrl({
+  const invitationShare = useMemo(() => {
+    const wedding = isAureliaEditorialLayout(props.design?.layout)
+      ? mergeAureliaWedding(
+          props.design.experience?.aureliaWedding,
+          aureliaFamilyDefaults(props.design.layout)
+        )
+      : null;
+    return buildInviteSharePayload({
+      category: categoryForBlueprint(props.design?.blueprintId),
+      event: displayEvent,
       uniqueLink: props.invitation.uniqueLink,
-      guestToken: guestDisplayName ? props.guestQrToken : null,
       fallbackHref: typeof window !== "undefined" ? window.location.href : undefined,
+      catalogSlug: props.templateSlug,
+      layoutSlug: props.design?.layout,
+      invitationName: displayInvitation.name,
+      partnerOneName: wedding?.partnerOneName,
+      partnerTwoName: wedding?.partnerTwoName,
+      guestDisplayName: props.guestName,
+      guestToken: props.guestQrToken,
+      admissionCode: props.admissionManualCode,
     });
-    return {
-      title,
-      text: guestDisplayName
-        ? buildInviteWhatsAppText({
-            guestName: guestDisplayName,
-            inviteUrl: url,
-            admissionCode: props.admissionManualCode,
-          })
-        : buildSocialInviteShareText(title, guestDisplayName),
-      url,
-    };
   }, [
-    displayEvent.hostName,
-    displayEvent.title,
+    displayEvent,
     displayInvitation.name,
     props.design,
     props.invitation.uniqueLink,
+    props.templateSlug,
     props.guestName,
     props.guestQrToken,
     props.admissionManualCode,
@@ -228,9 +216,9 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
     registryUrl: props.registryUrl,
     eventId: props.eventId,
     calendarEvent,
-    shareTitle: familyShare?.title ?? displayEvent.title,
-    shareText: familyShare?.text,
-    shareUrl: familyShare?.url,
+    shareTitle: invitationShare.title,
+    shareText: invitationShare.text,
+    shareUrl: invitationShare.url,
     hubTabs,
     hasCalendarDate: Boolean(props.event.startDateRaw),
     buttonActions: experience?.buttonActions,

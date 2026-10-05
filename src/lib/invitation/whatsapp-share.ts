@@ -51,25 +51,46 @@ export function ensureSingleShareUrl(text: string, url: string): string {
 /**
  * Stationery body for a personal invitation share.
  * Keeps the stored guest name as-is (Pastor / Mr / Mrs stay if already typed).
- * Admission code sits above the invite URL so messengers unfurl the link last.
+ * The link itself is attached by the share sheet, not printed under the letter.
  */
 export function buildPersonalInvitationShareBody(params: {
   guestName: string;
   admissionCode?: string | null;
 }): string {
   const guest = params.guestName.replace(/\s+/g, " ").trim();
-  const lines = [
-    `Dear ${guest},`,
-    "",
-    "You are personally invited.",
-    "",
-    "Open your invitation:",
-  ];
+  const lines = [`Dear ${guest},`, "", "You are personally invited."];
   const code = params.admissionCode?.replace(/\s+/g, " ").trim();
   if (code) {
     lines.push("", `Your admission code: ${code}`);
   }
   return lines.join("\n");
+}
+
+/**
+ * Letter sent with any invitation template.
+ * Memorials keep honour language. The link stays on the share payload, not in the letter.
+ */
+export function buildInvitationShareLetter(params: {
+  title: string;
+  guestName: string;
+  admissionCode?: string | null;
+  memorial?: boolean;
+}): string {
+  const guest = params.guestName.replace(/\s+/g, " ").trim();
+  if (params.memorial) {
+    const lines = [
+      `Dear ${guest},`,
+      "",
+      `Please join us as we honour and remember ${params.title.trim()}.`,
+    ];
+    const code = params.admissionCode?.replace(/\s+/g, " ").trim();
+    if (code) lines.push("", `Your admission code: ${code}`);
+    return lines.join("\n");
+  }
+  return buildPersonalInvitationShareBody({
+    guestName: guest,
+    admissionCode: params.admissionCode,
+  });
 }
 
 export function buildInviteWhatsAppText(params: {

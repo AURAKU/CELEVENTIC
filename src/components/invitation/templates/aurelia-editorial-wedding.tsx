@@ -394,7 +394,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
   );
   const menuId = useId();
   const lookbookId = useId();
-  const [lookbookOpen, setLookbookOpen] = useState(true);
+  const [lookbookOpen, setLookbookOpen] = useState(false);
   const [calOpen, setCalOpen] = useState(false);
   const countdownIso = resolveAureliaCountdownIso(
     config.ceremonies,

@@ -2785,19 +2785,6 @@
   cursor: pointer;
 }
 
-.inv-share-sheet-url {
-  margin: 0 0 0.9rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--inv-color-accent) 28%, transparent);
-  background: color-mix(in srgb, #000 28%, transparent);
-  font-family: var(--inv-font-body);
-  font-size: 0.78rem;
-  line-height: 1.35;
-  color: color-mix(in srgb, var(--inv-color-ink) 88%, transparent);
-  word-break: break-all;
-}
-
 .inv-share-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

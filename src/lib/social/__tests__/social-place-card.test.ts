@@ -166,7 +166,8 @@ describe("Aurelia / Seraphine share surface", () => {
     assert.equal(ama.description, "Dear Ama, you are personally invited.");
     assert.match(ama.shareText, /Dear Ama,/);
     assert.match(ama.shareText, /You are personally invited\./);
-    assert.match(ama.shareText, /Open your invitation:/);
+    assert.doesNotMatch(ama.shareText, /https?:\/\//);
+    assert.doesNotMatch(ama.shareText, /Open your invitation:/);
     assert.match(ama.image.url, /guest=ama-token/);
     assert.doesNotMatch(`${ama.shareTitle} ${ama.description}`, /Aurelia/i);
 
@@ -200,7 +201,8 @@ describe("Aurelia / Seraphine share surface", () => {
     assert.equal(surface.heroUrl, "/uploads/events/kojo-fafa-hero.jpg");
     assert.equal(surface.guestGreeting, "Dear Pastor Christopher Fiave,");
     assert.equal(surface.phrase, "You are personally invited.");
-    assert.match(surface.shareText, /Open your invitation:/);
+    assert.doesNotMatch(surface.shareText, /Open your invitation:/);
+    assert.doesNotMatch(surface.shareText, /https?:\/\//);
     assert.doesNotMatch(surface.shareText, /https?:\/\//);
     assert.match(surface.canonicalUrl, /guest=cmusgwbyy00n0lag9ozdkhgmj/);
     assert.doesNotMatch(`${surface.title} ${surface.shareTitle}`, /Seraphine/i);
@@ -268,7 +270,8 @@ describe("social place-card markup", () => {
       .children;
     const serialized = JSON.stringify(tree);
     assert.match(serialized, /\/templates\/aurelia\/hero\.jpg/);
-    assert.match(serialized, /objectFit":"cover"/);
+    assert.match(serialized, /objectFit":"contain"/);
+    assert.doesNotMatch(text, /OPEN TO ENTER|https?:\/\//);
     void hero;
   });
 

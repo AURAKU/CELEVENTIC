@@ -1,59 +1,80 @@
 /**
- * Idempotent organiser-style seed for the Kojo & Fafa Seraphine wedding.
+ * Idempotent seed for the two couple invitations that must show on the
+ * organiser home next to every other published event. Both use the Forever
+ * Afaris wedding template (`forever-afaris-wedding`) with their own copy,
+ * photographs, and film. Nothing from the Jeffery & Chelsy wedding is stored.
  *
- * Copies couple photographs into event uploads, then creates or updates:
- *   Event slug `kojo-and-fafa`
- *   Invitation using seraphine-champagne-wedding
- *   journey captions such as "Where it began"
+ *   Kojo & Fafa — slug `kojo-and-fafa`
+ *   Edwin & Lordina — slug `edwin-and-lordina`
+ *
+ * Owned by the Super Admin account so they appear on that dashboard.
  *
  * Run: DATABASE_URL=file:./prisma/dev.db npx tsx scripts/seed-kojo-fafa-wedding.ts
  */
-import { copyFileSync, mkdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../src/lib/prisma";
-import { getDefaultDesignConfig } from "../src/lib/invitation-templates";
 import { generateToken, slugify } from "../src/lib/utils";
 import { getAppUrlFromEnv } from "../src/lib/app-url";
-import {
-  SERAPHINE_CATALOG_SLUG,
-  SERAPHINE_JOURNEY_CHAPTERS,
-  SERAPHINE_LAYOUT_SLUG,
-} from "../src/lib/experience/aurelia-editorial";
+import { SERAPHINE_TRADITIONAL_MAPS } from "../src/lib/experience/aurelia-editorial";
 import type { InvitationDesignConfig } from "../src/types/invitation-design";
 import { isVideoUrl } from "../src/lib/invitation/theme-media-assets";
+import { seedEdwinLordinaWedding } from "./seed-edwin-lordina-wedding";
+import { DEMO_MEMORY_EVENT_SLUG } from "../src/lib/memory/ensure-event-memory-links";
 
 const EVENT_SLUG = "kojo-and-fafa";
-const UPLOAD_DIR = path.join(process.cwd(), "public/uploads/events/kojo-fafa");
-const PUBLIC_PREFIX = "/uploads/events/kojo-fafa";
+const LAYOUT_SLUG = "forever-afaris-wedding";
+const HERO = "/templates/seraphine/hero.jpg";
 
-function copyJourneyUploads() {
-  mkdirSync(UPLOAD_DIR, { recursive: true });
-  return SERAPHINE_JOURNEY_CHAPTERS.map((item) => {
-    const sourceName = path.basename(item.imageUrl ?? "");
-    const dest = path.join(UPLOAD_DIR, sourceName);
-    copyFileSync(path.join(process.cwd(), "public", item.imageUrl ?? ""), dest);
-    return {
-      ...item,
-      imageUrl: `${PUBLIC_PREFIX}/${sourceName}`,
-    };
-  });
+const COUPLE_ONLY = [
+  /jeffery/i,
+  /chelsy/i,
+  /francisca/i,
+  /\bafari\b/i,
+  /\bopoku\b/i,
+  /subtle class/i,
+  /justine kuffour/i,
+  /maame yeboah/i,
+  /forever afaris/i,
+  /ogbojo/i,
+];
+
+function loadKojoDesign(): InvitationDesignConfig {
+  const designPath = path.join(process.cwd(), "scripts/fixtures/kojo-fafa-design.json");
+  const design = JSON.parse(readFileSync(designPath, "utf8")) as InvitationDesignConfig;
+  const board = design.studio?.weddingBoard;
+  if (board) board.mapUrl = SERAPHINE_TRADITIONAL_MAPS;
+  const leaked = COUPLE_ONLY.find((pattern) => pattern.test(JSON.stringify(design)));
+  if (leaked) {
+    throw new Error(`Kojo design still contains another couple's copy: ${leaked}`);
+  }
+  return design;
 }
 
 async function main() {
-  const journey = copyJourneyUploads();
+  const designConfig = loadKojoDesign();
+  const gallery = (designConfig.media ?? []).filter((item) => item.role === "reference");
   const organizer =
     (await prisma.user.findFirst({
-      where: { role: { in: ["ADMIN", "SUPER_ADMIN", "ORGANIZER"] } },
+      where: { email: "admin@celeventic.com" },
       select: { id: true, name: true, email: true },
-    })) ?? (await prisma.user.findFirst({ select: { id: true, name: true, email: true } }));
+    })) ??
+    (await prisma.user.findFirst({
+      where: { role: "SUPER_ADMIN" },
+      select: { id: true, name: true, email: true },
+    })) ??
+    (await prisma.user.findFirst({
+      where: { role: { in: ["ADMIN", "ORGANIZER"] } },
+      select: { id: true, name: true, email: true },
+    }));
 
   if (!organizer) {
     throw new Error("No organiser account found. Run npm run seed:admin first.");
   }
 
   const startDate = new Date("2026-11-13T10:00:00.000Z");
-  const coverImageUrl = journey[0]?.imageUrl ?? null;
+  const coverImageUrl = HERO;
   const title = "Kojo & Fafa";
   const hostName = "Kojo & Fafa";
 
@@ -90,56 +111,32 @@ async function main() {
       status: "PUBLISHED",
       isPublic: true,
       startDate,
+      organizerId: organizer.id,
     },
   });
 
   await prisma.eventMedia.deleteMany({ where: { eventId: event.id } });
-  await prisma.eventMedia.createMany({
-    data: journey.map((item, index) => ({
-      eventId: event.id,
-      url: item.imageUrl ?? "",
-      type: isVideoUrl(item.imageUrl) ? "video" : "image",
-      caption: item.title,
-      sortOrder: index,
-    })),
+  if (gallery.length > 0) {
+    await prisma.eventMedia.createMany({
+      data: gallery.map((item, index) => ({
+        eventId: event.id,
+        url: item.url,
+        type: item.type === "video" || isVideoUrl(item.url) ? "video" : "image",
+        caption: item.name ?? "Kojo & Fafa",
+        sortOrder: index,
+      })),
+    });
+  }
+
+  const template = await prisma.eventTemplate.findFirst({
+    where: { slug: LAYOUT_SLUG },
+    select: { id: true, slug: true },
   });
 
-  const template =
-    (await prisma.eventTemplate.findFirst({
-      where: { OR: [{ slug: SERAPHINE_CATALOG_SLUG }, { slug: SERAPHINE_LAYOUT_SLUG }] },
-      select: { id: true, slug: true },
-    })) ??
-    (await prisma.invitationCatalogTemplate
-      .findFirst({
-        where: { slug: SERAPHINE_CATALOG_SLUG },
-        select: { id: true, slug: true },
-      })
-      .then(() => null));
-
-  const baseDesign = getDefaultDesignConfig(SERAPHINE_CATALOG_SLUG);
-  const designConfig: InvitationDesignConfig = {
-    ...baseDesign,
-    experience: {
-      ...baseDesign.experience,
-      aureliaWedding: {
-        ...baseDesign.experience?.aureliaWedding,
-        journey,
-        storyEyebrow: "Moments",
-        storyTitle: "Our Journey",
-        storySignature: "Kojo & Fafa",
-        partnerOneName: "Kojo",
-        partnerTwoName: "Fafa",
-        monogram: "K & F",
-        heroImageUrl: "/templates/seraphine/hero.jpg",
-      },
-    },
-    media: journey.map((item) => ({
-      url: item.imageUrl ?? "",
-      type: isVideoUrl(item.imageUrl) ? "video" : "image",
-      role: "reference" as const,
-      name: item.title,
-    })),
-  };
+  await prisma.event.updateMany({
+    where: { slug: DEMO_MEMORY_EVENT_SLUG, title: { in: ["Kojo & Fafa", "Enock & Ruth"] } },
+    data: { title: "Celeventic Live Album", hostName: "Celeventic", isPublic: false },
+  });
 
   const existing = await prisma.invitation.findFirst({
     where: { eventId: event.id },
@@ -156,6 +153,7 @@ async function main() {
           templateId: template?.id,
           designConfig: designConfig as unknown as Prisma.InputJsonValue,
           status: "ACTIVE",
+          uniqueLink: "kojo-and-fafa",
         },
       })
     : await prisma.invitation.create({
@@ -167,7 +165,7 @@ async function main() {
             "Together with their families, Kojo and Fafa invite you to celebrate their wedding.",
           templateId: template?.id,
           designConfig: designConfig as unknown as Prisma.InputJsonValue,
-          uniqueLink: generateToken(32),
+          uniqueLink: "kojo-and-fafa",
           status: "ACTIVE",
         },
       });
@@ -175,18 +173,23 @@ async function main() {
   const appUrl = getAppUrlFromEnv();
   const inviteUrl = `${appUrl}/invite/${invitation.uniqueLink}?skipIntro=1`;
 
+  const edwin = await seedEdwinLordinaWedding(prisma, organizer);
+
   console.log(
     JSON.stringify(
       {
-        eventId: event.id,
-        eventSlug: event.slug,
-        title: event.title,
-        organizer: organizer.email,
-        invitationId: invitation.id,
-        uniqueLink: invitation.uniqueLink,
-        inviteUrl,
-        photos: journey.length,
-        firstCaption: journey[0]?.title,
+        kojo: {
+          eventId: event.id,
+          eventSlug: event.slug,
+          title: event.title,
+          organizer: organizer.email,
+          invitationId: invitation.id,
+          uniqueLink: invitation.uniqueLink,
+          inviteUrl,
+          layout: designConfig.layout,
+          photos: gallery.length,
+        },
+        edwin,
       },
       null,
       2

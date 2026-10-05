@@ -3318,8 +3318,10 @@ a.giftPay {
 }
 
 .seraphine .countStage {
-  width: min(22rem, 100%);
-  margin-top: 0.55rem;
+  display: flex;
+  justify-content: center;
+  width: min(100%, 36rem);
+  margin: 0.85rem auto 0;
   padding: 0;
 }
 
@@ -3800,7 +3802,8 @@ a.giftPay {
   }
 
   .seraphine .countStage {
-    width: min(22rem, 100%);
+    width: min(100%, 36rem);
+    padding-top: 0;
   }
 
   .seraphine .section,

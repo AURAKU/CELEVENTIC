@@ -12,6 +12,9 @@ const UPPER_TOP = 64;
 const UPPER_NECK = 174;
 const LOWER_NECK = 178;
 const LOWER_FLOOR = 288;
+/** One full turn. Slow enough to read, fast enough to see within a glance. */
+const IDLE_TURN_MS = 16_000;
+const REST_TILT = 8;
 const HEART = "♥";
 const HEART_INKS = ["#d4c6a0", "#c5b48a", "#b09a6e"] as const;
 const STREAM = [
@@ -159,42 +162,75 @@ export function SeraphineHourglass({
     [count.s]
   );
 
-  const spin = useRef({ x: 8, y: 0 });
+  const turnRef = useRef<HTMLDivElement>(null);
+  const spin = useRef({ x: REST_TILT, y: 0 });
   const velocity = useRef(0);
   const drag = useRef<{ id: number; x: number; y: number; t: number } | null>(null);
-  const raf = useRef(0);
-  const [pose, setPose] = useState({ x: 8, y: 0 });
+  /** True while this component, not the CSS turn, owns the transform. */
+  const ownsTurn = useRef(false);
   const [held, setHeld] = useState(false);
-  const reduceMotion = useRef(false);
+
+  const paint = () => {
+    const node = turnRef.current;
+    if (!node) return;
+    const { x, y } = spin.current;
+    node.style.transform = `rotateX(${x.toFixed(2)}deg) rotateY(${y.toFixed(2)}deg)`;
+  };
+
+  const readYaw = () => {
+    const node = turnRef.current;
+    if (!node) return spin.current.y;
+    const running = node.getAnimations().find((item) => item.playState !== "finished");
+    const timing = running?.effect && "getComputedTiming" in running.effect ? running.effect.getComputedTiming() : null;
+    const duration = Number(timing?.duration);
+    const time = Number(running?.currentTime);
+    if (duration > 0 && Number.isFinite(time)) {
+      return ((time % duration) / duration) * 360;
+    }
+    return spin.current.y;
+  };
+
+  const takeOver = () => {
+    const node = turnRef.current;
+    if (!node) return;
+    spin.current.y = readYaw();
+    node.style.animation = "none";
+    ownsTurn.current = true;
+    paint();
+  };
 
   useEffect(() => {
-    reduceMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const node = turnRef.current;
+    const animated = node ? getComputedStyle(node).animationName : "none";
+    if (!animated || animated === "none") {
+      ownsTurn.current = true;
+      paint();
+    }
+
+    let frame = 0;
     let last = performance.now();
     const tick = (now: number) => {
-      const dt = Math.min(32, now - last);
+      const dt = Math.min(34, now - last);
       last = now;
-      if (!drag.current && !reduceMotion.current) {
+      if (ownsTurn.current && !drag.current) {
         if (Math.abs(velocity.current) > 0.12) {
           spin.current.y += velocity.current * (dt / 16.67);
           velocity.current *= 0.94;
         } else {
           velocity.current = 0;
-          spin.current.y += 0.02 * dt;
+          spin.current.y += (360 / IDLE_TURN_MS) * dt;
         }
-        spin.current.x += (8 - spin.current.x) * 0.05;
-        setPose({ x: spin.current.x, y: spin.current.y });
+        spin.current.x += (REST_TILT - spin.current.x) * 0.08;
+        paint();
       }
-      raf.current = requestAnimationFrame(tick);
+      frame = requestAnimationFrame(tick);
     };
-    raf.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf.current);
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
   }, []);
 
-  function publish() {
-    setPose({ x: spin.current.x, y: spin.current.y });
-  }
-
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    takeOver();
     drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, t: performance.now() };
     velocity.current = 0;
     setHeld(true);
@@ -212,19 +248,13 @@ export function SeraphineHourglass({
     spin.current.x = Math.max(-22, Math.min(24, spin.current.x - dy * 0.16));
     velocity.current = (dx / dt) * 14;
     drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, t: now };
-    publish();
+    paint();
   }
 
   function endDrag(event: PointerEvent<HTMLDivElement>) {
     if (!drag.current || drag.current.id !== event.pointerId) return;
     drag.current = null;
     setHeld(false);
-    if (reduceMotion.current) {
-      spin.current.y = Math.abs(((spin.current.y % 360) + 360) % 360 - 180) < 90 ? 180 : 0;
-      spin.current.x = 8;
-      velocity.current = 0;
-      publish();
-    }
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -232,7 +262,7 @@ export function SeraphineHourglass({
     event.preventDefault();
     spin.current.y += event.key === "ArrowRight" ? 24 : -24;
     velocity.current = 0;
-    publish();
+    paint();
   }
 
   return (
@@ -242,12 +272,6 @@ export function SeraphineHourglass({
           className={styles.glassWrap}
           data-complete={count.begun ? "true" : "false"}
           data-held={held ? "true" : "false"}
-          style={
-            {
-              "--rx": `${pose.x.toFixed(2)}deg`,
-              "--ry": `${pose.y.toFixed(2)}deg`,
-            } as CSSProperties
-          }
           role="group"
           tabIndex={0}
           aria-label="Hourglass of champagne-gold hearts, slowly turning. Drag or use arrow keys to spin and see the back."
@@ -257,7 +281,7 @@ export function SeraphineHourglass({
           onPointerCancel={endDrag}
           onKeyDown={onKeyDown}
         >
-          <div className={styles.turntable}>
+          <div ref={turnRef} className={styles.turntable}>
             <div className={`${styles.face} ${styles.faceFront}`}>
               <svg className={styles.svg} viewBox="0 8 240 340" role="img" aria-hidden>
                 <GoldDefs uid={frontId} />

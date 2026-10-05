@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { buildPersonalInvitationShareBody } from "@/lib/invitation/whatsapp-share";
+import { buildInvitationShareLetter } from "@/lib/invitation/whatsapp-share";
 import { truncateForShare } from "@/lib/social/share-description";
 import { sanitizeSocialGuestDisplayName, formatSocialGuestGreeting } from "@/lib/social/social-guest";
 import { resolveSocialEventKind, type SocialEventKind } from "@/lib/social/social-category";
@@ -32,7 +32,7 @@ export type SocialPlaceCardImage = {
 export const SOCIAL_PLACE_CARD_WIDTH = 1200;
 export const SOCIAL_PLACE_CARD_HEIGHT = 630;
 export const SOCIAL_PLACE_CARD_TYPE = "image/png";
-export const SOCIAL_PLACE_CARD_ART_VERSION = "letter-1";
+export const SOCIAL_PLACE_CARD_ART_VERSION = "full-frame-2";
 export {
   SOCIAL_PLACE_CARD_PHRASE,
   SOCIAL_PLACE_CARD_PERSONAL_PHRASE,
@@ -258,17 +258,19 @@ export function buildSocialInvitationSurface(input: SocialInvitationInput): Soci
     SOCIAL_PLACE_CARD_ART_VERSION,
   ]);
   const image = decorateSocialPlaceCardImage(input.appUrl, input.uniqueLink, version, guestToken);
-  const familyCard = variant === "aurelia" || variant === "seraphine";
-  const familyShareText =
-    familyCard && guestDisplayName
-      ? buildPersonalInvitationShareBody({ guestName: guestDisplayName })
-      : socialNativeShareText({
-          kind,
-          title: resolved.title,
-          guestDisplayName,
-        });
-  const familyDescription =
-    familyCard && guestDisplayName
+  const shareText = guestDisplayName
+    ? buildInvitationShareLetter({
+        title: resolved.title,
+        guestName: guestDisplayName,
+        memorial: kind === "funeral",
+      })
+    : socialNativeShareText({
+        kind,
+        title: resolved.title,
+        guestDisplayName,
+      });
+  const shareDescription =
+    guestDisplayName && kind !== "funeral"
       ? truncateForShare(`Dear ${guestDisplayName}, you are personally invited.`)
       : description;
   return {
@@ -276,8 +278,8 @@ export function buildSocialInvitationSurface(input: SocialInvitationInput): Soci
     variant: variant ?? "platform",
     title: resolved.title,
     shareTitle: socialShareTitle(resolved.title, kind),
-    shareText: familyShareText,
-    description: familyDescription,
+    shareText,
+    description: shareDescription,
     dateLabel,
     image,
     canonicalUrl: buildInviteCanonicalUrl(

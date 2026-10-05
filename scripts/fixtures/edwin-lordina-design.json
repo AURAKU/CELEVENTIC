@@ -1,0 +1,201 @@
+{
+  "layout": "forever-afaris-wedding",
+  "colors": {
+    "primary": "#1B365D",
+    "secondary": "#C7A35A",
+    "accent": "#C7A35A",
+    "background": "#FBF6EF",
+    "text": "#1B365D"
+  },
+  "fonts": {
+    "heading": "Cinzel",
+    "script": "Great Vibes",
+    "body": "Cormorant Garamond"
+  },
+  "animation": "fade",
+  "ornament": "floral",
+  "introText": "",
+  "studio": {
+    "fullScreen": true,
+    "revealMode": "envelope",
+    "buttonStyle": "wax-seal",
+    "headingSize": 26,
+    "bodySize": 13,
+    "scriptSize": 30,
+    "rsvpLabel": "R.S.V.P",
+    "weddingBoard": {
+      "openingInstruction": "Tap anywhere to open",
+      "sealMonogram": "E | L",
+      "gateWord": "#EDWINANDLORDINA",
+      "envelopeAddressLine": "You are cordially invited",
+      "envelopeStyle": "ivory-lace",
+      "gateStyle": "ivory-arch",
+      "sealColor": "champagne",
+      "sealMotif": "monogram",
+      "haptics": true,
+      "accentColor": "#C7A35A",
+      "blushColor": "#F3E6D0",
+      "inkColor": "#1B365D",
+      "canvasColor": "#FBF6EF",
+      "eyebrow": "TOGETHER WITH THEIR FAMILIES",
+      "scriptTitle": "The Wedding",
+      "familyHeading": "",
+      "familyIntro": "Together with their families, Edwin and Lordina warmly welcome you to share in a love written by God.",
+      "coupleName1": "Edwin Ebow Blankson",
+      "coupleName2": "Lordina Ewurafua Anderson",
+      "invitationCopy": "Joyfully request the honour of your presence as they begin forever, side by side.",
+      "hashtag": "#EdwinAndLordina",
+      "heroCaption": "From miles apart to forever side by side",
+      "displayDate": "DECEMBER \u2022 24 & 26 \u2022 2026",
+      "weekday": "THU \u00b7 SAT",
+      "timeLabel": "9:00 AM",
+      "receptionText": "Reception at 4:00 PM, Combos & Casa, East Legon Hills",
+      "accessNote": "STRICTLY BY INVITATION",
+      "venueName": "ASSEMBLIES OF GOD TEMA COMMUNITY 12 TCC",
+      "venueAddress": "Hospital Road Link Extension, Tema Community 12",
+      "mapUrl": "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z",
+      "mapButtonLabel": "Tap here for Google Map directions",
+      "countdownHeading": "Counting Down To Forever",
+      "countdownTarget": "2026-12-24T09:00:00+00:00",
+      "countdownExpiredMessage": "Today we say I do",
+      "greetingHeading": "A Note For You",
+      "greetingBody": "Of all the people we could have shared this day with, we chose you. Thank you for standing with us as we begin forever.",
+      "greetingFallbackName": "Our Treasured Guest",
+      "programmeHeading": "Order Of The Day",
+      "programmeItems": [
+        {
+          "id": "traditional",
+          "time": "THU 24 DEC \u00b7 9:00 AM",
+          "title": "Traditional Ceremony",
+          "description": "Bride\u2019s house, Tema Community 12"
+        },
+        {
+          "id": "white",
+          "time": "SAT 26 DEC \u00b7 9:00 AM",
+          "title": "White Wedding, Church Ceremony",
+          "description": "Assemblies of God Tema Community 12 TCC"
+        },
+        {
+          "id": "reception",
+          "time": "SAT 26 DEC \u00b7 4:00 PM",
+          "title": "Reception",
+          "description": "Combos & Casa, East Legon Hills"
+        },
+        {
+          "id": "menu",
+          "time": "RECEPTION",
+          "title": "Wedding Menu",
+          "description": "STARTERS\nBeef spring rolls\nNkosua Ne Meko\n\nSALADS\nTuna and egg pasta salad\nGhanaian mixed salad\nCreamy coleslaw (apple)\n\nMAINS\nJollof\nAssorted fried rice\nStir fried spaghetti\n\nPROTEINS\nGrilled chicken\nDeep fried fish cuts\nSpicy cozy tilapia\n\nSIDES\nBanku or Acheke\nKelewele\n\nSAUCES\nShredded beef in oyster sauce\nGreen chilli\nRed chilli\nBlack pepper (shito)"
+        }
+      ],
+      "dressCodeHeading": "DRESS CODE",
+      "dressCodeLadies": "Ivory, champagne gold, and navy blue. Elegant, celebratory, and timeless.",
+      "dressCodeGents": "Ivory, champagne gold, and navy blue. A tailored suit or coordinated celebration colours.",
+      "guestPolicyHeading": "WHO IS THIS INVITATION FOR?",
+      "guestPolicyBody": "This celebration honours the names written on the invitation. Kindly come as invited, and we will look after you.",
+      "storyHeading": "Our Love Story",
+      "storyBody": "Two people, miles apart, somehow found each other through a screen, and from the very beginning, there was a feeling that this was different.\n\nWe recognized something special almost immediately. Edwin knew he had found his wife, and Lordina knew there was something incredibly special about the man who had entered her life.\n\nWhat began with messages soon became hours of conversations, endless laughter, late-night calls, prayers, plans, and a connection that made thousands of miles feel insignificant. Somewhere between the calls, the visits, the inside jokes, and simply doing life together from opposite sides of the world, we became home to one another.\n\nOur love has crossed countries, time zones, and an ocean, yet loving each other has always felt like the easiest part.\n\nThrough it all, our love has been rooted in something greater than the two of us. We believe our love is biblical, written by God long before we knew each other. A love grounded in faith, strengthened through prayer, covered by grace, and built on the promise of choosing each other, again and again.\n\nWe found friendship, partnership, and a love that felt familiar from the very beginning, almost as though God was simply introducing us to someone He already knew belonged in our story.\n\nAnd now, the two people who once stared at each other through phone screens are preparing to stand before God, our families, and the people we love most and say, \u201cI do.\u201d\n\nFrom miles apart to forever side by side, a love story written by God, lived by us, and only just beginning.",
+      "galleryHeading": "Moments",
+      "scratchHeading": "A Little Secret",
+      "scratchPrompt": "Scratch to reveal",
+      "scratchMessage": "Welcome to the littest rest of our lives. \ud83e\udd42\ud83d\udc8d\u2764\ufe0f",
+      "rsvpHeading": "R.S.V.P",
+      "rsvpContacts": [
+        {
+          "name": "ADEL",
+          "phone": "+233 24 394 2142"
+        },
+        {
+          "name": "MICHELIN",
+          "phone": "+233 24 419 8321"
+        },
+        {
+          "name": "KEN",
+          "phone": "+233 55 051 3899"
+        },
+        {
+          "name": "NHYIRA",
+          "phone": "+233 55 139 2195"
+        }
+      ],
+      "closingHeading": "With Love & Gratitude",
+      "closingMessage": "From miles apart to forever side by side. Your presence is the greatest gift.",
+      "closingSignature": "Edwin & Lordina",
+      "replayLabel": "Replay opening",
+      "memoryHeading": "Memory Vault",
+      "memoryBody": "Every photo and video you capture belongs in our album. Upload yours and we will treasure it forever.",
+      "memoryCta": "Add your memories",
+      "features": {
+        "guestWelcome": true,
+        "heroPortrait": true,
+        "countdown": true,
+        "greeting": true,
+        "programme": true,
+        "location": true,
+        "dressCode": true,
+        "guestPolicy": true,
+        "story": true,
+        "gallery": true,
+        "scratch": true,
+        "rsvp": true,
+        "closing": true,
+        "familyIntro": true,
+        "memory": true
+      }
+    }
+  },
+  "experience": {
+    "collectionId": "luxury-gold",
+    "openingExperience": "blush-gate",
+    "outroExperience": "golden-sparkles",
+    "defaultAudioCategory": "wedding",
+    "defaultAudioTrackId": "layout-forever-afaris-wedding",
+    "hubMode": "scroll",
+    "countdownStyle": "gold-royal",
+    "sceneTransition": "door",
+    "heroLayout": "garden-bloom",
+    "slideshowStyle": "luxury-frame",
+    "pacing": "medium",
+    "introEnabled": true,
+    "introDurationSec": 2,
+    "enableRevealSounds": true,
+    "enabledTabs": [
+      "invitation",
+      "countdown",
+      "timeline",
+      "venue",
+      "gallery",
+      "memory",
+      "rsvp"
+    ],
+    "introVariant": "swan-glide",
+    "typographyPackId": "luxury",
+    "backgroundPackId": "gold-foil"
+  },
+  "media": [
+    {
+      "url": "/templates/edwin-lordina/hero-navy.jpg",
+      "type": "image",
+      "role": "hero",
+      "name": "Edwin & Lordina"
+    },
+    {
+      "url": "/templates/edwin-lordina/hero-navy.jpg",
+      "type": "image",
+      "role": "intro",
+      "name": "Edwin & Lordina"
+    },
+    {
+      "url": "/templates/edwin-lordina/hero-navy.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Edwin & Lordina"
+    },
+    {
+      "url": "/templates/edwin-lordina/lounge.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Together"
+    }
+  ]
+}

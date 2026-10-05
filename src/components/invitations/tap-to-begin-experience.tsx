@@ -211,6 +211,53 @@ function resolveNames(
   return null;
 }
 
+function splitFormalName(name: string): { given: string; surname: string } | null {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return null;
+  return {
+    given: parts.slice(0, -1).join(" "),
+    surname: parts[parts.length - 1],
+  };
+}
+
+function CoupleLockup({ name1, name2 }: { name1: string; name2: string }) {
+  const first = splitFormalName(name1);
+  const second = splitFormalName(name2);
+  const formal = Boolean(first && second);
+
+  return (
+    <div className={formal ? `${styles.names} ${styles.namesFormal}` : styles.names}>
+      <p className={styles.coupleLine}>
+        {first ? (
+          <span className={styles.formalName}>
+            <span className={styles.givenNames}>{first.given}</span>
+            <span className={styles.surname}>{first.surname}</span>
+          </span>
+        ) : (
+          <span className={styles.coupleName}>{name1}</span>
+        )}
+        {formal ? (
+          <span className={styles.ampRow}>
+            <span className={styles.ampRule} aria-hidden />
+            <span className={styles.inlineAmp}>&amp;</span>
+            <span className={styles.ampRule} aria-hidden />
+          </span>
+        ) : (
+          <span className={styles.inlineAmp}>&amp;</span>
+        )}
+        {second ? (
+          <span className={styles.formalName}>
+            <span className={styles.givenNames}>{second.given}</span>
+            <span className={styles.surname}>{second.surname}</span>
+          </span>
+        ) : (
+          <span className={styles.coupleName}>{name2}</span>
+        )}
+      </p>
+    </div>
+  );
+}
+
 /** Minimal ripple glyph, reads as "tap here" without a generic stock hand/cursor icon. */
 function TapGlyph() {
   return (
@@ -529,13 +576,7 @@ export function TapToBeginExperience({
         ) : null}
 
         {couple ? (
-          <div className={styles.names}>
-            <p className={styles.coupleLine}>
-              <span className={styles.coupleName}>{couple.name1}</span>
-              <span className={styles.inlineAmp}>&amp;</span>
-              <span className={styles.coupleName}>{couple.name2}</span>
-            </p>
-          </div>
+          <CoupleLockup name1={couple.name1} name2={couple.name2} />
         ) : funeralMemorial ? (
           <div className={styles.memorialNameCard}>
             <span className={styles.memorialNameCardRule} aria-hidden />

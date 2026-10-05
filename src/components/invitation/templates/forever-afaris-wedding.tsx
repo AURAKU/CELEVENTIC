@@ -15,6 +15,7 @@ import type { InvitationRenderProps } from "@/types/invitation-design";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
 import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
 import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
+import { isVideoUrl } from "@/lib/invitation/theme-media-assets";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
 import {
   distinctInvitationPhrase,
@@ -502,11 +503,20 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     // Reference media is appended for legacy published snapshots, then deduped.
     const fromUploads = (props.galleryUrls ?? []).map((url) => ({
       url,
-      name: undefined,
+      name: undefined as string | undefined,
+      video: isVideoUrl(url),
     }));
     const fromMedia = (design.media ?? [])
-      .filter((m) => m.type === "image" && m.role === "reference")
-      .map((m) => ({ url: m.url, name: m.name }));
+      .filter(
+        (m) =>
+          m.role === "reference" &&
+          (m.type === "image" || m.type === "video" || isVideoUrl(m.url))
+      )
+      .map((m) => ({
+        url: m.url,
+        name: m.name,
+        video: m.type === "video" || isVideoUrl(m.url),
+      }));
 
     const seen = new Set<string>();
     return [...fromUploads, ...fromMedia].filter((item) => {
@@ -592,13 +602,13 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         )}
 
         <h1 className="mt-6 space-y-2">
-          <span className={T.name} style={{ color: C.ink }}>
+          <span className={`${T.name} text-balance`} style={{ color: C.ink }}>
             {couple1}
           </span>
           <span className={`block ${T.script}`} style={{ color: C.goldDeep }}>
             and
           </span>
-          <span className={T.name} style={{ color: C.ink }}>
+          <span className={`${T.name} text-balance`} style={{ color: C.ink }}>
             {couple2}
           </span>
         </h1>
@@ -922,15 +932,26 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                 className="relative overflow-hidden rounded-lg"
                 style={{ aspectRatio: "3 / 4", border: `1px solid ${C.border}` }}
               >
-                <Image
-                  src={m.url}
-                  alt={m.name || "Wedding moment"}
-                  fill
-                  loading="lazy"
-                  sizes="(max-width: 640px) 45vw, 280px"
-                  className="object-cover"
-                  unoptimized={shouldUnoptimizeNextImage(m.url)}
-                />
+                {m.video ? (
+                  <video
+                    src={m.url}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label={m.name || "Wedding film"}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={m.url}
+                    alt={m.name || "Wedding moment"}
+                    fill
+                    loading="lazy"
+                    sizes="(max-width: 640px) 45vw, 280px"
+                    className="object-cover"
+                    unoptimized={shouldUnoptimizeNextImage(m.url)}
+                  />
+                )}
               </div>
             ))}
           </div>

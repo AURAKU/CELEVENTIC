@@ -5,9 +5,8 @@ import type { InvitationEventData } from "@/types/invitation-design";
 import { resolveSocialEventKind } from "@/lib/social/social-category";
 import { socialNativeShareText } from "@/lib/social/social-copy";
 import { resolveSocialEventTitle } from "@/lib/social/social-event-title";
-import { isAureliaFamilySocialLayout } from "@/lib/social/social-live-input";
 import { sanitizeSocialGuestDisplayName } from "@/lib/social/social-guest";
-import { buildPersonalInvitationShareBody, ensureSingleShareUrl } from "@/lib/invitation/whatsapp-share";
+import { buildInvitationShareLetter, ensureSingleShareUrl } from "@/lib/invitation/whatsapp-share";
 
 export type InviteSharePayload = {
   title: string;
@@ -97,25 +96,22 @@ export function buildInviteSharePayload(input: {
   }).title;
 
   const guestDisplayName = sanitizeSocialGuestDisplayName(input.guestDisplayName);
-  const familyLetter =
-    guestDisplayName &&
-    isAureliaFamilySocialLayout({
-      catalogSlug: input.catalogSlug,
-      layoutSlug: input.layoutSlug,
-    })
-      ? buildPersonalInvitationShareBody({
-          guestName: guestDisplayName,
-          admissionCode: input.admissionCode,
-        })
-      : socialNativeShareText({
-          kind,
-          title,
-          guestDisplayName,
-        });
+  const letter = guestDisplayName
+    ? buildInvitationShareLetter({
+        title,
+        guestName: guestDisplayName,
+        admissionCode: input.admissionCode,
+        memorial: kind === "funeral",
+      })
+    : socialNativeShareText({
+        kind,
+        title,
+        guestDisplayName,
+      });
 
   return {
     title,
-    text: familyLetter,
+    text: letter,
     url,
   };
 }

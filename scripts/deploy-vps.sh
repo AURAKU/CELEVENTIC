@@ -127,6 +127,9 @@ pm2 stop "$APP_NAME"
 npx prisma migrate deploy
 npx prisma migrate status
 
+log "Seeding Kojo & Fafa and Edwin & Lordina invitations"
+npx tsx scripts/seed-kojo-fafa-wedding.ts
+
 log "Building Next.js (previous .next already backed up)"
 rm -rf .next
 export CELEVENTIC_BUILD_COMMIT="$NEW_COMMIT"

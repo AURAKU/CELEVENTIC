@@ -1,20 +1,29 @@
 .stage {
   position: relative;
-  width: min(16.5rem, 100%);
-  margin: 0.85rem auto 0;
-  padding: 0.2rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 34rem);
+  margin: 0.45rem auto 0;
+  padding: 0;
+  text-align: center;
+  container-type: inline-size;
+  container-name: hourglass;
 }
 
 .scene {
-  perspective: 820px;
-  perspective-origin: 50% 42%;
+  width: clamp(9.15rem, 46cqi, 15.25rem);
+  max-width: 100%;
+  margin-inline: auto;
+  perspective: 980px;
+  perspective-origin: 50% 46%;
   transform-style: preserve-3d;
 }
 
 .glassWrap {
   position: relative;
   z-index: 1;
-  width: min(8.2rem, 48cqi);
+  width: 100%;
   margin: 0 auto;
   outline: none;
   cursor: grab;
@@ -35,8 +44,10 @@
 
 .turntable {
   position: relative;
+  transform-origin: center center;
   transform-style: preserve-3d;
-  transform: rotateX(var(--rx, 8deg)) rotateY(var(--ry, 0deg));
+  -webkit-transform-style: preserve-3d;
+  animation: hourTurn 16s linear infinite;
   will-change: transform;
 }
 
@@ -143,9 +154,9 @@
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  width: min(18.5rem, 100%);
-  margin: 0.15rem auto 0;
-  padding: 0.15rem 0 0.35rem;
+  width: min(100%, 28rem);
+  margin: 0.35rem auto 0;
+  padding: 0.15rem 0 0.2rem;
 }
 
 .cell {
@@ -171,8 +182,9 @@
 
 .num {
   font-family: var(--aurelia-serif);
-  font-size: clamp(1.42rem, 6.2cqi, 1.85rem);
+  font-size: clamp(1.35rem, 7.4cqi, 2.05rem);
   font-weight: 400;
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   line-height: 1;
   color: #e8dcc0;
@@ -181,9 +193,10 @@
 
 .label {
   font-family: var(--aurelia-display);
-  font-size: 0.46rem;
-  letter-spacing: 0.2em;
+  font-size: clamp(0.42rem, 1.7cqi, 0.52rem);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: color-mix(in srgb, #fafaf5 58%, #c5b48a);
 }
 
@@ -200,6 +213,15 @@
   font-size: clamp(1.22rem, 4.8cqi, 1.55rem);
   line-height: 1.15;
   color: color-mix(in srgb, #fafaf5 78%, #c5b48a);
+}
+
+@keyframes hourTurn {
+  from {
+    transform: rotateX(8deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(8deg) rotateY(360deg);
+  }
 }
 
 @keyframes hourBreathe {
@@ -259,6 +281,7 @@
   .heart,
   .heartTick,
   .num,
+  .turntable,
   .glassWrap[data-complete="true"] {
     animation: none;
   }
@@ -268,16 +291,33 @@
   }
 }
 
-@container aurelia (min-width: 768px) {
-  .stage {
-    width: min(20rem, 100%);
+@container hourglass (max-width: 340px) {
+  .scene {
+    width: clamp(8.35rem, 54cqi, 10.4rem);
   }
 
-  .glassWrap {
-    width: min(8.8rem, 24cqi);
+  .label {
+    letter-spacing: 0.12em;
+  }
+
+  .kicker,
+  .finale {
+    padding-inline: 0.35rem;
+  }
+}
+
+@container hourglass (min-width: 560px) {
+  .scene {
+    width: clamp(11.25rem, 40cqi, 14.5rem);
   }
 
   .dial {
-    width: min(22rem, 100%);
+    margin-top: 0.55rem;
+  }
+}
+
+@container hourglass (min-width: 860px) {
+  .scene {
+    width: clamp(13rem, 38cqi, 15.25rem);
   }
 }

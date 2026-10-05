@@ -63,6 +63,8 @@ const DEMO_SLUG = DEMO_MEMORY_EVENT_SLUG;
 export async function ensureDemoMemoryLinks(eventTitle?: string): Promise<EventMemoryLinks | null> {
   let event = await prisma.event.findUnique({ where: { slug: DEMO_SLUG } });
 
+  const displayTitle = eventTitle?.trim() || null;
+
   if (!event) {
     const organizer =
       (await prisma.user.findFirst({
@@ -78,7 +80,7 @@ export async function ensureDemoMemoryLinks(eventTitle?: string): Promise<EventM
     event = await prisma.event.create({
       data: {
         slug: DEMO_SLUG,
-        title: eventTitle?.trim() || "Celeventic Live Album",
+        title: "Celeventic Live Album",
         eventType: "WEDDING",
         hostName: "Celeventic",
         description: "Demo album for invitation Memory Vault previews.",
@@ -88,11 +90,12 @@ export async function ensureDemoMemoryLinks(eventTitle?: string): Promise<EventM
         organizerId: organizer.id,
       },
     });
-  } else if (eventTitle?.trim() && event.title !== eventTitle.trim()) {
-    // Keep demo title aligned with the template being previewed when possible
+  } else if (event.title !== "Celeventic Live Album") {
+    // Preview pages used to rename this shared row to the couple on screen,
+    // which made Kojo & Fafa / Enock & Ruth look like real events with no invitation.
     event = await prisma.event.update({
       where: { id: event.id },
-      data: { title: eventTitle.trim() },
+      data: { title: "Celeventic Live Album", hostName: "Celeventic" },
     });
   }
 
@@ -103,5 +106,7 @@ export async function ensureDemoMemoryLinks(eventTitle?: string): Promise<EventM
     allowAnonymousUploads: true,
   });
 
-  return ensureEventMemoryLinks(event.id);
+  const links = await ensureEventMemoryLinks(event.id);
+  if (!links) return null;
+  return displayTitle ? { ...links, eventTitle: displayTitle } : links;
 }

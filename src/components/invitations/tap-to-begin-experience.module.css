@@ -485,6 +485,93 @@
   color: color-mix(in srgb, var(--tap-gold) 88%, transparent);
 }
 
+.namesFormal {
+  width: min(100%, 22rem);
+  margin-top: 1.05rem;
+}
+
+.namesFormal .coupleLine {
+  gap: 0.28rem;
+  max-width: min(100%, 20.5rem);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.formalName {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.16rem;
+  max-width: 100%;
+}
+
+.givenNames {
+  max-width: min(100%, 19rem);
+  font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
+  font-size: calc(clamp(0.58rem, 2.4vw, 0.76rem) * var(--tap-scale, 1));
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  line-height: 1.45;
+  text-wrap: balance;
+  color: color-mix(in srgb, var(--tap-ivory) 70%, var(--tap-gold) 30%);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+}
+
+.surname {
+  font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
+  font-size: calc(clamp(1.22rem, 5.6vw, 1.92rem) * var(--tap-scale, 1));
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
+  line-height: 1.02;
+  color: color-mix(in srgb, var(--tap-ivory) 96%, white);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.28),
+    0 10px 28px rgba(0, 0, 0, 0.48);
+}
+
+.ampRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.72rem;
+  margin: 0.2rem 0 0.12rem;
+}
+
+.ampRow .inlineAmp {
+  font-size: calc(2.2rem * var(--tap-scale, 1));
+}
+
+.ampRule {
+  display: block;
+  width: 2.35rem;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--tap-gold) 88%, var(--tap-ivory) 12%),
+    transparent
+  );
+}
+
+@media (max-width: 380px) {
+  .givenNames {
+    letter-spacing: 0.14em;
+    text-indent: 0.14em;
+  }
+
+  .surname {
+    letter-spacing: 0.1em;
+    text-indent: 0.1em;
+  }
+
+  .ampRule {
+    width: 1.6rem;
+  }
+}
+
 .hostLine {
   margin: 1.1rem 0 0;
   font-family: var(--tap-font-family, var(--font-cormorant), "Cormorant Garamond", serif);

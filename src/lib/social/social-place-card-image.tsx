@@ -16,11 +16,27 @@ export type SocialPlaceCardVisual = {
   guestGreeting?: string | null;
 };
 
+const INK = "#1C1915";
+const PAPER = "#F7F3EC";
+const MAT = "#EFEAE1";
+
 function titleSize(title: string, personalized: boolean): number {
-  if (title.length > 42) return personalized ? 40 : 44;
-  if (title.length > 28) return personalized ? 48 : 54;
-  if (title.length > 18) return personalized ? 56 : 64;
-  return personalized ? 64 : 76;
+  if (title.length > 42) return personalized ? 34 : 38;
+  if (title.length > 28) return personalized ? 40 : 46;
+  if (title.length > 18) return personalized ? 48 : 54;
+  return personalized ? 54 : 62;
+}
+
+/** Theme accents are often too pale on ivory. Darken until small type stays readable. */
+function readableAccent(accent: string): string {
+  const hex = accent.trim().replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return "#6F5A38";
+  const channels = [0, 2, 4].map((index) => parseInt(hex.slice(index, index + 2), 16));
+  const luminance = (0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]) / 255;
+  if (luminance < 0.45) return `#${hex}`;
+  return channels
+    .map((channel) => Math.max(0, Math.round(channel * 0.62)).toString(16).padStart(2, "0"))
+    .reduce((hexColor, channel) => hexColor + channel, "#");
 }
 
 function coupleLockup(title: string): { one: string; two: string } | null {
@@ -31,35 +47,6 @@ function coupleLockup(title: string): { one: string; two: string } | null {
   if (!one || !two) return null;
   if (one.length > 16 || two.length > 16) return null;
   return { one, two };
-}
-
-function HudCorner({
-  x,
-  y,
-  color,
-}: {
-  x: "left" | "right";
-  y: "top" | "bottom";
-  color: string;
-}) {
-  const on = `2px solid ${color}`;
-  const off = "0px solid transparent";
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: x === "left" ? 32 : 1142,
-        top: y === "top" ? 32 : 572,
-        width: 26,
-        height: 26,
-        display: "flex",
-        borderTop: y === "top" ? on : off,
-        borderBottom: y === "bottom" ? on : off,
-        borderLeft: x === "left" ? on : off,
-        borderRight: x === "right" ? on : off,
-      }}
-    />
-  );
 }
 
 export function SocialPlaceCardMarkup({
@@ -94,10 +81,10 @@ export function SocialPlaceCardMarkup({
     ? SOCIAL_PLACE_CARD_KICKER
     : kicker?.trim() || SOCIAL_PLACE_CARD_KICKER;
   const lockup = unavailable ? null : coupleLockup(displayTitle);
-  const size = unavailable ? 42 : lockup ? 78 : titleSize(displayTitle, Boolean(greeting));
+  const size = unavailable ? 40 : lockup ? 64 : titleSize(displayTitle, Boolean(greeting));
   const showPhrase = Boolean(displayPhrase) && (unavailable || !heroSrc || Boolean(greeting));
-  const gold = palette.gold;
-  const ivory = palette.ivory;
+  const accent = readableAccent(palette.gold);
+  const showPhoto = Boolean(heroSrc) && !unavailable;
 
   return (
     <div
@@ -105,309 +92,193 @@ export function SocialPlaceCardMarkup({
         width: "1200px",
         height: "630px",
         display: "flex",
-        position: "relative",
-        overflow: "hidden",
-        background: palette.heroWash,
+        background: PAPER,
         fontFamily: "Georgia, 'Times New Roman', serif",
       }}
     >
-      {heroSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={heroSrc}
-          alt=""
-          width={1200}
-          height={630}
+      {showPhoto ? (
+        <div
           style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: "1200px",
+            width: "548px",
             height: "630px",
-            objectFit: "cover",
-            objectPosition: "center 18%",
-          }}
-        />
-      ) : null}
-
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: "1200px",
-          height: "630px",
-          display: "flex",
-          background: heroSrc
-            ? "linear-gradient(180deg, rgba(4,6,8,0.22) 0%, rgba(4,6,8,0.04) 34%, rgba(4,6,8,0.42) 68%, rgba(4,6,8,0.92) 100%)"
-            : palette.panel,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: "1200px",
-          height: "630px",
-          display: "flex",
-          background:
-            "linear-gradient(90deg, rgba(4,6,8,0.38) 0%, rgba(4,6,8,0) 28%, rgba(4,6,8,0) 62%, rgba(4,6,8,0.55) 100%)",
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          right: -210,
-          top: 40,
-          width: 540,
-          height: 540,
-          display: "flex",
-          borderRadius: 540,
-          border: `1px solid ${gold}55`,
-          background: "rgba(0,0,0,0)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          right: -150,
-          top: 100,
-          width: 420,
-          height: 420,
-          display: "flex",
-          borderRadius: 420,
-          border: `1px solid ${gold}33`,
-          background: "rgba(0,0,0,0)",
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: 5,
-          height: "630px",
-          display: "flex",
-          background: gold,
-        }}
-      />
-      {[0, 1, 2, 3, 4, 5, 6].map((index) => (
-        <div
-          key={`tick-${index}`}
-          style={{
-            position: "absolute",
-            left: 12,
-            top: 48 + index * 78,
-            width: 10,
-            height: 4,
             display: "flex",
-            background: gold,
-          }}
-        />
-      ))}
-
-      <div
-        style={{
-          position: "absolute",
-          left: 24,
-          top: 24,
-          width: 1152,
-          height: 582,
-          display: "flex",
-          border: `1px solid ${gold}40`,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: 32,
-          top: 32,
-          width: 1136,
-          height: 566,
-          display: "flex",
-          border: `1px solid ${gold}22`,
-        }}
-      />
-
-      <HudCorner x="left" y="top" color={gold} />
-      <HudCorner x="right" y="top" color={gold} />
-      <HudCorner x="left" y="bottom" color={gold} />
-      <HudCorner x="right" y="bottom" color={gold} />
-
-      <div
-        style={{
-          position: "absolute",
-          left: 56,
-          top: 50,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            fontSize: 11,
-            letterSpacing: "0.48em",
-            color: gold,
-            fontFamily: "Helvetica, Arial, sans-serif",
+            alignItems: "center",
+            justifyContent: "center",
+            background: MAT,
           }}
         >
-          {displayKicker}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            marginTop: 10,
-            width: 54,
-            height: 1,
-            background: gold,
-          }}
-        />
-      </div>
-
-      {dateLabel && !unavailable ? (
-        <div
-          style={{
-            position: "absolute",
-            right: 56,
-            top: 46,
-            display: "flex",
-            padding: "11px 18px",
-            border: `1px solid ${gold}99`,
-            background: "rgba(8,10,12,0.28)",
-            color: gold,
-            fontSize: 13,
-            letterSpacing: "0.34em",
-            textTransform: "uppercase",
-            fontFamily: "Helvetica, Arial, sans-serif",
-          }}
-        >
-          {dateLabel}
-        </div>
-      ) : null}
-
-      <div
-        style={{
-          position: "absolute",
-          left: 56,
-          bottom: 44,
-          right: 56,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {greeting ? (
           <div
             style={{
+              width: "492px",
+              height: "566px",
               display: "flex",
-              color: "rgba(246, 240, 230, 0.8)",
-              fontSize: 22,
-              fontStyle: "italic",
-              lineHeight: 1.2,
-              marginBottom: 8,
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#FBF9F5",
+              borderRadius: 18,
+              border: `1px solid ${accent}66`,
+              overflow: "hidden",
             }}
           >
-            {greeting}
-          </div>
-        ) : null}
-
-        {lockup ? (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroSrc ?? ""}
+              alt=""
+              width={492}
+              height={566}
               style={{
-                display: "flex",
-                color: ivory,
-                fontSize: size,
-                lineHeight: 0.92,
-                letterSpacing: "-0.04em",
-                textShadow: "0 22px 48px rgba(0,0,0,0.5)",
+                width: "492px",
+                height: "566px",
+                objectFit: "contain",
+                objectPosition: "center",
               }}
-            >
-              {lockup.one}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", marginTop: 2 }}>
-              <div
-                style={{
-                  display: "flex",
-                  color: gold,
-                  fontSize: Math.round(size * 0.72),
-                  lineHeight: 0.9,
-                  marginRight: 16,
-                  fontFamily: "Georgia, 'Times New Roman', serif",
-                }}
-              >
-                &
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  color: ivory,
-                  fontSize: size,
-                  lineHeight: 0.92,
-                  letterSpacing: "-0.04em",
-                  textShadow: "0 22px 48px rgba(0,0,0,0.5)",
-                }}
-              >
-                {lockup.two}
-              </div>
-            </div>
+            />
           </div>
-        ) : (
+        </div>
+      ) : null}
+
+      <div
+        style={{
+          width: showPhoto ? "652px" : "1200px",
+          height: "630px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: showPhoto ? "52px 56px 48px 48px" : "72px 88px",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{
               display: "flex",
-              color: ivory,
-              fontSize: size,
-              lineHeight: 1.02,
-              letterSpacing: "-0.03em",
-              maxWidth: "980px",
-              textShadow: "0 18px 40px rgba(0,0,0,0.45)",
+              fontSize: 13,
+              letterSpacing: "0.42em",
+              color: accent,
+              fontFamily: "Helvetica, Arial, sans-serif",
             }}
           >
-            {displayTitle}
+            {displayKicker}
           </div>
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            marginTop: 16,
-            width: 72,
-            height: 2,
-            background: gold,
-          }}
-        />
-        {showPhrase ? (
           <div
             style={{
               display: "flex",
               marginTop: 14,
-              fontSize: 21,
-              lineHeight: 1.35,
-              color: "rgba(246, 240, 230, 0.78)",
-              maxWidth: "640px",
+              width: 42,
+              height: 1,
+              background: accent,
             }}
-          >
-            {displayPhrase}
-          </div>
-        ) : null}
-        <div
-          style={{
-            display: "flex",
-            marginTop: 18,
-            alignItems: "center",
-          }}
-        >
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {greeting ? (
+            <div
+              style={{
+                display: "flex",
+                color: "rgba(28, 25, 21, 0.62)",
+                fontSize: 22,
+                fontStyle: "italic",
+                lineHeight: 1.2,
+                marginBottom: 12,
+              }}
+            >
+              {greeting}
+            </div>
+          ) : null}
+
+          {lockup ? (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  display: "flex",
+                  color: INK,
+                  fontSize: size,
+                  lineHeight: 0.94,
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                {lockup.one}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", marginTop: 4 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    color: accent,
+                    fontSize: Math.round(size * 0.62),
+                    lineHeight: 0.9,
+                    marginRight: 14,
+                  }}
+                >
+                  &
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    color: INK,
+                    fontSize: size,
+                    lineHeight: 0.94,
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  {lockup.two}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                color: INK,
+                fontSize: size,
+                lineHeight: 1.05,
+                letterSpacing: "-0.03em",
+                maxWidth: showPhoto ? "540px" : "900px",
+              }}
+            >
+              {displayTitle}
+            </div>
+          )}
+
+          {dateLabel && !unavailable ? (
+            <div
+              style={{
+                display: "flex",
+                marginTop: 18,
+                color: accent,
+                fontSize: 15,
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+                fontFamily: "Helvetica, Arial, sans-serif",
+              }}
+            >
+              {dateLabel}
+            </div>
+          ) : null}
+
+          {showPhrase ? (
+            <div
+              style={{
+                display: "flex",
+                marginTop: 16,
+                fontSize: 22,
+                lineHeight: 1.35,
+                color: "rgba(28, 25, 21, 0.68)",
+                maxWidth: showPhoto ? "520px" : "760px",
+              }}
+            >
+              {displayPhrase}
+            </div>
+          ) : null}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center" }}>
           <div
             style={{
               display: "flex",
-              width: 7,
-              height: 7,
+              width: 6,
+              height: 6,
               marginRight: 12,
-              background: gold,
+              background: accent,
               transform: "rotate(45deg)",
             }}
           />
@@ -415,8 +286,8 @@ export function SocialPlaceCardMarkup({
             style={{
               display: "flex",
               fontSize: 12,
-              letterSpacing: "0.46em",
-              color: gold,
+              letterSpacing: "0.42em",
+              color: accent,
               fontFamily: "Helvetica, Arial, sans-serif",
             }}
           >
@@ -424,23 +295,6 @@ export function SocialPlaceCardMarkup({
           </div>
         </div>
       </div>
-
-      {!unavailable ? (
-        <div
-          style={{
-            position: "absolute",
-            right: 56,
-            bottom: 52,
-            display: "flex",
-            fontSize: 11,
-            letterSpacing: "0.42em",
-            color: `${gold}cc`,
-            fontFamily: "Helvetica, Arial, sans-serif",
-          }}
-        >
-          OPEN TO ENTER
-        </div>
-      ) : null}
     </div>
   );
 }

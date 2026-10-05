@@ -213,10 +213,6 @@ export function PersistentActionBar({ context, visible, hasRsvpPage }: Persisten
               </button>
             </div>
 
-            <p className="inv-share-sheet-url" title={payload.url}>
-              {payload.url}
-            </p>
-
             <div className="inv-share-grid" role="list">
               {CHANNELS.map(({ id, label, Icon }) => (
                 <button
