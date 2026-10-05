@@ -126,7 +126,7 @@
     "defaultAudioCategory": "wedding",
     "defaultAudioTrackId": "layout-seraphine-champagne-wedding",
     "hubMode": "scroll",
-    "countdownStyle": "gold-royal",
+    "countdownStyle": "hourglass",
     "sceneTransition": "door",
     "heroLayout": "garden-bloom",
     "slideshowStyle": "luxury-frame",

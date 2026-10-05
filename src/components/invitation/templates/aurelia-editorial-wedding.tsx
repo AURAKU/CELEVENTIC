@@ -639,7 +639,12 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
             aria-label={`${count.d} days ${count.h} hours ${count.m} minutes ${count.s} seconds`}
             data-testid="seraphine-countdown"
           >
-            <SeraphineHourglass count={count} />
+            <SeraphineHourglass
+              count={count}
+              monogram={config.monogram}
+              coupleLine={`${config.partnerOneName} & ${config.partnerTwoName}`}
+              dateLine={config.dateDisplay}
+            />
           </div>
         ) : (
           <div className={styles.grid}>

@@ -34,6 +34,9 @@ import { PlaceCard } from "@/components/invitation/place-card";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
 import { detectCalendarPlatform, setSmartCalendarReminder } from "@/lib/invitation/smart-calendar";
+import { hourglassEngraving } from "@/lib/invitation/hourglass-identity";
+import { useCountdown } from "@/hooks/use-countdown";
+import { SeraphineHourglass } from "./seraphine-hourglass";
 
 export type ForeverAfarisWeddingProps = InvitationRenderProps & {
   contactEmail?: string | null;
@@ -251,6 +254,36 @@ function diffParts(target: number) {
     minutes: Math.floor((s % 3600) / 60),
     seconds: s % 60,
   };
+}
+
+function WeddingHourglass({
+  targetIso,
+  name1,
+  name2,
+  seal,
+  displayDate,
+}: {
+  targetIso: string;
+  name1: string;
+  name2: string;
+  seal: string;
+  displayDate: string;
+}) {
+  const count = useCountdown(targetIso);
+  const engraving = hourglassEngraving({
+    name1,
+    name2,
+    seal,
+    displayDate,
+  });
+  return (
+    <SeraphineHourglass
+      count={count}
+      monogram={engraving.monogram}
+      coupleLine={engraving.coupleLine}
+      dateLine={engraving.dateLine}
+    />
+  );
 }
 
 function WeddingCountdown({
@@ -751,12 +784,29 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     countdown: features.countdown ? (
       <Reveal as="section">
-        <WeddingCountdown
-          targetIso={countdownTarget}
-          heading={board.countdownHeading}
-          expiredMessage={board.countdownExpiredMessage}
-          palette={C}
-        />
+        {(design.experience?.countdownStyle as string | undefined) === "hourglass" ? (
+          <div className="text-center">
+            <p className={T.scriptSm} style={{ color: C.goldDeep }}>
+              {board.countdownHeading}
+            </p>
+            <div className="mx-auto mt-4 w-full max-w-[22rem]">
+              <WeddingHourglass
+                targetIso={countdownTarget}
+                name1={board.coupleName1}
+                name2={board.coupleName2}
+                seal={board.sealMonogram}
+                displayDate={board.displayDate}
+              />
+            </div>
+          </div>
+        ) : (
+          <WeddingCountdown
+            targetIso={countdownTarget}
+            heading={board.countdownHeading}
+            expiredMessage={board.countdownExpiredMessage}
+            palette={C}
+          />
+        )}
       </Reveal>
     ) : null,
 

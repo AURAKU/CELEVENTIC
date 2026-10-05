@@ -136,8 +136,14 @@ function CapsAndGlass({ uid, breathe }: { uid: string; breathe?: boolean }) {
 
 export function SeraphineHourglass({
   count,
+  monogram,
+  coupleLine,
+  dateLine,
 }: {
   count: CountdownParts;
+  monogram?: string | null;
+  coupleLine?: string | null;
+  dateLine?: string | null;
 }) {
   const uid = useId().replace(/:/g, "");
   const frontId = `${uid}f`;
@@ -378,38 +384,44 @@ export function SeraphineHourglass({
                 <CapsAndGlass uid={backId} />
                 <ellipse cx={CX} cy="168" rx="54" ry="62" fill={`url(#${backId}-plate)`} stroke="#c5b48a" strokeWidth="1.2" />
                 <ellipse cx={CX} cy="168" rx="46" ry="54" fill="none" stroke="rgba(232,220,192,0.35)" strokeWidth="0.7" />
-                <text
-                  x={CX}
-                  y="148"
-                  textAnchor="middle"
-                  fill="#5c4a28"
-                  fontSize="11"
-                  letterSpacing="2.4"
-                  fontFamily="var(--aurelia-display)"
-                >
-                  K  &  F
-                </text>
-                <text
-                  x={CX}
-                  y="176"
-                  textAnchor="middle"
-                  fill="#3f331c"
-                  fontSize="17"
-                  fontFamily="var(--aurelia-script)"
-                >
-                  Kojo & Fafa
-                </text>
-                <text
-                  x={CX}
-                  y="196"
-                  textAnchor="middle"
-                  fill="#6a5730"
-                  fontSize="8"
-                  letterSpacing="1.6"
-                  fontFamily="var(--aurelia-display)"
-                >
-                  13 · 14 NOVEMBER
-                </text>
+                {monogram?.trim() ? (
+                  <text
+                    x={CX}
+                    y="148"
+                    textAnchor="middle"
+                    fill="#5c4a28"
+                    fontSize="11"
+                    letterSpacing="2.4"
+                    fontFamily="var(--aurelia-display)"
+                  >
+                    {monogram.trim()}
+                  </text>
+                ) : null}
+                {coupleLine?.trim() ? (
+                  <text
+                    x={CX}
+                    y="176"
+                    textAnchor="middle"
+                    fill="#3f331c"
+                    fontSize={coupleLine.trim().length > 18 ? 13 : 17}
+                    fontFamily="var(--aurelia-script)"
+                  >
+                    {coupleLine.trim()}
+                  </text>
+                ) : null}
+                {dateLine?.trim() ? (
+                  <text
+                    x={CX}
+                    y="196"
+                    textAnchor="middle"
+                    fill="#6a5730"
+                    fontSize={dateLine.trim().length > 22 ? 6.5 : 8}
+                    letterSpacing="1.2"
+                    fontFamily="var(--aurelia-display)"
+                  >
+                    {dateLine.trim()}
+                  </text>
+                ) : null}
                 <text x={CX} y="214" textAnchor="middle" fontSize="11" fill="#c5b48a">
                   {HEART}
                 </text>
