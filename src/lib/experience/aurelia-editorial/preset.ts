@@ -1,3 +1,4 @@
+import { googleMapsPlaceHref } from "@/lib/invitation/maps-utils";
 import {
   AURELIA_CATALOG_SLUG,
   AURELIA_LAYOUT_SLUG,
@@ -44,6 +45,13 @@ export const AURELIA_COUPLE_GALLERY = [
 export const AURELIA_INVITE_MUSIC = "/templates/aurelia/ordinary.mp3";
 export const AURELIA_INVITE_MUSIC_TITLE = "Ordinary";
 export const AURELIA_INVITE_MUSIC_DURATION_SEC = 188.21;
+/**
+ * Seraphine score: Pachelbel’s Canon in D — the wedding love theme everyone
+ * already knows. Recording by Kevin MacLeod (incompetech.com), CC BY 3.0.
+ */
+export const SERAPHINE_INVITE_MUSIC = "/templates/seraphine/canon-in-d.mp3";
+export const SERAPHINE_INVITE_MUSIC_TITLE = "Canon in D";
+export const SERAPHINE_INVITE_MUSIC_DURATION_SEC = 355.68;
 export const AURELIA_JOURNEY_FALLBACKS = [
   "/templates/aurelia/journey-01.jpg",
   "/templates/aurelia/journey-02.jpg",
@@ -230,32 +238,61 @@ export const AURELIA_WEDDING_DEFAULTS: AureliaWeddingConfig = {
 };
 
 export const SERAPHINE_HERO_FALLBACK = "/templates/seraphine/hero.jpg";
-/** Kojo & Fafa photographs and film for Moments / Our Journey. */
+/** Kojo & Fafa framed lookbook — studio and pool portraits only. */
+export const SERAPHINE_LOOKBOOK_GALLERY = [
+  "/templates/seraphine/couple/11-studio-black.jpg",
+  "/templates/seraphine/couple/12-ivory-embrace.jpg",
+  "/templates/seraphine/couple/13-poolside-black.jpg",
+  "/templates/seraphine/couple/14-ivory-spin.jpg",
+  "/templates/seraphine/couple/15-pool-laugh.jpg",
+  "/templates/seraphine/couple/16-ivory-steps.jpg",
+] as const;
+/** Lookbook portraits plus Our Journey stills for catalogue identity. */
 export const SERAPHINE_COUPLE_GALLERY = [
-  "/templates/seraphine/couple/08-forehead-kiss.jpg",
-  "/templates/seraphine/couple/07-pool-lean.jpg",
-  "/templates/seraphine/couple/09-pool-stand.jpg",
-  "/templates/seraphine/couple/10-studio-stool.jpg",
+  ...SERAPHINE_LOOKBOOK_GALLERY,
   "/templates/seraphine/couple/01-chambers.jpg",
   "/templates/seraphine/couple/02-beach.jpg",
   "/templates/seraphine/couple/03-dinner.jpg",
   "/templates/seraphine/couple/04-boat.jpg",
   "/templates/seraphine/couple/05-lounge.jpg",
-  "/templates/seraphine/couple/06-journey.mp4",
 ] as const;
 export const SERAPHINE_MONOGRAM = "/templates/seraphine/monogram-lockup.jpg";
 export const SERAPHINE_MONOGRAM_PNG = "/templates/seraphine/monogram-qr.png";
 export const SERAPHINE_MONOGRAM_CREST = "/templates/seraphine/monogram-crest.png";
 export const SERAPHINE_GUEST_OUTFITS = "/templates/seraphine/guest-outfits-board.jpg";
+export const SERAPHINE_GUEST_OUTFITS_PAIRS = "/templates/seraphine/guest-outfits-pairs.jpg";
+export const SERAPHINE_GUEST_OUTFITS_GENTLEMEN = "/templates/seraphine/guest-outfits-gentlemen.jpg";
+export const SERAPHINE_GUEST_OUTFIT_SLIDES = [
+  {
+    id: "ladies",
+    label: "Ladies",
+    imageUrl: SERAPHINE_GUEST_OUTFITS,
+    alt: "Lookbook of bright guest gowns in garden soirée colours",
+  },
+  {
+    id: "gentlemen",
+    label: "Gentlemen",
+    imageUrl: SERAPHINE_GUEST_OUTFITS_GENTLEMEN,
+    alt: "Lookbook of tailored guest suits for the garden soirée",
+  },
+] as const;
 export const SERAPHINE_TRADITIONAL_ISO = "2026-11-13T10:00:00+00:00";
 export const SERAPHINE_WHITE_ISO = "2026-11-14T00:00:00+00:00";
-export const SERAPHINE_TRADITIONAL_MAPS =
-  "https://www.google.com/maps/search/?api=1&query=" +
-  encodeURIComponent("Westville Homes, 20 Onyasia Street, West Legon, Accra, Ghana");
+/** Verified pin: Westville on Onyasia Street, West Legon (MQ3R+86). */
+export const SERAPHINE_TRADITIONAL_PIN = {
+  label: "Westville Homes, 20 Onyasia Street, West Legon, Accra, Ghana",
+  lat: 5.653355,
+  lng: -0.209499,
+} as const;
+/** Verified pin: Forest Grove Events, adjacent to 335 Place, North Dzorwulu. */
+export const SERAPHINE_WHITE_PIN = {
+  label: "The Forest Grove Event, Adjacent to 335 Place, Dzorwulu, Accra, Ghana",
+  lat: 5.621568,
+  lng: -0.18492,
+} as const;
+export const SERAPHINE_TRADITIONAL_MAPS = googleMapsPlaceHref(SERAPHINE_TRADITIONAL_PIN);
 export const SERAPHINE_TRADITIONAL_MAP_IMAGE = "/templates/seraphine/westville-homes-map.jpg";
-export const SERAPHINE_WHITE_MAPS =
-  "https://www.google.com/maps/search/?api=1&query=" +
-  encodeURIComponent("The Forest Grove Event, adjacent to 335 Place, Dzorwulu, Accra, Ghana");
+export const SERAPHINE_WHITE_MAPS = googleMapsPlaceHref(SERAPHINE_WHITE_PIN);
 export const SERAPHINE_WHITE_MAP_IMAGE = "/templates/seraphine/forest-grove-map.jpg";
 
 /** Traditional ceremony colour mood — tropical celebration, not Aurelia brown. */
@@ -389,23 +426,15 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       variant: "light",
     },
     {
-      id: "white",
-      eventLabel: "Wedding Ceremony",
-      dateLabel: "Saturday, 14 November",
-      title: "Wedding Colour Theme",
-      scriptLine: "Soft, airy, romantic",
-      note: "Sage, cream, and pale moss for a calm, refined wedding day.",
-      palette: [...SERAPHINE_SAGE_PALETTE],
-      variant: "light",
-    },
-    {
       id: "outfits",
       eventLabel: "Wedding Ceremony",
       dateLabel: "Saturday, 14 November",
       title: "Wedding Guest Outfits",
-      scriptLine: "Bright colours, airy fabrics, and a touch of whimsical romance.",
-      note: "Come dressed in bright colours, airy fabrics, and a touch of whimsical romance. Ladies may complete their look with a fascinator. Men are invited in polished formal looks in refined complementary colours.",
+      scriptLine: "Dress Code: Garden Soirée",
+      note:
+        "Ladies — Florals & Fascinators\nElegant floral dresses paired with a beautiful fascinator or hat. Think romantic, graceful and garden-chic.\n\nGentlemen — Suited & Sophisticated\nA well-tailored suit, crisp shirt and polished shoes. Ties, bow ties and pocket squares are welcome for that extra touch of elegance.\n\nA little note from us:\nDress beautifully, celebrate colour and bring your own touch of elegance. We can’t wait to see our garden filled with florals, fascinators and dapper suits.",
       imageUrl: SERAPHINE_GUEST_OUTFITS,
+      gentlemenImageUrl: SERAPHINE_GUEST_OUTFITS_GENTLEMEN,
       palette: [],
       variant: "light",
     },

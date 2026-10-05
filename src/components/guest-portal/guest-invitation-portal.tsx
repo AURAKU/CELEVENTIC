@@ -507,6 +507,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
           giftCtaLabel={props.giftCtaLabel}
           giftPrivacyNote={props.giftPrivacyNote}
           guestQrToken={props.guestQrToken}
+          eventId={props.eventId}
         />
 
         {/* Journey-owning templates supply their own chrome, hide the duplicate action rail */}

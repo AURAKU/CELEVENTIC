@@ -16,7 +16,11 @@ import {
   AURELIA_STORY_FALLBACK,
   SERAPHINE_CATALOG_SLUG,
   SERAPHINE_COUPLE_GALLERY,
+  SERAPHINE_LOOKBOOK_GALLERY,
   SERAPHINE_GUEST_OUTFITS,
+  SERAPHINE_GUEST_OUTFITS_PAIRS,
+  SERAPHINE_GUEST_OUTFITS_GENTLEMEN,
+  SERAPHINE_GUEST_OUTFIT_SLIDES,
   SERAPHINE_HERO_FALLBACK,
   SERAPHINE_INTRO_ID,
   SERAPHINE_LAYOUT_SLUG,
@@ -43,8 +47,8 @@ import { getCatalogTemplate } from "@/lib/invitation-mvp/catalogue";
 import { getDefaultDesignConfig } from "@/lib/invitation-templates";
 import { getTemplateExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import { CATALOG_DEMO_IDENTITIES } from "@/lib/invitation-mvp/catalog-public-copy";
-import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
-import { toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
+import { buildDirectionsUrl, toGoogleMapsDirectionsHref } from "@/lib/invitation/maps-utils";
+import { calendarEventLocation, toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
 import { getCatalogMusicProfile } from "@/lib/invitation/catalog-music-identity";
 import { getLayoutMusicProfile, musicProfileUrl } from "@/lib/invitation/layout-music-identity";
 import {
@@ -52,6 +56,9 @@ import {
   AURELIA_INVITE_MUSIC_DURATION_SEC,
   AURELIA_INVITE_MUSIC_TITLE,
   AURELIA_TRADITIONAL_PALETTE,
+  SERAPHINE_INVITE_MUSIC,
+  SERAPHINE_INVITE_MUSIC_DURATION_SEC,
+  SERAPHINE_INVITE_MUSIC_TITLE,
 } from "@/lib/experience/aurelia-editorial/preset";
 
 const FORBIDDEN = /kofi|kamilia|\bk\s*&\s*k\b|anagkazo|bride'?s home|lovable\.app/i;
@@ -376,6 +383,22 @@ test("Aurelia plays Ordinary as the invitation score", () => {
   assert.match(wrapperSrc, /if \(next === "portal"\) \{\s*void startAudio\(\);/s);
 });
 
+test("Seraphine plays Canon in D as the invitation score", () => {
+  const catalog = getCatalogMusicProfile(SERAPHINE_CATALOG_SLUG);
+  const layout = getLayoutMusicProfile(SERAPHINE_LAYOUT_SLUG);
+  assert.equal(catalog?.title, SERAPHINE_INVITE_MUSIC_TITLE);
+  assert.equal(catalog?.url, SERAPHINE_INVITE_MUSIC);
+  assert.equal(musicProfileUrl(catalog!), SERAPHINE_INVITE_MUSIC);
+  assert.equal(catalog?.startSec, 0);
+  assert.equal(catalog?.endSec, SERAPHINE_INVITE_MUSIC_DURATION_SEC);
+  assert.equal(layout.title, SERAPHINE_INVITE_MUSIC_TITLE);
+  assert.equal(musicProfileUrl(layout), SERAPHINE_INVITE_MUSIC);
+  assert.notEqual(SERAPHINE_INVITE_MUSIC, AURELIA_INVITE_MUSIC);
+  assert.equal(existsSync("public/templates/seraphine/canon-in-d.mp3"), true);
+  assert.ok(statSync("public/templates/seraphine/canon-in-d.mp3").size > 1_000_000);
+  assert.equal(readFileSync("public/templates/seraphine/canon-in-d.mp3").subarray(0, 3).toString("ascii"), "ID3");
+});
+
 test("Aurelia traditional color option uses the approved brown palette", () => {
   const palette = AURELIA_WEDDING_DEFAULTS.dressCodes[0]?.palette ?? [];
   assert.deepEqual(
@@ -455,6 +478,8 @@ test("Aurelia invitation hosts Memory Vault as The Album", () => {
   assert.match(liveAlbumUi, /canModerate/);
   assert.match(liveAlbumUi, /method: "DELETE"/);
   assert.match(liveAlbumUi, /\{canModerate \?/);
+  assert.match(liveAlbumUi, /stageRemove/);
+  assert.match(liveAlbumUi, /Remove this photograph from the album/);
   assert.match(liveAlbumUi, /setOpenId\(item\.id\)/);
   assert.match(liveAlbumUi, /Close photograph/);
   assert.match(liveAlbumUi, /role="dialog"/);
@@ -531,7 +556,11 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.ok(buildDirectionsUrl({ mapsLink: SERAPHINE_TRADITIONAL_MAPS }));
   assert.match(
     toMapsEmbedUrl(SERAPHINE_TRADITIONAL_MAPS, "Westville Homes") ?? "",
-    /Westville|Onyasia|West%20Legon/
+    /5\.653355/
+  );
+  assert.match(
+    toGoogleMapsDirectionsHref(SERAPHINE_TRADITIONAL_MAPS) ?? "",
+    /destination=5\.653355/
   );
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.venues[0]?.mapsUrl, SERAPHINE_TRADITIONAL_MAPS);
   assert.equal(SERAPHINE_TRADITIONAL_MAP_IMAGE, "/templates/seraphine/westville-homes-map.jpg");
@@ -547,6 +576,29 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.mapsUrl, SERAPHINE_WHITE_MAPS);
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.address, "Adjacent to 335 Place, Dzorwulu");
   assert.match(SERAPHINE_WHITE_MAPS, /Forest Grove|Dzorwulu|335/);
+  assert.match(SERAPHINE_WHITE_MAPS, /5\.621568/);
+  assert.match(
+    toMapsEmbedUrl(SERAPHINE_WHITE_MAPS, "The Forest Grove Event") ?? "",
+    /5\.621568/
+  );
+  assert.match(
+    toGoogleMapsDirectionsHref(SERAPHINE_WHITE_MAPS) ?? "",
+    /destination=5\.621568/
+  );
+  assert.equal(
+    calendarEventLocation(
+      SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.venueName,
+      SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.address
+    ),
+    "The Forest Grove Event, Adjacent to 335 Place, Dzorwulu"
+  );
+  assert.equal(
+    calendarEventLocation(
+      SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.venueName,
+      SERAPHINE_WEDDING_DEFAULTS.ceremonies[0]?.address
+    ),
+    "Westville Homes, 20 Onyasia Street, West Legon"
+  );
   assert.equal(SERAPHINE_WHITE_MAP_IMAGE, "/templates/seraphine/forest-grove-map.jpg");
   assert.equal(existsSync("public/templates/seraphine/forest-grove-map.jpg"), true);
   assert.ok(buildDirectionsUrl({ mapsLink: SERAPHINE_WHITE_MAPS }));
@@ -603,6 +655,31 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.match(
     readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.tsx", "utf8"),
     /countdownDates[\s\S]*13[\s\S]*14 November 2026/
+  );
+  assert.match(
+    readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.tsx", "utf8"),
+    /data-testid="seraphine-countdown"/
+  );
+  assert.match(
+    readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.tsx", "utf8"),
+    /SeraphineHourglass/
+  );
+  assert.match(
+    readFileSync("src/components/invitation/templates/seraphine-hourglass.tsx", "utf8"),
+    /SERAPHINE_HOURGLASS_MS/
+  );
+  assert.match(
+    readFileSync("src/components/invitation/templates/seraphine-hourglass.tsx", "utf8"),
+    /The glass keeps our promise/
+  );
+  assert.equal(existsSync("src/components/invitation/templates/seraphine-hourglass.module.css"), true);
+  assert.match(
+    readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.module.css", "utf8"),
+    /--seraphine-portrait/
+  );
+  assert.match(
+    readFileSync("src/hooks/use-countdown.ts", "utf8"),
+    /remainingMs/
   );
   assert.equal(
     mergeAureliaWedding(
@@ -667,15 +744,52 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
     ).dressCodes[0]?.palette,
     []
   );
-  assert.deepEqual(
-    SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.palette.map((swatch) => swatch.hex.toUpperCase()),
-    ["#8BA888", "#A8C0A0", "#FAFAF5", "#F5F0E4", "#C0C8A8"]
-  );
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[2]?.title, "Wedding Guest Outfits");
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[2]?.imageUrl, SERAPHINE_GUEST_OUTFITS);
   assert.equal(
-    mergeAureliaWedding({}, SERAPHINE_WEDDING_DEFAULTS).dressCodes[2]?.imageUrl,
+    SERAPHINE_WEDDING_DEFAULTS.dressCodes.some((item) => item.title === "Wedding Colour Theme"),
+    false
+  );
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.id, "outfits");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.title, "Wedding Guest Outfits");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.scriptLine, "Dress Code: Garden Soirée");
+  assert.match(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.note ?? "", /Ladies — Florals & Fascinators/);
+  assert.match(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.note ?? "", /Gentlemen — Suited & Sophisticated/);
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.imageUrl, SERAPHINE_GUEST_OUTFITS);
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.dressCodes[1]?.gentlemenImageUrl, SERAPHINE_GUEST_OUTFITS_GENTLEMEN);
+  assert.equal(SERAPHINE_GUEST_OUTFITS_GENTLEMEN, "/templates/seraphine/guest-outfits-gentlemen.jpg");
+  assert.equal(SERAPHINE_GUEST_OUTFITS_PAIRS, "/templates/seraphine/guest-outfits-pairs.jpg");
+  assert.deepEqual(
+    SERAPHINE_GUEST_OUTFIT_SLIDES.map((slide) => slide.id),
+    ["ladies", "gentlemen"]
+  );
+  assert.equal(existsSync("public/templates/seraphine/guest-outfits-pairs.jpg"), true);
+  assert.equal(existsSync("public/templates/seraphine/guest-outfits-gentlemen.jpg"), true);
+  assert.equal(
+    mergeAureliaWedding({}, SERAPHINE_WEDDING_DEFAULTS).dressCodes[1]?.scriptLine,
+    "Dress Code: Garden Soirée"
+  );
+  assert.match(
+    mergeAureliaWedding({}, SERAPHINE_WEDDING_DEFAULTS).dressCodes[1]?.note ?? "",
+    /Ladies — Florals & Fascinators/
+  );
+  assert.equal(
+    mergeAureliaWedding({}, SERAPHINE_WEDDING_DEFAULTS).dressCodes[1]?.imageUrl,
     SERAPHINE_GUEST_OUTFITS
+  );
+  assert.equal(
+    mergeAureliaWedding(
+      {
+        dressCodes: [
+          {
+            id: "white",
+            eventLabel: "Wedding Ceremony",
+            dateLabel: "Saturday, 14 November",
+            title: "Wedding Colour Theme",
+          },
+        ],
+      },
+      SERAPHINE_WEDDING_DEFAULTS
+    ).dressCodes.some((item) => item.id === "white" || item.title === "Wedding Colour Theme"),
+    false
   );
   assert.equal(existsSync("public/templates/seraphine/guest-outfits-board.jpg"), true);
   assert.equal(AURELIA_WEDDING_DEFAULTS.partnerOneName, "Enock");
@@ -763,19 +877,27 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.equal(existsSync("public/templates/seraphine/hero.jpg"), true);
   assert.ok(statSync("public/templates/seraphine/hero.jpg").size > 50_000);
   assert.equal(
-    SERAPHINE_COUPLE_GALLERY.includes("/templates/seraphine/couple/09-pool-stand.jpg"),
+    SERAPHINE_LOOKBOOK_GALLERY.includes("/templates/seraphine/couple/11-studio-black.jpg"),
     true
   );
-  assert.notEqual(SERAPHINE_HERO_FALLBACK, "/templates/seraphine/couple/09-pool-stand.jpg");
-  assert.equal(SERAPHINE_COUPLE_GALLERY.length, 10);
-  assert.equal(SERAPHINE_COUPLE_GALLERY[0], "/templates/seraphine/couple/08-forehead-kiss.jpg");
-  assert.equal(SERAPHINE_COUPLE_GALLERY.at(-1), "/templates/seraphine/couple/06-journey.mp4");
-  assert.equal(SERAPHINE_COUPLE_GALLERY.filter((url) => url.endsWith(".mp4")).length, 1);
-  assert.equal(SERAPHINE_COUPLE_GALLERY.filter((url) => /\.(jpe?g)$/i.test(url)).length, 9);
+  assert.notEqual(SERAPHINE_HERO_FALLBACK, SERAPHINE_LOOKBOOK_GALLERY[0]);
+  assert.equal(SERAPHINE_LOOKBOOK_GALLERY.length, 6);
+  assert.equal(SERAPHINE_LOOKBOOK_GALLERY[0], "/templates/seraphine/couple/11-studio-black.jpg");
+  assert.equal(SERAPHINE_LOOKBOOK_GALLERY.at(-1), "/templates/seraphine/couple/16-ivory-steps.jpg");
+  assert.equal(SERAPHINE_LOOKBOOK_GALLERY.filter((url) => url.endsWith(".mp4")).length, 0);
+  assert.equal(SERAPHINE_COUPLE_GALLERY.length, 11);
+  assert.equal(SERAPHINE_COUPLE_GALLERY.filter((url) => /\.(jpe?g)$/i.test(url)).length, 11);
+  assert.equal(
+    SERAPHINE_LOOKBOOK_GALLERY.some((url) => /01-chambers|02-beach|03-dinner|04-boat|05-lounge/i.test(url)),
+    false
+  );
   assert.equal(
     SERAPHINE_COUPLE_GALLERY.some((url) => /standing|gold-laugh|black-and-white|chair|gold-gaze/i.test(url)),
     false
   );
+  for (const url of SERAPHINE_LOOKBOOK_GALLERY) {
+    assert.equal(existsSync(`public${url}`), true, url);
+  }
   for (const url of SERAPHINE_COUPLE_GALLERY) {
     assert.equal(existsSync(`public${url}`), true, url);
   }
@@ -784,9 +906,12 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
     "src/components/invitation/templates/aurelia-editorial-wedding.tsx",
     "utf8"
   );
-  assert.match(templateSrc, /SERAPHINE_COUPLE_GALLERY/);
-  assert.match(templateSrc, /isSeraphine\s*\?\s*\[\.\.\.SERAPHINE_COUPLE_GALLERY\]/);
-  assert.match(templateSrc, /media: isSeraphine \? \[\] : props\.design\.media/);
+  assert.match(templateSrc, /SERAPHINE_LOOKBOOK_GALLERY/);
+  assert.match(templateSrc, /resolveAureliaJourneyMoments/);
+  assert.match(templateSrc, /AureliaJourneyMoments/);
+  assert.match(templateSrc, /styles\.storySplit/);
+  assert.match(templateSrc, /look=\{isSeraphine \? "lookbook" : "flush"\}/);
+  assert.match(templateSrc, /isSeraphine \? \[\] : props\.design\.media/);
   assert.match(templateSrc, /journey: isSeraphine \? \[\] : config\.journey/);
   assert.match(templateSrc, /monogramMark/);
   assert.match(templateSrc, /familyMonogram/);
@@ -796,12 +921,19 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.match(templateSrc, /outfitToggle/);
   assert.match(templateSrc, /View the lookbook/);
   assert.match(templateSrc, /outfitBoard/);
+  assert.match(templateSrc, /OutfitLookbookDeck/);
+  assert.match(templateSrc, /SERAPHINE_GUEST_OUTFIT_SLIDES/);
+  assert.match(templateSrc, /swipe to see every look/);
+  assert.match(templateSrc, /seraphine-outfit-deck/);
+  assert.match(
+    readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.module.css", "utf8"),
+    /\.outfitViewport[\s\S]*\.outfitTrack[\s\S]*\.outfitNav/
+  );
   assert.match(templateSrc, /id="aurelia-gifts"/);
   assert.match(templateSrc, /AureliaGiftCheckout/);
   assert.match(templateSrc, /AureliaCoupleAlbum/);
+  assert.match(templateSrc, /AureliaJourneyMoments/);
   assert.match(templateSrc, /variant="story"/);
-  assert.match(templateSrc, /look=\{isSeraphine \? "lookbook" : "flush"\}/);
-  assert.match(templateSrc, /styles\.storySplit/);
   assert.match(templateSrc, /id="aurelia-story"/);
   assert.match(templateSrc, /AURELIA_COUPLE_GALLERY/);
   assert.match(
@@ -812,9 +944,21 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
     readFileSync("src/components/invitation/templates/aurelia-couple-album.tsx", "utf8"),
     /storyLookbook/
   );
+  assert.doesNotMatch(
+    readFileSync("src/components/invitation/templates/aurelia-couple-album.tsx", "utf8"),
+    /storyGalleryPlate/
+  );
   assert.match(
     readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.module.css", "utf8"),
     /\.storyLookbook \.storyGalleryFrame/
+  );
+  assert.match(
+    readFileSync("src/components/invitation/templates/aurelia-editorial-wedding.module.css", "utf8"),
+    /\.journeySlideshow/
+  );
+  assert.doesNotMatch(
+    readFileSync("src/components/invitation/templates/aurelia-journey-moments.tsx", "utf8"),
+    /Play Music|momentPlay|seraphine-journey-play-music|momentTitle|momentHead|momentCount/
   );
   assert.doesNotMatch(
     readFileSync("public/templates/seraphine/monogram.svg", "utf8"),
@@ -859,6 +1003,8 @@ test("Seraphine invitation chrome is Sage and White, not Aurelia brown", () => {
   assert.match(css, /\.metaPrimary \{\n  font-family: var\(--aurelia-readable\);/);
   assert.match(css, /\.metaSecondary \{\n  font-family: var\(--aurelia-readable\);/);
   assert.doesNotMatch(css, /\.metaPrimary \{\n  font-family: var\(--aurelia-serif\);/);
+  assert.match(css, /\[data-testid="rsvp-party-label"\]/);
+  assert.match(css, /\.seraphine \.rsvpPanel :global\(\[data-testid="rsvp-party-label"\]\) \{\n  color: #fafaf5/i);
 });
 
 test("Aurelia guest copy has no pause dashes between clauses", () => {

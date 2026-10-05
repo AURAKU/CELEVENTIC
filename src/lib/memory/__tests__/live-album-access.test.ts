@@ -72,6 +72,29 @@ describe("live album delete access", () => {
     );
   });
 
+  it("preview albums still block guests from deleting", () => {
+    assert.equal(
+      resolveLiveAlbumDeleteAccess({
+        role: null,
+        userId: null,
+        organizerId: null,
+        hasInvitation: false,
+        isPreviewAlbum: true,
+      }),
+      false
+    );
+    assert.equal(
+      resolveLiveAlbumDeleteAccess({
+        role: "GUEST" as never,
+        userId: "guest_1",
+        organizerId: null,
+        hasInvitation: false,
+        isPreviewAlbum: true,
+      }),
+      false
+    );
+  });
+
   it("preview albums allow a signed-in organizer to moderate", () => {
     assert.equal(isLiveAlbumPreviewKey("preview-seraphine-champagne-wedding"), true);
     assert.equal(

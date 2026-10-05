@@ -16,7 +16,7 @@ export const WITHDRAWAL_PAYOUT_METHODS: Array<{
 }> = [
   { id: "MTN_MOMO", label: "MTN Mobile Money", networkHint: "mtn" },
   { id: "TELECEL_CASH", label: "Telecel Cash", networkHint: "vod" },
-  { id: "AIRTELTIGO_MONEY", label: "AirtelTigo / AT Money", networkHint: "atl" },
+  { id: "AIRTELTIGO_MONEY", label: "AT Money", networkHint: "atl" },
   { id: "GHANA_BANK", label: "Ghana bank account", networkHint: null },
 ];
 

@@ -236,8 +236,11 @@ export class GiftPaymentService {
         },
       });
       if (error instanceof PaymentProviderError) {
+        const missing = /not configured|secret key|disabled/i.test(error.message);
         throw new GiftPaymentError(
-          "Gifting is temporarily unavailable. Please try again shortly.",
+          missing
+            ? "Paystack is not connected for this invitation. Please try again shortly."
+            : "Gifting is temporarily unavailable. Please try again shortly.",
           503
         );
       }

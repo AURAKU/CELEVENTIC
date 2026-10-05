@@ -1,3 +1,13 @@
+/** Lat/lng pin so Maps never geocodes a nearby-but-wrong neighbourhood. */
+export type MapsPin = {
+  label: string;
+  lat: number;
+  lng: number;
+};
+
+const COORD_IN_HREF = /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/;
+const COORD_PAIR = /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/;
+
 /** Make Maps / web CTAs absolute https so they never resolve as a same-origin 404. */
 export function normalizeExternalHref(url: string | null | undefined): string {
   const trimmed = url?.trim() ?? "";
@@ -9,6 +19,67 @@ export function normalizeExternalHref(url: string | null | undefined): string {
     return `https://${trimmed.replace(/^\/+/, "")}`;
   }
   return trimmed;
+}
+
+/** Named Google Maps place URL pinned to verified coordinates. */
+export function googleMapsPlaceHref(pin: MapsPin): string {
+  const slug = encodeURIComponent(pin.label).replace(/%20/g, "+");
+  return `https://www.google.com/maps/place/${slug}/@${pin.lat},${pin.lng},17z`;
+}
+
+/** Turn-by-turn Google Maps URL to a verified pin. */
+export function googleMapsDirectionsHref(pin: MapsPin): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    `${pin.lat},${pin.lng}`
+  )}`;
+}
+
+export function extractMapsCoordinates(
+  url: string | null | undefined
+): { lat: number; lng: number } | null {
+  const link = normalizeExternalHref(url);
+  if (!link) return null;
+  try {
+    const parsed = new URL(link);
+    const at = parsed.pathname.match(COORD_IN_HREF) || parsed.href.match(COORD_IN_HREF);
+    if (at) {
+      const lat = Number(at[1]);
+      const lng = Number(at[2]);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+    }
+    for (const key of ["query", "q", "destination", "ll", "center"]) {
+      const raw = parsed.searchParams.get(key);
+      const pair = raw?.match(COORD_PAIR);
+      if (!pair) continue;
+      const lat = Number(pair[1]);
+      const lng = Number(pair[2]);
+      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/** Prefer coordinates so embeds never follow a fuzzy text geocode. */
+export function extractMapsQuery(url: string | null | undefined, fallback = ""): string {
+  const coords = extractMapsCoordinates(url);
+  if (coords) return `${coords.lat},${coords.lng}`;
+  const link = normalizeExternalHref(url);
+  if (!link) return fallback;
+  try {
+    const parsed = new URL(link);
+    const fromParams =
+      parsed.searchParams.get("query") ||
+      parsed.searchParams.get("q") ||
+      parsed.searchParams.get("destination");
+    if (fromParams) return fromParams;
+    const place = parsed.pathname.match(/\/maps\/place\/([^/@]+)/);
+    if (place?.[1]) return decodeURIComponent(place[1].replace(/\+/g, " "));
+  } catch {
+    /* keep fallback */
+  }
+  return fallback;
 }
 
 function isAbsoluteHttpUrl(url: string): boolean {
@@ -37,6 +108,7 @@ function mapsHrefHasLocation(url: string): boolean {
         parsed.searchParams.get("destination") ||
         parsed.searchParams.get("query_place_id") ||
         /\/maps\/place\//i.test(parsed.pathname) ||
+        /\/maps\/dir\//i.test(parsed.pathname) ||
         /\/maps\/@/.test(parsed.pathname) ||
         parsed.hostname.toLowerCase() === "maps.app.goo.gl"
     );
@@ -98,4 +170,14 @@ export function hasLocationData(options: {
   landmark?: string | null;
 }): boolean {
   return Boolean(buildDirectionsUrl(options));
+}
+
+/** Open turn-by-turn to the pin when we have coordinates; otherwise the maps link. */
+export function toGoogleMapsDirectionsHref(
+  mapsUrl?: string | null,
+  fallbackLabel?: string | null
+): string {
+  const coords = extractMapsCoordinates(mapsUrl);
+  if (coords) return googleMapsDirectionsHref({ label: fallbackLabel?.trim() || "", ...coords });
+  return resolveMapsLocationHref({ mapsUrl, locationName: fallbackLabel });
 }

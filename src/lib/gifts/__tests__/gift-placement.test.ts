@@ -8,7 +8,11 @@ import {
   invitationGiftAutoOpenAction,
   isCampaignPlaceable,
   isGuestScopedToCampaignEvent,
+  isPreviewGiftLink,
+  previewGiftEventTitle,
+  publicTokenFromGiftUrl,
   sanitizeCompanionReturnUrl,
+  allowPreviewGiftBootstrap,
 } from "../gift-placement";
 import { amountsMatch } from "../money";
 import { companionGiftTeaser, getGiftCopy } from "../gift-copy";
@@ -185,4 +189,23 @@ test("invitation auto-open creates or activates drafts, never un-pauses closed w
   assert.equal(invitationGiftAutoOpenAction({ status: "ACTIVE" }), "keep");
   assert.equal(invitationGiftAutoOpenAction({ status: "PAUSED" }), "keep");
   assert.equal(invitationGiftAutoOpenAction({ status: "CLOSED" }), "keep");
+});
+
+test("gift URLs expose the public Paystack campaign token", () => {
+  assert.equal(
+    publicTokenFromGiftUrl("https://www.celeventic.com/gift/gft_liveToken12"),
+    "gft_liveToken12"
+  );
+  assert.equal(publicTokenFromGiftUrl("/gift/gft_previewToken9"), "gft_previewToken9");
+  assert.equal(publicTokenFromGiftUrl("https://www.celeventic.com/invite/abc"), null);
+  assert.equal(publicTokenFromGiftUrl(null), null);
+});
+
+test("preview uniqueLinks open the shared demo gift wallet like a live invite", () => {
+  assert.equal(isPreviewGiftLink("preview-seraphine-champagne-wedding"), true);
+  assert.equal(isPreviewGiftLink("preview"), true);
+  assert.equal(isPreviewGiftLink("kojo-and-fafa"), false);
+  assert.equal(previewGiftEventTitle("preview-seraphine-champagne-wedding"), "Kojo & Fafa");
+  assert.equal(previewGiftEventTitle("preview-aurelia-editorial-wedding"), "Enock & Ruth");
+  assert.equal(allowPreviewGiftBootstrap(), true);
 });

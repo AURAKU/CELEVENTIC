@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import {
   GIFT_PAYMENT_METHODS,
@@ -73,12 +73,16 @@ test("checkout is restricted to the channel the guest picked", () => {
 
 test("gift network marks use official MTN, Telecel and AT lockups", () => {
   const src = readFileSync("src/components/gifts/gift-network-logo.tsx", "utf8");
-  assert.match(src, /aria-label="MTN"/);
-  assert.match(src, /aria-label="Telecel"/);
-  assert.match(src, /aria-label="AT"/);
-  assert.match(src, /#FFCC00/);
-  assert.match(src, /#E30613/);
-  assert.match(src, /#ED1C24/);
+  assert.match(src, /\/gifts\/networks\/mtn-momo\.svg/);
+  assert.match(src, /\/gifts\/networks\/telecel-cash\.svg/);
+  assert.match(src, /\/gifts\/networks\/at-money\.png/);
+  assert.equal(existsSync("public/gifts/networks/mtn-momo.svg"), true);
+  assert.equal(existsSync("public/gifts/networks/telecel-cash.svg"), true);
+  assert.equal(existsSync("public/gifts/networks/at-money.png"), true);
+  const mtn = readFileSync("public/gifts/networks/mtn-momo.svg", "utf8");
+  assert.match(mtn, /#FFCB05/);
+  const telecel = readFileSync("public/gifts/networks/telecel-cash.svg", "utf8");
+  assert.match(telecel, /#E32526/);
 });
 
 test("celebratory default copy never uses fundraising language", () => {

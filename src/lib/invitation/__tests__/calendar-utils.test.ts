@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildGoogleCalendarUrl,
   buildIcsContent,
+  calendarEventLocation,
   defaultReminderMinutes,
   hasValidCalendarWindow,
   toGoogleCalendarDates,
@@ -78,10 +79,28 @@ describe("calendar reminders", () => {
     const google = buildGoogleCalendarUrl(event);
     assert.match(google, /dates=20261114%2F20261115/);
     assert.match(google, /Time\+details/);
+    assert.match(google, /location=The\+Forest\+Grove\+Event/);
     const ics = buildIcsContent(event);
     assert.match(ics, /DTSTART;VALUE=DATE:20261114/);
     assert.match(ics, /DTEND;VALUE=DATE:20261115/);
     assert.doesNotMatch(ics, /DTSTART:20261114T000000Z/);
+  });
+
+  it("joins venue name and street into the calendar location", () => {
+    assert.equal(
+      calendarEventLocation("The Forest Grove Event", "Adjacent to 335 Place, Dzorwulu"),
+      "The Forest Grove Event, Adjacent to 335 Place, Dzorwulu"
+    );
+    const google = buildGoogleCalendarUrl({
+      title: "Kojo & Fafa · Traditional Ceremony",
+      startDateRaw: "2026-11-13T10:00:00+00:00",
+      venue: calendarEventLocation("Westville Homes", "20 Onyasia Street, West Legon"),
+      timeZone: "Africa/Accra",
+    });
+    assert.match(google, /dates=20261113T100000Z/);
+    assert.match(google, /ctz=Africa%2FAccra/);
+    assert.match(google, /Westville/);
+    assert.match(google, /Onyasia/);
   });
 });
 
@@ -93,5 +112,14 @@ describe("maps embed URLs", () => {
     );
     assert.match(embed ?? "", /^https:\/\/maps\.google\.com\/maps\?q=/);
     assert.match(embed ?? "", /Femmora/);
+  });
+
+  it("pins place URLs to coordinates instead of a fuzzy address geocode", () => {
+    const embed = toMapsEmbedUrl(
+      "https://www.google.com/maps/place/The+Forest+Grove+Event/@5.621568,-0.18492,17z",
+      "South Legon"
+    );
+    assert.match(embed ?? "", /q=5\.621568%2C-0\.18492/);
+    assert.doesNotMatch(embed ?? "", /South/);
   });
 });

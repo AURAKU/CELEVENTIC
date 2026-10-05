@@ -536,7 +536,7 @@ function MethodStep({
             className={`gift-chip flex w-full items-center justify-between px-4 py-4 text-left text-sm ${m.accentClass}`}
           >
             <span className="flex items-center gap-3">
-              <GiftNetworkLogo methodId={m.id} className="h-9 w-9 shrink-0 rounded-[0.55rem]" />
+              <GiftNetworkLogo methodId={m.id} className="h-9 w-9 shrink-0 rounded-[0.55rem] bg-white object-contain" />
               <span>
                 <span className="font-medium">{m.label}</span>
                 {m.aka && (

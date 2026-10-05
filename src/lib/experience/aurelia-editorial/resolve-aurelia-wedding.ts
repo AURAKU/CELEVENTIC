@@ -55,6 +55,16 @@ function copyOptional(value: string | null | undefined): string | undefined {
   return withoutInvitationPauseDashes(trim(value));
 }
 
+/** Keep titled em dashes and line breaks in dress-code notes. */
+function copyDressNote(value: string | null | undefined): string | undefined {
+  if (value == null) return value ?? undefined;
+  return value
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function sanitizeAureliaGuestCopy(config: AureliaWeddingConfig): AureliaWeddingConfig {
   return {
     ...config,
@@ -126,7 +136,7 @@ function sanitizeAureliaGuestCopy(config: AureliaWeddingConfig): AureliaWeddingC
       dateLabel: copy(item.dateLabel),
       title: copy(item.title),
       scriptLine: copyOptional(item.scriptLine),
-      note: copyOptional(item.note),
+      note: copyDressNote(item.note),
     })),
     journey: config.journey.map((item) => ({
       ...item,
@@ -236,6 +246,7 @@ function mergeDress(
       note: trim(extra.note) || canonical.note,
       scriptLine: trim(extra.scriptLine) || canonical.scriptLine,
       imageUrl: trim(extra.imageUrl) || canonical.imageUrl,
+      gentlemenImageUrl: trim(extra.gentlemenImageUrl) || canonical.gentlemenImageUrl,
       palette: canonical.palette.map((swatch) => ({ ...swatch })),
     };
   });

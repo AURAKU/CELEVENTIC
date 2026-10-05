@@ -40,6 +40,7 @@ export type InvitationRendererProps = InvitationRenderProps & {
   giftCtaLabel?: string | null;
   giftPrivacyNote?: string | null;
   guestQrToken?: string | null;
+  eventId?: string | null;
 };
 
 export function InvitationRenderer({ interactiveMedia = false, ...props }: InvitationRendererProps) {

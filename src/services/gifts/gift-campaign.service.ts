@@ -19,6 +19,7 @@ import {
   invitationGiftAutoOpenAction,
   isCampaignPlaceable,
   isGuestScopedToCampaignEvent,
+  publicTokenFromGiftUrl,
 } from "@/lib/gifts/gift-placement";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 
@@ -383,6 +384,39 @@ export class GiftCampaignService {
       subtitle: copy.subtitle,
       ctaLabel: copy.ctaLabel,
       privacyNote: copy.privacyNote,
+    };
+  }
+
+  /**
+   * In-invite Paystack checkout payload: live campaign view plus the public
+   * gift URL. Used by published invitations and /dev previews.
+   */
+  async resolvePublicInviteCheckout(
+    eventId: string,
+    options: {
+      guestQrToken?: string | null;
+      autoOpen?: boolean;
+      invitationId?: string | null;
+    } = {}
+  ): Promise<{
+    giftUrl: string;
+    qrImageUrl: string;
+    title: string;
+    subtitle: string;
+    ctaLabel: string;
+    privacyNote: string;
+    campaign: PublicGiftCampaignView;
+  } | null> {
+    const placement = await this.resolveInvitePlacement(eventId, options);
+    if (!placement) return null;
+    const token = publicTokenFromGiftUrl(placement.giftUrl);
+    if (!token) return null;
+    const context = await this.getByPublicToken(token);
+    if (!context) return null;
+    const guest = await this.resolvePersonalisedGuest(context.campaign, options.guestQrToken);
+    return {
+      ...placement,
+      campaign: this.toPublicView(context, guest ? { name: guest.name } : null),
     };
   }
 

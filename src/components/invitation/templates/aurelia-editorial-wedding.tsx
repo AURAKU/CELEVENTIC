@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useMemo, useState } from "react";
-import { Calendar, ChevronDown, Clock, MapPin, Menu, Phone, X } from "lucide-react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Clock, MapPin, Menu, Phone, X } from "lucide-react";
 import { InvitationRsvpPanel } from "@/components/invitation/shared/invitation-rsvp-panel";
 import { SetReminderButton } from "@/components/guest-portal/set-reminder-button";
 import { useCountdown } from "@/hooks/use-countdown";
@@ -12,7 +12,9 @@ import {
   AURELIA_QR_CENTER,
   SERAPHINE_HERO_FALLBACK,
   AURELIA_COUPLE_GALLERY,
-  SERAPHINE_COUPLE_GALLERY,
+  SERAPHINE_LOOKBOOK_GALLERY,
+  SERAPHINE_GUEST_OUTFIT_SLIDES,
+  SERAPHINE_JOURNEY_CHAPTERS,
   SERAPHINE_LAYOUT_SLUG,
   SERAPHINE_MONOGRAM,
   SERAPHINE_MONOGRAM_CREST,
@@ -28,15 +30,19 @@ import {
   resolveAureliaCountdownIso,
   resolveAureliaHeroImage,
   resolveAureliaCoupleAlbum,
+  resolveAureliaJourneyMoments,
 } from "@/lib/experience/aurelia-editorial";
-import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
-import { toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
+import { buildDirectionsUrl, toGoogleMapsDirectionsHref } from "@/lib/invitation/maps-utils";
+import { calendarEventLocation, toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
 import { EVENT_TIME_ZONE } from "@/lib/constants";
 import { invitationFontVars } from "@/lib/invitation-fonts";
 import type { InvitationRendererProps } from "@/components/invitation/invitation-renderer";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import { AureliaCoupleAlbum } from "./aurelia-couple-album";
 import { AureliaGiftCheckout } from "./aurelia-gift-checkout";
+import { AureliaJourneyMoments } from "./aurelia-journey-moments";
+import { AureliaHeroCalendar } from "./aurelia-hero-calendar";
+import { SeraphineHourglass } from "./seraphine-hourglass";
 import { AureliaMemoryAlbum } from "./aurelia-memory-album";
 import { isOrganizerUploadedQrCenter } from "@/lib/qr/qr-center-resolution";
 import styles from "./aurelia-editorial-wedding.module.css";
@@ -58,6 +64,194 @@ function splitMonogram(value: string, partnerOne = "", partnerTwo = ""): [string
   const one = (parts[0] || "E").charAt(0).toUpperCase() || "E";
   const two = (parts[1] || one).charAt(0).toUpperCase() || one;
   return [one, two];
+}
+
+
+type OutfitSlide = {
+  id: string;
+  label: string;
+  src: string;
+  alt: string;
+};
+
+function OutfitLookbookDeck({
+  id,
+  slides,
+}: {
+  id: string;
+  slides: readonly OutfitSlide[];
+}) {
+  const [index, setIndex] = useState(0);
+  const [drag, setDrag] = useState(0);
+  const startX = useRef<number | null>(null);
+  const startY = useRef(0);
+  const locked = useRef<"x" | "y" | null>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const last = Math.max(slides.length - 1, 0);
+  const current = slides[index] ?? slides[0];
+  const nextSlide = slides[index + 1];
+
+  const goTo = useCallback((next: number) => {
+    setIndex(Math.min(Math.max(next, 0), last));
+    setDrag(0);
+  }, [last]);
+
+  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    startX.current = event.clientX;
+    startY.current = event.clientY;
+    locked.current = null;
+    setDrag(0);
+  };
+
+  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (startX.current == null) return;
+    const dx = event.clientX - startX.current;
+    const dy = event.clientY - startY.current;
+    if (!locked.current) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      locked.current = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (locked.current === "x") {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+    }
+    if (locked.current !== "x") return;
+    event.preventDefault();
+    const width = viewportRef.current?.offsetWidth ?? 1;
+    const max = width * 0.92;
+    const next = Math.min(Math.max(dx, -max), max);
+    if ((index === 0 && next > 0) || (index === last && next < 0)) {
+      setDrag(next * 0.35);
+      return;
+    }
+    setDrag(next);
+  };
+
+  const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (startX.current == null) return;
+    const dx = event.clientX - startX.current;
+    const width = viewportRef.current?.offsetWidth ?? 320;
+    const axis = locked.current;
+    startX.current = null;
+    locked.current = null;
+    setDrag(0);
+    if (axis !== "x") return;
+    if (dx <= -width * 0.18) goTo(index + 1);
+    else if (dx >= width * 0.18) goTo(index - 1);
+  };
+
+  if (!current) return null;
+
+  return (
+    <figure id={id} className={styles.outfitPanel}>
+      <div className={styles.outfitTabs} role="tablist" aria-label="Guest lookbook">
+        {slides.map((slide, slideIndex) => (
+          <button
+            key={slide.id}
+            type="button"
+            role="tab"
+            aria-selected={index === slideIndex}
+            className={`${styles.outfitTab}${index === slideIndex ? ` ${styles.outfitTabActive}` : ""}`}
+            onClick={() => goTo(slideIndex)}
+          >
+            {slide.label}
+          </button>
+        ))}
+      </div>
+      <div
+        ref={viewportRef}
+        className={styles.outfitViewport}
+        data-testid="seraphine-outfit-deck"
+        role="group"
+        aria-roledescription="carousel"
+        aria-label="Guest outfit looks"
+        tabIndex={0}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowRight") goTo(index + 1);
+          if (event.key === "ArrowLeft") goTo(index - 1);
+        }}
+      >
+        <div
+          className={styles.outfitTrack}
+          style={{
+            transform: `translateX(calc(${-index * 100}% + ${drag}px))`,
+            transition: drag ? "none" : undefined,
+          }}
+        >
+          {slides.map((slide) => (
+            <div className={styles.outfitSlide} key={slide.id} aria-hidden={current.id !== slide.id}>
+              <div className={styles.outfitMat}>
+                <img
+                  className={styles.outfitImage}
+                  src={slide.src}
+                  alt={slide.alt}
+                  width={768}
+                  height={1024}
+                  decoding="async"
+                  draggable={false}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          className={`${styles.outfitNav} ${styles.outfitNavPrev}`}
+          aria-label={index === 0 ? "Previous look" : `View ${slides[index - 1]?.label} look`}
+          disabled={index === 0}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => goTo(index - 1)}
+        >
+          <ChevronLeft size={20} strokeWidth={1.75} />
+        </button>
+        <button
+          type="button"
+          className={`${styles.outfitNav} ${styles.outfitNavNext}`}
+          aria-label={nextSlide ? `View ${nextSlide.label} look` : "Next look"}
+          disabled={index === last}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => goTo(index + 1)}
+        >
+          <ChevronRight size={20} strokeWidth={1.75} />
+        </button>
+      </div>
+      <p className={styles.outfitHint}>
+        {index + 1} of {slides.length} · swipe to see every look
+      </p>
+      <figcaption className={styles.outfitCaption}>
+        A lookbook for colour and mood. Not a uniform.
+      </figcaption>
+    </figure>
+  );
+}
+
+function DressCodeNote({ note }: { note: string }) {
+  const blocks = note
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  if (blocks.length <= 1 && !note.includes("\n")) {
+    return <p className={styles.lede}>{note}</p>;
+  }
+  return (
+    <div className={styles.dressNote}>
+      {blocks.map((block) => {
+        const [heading, ...rest] = block.split("\n");
+        const body = rest.join(" ").trim();
+        return (
+          <div className={styles.dressNoteBlock} key={heading}>
+            {heading ? (
+              <p className={body ? styles.dressNoteHead : styles.lede}>{heading}</p>
+            ) : null}
+            {body ? <p className={styles.dressNoteBody}>{body}</p> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function AureliaLocationPreview({
@@ -170,7 +364,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
     () =>
       resolveAureliaCoupleAlbum({
         galleryUrls: isSeraphine
-          ? [...SERAPHINE_COUPLE_GALLERY]
+          ? [...SERAPHINE_LOOKBOOK_GALLERY]
           : [...(props.galleryUrls ?? []), ...AURELIA_COUPLE_GALLERY],
         media: isSeraphine ? [] : props.design.media,
         journey: isSeraphine ? [] : config.journey,
@@ -185,9 +379,23 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       resolvedHero,
     ]
   );
+  const journeyMoments = useMemo(
+    () =>
+      isSeraphine
+        ? resolveAureliaJourneyMoments({
+            journey: config.journey,
+            galleryUrls: props.galleryUrls,
+            media: props.design.media,
+            catalogFallback: SERAPHINE_JOURNEY_CHAPTERS,
+            reservedUrls: [...SERAPHINE_LOOKBOOK_GALLERY],
+          })
+        : [],
+    [config.journey, isSeraphine, props.design.media, props.galleryUrls]
+  );
   const menuId = useId();
   const lookbookId = useId();
-  const [lookbookOpen, setLookbookOpen] = useState(false);
+  const [lookbookOpen, setLookbookOpen] = useState(true);
+  const [calOpen, setCalOpen] = useState(false);
   const countdownIso = resolveAureliaCountdownIso(
     config.ceremonies,
     props.event.startDateRaw
@@ -233,6 +441,11 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       venueName,
       landmark: address,
     });
+  const mapsDirectionsHref = (mapsUrl?: string, venueName?: string, address?: string) =>
+    toGoogleMapsDirectionsHref(
+      mapsUrl,
+      [venueName, address].filter(Boolean).join(", ")
+    );
   const seraphineMapPreview: Record<string, string> = {
     traditional: SERAPHINE_TRADITIONAL_MAP_IMAGE,
     white: SERAPHINE_WHITE_MAP_IMAGE,
@@ -247,7 +460,22 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
       data-testid="aurelia-editorial-wedding"
     >
       <header className={`${styles.header} ${heroMode ? styles.headerOnHero : ""}`}>
-        {familyMonogram ? (
+        {isSeraphine ? (
+          <button
+            type="button"
+            className={styles.headerCrestBtn}
+            aria-label={monogramLabel}
+            onClick={() => {
+              setMenuOpen(false);
+              document.getElementById("aurelia-home")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          >
+            <span className={`${styles.headerCrest} ${styles.finaleMarkInk}`} aria-hidden>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={SERAPHINE_MONOGRAM_CREST} alt="" width={1024} height={1024} />
+            </span>
+          </button>
+        ) : familyMonogram ? (
           <span className={styles.monogramMark} aria-label={monogramLabel}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={familyMonogram} alt="" width={160} height={160} />
@@ -275,9 +503,36 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
 
       {menuOpen ? (
         <div className={styles.overlay} id={menuId} role="dialog" aria-modal="true" aria-label="Invitation menu">
-          <button type="button" className={styles.overlayClose} onClick={() => setMenuOpen(false)}>
-            Close
-          </button>
+          <div className={styles.overlayHead}>
+            <div className={styles.overlayBrand}>
+              {familyMonogram ? (
+                <span
+                  className={
+                    isSeraphine
+                      ? `${styles.overlayCrest} ${styles.finaleMarkInk}`
+                      : `${styles.monogramMark} ${styles.overlayMark}`
+                  }
+                  aria-label={monogramLabel}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={isSeraphine ? SERAPHINE_MONOGRAM_CREST : familyMonogram}
+                    alt=""
+                    width={isSeraphine ? 1024 : 320}
+                    height={isSeraphine ? 1024 : 320}
+                  />
+                </span>
+              ) : (
+                <span className={styles.monogram} aria-label={monogramLabel}>
+                  <span className={styles.monogramLetter}>{monoOne}</span>
+                  <span className={styles.monogramAmp} aria-hidden>
+                    &amp;
+                  </span>
+                  <span className={styles.monogramLetter}>{monoTwo}</span>
+                </span>
+              )}
+            </div>
+          </div>
           <nav className={styles.overlayNav}>
             {nav.map((item, index) => (
               <button
@@ -291,8 +546,16 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               </button>
             ))}
           </nav>
-          <button type="button" className={styles.menuButton} aria-label="Close menu" onClick={() => setMenuOpen(false)}>
-            <X size={22} />
+          <button
+            type="button"
+            className={styles.overlayClose}
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close menu"
+          >
+            <span className={styles.overlayCloseMark} aria-hidden>
+              <X size={17} strokeWidth={1.7} />
+            </span>
+            <span className={styles.overlayCloseLabel}>Close</span>
           </button>
         </div>
       ) : null}
@@ -331,7 +594,16 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
             <span className={`${styles.heroName} ${styles.heroNameTwo}`}>{config.partnerTwoName}</span>
           </div>
           <p className={styles.heroMeta}>{config.marriedLine}</p>
-          <p className={styles.heroDate}>{config.dateDisplay}</p>
+          {isSeraphine ? (
+            <AureliaHeroCalendar
+              label={config.dateDisplay}
+              ceremonies={config.ceremonies}
+              open={calOpen}
+              onOpenChange={setCalOpen}
+            />
+          ) : (
+            <p className={styles.heroDate}>{config.dateDisplay}</p>
+          )}
         </div>
         <div className={styles.heroActions}>
           <button type="button" className={styles.btnOutline} onClick={() => jump("celebrations")}>
@@ -359,19 +631,31 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
         </span>
         <h2 className={styles.heading}>{config.countdownTitle}</h2>
         <div className={styles.goldRule} />
-        <div className={styles.grid}>
-          {[
-            ["DAYS", count.d],
-            ["HOURS", count.h],
-            ["MINUTES", count.m],
-            ["SECONDS", count.s],
-          ].map(([label, value]) => (
-            <div className={styles.cell} key={String(label)}>
-              <div className={styles.cellNum}>{pad(Number(value))}</div>
-              <span className={styles.cellLabel}>{label}</span>
-            </div>
-          ))}
-        </div>
+        {isSeraphine ? (
+          <div
+            className={styles.countStage}
+            role="timer"
+            aria-live="off"
+            aria-label={`${count.d} days ${count.h} hours ${count.m} minutes ${count.s} seconds`}
+            data-testid="seraphine-countdown"
+          >
+            <SeraphineHourglass count={count} />
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {[
+              ["DAYS", count.d],
+              ["HOURS", count.h],
+              ["MINUTES", count.m],
+              ["SECONDS", count.s],
+            ].map(([label, value]) => (
+              <div className={styles.cell} key={String(label)}>
+                <div className={styles.cellNum}>{pad(Number(value))}</div>
+                <span className={styles.cellLabel}>{label}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {aureliaSectionVisible(config, "story") ? (
@@ -410,6 +694,12 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           </div>
         </section>
       ) : null}
+      {isSeraphine && journeyMoments.length > 0 ? (
+        <AureliaJourneyMoments
+          items={journeyMoments}
+          coupleNames={`${config.partnerOneName} & ${config.partnerTwoName}`}
+        />
+      ) : null}
 
       {aureliaSectionVisible(config, "celebrations") ? (
         <section className={`${styles.section} ${styles.sectionNarrow}`} id="aurelia-celebrations">
@@ -420,12 +710,18 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <div className={styles.cardDeck}>
           {config.ceremonies.map((ceremony) => {
             const href = mapsHref(ceremony.mapsUrl, ceremony.venueName, ceremony.address);
+            const directionsHref = mapsDirectionsHref(
+              ceremony.mapsUrl,
+              ceremony.venueName,
+              ceremony.address
+            );
             const hasMaps = Boolean(
               href && (ceremony.mapsUrl?.trim() || ceremony.address?.trim())
             );
             const hasTime = Boolean(ceremony.timeLabel?.trim());
             const hasVenue = Boolean(ceremony.venueName?.trim() || ceremony.address?.trim());
             const timePending = /to be announced|tba|\btbd\b/i.test(ceremony.timeLabel ?? "");
+            const calendarVenue = calendarEventLocation(ceremony.venueName, ceremony.address);
             return (
               <article className={styles.card} key={ceremony.id}>
                 <div className={styles.cardKicker}>{ceremony.kicker}</div>
@@ -466,16 +762,16 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     mapsUrl={ceremony.mapsUrl}
                     venueName={ceremony.venueName}
                     address={ceremony.address}
-                    href={href}
+                    href={directionsHref || href}
                     label={ceremony.venueName}
                     invitationId={props.invitation.id}
                     previewImageUrl={isSeraphine ? seraphineMapPreview[ceremony.id] : undefined}
                   />
                 ) : null}
-                {hasMaps && href ? (
+                {hasMaps && (directionsHref || href) ? (
                   <a
                     className={styles.directions}
-                    href={href}
+                    href={directionsHref || href}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() =>
@@ -497,10 +793,20 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     event={{
                       title: `${config.partnerOneName} & ${config.partnerTwoName} · ${ceremony.title}`,
                       startDateRaw: ceremony.startAtIso,
-                      venue: ceremony.venueName,
+                      venue: calendarVenue,
                       timeZone: EVENT_TIME_ZONE,
                       allDay: timePending,
-                      description: timePending ? "Time details to be announced." : undefined,
+                      description: [
+                        timePending
+                          ? "Time details to be announced."
+                          : [ceremony.weekday, ceremony.dateLabel, ceremony.timeLabel]
+                              .filter(Boolean)
+                              .join(" · "),
+                        calendarVenue,
+                        directionsHref || href ? `Directions: ${directionsHref || href}` : "",
+                      ]
+                        .filter(Boolean)
+                        .join("\n"),
                     }}
                   />
                 ) : null}
@@ -520,6 +826,11 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
           <div className={styles.cardDeck}>
           {aureliaDistinctVenues(config).map((venue) => {
             const href = mapsHref(venue.mapsUrl, venue.venueName, venue.address);
+            const directionsHref = mapsDirectionsHref(
+              venue.mapsUrl,
+              venue.venueName,
+              venue.address
+            );
             return (
               <article className={styles.card} key={venue.id}>
                 <div className={styles.cardKicker}>{venue.eventLabel}</div>
@@ -532,15 +843,15 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     mapsUrl={venue.mapsUrl}
                     venueName={venue.venueName}
                     address={venue.address}
-                    href={href}
+                    href={directionsHref || href}
                     label={venue.venueName}
                     invitationId={props.invitation.id}
                   />
                 ) : null}
-                {href ? (
+                {directionsHref || href ? (
                   <a
                     className={styles.directions}
-                    href={href}
+                    href={directionsHref || href}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() =>
@@ -580,7 +891,7 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               <div className={styles.cardKicker}>{dress.dateLabel}</div>
               <h3 className={styles.cardTitle}>{dress.title}</h3>
               {dress.scriptLine ? <p className={styles.scriptLine}>{dress.scriptLine}</p> : null}
-              {dress.note ? <p className={styles.lede}>{dress.note}</p> : null}
+              {dress.note ? <DressCodeNote note={dress.note} /> : null}
               {outfitLookbook ? (
                 <div className={styles.outfitLookbook}>
                   <button
@@ -598,25 +909,15 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
                     />
                   </button>
                   {lookbookOpen ? (
-                    <figure id={lookbookId} className={styles.outfitPanel}>
-                      <div className={styles.outfitMat}>
-                        <img
-                          className={styles.outfitImage}
-                          src={dress.imageUrl ?? ""}
-                          alt="Lookbook of bright guest dresses and complementary suits"
-                          width={864}
-                          height={1152}
-                          decoding="async"
-                        />
-                      </div>
-                      <div className={styles.outfitLegend}>
-                        <span>Ladies</span>
-                        <span>Gentlemen</span>
-                      </div>
-                      <figcaption className={styles.outfitCaption}>
-                        A lookbook for colour and mood. Not a uniform.
-                      </figcaption>
-                    </figure>
+                    <OutfitLookbookDeck
+                      id={lookbookId}
+                      slides={SERAPHINE_GUEST_OUTFIT_SLIDES.map((slide) => ({
+                        id: slide.id,
+                        label: slide.label,
+                        src: slide.imageUrl,
+                        alt: slide.alt,
+                      }))}
+                    />
                   ) : null}
                 </div>
               ) : dress.imageUrl ? (
@@ -697,6 +998,8 @@ export function AureliaEditorialWeddingTemplate(props: InvitationRendererProps) 
               giftPrivacyNote={props.giftPrivacyNote}
               guestName={props.guestName}
               guestQrToken={props.guestQrToken}
+              eventId={props.eventId}
+              inviteLink={props.invitation.uniqueLink}
               returnPath={
                 props.invitation.uniqueLink
                   ? `/invite/${props.invitation.uniqueLink}#aurelia-gifts`

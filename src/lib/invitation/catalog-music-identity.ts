@@ -12,6 +12,9 @@ import {
   AURELIA_INVITE_MUSIC,
   AURELIA_INVITE_MUSIC_DURATION_SEC,
   AURELIA_INVITE_MUSIC_TITLE,
+  SERAPHINE_INVITE_MUSIC,
+  SERAPHINE_INVITE_MUSIC_DURATION_SEC,
+  SERAPHINE_INVITE_MUSIC_TITLE,
 } from "@/lib/experience/aurelia-editorial/preset";
 
 /**
@@ -338,16 +341,16 @@ export const CATALOG_MUSIC_IDENTITY: Record<string, LayoutMusicProfile> = {
   },
   "seraphine-champagne-wedding": {
     trackId: "catalog-seraphine-champagne-wedding",
-    title: AURELIA_INVITE_MUSIC_TITLE,
+    title: SERAPHINE_INVITE_MUSIC_TITLE,
     category: "wedding",
-    bundledFile: "piano-garden",
-    url: AURELIA_INVITE_MUSIC,
+    bundledFile: "strings-garden",
+    url: SERAPHINE_INVITE_MUSIC,
     startSec: 0,
-    endSec: AURELIA_INVITE_MUSIC_DURATION_SEC,
-    originalDurationSec: AURELIA_INVITE_MUSIC_DURATION_SEC,
-    volume: 0.38,
-    fadeInSec: 2,
-    fadeOutSec: 1.5,
+    endSec: SERAPHINE_INVITE_MUSIC_DURATION_SEC,
+    originalDurationSec: SERAPHINE_INVITE_MUSIC_DURATION_SEC,
+    volume: 0.36,
+    fadeInSec: 2.4,
+    fadeOutSec: 1.8,
   },
 };
 

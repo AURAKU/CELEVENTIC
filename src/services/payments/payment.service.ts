@@ -86,13 +86,18 @@ class PaystackAdapter implements PaymentProviderAdapter {
         metadata: params.metadata,
         ...(params.channels?.length ? { channels: params.channels } : {}),
       }),
+      signal: AbortSignal.timeout(20000),
     });
 
-    const data = (await res.json()) as {
+    const data = (await res.json().catch(() => ({}))) as {
       status?: boolean;
       message?: string;
       data?: { authorization_url?: string };
     };
+
+    if (res.status === 401) {
+      throw new PaymentProviderError("Paystack rejected the secret key");
+    }
 
     if (!res.ok || !data.data?.authorization_url) {
       throw new PaymentProviderError(data.message || "Paystack failed to initialize payment");

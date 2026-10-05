@@ -84,8 +84,6 @@ export function AureliaCoupleAlbum({
     ) : null;
 
   const isLookbook = isStory && look === "lookbook";
-  const slideCount = String(playlist.length).padStart(2, "0");
-  const slideNo = String(slideIndex + 1).padStart(2, "0");
 
   return (
     <div
@@ -109,14 +107,6 @@ export function AureliaCoupleAlbum({
               className={`${styles.storyGalleryFrame} ${current.type === "video" ? styles.storyGalleryFilm : ""}`}
               role="listitem"
             >
-              {isLookbook ? (
-                <p className={styles.storyGalleryPlate}>
-                  <span>{current.type === "video" ? "Film" : "Photograph"}</span>
-                  <span>
-                    {slideNo} / {slideCount}
-                  </span>
-                </p>
-              ) : null}
               <button
                 type="button"
                 className={styles.storyGalleryOpen}

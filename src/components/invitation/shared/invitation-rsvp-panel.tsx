@@ -380,9 +380,14 @@ export function InvitationRsvpPanel({
                   ? "ff-rsvp-party-label"
                   : memorial
                     ? "inv-rsvp-party-label"
-                    : "text-xs font-semibold uppercase tracking-wide"
+                    : "text-xs font-semibold uppercase tracking-[0.16em]"
               }
-              style={memorial || fashion ? undefined : { color: accentColor }}
+              style={
+                memorial || fashion
+                  ? undefined
+                  : { color: variant === "dark" ? "#FAFAF5" : accentColor }
+              }
+              data-testid="rsvp-party-label"
             >
               Party seats
             </p>

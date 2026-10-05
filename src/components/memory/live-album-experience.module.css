@@ -1,10 +1,10 @@
 .wrap {
-  --live-ivory: var(--memory-color-surface, #f8f4ea);
-  --live-terracotta: var(--memory-color-accent, #b65a37);
-  --live-espresso: var(--memory-color-ink, #352019);
-  --live-brown: var(--memory-color-ink-muted, #5a453c);
-  --live-gold: var(--memory-color-border, #b69a63);
-  --live-on-accent: var(--memory-color-on-accent, #f8f4ea);
+  --live-ivory: var(--memory-color-surface, var(--wedding-ivory, #f8f4ea));
+  --live-terracotta: var(--memory-color-accent, var(--wedding-terracotta, #b65a37));
+  --live-espresso: var(--memory-color-ink, var(--wedding-espresso, #352019));
+  --live-brown: var(--memory-color-ink-muted, var(--wedding-brown, #5a453c));
+  --live-gold: var(--memory-color-border, var(--wedding-gold, #b69a63));
+  --live-on-accent: var(--memory-color-on-accent, var(--wedding-ivory, #f8f4ea));
   color: var(--live-espresso);
   font-family: var(--memory-font-body, var(--font-cormorant), "Cormorant Garamond", Georgia, serif);
 }
@@ -120,11 +120,20 @@
 .nameField input {
   min-height: 2.7rem;
   padding: 0.55rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--live-gold) 55%, transparent);
-  background: color-mix(in srgb, white 70%, var(--live-ivory));
+  border: 1px solid color-mix(in srgb, var(--live-gold) 62%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--live-ivory) 88%, white) 0%,
+      color-mix(in srgb, var(--live-ivory) 72%, white) 100%
+    );
   color: inherit;
   font: inherit;
   font-size: 1.05rem;
+}
+
+.nameField input::placeholder {
+  color: color-mix(in srgb, var(--live-brown) 72%, transparent);
 }
 
 .nameField input:focus-visible {
@@ -162,15 +171,28 @@
 }
 
 .fill {
-  border: 1px solid var(--live-terracotta);
+  border: 1px solid color-mix(in srgb, var(--live-gold) 55%, var(--live-terracotta));
   background: var(--live-terracotta);
   color: var(--live-on-accent);
 }
 
+.fill:hover,
+.fill:focus-visible {
+  background: color-mix(in srgb, var(--live-terracotta) 78%, var(--live-espresso));
+  border-color: var(--live-gold);
+}
+
 .ghost {
-  border: 1px solid color-mix(in srgb, var(--live-gold) 70%, transparent);
-  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--live-gold) 72%, transparent);
+  background: color-mix(in srgb, var(--live-ivory) 82%, white);
   color: var(--live-espresso);
+}
+
+.ghost:hover,
+.ghost:focus-visible {
+  border-color: var(--live-gold);
+  color: var(--live-terracotta);
+  background: color-mix(in srgb, var(--live-ivory) 94%, white);
 }
 
 .status {
@@ -333,4 +355,29 @@
   margin: 0.75rem 0 0;
   color: #faf8f4;
   font-size: 0.98rem;
+}
+
+.stageRemove {
+  margin-top: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.6rem;
+  padding: 0.45rem 0.95rem;
+  border: 1px solid color-mix(in srgb, #c45c4a 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #3a1c1c 88%, transparent);
+  color: #faf4f2;
+  font-family: var(--memory-font-display, var(--font-cinzel), Cinzel, serif);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.stageRemove:hover,
+.stageRemove:focus-visible {
+  background: #7f1d1d;
+  outline: 2px solid #faf8f4;
+  outline-offset: 2px;
 }

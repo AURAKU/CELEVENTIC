@@ -57,6 +57,7 @@ export interface AureliaDressCode {
   palette: AureliaPaletteSwatch[];
   variant?: "light" | "dark";
   imageUrl?: string | null;
+  gentlemenImageUrl?: string | null;
 }
 
 export interface AureliaCeremony {

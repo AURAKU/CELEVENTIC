@@ -133,6 +133,46 @@ export function isGuestScopedToCampaignEvent(
   return Boolean(guest && guest.eventId === campaignEventId);
 }
 
+/** Public gift token encoded in `/gift/{token}` placement URLs. */
+export function publicTokenFromGiftUrl(url?: string | null): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url, "https://celeventic.local");
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const index = parts.indexOf("gift");
+    const token = index >= 0 ? parts[index + 1] : null;
+    return token && token.length >= 8 ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Catalog /dev previews share a demo event instead of a published uniqueLink. */
+export function isPreviewGiftLink(link?: string | null): boolean {
+  if (!link) return false;
+  const value = link.trim();
+  return (
+    value.startsWith("preview") ||
+    value.includes("preview-") ||
+    value.startsWith("demo-") ||
+    value.startsWith("sample-") ||
+    value.startsWith("catalog-") ||
+    value.startsWith("thumb-")
+  );
+}
+
+/** Couple title used when auto-opening the shared preview gift wallet. */
+export function previewGiftEventTitle(linkOrSlug?: string | null): string {
+  const value = (linkOrSlug || "").toLowerCase();
+  if (value.includes("seraphine")) return "Kojo & Fafa";
+  if (value.includes("aurelia")) return "Enock & Ruth";
+  return "Celeventic Live Album";
+}
+
+export function allowPreviewGiftBootstrap(): boolean {
+  return process.env.NODE_ENV !== "production" || process.env.ALLOW_DEV_RUNTIME === "1";
+}
+
 /**
  * Invitation gift wallets stay DRAFT until a host opens Gift Wallet, which left
  * Aurelia's in-invite Paystack form looking ready while `giftUrl` was null.

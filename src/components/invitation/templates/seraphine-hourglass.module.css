@@ -1,0 +1,283 @@
+.stage {
+  position: relative;
+  width: min(16.5rem, 100%);
+  margin: 0.85rem auto 0;
+  padding: 0.2rem 0 0;
+}
+
+.scene {
+  perspective: 820px;
+  perspective-origin: 50% 42%;
+  transform-style: preserve-3d;
+}
+
+.glassWrap {
+  position: relative;
+  z-index: 1;
+  width: min(8.2rem, 48cqi);
+  margin: 0 auto;
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transform-style: preserve-3d;
+}
+
+.glassWrap:active,
+.glassWrap[data-held="true"] {
+  cursor: grabbing;
+}
+
+.glassWrap[data-complete="true"] {
+  animation: hourSettle 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.turntable {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 8deg)) rotateY(var(--ry, 0deg));
+  will-change: transform;
+}
+
+.face {
+  position: relative;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.faceFront {
+  transform: translateZ(11px);
+}
+
+.faceBack {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg) translateZ(11px);
+}
+
+.slab {
+  position: absolute;
+  left: 50%;
+  background: linear-gradient(180deg, #e8dcc0, #c5b48a 48%, #8a7344);
+  transform-origin: center center;
+  pointer-events: none;
+}
+
+.slabTop {
+  top: 13.4%;
+  height: 4.6%;
+  width: 1.15rem;
+  margin-left: -0.58rem;
+  border-radius: 2px;
+  transform: rotateY(90deg);
+}
+
+.slabFoot {
+  top: 13.4%;
+  height: 4.6%;
+  width: 1.15rem;
+  margin-left: -0.58rem;
+  border-radius: 2px;
+  transform: rotateY(90deg);
+}
+
+.slabFoot {
+  top: 84.2%;
+  height: 4.6%;
+  width: 1.15rem;
+  margin-left: -0.58rem;
+  border-radius: 2px;
+  transform: rotateY(90deg);
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.breathe {
+  transform-origin: 130px 210px;
+  animation: hourBreathe 9s ease-in-out infinite;
+}
+
+.glassWrap[data-complete="true"] .breathe {
+  animation: none;
+}
+
+.pourField {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  clip-path: polygon(20% 16%, 80% 16%, 53% 51%, 80% 87%, 20% 87%, 47% 51%);
+}
+
+.heart {
+  position: absolute;
+  left: 50%;
+  top: var(--heart-from, 32%);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: var(--heart-size, 0.4rem);
+  line-height: 1;
+  color: #c5b48a;
+  filter: drop-shadow(0 0 2px rgba(197, 180, 138, 0.48));
+  animation: hourHeart var(--heart-dur, 1.16s) var(--heart-delay, 0s) linear infinite;
+  will-change: transform, opacity, top;
+}
+
+.heartTick {
+  animation: hourHeart var(--heart-dur, 1.05s) var(--heart-delay, 0s) linear both;
+}
+
+.glassWrap[data-complete="true"] .pourField {
+  display: none;
+}
+
+.dial {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(18.5rem, 100%);
+  margin: 0.15rem auto 0;
+  padding: 0.15rem 0 0.35rem;
+}
+
+.cell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+  padding: 0.2rem 0.1rem 0.05rem;
+}
+
+.sep {
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  width: 1px;
+  height: 1.35rem;
+  background: color-mix(in srgb, #c5b48a 42%, transparent);
+}
+
+.cell[data-unit="seconds"] .num {
+  color: #c5b48a;
+}
+
+.num {
+  font-family: var(--aurelia-serif);
+  font-size: clamp(1.42rem, 6.2cqi, 1.85rem);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #e8dcc0;
+  animation: hourTick 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.label {
+  font-family: var(--aurelia-display);
+  font-size: 0.46rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #fafaf5 58%, #c5b48a);
+}
+
+.finale {
+  margin: 0.55rem 0 0;
+  font-family: var(--aurelia-script);
+  font-size: clamp(1.4rem, 5.4cqi, 1.85rem);
+  color: #e8dcc0;
+}
+
+.kicker {
+  margin: 0.42rem 0 0;
+  font-family: var(--aurelia-script);
+  font-size: clamp(1.22rem, 4.8cqi, 1.55rem);
+  line-height: 1.15;
+  color: color-mix(in srgb, #fafaf5 78%, #c5b48a);
+}
+
+@keyframes hourBreathe {
+  0%,
+  100% {
+    transform: rotate(-0.35deg);
+  }
+  50% {
+    transform: rotate(0.4deg);
+  }
+}
+
+@keyframes hourHeart {
+  0% {
+    top: var(--heart-from, 32%);
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.42) rotate(-16deg);
+  }
+  8% {
+    opacity: 1;
+  }
+  48% {
+    top: 51%;
+    transform: translate(calc(-50% + var(--drift, 0px) * 0.35), 0) scale(0.62) rotate(10deg);
+  }
+  100% {
+    top: 82%;
+    opacity: 0;
+    transform: translate(calc(-50% + var(--drift, 0px)), 0) scale(0.4) rotate(24deg);
+  }
+}
+
+@keyframes hourTick {
+  from {
+    opacity: 0.42;
+    transform: translateY(0.18em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hourSettle {
+  from {
+    transform: scale(1.03);
+    filter: saturate(1.12);
+  }
+  to {
+    transform: none;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathe,
+  .heart,
+  .heartTick,
+  .num,
+  .glassWrap[data-complete="true"] {
+    animation: none;
+  }
+
+  .pourField {
+    display: none;
+  }
+}
+
+@container aurelia (min-width: 768px) {
+  .stage {
+    width: min(20rem, 100%);
+  }
+
+  .glassWrap {
+    width: min(8.8rem, 24cqi);
+  }
+
+  .dial {
+    width: min(22rem, 100%);
+  }
+}

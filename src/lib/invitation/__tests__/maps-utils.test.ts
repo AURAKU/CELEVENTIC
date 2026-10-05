@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildDirectionsUrl,
+  extractMapsCoordinates,
+  googleMapsPlaceHref,
   normalizeExternalHref,
   resolveMapsLocationHref,
+  toGoogleMapsDirectionsHref,
 } from "@/lib/invitation/maps-utils";
 
 test("normalizeExternalHref never leaves Google Maps as a same-origin path", () => {
@@ -59,4 +62,17 @@ test("resolveMapsLocationHref never ships a same-origin maps path on live", () =
     resolveMapsLocationHref({ mapsUrl: "javascript:alert(1)", locationName: "FEMMORA GH" }),
     "https://www.google.com/maps/search/?api=1&query=FEMMORA%20GH"
   );
+});
+
+test("googleMapsPlaceHref pins the named venue to exact coordinates", () => {
+  const href = googleMapsPlaceHref({
+    label: "The Forest Grove Event, Adjacent to 335 Place, Dzorwulu, Accra, Ghana",
+    lat: 5.621568,
+    lng: -0.18492,
+  });
+  assert.match(href, /^https:\/\/www\.google\.com\/maps\/place\//);
+  assert.match(href, /Forest\+Grove|Dzorwulu|335/);
+  assert.match(href, /@5\.621568,-0\.18492,17z/);
+  assert.deepEqual(extractMapsCoordinates(href), { lat: 5.621568, lng: -0.18492 });
+  assert.match(toGoogleMapsDirectionsHref(href), /destination=5\.621568%2C-0\.18492/);
 });

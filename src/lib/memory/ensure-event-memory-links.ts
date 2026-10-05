@@ -53,7 +53,8 @@ export async function ensureEventMemoryLinks(eventId: string): Promise<EventMemo
   };
 }
 
-const DEMO_SLUG = "celeventic-memory-demo";
+export const DEMO_MEMORY_EVENT_SLUG = "celeventic-memory-demo";
+const DEMO_SLUG = DEMO_MEMORY_EVENT_SLUG;
 
 /**
  * Shared demo event so catalog / template previews can show a working Album QR

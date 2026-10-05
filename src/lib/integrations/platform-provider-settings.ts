@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaQueryWithTimeout } from "@/lib/prisma";
 import type { PaymentProvider, Prisma } from "@prisma/client";
 import { isProviderEnabled } from "@/lib/integrations/integration-runtime";
 
@@ -28,7 +28,15 @@ export function isPaymentProviderId(value: unknown): value is PaymentProviderId 
 }
 
 export async function getPlatformDefaultProviders(): Promise<PlatformDefaultProviders> {
-  const row = await prisma.adminSetting.findUnique({ where: { key: PLATFORM_DEFAULTS_KEY } });
+  let row: { value: Prisma.JsonValue } | null = null;
+  try {
+    row = await prismaQueryWithTimeout(
+      prisma.adminSetting.findUnique({ where: { key: PLATFORM_DEFAULTS_KEY } }),
+      2000
+    );
+  } catch {
+    return DEFAULT_PLATFORM_PROVIDERS;
+  }
   const value = (row?.value as Partial<PlatformDefaultProviders> | null) ?? {};
 
   // Migrate legacy Flutterwave/Hubtel defaults → Paystack
@@ -95,7 +103,8 @@ export async function resolvePaymentProvider(
     if (await isProviderEnabled(provider)) return provider;
   }
 
-  throw new Error(
-    "No payment provider is enabled. Configure Paystack in Admin → Integrations."
-  );
+  // Gift + wallet checkout always settles through Paystack. Missing keys fail
+  // inside the adapter with a provider error instead of a generic 500.
+  if (isPaymentProviderId(requested)) return requested;
+  return DEFAULT_PLATFORM_PROVIDERS.payments;
 }

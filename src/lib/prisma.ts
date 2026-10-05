@@ -4,6 +4,20 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+/**
+ * Local preview / `ALLOW_DEV_RUNTIME=1` must be able to open a gift wallet even
+ * when `.env` was never copied. SQLite path is schema-relative (`prisma/dev.db`).
+ */
+function ensureLocalDatabaseUrl() {
+  if (process.env.DATABASE_URL?.trim()) return;
+  const allowDev =
+    process.env.NODE_ENV !== "production" || process.env.ALLOW_DEV_RUNTIME === "1";
+  if (!allowDev) return;
+  process.env.DATABASE_URL = "file:./dev.db";
+}
+
+ensureLocalDatabaseUrl();
+
 function createPrismaClient() {
   return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
@@ -19,8 +33,27 @@ export function isPrismaUnavailableError(error: unknown): boolean {
     name === "PrismaClientInitializationError" ||
     message.includes("Environment variable not found: DATABASE_URL") ||
     message.includes("Can't reach database server") ||
+    message.includes("Prisma query timed out") ||
     message.includes("Invalid `prisma.")
   );
+}
+
+/** Fail fast instead of hanging invite/gift routes when the database is wedged. */
+export async function prismaQueryWithTimeout<T>(
+  operation: Promise<T>,
+  timeoutMs = 2500
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("Prisma query timed out")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 /**

@@ -27,6 +27,7 @@ import {
   getGiftCopy,
 } from "@/lib/gifts/gift-copy";
 import { formatMinor, MoneyError, toMinorUnits } from "@/lib/gifts/money";
+import { publicTokenFromGiftUrl } from "@/lib/gifts/gift-placement";
 import styles from "./aurelia-editorial-wedding.module.css";
 
 type MethodOption = {
@@ -38,18 +39,35 @@ type MethodOption = {
 type CheckoutPhase = "form" | "confirming" | "success" | "failed";
 
 const GIFT_REF_KEY = "celeventic.invite-gift.ref";
+const GIFT_FETCH_MS = 20000;
 
-function publicTokenFromGiftUrl(url?: string | null): string | null {
-  if (!url) return null;
+async function giftFetch(input: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), GIFT_FETCH_MS);
   try {
-    const parsed = new URL(url, "https://celeventic.local");
-    const parts = parsed.pathname.split("/").filter(Boolean);
-    const index = parts.indexOf("gift");
-    const token = index >= 0 ? parts[index + 1] : null;
-    return token && token.length >= 8 ? token : null;
-  } catch {
-    return null;
+    return await fetch(input, {
+      cache: "no-store",
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timer);
   }
+}
+
+function payloadError(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === "object" && "error" in payload) {
+    const error = (payload as { error?: unknown }).error;
+    if (typeof error === "string" && error.trim()) return error;
+  }
+  return fallback;
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof DOMException && error.name === "AbortError") ||
+    (error instanceof Error && error.name === "AbortError")
+  );
 }
 
 function giftReturnPath(fallback?: string | null): string | null {
@@ -98,7 +116,7 @@ function forgetGiftReference() {
 }
 
 async function loadGiftPayment(reference: string): Promise<PublicGiftPaymentView | null> {
-  const verify = await fetch("/api/gifts/verify", {
+  const verify = await giftFetch("/api/gifts/verify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reference }),
@@ -107,10 +125,50 @@ async function loadGiftPayment(reference: string): Promise<PublicGiftPaymentView
     const payload = await verify.json().catch(() => ({}));
     return (payload.data as PublicGiftPaymentView) ?? null;
   }
-  const status = await fetch(`/api/gifts/status/${encodeURIComponent(reference)}`);
+  const status = await giftFetch(`/api/gifts/status/${encodeURIComponent(reference)}`);
   if (!status.ok) return null;
   const payload = await status.json().catch(() => ({}));
   return (payload.data as PublicGiftPaymentView) ?? null;
+}
+
+function invitePlacementQuery(input: {
+  inviteLink?: string | null;
+  eventId?: string | null;
+  guestQrToken?: string | null;
+}): URLSearchParams {
+  const params = new URLSearchParams();
+  const link = input.inviteLink?.trim();
+  const eventId = input.eventId?.trim();
+  if (link) params.set("link", link);
+  else if (typeof window !== "undefined") {
+    const path = window.location.pathname;
+    const invite = path.match(/^\/invite\/([^/]+)/);
+    if (invite?.[1]) params.set("link", decodeURIComponent(invite[1]));
+    const dev = path.match(/^\/dev\/([^/]+)/);
+    if (dev?.[1]) params.set("link", `preview-${dev[1]}`);
+  }
+  if (eventId) params.set("eventId", eventId);
+  if (input.guestQrToken?.trim()) params.set("g", input.guestQrToken.trim());
+  return params;
+}
+
+type InvitePlacementPayload = {
+  giftUrl?: string;
+  qrImageUrl?: string | null;
+  title?: string | null;
+  ctaLabel?: string | null;
+  privacyNote?: string | null;
+  campaign?: PublicGiftCampaignView;
+  methods?: MethodOption[];
+};
+
+async function loadInvitePlacement(query: URLSearchParams): Promise<InvitePlacementPayload | null> {
+  if (!query.get("link") && !query.get("eventId")) return null;
+  const res = await giftFetch(`/api/gifts/invite-placement?${query.toString()}`);
+  const payload = await res.json().catch(() => ({}));
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(payloadError(payload, "We could not open Paystack for this invitation."));
+  return (payload.data as InvitePlacementPayload) ?? null;
 }
 
 export function AureliaGiftCheckout({
@@ -123,6 +181,8 @@ export function AureliaGiftCheckout({
   guestQrToken,
   returnPath,
   detailsNote,
+  eventId,
+  inviteLink,
   collapsible = false,
 }: {
   giftUrl?: string | null;
@@ -135,9 +195,13 @@ export function AureliaGiftCheckout({
   guestQrToken?: string | null;
   returnPath?: string | null;
   detailsNote?: string;
+  eventId?: string | null;
+  inviteLink?: string | null;
   collapsible?: boolean;
 }) {
-  const token = useMemo(() => publicTokenFromGiftUrl(giftUrl), [giftUrl]);
+  const [resolvedGiftUrl, setResolvedGiftUrl] = useState<string | null>(giftUrl ?? null);
+  const [resolvedQrImageUrl, setResolvedQrImageUrl] = useState<string | null>(giftQrImageUrl ?? null);
+  const token = useMemo(() => publicTokenFromGiftUrl(resolvedGiftUrl), [resolvedGiftUrl]);
   const fallbackMethods = useMemo<MethodOption[]>(
     () =>
       listEnabledGiftPaymentMethods().map((method) => ({
@@ -150,7 +214,7 @@ export function AureliaGiftCheckout({
 
   const [campaign, setCampaign] = useState<PublicGiftCampaignView | null>(null);
   const [methods, setMethods] = useState<MethodOption[]>(fallbackMethods);
-  const [loading, setLoading] = useState(Boolean(token));
+  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [amountMinor, setAmountMinor] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
@@ -168,14 +232,36 @@ export function AureliaGiftCheckout({
   const panelId = useId();
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
+    if (giftUrl) setResolvedGiftUrl(giftUrl);
+    if (giftQrImageUrl) setResolvedQrImageUrl(giftQrImageUrl);
+  }, [giftUrl, giftQrImageUrl]);
+
+  const applyPlacement = useCallback((data: InvitePlacementPayload) => {
+    if (data.giftUrl) setResolvedGiftUrl(data.giftUrl);
+    if (data.qrImageUrl) setResolvedQrImageUrl(data.qrImageUrl);
+    if (data.campaign) setCampaign(data.campaign);
+    if (Array.isArray(data.methods) && data.methods.length) {
+      setMethods(data.methods.filter((item) => item.id !== "CARD"));
     }
+  }, []);
+
+  const bootstrapWallet = useCallback(async () => {
+    const query = invitePlacementQuery({ inviteLink, eventId, guestQrToken });
+    const data = await loadInvitePlacement(query);
+    if (data) applyPlacement(data);
+    return publicTokenFromGiftUrl(data?.giftUrl);
+  }, [applyPlacement, eventId, guestQrToken, inviteLink]);
+
+  useEffect(() => {
     let cancelled = false;
-    const query = guestQrToken ? `?g=${encodeURIComponent(guestQrToken)}` : "";
-    fetch(`/api/gifts/campaign/${encodeURIComponent(token)}${query}`)
-      .then(async (res) => {
+    setLoading(true);
+    setLoadError(null);
+
+    const run = async () => {
+      if (token) {
+        if (campaign?.publicToken === token) return;
+        const query = guestQrToken ? `?g=${encodeURIComponent(guestQrToken)}` : "";
+        const res = await giftFetch(`/api/gifts/campaign/${encodeURIComponent(token)}${query}`);
         const payload = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(payload.error || "Gift wallet is not available.");
         if (cancelled) return;
@@ -183,17 +269,25 @@ export function AureliaGiftCheckout({
         if (Array.isArray(payload.data.methods) && payload.data.methods.length) {
           setMethods(payload.data.methods.filter((item: MethodOption) => item.id !== "CARD"));
         }
-      })
+        return;
+      }
+      const nextToken = await bootstrapWallet();
+      if (cancelled) return;
+      if (!nextToken) return;
+    };
+
+    void run()
       .catch((err: Error) => {
         if (!cancelled) setLoadError(err.message);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [token, guestQrToken]);
+  }, [token, guestQrToken, bootstrapWallet]);
 
   useEffect(() => {
     if (!collapsible) return;
@@ -318,10 +412,6 @@ export function AureliaGiftCheckout({
   );
 
   async function submit() {
-    if (!token) {
-      setError("The gift wallet is not open on this invitation yet.");
-      return;
-    }
     if (amountMinor === null || amountError || !method) return;
     if (campaign?.requireGuestName !== false && !guestName.trim()) {
       setError("Please tell the couple who the gift is from.");
@@ -334,11 +424,18 @@ export function AureliaGiftCheckout({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/gifts/initialize", {
+      let publicToken = token;
+      if (!publicToken) {
+        publicToken = await bootstrapWallet().catch(() => null);
+      }
+      const placement = invitePlacementQuery({ inviteLink, eventId, guestQrToken });
+      const res = await giftFetch("/api/gifts/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          publicToken: token,
+          publicToken: publicToken || undefined,
+          inviteLink: placement.get("link") || undefined,
+          eventId: placement.get("eventId") || undefined,
           amountMinor,
           method,
           guestName: guestName.trim() || undefined,
@@ -350,7 +447,7 @@ export function AureliaGiftCheckout({
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(payload.error ?? "We could not start this gift. Please try again.");
+        setError(payloadError(payload, "We could not start this gift. Please try again."));
         setSubmitting(false);
         return;
       }
@@ -358,13 +455,17 @@ export function AureliaGiftCheckout({
       const reference = payload.data?.reference as string | undefined;
       if (reference) rememberGiftReference(reference);
       if (!authorizationUrl) {
-        setError("We could not open checkout. Please try again.");
+        setError("We could not open Paystack checkout. Please try again.");
         setSubmitting(false);
         return;
       }
       window.location.href = authorizationUrl;
-    } catch {
-      setError("Network problem. Please check your connection and try again.");
+    } catch (err) {
+      setError(
+        isAbortError(err)
+          ? "Paystack took too long to respond. Please try again."
+          : "Network problem. Please check your connection and try again."
+      );
       setSubmitting(false);
     }
   }
@@ -381,20 +482,19 @@ export function AureliaGiftCheckout({
   const needsName = campaign?.requireGuestName !== false;
   const needsContact = campaign?.requireGuestContact !== false;
   const canPay = Boolean(
-    token &&
-      amountMinor &&
+    amountMinor &&
       !amountError &&
       method &&
       !submitting &&
       !closed &&
-      !loadError &&
       (!needsName || guestName.trim()) &&
       (!needsContact || guestPhone.trim())
   );
   const cta = giftCtaLabel || campaign?.ctaLabel || "Send a Cash Gift";
   const qrSrc =
+    resolvedQrImageUrl ||
     giftQrImageUrl ||
-    (giftUrl ? `/api/qr/image?data=${encodeURIComponent(giftUrl)}&size=512` : null);
+    (resolvedGiftUrl ? `/api/qr/image?data=${encodeURIComponent(resolvedGiftUrl)}&size=512` : null);
   const outcome = phase !== "form";
 
   if (closed) {
@@ -410,26 +510,16 @@ export function AureliaGiftCheckout({
     <div className={styles.giftPanel} id={panelId} aria-label={giftTitle || campaign?.title || "Send a cash gift"}>
       {loading ? (
         <p className={styles.giftStatus} aria-busy="true">
-          Opening the gift wallet…
+          Connecting to Paystack…
         </p>
-      ) : !token ? (
-        <div className={styles.giftOutcome}>
-          <p className={styles.giftKicker}>Almost ready</p>
-          <h3 className={styles.giftThankYou}>Gift wallet opening</h3>
-          <p className={styles.giftOutcomeCopy}>
-            The couple&apos;s gift wallet is not live on this invitation yet. As soon as
-            it is, this form connects to Paystack so your gift can be sent securely.
-          </p>
-        </div>
-      ) : (
-        <>
-          {loadError ? (
-            <p className={styles.giftError} role="alert">
-              {loadError}
-            </p>
-          ) : null}
+      ) : null}
+      {loadError ? (
+        <p className={styles.giftError} role="alert">
+          {loadError}
+        </p>
+      ) : null}
 
-          <p className={styles.giftLabel}>{campaign?.amountPrompt || "Choose an amount"}</p>
+      <p className={styles.giftLabel}>{campaign?.amountPrompt || "Choose an amount"}</p>
           <div className={styles.giftAmounts}>
             {suggested.map((value) => {
               const selected = amountMinor === value && !customAmount;
@@ -543,8 +633,6 @@ export function AureliaGiftCheckout({
             <ShieldCheck size={12} aria-hidden />
             Payments are processed securely by Paystack.
           </p>
-        </>
-      )}
     </div>
   );
 
@@ -572,9 +660,9 @@ export function AureliaGiftCheckout({
           {phase === "form" && qrSrc ? (
             <a
               className={styles.albumQr}
-              href={giftUrl || "#aurelia-gifts"}
-              target={giftUrl ? "_blank" : undefined}
-              rel={giftUrl ? "noopener noreferrer" : undefined}
+              href={resolvedGiftUrl || "#aurelia-gifts"}
+              target={resolvedGiftUrl ? "_blank" : undefined}
+              rel={resolvedGiftUrl ? "noopener noreferrer" : undefined}
               aria-label="Scan to send a cash gift"
             >
               <img src={qrSrc} alt="" width={512} height={512} decoding="async" />

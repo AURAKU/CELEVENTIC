@@ -136,8 +136,30 @@ export function AureliaEditorialStudioPanel({
           orderId={orderId}
           maxImages={24}
           title="Couple photo & film album"
-          description="Appears under Celebrate With Us. Guests swipe through photographs and films of the couple. Separate from the hero portrait and the live guest album."
+          description="Appears in the lookbook above Our Journey. Guests swipe through photographs and films of the couple. Separate from the story slideshow below the copy."
         />
+      ) : null}
+      {wedding.journey.length > 0 ? (
+        <div className="grid gap-2 rounded-lg border border-amber-100 p-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-800/80">
+            Journey captions
+          </p>
+          {wedding.journey.map((item, index) => (
+            <Input
+              key={item.id || `${item.imageUrl}-${index}`}
+              value={item.title}
+              placeholder={index === 0 ? "Where it began" : `Chapter ${index + 1}`}
+              onChange={(e) => {
+                const journey = wedding.journey.map((entry, i) =>
+                  i === index
+                    ? { ...entry, title: e.target.value, caption: e.target.value }
+                    : entry
+                );
+                patch({ journey });
+              }}
+            />
+          ))}
+        </div>
       ) : null}
       <div className="grid gap-2">
         <Label>Gift details</Label>

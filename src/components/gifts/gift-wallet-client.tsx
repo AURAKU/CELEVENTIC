@@ -1161,7 +1161,7 @@ function WithdrawalsPanel({
               >
                 <option value="MTN_MOMO">MTN Mobile Money</option>
                 <option value="TELECEL_CASH">Telecel Cash</option>
-                <option value="AIRTELTIGO_MONEY">AirtelTigo / AT Money</option>
+                <option value="AIRTELTIGO_MONEY">AT Money</option>
                 <option value="GHANA_BANK">Ghana bank account</option>
               </select>
             </div>

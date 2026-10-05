@@ -5,14 +5,28 @@ import { resolveMusicUrl } from "@/lib/music/validate-selection";
 let activeInvitationAudioManager: InvitationAudioManager | null = null;
 let invitationAudioDucked = false;
 
+type AudioGlobal = typeof globalThis & {
+  __celeventicInviteAudio?: InvitationAudioManager | null;
+};
+
+function setActiveInvitationAudioManager(manager: InvitationAudioManager | null) {
+  activeInvitationAudioManager = manager;
+  (globalThis as AudioGlobal).__celeventicInviteAudio = manager;
+}
+
+/** Guest surfaces (Play Music overlays) toggle the live invitation bed. */
+export function getActiveInvitationAudioManager(): InvitationAudioManager | null {
+  return (globalThis as AudioGlobal).__celeventicInviteAudio ?? activeInvitationAudioManager;
+}
+
 /** Stops any invitation audio currently playing (e.g. when leaving a preview). */
 export function pauseAllInvitationAudio(): void {
-  activeInvitationAudioManager?.pause();
+  getActiveInvitationAudioManager()?.pause();
 }
 
 /** Pause bed music while a guest-started film owns the audio stage. */
 export function duckInvitationAudio(): void {
-  const manager = activeInvitationAudioManager;
+  const manager = getActiveInvitationAudioManager();
   if (!manager) return;
   invitationAudioDucked = manager.isPlaying();
   manager.pause();
@@ -22,7 +36,7 @@ export function duckInvitationAudio(): void {
 export function unduckInvitationAudio(): void {
   if (!invitationAudioDucked) return;
   invitationAudioDucked = false;
-  void activeInvitationAudioManager?.resume();
+  void getActiveInvitationAudioManager()?.resume();
 }
 
 export interface InvitationAudioManager {
@@ -222,7 +236,7 @@ export function createInvitationAudioManager(
       if (activeInvitationAudioManager && activeInvitationAudioManager !== manager) {
         activeInvitationAudioManager.pause();
       }
-      activeInvitationAudioManager = manager;
+      setActiveInvitationAudioManager(manager);
 
       // Seek best-effort without awaiting network — awaiting before play()
       // drops the Safari/Chrome user-activation token and blocks autoplay.
@@ -324,6 +338,7 @@ export function createInvitationAudioManager(
   manager = {
     prime() {
       ensureAudio();
+      setActiveInvitationAudioManager(manager);
     },
     unlock: async () => playNow(true),
     armSilently,
@@ -331,10 +346,10 @@ export function createInvitationAudioManager(
     async resume() {
       const a = ensureAudio();
       try {
-        if (activeInvitationAudioManager && activeInvitationAudioManager !== manager) {
-          activeInvitationAudioManager.pause();
+        if (getActiveInvitationAudioManager() && getActiveInvitationAudioManager() !== manager) {
+          getActiveInvitationAudioManager()?.pause();
         }
-        activeInvitationAudioManager = manager;
+        setActiveInvitationAudioManager(manager);
         if (muted) applyMuteToElement(a);
         await a.play();
         if (muted) {
@@ -393,8 +408,8 @@ export function createInvitationAudioManager(
         audio.pause();
         audio.src = "";
       }
-      if (activeInvitationAudioManager === manager) {
-        activeInvitationAudioManager = null;
+      if (getActiveInvitationAudioManager() === manager) {
+        setActiveInvitationAudioManager(null);
       }
       audio = null;
       trimHandler = null;

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, prismaQueryWithTimeout } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
 import { getCatalogEntry } from "@/lib/integrations/integration-catalog";
 
@@ -45,30 +45,53 @@ function envPublicKey(provider: string): string | null {
   }
 }
 
-/** Resolve provider credentials — DB overrides env when enabled. */
-export async function getProviderCredentials(provider: string): Promise<ProviderCredentials> {
-  const row = await prisma.apiSetting.findUnique({ where: { provider } });
-  const envKey = ENV_SECRET_MAP[provider];
-  const envSecret = envKey ? process.env[envKey] ?? null : null;
-  const envPublic = envPublicKey(provider);
-
-  if (!row) {
-    return {
-      enabled: envConfigured(provider),
-      secret: envSecret,
-      publicKey: envPublic,
-      webhookUrl: null,
-      config: {},
-    };
+async function readProviderSettingRow(provider: string) {
+  try {
+    return await prismaQueryWithTimeout(
+      prisma.apiSetting.findUnique({ where: { provider } }),
+      2000
+    );
+  } catch {
+    return null;
   }
+}
+
+function decryptOrNull(encryptedKey: string | null | undefined): string | null {
+  if (!encryptedKey?.trim()) return null;
+  try {
+    return decrypt(encryptedKey);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve provider credentials.
+ * Env keys are always readable (Paystack must not wait on a stuck database).
+ * A stored Admin row still wins when it is present and enabled.
+ */
+export async function getProviderCredentials(provider: string): Promise<ProviderCredentials> {
+  const envKey = ENV_SECRET_MAP[provider];
+  const envSecret = envKey ? process.env[envKey]?.trim() || null : null;
+  const envPublic = envPublicKey(provider)?.trim() || null;
+  const fromEnv: ProviderCredentials = {
+    enabled: envConfigured(provider),
+    secret: envSecret,
+    publicKey: envPublic,
+    webhookUrl: null,
+    config: {},
+  };
+
+  const row = await readProviderSettingRow(provider);
+  if (!row) return fromEnv;
 
   const config = (row.config as Record<string, unknown>) ?? {};
-  const secret = row.encryptedKey ? decrypt(row.encryptedKey) : envSecret;
+  const secret = decryptOrNull(row.encryptedKey) || envSecret;
 
   return {
-    enabled: row.isEnabled,
+    enabled: row.isEnabled || fromEnv.enabled,
     secret,
-    publicKey: row.publicKey || envPublic,
+    publicKey: row.publicKey?.trim() || envPublic,
     webhookUrl: row.webhookUrl,
     config,
   };

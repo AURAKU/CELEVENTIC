@@ -273,6 +273,17 @@ export function LiveAlbumExperience({
               />
             )}
             {openItem.guestName ? <p className={styles.stageCaption}>{openItem.guestName}</p> : null}
+            {canModerate ? (
+              <button
+                type="button"
+                className={styles.stageRemove}
+                aria-label="Remove this photograph from the album"
+                onClick={() => void removeItem(openItem)}
+              >
+                <Trash2 size={16} aria-hidden />
+                Remove
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}

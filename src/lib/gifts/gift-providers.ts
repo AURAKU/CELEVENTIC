@@ -55,8 +55,9 @@ export const GIFT_PAYMENT_METHODS: readonly GiftPaymentMethod[] = [
   },
   {
     id: "AIRTELTIGO_MONEY",
-    label: "AirtelTigo Money",
-    shortLabel: "AirtelTigo",
+    label: "AT Money",
+    shortLabel: "AT Money",
+    aka: "AirtelTigo",
     paystackProvider: "atl",
     paystackChannel: "mobile_money",
     channel: "MOBILE_MONEY",

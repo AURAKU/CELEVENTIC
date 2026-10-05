@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { giftPaymentService, GiftPaymentError } from "@/services/gifts/gift-payment.service";
+import { resolveInviteGiftCheckout } from "@/services/gifts/resolve-invite-gift-checkout";
 import { GIFT_PAYMENT_METHOD_IDS } from "@/lib/gifts/gift-providers";
 import { rateLimit } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
@@ -10,7 +11,9 @@ import { createAuditLog } from "@/lib/audit";
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  publicToken: z.string().min(8).max(128),
+  publicToken: z.string().trim().max(128).optional(),
+  inviteLink: z.string().trim().max(220).optional(),
+  eventId: z.string().trim().max(80).optional(),
   /** Integer minor units, the client never sends a decimal string. */
   amountMinor: z.number().int().positive(),
   method: z.enum(GIFT_PAYMENT_METHOD_IDS as [string, ...string[]]),
@@ -46,8 +49,22 @@ export async function POST(req: Request) {
     const data = schema.parse(body);
     const session = await getServerSession(authOptions);
 
+    let publicToken = data.publicToken?.trim() || "";
+    if (publicToken.length < 8) publicToken = "";
+    if (!publicToken) {
+      const checkout = await resolveInviteGiftCheckout({
+        uniqueLink: data.inviteLink,
+        eventId: data.eventId,
+        guestQrToken: data.guestToken,
+      });
+      publicToken = checkout?.campaign.publicToken ?? "";
+    }
+    if (!publicToken) {
+      throw new GiftPaymentError("This gift link is not available", 404);
+    }
+
     const result = await giftPaymentService.initialize({
-      publicToken: data.publicToken,
+      publicToken,
       amountMinor: data.amountMinor,
       method: data.method,
       guestName: data.guestName ?? null,

@@ -1,4 +1,4 @@
-import { normalizeExternalHref } from "@/lib/invitation/maps-utils";
+import { extractMapsQuery, normalizeExternalHref } from "@/lib/invitation/maps-utils";
 
 export interface CalendarEventInput {
   title: string;
@@ -69,6 +69,14 @@ export function toGoogleCalendarDates(
   const fmt = (d: Date) =>
     `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
   return `${fmt(start)}/${fmt(end)}`;
+}
+
+/** Calendar LOCATION — venue name plus the street line shown on the invitation. */
+export function calendarEventLocation(
+  venueName?: string | null,
+  address?: string | null
+): string {
+  return [venueName?.trim(), address?.trim()].filter(Boolean).join(", ");
 }
 
 export function hasValidCalendarWindow(event: CalendarEventInput): boolean {
@@ -266,25 +274,13 @@ export async function shareOrDownloadIcs(
   return "downloaded";
 }
 
-/** Embed-friendly Google Maps URL (no API key). */
+/** Embed-friendly Google Maps URL (no API key). Pins coordinates when the link has them. */
 export function toMapsEmbedUrl(mapsLink?: string | null, venueLabel?: string | null): string | null {
   const link = normalizeExternalHref(mapsLink);
   if (link.includes("output=embed") || link.includes("/maps/embed")) {
     return link;
   }
-  let query = venueLabel?.trim() || "";
-  if (link) {
-    try {
-      const parsed = new URL(link);
-      query =
-        parsed.searchParams.get("query") ||
-        parsed.searchParams.get("q") ||
-        parsed.searchParams.get("destination") ||
-        query;
-    } catch {
-      /* keep venue label */
-    }
-  }
+  const query = extractMapsQuery(link, venueLabel?.trim() || "");
   if (query) {
     return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&hl=en&z=16&output=embed`;
   }
