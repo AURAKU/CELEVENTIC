@@ -75,8 +75,12 @@ const MOTE_COUNT = 18;
 /** Deliberate luxury pacing: seal lift → envelope unfold → intro tableau. */
 const UNSEAL_HOLD_MS = 2400;
 const GATE_REVEAL_AT_MS = 4600;
-/** Magical auto intro duration after the gate stage begins (matches Framer timeline). */
-const INTRO_DURATION_MS = 7000;
+/**
+ * Name tableau after the envelope. Long enough to read the gate title, short
+ * enough that the invitation underneath is scrollable almost at once. A tap
+ * or scroll during this beat opens the page immediately.
+ */
+const INTRO_DURATION_MS = 1800;
 const INTRO_REDUCED_MS = 600;
 
 /** Cinematic easing shared across the ceremony. */
@@ -181,9 +185,10 @@ export function ForeverAfarisWeddingOpening({
     doneRef.current = true;
     clearTimers();
     setVisible(false);
-    // Intro already dissolved; hand off without a second blank beat.
-    after(prefersReduced ? 40 : 280, onComplete);
-  }, [after, clearTimers, onComplete, prefersReduced]);
+    // Drop the overlay in the same turn so the page can scroll. A delayed
+    // handoff left the fixed ceremony eating the first swipe.
+    onComplete();
+  }, [clearTimers, onComplete]);
 
   const openEnvelope = useCallback(() => {
     if (openedRef.current || stage !== "sealed") return;
@@ -211,14 +216,35 @@ export function ForeverAfarisWeddingOpening({
     finish();
   }, [finish, onBegin, stage]);
 
-  // Magical auto-intro: no ENTER tap required once the gate tableau is live.
+  // The name card finishes itself, and any tap or scroll opens the invitation now.
   useEffect(() => {
     if (stage !== "gate") return;
     const ms = prefersReduced ? INTRO_REDUCED_MS : INTRO_DURATION_MS;
     const id = window.setTimeout(() => {
       enterThroughGate();
     }, ms);
-    return () => window.clearTimeout(id);
+
+    let touchY = 0;
+    const onTouchStart = (event: TouchEvent) => {
+      touchY = event.touches[0]?.clientY ?? 0;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      const y = event.touches[0]?.clientY ?? touchY;
+      if (Math.abs(y - touchY) > 10) enterThroughGate();
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) > 1 || Math.abs(event.deltaX) > 1) enterThroughGate();
+    };
+
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: true });
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("wheel", onWheel);
+    };
   }, [enterThroughGate, prefersReduced, stage]);
 
   const skip = useCallback(() => {
@@ -260,10 +286,10 @@ export function ForeverAfarisWeddingOpening({
           // The entire ceremony is the tap target while the envelope is sealed:
           // guests aim at the envelope, not at an 82px wax seal. The seal button
           // stays for keyboard/screen-reader users and its click is idempotent.
-          onClick={sealed ? openEnvelope : undefined}
+          onClick={sealed ? openEnvelope : stage === "gate" ? enterThroughGate : undefined}
           style={{
             background: `radial-gradient(120% 90% at 50% 18%, ${C.linen} 0%, ${C.blush} 55%, ${C.blushDeep} 100%)`,
-            cursor: sealed ? "pointer" : undefined,
+            cursor: sealed || stage === "gate" ? "pointer" : undefined,
           }}
         >
           {/* Depth wash, drifts opposite the envelope for a sense of room */}
@@ -348,6 +374,7 @@ export function ForeverAfarisWeddingOpening({
               names={coupleLine}
               reducedMotion={Boolean(prefersReduced)}
               embedded={embedded}
+              durationMs={prefersReduced ? INTRO_REDUCED_MS : INTRO_DURATION_MS}
             />
           )}
         </motion.div>
@@ -910,13 +937,15 @@ function InvitationIntro({
   names,
   reducedMotion,
   embedded = false,
+  durationMs,
 }: {
   title: string;
   names: string;
   reducedMotion: boolean;
   embedded?: boolean;
+  durationMs: number;
 }) {
-  const duration = reducedMotion ? 0.6 : 7;
+  const duration = durationMs / 1000;
   const titleRef = useRef<HTMLHeadingElement | null>(null);
 
   // Guarantee the full title stays inside the viewport on every device width.

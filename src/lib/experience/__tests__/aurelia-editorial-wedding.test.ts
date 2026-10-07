@@ -518,8 +518,14 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   assert.equal(SERAPHINE_TRADITIONAL_ISO, "2026-11-13T10:00:00+00:00");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.heroTagline, "");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpTitle, "RSVP");
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpContacts?.[0]?.name, "Esther");
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpContacts?.[0]?.phone, "0549436196");
+  assert.deepEqual(
+    (SERAPHINE_WEDDING_DEFAULTS.rsvpContacts ?? []).map((item) => [item.name, item.phone]),
+    [
+      ["Esther", "+233 54 943 6196"],
+      ["Vivian", "+233 54 556 3915"],
+      ["Ella", "+233 24 769 0263"],
+    ]
+  );
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.rsvpShowPhone, false);
   assert.equal(
     mergeAureliaWedding({ rsvpShowPhone: true }, SERAPHINE_WEDDING_DEFAULTS).rsvpShowPhone,
@@ -624,10 +630,10 @@ test("Seraphine is an isolated Aurelia-family duplicate for Kojo and Fafa", () =
   );
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.title, "Wedding Ceremony");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.dateLabel, "14 November 2026");
-  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.timeLabel, "Details to be announced");
+  assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.timeLabel, "3:00 PM");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.venueName, "The Forest Grove Event");
   assert.equal(SERAPHINE_WEDDING_DEFAULTS.ceremonies[1]?.startAtIso, SERAPHINE_WHITE_ISO);
-  assert.equal(SERAPHINE_WHITE_ISO, "2026-11-14T00:00:00+00:00");
+  assert.equal(SERAPHINE_WHITE_ISO, "2026-11-14T15:00:00+00:00");
   assert.equal(
     mergeAureliaWedding(
       {

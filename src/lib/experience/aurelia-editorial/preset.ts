@@ -277,7 +277,7 @@ export const SERAPHINE_GUEST_OUTFIT_SLIDES = [
   },
 ] as const;
 export const SERAPHINE_TRADITIONAL_ISO = "2026-11-13T10:00:00+00:00";
-export const SERAPHINE_WHITE_ISO = "2026-11-14T00:00:00+00:00";
+export const SERAPHINE_WHITE_ISO = "2026-11-14T15:00:00+00:00";
 /** Verified pin: Westville on Onyasia Street, West Legon (MQ3R+86). */
 export const SERAPHINE_TRADITIONAL_PIN = {
   label: "Westville Homes, 20 Onyasia Street, West Legon, Accra, Ghana",
@@ -345,7 +345,11 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
   rsvpCta: "RSVP",
   rsvpByLabel: "",
   rsvpContactsEyebrow: "Call or WhatsApp",
-  rsvpContacts: [{ name: "Esther", phone: "0549436196" }],
+  rsvpContacts: [
+    { name: "Esther", phone: "+233 54 943 6196" },
+    { name: "Vivian", phone: "+233 54 556 3915" },
+    { name: "Ella", phone: "+233 24 769 0263" },
+  ],
   rsvpShowPhone: false,
   storyEyebrow: "Moments",
   storyTitle: "Our Journey",
@@ -398,7 +402,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
       title: "Wedding Ceremony",
       weekday: "Saturday",
       dateLabel: "14 November 2026",
-      timeLabel: "Details to be announced",
+      timeLabel: "3:00 PM",
       venueName: "The Forest Grove Event",
       address: "Adjacent to 335 Place, Dzorwulu",
       mapsUrl: SERAPHINE_WHITE_MAPS,
@@ -450,7 +454,7 @@ export const SERAPHINE_WEDDING_DEFAULTS: AureliaWeddingConfig = {
     {
       id: "contact",
       question: "Who can I contact for assistance?",
-      answer: "Call or WhatsApp Esther.",
+      answer: "Call or WhatsApp Esther, Vivian, or Ella.",
     },
     {
       id: "album",

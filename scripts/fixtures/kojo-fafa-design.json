@@ -49,7 +49,7 @@
       "displayDate": "NOVEMBER • 13 & 14 • 2026",
       "weekday": "FRI · SAT",
       "timeLabel": "10:00 AM",
-      "receptionText": "Wedding ceremony at The Forest Grove Event, Adjacent to 335 Place, Dzorwulu. Time to be announced.",
+      "receptionText": "Wedding ceremony at 3:00 PM at The Forest Grove Event, Adjacent to 335 Place, Dzorwulu.",
       "accessNote": "STRICTLY BY INVITATION",
       "venueName": "WESTVILLE HOMES",
       "venueAddress": "20 Onyasia Street, West Legon",
@@ -70,9 +70,9 @@
         },
         {
           "id": "white",
-          "time": "SAT 14 NOV",
+          "time": "SAT 14 NOV · 3:00 PM",
           "title": "Wedding Ceremony",
-          "description": "The Forest Grove Event, Adjacent to 335 Place, Dzorwulu. Time to be announced."
+          "description": "The Forest Grove Event, Adjacent to 335 Place, Dzorwulu"
         }
       ],
       "dressCodeHeading": "DRESS CODE",
@@ -89,8 +89,16 @@
       "rsvpHeading": "R.S.V.P",
       "rsvpContacts": [
         {
-          "name": "ESTHER",
-          "phone": "0549436196"
+          "name": "Esther",
+          "phone": "+233 54 943 6196"
+        },
+        {
+          "name": "Vivian",
+          "phone": "+233 54 556 3915"
+        },
+        {
+          "name": "Ella",
+          "phone": "+233 24 769 0263"
         }
       ],
       "closingHeading": "With Love & Gratitude",

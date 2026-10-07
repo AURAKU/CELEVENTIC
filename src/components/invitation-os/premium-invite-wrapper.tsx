@@ -520,7 +520,6 @@ export function PremiumInviteWrapper({
       forceUnlockInvitationViewport("portal-raf");
       assertPortalViewportInteractive();
       resetInviteScrollToCover({ smooth: false });
-      window.setTimeout(() => resetInviteScrollToCover({ smooth: true }), 120);
     });
   }, [startAudio, setPhase]);
 
@@ -597,7 +596,6 @@ export function PremiumInviteWrapper({
 
     const settleMs = window.setTimeout(() => {
       scroller.classList.remove("inv-paged-scroll--settle");
-      resetInviteScrollToCover({ smooth: false });
       assertPortalViewportInteractive();
     }, 420);
 

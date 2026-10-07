@@ -1177,7 +1177,7 @@ function HeroPortrait({
             fill
             priority
             sizes="(max-width: 640px) 78vw, 320px"
-            className="object-cover"
+            className="object-cover object-[center_22%]"
             unoptimized={shouldUnoptimizeNextImage(url)}
           />
         </motion.div>
