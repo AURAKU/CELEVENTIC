@@ -72,16 +72,14 @@ export interface WeddingOpeningProps {
 }
 
 const MOTE_COUNT = 18;
-/** Deliberate luxury pacing: seal lift → envelope unfold → intro tableau. */
-const UNSEAL_HOLD_MS = 2400;
-const GATE_REVEAL_AT_MS = 4600;
 /**
- * Name tableau after the envelope. Long enough to read the gate title, short
- * enough that the invitation underneath is scrollable almost at once. A tap
- * or scroll during this beat opens the page immediately.
+ * The seal still lifts, then the page is free. A guest who scrolls or taps
+ * again during this beat is not held for the rest of the choreography.
  */
-const INTRO_DURATION_MS = 1800;
-const INTRO_REDUCED_MS = 600;
+const UNSEAL_HOLD_MS = 280;
+const OPEN_RELEASE_MS = 720;
+const INTRO_DURATION_MS = 420;
+const INTRO_REDUCED_MS = 200;
 
 /** Cinematic easing shared across the ceremony. */
 const EASE_SILK = [0.22, 1, 0.36, 1] as const;
@@ -155,6 +153,7 @@ export function ForeverAfarisWeddingOpening({
   const [visible, setVisible] = useState(true);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const doneRef = useRef(false);
+  const shellRef = useRef<HTMLDivElement>(null);
   /**
    * The whole ceremony is now one tap target, so the same gesture can reach
    * `openEnvelope` from the seal button and from the stage behind it in the
@@ -184,9 +183,10 @@ export function ForeverAfarisWeddingOpening({
     if (doneRef.current) return;
     doneRef.current = true;
     clearTimers();
+    // Release the gesture target before React unmounts the overlay, so the
+    // swipe that dismisses the ceremony is not swallowed by the fixed layer.
+    if (shellRef.current) shellRef.current.style.pointerEvents = "none";
     setVisible(false);
-    // Drop the overlay in the same turn so the page can scroll. A delayed
-    // handoff left the fixed ceremony eating the first swipe.
     onComplete();
   }, [clearTimers, onComplete]);
 
@@ -204,11 +204,8 @@ export function ForeverAfarisWeddingOpening({
     }
     setStage("unsealing");
     after(UNSEAL_HOLD_MS, () => setStage("envelopeOpening"));
-    after(GATE_REVEAL_AT_MS, () => {
-      setStage("gate");
-      vibrate(10, haptics);
-    });
-  }, [after, haptics, onBegin, prefersReduced, stage]);
+    after(OPEN_RELEASE_MS, () => finish());
+  }, [after, finish, haptics, onBegin, prefersReduced, stage]);
 
   const enterThroughGate = useCallback(() => {
     if (stage !== "gate") return;
@@ -216,13 +213,28 @@ export function ForeverAfarisWeddingOpening({
     finish();
   }, [finish, onBegin, stage]);
 
-  // The name card finishes itself, and any tap or scroll opens the invitation now.
+  // After the open tap, a scroll or another tap frees the page at once.
+  // The short auto-release still plays the seal lift when the guest waits.
   useEffect(() => {
-    if (stage !== "gate") return;
-    const ms = prefersReduced ? INTRO_REDUCED_MS : INTRO_DURATION_MS;
-    const id = window.setTimeout(() => {
-      enterThroughGate();
-    }, ms);
+    if (stage === "sealed" || stage === "done") return;
+
+    let armed = false;
+    const armId = window.setTimeout(() => {
+      armed = true;
+    }, 160);
+
+    const dismiss = () => {
+      if (!armed) return;
+      finish();
+    };
+
+    const autoId =
+      stage === "gate"
+        ? window.setTimeout(
+            () => finish(),
+            prefersReduced ? INTRO_REDUCED_MS : INTRO_DURATION_MS
+          )
+        : 0;
 
     let touchY = 0;
     const onTouchStart = (event: TouchEvent) => {
@@ -230,22 +242,23 @@ export function ForeverAfarisWeddingOpening({
     };
     const onTouchMove = (event: TouchEvent) => {
       const y = event.touches[0]?.clientY ?? touchY;
-      if (Math.abs(y - touchY) > 10) enterThroughGate();
+      if (Math.abs(y - touchY) > 6) dismiss();
     };
     const onWheel = (event: WheelEvent) => {
-      if (Math.abs(event.deltaY) > 1 || Math.abs(event.deltaX) > 1) enterThroughGate();
+      if (Math.abs(event.deltaY) > 0 || Math.abs(event.deltaX) > 0) dismiss();
     };
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("wheel", onWheel, { passive: true });
     return () => {
-      window.clearTimeout(id);
+      window.clearTimeout(armId);
+      window.clearTimeout(autoId);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("wheel", onWheel);
     };
-  }, [enterThroughGate, prefersReduced, stage]);
+  }, [finish, prefersReduced, stage]);
 
   const skip = useCallback(() => {
     onBegin?.();
@@ -273,6 +286,7 @@ export function ForeverAfarisWeddingOpening({
     <AnimatePresence onExitComplete={() => setStage("done")}>
       {visible && (
         <motion.div
+          ref={shellRef}
           className={
             embedded
               ? "absolute inset-0 z-10 flex items-center justify-center overflow-hidden"
@@ -286,7 +300,7 @@ export function ForeverAfarisWeddingOpening({
           // The entire ceremony is the tap target while the envelope is sealed:
           // guests aim at the envelope, not at an 82px wax seal. The seal button
           // stays for keyboard/screen-reader users and its click is idempotent.
-          onClick={sealed ? openEnvelope : stage === "gate" ? enterThroughGate : undefined}
+          onClick={sealed ? openEnvelope : finish}
           style={{
             background: `radial-gradient(120% 90% at 50% 18%, ${C.linen} 0%, ${C.blush} 55%, ${C.blushDeep} 100%)`,
             cursor: sealed || stage === "gate" ? "pointer" : undefined,

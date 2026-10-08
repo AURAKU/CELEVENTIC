@@ -4,6 +4,7 @@ import { resolveInvitationAllowance } from "@/lib/admission/admission-logic";
 import {
   deriveGuestPlaceCardMonogram,
   formatPlaceCardMonogram,
+  isHostIdentityName,
   looksLikeEventTitle,
   resolvePlaceCardConfig,
   resolvePlaceCardGuestName,
@@ -199,31 +200,41 @@ export async function resolvePlaceCard(
     otherInvitationNames: siblingNames,
   });
 
-  const resolvedGuestName =
+  const hostLabels = [invitation.event.title, invitation.event.hostName];
+  const namedGuest =
     resolvePlaceCardGuestName({
       tokenGuest,
       passDisplayName: partyDisplayName,
       guestNames: partyGuests.map((guest) => guest.name),
-    }) || partyDisplayName;
+      hostLabels,
+    }) || (isHostIdentityName(partyDisplayName, hostLabels) ? null : partyDisplayName);
 
+  const resolvedGuestName = namedGuest?.trim() || null;
   const assigned = Boolean(resolvedGuestName) && !looksLikeEventTitle(resolvedGuestName);
+  // The published ceremony link is named for the couple. It still shows a
+  // place card, addressed to Invited Guest, until a real guest is assigned.
+  const generalCeremony =
+    !tokenGuest && isHostIdentityName(invitation.name, hostLabels);
   // A specific guest gets their own initials. Generic/non-personalized cards
   // retain the event/couple seal (for Forever Afaris, "C | J").
   const guestMonogram = assigned
     ? deriveGuestPlaceCardMonogram(resolvedGuestName)
+    : "";
+  const coupleSeal = generalCeremony
+    ? deriveGuestPlaceCardMonogram(invitation.event.hostName || invitation.event.title)
     : "";
   const config = {
     ...baseConfig,
     // Organiser "group name" must never override the invitation party label
     // with a GuestGroup that can span or leak across invitations.
     groupName: "",
-    monogram: guestMonogram || eventMonogram,
+    monogram: guestMonogram || coupleSeal || eventMonogram,
   };
   if (
     !shouldShowPlaceCard(
       config,
       feature?.enabled ?? false,
-      assigned || partyGuests.length > 0
+      assigned || partyGuests.length > 0 || generalCeremony
     )
   ) {
     return null;

@@ -31,6 +31,7 @@ export const greatVibes = Great_Vibes({
 
 export const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
+  style: ["normal", "italic"],
   variable: "--font-cormorant",
   display: "swap",
 });

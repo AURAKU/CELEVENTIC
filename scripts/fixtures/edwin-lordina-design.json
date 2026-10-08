@@ -73,13 +73,15 @@
           "id": "white",
           "time": "SAT 26 DEC \u00b7 9:00 AM",
           "title": "White Wedding, Church Ceremony",
-          "description": "Assemblies of God Tema Community 12 TCC"
+          "description": "Assemblies of God Tema Community 12 TCC",
+          "mapUrl": "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z"
         },
         {
           "id": "reception",
           "time": "SAT 26 DEC \u00b7 4:00 PM",
           "title": "Reception",
-          "description": "Combos & Casa, East Legon Hills"
+          "description": "Combos & Casa, East Legon Hills",
+          "mapUrl": "https://www.google.com/maps/place/Combos+%26+Casa/@5.706804,-0.11083,17z"
         },
         {
           "id": "menu",
@@ -136,7 +138,7 @@
         "guestPolicy": true,
         "story": true,
         "gallery": true,
-        "scratch": true,
+        "scratch": false,
         "rsvp": true,
         "closing": true,
         "familyIntro": true,
@@ -180,22 +182,46 @@
       "name": "Edwin & Lordina"
     },
     {
-      "url": "/templates/edwin-lordina/hero-navy.jpg",
+      "url": "/templates/edwin-lordina/cover-sofa.jpg",
       "type": "image",
       "role": "intro",
       "name": "Edwin & Lordina"
     },
     {
-      "url": "/templates/edwin-lordina/hero-navy.jpg",
+      "url": "/templates/edwin-lordina/moments/01-stool.jpg",
       "type": "image",
       "role": "reference",
-      "name": "Edwin & Lordina"
+      "name": "Edwin and Lordina"
     },
     {
-      "url": "/templates/edwin-lordina/lounge.jpg",
+      "url": "/templates/edwin-lordina/moments/02-gold.jpg",
       "type": "image",
       "role": "reference",
-      "name": "Together"
+      "name": "Edwin and Lordina"
+    },
+    {
+      "url": "/templates/edwin-lordina/moments/03-sofa.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Edwin and Lordina"
+    },
+    {
+      "url": "/templates/edwin-lordina/moments/04-navy.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Edwin and Lordina"
+    },
+    {
+      "url": "/templates/edwin-lordina/moments/05-close.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Edwin and Lordina"
+    },
+    {
+      "url": "/templates/edwin-lordina/moments/06-sofa-smile.jpg",
+      "type": "image",
+      "role": "reference",
+      "name": "Edwin and Lordina"
     }
   ]
 }

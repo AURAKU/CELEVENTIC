@@ -51,10 +51,13 @@ export async function GET(
     canModerate,
     canRemoveMedia,
   });
-  const { publicTheme, identity } = await eventMemoryThemeService.resolveForEvent(record.eventId, {
-    title: record.event.title,
-    hostName: record.event.hostName,
-  });
+  const [{ publicTheme, identity }, uploadToken] = await Promise.all([
+    eventMemoryThemeService.resolveForEvent(record.eventId, {
+      title: record.event.title,
+      hostName: record.event.hostName,
+    }),
+    eventMemoryTokenService.getOrCreateUploadToken(record.eventId),
+  ]);
 
   return NextResponse.json({
     success: true,
@@ -67,8 +70,16 @@ export async function GET(
         logoUrl: record.event.logoUrl,
         eyebrow: identity.eyebrow,
         subtitle: identity.subtitle,
+        lede: identity.lede,
       },
       allowDownloads: settings.allowDownloads,
+      upload: {
+        token: uploadToken.token,
+        windowOpen: eventMemorySettingsService.isUploadWindowOpen(settings),
+        approvalRequired: settings.approvalRequired,
+        allowAnonymousUploads: settings.allowAnonymousUploads,
+        maxImageSizeMb: settings.maxImageSizeMb,
+      },
       theme: publicTheme,
       canModerate,
       viewToken: token,

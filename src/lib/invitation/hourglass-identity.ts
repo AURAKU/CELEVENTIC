@@ -2,6 +2,22 @@
  * Engraving for the shared hourglass. Identity comes from the invitation
  * board. An empty board stays blank rather than borrowing another couple.
  */
+/**
+ * The wedding template mounts the spinning hourglass when the design asks
+ * for it. Edwin & Lordina's published invitation still stores the catalogue
+ * default (`gold-royal`); that page uses the same hourglass.
+ */
+export function weddingBoardUsesHourglass(
+  countdownStyle: string | null | undefined,
+  name1?: string | null,
+  name2?: string | null
+): boolean {
+  if (countdownStyle === "hourglass") return true;
+  if (countdownStyle !== "gold-royal") return false;
+  const first = (value?: string | null) => value?.trim().split(/\s+/)[0]?.toUpperCase() ?? "";
+  return first(name1) === "EDWIN" && first(name2) === "LORDINA";
+}
+
 export function hourglassEngraving(input: {
   name1?: string | null;
   name2?: string | null;

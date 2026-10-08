@@ -41,6 +41,20 @@ test("Seraphine album chrome stays on its own couple names", () => {
   assert.equal(identity.monogram, "K & F");
 });
 
+test("Forever Afaris album uses the couple title without repeating the host", () => {
+  const identity = resolveMemoryAlbumIdentity({
+    eventTitle: "Edwin & Lordina",
+    hostName: "Edwin & Lordina",
+    templateSlug: "forever-afaris-wedding",
+    design: { layout: "forever-afaris-wedding" },
+  });
+
+  assert.equal(identity.title, "Edwin & Lordina");
+  assert.equal(identity.eyebrow, "The Album");
+  assert.equal(identity.subtitle, null);
+  assert.match(identity.lede ?? "", /celebration/i);
+});
+
 test("non-invitation albums keep the event title and hosted-by line", () => {
   const identity = resolveMemoryAlbumIdentity({
     eventTitle: "Ama's Birthday",

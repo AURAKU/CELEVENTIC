@@ -50,7 +50,10 @@ export async function GET(
     title: event.title,
     hostName: event.hostName,
   });
-  const viewToken = await eventMemoryTokenService.getOrCreateViewToken(event.id);
+  const [viewToken, uploadToken] = await Promise.all([
+    eventMemoryTokenService.getOrCreateViewToken(event.id),
+    eventMemoryTokenService.getOrCreateUploadToken(event.id),
+  ]);
 
   return NextResponse.json({
     success: true,
@@ -63,8 +66,16 @@ export async function GET(
         logoUrl: event.logoUrl,
         eyebrow: identity.eyebrow,
         subtitle: identity.subtitle,
+        lede: identity.lede,
       },
       allowDownloads: settings.allowDownloads,
+      upload: {
+        token: uploadToken.token,
+        windowOpen: eventMemorySettingsService.isUploadWindowOpen(settings),
+        approvalRequired: settings.approvalRequired,
+        allowAnonymousUploads: settings.allowAnonymousUploads,
+        maxImageSizeMb: settings.maxImageSizeMb,
+      },
       theme: publicTheme,
       canModerate,
       viewToken: viewToken.token,

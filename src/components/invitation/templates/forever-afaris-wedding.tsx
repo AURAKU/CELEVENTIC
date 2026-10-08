@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -13,7 +14,7 @@ import {
 } from "framer-motion";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
-import { buildDirectionsUrl } from "@/lib/invitation/maps-utils";
+import { buildDirectionsUrl, resolveMapsLocationHref } from "@/lib/invitation/maps-utils";
 import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { isVideoUrl } from "@/lib/invitation/theme-media-assets";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
@@ -31,12 +32,26 @@ import {
 } from "./forever-afaris-wedding-palette";
 import { TraditionalMarriageRespond } from "./traditional-marriage-respond";
 import { PlaceCard } from "@/components/invitation/place-card";
+import { InvitationMediaLightbox } from "@/components/invitation/invitation-media-lightbox";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import type { CalendarEventInput } from "@/lib/invitation/calendar-utils";
-import { detectCalendarPlatform, setSmartCalendarReminder } from "@/lib/invitation/smart-calendar";
-import { hourglassEngraving } from "@/lib/invitation/hourglass-identity";
+import { calendarEventLocation, toMapsEmbedUrl } from "@/lib/invitation/calendar-utils";
+import {
+  celebrationDayGroups,
+  celebrationMomentsFromProgramme,
+  programmeMapUrl,
+  type CelebrationDay,
+} from "@/lib/invitation/celebration-days";
+import {
+  detectCalendarPlatform,
+  setSmartCalendarReminder,
+  setSmartCalendarReminders,
+} from "@/lib/invitation/smart-calendar";
+import { hourglassEngraving, weddingBoardUsesHourglass } from "@/lib/invitation/hourglass-identity";
 import { useCountdown } from "@/hooks/use-countdown";
 import { SeraphineHourglass } from "./seraphine-hourglass";
+import { Phone } from "lucide-react";
+import { WhatsAppIcon } from "@/components/memory/icons/social-brand-icons";
 
 export type ForeverAfarisWeddingProps = InvitationRenderProps & {
   contactEmail?: string | null;
@@ -60,12 +75,15 @@ const T = {
   labelTight: "text-[clamp(0.75rem,1.9vw,0.875rem)]",
   body: "text-[clamp(1.0625rem,2.6vw,1.25rem)]",
   bodyLg: "text-[clamp(1.125rem,2.8vw,1.35rem)]",
-  name: "block font-[family-name:var(--font-cinzel)] text-[clamp(1.55rem,5.2vw,2.35rem)] font-semibold leading-tight tracking-[0.1em]",
+  name: "mx-auto block w-fit whitespace-nowrap font-[family-name:var(--font-cormorant)] text-[clamp(1.45rem,6.4vw,2.2rem)] font-medium italic leading-[1.05] tracking-[0.012em]",
+  nameClose:
+    "mx-auto block w-fit whitespace-nowrap font-[family-name:var(--font-cormorant)] text-[clamp(1.05rem,4.2vw,1.45rem)] font-medium italic leading-[1.05] tracking-[0.01em]",
   script: "font-[family-name:var(--font-great-vibes)] text-[clamp(2.5rem,7.5vw,3.6rem)] leading-none",
   scriptSm: "font-[family-name:var(--font-great-vibes)] text-[clamp(2.1rem,6.5vw,3rem)] leading-tight",
   sectionLabel: "text-[clamp(0.8125rem,2vw,0.95rem)] uppercase tracking-[0.3em]",
   cta: "text-[clamp(0.78rem,1.9vw,0.9rem)] uppercase tracking-[0.2em]",
-  programmeTime: "text-[clamp(0.75rem,1.8vw,0.875rem)] uppercase tracking-[0.18em]",
+  programmeTime:
+    "mb-1.5 inline-flex max-w-full rounded-full px-3 py-2 font-[family-name:var(--font-cinzel)] text-[clamp(0.95rem,2.8vw,1.08rem)] font-semibold uppercase leading-snug tracking-[0.1em]",
   programmeTitle:
     "break-words font-[family-name:var(--font-cinzel)] text-[clamp(1.05rem,2.8vw,1.25rem)] font-semibold leading-snug",
   programmeDesc:
@@ -141,6 +159,8 @@ function WeddingDateSaveRow({
   timeLabel,
   palette: C,
   calendarEvent,
+  calendarEvents,
+  days,
   staticPreview,
 }: {
   weekday: string;
@@ -148,24 +168,33 @@ function WeddingDateSaveRow({
   timeLabel: string;
   palette: FaPalette;
   calendarEvent: CalendarEventInput;
+  calendarEvents?: CalendarEventInput[];
+  days?: CelebrationDay[];
   staticPreview: boolean;
 }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
-  const [platformHint, setPlatformHint] = useState("Tap to save the date");
+  const [calendarApp, setCalendarApp] = useState("your calendar");
+
+  const multiDay = (days?.length ?? 0) >= 2;
 
   useEffect(() => {
     const p = detectCalendarPlatform();
-    if (p === "apple") setPlatformHint("Tap to add to Apple Calendar");
-    else if (p === "google") setPlatformHint("Tap to add to Google Calendar");
-    else setPlatformHint("Tap to add to Outlook Calendar");
+    setCalendarApp(p === "apple" ? "Apple Calendar" : p === "google" ? "Google Calendar" : "Outlook Calendar");
   }, []);
+
+  const platformHint = multiDay
+    ? `Tap to add every celebration to ${calendarApp}`
+    : `Tap to add to ${calendarApp}`;
 
   async function saveDate() {
     if (staticPreview || state === "loading") return;
     setState("loading");
     setMessage("");
-    const result = await setSmartCalendarReminder(calendarEvent);
+    const result =
+      days && days.length >= 2 && calendarEvents && calendarEvents.length > 1
+        ? await setSmartCalendarReminders(calendarEvents)
+        : await setSmartCalendarReminder(calendarEvent);
     setState(result.success ? "done" : "error");
     setMessage(result.message);
     if (result.success) {
@@ -185,15 +214,32 @@ function WeddingDateSaveRow({
           ? "Couldn’t save — tap to try again"
           : platformHint;
 
+  const sharedMonth =
+    multiDay && days!.every((day) => day.month === days![0].month && day.year === days![0].year);
+  const spoken = multiDay
+    ? days!
+        .map(
+          (day) =>
+            `${day.weekday} ${day.day} ${day.month}, ${day.moments
+              .map((moment) => `${moment.title} at ${moment.timeLabel}`)
+              .join(", ")}`
+        )
+        .join(". ")
+    : `${weekday} ${displayDate} ${timeLabel}`;
+
   return (
-    <div className="mx-auto w-full max-w-[22rem]">
+    <div className={`mx-auto w-full ${multiDay ? "max-w-[26rem]" : "max-w-[22rem]"}`}>
       <button
         type="button"
         disabled={staticPreview || state === "loading"}
         onClick={() => void saveDate()}
-        aria-label={`${weekday} ${displayDate} ${timeLabel}. ${statusLabel}`}
+        aria-label={`${spoken}. ${statusLabel}`}
         title={staticPreview ? "Preview" : statusLabel}
-        className="group relative mx-auto flex w-full max-w-[22rem] items-stretch justify-center gap-4 py-4 text-center transition-all duration-300 touch-manipulation select-none hover:brightness-[1.02] active:scale-[0.985] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 disabled:opacity-70"
+        className={`group relative mx-auto w-full transition-all duration-300 touch-manipulation select-none hover:brightness-[1.02] active:scale-[0.985] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 disabled:opacity-70 ${
+          multiDay
+            ? "flex flex-col px-1 py-1 text-left"
+            : "flex max-w-[22rem] items-stretch justify-center gap-4 py-4 text-center"
+        }`}
         style={{
           borderTop: `1px solid ${C.border}`,
           borderBottom: `1px solid ${C.border}`,
@@ -204,28 +250,96 @@ function WeddingDateSaveRow({
               : "transparent",
         }}
       >
-        <div
-          className={`flex flex-col justify-center text-right ${T.labelTight} uppercase tracking-[0.2em]`}
-          style={{ color: C.cocoa }}
-        >
-          <span>{weekday}</span>
-        </div>
-        <div
-          className="px-3 font-[family-name:var(--font-cinzel)] text-[clamp(1.15rem,3.2vw,1.4rem)] font-semibold"
-          style={{
-            color: C.ink,
-            borderLeft: `1px solid ${C.border}`,
-            borderRight: `1px solid ${C.border}`,
-          }}
-        >
-          <div className="py-1">{displayDate}</div>
-        </div>
-        <div
-          className="flex min-w-[5.5rem] flex-col justify-center whitespace-nowrap text-left text-[clamp(1.05rem,2.8vw,1.25rem)] font-semibold uppercase tracking-[0.12em]"
-          style={{ color: C.cocoa }}
-        >
-          <span>{timeLabel}</span>
-        </div>
+        {multiDay ? (
+          <>
+            {sharedMonth ? (
+              <p
+                className="py-3 text-center font-[family-name:var(--font-cinzel)] text-[0.72rem] font-semibold uppercase tracking-[0.34em]"
+                style={{ color: C.goldDeep }}
+              >
+                {days![0].month} {days![0].year}
+              </p>
+            ) : null}
+            {days!.map((day, index) => (
+              <div
+                key={day.key}
+                className="px-1 py-3.5"
+                style={{
+                  borderTop: index > 0 || sharedMonth ? `1px solid ${C.border}` : undefined,
+                }}
+              >
+                <div className="flex items-baseline justify-between gap-4">
+                  <span
+                    className="font-[family-name:var(--font-cinzel)] text-[0.68rem] font-semibold uppercase tracking-[0.28em]"
+                    style={{ color: C.cocoa }}
+                  >
+                    {day.weekday}
+                  </span>
+                  <span
+                    className="font-[family-name:var(--font-cinzel)] text-[1.7rem] font-semibold leading-none tracking-[0.04em]"
+                    style={{ color: C.ink }}
+                  >
+                    {day.day}
+                  </span>
+                </div>
+                <ul className="mt-3 space-y-3">
+                  {day.moments.map((moment) => (
+                    <li
+                      key={moment.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5"
+                    >
+                      <span
+                        className="font-[family-name:var(--font-cinzel)] text-[clamp(0.82rem,2.4vw,0.95rem)] font-semibold leading-snug"
+                        style={{ color: C.ink }}
+                      >
+                        {moment.title}
+                      </span>
+                      <span
+                        className="whitespace-nowrap font-[family-name:var(--font-cinzel)] text-[0.78rem] font-semibold tracking-[0.12em]"
+                        style={{ color: C.goldDeep }}
+                      >
+                        {moment.timeLabel}
+                      </span>
+                      {moment.place ? (
+                        <span
+                          className="col-span-2 font-[family-name:var(--font-cormorant)] text-[clamp(0.98rem,2.5vw,1.08rem)] leading-snug"
+                          style={{ color: C.cocoa }}
+                        >
+                          {moment.place}
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            <div
+              className={`flex flex-col justify-center text-right ${T.labelTight} uppercase tracking-[0.2em]`}
+              style={{ color: C.cocoa }}
+            >
+              <span>{weekday}</span>
+            </div>
+            <div
+              className="px-3 font-[family-name:var(--font-cinzel)] text-[clamp(1.15rem,3.2vw,1.4rem)] font-semibold"
+              style={{
+                color: C.ink,
+                borderLeft: `1px solid ${C.border}`,
+                borderRight: `1px solid ${C.border}`,
+              }}
+            >
+              <div className="py-1">{displayDate}</div>
+            </div>
+            <div
+              className="flex min-w-[5.5rem] flex-col justify-center whitespace-nowrap text-left text-[clamp(1.05rem,2.8vw,1.25rem)] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: C.cocoa }}
+            >
+              <span>{timeLabel}</span>
+            </div>
+          </>
+        )}
       </button>
       <p
         className={`mt-2.5 font-[family-name:var(--font-cormorant)] ${T.label} tracking-[0.14em] transition-opacity duration-300`}
@@ -256,18 +370,169 @@ function diffParts(target: number) {
   };
 }
 
+function guestPhoneLinks(
+  phone: string,
+  message: string
+): { telHref: string; whatsAppHref: string } | null {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 9) return null;
+  const e164 = digits.startsWith("233")
+    ? digits
+    : digits.startsWith("0")
+      ? `233${digits.slice(1)}`
+      : digits;
+  return {
+    telHref: `tel:+${e164}`,
+    whatsAppHref: `https://wa.me/${e164}?text=${encodeURIComponent(message)}`,
+  };
+}
+
+function ConfirmContacts({
+  contacts,
+  eventTitle,
+  palette: C,
+  staticPreview,
+  embedded = false,
+}: {
+  contacts: { name: string; phone: string }[];
+  eventTitle: string;
+  palette: FaPalette;
+  staticPreview: boolean;
+  embedded?: boolean;
+}) {
+  const rows = contacts.flatMap((contact) => {
+    const name = contact.name.trim();
+    const links = guestPhoneLinks(
+      contact.phone,
+      `Hello ${name}, I would like to confirm my attendance for ${eventTitle}.`
+    );
+    return name && links ? [{ name, ...links }] : [];
+  });
+  if (!rows.length) return null;
+
+  const action =
+    "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border px-3 font-[family-name:var(--font-cinzel)] text-[0.68rem] uppercase tracking-[0.16em]";
+
+  return (
+    <div className={embedded ? "text-center" : "mx-auto mt-6 max-w-[22rem] text-center"}>
+      {embedded ? null : (
+        <p className={`${T.label} uppercase tracking-[0.28em]`} style={{ color: C.cocoa }}>
+          Kindly confirm with
+        </p>
+      )}
+      <ul className={embedded ? "flex flex-col gap-5" : "mt-4 flex flex-col gap-5"}>
+        {rows.map((row) => {
+          const callLabel = (
+            <>
+              <Phone className="h-3.5 w-3.5" aria-hidden />
+              Call
+            </>
+          );
+          const whatsAppLabel = (
+            <>
+              <WhatsAppIcon title="" className="h-4 w-4" />
+              WhatsApp
+            </>
+          );
+          return (
+            <li key={`${row.name}-${row.telHref}`} className="flex flex-col items-stretch gap-2.5">
+              <span
+                className="font-[family-name:var(--font-cinzel)] text-[0.95rem] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: C.ink }}
+              >
+                {row.name}
+              </span>
+              <div className="flex gap-2">
+                {staticPreview ? (
+                  <span className={action} style={{ color: C.ink, borderColor: C.gold }}>
+                    {callLabel}
+                  </span>
+                ) : (
+                  <a
+                    href={row.telHref}
+                    className={action}
+                    style={{ color: C.ink, borderColor: C.gold, background: C.linen }}
+                    aria-label={`Call ${row.name}`}
+                  >
+                    {callLabel}
+                  </a>
+                )}
+                {staticPreview ? (
+                  <span className={action} style={{ color: C.ink, borderColor: C.gold }}>
+                    {whatsAppLabel}
+                  </span>
+                ) : (
+                  <a
+                    href={row.whatsAppHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={action}
+                    style={{ color: C.ink, borderColor: C.gold, background: C.linen }}
+                    aria-label={`WhatsApp ${row.name}`}
+                  >
+                    {whatsAppLabel}
+                  </a>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function CoupleNameLockup({
+  one,
+  two,
+  palette: C,
+  compact = false,
+}: {
+  one: string;
+  two: string;
+  palette: FaPalette;
+  compact?: boolean;
+}) {
+  const nameStyle = { color: C.ink };
+  return (
+    <>
+      <span className={compact ? T.nameClose : T.name} style={nameStyle}>
+        {one}
+      </span>
+      <span
+        className={`block font-[family-name:var(--font-great-vibes)] leading-none ${compact ? "my-0.5 text-[clamp(1.65rem,4.8vw,2.05rem)]" : "my-1 text-[clamp(2.15rem,6.2vw,2.85rem)]"}`}
+        style={{ color: C.goldDeep }}
+      >
+        and
+      </span>
+      <span className={compact ? T.nameClose : T.name} style={nameStyle}>
+        {two}
+      </span>
+    </>
+  );
+}
+
+function storyParagraphs(body: string): string[] {
+  return body
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.replace(/\s*\n\s*/g, " ").trim())
+    .filter(Boolean);
+}
+
 function WeddingHourglass({
   targetIso,
   name1,
   name2,
   seal,
   displayDate,
+  palette: C,
 }: {
   targetIso: string;
   name1: string;
   name2: string;
   seal: string;
   displayDate: string;
+  palette: FaPalette;
 }) {
   const count = useCountdown(targetIso);
   const engraving = hourglassEngraving({
@@ -282,6 +547,10 @@ function WeddingHourglass({
       monogram={engraving.monogram}
       coupleLine={engraving.coupleLine}
       dateLine={engraving.dateLine}
+      dial="light"
+      ink={C.ink}
+      labelInk={C.cocoa}
+      rule={C.gold}
     />
   );
 }
@@ -559,8 +828,124 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     });
   }, [design.media, props.galleryUrls]);
 
+  const [openMoment, setOpenMoment] = useState<number | null>(null);
+  const [momentPage, setMomentPage] = useState(1);
+  const [momentsPerPage, setMomentsPerPage] = useState(4);
+  useEffect(() => {
+    const tablet = window.matchMedia("(min-width: 640px)");
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const apply = () => {
+      setMomentsPerPage(desktop.matches ? 9 : tablet.matches ? 6 : 4);
+    };
+    apply();
+    tablet.addEventListener("change", apply);
+    desktop.addEventListener("change", apply);
+    return () => {
+      tablet.removeEventListener("change", apply);
+      desktop.removeEventListener("change", apply);
+    };
+  }, []);
+  const momentItems = useMemo(
+    () =>
+      galleryImages.map((item) => ({
+        url: item.url,
+        type: item.video ? ("video" as const) : ("image" as const),
+        caption: item.name?.trim() || null,
+      })),
+    [galleryImages]
+  );
+  const momentPageCount = Math.max(1, Math.ceil(galleryImages.length / momentsPerPage));
+  const safeMomentPage = Math.min(momentPage, momentPageCount);
+  const pagedMoments = galleryImages
+    .map((item, index) => ({ ...item, index }))
+    .slice((safeMomentPage - 1) * momentsPerPage, safeMomentPage * momentsPerPage);
+
+  useEffect(() => {
+    if (openMoment === null || typeof document === "undefined") return;
+    const scroller = document.querySelector<HTMLElement>(".invite-viewport-live");
+    if (!scroller) return;
+    const previous = scroller.style.overflowY;
+    scroller.style.overflowY = "hidden";
+    return () => {
+      scroller.style.overflowY = previous;
+    };
+  }, [openMoment]);
+
   const countdownTarget =
     board.countdownTarget?.trim() || event.startDateRaw || event.startDate;
+
+  const celebrationDays = useMemo(() => {
+    const source = `${event.startDateRaw || ""} ${event.startDate || ""} ${board.displayDate || ""}`;
+    const yearMatch = source.match(/\b(20\d{2})\b/);
+    const year = yearMatch ? Number(yearMatch[1]) : Number.NaN;
+    return celebrationDayGroups(
+      celebrationMomentsFromProgramme(
+        board.programmeItems,
+        year,
+        event.startDateRaw || event.startDate || ""
+      )
+    );
+  }, [board.displayDate, board.programmeItems, event.startDate, event.startDateRaw]);
+
+  const celebrationEvents = useMemo<CalendarEventInput[]>(() => {
+    if (celebrationDays.length < 2) return [];
+    const couple =
+      couple1 && couple2 ? `${couple1} & ${couple2}` : event.title?.trim() || "Wedding celebration";
+    return celebrationDays.flatMap((day) =>
+      day.moments.map((moment) => ({
+        title: `${couple} — ${moment.title}`,
+        startDateRaw: moment.startIso,
+        endDateRaw: moment.endIso,
+        venue: moment.place || undefined,
+        timeZone: /(?:Z|\+00:00)$/.test(moment.startIso) ? "Africa/Accra" : undefined,
+        reminderMinutesBefore: [24 * 60, 60],
+        description: `${moment.weekday} ${moment.day} ${moment.month} ${moment.year} · ${moment.timeLabel}${
+          moment.place ? `\n${moment.place}` : ""
+        }`,
+      }))
+    );
+  }, [celebrationDays, couple1, couple2, event.title]);
+
+  const venueStops = useMemo(() => {
+    const sharedMap = board.mapUrl?.trim() || "";
+    const seen = new Set<string>();
+    return celebrationDays.flatMap((day) =>
+      day.moments.flatMap((moment) => {
+        const item = board.programmeItems.find((entry) => entry.id === moment.id);
+        const mapsUrl = programmeMapUrl(item, moment.place, venueName, sharedMap);
+        if (!mapsUrl || seen.has(mapsUrl)) return [];
+        seen.add(mapsUrl);
+        const address = mapsUrl === sharedMap ? board.venueAddress?.trim() || "" : "";
+        const href = resolveMapsLocationHref({
+          mapsUrl,
+          locationName: moment.place,
+          address,
+        });
+        const base = celebrationEvents.find((entry) => entry.title.endsWith(`— ${moment.title}`));
+        const placeLine = calendarEventLocation(moment.place, address);
+        const event: CalendarEventInput = {
+          title: base?.title || moment.title,
+          startDateRaw: base?.startDateRaw || moment.startIso,
+          endDateRaw: base?.endDateRaw || moment.endIso,
+          timeZone: base?.timeZone,
+          reminderMinutesBefore: base?.reminderMinutesBefore ?? [24 * 60, 60],
+          venue: placeLine || undefined,
+          description: [base?.description, href].filter(Boolean).join("\n"),
+        };
+        return [
+          {
+            id: moment.id,
+            when: `${moment.weekday} ${moment.day} ${moment.month} · ${moment.timeLabel}`,
+            title: moment.title,
+            place: moment.place,
+            address,
+            mapsUrl: href || mapsUrl,
+            event,
+          },
+        ];
+      })
+    );
+  }, [board.mapUrl, board.programmeItems, board.venueAddress, celebrationDays, celebrationEvents, venueName]);
 
   const calendarEvent = useMemo<CalendarEventInput>(
     () => ({
@@ -634,16 +1019,8 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           </p>
         )}
 
-        <h1 className="mt-6 space-y-2">
-          <span className={`${T.name} text-balance`} style={{ color: C.ink }}>
-            {couple1}
-          </span>
-          <span className={`block ${T.script}`} style={{ color: C.goldDeep }}>
-            and
-          </span>
-          <span className={`${T.name} text-balance`} style={{ color: C.ink }}>
-            {couple2}
-          </span>
+        <h1 className="mx-auto mt-8 w-full">
+          <CoupleNameLockup one={couple1} two={couple2} palette={C} />
         </h1>
 
         <p
@@ -685,6 +1062,8 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             timeLabel={timeLabel}
             palette={C}
             calendarEvent={calendarEvent}
+            calendarEvents={celebrationEvents}
+            days={celebrationDays}
             staticPreview={staticPreview}
           />
         ) : (
@@ -727,6 +1106,19 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         ) : null}
 
         {features.location ? (
+          venueStops.length >= 2 ? (
+            <div className="mt-7 grid grid-cols-1 gap-8 text-center md:grid-cols-2 md:items-start md:gap-6">
+              {venueStops.map((stop) => (
+                <VenueMapCard
+                  key={stop.id}
+                  stop={stop}
+                  palette={C}
+                  buttonLabel={board.mapButtonLabel}
+                  staticPreview={staticPreview}
+                />
+              ))}
+            </div>
+          ) : (
           <div className="mt-7 text-center">
             <VenueSketch palette={C} />
             <p
@@ -759,13 +1151,17 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
               </Link>
             )}
           </div>
+          )
         ) : null}
 
-        {board.receptionText && (
+        {board.receptionText &&
+        !celebrationDays.some((day) =>
+          day.moments.some((moment) => /reception/i.test(moment.title))
+        ) ? (
           <p className={`mt-5 ${T.scriptSm}`} style={{ color: C.goldDeep }}>
             {board.receptionText}
           </p>
-        )}
+        ) : null}
         {board.accessNote && (
           <p
             className={`mx-auto mt-4 w-fit max-w-full rounded-full border px-4 py-2 ${T.labelTight} font-semibold uppercase leading-relaxed tracking-[0.2em]`}
@@ -784,7 +1180,11 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     countdown: features.countdown ? (
       <Reveal as="section">
-        {(design.experience?.countdownStyle as string | undefined) === "hourglass" ? (
+        {weddingBoardUsesHourglass(
+          design.experience?.countdownStyle as string | undefined,
+          board.coupleName1,
+          board.coupleName2
+        ) ? (
           <div className="text-center">
             <p className={T.scriptSm} style={{ color: C.goldDeep }}>
               {board.countdownHeading}
@@ -796,6 +1196,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                 name2={board.coupleName2}
                 seal={board.sealMonogram}
                 displayDate={board.displayDate}
+                palette={C}
               />
             </div>
           </div>
@@ -861,7 +1262,14 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                   style={{ background: C.gold, boxShadow: `0 0 0 3px ${C.ivory}, 0 0 10px ${C.goldSoft}` }}
                 />
                 {item.time ? (
-                  <p className={T.programmeTime} style={{ color: C.gold }}>
+                  <p
+                    className={T.programmeTime}
+                    style={{
+                      color: C.ink,
+                      background: `color-mix(in srgb, ${C.gold} 28%, ${C.linen})`,
+                      boxShadow: `inset 0 0 0 1px ${C.gold}`,
+                    }}
+                  >
                     {item.time}
                   </p>
                 ) : null}
@@ -869,9 +1277,12 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                   {item.title}
                 </p>
                 {item.description && (
-                  <p className={T.programmeDesc} style={{ color: C.cocoa }}>
-                    {item.description}
-                  </p>
+                  <ProgrammeNote
+                    id={item.id}
+                    title={item.title}
+                    description={item.description}
+                    palette={C}
+                  />
                 )}
               </li>
             ))}
@@ -929,28 +1340,20 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           }
           initialRsvpStatus={props.initialRsvpStatus}
           initialAttendingCount={props.initialAttendingCount}
-          organizerPhone={organizerPhone}
-          organizerEmail={organizerEmail}
+          organizerPhone={board.rsvpContacts.length ? null : organizerPhone}
+          organizerEmail={board.rsvpContacts.length ? null : organizerEmail}
+          reachHosts={
+            board.rsvpContacts.length ? (
+              <ConfirmContacts
+                embedded
+                contacts={board.rsvpContacts}
+                eventTitle={event.title}
+                palette={C}
+                staticPreview={staticPreview}
+              />
+            ) : undefined
+          }
         />
-        {board.rsvpContacts.length > 0 && (
-          <div className="mt-5 text-center">
-            <p className={`${T.label} uppercase tracking-[0.28em]`} style={{ color: C.cocoa }}>
-              Kindly confirm with
-            </p>
-            <div className="mt-2 flex flex-col items-center gap-1">
-              {board.rsvpContacts.map((c) => (
-                <a
-                  key={`${c.name}-${c.phone}`}
-                  href={`tel:${c.phone.replace(/\s/g, "")}`}
-                  className={`font-[family-name:var(--font-cormorant)] ${T.body} uppercase tracking-[0.08em] hover:opacity-80`}
-                  style={{ color: C.ink }}
-                >
-                  {c.name}, {c.phone}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
       </Reveal>
     ) : null,
 
@@ -960,12 +1363,17 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <h2 className={T.scriptSm} style={{ color: C.goldDeep }}>
             {board.storyHeading}
           </h2>
-          <p
-            className={`mx-auto mt-4 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.bodyLg} italic leading-relaxed`}
-            style={{ color: C.cocoa }}
-          >
-            {board.storyBody}
-          </p>
+          <div className="mx-auto mt-6 flex max-w-[32rem] flex-col gap-5 text-left">
+            {storyParagraphs(board.storyBody).map((paragraph) => (
+              <p
+                key={paragraph}
+                className="font-[family-name:var(--font-cormorant)] text-[clamp(1.32rem,3.7vw,1.55rem)] font-medium italic leading-[1.78] tracking-[0.008em]"
+                style={{ color: C.ink }}
+              >
+                {paragraph}
+              </p>
+            ))}
+          </div>
         </Reveal>
       ) : null,
 
@@ -975,36 +1383,75 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <h2 className={`text-center ${T.scriptSm}`} style={{ color: C.goldDeep }}>
             {board.galleryHeading}
           </h2>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            {galleryImages.map((m, i) => (
-              <div
-                key={`${m.url}-${i}`}
-                className="relative overflow-hidden rounded-lg"
-                style={{ aspectRatio: "3 / 4", border: `1px solid ${C.border}` }}
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:gap-4">
+            {pagedMoments.map((m) => (
+              <button
+                key={`${m.url}-${m.index}`}
+                type="button"
+                className="relative block w-full overflow-hidden rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                style={{ aspectRatio: "3 / 4", border: `1px solid ${C.border}`, outlineColor: C.gold }}
+                aria-label={`View ${m.name || "wedding moment"} full screen`}
+                onClick={() => setOpenMoment(m.index)}
               >
                 {m.video ? (
                   <video
                     src={m.url}
-                    controls
                     playsInline
+                    muted
                     preload="metadata"
-                    aria-label={m.name || "Wedding film"}
+                    aria-hidden
                     className="absolute inset-0 h-full w-full object-cover"
                   />
                 ) : (
                   <Image
                     src={m.url}
-                    alt={m.name || "Wedding moment"}
+                    alt=""
                     fill
                     loading="lazy"
-                    sizes="(max-width: 640px) 45vw, 280px"
+                    sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 280px"
                     className="object-cover"
                     unoptimized={shouldUnoptimizeNextImage(m.url)}
                   />
                 )}
-              </div>
+              </button>
             ))}
           </div>
+          {momentPageCount > 1 ? (
+            <div className="mt-5 flex items-center justify-center gap-4">
+              <button
+                type="button"
+                disabled={safeMomentPage <= 1}
+                onClick={() => setMomentPage((current) => Math.max(1, current - 1))}
+                className={`${T.cta} disabled:opacity-35`}
+                style={{ color: C.ink }}
+              >
+                Previous
+              </button>
+              <span className={T.labelTight} style={{ color: C.cocoa }}>
+                {safeMomentPage} / {momentPageCount}
+              </span>
+              <button
+                type="button"
+                disabled={safeMomentPage >= momentPageCount}
+                onClick={() => setMomentPage((current) => Math.min(momentPageCount, current + 1))}
+                className={`${T.cta} disabled:opacity-35`}
+                style={{ color: C.ink }}
+              >
+                Next
+              </button>
+            </div>
+          ) : null}
+          {openMoment !== null && typeof document !== "undefined"
+            ? createPortal(
+                <InvitationMediaLightbox
+                  items={momentItems}
+                  initialIndex={openMoment}
+                  onClose={() => setOpenMoment(null)}
+                  closeLabel="Close"
+                />,
+                document.body
+              )
+            : null}
         </Reveal>
       ) : null,
 
@@ -1068,11 +1515,15 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         >
           {board.closingMessage}
         </p>
-        {board.closingSignature && (
+        {board.closingSignature && couple1 && couple2 ? (
+          <p className="mx-auto mt-8 w-full" aria-label={board.closingSignature}>
+            <CoupleNameLockup one={couple1} two={couple2} palette={C} />
+          </p>
+        ) : board.closingSignature ? (
           <p className={`mt-4 ${T.scriptSm}`} style={{ color: C.ink }}>
             {board.closingSignature}
           </p>
-        )}
+        ) : null}
         {board.hashtag && (
           <p
             className={`mt-4 font-[family-name:var(--font-cinzel)] ${T.label} font-bold tracking-[0.2em]`}
@@ -1097,7 +1548,11 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
   const visible = board.sectionOrder
     .map((id) => ({ id, node: scenes[id] }))
-    .filter((entry): entry is { id: WeddingSectionId; node: React.ReactNode } => Boolean(entry.node));
+    .filter((entry): entry is { id: WeddingSectionId; node: React.ReactNode } => {
+      if (!entry.node) return false;
+      if (props.placeCard && entry.id === "greeting") return false;
+      return true;
+    });
 
   return (
     <div
@@ -1108,7 +1563,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       }}
     >
       <PageFlora palette={C} />
-      <div className="relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[560px] sm:px-7 sm:pt-10 md:max-w-[640px] lg:max-w-[720px]">
+      <div className="relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[640px] sm:px-8 sm:pt-10 md:max-w-[800px] md:px-10 lg:max-w-[960px] lg:pt-14">
         {visible.map((entry, i) => (
           <div key={entry.id} className="min-w-0">
             {i > 0 && <Divider palette={C} />}
@@ -1123,6 +1578,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                   design={design}
                   className="mt-8 px-0"
                 />
+                {scenes.greeting ? <div className="mt-8">{scenes.greeting}</div> : null}
               </ClientErrorBoundary>
             )}
           </div>
@@ -1202,6 +1658,106 @@ function HeroPortrait({
   );
 }
 
+/** A blank line between a dish and the next section is collapsed to one space upstream. */
+function peelSectionLabel(line: string): string[] {
+  const match = line.match(/^(.*\S)\s+([A-Z][A-Z &/-]{2,20})$/);
+  if (!match) return [line];
+  const [, dish, label] = match;
+  if (!dish || dish === dish.toUpperCase()) return [line];
+  return [dish, label];
+}
+
+function isLongProgrammeNote(description: string): boolean {
+  const lines = description.split("\n").map((line) => line.trim()).filter(Boolean);
+  return description.length > 140 || lines.length > 3;
+}
+
+function ProgrammeNote({
+  id,
+  title,
+  description,
+  palette: C,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  palette: FaPalette;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!isLongProgrammeNote(description)) {
+    return (
+      <p
+        className={`${T.programmeDesc} inline-block max-w-full rounded-md px-2.5 py-1 font-semibold`}
+        data-programme-place=""
+        style={{
+          color: C.ink,
+          background: `color-mix(in srgb, ${C.gold} 46%, white)`,
+          boxShadow: `inset 0 0 0 1.5px ${C.goldDeep}`,
+        }}
+      >
+        {description}
+      </p>
+    );
+  }
+
+  const menu = /menu/i.test(title);
+  const panelId = `programme-note-${id}`;
+  const lines = description
+    .split("\n")
+    .flatMap((line) => peelSectionLabel(line.trim()))
+    .filter(Boolean)
+    .map((text) => ({
+      text,
+      heading: text === text.toUpperCase() && /[A-Z]/.test(text) && text.length < 24,
+    }));
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-[family-name:var(--font-cinzel)] text-[0.72rem] uppercase tracking-[0.16em]"
+        style={{ color: C.ink, background: `${C.linen}ee`, border: `1px solid ${C.border}` }}
+      >
+        {open ? (menu ? "Hide the menu" : "Hide details") : menu ? "View the menu" : "View details"}
+        <span
+          aria-hidden
+          className="inline-block h-1.5 w-1.5 border-b border-r"
+          style={{
+            borderColor: C.goldDeep,
+            transform: open ? "rotate(-135deg) translateY(1px)" : "rotate(45deg) translateY(-1px)",
+          }}
+        />
+      </button>
+      {open ? (
+        <div id={panelId} className="mt-3 space-y-1">
+          {lines.map((line, index) =>
+            line.heading ? (
+              <p
+                key={`${line.text}-${index}`}
+                className={`${index === 0 ? "" : "pt-2"} font-[family-name:var(--font-cinzel)] text-[0.72rem] uppercase tracking-[0.18em]`}
+                style={{ color: C.goldDeep }}
+              >
+                {line.text}
+              </p>
+            ) : (
+              <p
+                key={`${line.text}-${index}`}
+                className="font-[family-name:var(--font-cormorant)] text-[clamp(0.98rem,2.4vw,1.125rem)] leading-snug"
+                style={{ color: C.cocoa }}
+              >
+                {line.text}
+              </p>
+            )
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function DressCard({
   label,
   body,
@@ -1226,6 +1782,118 @@ function DressCard({
         {body}
       </p>
     </div>
+  );
+}
+
+function VenueMapCard({
+  stop,
+  palette: C,
+  buttonLabel,
+  staticPreview,
+}: {
+  stop: {
+    when: string;
+    title: string;
+    place: string;
+    address: string;
+    mapsUrl: string;
+    event: CalendarEventInput;
+  };
+  palette: FaPalette;
+  buttonLabel: string;
+  staticPreview: boolean;
+}) {
+  const embedUrl = toMapsEmbedUrl(stop.mapsUrl, stop.place);
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [calendarApp, setCalendarApp] = useState("your calendar");
+
+  useEffect(() => {
+    const platform = detectCalendarPlatform();
+    setCalendarApp(
+      platform === "apple" ? "Apple Calendar" : platform === "google" ? "Google Calendar" : "Outlook Calendar"
+    );
+  }, []);
+
+  async function saveReminder() {
+    if (staticPreview || state === "loading") return;
+    setState("loading");
+    const result = await setSmartCalendarReminder(stop.event);
+    setState(result.success ? "done" : "error");
+    if (result.success) window.setTimeout(() => setState("idle"), 3600);
+  }
+
+  const reminderLabel =
+    state === "loading"
+      ? "Saving reminder…"
+      : state === "done"
+        ? "Saved to your calendar"
+        : state === "error"
+          ? "Couldn’t save — tap to try again"
+          : `Tap to add this celebration to ${calendarApp}`;
+
+  return (
+    <article className="mx-auto w-full max-w-[26rem]">
+      <p className={`${T.labelTight} uppercase tracking-[0.22em]`} style={{ color: C.goldDeep }}>
+        {stop.when}
+      </p>
+      <h3
+        className="mt-2 font-[family-name:var(--font-cinzel)] text-[clamp(0.95rem,2.5vw,1.15rem)] tracking-[0.12em]"
+        style={{ color: C.ink }}
+      >
+        {stop.title}
+      </h3>
+      <p className={`mt-2 font-[family-name:var(--font-cormorant)] ${T.body}`} style={{ color: C.ink }}>
+        {stop.place}
+      </p>
+      {stop.address ? (
+        <p className={`font-[family-name:var(--font-cormorant)] ${T.body}`} style={{ color: C.cocoa }}>
+          {stop.address}
+        </p>
+      ) : null}
+      {embedUrl ? (
+        <div
+          className="mx-auto mt-4 overflow-hidden"
+          style={{
+            borderRadius: 18,
+            border: `1px solid ${C.border}`,
+            boxShadow: `0 16px 32px -24px ${C.ink}`,
+          }}
+        >
+          <iframe
+            title={`Map of ${stop.place}`}
+            src={embedUrl}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="h-44 w-full bg-[#FBF6EF]"
+          />
+        </div>
+      ) : null}
+      {!staticPreview && stop.mapsUrl ? (
+        <Link
+          href={stop.mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 ${T.cta} transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
+          style={{
+            color: C.ink,
+            background: `linear-gradient(135deg, ${C.goldSoft}, ${C.gold})`,
+            boxShadow: `0 12px 26px -14px ${C.goldDeep}`,
+          }}
+        >
+          {buttonLabel}
+        </Link>
+      ) : null}
+      {!staticPreview && stop.event.startDateRaw ? (
+        <button
+          type="button"
+          onClick={saveReminder}
+          className={`mx-auto mt-3 block max-w-[20rem] ${T.labelTight} leading-relaxed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
+          style={{ color: C.cocoa }}
+        >
+          {reminderLabel}
+        </button>
+      ) : null}
+    </article>
   );
 }
 

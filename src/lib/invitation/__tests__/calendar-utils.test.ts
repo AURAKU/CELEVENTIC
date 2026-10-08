@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildGoogleCalendarUrl,
+  buildIcsCalendar,
   buildIcsContent,
   calendarEventLocation,
   defaultReminderMinutes,
@@ -9,6 +10,7 @@ import {
   toGoogleCalendarDates,
   toMapsEmbedUrl,
 } from "@/lib/invitation/calendar-utils";
+import { calendarBundleForEvents } from "@/lib/invitation/smart-calendar";
 
 describe("calendar reminders", () => {
   const event = {
@@ -101,6 +103,68 @@ describe("calendar reminders", () => {
     assert.match(google, /ctz=Africa%2FAccra/);
     assert.match(google, /Westville/);
     assert.match(google, /Onyasia/);
+  });
+});
+
+describe("celebration calendar bundle", () => {
+  const events = [
+    {
+      title: "Edwin & Lordina — Traditional Ceremony",
+      startDateRaw: "2026-12-24T09:00:00.000Z",
+      endDateRaw: "2026-12-24T12:00:00.000Z",
+      venue: "Bride’s house, Tema Community 12",
+      timeZone: "Africa/Accra",
+      reminderMinutesBefore: [1440, 60],
+      description: "Thursday 24 December 2026 · 9:00 AM",
+    },
+    {
+      title: "Edwin & Lordina — White Wedding",
+      startDateRaw: "2026-12-26T09:00:00.000Z",
+      endDateRaw: "2026-12-26T16:00:00.000Z",
+      venue: "Assemblies of God Tema Community 12 TCC",
+      timeZone: "Africa/Accra",
+      reminderMinutesBefore: [1440, 60],
+    },
+    {
+      title: "Edwin & Lordina — Reception",
+      startDateRaw: "2026-12-26T16:00:00.000Z",
+      endDateRaw: "2026-12-26T21:00:00.000Z",
+      venue: "Combos & Casa, East Legon Hills",
+      timeZone: "Africa/Accra",
+      reminderMinutesBefore: [1440, 60],
+    },
+  ];
+
+  it("hands Apple one file containing every celebration and both reminders", () => {
+    const bundle = calendarBundleForEvents(events, "apple");
+    assert.equal(bundle.useFile, true);
+    const ics = buildIcsCalendar(events);
+    assert.equal(ics.match(/BEGIN:VEVENT/g)?.length, 3);
+    assert.match(ics, /Traditional Ceremony/);
+    assert.match(ics, /White Wedding/);
+    assert.match(ics, /Reception/);
+    assert.match(ics, /Bride/);
+    assert.match(ics, /Combos/);
+    assert.match(ics, /TRIGGER:-PT1440M/);
+    assert.match(ics, /TRIGGER:-PT60M/);
+  });
+
+  it("opens a Google page for each celebration on Android and desktop Chrome", () => {
+    const bundle = calendarBundleForEvents(events, "google");
+    assert.equal(bundle.useFile, false);
+    assert.equal(bundle.urls.length, 3);
+    assert.match(bundle.urls[0] ?? "", /calendar\.google\.com/);
+    assert.match(bundle.urls[0] ?? "", /dates=20261224T090000Z/);
+    assert.match(bundle.urls[0] ?? "", /ctz=Africa%2FAccra/);
+    assert.match(bundle.urls[2] ?? "", /dates=20261226T160000Z/);
+    assert.match(bundle.urls[2] ?? "", /Combos/);
+  });
+
+  it("opens an Outlook page for each celebration on Windows", () => {
+    const bundle = calendarBundleForEvents(events, "outlook");
+    assert.equal(bundle.urls.length, 3);
+    assert.match(bundle.urls[1] ?? "", /outlook\.live\.com/);
+    assert.match(bundle.urls[1] ?? "", /startdt=2026-12-26T09/);
   });
 });
 

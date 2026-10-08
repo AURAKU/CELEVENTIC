@@ -229,10 +229,7 @@ function CoupleLockup({ name1, name2 }: { name1: string; name2: string }) {
     <div className={formal ? `${styles.names} ${styles.namesFormal}` : styles.names}>
       <p className={styles.coupleLine}>
         {first ? (
-          <span className={styles.formalName}>
-            <span className={styles.givenNames}>{first.given}</span>
-            <span className={styles.surname}>{first.surname}</span>
-          </span>
+          <span className={styles.fullName}>{name1}</span>
         ) : (
           <span className={styles.coupleName}>{name1}</span>
         )}
@@ -246,26 +243,12 @@ function CoupleLockup({ name1, name2 }: { name1: string; name2: string }) {
           <span className={styles.inlineAmp}>&amp;</span>
         )}
         {second ? (
-          <span className={styles.formalName}>
-            <span className={styles.givenNames}>{second.given}</span>
-            <span className={styles.surname}>{second.surname}</span>
-          </span>
+          <span className={styles.fullName}>{name2}</span>
         ) : (
           <span className={styles.coupleName}>{name2}</span>
         )}
       </p>
     </div>
-  );
-}
-
-/** Minimal ripple glyph, reads as "tap here" without a generic stock hand/cursor icon. */
-function TapGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="3.1" fill="currentColor" />
-      <circle cx="12" cy="12" r="7.4" stroke="currentColor" strokeWidth="1.3" opacity="0.55" />
-      <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="1.1" opacity="0.28" />
-    </svg>
   );
 }
 
@@ -615,18 +598,15 @@ export function TapToBeginExperience({
           {hideCtaChip || layoutSlug === "luxury-fashion-flagship" ? (
             <span className={styles.fashionHint}>{ctaText}</span>
           ) : (
-            <span className={styles.ctaChip}>
-              <span className={styles.ctaTapMark} aria-hidden>
-                <TapGlyph />
+            <>
+              <span className={styles.seal} aria-hidden>
+                <span className={styles.sealRing}>
+                  <span className={styles.sealWord}>Open</span>
+                </span>
               </span>
               <span className={styles.ctaWord}>{ctaText}</span>
-            </span>
+            </>
           )}
-          {!staticPreview ? (
-            <span className={styles.ctaHint} aria-hidden>
-              or press Enter
-            </span>
-          ) : null}
         </div>
       </div>
     </>

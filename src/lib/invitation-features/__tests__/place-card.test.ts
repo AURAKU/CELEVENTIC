@@ -6,6 +6,7 @@ import {
   formatAllowanceCopy,
   formatPlaceCardMonogram,
   inferRecipientType,
+  isHostIdentityName,
   PLACE_CARD_DEFAULTS,
   PLACE_CARD_PRESETS,
   resolvePlaceCardConfig,
@@ -75,6 +76,44 @@ test("multiple event guests are never joined into one place-card recipient", () 
 
 test("a sole guest remains the safe fallback when no token or pass name exists", () => {
   assert.equal(resolvePlaceCardGuestName({ guestNames: ["Mabel Wiah"] }), "Mabel Wiah");
+});
+
+test("the general ceremony link does not address the couple as the guest", () => {
+  const hosts = ["Edwin & Lordina", "Edwin & Lordina"];
+  assert.equal(isHostIdentityName("Edwin & Lordina", hosts), true);
+  assert.equal(isHostIdentityName("Edwin and Lordina", hosts), true);
+  assert.equal(isHostIdentityName("Ama Serwaa", hosts), false);
+  assert.equal(
+    resolvePlaceCardGuestName({
+      passDisplayName: "Edwin & Lordina",
+      guestNames: [],
+      hostLabels: hosts,
+    }),
+    null
+  );
+  assert.equal(
+    resolveRecipientLine(
+      config(),
+      recipient({
+        guestName: null,
+        invitationName: "Edwin & Lordina",
+        assigned: false,
+      })
+    ),
+    "Invited Guest"
+  );
+});
+
+test("a personal guest token still wins on the general ceremony link", () => {
+  assert.equal(
+    resolvePlaceCardGuestName({
+      tokenGuest: "Ama Serwaa",
+      passDisplayName: "Edwin & Lordina",
+      guestNames: [],
+      hostLabels: ["Edwin & Lordina"],
+    }),
+    "Ama Serwaa"
+  );
 });
 
 /* ── config resolution ─────────────────────────────────────────────────── */
@@ -408,6 +447,27 @@ test("a template with its own adapter still inherits its own palette", () => {
   assert.equal(tokens.primary, "#1A1408");
   assert.equal(tokens.motion, "full");
   assert.equal(tokens.radius, "1.25rem");
+  assert.equal(tokens.background, "transparent");
+  assert.equal(tokens.surface, "#FBF8F1");
+});
+
+test("forever afaris place cards stay on ivory paper when the stored background is a gold gradient", () => {
+  const design = {
+    layout: "forever-afaris-wedding",
+    colors: {
+      primary: "#3A2A2E",
+      secondary: "#C7A35A",
+      accent: "#D99A93",
+      background: "linear-gradient(145deg, rgb(212, 175, 55), rgb(139, 105, 20))",
+      text: "#3A2A2E",
+    },
+  } as unknown as InvitationDesignConfig;
+
+  const tokens = getTemplateFeatureAdapter(design.layout).themeTokens(design);
+  assert.equal(tokens.background, "transparent");
+  assert.equal(tokens.surface, "#FFFDFA");
+  assert.equal(tokens.border, "#C7A35A");
+  assert.equal(tokens.surface.includes("gradient"), false);
 });
 
 test("luxury fashion place cards sit on ivory paper and hide general-admission capacity", () => {

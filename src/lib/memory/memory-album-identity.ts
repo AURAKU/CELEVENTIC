@@ -58,10 +58,26 @@ export function resolveMemoryAlbumIdentity(input: {
     };
   }
 
+  const sameParty =
+    hostName.length > 0 &&
+    hostName.localeCompare(eventTitle, undefined, { sensitivity: "accent" }) === 0;
+
+  if (layout === "forever-afaris-wedding") {
+    return {
+      title: eventTitle,
+      eyebrow: "The Album",
+      subtitle: hostName && !sameParty ? `Hosted by ${hostName}` : null,
+      layout,
+      lede: "Photographs and films from the celebration, gathered in one place.",
+      logoUrl: null,
+      monogram: null,
+    };
+  }
+
   return {
     title: eventTitle,
     eyebrow: "Event memories",
-    subtitle: hostName ? `Hosted by ${hostName}` : null,
+    subtitle: hostName && !sameParty ? `Hosted by ${hostName}` : null,
     layout,
     lede: null,
     logoUrl: null,

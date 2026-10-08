@@ -92,6 +92,18 @@ function formatWishTime(iso: string): string {
   }
 }
 
+function formatWishSignature(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(iso));
+  } catch {
+    return "";
+  }
+}
+
 function aureliaWishTokenStyle(layout?: string | null): CSSProperties {
   return aureliaTokenStyle(aureliaFamilyDefaults(layout).theme) as CSSProperties;
 }
@@ -134,6 +146,10 @@ export function GuestWishesCard({
   const memorial = tone === "memorial";
   const fashion = !memorial && layout === LUXURY_FASHION_LAYOUT_SLUG;
   const aurelia = !memorial && !fashion && isAureliaEditorialLayout(layout);
+  const wedding = !memorial && !fashion && !aurelia && layout === "forever-afaris-wedding";
+  const wishInk = colors?.text || colors?.primary || "#1B365D";
+  const wishGold = colors?.secondary || colors?.accent || "#C7A35A";
+  const wishPaper = colors?.background || "#FBF6EF";
   const resolvedHouseName = houseName ?? fashionHouse?.houseName ?? null;
   const houseLogoSrc = fashion
     ? fashionHouseLogoSrc({
@@ -505,7 +521,12 @@ export function GuestWishesCard({
     ? `h-11 ${cb.field}`
     : dark
       ? "bg-white/10 border-white/20 text-white placeholder:text-white/45 font-[family-name:var(--font-sans)] text-base"
-      : "bg-white/95 border-rose-200/70 text-slate-800 placeholder:text-slate-400 font-[family-name:var(--font-sans)] text-base shadow-sm";
+      : wedding
+        ? "h-12 rounded-xl border bg-[#FFFDFA] px-4 font-[family-name:var(--font-cormorant)] text-[1.125rem] leading-normal shadow-none placeholder:text-[#1B365D]/55 focus-visible:ring-[#C7A35A]/30"
+        : "bg-white/95 border-rose-200/70 text-slate-800 placeholder:text-slate-400 font-[family-name:var(--font-sans)] text-base shadow-sm";
+  const weddingFieldStyle: CSSProperties | undefined = wedding
+    ? { borderColor: wishGold, color: wishInk, backgroundColor: "#FFFDFA" }
+    : undefined;
 
   if (memorial) {
     return (
@@ -1153,12 +1174,23 @@ export function GuestWishesCard({
 
   return (
     <div
-      className={`inv-3d-scene rounded-2xl border p-5 sm:p-6 shadow-lg ${
+      className={`inv-3d-scene rounded-2xl border p-5 sm:p-6 ${
         dark
-          ? "border-white/15 bg-black/35 backdrop-blur-xl"
-          : "border-rose-200/60 bg-gradient-to-br from-rose-50 via-white to-rose-50/40"
+          ? "border-white/15 bg-black/35 backdrop-blur-xl shadow-lg"
+          : wedding
+            ? "bg-[#FBF6EF] shadow-[0_18px_44px_-30px_rgba(27,54,93,0.55)]"
+            : "border-rose-200/60 bg-gradient-to-br from-rose-50 via-white to-rose-50/40 shadow-lg"
       }`}
-      style={{ ["--wish-accent" as string]: accentColor }}
+      style={
+        wedding
+          ? {
+              ["--wish-accent" as string]: wishGold,
+              backgroundColor: wishPaper,
+              borderColor: wishGold,
+              color: wishInk,
+            }
+          : { ["--wish-accent" as string]: accentColor }
+      }
     >
       {!hideHeader && (
         <>
@@ -1166,25 +1198,35 @@ export function GuestWishesCard({
             <div className="flex items-center gap-2.5 min-w-0">
               <span
                 className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                  dark ? "bg-white/10" : "bg-rose-100/80"
+                  dark ? "bg-white/10" : wedding ? "" : "bg-rose-100/80"
                 }`}
-                style={{ color: accentColor }}
+                style={{ color: wedding ? wishGold : accentColor, backgroundColor: wedding ? `${wishGold}22` : undefined }}
               >
                 <Heart className="h-4 w-4" fill="currentColor" fillOpacity={0.2} />
               </span>
               <h3
-                className={`font-[family-name:var(--font-cormorant)] text-2xl sm:text-[1.65rem] font-semibold tracking-tight leading-none ${
-                  dark ? "text-white" : "text-slate-900"
-                }`}
+                className={
+                  wedding
+                    ? "font-[family-name:var(--font-cinzel)] text-[clamp(1.65rem,5vw,2rem)] font-semibold leading-none tracking-[0.04em]"
+                    : `font-[family-name:var(--font-cormorant)] text-2xl sm:text-[1.65rem] font-semibold tracking-tight leading-none ${
+                        dark ? "text-white" : "text-slate-900"
+                      }`
+                }
+                style={wedding ? { color: wishInk } : undefined}
               >
                 {copy.title}
               </h3>
             </div>
             {total > 0 && (
               <span
-                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide font-[family-name:var(--font-sans)] ${
-                  dark ? "bg-white/10 text-white/70" : "bg-rose-100/70 text-rose-800/80"
+                className={`shrink-0 font-[family-name:var(--font-cinzel)] uppercase ${
+                  wedding
+                    ? "border-b pb-1 text-[0.68rem] font-semibold tracking-[0.22em]"
+                    : `rounded-full px-2.5 py-1 text-[0.75rem] font-medium tracking-[0.08em] ${
+                        dark ? "bg-white/10 text-white/70" : "bg-rose-100/70 text-rose-800/80"
+                      }`
                 }`}
+                style={wedding ? { color: wishGold, borderColor: wishGold } : undefined}
               >
                 {total} {total === 1 ? copy.nounOne : copy.nounMany}
               </span>
@@ -1192,9 +1234,14 @@ export function GuestWishesCard({
           </div>
 
           <p
-            className={`mt-3 mb-5 text-[15px] leading-relaxed font-[family-name:var(--font-sans)] ${
-              dark ? "text-white/75" : "text-slate-600"
-            }`}
+            className={
+              wedding
+                ? "mt-4 mb-6 font-[family-name:var(--font-cormorant)] text-[clamp(1.2rem,3.2vw,1.38rem)] font-medium italic leading-[1.65]"
+                : `mt-3 mb-5 text-[15px] leading-relaxed font-[family-name:var(--font-sans)] ${
+                    dark ? "text-white/75" : "text-slate-600"
+                  }`
+            }
+            style={wedding ? { color: wishInk } : undefined}
           >
             {copy.lead}
             {canModerate ? copy.leadModerator : copy.leadGuest}
@@ -1215,9 +1262,14 @@ export function GuestWishesCard({
         <div className="space-y-1.5">
           <label
             htmlFor="guest-wish-name"
-            className={`block text-xs font-semibold uppercase tracking-[0.14em] font-[family-name:var(--font-sans)] ${
-              dark ? "text-white/55" : "text-slate-500"
+            className={`block font-semibold uppercase ${
+              wedding
+                ? "font-[family-name:var(--font-cinzel)] text-[0.78rem] tracking-[0.18em]"
+                : `text-xs tracking-[0.14em] font-[family-name:var(--font-sans)] ${
+                    dark ? "text-white/55" : "text-slate-500"
+                  }`
             }`}
+            style={wedding ? { color: wishInk } : undefined}
           >
             Your name
           </label>
@@ -1229,14 +1281,20 @@ export function GuestWishesCard({
             required
             maxLength={80}
             className={`h-11 ${fieldClass}`}
+            style={weddingFieldStyle}
           />
         </div>
         <div className="space-y-1.5">
           <label
             htmlFor="guest-wish-message"
-            className={`block text-xs font-semibold uppercase tracking-[0.14em] font-[family-name:var(--font-sans)] ${
-              dark ? "text-white/55" : "text-slate-500"
+            className={`block font-semibold uppercase ${
+              wedding
+                ? "font-[family-name:var(--font-cinzel)] text-[0.78rem] tracking-[0.18em]"
+                : `text-xs tracking-[0.14em] font-[family-name:var(--font-sans)] ${
+                    dark ? "text-white/55" : "text-slate-500"
+                  }`
             }`}
+            style={wedding ? { color: wishInk } : undefined}
           >
             {copy.messageLabel}
           </label>
@@ -1248,20 +1306,29 @@ export function GuestWishesCard({
             required
             rows={3}
             maxLength={1000}
-            className={`min-h-[96px] resize-y ${fieldClass}`}
+            className={`min-h-[96px] resize-y ${fieldClass}${wedding ? " italic" : ""}`}
+            style={weddingFieldStyle}
           />
         </div>
         {error && (
           <p className="text-sm font-[family-name:var(--font-sans)] text-red-500">{error}</p>
         )}
-        {success && (
+        {success && !wedding && (
           <p className="text-sm font-[family-name:var(--font-sans)] text-emerald-600">{success}</p>
         )}
         <Button
           type="submit"
           disabled={submitting || !authorName.trim() || message.trim().length < 2}
-          className="w-full h-11 gap-2 text-[15px] font-semibold font-[family-name:var(--font-sans)] shadow-sm"
-          style={{ backgroundColor: accentColor }}
+          className={`w-full h-12 gap-2 shadow-none ${
+            wedding
+              ? "font-[family-name:var(--font-cinzel)] text-[0.82rem] font-semibold uppercase tracking-[0.16em]"
+              : "text-[15px] font-semibold font-[family-name:var(--font-sans)]"
+          }`}
+          style={
+            wedding
+              ? { backgroundColor: wishGold, backgroundImage: "none", color: wishInk }
+              : { backgroundColor: accentColor }
+          }
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           {copy.submit}
@@ -1271,17 +1338,23 @@ export function GuestWishesCard({
       <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
         {loading ? (
           <p
-            className={`text-[15px] text-center py-8 font-[family-name:var(--font-sans)] ${
-              dark ? "text-white/50" : "text-slate-500"
+            className={`text-center py-8 ${
+              wedding
+                ? "font-[family-name:var(--font-cormorant)] text-[1.2rem] leading-relaxed"
+                : `text-[15px] font-[family-name:var(--font-sans)] ${dark ? "text-white/50" : "text-slate-500"}`
             }`}
+            style={wedding ? { color: wishInk } : undefined}
           >
             {copy.loading}
           </p>
         ) : wishes.length === 0 ? (
           <p
-            className={`text-[15px] text-center py-8 font-[family-name:var(--font-sans)] ${
-              dark ? "text-white/45" : "text-slate-500"
+            className={`text-center py-8 ${
+              wedding
+                ? "font-[family-name:var(--font-cormorant)] text-[1.2rem] leading-relaxed"
+                : `text-[15px] font-[family-name:var(--font-sans)] ${dark ? "text-white/45" : "text-slate-500"}`
             }`}
+            style={wedding ? { color: wishInk } : undefined}
           >
             {copy.empty}
           </p>
@@ -1291,9 +1364,16 @@ export function GuestWishesCard({
             return (
               <article
                 key={w.id}
-                className={`inv-3d-card rounded-2xl px-4 py-3.5 shadow-sm border ${
-                  dark ? "bg-white/10 border-white/15" : "bg-white/95 border-rose-100/90"
+                className={`inv-3d-card ${
+                  wedding
+                    ? "border-t bg-[#FFFDFA] px-1 py-4 shadow-none"
+                    : `rounded-2xl border px-4 py-3.5 ${
+                        dark
+                          ? "border-white/15 bg-white/10 shadow-sm"
+                          : "border-rose-100/90 bg-white/95 shadow-sm"
+                      }`
                 }`}
+                style={wedding ? { borderColor: `${wishGold}99` } : undefined}
               >
                 {isEditing ? (
                   <div className="space-y-2">
@@ -1347,14 +1427,24 @@ export function GuestWishesCard({
                   <>
                     <div className="flex items-start justify-between gap-3">
                       <p
-                        className={`min-w-0 text-[15px] sm:text-base leading-[1.65] font-[family-name:var(--font-sans)] ${
-                          dark ? "text-white/92" : "text-slate-800"
+                        className={`min-w-0 ${
+                          wedding
+                            ? "font-[family-name:var(--font-cormorant)] text-[clamp(1.22rem,3.4vw,1.42rem)] font-medium italic leading-[1.62] tracking-[0.004em]"
+                            : `text-[15px] leading-[1.65] sm:text-base font-[family-name:var(--font-sans)] ${
+                                dark ? "text-white/92" : "text-slate-800"
+                              }`
                         }`}
+                        style={wedding ? { color: wishInk } : undefined}
                       >
                         <span
-                          className={`mr-0.5 select-none font-[family-name:var(--font-cormorant)] text-2xl leading-none align-[-0.15em] ${
-                            dark ? "text-rose-300/80" : "text-rose-400"
+                          className={`select-none ${
+                            wedding
+                              ? "mr-1.5 inline-block translate-y-[0.18em] font-[family-name:var(--font-great-vibes)] text-[2.35rem] font-normal not-italic leading-none"
+                              : `mr-0.5 font-[family-name:var(--font-cormorant)] text-2xl leading-none align-[-0.15em] ${
+                                  dark ? "text-rose-300/80" : "text-rose-400"
+                                }`
                           }`}
+                          style={wedding ? { color: wishGold } : undefined}
                           aria-hidden
                         >
                           “
@@ -1402,19 +1492,43 @@ export function GuestWishesCard({
                         </div>
                       )}
                     </div>
-                    <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <div
+                      className={
+                        wedding
+                          ? "mt-3.5 flex items-baseline justify-between gap-3 border-t pt-2.5"
+                          : "mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
+                      }
+                      style={wedding ? { borderColor: `${wishGold}55` } : undefined}
+                    >
                       <p
-                        className="text-sm font-semibold font-[family-name:var(--font-cormorant)] tracking-wide"
-                        style={{ color: accentColor }}
+                        className={`font-semibold ${
+                          wedding
+                            ? "inline-block w-fit max-w-[70%] font-[family-name:var(--font-cinzel)] text-[0.84rem] uppercase leading-none tracking-[0.14em]"
+                            : "font-[family-name:var(--font-cormorant)] text-sm tracking-wide"
+                        }`}
+                        style={
+                          wedding
+                            ? {
+                                color: wishInk,
+                                boxShadow: `inset 0 -0.78em 0 color-mix(in srgb, ${wishGold} 72%, white)`,
+                                padding: "0.06em 0.32em 0.02em",
+                              }
+                            : { color: accentColor }
+                        }
                       >
                         {w.authorName}
                       </p>
                       <span
-                        className={`text-xs font-[family-name:var(--font-sans)] ${
-                          dark ? "text-white/40" : "text-slate-400"
-                        }`}
+                        className={
+                          wedding
+                            ? "shrink-0 font-[family-name:var(--font-cormorant)] text-[1.02rem] italic"
+                            : `text-xs font-[family-name:var(--font-sans)] ${
+                                dark ? "text-white/40" : "text-slate-400"
+                              }`
+                        }
+                        style={wedding ? { color: `${wishInk}b3` } : undefined}
                       >
-                        {formatWishTime(w.createdAt)}
+                        {wedding ? formatWishSignature(w.createdAt) : formatWishTime(w.createdAt)}
                       </span>
                     </div>
                   </>

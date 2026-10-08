@@ -2,10 +2,10 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import type { CountdownParts } from "@/hooks/use-countdown";
+import { hourglassSandLevel, SERAPHINE_HOURGLASS_MS } from "@/lib/invitation/hourglass-sand";
 import styles from "./seraphine-hourglass.module.css";
 
-/** Visual capacity of the glass — a full upper chamber is sixty days remaining. */
-export const SERAPHINE_HOURGLASS_MS = 60 * 24 * 60 * 60 * 1000;
+export { SERAPHINE_HOURGLASS_MS };
 
 const CX = 120;
 const UPPER_TOP = 64;
@@ -109,10 +109,74 @@ function GoldDefs({ uid }: { uid: string }) {
         <stop offset="55%" stopColor="#c5b48a" />
         <stop offset="100%" stopColor="#8a7344" />
       </radialGradient>
+      <linearGradient id={`${uid}-sand`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#f3ead4" />
+        <stop offset="45%" stopColor="#d4c6a0" />
+        <stop offset="100%" stopColor="#a88b55" />
+      </linearGradient>
       <filter id={`${uid}-soft`} x="-40%" y="-40%" width="180%" height="180%">
         <feGaussianBlur stdDeviation="1.2" />
       </filter>
     </defs>
+  );
+}
+
+function FallenSand({
+  uid,
+  clipTop,
+  clipBot,
+  upperHearts,
+  lowerHearts,
+  pileTop,
+}: {
+  uid: string;
+  clipTop: string;
+  clipBot: string;
+  upperHearts: PackedHeart[];
+  lowerHearts: PackedHeart[];
+  pileTop: number;
+}) {
+  const pileHeight = Math.max(0, LOWER_FLOOR + 10 - pileTop);
+  return (
+    <>
+      <g clipPath={`url(#${clipTop})`}>
+        {upperHearts.map((heart, index) => (
+          <text
+            key={`up-${index}`}
+            x={heart.x.toFixed(1)}
+            y={heart.y.toFixed(1)}
+            fontSize={heart.size}
+            fill={heart.ink}
+            fontFamily="Georgia, 'Times New Roman', serif"
+            textAnchor="middle"
+            dominantBaseline="central"
+            transform={`rotate(${heart.rot.toFixed(1)} ${heart.x.toFixed(1)} ${heart.y.toFixed(1)})`}
+          >
+            {HEART}
+          </text>
+        ))}
+      </g>
+      <g clipPath={`url(#${clipBot})`}>
+        {pileHeight > 2 ? (
+          <rect x="28" y={pileTop} width="184" height={pileHeight} fill={`url(#${uid}-sand)`} />
+        ) : null}
+        {lowerHearts.map((heart, index) => (
+          <text
+            key={`lo-${index}`}
+            x={heart.x.toFixed(1)}
+            y={heart.y.toFixed(1)}
+            fontSize={heart.size}
+            fill={heart.ink}
+            fontFamily="Georgia, 'Times New Roman', serif"
+            textAnchor="middle"
+            dominantBaseline="central"
+            transform={`rotate(${heart.rot.toFixed(1)} ${heart.x.toFixed(1)} ${heart.y.toFixed(1)})`}
+          >
+            {HEART}
+          </text>
+        ))}
+      </g>
+    </>
   );
 }
 
@@ -139,24 +203,33 @@ export function SeraphineHourglass({
   monogram,
   coupleLine,
   dateLine,
+  dial = "dark",
+  ink,
+  labelInk,
+  rule,
 }: {
   count: CountdownParts;
   monogram?: string | null;
   coupleLine?: string | null;
   dateLine?: string | null;
+  /** Pale gold figures are for a dark countdown field. Ivory pages need ink. */
+  dial?: "dark" | "light";
+  ink?: string;
+  labelInk?: string;
+  rule?: string;
 }) {
   const uid = useId().replace(/:/g, "");
   const frontId = `${uid}f`;
   const backId = `${uid}b`;
-  const remain = count.begun ? 0 : clamp01(count.remainingMs / SERAPHINE_HOURGLASS_MS);
-  const spent = 1 - remain;
+  const { remain, spent } = hourglassSandLevel(count.remainingMs, count.begun);
   const flowing = remain > 0.004 && !count.begun;
   const clipTop = `hour-top-${uid}`;
   const clipBot = `hour-bot-${uid}`;
-  const surface = UPPER_NECK - (UPPER_NECK - UPPER_TOP) * remain;
+  const sandTop = UPPER_NECK - (UPPER_NECK - UPPER_TOP) * remain;
   const pileTop = LOWER_FLOOR - (LOWER_FLOOR - LOWER_NECK) * spent;
-  const fromPct = ((surface - 8) / 332) * 100 + 1.5;
-  const upperHearts = useMemo(() => packHearts(surface, UPPER_NECK - 2, upperHalf, 3), [surface]);
+  const fromPct = ((sandTop - 8) / 340) * 100;
+  const landPct = ((pileTop - 8) / 340) * 100;
+  const upperHearts = useMemo(() => packHearts(sandTop, UPPER_NECK - 2, upperHalf, 3), [sandTop]);
   const lowerHearts = useMemo(() => packHearts(pileTop, LOWER_FLOOR - 6, lowerHalf, 41), [pileTop]);
   const tickHearts = useMemo(
     () =>
@@ -272,7 +345,17 @@ export function SeraphineHourglass({
   }
 
   return (
-    <div className={styles.stage}>
+    <div
+      className={styles.stage}
+      data-surface={dial}
+      style={
+        {
+          "--hour-num": ink,
+          "--hour-label": labelInk,
+          "--hour-rule": rule,
+        } as CSSProperties
+      }
+    >
       <div className={styles.scene}>
         <div
           className={styles.glassWrap}
@@ -301,46 +384,25 @@ export function SeraphineHourglass({
                 </defs>
                 <ellipse cx={CX} cy="318" rx="62" ry="7" fill="rgba(197,180,138,0.3)" filter={`url(#${frontId}-soft)`} />
                 <CapsAndGlass uid={frontId} breathe={!held} />
-                <g clipPath={`url(#${clipTop})`}>
-                  {upperHearts.map((heart, index) => (
-                    <text
-                      key={`up-${index}`}
-                      x={heart.x.toFixed(1)}
-                      y={heart.y.toFixed(1)}
-                      fontSize={heart.size}
-                      fill={heart.ink}
-                      fontFamily="Georgia, 'Times New Roman', serif"
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      transform={`rotate(${heart.rot.toFixed(1)} ${heart.x.toFixed(1)} ${heart.y.toFixed(1)})`}
-                    >
-                      {HEART}
-                    </text>
-                  ))}
-                </g>
-                <g clipPath={`url(#${clipBot})`}>
-                  {lowerHearts.map((heart, index) => (
-                    <text
-                      key={`lo-${index}`}
-                      x={heart.x.toFixed(1)}
-                      y={heart.y.toFixed(1)}
-                      fontSize={heart.size}
-                      fill={heart.ink}
-                      fontFamily="Georgia, 'Times New Roman', serif"
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      transform={`rotate(${heart.rot.toFixed(1)} ${heart.x.toFixed(1)} ${heart.y.toFixed(1)})`}
-                    >
-                      {HEART}
-                    </text>
-                  ))}
-                </g>
+                <FallenSand
+                  uid={frontId}
+                  clipTop={clipTop}
+                  clipBot={clipBot}
+                  upperHearts={upperHearts}
+                  lowerHearts={lowerHearts}
+                  pileTop={pileTop}
+                />
               </svg>
               {flowing ? (
                 <div
                   className={styles.pourField}
                   aria-hidden
-                  style={{ "--heart-from": `${fromPct.toFixed(2)}%` } as CSSProperties}
+                  style={
+                    {
+                      "--heart-from": `${fromPct.toFixed(2)}%`,
+                      "--heart-land": `${landPct.toFixed(2)}%`,
+                    } as CSSProperties
+                  }
                 >
                   {STREAM.map((heart, index) => (
                     <span
@@ -380,8 +442,24 @@ export function SeraphineHourglass({
             <div className={`${styles.face} ${styles.faceBack}`} aria-hidden>
               <svg className={styles.svg} viewBox="0 8 240 340">
                 <GoldDefs uid={backId} />
+                <defs>
+                  <clipPath id={`${clipTop}-back`}>
+                    <path d={UPPER_GLASS} />
+                  </clipPath>
+                  <clipPath id={`${clipBot}-back`}>
+                    <path d={LOWER_GLASS} />
+                  </clipPath>
+                </defs>
                 <ellipse cx={CX} cy="318" rx="62" ry="7" fill="rgba(197,180,138,0.28)" filter={`url(#${backId}-soft)`} />
                 <CapsAndGlass uid={backId} />
+                <FallenSand
+                  uid={backId}
+                  clipTop={`${clipTop}-back`}
+                  clipBot={`${clipBot}-back`}
+                  upperHearts={upperHearts}
+                  lowerHearts={lowerHearts}
+                  pileTop={pileTop}
+                />
                 <ellipse cx={CX} cy="168" rx="54" ry="62" fill={`url(#${backId}-plate)`} stroke="#c5b48a" strokeWidth="1.2" />
                 <ellipse cx={CX} cy="168" rx="46" ry="54" fill="none" stroke="rgba(232,220,192,0.35)" strokeWidth="0.7" />
                 {monogram?.trim() ? (

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import { PageLoader } from "@/components/ui/page-loader";
 import { PublicMemoriesGallery, type MemoryGalleryItem, type MemoryThemeVars } from "@/components/memory/public-memories-gallery";
+import type { AlbumUploadConfig } from "@/components/memory/album-upload-bar";
 import { readOrCreateClientGuestKey } from "@/lib/memory/memory-guest-identity";
 
 type MediaFilter = "all" | "image" | "video";
@@ -22,8 +23,9 @@ export default function MemoryTokenGalleryPage() {
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<{
-    event: { title: string; hostName: string; eyebrow?: string | null; subtitle?: string | null };
+    event: { title: string; hostName: string; eyebrow?: string | null; subtitle?: string | null; lede?: string | null };
     allowDownloads: boolean;
+    upload?: AlbumUploadConfig | null;
     canModerate?: boolean;
     viewToken?: string;
     theme?: { cssVars?: CSSProperties };
@@ -68,6 +70,7 @@ export default function MemoryTokenGalleryPage() {
       hostName={data.event.hostName}
       eyebrow={data.event.eyebrow}
       subtitle={data.event.subtitle}
+      lede={data.event.lede}
       items={data.memories.items}
       page={data.memories.page}
       pages={data.memories.pages}
@@ -80,6 +83,8 @@ export default function MemoryTokenGalleryPage() {
       themeVars={data.theme?.cssVars as MemoryThemeVars | undefined}
       viewToken={data.viewToken ?? token}
       canModerate={Boolean(data.canModerate)}
+      upload={data.upload}
+      onRefresh={() => void loadGallery()}
     />
   );
 }

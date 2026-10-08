@@ -27,6 +27,7 @@ import {
   removeOwnedCommentToken,
 } from "@/lib/memory/memory-guest-identity";
 import { MemoryShareBar } from "@/components/memory/memory-share-bar";
+import { AlbumUploadBar, type AlbumUploadConfig } from "@/components/memory/album-upload-bar";
 
 export interface MemoryGalleryItem {
   id: string;
@@ -59,6 +60,7 @@ interface PublicMemoriesGalleryProps {
   hostName: string;
   eyebrow?: string | null;
   subtitle?: string | null;
+  lede?: string | null;
   items: MemoryGalleryItem[];
   page: number;
   pages: number;
@@ -72,6 +74,8 @@ interface PublicMemoriesGalleryProps {
   viewToken?: string;
   canModerate?: boolean;
   onItemsChange?: (items: MemoryGalleryItem[]) => void;
+  upload?: AlbumUploadConfig | null;
+  onRefresh?: () => void;
 }
 
 const MUTE_PREF_KEY = "celeventic.memory.videoMuted";
@@ -99,6 +103,7 @@ export function PublicMemoriesGallery({
   hostName,
   eyebrow,
   subtitle,
+  lede,
   items,
   page,
   pages,
@@ -112,6 +117,8 @@ export function PublicMemoriesGallery({
   viewToken,
   canModerate = false,
   onItemsChange,
+  upload,
+  onRefresh,
 }: PublicMemoriesGalleryProps) {
   const [lightbox, setLightbox] = useState<MemoryGalleryItem | null>(null);
   const [localItems, setLocalItems] = useState(items);
@@ -350,9 +357,19 @@ export function PublicMemoriesGallery({
     }
   }
 
+  const hostLine = (() => {
+    const line = subtitle?.trim() || (hostName.trim() ? `Hosted by ${hostName.trim()}` : "");
+    if (!line) return null;
+    const named = line.replace(/^hosted by\s+/i, "").trim();
+    if (named.localeCompare(eventTitle.trim(), undefined, { sensitivity: "accent" }) === 0) return null;
+    return line;
+  })();
+  const memoryCount =
+    total === 0 ? "Awaiting the first memory" : `${total} ${total === 1 ? "memory" : "memories"}`;
+
   const shellStyle: CSSProperties = {
     ...themeVars,
-    background: `linear-gradient(180deg, var(--memory-color-surface, #FAFAFA) 0%, var(--memory-color-surface-alt, #F3EEE6) 100%)`,
+    background: `linear-gradient(180deg, var(--memory-color-surface, #FBF6EF) 0%, color-mix(in srgb, var(--memory-color-surface, #FBF6EF) 86%, var(--memory-color-accent, #C7A35A)) 100%)`,
     color: "var(--memory-color-ink, #0F172A)",
     fontFamily: "var(--memory-font-body, inherit)",
   };
@@ -361,50 +378,80 @@ export function PublicMemoriesGallery({
     <div className="public-viewport-shell" style={shellStyle}>
       <div className="memory-viewport-stage">
       <header
-        className="sticky top-0 z-20 backdrop-blur-md border-b"
+        className="sticky top-0 z-20 px-4 pt-[max(0.85rem,env(safe-area-inset-top))] pb-3 backdrop-blur-md"
         style={{
-          background: "color-mix(in srgb, var(--memory-color-surface, #FAFAFA) 92%, transparent)",
-          borderColor: "var(--memory-color-border, #e5e7eb)",
+          background: "color-mix(in srgb, var(--memory-color-surface, #FBF6EF) 90%, transparent)",
         }}
       >
-        <div className="px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 text-center">
+        <div
+          className="mx-auto max-w-3xl rounded-[1.35rem] px-5 pb-4 pt-5 text-center"
+          style={{
+            background:
+              "linear-gradient(180deg, color-mix(in srgb, var(--memory-color-surface, #FFFDFA) 88%, white), var(--memory-color-surface, #FBF6EF))",
+            boxShadow:
+              "inset 0 0 0 1px color-mix(in srgb, var(--memory-color-accent, #C7A35A) 72%, transparent), inset 0 0 0 6px color-mix(in srgb, var(--memory-color-surface, #FBF6EF) 70%, transparent), inset 0 0 0 7px color-mix(in srgb, var(--memory-color-accent, #C7A35A) 38%, transparent), 0 18px 40px -30px rgba(27, 54, 93, 0.45)",
+          }}
+        >
           <p
-            className="text-[10px] uppercase tracking-[0.35em] mb-1"
-            style={{ color: "var(--memory-color-accent, var(--memory-color-ink-muted, #64748b))" }}
-          >
-            {eyebrow?.trim() || "Event memories"}
-          </p>
-          <h1
-            className="text-xl sm:text-2xl md:text-3xl font-medium leading-tight tracking-[0.04em]"
+            className="text-[0.68rem] uppercase tracking-[0.42em]"
             style={{
-              fontFamily: "var(--memory-font-display, Georgia, serif)",
-              color: "var(--memory-color-primary, var(--memory-color-ink, #0F172A))",
+              color: "var(--memory-color-accent, #C7A35A)",
+              fontFamily: "var(--memory-font-display, var(--font-cinzel), Cinzel, serif)",
+            }}
+          >
+            {eyebrow?.trim() || "The Album"}
+          </p>
+          <div className="mx-auto mt-3 flex items-center justify-center gap-3" aria-hidden>
+            <span
+              className="h-px w-10"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent, var(--memory-color-accent, #C7A35A))",
+              }}
+            />
+            <span
+              className="h-1.5 w-1.5 rotate-45"
+              style={{ background: "var(--memory-color-accent, #C7A35A)" }}
+            />
+            <span
+              className="h-px w-10"
+              style={{
+                background:
+                  "linear-gradient(90deg, var(--memory-color-accent, #C7A35A), transparent)",
+              }}
+            />
+          </div>
+          <h1
+            className="mt-3 text-[clamp(1.65rem,6vw,2.35rem)] font-semibold uppercase leading-[1.12] tracking-[0.08em]"
+            style={{
+              fontFamily: "var(--memory-font-display, var(--font-cinzel), Cinzel, serif)",
+              color: "var(--memory-color-ink, #1B365D)",
             }}
           >
             {eventTitle}
           </h1>
-          {subtitle?.trim() ? (
+          {hostLine ? (
             <p
-              className="text-xs mt-1 tracking-[0.18em] uppercase"
+              className="mt-2 text-[0.95rem] italic leading-snug"
               style={{
-                color: "var(--memory-color-ink-muted, #64748b)",
-                fontFamily: "var(--memory-font-body, inherit)",
+                color: "var(--memory-color-ink-muted, #6E5257)",
+                fontFamily: "var(--memory-font-body, var(--font-cormorant), Georgia, serif)",
               }}
             >
-              {subtitle.trim()}
-            </p>
-          ) : hostName.trim() ? (
-            <p className="text-xs mt-1" style={{ color: "var(--memory-color-ink-muted, #64748b)" }}>
-              Hosted by {hostName}
+              {hostLine}
             </p>
           ) : null}
-          <div
-            aria-hidden
-            className="mx-auto mt-3 h-px w-16"
-            style={{ background: "var(--memory-color-border, #D8C09C)" }}
-          />
-          <p className="text-[11px] mt-2" style={{ color: "var(--memory-color-ink-muted, #94a3b8)" }}>
-            {total} {total === 1 ? "memory" : "memories"}
+          <p
+            className="mx-auto mt-3 inline-flex rounded-full px-3 py-1.5 text-[0.68rem] uppercase tracking-[0.18em]"
+            style={{
+              color: "var(--memory-color-ink, #1B365D)",
+              fontFamily: "var(--memory-font-display, var(--font-cinzel), Cinzel, serif)",
+              background:
+                "color-mix(in srgb, var(--memory-color-accent, #C7A35A) 22%, var(--memory-color-surface, #FBF6EF))",
+              boxShadow: "inset 0 0 0 1px var(--memory-color-accent, #C7A35A)",
+            }}
+          >
+            {memoryCount}
           </p>
         </div>
 
@@ -451,30 +498,52 @@ export function PublicMemoriesGallery({
           </div>
         ) : localItems.length === 0 ? (
           <div
-            className="mx-4 mt-12 rounded-2xl border border-dashed p-10 text-center"
+            className="mx-4 mt-6 rounded-[1.35rem] px-6 py-12 text-center"
             style={{
-              borderColor: "var(--memory-color-border, #e5e7eb)",
-              background:
-                "linear-gradient(160deg, color-mix(in srgb, var(--memory-color-accent-soft, #f5e6c8) 35%, transparent), transparent)",
+              background: "color-mix(in srgb, var(--memory-color-surface, #FFFDFA) 80%, white)",
+              boxShadow:
+                "inset 0 0 0 1px color-mix(in srgb, var(--memory-color-accent, #C7A35A) 55%, transparent)",
             }}
           >
-            <Grid3X3
-              className="h-10 w-10 mx-auto mb-3 opacity-40"
-              style={{ color: "var(--memory-color-accent, #b08d57)" }}
-            />
             <p
-              className="font-medium text-lg"
-              style={{ fontFamily: "var(--memory-font-display, Georgia, serif)" }}
+              className="text-[2.4rem] leading-none"
+              style={{
+                color: "var(--memory-color-accent, #C7A35A)",
+                fontFamily: "var(--memory-font-script, var(--font-great-vibes), 'Great Vibes', cursive)",
+              }}
+            >
+              For the album
+            </p>
+            <p
+              className="mt-3 text-[clamp(1.15rem,3vw,1.4rem)] font-semibold uppercase tracking-[0.12em]"
+              style={{
+                color: "var(--memory-color-ink, #1B365D)",
+                fontFamily: "var(--memory-font-display, var(--font-cinzel), Cinzel, serif)",
+              }}
             >
               No {activeFilter === "all" ? "" : activeFilter === "image" ? "photo " : "video "}
               memories yet
             </p>
-            <p className="text-sm mt-2" style={{ color: "var(--memory-color-ink-muted, #64748b)" }}>
-              Approved uploads will appear here in a portrait gallery.
+            <p
+              className="mx-auto mt-3 max-w-[24rem] text-[1.15rem] leading-relaxed"
+              style={{
+                color: "var(--memory-color-ink, #1B365D)",
+                fontFamily: "var(--memory-font-body, var(--font-cormorant), Georgia, serif)",
+              }}
+            >
+              {lede?.trim() ||
+                "Photographs and films from the celebration gather here. Add yours below."}
             </p>
+            {upload && onRefresh ? <AlbumUploadBar upload={upload} onUploaded={onRefresh} /> : null}
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-0.5">
+          <>
+          {upload && onRefresh ? (
+            <div className="px-4 pt-4">
+              <AlbumUploadBar upload={upload} onUploaded={onRefresh} />
+            </div>
+          ) : null}
+          <div className="mt-4 grid grid-cols-3 gap-2.5 px-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
             {localItems.map((item) => {
               const gridSrc = resolvePublicMediaUrl(pickMemoryGridSrc(item));
               const video = isMemoryVideo(item);
@@ -482,7 +551,7 @@ export function PublicMemoriesGallery({
                 <button
                   key={item.id}
                   type="button"
-                  className="relative aspect-[4/5] overflow-hidden group touch-manipulation"
+                  className="group relative aspect-[3/4] touch-manipulation overflow-hidden rounded-xl"
                   style={{ background: "var(--memory-color-accent-soft, #e2e8f0)" }}
                   onClick={() => onMediaDoubleTap(item)}
                   aria-label={video ? "Open video" : "Open photo"}
@@ -509,15 +578,25 @@ export function PublicMemoriesGallery({
                       ★
                     </span>
                   ) : null}
-                  {(item.likeCount ?? 0) > 0 ? (
-                    <span className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 text-[10px] text-white drop-shadow">
-                      <Heart className="h-3 w-3 fill-white" /> {item.likeCount}
+                  {(item.likeCount ?? 0) > 0 || (item.commentCount ?? 0) > 0 ? (
+                    <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1.5 text-[10px] text-white drop-shadow">
+                      {(item.likeCount ?? 0) > 0 ? (
+                        <span className="inline-flex items-center gap-0.5">
+                          <Heart className="h-3 w-3 fill-white" /> {item.likeCount}
+                        </span>
+                      ) : null}
+                      {(item.commentCount ?? 0) > 0 ? (
+                        <span className="inline-flex items-center gap-0.5">
+                          <MessageCircle className="h-3 w-3 fill-white" /> {item.commentCount}
+                        </span>
+                      ) : null}
                     </span>
                   ) : null}
                 </button>
               );
             })}
           </div>
+          </>
         )}
 
         {pages > 1 ? (
@@ -630,25 +709,28 @@ export function PublicMemoriesGallery({
                 <Heart
                   className={cn("h-6 w-6", lightbox.likedByViewer && "fill-rose-500 text-rose-500")}
                 />
+                <span className="sr-only">Like</span>
               </button>
               <span className="text-sm tabular-nums">{lightbox.likeCount ?? 0}</span>
               <button
                 type="button"
-                className="p-2 min-h-11 min-w-11"
+                className="inline-flex items-center gap-1.5 px-2 min-h-11"
                 onClick={() => void openComments(lightbox)}
                 aria-label="Comments"
               >
                 <MessageCircle className="h-6 w-6" />
+                <span className="text-sm">Comment</span>
               </button>
               <span className="text-sm tabular-nums">{lightbox.commentCount ?? 0}</span>
               {lightbox.canDelete ? (
                 <button
                   type="button"
-                  className="p-2 min-h-11 min-w-11 ml-auto text-rose-300"
+                  className="inline-flex items-center gap-1.5 px-2 min-h-11 ml-auto text-rose-300"
                   onClick={() => void deleteMemory(lightbox)}
-                  aria-label="Delete memory"
+                  aria-label="Remove this photo"
                 >
                   <Trash2 className="h-5 w-5" />
+                  <span className="text-sm">Remove</span>
                 </button>
               ) : null}
             </div>

@@ -152,6 +152,16 @@ describe("mergeWeddingBoard", () => {
       }).storyBody,
       "From a first hello to this joyful yes, we can't wait to celebrate."
     );
+    assert.equal(
+      withoutPhraseDashes("First paragraph.\n\nSecond  paragraph."),
+      "First paragraph.\n\nSecond paragraph."
+    );
+    assert.equal(
+      mergeWeddingBoard({
+        storyBody: "One quiet beginning.\n\nThen a life together.",
+      }).storyBody,
+      "One quiet beginning.\n\nThen a life together."
+    );
     assert.ok(!mergeWeddingBoard(undefined).storyBody.includes("—"));
     assert.ok(!mergeWeddingBoard(undefined).scratchMessage.includes("—"));
   });

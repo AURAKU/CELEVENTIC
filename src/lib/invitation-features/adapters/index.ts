@@ -36,6 +36,20 @@ function withAlpha(hex: string, alpha: string) {
   return /^#[0-9a-fA-F]{6}$/.test(hex) ? `${hex}${alpha}` : hex;
 }
 
+function isHex6(value: string | undefined): value is string {
+  return /^#[0-9a-fA-F]{6}$/.test(value ?? "");
+}
+
+/** Ivory and linen pass; gold gradients and metal swatches do not. */
+function isPaperHex(value: string | undefined): value is string {
+  if (!isHex6(value)) return false;
+  const n = Number.parseInt(value.slice(1), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b >= 200;
+}
+
 /** Polished default — works for any template with a `design.colors` block. */
 export const defaultFeatureAdapter: InvitationTemplateFeatureAdapter = {
   layout: "default",
@@ -57,12 +71,20 @@ export const defaultFeatureAdapter: InvitationTemplateFeatureAdapter = {
   },
 };
 
-/** Forever Afaris — blush / ivory / champagne, restrained shimmer. */
+/** Forever Afaris — ivory paper and champagne rules, never a gold slab. */
 const foreverAfarisAdapter: InvitationTemplateFeatureAdapter = {
   layout: "forever-afaris-wedding",
   themeTokens(design) {
     const base = defaultFeatureAdapter.themeTokens(design);
-    return { ...base, radius: "1.25rem", motion: "full" };
+    const metal = isHex6(design.colors.secondary) ? design.colors.secondary : "#C7A35A";
+    return {
+      ...base,
+      background: "transparent",
+      surface: isPaperHex(design.colors.background) ? design.colors.background : "#FFFDFA",
+      border: metal,
+      radius: "1.25rem",
+      motion: "full",
+    };
   },
 };
 

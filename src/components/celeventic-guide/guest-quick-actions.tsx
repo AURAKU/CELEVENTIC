@@ -81,13 +81,19 @@ export function GuestQuickActions({
   );
 }
 
-const GUIDE_GLASS =
-  "bg-white/38 backdrop-blur-2xl border border-white/70 shadow-[0_10px_28px_rgba(15,23,42,0.14),inset_0_1px_0_rgba(255,255,255,0.95)]";
+const GUIDE_GLASS = [
+  "relative isolate overflow-hidden",
+  "border border-white/75 bg-white/20",
+  "backdrop-blur-2xl backdrop-saturate-150",
+  "shadow-[0_12px_28px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.4)]",
+  "before:pointer-events-none before:absolute before:inset-x-2 before:top-px before:z-0 before:h-[46%] before:rounded-full",
+  "before:bg-gradient-to-b before:from-white/80 before:to-transparent",
+].join(" ");
 
 function GuideLogoMark({ size = 34 }: { size?: number }) {
   return (
     <span
-      className="relative isolate block overflow-hidden rounded-full bg-white/75 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.95)]"
+      className="relative z-[1] isolate block overflow-hidden rounded-full bg-white/80 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.95),0_1px_2px_rgba(15,23,42,0.08)]"
       style={{ width: size, height: size }}
       aria-hidden
     >
@@ -154,7 +160,7 @@ export function InviteGuestHelpFab({
             onClick={() =>
               trackGuideEvent("guide_context_help", { action: "open-guest-guide", surface: "invite-fab" })
             }
-            className="inline-flex h-9 items-center gap-2 rounded-full pl-0.5 pr-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2"
+            className="relative z-[1] inline-flex h-9 items-center gap-2 rounded-full pl-0.5 pr-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83] focus-visible:ring-offset-2"
             aria-label={`${APP_NAME} Guide — learn how to navigate the invitation`}
           >
             <GuideLogoMark size={34} />
@@ -165,7 +171,7 @@ export function InviteGuestHelpFab({
           <button
             type="button"
             onClick={() => setHidden(true)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/35 text-[#0B8A83]/80 transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83]"
+            className="relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/25 text-[#0B8A83]/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] backdrop-blur-md transition-colors hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8A83]"
             aria-label="Hide guide"
           >
             <ChevronDown className="h-4 w-4" strokeWidth={2.4} aria-hidden />

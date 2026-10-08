@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { hourglassEngraving } from "../hourglass-identity";
+import { hourglassEngraving, weddingBoardUsesHourglass } from "../hourglass-identity";
 
 test("hourglass engraving uses the couple on the board", () => {
   const kojo = hourglassEngraving({
@@ -34,12 +34,24 @@ test("an empty board does not fall back to another couple", () => {
   assert.doesNotMatch(JSON.stringify(blank), /kojo|fafa|edwin|lordina|jeffery|chelsy/i);
 });
 
+test("gold-royal stays numeric unless the board is Edwin and Lordina", () => {
+  assert.equal(weddingBoardUsesHourglass("hourglass", "Anyone", "Else"), true);
+  assert.equal(weddingBoardUsesHourglass("gold-royal", "EDWIN", "LORDINA"), true);
+  assert.equal(
+    weddingBoardUsesHourglass("gold-royal", "Edwin Ebow Blankson", "Lordina Ewurafua Anderson"),
+    true
+  );
+  assert.equal(weddingBoardUsesHourglass("gold-royal", "OWURAKU AFARI", "FRANCISCA"), false);
+  assert.equal(weddingBoardUsesHourglass("classic", "EDWIN", "LORDINA"), false);
+  assert.equal(weddingBoardUsesHourglass(undefined, "EDWIN", "LORDINA"), false);
+});
+
 test("the wedding template shows the hourglass only when the design asks for it", () => {
   const source = readFileSync(
     "src/components/invitation/templates/forever-afaris-wedding.tsx",
     "utf8"
   );
-  assert.match(source, /countdownStyle as string \| undefined\) === "hourglass"/);
+  assert.match(source, /weddingBoardUsesHourglass/);
   assert.match(source, /hourglassEngraving/);
   assert.doesNotMatch(source, /Kojo & Fafa|Edwin Ebow|JEFFERY|CHELSY/);
 });

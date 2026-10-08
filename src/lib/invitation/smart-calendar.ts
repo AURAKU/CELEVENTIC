@@ -1,6 +1,7 @@
 import {
   buildGoogleCalendarUrl,
   buildOutlookCalendarUrl,
+  downloadIcsCalendar,
   downloadIcsFile,
   hasValidCalendarWindow,
   type CalendarEventInput,
@@ -41,7 +42,8 @@ export function detectCalendarPlatform(): SmartCalendarPlatform {
   if (isIOS || isIPadOS) return "apple";
   if (isMac && isAppleSafari()) return "apple";
   if (isAndroid) return "google";
-  if (isWindows && /Edg\//.test(ua)) return "outlook";
+  // Windows Calendar lives in Outlook, except Chrome, which keeps Google Calendar.
+  if (isWindows && !/Chrome|CriOS/.test(ua)) return "outlook";
 
   return "google";
 }
@@ -136,6 +138,75 @@ export async function setSmartCalendarReminder(
       label,
       success: true,
       message: `Opening ${label} with the event date and time.`,
+    };
+  } catch {
+    return {
+      platform,
+      label,
+      success: false,
+      message: "Could not set reminder. Please try again.",
+    };
+  }
+}
+
+export function openCalendarUrls(urls: string[]) {
+  for (const url of urls) openCalendarUrl(url);
+}
+
+/**
+ * Apple receives one calendar file, because Calendar imports every event and its alarm.
+ * Google and Outlook receive one compose link per celebration, because those pages hold a single event.
+ */
+export function calendarBundleForEvents(
+  events: CalendarEventInput[],
+  platform: SmartCalendarPlatform = detectCalendarPlatform()
+): { urls: string[]; useFile: boolean } {
+  const ready = events.filter(hasValidCalendarWindow);
+  if (ready.length === 0 || platform === "apple") return { urls: [], useFile: true };
+  const urls = ready
+    .map((event) =>
+      platform === "outlook" ? buildOutlookCalendarUrl(event) : buildGoogleCalendarUrl(event)
+    )
+    .filter(Boolean);
+  if (urls.length !== ready.length) return { urls: [], useFile: true };
+  return { urls, useFile: false };
+}
+
+/**
+ * Adds every celebration on the device's calendar.
+ * Apple gets one file with an alarm on each event.
+ * Google and Outlook get one save page per celebration.
+ */
+export async function setSmartCalendarReminders(
+  events: CalendarEventInput[]
+): Promise<SmartCalendarResult> {
+  const ready = events.filter(hasValidCalendarWindow);
+  if (ready.length <= 1) {
+    return setSmartCalendarReminder(ready[0] ?? events[0] ?? { title: "Celebration", startDateRaw: "" });
+  }
+
+  const platform = detectCalendarPlatform();
+  const label = platformLabel(platform);
+  const filename = calendarFileName(ready[0]?.title || "celebration");
+  const bundle = calendarBundleForEvents(ready, platform);
+
+  try {
+    if (bundle.useFile) {
+      downloadIcsCalendar(ready, filename);
+      return {
+        platform,
+        label,
+        success: true,
+        message: `Opening ${label} with each celebration, the place, and a reminder.`,
+      };
+    }
+
+    openCalendarUrls(bundle.urls);
+    return {
+      platform,
+      label,
+      success: true,
+      message: `Opening ${label} with all ${ready.length} celebrations. Save each one to keep your reminder.`,
     };
   } catch {
     return {

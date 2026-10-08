@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import { PageLoader } from "@/components/ui/page-loader";
 import { PublicMemoriesGallery, type MemoryGalleryItem, type MemoryThemeVars } from "@/components/memory/public-memories-gallery";
+import type { AlbumUploadConfig } from "@/components/memory/album-upload-bar";
 import { readOrCreateClientGuestKey } from "@/lib/memory/memory-guest-identity";
 
 type MediaFilter = "all" | "image" | "video";
@@ -15,15 +16,16 @@ export default function EventMemoriesBySlugPage() {
   const [filter, setFilter] = useState<MediaFilter>("all");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<{
-    event: { title: string; hostName: string; eyebrow?: string | null; subtitle?: string | null };
+    event: { title: string; hostName: string; eyebrow?: string | null; subtitle?: string | null; lede?: string | null };
     allowDownloads: boolean;
+    upload?: AlbumUploadConfig | null;
     canModerate?: boolean;
     viewToken?: string;
     theme?: { cssVars?: CSSProperties };
     memories: { items: MemoryGalleryItem[]; page: number; pages: number; total: number };
   } | null>(null);
 
-  useEffect(() => {
+  const loadGallery = useCallback(() => {
     setLoading(true);
     const guestKey = readOrCreateClientGuestKey();
     const mediaParam = filter === "all" ? "" : `&mediaType=${filter}`;
@@ -37,6 +39,10 @@ export default function EventMemoriesBySlugPage() {
       });
   }, [slug, page, filter]);
 
+  useEffect(() => {
+    loadGallery();
+  }, [loadGallery]);
+
   if (loading && !data) return <PageLoader />;
   if (!data) return <p className="text-center py-20 text-slate-500">Memory gallery not found.</p>;
 
@@ -46,6 +52,7 @@ export default function EventMemoriesBySlugPage() {
       hostName={data.event.hostName}
       eyebrow={data.event.eyebrow}
       subtitle={data.event.subtitle}
+      lede={data.event.lede}
       items={data.memories.items}
       page={data.memories.page}
       pages={data.memories.pages}
@@ -61,6 +68,8 @@ export default function EventMemoriesBySlugPage() {
       themeVars={data.theme?.cssVars as MemoryThemeVars | undefined}
       viewToken={data.viewToken}
       canModerate={Boolean(data.canModerate)}
+      upload={data.upload}
+      onRefresh={loadGallery}
     />
   );
 }

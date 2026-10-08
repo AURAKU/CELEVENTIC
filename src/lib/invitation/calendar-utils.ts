@@ -186,24 +186,17 @@ function buildValarmBlocks(minutesBefore: number[]): string[] {
   return lines;
 }
 
-export function buildIcsContent(event: CalendarEventInput): string {
-  if (!hasValidCalendarWindow(event)) return "";
+function veventLines(event: CalendarEventInput, stamp: string, index: number): string[] {
   const { start, end } = resolveEventWindow(event);
-  const uid = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}@celeventic.com`;
+  const uid = `${stamp}-${index}-${Math.random().toString(36).slice(2, 10)}@celeventic.com`;
   const reminders = defaultReminderMinutes(event);
   const descriptionParts = [event.description?.trim(), reminderDescription(reminders)].filter(
     Boolean
   );
-
-  const rawLines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Celeventic//Invitation//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
+  const lines = [
     "BEGIN:VEVENT",
     `UID:${uid}`,
-    `DTSTAMP:${formatIcsUtc(new Date().toISOString())}`,
+    `DTSTAMP:${stamp}`,
     event.allDay
       ? `DTSTART;VALUE=DATE:${utcYmdCompact(start)}`
       : `DTSTART:${formatIcsUtc(start.toISOString())}`,
@@ -212,22 +205,47 @@ export function buildIcsContent(event: CalendarEventInput): string {
       : `DTEND:${formatIcsUtc(end.toISOString())}`,
     `SUMMARY:${icsEscape(event.title)}`,
   ];
-  if (event.venue) rawLines.push(`LOCATION:${icsEscape(event.venue)}`);
+  if (event.venue) lines.push(`LOCATION:${icsEscape(event.venue)}`);
   if (descriptionParts.length) {
-    rawLines.push(`DESCRIPTION:${icsEscape(descriptionParts.join("\n\n").slice(0, 800))}`);
+    lines.push(`DESCRIPTION:${icsEscape(descriptionParts.join("\n\n").slice(0, 800))}`);
   }
-  rawLines.push(...buildValarmBlocks(reminders));
-  rawLines.push("END:VEVENT", "END:VCALENDAR");
+  lines.push(...buildValarmBlocks(reminders));
+  lines.push("END:VEVENT");
+  return lines;
+}
 
+function wrapCalendar(eventLines: string[]): string {
+  const rawLines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Celeventic//Invitation//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...eventLines,
+    "END:VCALENDAR",
+  ];
   return rawLines.map(icsFold).join("\r\n");
+}
+
+export function buildIcsContent(event: CalendarEventInput): string {
+  if (!hasValidCalendarWindow(event)) return "";
+  const stamp = formatIcsUtc(new Date().toISOString());
+  return wrapCalendar(veventLines(event, stamp, 0));
+}
+
+/** One calendar file with a separate entry for each celebration. */
+export function buildIcsCalendar(events: CalendarEventInput[]): string {
+  const ready = events.filter(hasValidCalendarWindow);
+  if (!ready.length) return "";
+  const stamp = formatIcsUtc(new Date().toISOString());
+  return wrapCalendar(ready.flatMap((event, index) => veventLines(event, stamp, index)));
 }
 
 export function buildIcsBlob(event: CalendarEventInput): Blob {
   return new Blob([buildIcsContent(event)], { type: "text/calendar;charset=utf-8" });
 }
 
-export function downloadIcsFile(event: CalendarEventInput, filename = "event.ics") {
-  const ics = buildIcsContent(event);
+function downloadIcsText(ics: string, filename: string) {
   if (!ics) return;
   const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -240,6 +258,14 @@ export function downloadIcsFile(event: CalendarEventInput, filename = "event.ics
   a.remove();
   // Delay revoke so Safari can finish handing off to Calendar.
   window.setTimeout(() => URL.revokeObjectURL(url), 2500);
+}
+
+export function downloadIcsFile(event: CalendarEventInput, filename = "event.ics") {
+  downloadIcsText(buildIcsContent(event), filename);
+}
+
+export function downloadIcsCalendar(events: CalendarEventInput[], filename = "celebration.ics") {
+  downloadIcsText(buildIcsCalendar(events), filename);
 }
 
 /**

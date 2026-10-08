@@ -180,6 +180,22 @@
   color: #c5b48a;
 }
 
+.stage[data-surface="light"] .num,
+.stage[data-surface="light"] .cell[data-unit="seconds"] .num {
+  color: var(--hour-num, #3a2a2e);
+  font-weight: 600;
+}
+
+.stage[data-surface="light"] .label,
+.stage[data-surface="light"] .kicker {
+  color: var(--hour-label, #6e5257);
+}
+
+.stage[data-surface="light"] .sep {
+  background: color-mix(in srgb, var(--hour-rule, #c7a35a) 78%, transparent);
+  height: 1.55rem;
+}
+
 .num {
   font-family: var(--aurelia-serif);
   font-size: clamp(1.35rem, 7.4cqi, 2.05rem);
@@ -245,12 +261,16 @@
   }
   48% {
     top: 51%;
+    opacity: 1;
     transform: translate(calc(-50% + var(--drift, 0px) * 0.35), 0) scale(0.62) rotate(10deg);
   }
+  88% {
+    opacity: 1;
+  }
   100% {
-    top: 82%;
+    top: var(--heart-land, 84%);
     opacity: 0;
-    transform: translate(calc(-50% + var(--drift, 0px)), 0) scale(0.4) rotate(24deg);
+    transform: translate(calc(-50% + var(--drift, 0px)), 0) scale(0.72) rotate(18deg);
   }
 }
 

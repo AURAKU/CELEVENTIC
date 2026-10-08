@@ -293,16 +293,22 @@ export function resolvePlaceCardGuestName(input: {
   tokenGuest?: string | null;
   passDisplayName?: string | null;
   guestNames: Array<string | null | undefined>;
+  /** Event title and host. These name the couple, not a guest, on the general link. */
+  hostLabels?: Array<string | null | undefined>;
 }): string | null {
-  const candidates = [input.tokenGuest, input.passDisplayName];
-  for (const candidate of candidates) {
-    const value = (candidate ?? "").trim();
-    if (value && !isAnonymousRecipientName(value)) return value;
-  }
+  const hostLabels = input.hostLabels ?? [];
+  const token = (input.tokenGuest ?? "").trim();
+  if (token && !isAnonymousRecipientName(token)) return token;
+
+  const acceptable = (value: string) =>
+    Boolean(value) && !isAnonymousRecipientName(value) && !isHostIdentityName(value, hostLabels);
+
+  const pass = (input.passDisplayName ?? "").trim();
+  if (acceptable(pass)) return pass;
 
   const namedGuests = input.guestNames
     .map((name) => (name ?? "").trim())
-    .filter((name) => name && !isAnonymousRecipientName(name));
+    .filter((name) => acceptable(name));
   return namedGuests.length === 1 ? namedGuests[0] : null;
 }
 
@@ -358,6 +364,28 @@ export function compactPlaceCardMonogram(raw?: string | null): string {
 
 /** Default place-card addressee when no guest name is assigned. */
 export const PLACE_CARD_FALLBACK_RECIPIENT = "Invited Guest";
+
+function hostIdentityKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * True when a label is the event or the hosts, such as "Edwin & Lordina".
+ * The general ceremony link must not print that as the invited guest.
+ */
+export function isHostIdentityName(
+  value: string | null | undefined,
+  labels: Array<string | null | undefined>
+): boolean {
+  const key = hostIdentityKey(value ?? "");
+  if (!key) return false;
+  return labels.some((label) => hostIdentityKey(label ?? "") === key);
+}
 
 /** True when a candidate string is not a real guest / party addressee. */
 export function isAnonymousRecipientName(value?: string | null): boolean {

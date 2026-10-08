@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Loader2, Mail, Minus, Phone, Plus } from "lucide-react";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
@@ -44,6 +44,8 @@ export interface TraditionalMarriageRespondProps {
   initialAttendingCount?: number | null;
   organizerPhone?: string | null;
   organizerEmail?: string | null;
+  /** Named host buttons. When set, they replace the single Call / WhatsApp row. */
+  reachHosts?: ReactNode;
 }
 
 type RsvpChoice = PersistedRsvpChoice;
@@ -70,6 +72,7 @@ export function TraditionalMarriageRespond({
   initialAttendingCount = null,
   organizerPhone,
   organizerEmail,
+  reachHosts,
 }: TraditionalMarriageRespondProps) {
   const { t } = useLocale();
   const staticPreview = useInvitationStaticPreview();
@@ -114,7 +117,7 @@ export function TraditionalMarriageRespond({
   }, [invitationId, guestId, seededStatus, seededAttending, allowance]);
 
   const nameLocked = Boolean(guestId && guestName.trim());
-  const showReachHosts = Boolean(organizerPhone || organizerEmail);
+  const showReachHosts = Boolean(reachHosts || organizerPhone || organizerEmail);
   const capacityLine = rsvpPartyCapacityLine(allowance);
   const slotGuidance = useMemo(
     () => rsvpPartySlotGuidance(allowance, attendingCount),
@@ -507,6 +510,9 @@ export function TraditionalMarriageRespond({
           >
             Reach the hosts
           </p>
+          {reachHosts ? (
+            <div className="mx-auto w-full max-w-[22rem]">{reachHosts}</div>
+          ) : (
           <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2">
             {organizerPhone &&
               (staticPreview ? (
@@ -575,6 +581,7 @@ export function TraditionalMarriageRespond({
                 </a>
               ))}
           </div>
+          )}
         </div>
       )}
     </section>

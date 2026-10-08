@@ -1336,6 +1336,42 @@
 }
 
 /* ─── Personalised Place Card (shared invitation feature) ───────── */
+.inv-place-card__corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.inv-place-card__corner[data-corner="tl"] {
+  top: 16px;
+  left: 16px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+
+.inv-place-card__corner[data-corner="tr"] {
+  top: 16px;
+  right: 16px;
+  border-top: 1px solid;
+  border-right: 1px solid;
+}
+
+.inv-place-card__corner[data-corner="bl"] {
+  bottom: 16px;
+  left: 16px;
+  border-bottom: 1px solid;
+  border-left: 1px solid;
+}
+
+.inv-place-card__corner[data-corner="br"] {
+  bottom: 16px;
+  right: 16px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+}
+
 .inv-place-card-fade {
   animation: inv-fade-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

@@ -56,7 +56,11 @@ export const FOREVER_AFARIS_GIFT_THEME: GiftTheme = {
     border: FA_PALETTE.border,
     onAccent: "#FFFDFA",
   },
-  fonts: { display: SERIF_STACK, body: SANS_STACK, script: SCRIPT_STACK },
+  fonts: {
+    display: 'var(--font-cinzel), "Cinzel", "Times New Roman", serif',
+    body: 'var(--font-cormorant), "Cormorant Garamond", Georgia, serif',
+    script: 'var(--font-great-vibes), "Great Vibes", cursive',
+  },
   radius: 18,
   ornament: "ribbon",
 };

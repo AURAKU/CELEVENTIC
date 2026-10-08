@@ -54,6 +54,8 @@ export interface WeddingBoardProgrammeItem {
   time: string;
   title: string;
   description?: string;
+  /** Google Maps place URL for this stop, when it has its own pin. */
+  mapUrl?: string;
 }
 
 /** Envelope paper treatment shown in the opening ceremony. */
@@ -466,7 +468,9 @@ export function withoutPhraseDashes(value: string | null | undefined): string {
     .replace(/\s*[—–]\s*/g, ", ")
     .replace(/(\w)\s+-\s+(\w)/g, "$1, $2")
     .replace(/,\s*,/g, ",")
-    .replace(/\s{2,}/g, " ")
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
