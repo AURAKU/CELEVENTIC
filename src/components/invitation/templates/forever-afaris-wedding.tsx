@@ -26,6 +26,8 @@ import {
   type WeddingSectionId,
 } from "@/lib/invitation/wedding-board";
 import { requestInvitationReplay } from "@/lib/experience/replay-invitation";
+import { groupWeddingSectionPages, isEdwinLordinaBook } from "@/lib/invitation/wedding-pages";
+import { WeddingBook } from "@/components/invitation/templates/forever-afaris-wedding-pages";
 import {
   resolveWeddingPalette,
   type FaPalette,
@@ -521,7 +523,7 @@ function CoupleNameLockup({
   gilded?: boolean;
 }) {
   const nameClass = featured
-    ? "mx-auto block w-fit max-w-full whitespace-nowrap font-[family-name:var(--font-playfair)] text-[clamp(1.4rem,7.05vw,2.85rem)] font-medium italic leading-[1.02] tracking-[-0.025em]"
+    ? "mx-auto block w-fit max-w-full whitespace-nowrap font-[family-name:var(--font-cormorant)] text-[clamp(1.32rem,6.15vw,2.35rem)] font-normal italic leading-[1.12] tracking-[0.012em]"
     : compact
       ? T.nameClose
       : T.name;
@@ -1432,13 +1434,8 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             {storyParagraphs(board.storyBody).map((paragraph) => (
               <p
                 key={paragraph}
-                style={{
-                  color: C.storyInk,
-                  fontFamily: 'var(--font-parisienne), "Parisienne", cursive',
-                  fontSize: "clamp(1.7rem, 4.8vw, 2.05rem)",
-                  lineHeight: 1.72,
-                  letterSpacing: "0.012em",
-                }}
+                className={`font-[family-name:var(--font-cormorant)] ${T.body} italic leading-[1.65]`}
+                style={{ color: C.storyInk }}
               >
                 {paragraph}
               </p>
@@ -1624,6 +1621,34 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       return true;
     });
 
+  const bookPages = groupWeddingSectionPages(visible.map((entry) => entry.id));
+  const showBook = isEdwinLordinaBook(couple1, couple2) && !staticPreview && bookPages.length > 1;
+  const visibleById = new Map(visible.map((entry) => [entry.id, entry]));
+
+  const renderEntry = (id: WeddingSectionId, showDivider: boolean) => {
+    const entry = visibleById.get(id);
+    if (!entry) return null;
+    return (
+      <div key={entry.id} className="min-w-0">
+        {showDivider ? <Divider palette={C} /> : null}
+        {entry.node}
+        {entry.id === "hero" && props.placeCard && (
+          <ClientErrorBoundary fallback={null}>
+            <PlaceCard
+              config={props.placeCard.config}
+              recipient={props.placeCard.recipient}
+              party={props.placeCard.party}
+              seating={props.placeCard.seating}
+              design={design}
+              className="mt-8 px-0"
+            />
+            {scenes.greeting ? <div className="mt-8">{scenes.greeting}</div> : null}
+          </ClientErrorBoundary>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div
       className="relative min-h-[100dvh] w-full"
@@ -1633,26 +1658,23 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       }}
     >
       <PageFlora palette={C} />
-      <div className="relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[640px] sm:px-8 sm:pt-10 md:max-w-[800px] md:px-10 lg:max-w-[960px] lg:pt-14">
-        {visible.map((entry, i) => (
-          <div key={entry.id} className="min-w-0">
-            {i > 0 && <Divider palette={C} />}
-            {entry.node}
-            {entry.id === "hero" && props.placeCard && (
-              <ClientErrorBoundary fallback={null}>
-                <PlaceCard
-                  config={props.placeCard.config}
-                  recipient={props.placeCard.recipient}
-                  party={props.placeCard.party}
-                  seating={props.placeCard.seating}
-                  design={design}
-                  className="mt-8 px-0"
-                />
-                {scenes.greeting ? <div className="mt-8">{scenes.greeting}</div> : null}
-              </ClientErrorBoundary>
-            )}
-          </div>
-        ))}
+      <div
+        className={
+          showBook
+            ? "relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-2 min-[375px]:px-5 sm:max-w-[640px] sm:px-8 sm:pt-4 md:max-w-[760px] md:px-10 lg:max-w-[880px] lg:pt-6"
+            : "relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[640px] sm:px-8 sm:pt-10 md:max-w-[800px] md:px-10 lg:max-w-[960px] lg:pt-14"
+        }
+      >
+        {showBook ? (
+          <WeddingBook
+            pages={bookPages}
+            palette={C}
+            reduced={Boolean(reduced)}
+            childrenFor={(page) => page.sections.map((id, index) => renderEntry(id, index > 0))}
+          />
+        ) : (
+          visible.map((entry, index) => renderEntry(entry.id, index > 0))
+        )}
       </div>
     </div>
   );
