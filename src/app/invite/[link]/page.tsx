@@ -38,6 +38,7 @@ import { buildSocialInvitationSurface } from "@/lib/social/social-place-card";
 import { resolveSocialInvitationGuest } from "@/lib/social/social-guest";
 import { buildLiveSocialInvitationInput } from "@/lib/social/social-live-input";
 import { getInvitationPassView } from "@/services/admission/guest-pass.service";
+import { isPublicInviteAlias } from "@/lib/invitation/public-invite-alias";
 import { getInvitationAdmission } from "@/services/admission/admission.service";
 import {
   buildEventCompanionHref,
@@ -189,7 +190,7 @@ export default async function InvitePage({
   // The link was repaired (percent-encoded, wrapped, trailing slash, case).
   // Settle the browser on the canonical URL so `event-day`, share cards,
   // reloads and the admission poller all agree on one token.
-  if (invitation.uniqueLink !== link) {
+  if (invitation.uniqueLink !== link && !isPublicInviteAlias(link, invitation.uniqueLink)) {
     const params = new URLSearchParams();
     if (guestToken) params.set("guest", guestToken);
     if (query.view) params.set("view", query.view);

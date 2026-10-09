@@ -10,6 +10,14 @@ import { normalizeEmail, normalizeGhanaPhone } from "@/lib/guest-import/contact"
 import { assertNoActiveGuestDuplicate } from "@/lib/guest-search/duplicate-guests";
 import { computeGuestCrmPeopleStats } from "@/lib/seating/people-stats";
 import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
+import {
+  applyEdwinPublishedDesign,
+  edwinDesignIsCurrent,
+} from "@/lib/invitation/edwin-published-design";
+import {
+  EDWIN_PUBLISHED_INVITE_LINK,
+  publicInviteAliasTarget,
+} from "@/lib/invitation/public-invite-alias";
 import { assertGuestQuota, assertInvitationQuota } from "@/lib/packages/package-quota";
 
 export interface CreateInvitationInput {
@@ -108,12 +116,32 @@ export class InvitationService {
    * WhatsApp, SMS and email clients that mangle them routinely.
    */
   async getInvitationByLink(rawLink: string) {
-    const direct = await this.findInvitationByExactLink(rawLink);
-    if (direct) return direct;
-
-    const canonical = await repairInviteLink(rawLink);
-    if (!canonical || canonical === rawLink) return null;
-    return this.findInvitationByExactLink(canonical);
+    const requested = rawLink.trim();
+    const direct = await this.findInvitationByExactLink(requested);
+    const aliasTarget = publicInviteAliasTarget(requested);
+    const invitation =
+      direct ??
+      (aliasTarget && aliasTarget !== requested
+        ? await this.findInvitationByExactLink(aliasTarget)
+        : null) ??
+      (await (async () => {
+        const canonical = await repairInviteLink(requested);
+        if (!canonical || canonical === requested) return null;
+        return this.findInvitationByExactLink(canonical);
+      })());
+    if (!invitation) return null;
+    if (
+      invitation.uniqueLink === EDWIN_PUBLISHED_INVITE_LINK &&
+      !edwinDesignIsCurrent(invitation.designConfig)
+    ) {
+      try {
+        await applyEdwinPublishedDesign(invitation.uniqueLink);
+        return this.findInvitationByExactLink(invitation.uniqueLink);
+      } catch (error) {
+        console.error("[edwin-design] could not refresh the published invitation", error);
+      }
+    }
+    return invitation;
   }
 
   private async findInvitationByExactLink(uniqueLink: string) {
