@@ -14,6 +14,8 @@ export const FA_PALETTE = {
   gold: "#C7A35A",
   goldDeep: "#A9852F",
   goldSoft: "#E6D2A2",
+  /** Antique-gold ink for long script passages. Dark enough to read on ivory. */
+  storyInk: "#67552f",
   /** Blush pinks, envelope + section washes */
   blush: "#F6E2DE",
   blushDeep: "#EFCBC5",
@@ -107,6 +109,8 @@ export function resolveWeddingPalette(overrides?: WeddingPaletteOverrides): FaPa
     palette.cream = darken(canvas, 0.06);
     palette.linen = lighten(canvas, 0.5);
   }
+
+  palette.storyInk = darken(palette.gold, 0.48);
 
   return palette;
 }

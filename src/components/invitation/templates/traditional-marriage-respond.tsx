@@ -44,6 +44,8 @@ export interface TraditionalMarriageRespondProps {
   initialAttendingCount?: number | null;
   organizerPhone?: string | null;
   organizerEmail?: string | null;
+  /** When false, guests reply with name and phone only. */
+  collectEmail?: boolean;
   /** Named host buttons. When set, they replace the single Call / WhatsApp row. */
   reachHosts?: ReactNode;
 }
@@ -73,6 +75,7 @@ export function TraditionalMarriageRespond({
   organizerPhone,
   organizerEmail,
   reachHosts,
+  collectEmail = true,
 }: TraditionalMarriageRespondProps) {
   const { t } = useLocale();
   const staticPreview = useInvitationStaticPreview();
@@ -91,6 +94,7 @@ export function TraditionalMarriageRespond({
   const [phone, setPhone] = useState("");
   const [attendingCount, setAttendingCount] = useState(seededAttending);
   const [pressed, setPressed] = useState<RsvpChoice | null>(null);
+  const [replyOpen, setReplyOpen] = useState(Boolean(seededStatus));
 
   useEffect(() => {
     setAttendingCount((prev) => clampAttendingCount(prev, allowance));
@@ -100,6 +104,7 @@ export function TraditionalMarriageRespond({
   useEffect(() => {
     if (seededStatus) {
       setRsvpStatus(seededStatus);
+      setReplyOpen(true);
       setConfirmedAttending(seededAttending);
       setAttendingCount(seededAttending);
       writePersistedRsvp(invitationId, guestId, {
@@ -111,6 +116,7 @@ export function TraditionalMarriageRespond({
     const cached = readPersistedRsvp(invitationId, guestId);
     if (!cached) return;
     setRsvpStatus(cached.status);
+    setReplyOpen(true);
     const attending = clampAttendingCount(cached.attendingCount, allowance);
     setConfirmedAttending(attending);
     setAttendingCount(attending);
@@ -139,7 +145,7 @@ export function TraditionalMarriageRespond({
 
     const cappedAttending = clampAttendingCount(attendingCount, allowance);
     const contact = {
-      email: email.trim() || undefined,
+      ...(collectEmail && email.trim() ? { email: email.trim() } : {}),
       phone: phone.trim() || undefined,
       ...(response === "ACCEPTED" ? { attendingCount: cappedAttending } : {}),
     };
@@ -253,6 +259,34 @@ export function TraditionalMarriageRespond({
         ) : null}
       </div>
 
+      <div className="relative mt-5 flex justify-center">
+        <button
+          type="button"
+          aria-expanded={replyOpen}
+          aria-controls="rsvp-details"
+          onClick={() => setReplyOpen((value) => !value)}
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-[family-name:var(--font-cinzel)] text-[0.68rem] font-semibold uppercase tracking-[0.16em] transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          style={{
+            color: PALETTE.ink,
+            background: `linear-gradient(135deg, ${PALETTE.linen}, ${PALETTE.mustardSoft})`,
+            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.75), 0 10px 18px -14px ${PALETTE.bronze}`,
+            outlineColor: PALETTE.mustard,
+          }}
+        >
+          {replyOpen ? "Hide" : showRsvp ? "Leave a reply" : "Reach the hosts"}
+          <span
+            aria-hidden
+            className="inline-block h-1.5 w-1.5 border-b-[1.5px] border-r-[1.5px]"
+            style={{
+              borderColor: PALETTE.ink,
+              transform: replyOpen ? "rotate(-135deg) translateY(1px)" : "rotate(45deg) translateY(-1px)",
+            }}
+          />
+        </button>
+      </div>
+
+      {replyOpen ? (
+      <div id="rsvp-details">
       <div
         className="tm-hairline relative mx-auto mt-6 mb-6 h-px w-20"
         style={{ backgroundColor: `${PALETTE.mustard}70` }}
@@ -308,20 +342,24 @@ export function TraditionalMarriageRespond({
                   }}
                   disabled={staticPreview || loading}
                 />
-                <label className="sr-only" htmlFor="tm-rsvp-email">
-                  {t("rsvp.your_email")}
-                </label>
-                <input
-                  id="tm-rsvp-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t("rsvp.your_email")}
-                  autoComplete="email"
-                  className={fieldClass}
-                  style={fieldStyle}
-                  disabled={staticPreview || loading}
-                />
+                {collectEmail ? (
+                  <>
+                    <label className="sr-only" htmlFor="tm-rsvp-email">
+                      {t("rsvp.your_email")}
+                    </label>
+                    <input
+                      id="tm-rsvp-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={t("rsvp.your_email")}
+                      autoComplete="email"
+                      className={fieldClass}
+                      style={fieldStyle}
+                      disabled={staticPreview || loading}
+                    />
+                  </>
+                ) : null}
                 <label className="sr-only" htmlFor="tm-rsvp-phone">
                   {t("rsvp.your_phone")}
                 </label>
@@ -584,6 +622,8 @@ export function TraditionalMarriageRespond({
           )}
         </div>
       )}
+      </div>
+      ) : null}
     </section>
   );
 }

@@ -23,12 +23,14 @@ export function hourglassEngraving(input: {
   name2?: string | null;
   seal?: string | null;
   displayDate?: string | null;
-}): { monogram: string; coupleLine: string; dateLine: string } {
+}): { monogram: string; coupleLine: string; dateLine: string; tag: string } {
   const first = (value?: string | null) => value?.trim().split(/\s+/).filter(Boolean)[0] ?? "";
   const one = first(input.name1);
   const two = first(input.name2);
   const monogram = input.seal?.trim() || "";
   const coupleLine = [one, two].filter(Boolean).join(" & ");
   const dateLine = input.displayDate?.replace(/\s*•\s*/g, " · ").replace(/\s+/g, " ").trim() || "";
-  return { monogram, coupleLine, dateLine };
+  const tag =
+    one.toUpperCase() === "EDWIN" && two.toUpperCase() === "LORDINA" ? "#EdWinsDina26" : "";
+  return { monogram, coupleLine, dateLine, tag };
 }

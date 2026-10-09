@@ -12,6 +12,7 @@ test("hourglass engraving uses the couple on the board", () => {
   });
   assert.equal(kojo.monogram, "K | F");
   assert.equal(kojo.coupleLine, "Kojo & Fafa");
+  assert.equal(kojo.tag, "");
   assert.match(kojo.dateLine, /13 & 14/);
   assert.doesNotMatch(`${kojo.monogram} ${kojo.coupleLine} ${kojo.dateLine}`, /edwin|lordina|blankson|anderson/i);
 
@@ -23,6 +24,7 @@ test("hourglass engraving uses the couple on the board", () => {
   });
   assert.equal(edwin.coupleLine, "Edwin & Lordina");
   assert.equal(edwin.monogram, "E | L");
+  assert.equal(edwin.tag, "#EdWinsDina26");
   assert.doesNotMatch(`${edwin.monogram} ${edwin.coupleLine} ${edwin.dateLine}`, /kojo|fafa|westville|esther/i);
 });
 
@@ -31,6 +33,7 @@ test("an empty board does not fall back to another couple", () => {
   assert.equal(blank.monogram, "");
   assert.equal(blank.coupleLine, "");
   assert.equal(blank.dateLine, "");
+  assert.equal(blank.tag, "");
   assert.doesNotMatch(JSON.stringify(blank), /kojo|fafa|edwin|lordina|jeffery|chelsy/i);
 });
 

@@ -14,7 +14,7 @@ import {
 } from "framer-motion";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
-import { buildDirectionsUrl, resolveMapsLocationHref } from "@/lib/invitation/maps-utils";
+import { buildDirectionsUrl, extractMapsCoordinates, resolveMapsLocationHref } from "@/lib/invitation/maps-utils";
 import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { isVideoUrl } from "@/lib/invitation/theme-media-assets";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
@@ -31,6 +31,7 @@ import {
   type FaPalette,
 } from "./forever-afaris-wedding-palette";
 import { TraditionalMarriageRespond } from "./traditional-marriage-respond";
+import { InvitationMapPreview } from "@/components/invitation/invitation-map-preview";
 import { PlaceCard } from "@/components/invitation/place-card";
 import { InvitationMediaLightbox } from "@/components/invitation/invitation-media-lightbox";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
@@ -50,7 +51,7 @@ import {
 import { hourglassEngraving, weddingBoardUsesHourglass } from "@/lib/invitation/hourglass-identity";
 import { useCountdown } from "@/hooks/use-countdown";
 import { SeraphineHourglass } from "./seraphine-hourglass";
-import { Phone } from "lucide-react";
+import { Bell, BellRing, Phone } from "lucide-react";
 import { WhatsAppIcon } from "@/components/memory/icons/social-brand-icons";
 
 export type ForeverAfarisWeddingProps = InvitationRenderProps & {
@@ -341,16 +342,38 @@ function WeddingDateSaveRow({
           </>
         )}
       </button>
-      <p
-        className={`mt-2.5 font-[family-name:var(--font-cormorant)] ${T.label} tracking-[0.14em] transition-opacity duration-300`}
-        style={{
-          color: state === "error" ? C.rose : state === "done" ? C.goldDeep : C.cocoa,
-          opacity: staticPreview ? 0.45 : state === "idle" ? 0.72 : 1,
-        }}
-        aria-live="polite"
-      >
-        {staticPreview ? "Save the date" : message || statusLabel}
-      </p>
+      <div className="mt-3 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          disabled={staticPreview || state === "loading"}
+          onClick={() => void saveDate()}
+          aria-label={staticPreview ? "Save the date" : statusLabel}
+          title={staticPreview ? "Preview" : statusLabel}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-transform duration-300 hover:scale-[1.04] active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-70"
+          style={{
+            color: C.ink,
+            background: `linear-gradient(145deg, ${C.goldSoft}, ${C.gold})`,
+            boxShadow: `0 12px 22px -14px ${C.goldDeep}`,
+            outlineColor: C.gold,
+          }}
+        >
+          {state === "done" ? (
+            <BellRing className="h-[1.15rem] w-[1.15rem]" strokeWidth={1.75} aria-hidden />
+          ) : (
+            <Bell className="h-[1.15rem] w-[1.15rem]" strokeWidth={1.75} aria-hidden />
+          )}
+        </button>
+        <p
+          className={`text-left font-[family-name:var(--font-cormorant)] ${T.label} tracking-[0.08em] transition-opacity duration-300`}
+          style={{
+            color: state === "error" ? C.rose : state === "done" ? C.goldDeep : C.cocoa,
+            opacity: staticPreview ? 0.45 : state === "idle" ? 0.85 : 1,
+          }}
+          aria-live="polite"
+        >
+          {staticPreview ? "Save the date" : message || statusLabel}
+        </p>
+      </div>
     </div>
   );
 }
@@ -411,38 +434,38 @@ function ConfirmContacts({
   if (!rows.length) return null;
 
   const action =
-    "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border px-3 font-[family-name:var(--font-cinzel)] text-[0.68rem] uppercase tracking-[0.16em]";
+    "inline-flex h-7 shrink-0 items-center gap-1 rounded-full border px-2 font-[family-name:var(--font-cinzel)] text-[0.58rem] uppercase tracking-[0.12em]";
 
   return (
-    <div className={embedded ? "text-center" : "mx-auto mt-6 max-w-[22rem] text-center"}>
+    <div className={embedded ? "text-left" : "mx-auto mt-6 max-w-[22rem] text-left"}>
       {embedded ? null : (
         <p className={`${T.label} uppercase tracking-[0.28em]`} style={{ color: C.cocoa }}>
           Kindly confirm with
         </p>
       )}
-      <ul className={embedded ? "flex flex-col gap-5" : "mt-4 flex flex-col gap-5"}>
+      <ul className={embedded ? "flex flex-col gap-2" : "mt-4 flex flex-col gap-2"}>
         {rows.map((row) => {
           const callLabel = (
             <>
-              <Phone className="h-3.5 w-3.5" aria-hidden />
+              <Phone className="h-3 w-3" aria-hidden />
               Call
             </>
           );
           const whatsAppLabel = (
             <>
-              <WhatsAppIcon title="" className="h-4 w-4" />
+              <WhatsAppIcon title="" className="h-3 w-3" />
               WhatsApp
             </>
           );
           return (
-            <li key={`${row.name}-${row.telHref}`} className="flex flex-col items-stretch gap-2.5">
+            <li key={`${row.name}-${row.telHref}`} className="flex items-center justify-between gap-3">
               <span
-                className="font-[family-name:var(--font-cinzel)] text-[0.95rem] font-semibold uppercase tracking-[0.16em]"
+                className="min-w-0 truncate font-[family-name:var(--font-cinzel)] text-[0.78rem] font-semibold uppercase tracking-[0.14em]"
                 style={{ color: C.ink }}
               >
                 {row.name}
               </span>
-              <div className="flex gap-2">
+              <div className="flex shrink-0 items-center gap-1.5">
                 {staticPreview ? (
                   <span className={action} style={{ color: C.ink, borderColor: C.gold }}>
                     {callLabel}
@@ -487,25 +510,46 @@ function CoupleNameLockup({
   two,
   palette: C,
   compact = false,
+  featured = false,
+  gilded = false,
 }: {
   one: string;
   two: string;
   palette: FaPalette;
   compact?: boolean;
+  featured?: boolean;
+  gilded?: boolean;
 }) {
-  const nameStyle = { color: C.ink };
+  const nameClass = featured
+    ? "mx-auto block w-fit max-w-full whitespace-nowrap font-[family-name:var(--font-playfair)] text-[clamp(1.4rem,7.05vw,2.85rem)] font-medium italic leading-[1.02] tracking-[-0.025em]"
+    : compact
+      ? T.nameClose
+      : T.name;
+  const ink = featured || gilded ? C.storyInk : C.ink;
   return (
     <>
-      <span className={compact ? T.nameClose : T.name} style={nameStyle}>
+      <span className={nameClass} style={{ color: ink }}>
         {one}
       </span>
-      <span
-        className={`block font-[family-name:var(--font-great-vibes)] leading-none ${compact ? "my-0.5 text-[clamp(1.65rem,4.8vw,2.05rem)]" : "my-1 text-[clamp(2.15rem,6.2vw,2.85rem)]"}`}
-        style={{ color: C.goldDeep }}
-      >
-        and
+      <span className={`flex items-center justify-center ${compact ? "my-0.5 gap-2" : featured ? "my-2 gap-3.5" : "my-1.5 gap-3"}`}>
+        <span
+          className={`${compact ? "w-7" : featured ? "w-12" : "w-10"} h-px`}
+          style={{ background: `linear-gradient(90deg, transparent, ${ink})` }}
+          aria-hidden
+        />
+        <span
+          className={`font-[family-name:var(--font-great-vibes)] leading-none ${compact ? "text-[clamp(1.65rem,4.8vw,2.05rem)]" : featured ? "text-[clamp(2.55rem,7.4vw,3.35rem)]" : "text-[clamp(2.15rem,6.2vw,2.85rem)]"}`}
+          style={{ color: ink }}
+        >
+          and
+        </span>
+        <span
+          className={`${compact ? "w-7" : featured ? "w-12" : "w-10"} h-px`}
+          style={{ background: `linear-gradient(90deg, ${ink}, transparent)` }}
+          aria-hidden
+        />
       </span>
-      <span className={compact ? T.nameClose : T.name} style={nameStyle}>
+      <span className={nameClass} style={{ color: ink }}>
         {two}
       </span>
     </>
@@ -547,6 +591,7 @@ function WeddingHourglass({
       monogram={engraving.monogram}
       coupleLine={engraving.coupleLine}
       dateLine={engraving.dateLine}
+      tag={engraving.tag}
       dial="light"
       ink={C.ink}
       labelInk={C.cocoa}
@@ -912,12 +957,13 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     return celebrationDays.flatMap((day) =>
       day.moments.flatMap((moment) => {
         const item = board.programmeItems.find((entry) => entry.id === moment.id);
-        const mapsUrl = programmeMapUrl(item, moment.place, venueName, sharedMap);
-        if (!mapsUrl || seen.has(mapsUrl)) return [];
-        seen.add(mapsUrl);
-        const address = mapsUrl === sharedMap ? board.venueAddress?.trim() || "" : "";
+        const pinUrl = programmeMapUrl(item, moment.place, venueName, sharedMap);
+        if (!pinUrl || seen.has(pinUrl)) return [];
+        seen.add(pinUrl);
+        const address = pinUrl === sharedMap ? board.venueAddress?.trim() || "" : "";
+        const guestMapUrl = item?.mapLink?.trim() || pinUrl;
         const href = resolveMapsLocationHref({
-          mapsUrl,
+          mapsUrl: guestMapUrl,
           locationName: moment.place,
           address,
         });
@@ -930,7 +976,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           timeZone: base?.timeZone,
           reminderMinutesBefore: base?.reminderMinutesBefore ?? [24 * 60, 60],
           venue: placeLine || undefined,
-          description: [base?.description, href].filter(Boolean).join("\n"),
+          description: [base?.description, href || guestMapUrl].filter(Boolean).join("\n"),
         };
         return [
           {
@@ -939,7 +985,8 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             title: moment.title,
             place: moment.place,
             address,
-            mapsUrl: href || mapsUrl,
+            mapsUrl: href || guestMapUrl,
+            pinUrl,
             event,
           },
         ];
@@ -1014,13 +1061,16 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         </p>
 
         {board.scriptTitle && (
-          <p className={`mt-3 ${T.script}`} style={{ color: C.goldDeep }}>
+          <p
+            className="mt-3 font-[family-name:var(--font-great-vibes)] text-[clamp(2.2rem,6.4vw,3.15rem)] leading-none"
+            style={{ color: C.goldDeep }}
+          >
             {board.scriptTitle}
           </p>
         )}
 
-        <h1 className="mx-auto mt-8 w-full">
-          <CoupleNameLockup one={couple1} two={couple2} palette={C} />
+        <h1 className="mx-auto mt-7 w-full">
+          <CoupleNameLockup one={couple1} two={couple2} palette={C} featured />
         </h1>
 
         <p
@@ -1300,8 +1350,22 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           {board.dressCodeHeading}
         </h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <DressCard label="Ladies" body={board.dressCodeLadies} palette={C} />
-          <DressCard label="Gents" body={board.dressCodeGents} palette={C} />
+          {board.dressCodeOccasions?.length ? (
+            board.dressCodeOccasions.map((occasion) => (
+              <DressCard
+                key={occasion.kicker || occasion.title}
+                kicker={occasion.kicker}
+                label={occasion.title}
+                body={occasion.detail}
+                palette={C}
+              />
+            ))
+          ) : (
+            <>
+              <DressCard label="Ladies" body={board.dressCodeLadies} palette={C} />
+              <DressCard label="Gents" body={board.dressCodeGents} palette={C} />
+            </>
+          )}
         </div>
       </Reveal>
     ) : null,
@@ -1326,6 +1390,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     rsvp: showRespond ? (
       <Reveal as="section">
         <TraditionalMarriageRespond
+          collectEmail={false}
           invitationId={invitation.id}
           guestId={guestId}
           guestName={invitedGuestName}
@@ -1363,12 +1428,17 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <h2 className={T.scriptSm} style={{ color: C.goldDeep }}>
             {board.storyHeading}
           </h2>
-          <div className="mx-auto mt-6 flex max-w-[32rem] flex-col gap-5 text-left">
+          <div className="mx-auto mt-6 flex max-w-[32rem] flex-col gap-4 text-left">
             {storyParagraphs(board.storyBody).map((paragraph) => (
               <p
                 key={paragraph}
-                className="font-[family-name:var(--font-cormorant)] text-[clamp(1.32rem,3.7vw,1.55rem)] font-medium italic leading-[1.78] tracking-[0.008em]"
-                style={{ color: C.ink }}
+                style={{
+                  color: C.storyInk,
+                  fontFamily: 'var(--font-parisienne), "Parisienne", cursive',
+                  fontSize: "clamp(1.7rem, 4.8vw, 2.05rem)",
+                  lineHeight: 1.72,
+                  letterSpacing: "0.012em",
+                }}
               >
                 {paragraph}
               </p>
@@ -1517,7 +1587,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         </p>
         {board.closingSignature && couple1 && couple2 ? (
           <p className="mx-auto mt-8 w-full" aria-label={board.closingSignature}>
-            <CoupleNameLockup one={couple1} two={couple2} palette={C} />
+            <CoupleNameLockup one={couple1} two={couple2} palette={C} gilded />
           </p>
         ) : board.closingSignature ? (
           <p className={`mt-4 ${T.scriptSm}`} style={{ color: C.ink }}>
@@ -1526,8 +1596,8 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         ) : null}
         {board.hashtag && (
           <p
-            className={`mt-4 font-[family-name:var(--font-cinzel)] ${T.label} font-bold tracking-[0.2em]`}
-            style={{ color: C.gold }}
+            className="mt-5 font-[family-name:var(--font-great-vibes)] text-[clamp(2.15rem,7vw,2.85rem)] leading-none"
+            style={{ color: C.goldDeep }}
           >
             {board.hashtag}
           </p>
@@ -1672,6 +1742,43 @@ function isLongProgrammeNote(description: string): boolean {
   return description.length > 140 || lines.length > 3;
 }
 
+const MENU_SMALL_WORDS = new Set(["and", "or", "in", "of", "with", "the", "a"]);
+
+/** Title-case a dish the way a printed menu would, keeping names that are already set. */
+function menuPhrase(raw: string): string {
+  const cleaned = raw
+    .replace(/\s*\(([^)]+)\)/g, (_, inner: string) => {
+      const note = String(inner).trim();
+      const titled = note.charAt(0).toUpperCase() + note.slice(1);
+      return /shito/i.test(note) ? ` ${titled}` : `, ${titled}`;
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = cleaned.split(" ");
+  const phrased = words
+    .map((word, index) => {
+      if (word !== word.toLowerCase()) return word;
+      const lower = word.toLowerCase();
+      if (index > 0 && MENU_SMALL_WORDS.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+  return phrased.replace(/\b(Deep|Stir|Pan) Fried\b/g, "$1-Fried");
+}
+
+function menuSections(lines: { text: string; heading: boolean }[]) {
+  const sections: { heading: string; dishes: string[] }[] = [];
+  for (const line of lines) {
+    if (line.heading) {
+      sections.push({ heading: line.text, dishes: [] });
+      continue;
+    }
+    if (!sections.length) sections.push({ heading: "", dishes: [] });
+    sections[sections.length - 1]?.dishes.push(menuPhrase(line.text));
+  }
+  return sections.filter((section) => section.heading || section.dishes.length);
+}
+
 function ProgrammeNote({
   id,
   title,
@@ -1687,12 +1794,14 @@ function ProgrammeNote({
   if (!isLongProgrammeNote(description)) {
     return (
       <p
-        className={`${T.programmeDesc} inline-block max-w-full rounded-md px-2.5 py-1 font-semibold`}
+        className={`${T.programmeDesc} inline max-w-full italic leading-[1.35] [box-decoration-break:clone]`}
         data-programme-place=""
         style={{
           color: C.ink,
-          background: `color-mix(in srgb, ${C.gold} 46%, white)`,
-          boxShadow: `inset 0 0 0 1.5px ${C.goldDeep}`,
+          backgroundImage: `linear-gradient(transparent 0.55em, color-mix(in srgb, ${C.gold} 58%, white) 0.55em)`,
+          WebkitBoxDecorationBreak: "clone",
+          boxDecorationBreak: "clone",
+          padding: "0 0.2em 0.08em",
         }}
       >
         {description}
@@ -1718,51 +1827,106 @@ function ProgrammeNote({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-[family-name:var(--font-cinzel)] text-[0.72rem] uppercase tracking-[0.16em]"
-        style={{ color: C.ink, background: `${C.linen}ee`, border: `1px solid ${C.border}` }}
+        className="inline-flex items-center gap-2.5 rounded-full px-5 py-2 font-[family-name:var(--font-cinzel)] text-[0.74rem] font-semibold uppercase tracking-[0.18em] transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        style={{
+          color: C.ink,
+          background: `linear-gradient(135deg, ${C.goldSoft}, ${C.gold})`,
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.7), 0 12px 22px -16px ${C.goldDeep}`,
+          outlineColor: C.goldDeep,
+        }}
       >
         {open ? (menu ? "Hide the menu" : "Hide details") : menu ? "View the menu" : "View details"}
         <span
           aria-hidden
-          className="inline-block h-1.5 w-1.5 border-b border-r"
+          className="inline-block h-1.5 w-1.5 border-b-[1.5px] border-r-[1.5px]"
           style={{
-            borderColor: C.goldDeep,
+            borderColor: C.ink,
             transform: open ? "rotate(-135deg) translateY(1px)" : "rotate(45deg) translateY(-1px)",
           }}
         />
       </button>
       {open ? (
-        <div id={panelId} className="mt-3 space-y-1">
-          {lines.map((line, index) =>
-            line.heading ? (
-              <p
-                key={`${line.text}-${index}`}
-                className={`${index === 0 ? "" : "pt-2"} font-[family-name:var(--font-cinzel)] text-[0.72rem] uppercase tracking-[0.18em]`}
-                style={{ color: C.goldDeep }}
-              >
-                {line.text}
-              </p>
-            ) : (
-              <p
-                key={`${line.text}-${index}`}
-                className="font-[family-name:var(--font-cormorant)] text-[clamp(0.98rem,2.4vw,1.125rem)] leading-snug"
-                style={{ color: C.cocoa }}
-              >
-                {line.text}
-              </p>
-            )
-          )}
-        </div>
+        menu ? (
+          <div
+            id={panelId}
+            className="mt-4 rounded-[1.35rem] px-5 py-7 text-center sm:px-8"
+            style={{
+              background: `linear-gradient(180deg, ${C.ivory} 0%, ${C.linen} 100%)`,
+              border: `1px solid ${C.border}`,
+              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.8), 0 22px 40px -30px ${C.ink}`,
+            }}
+          >
+            {menuSections(lines).map((section, sectionIndex) => (
+              <div key={section.heading || sectionIndex} className={sectionIndex === 0 ? "" : "mt-6"}>
+                {section.heading ? (
+                  <div className="mb-2.5 flex items-center justify-center gap-3">
+                    <span
+                      className="h-px w-8"
+                      style={{ background: `linear-gradient(90deg, transparent, ${C.gold})` }}
+                      aria-hidden
+                    />
+                    <p
+                      className="font-[family-name:var(--font-cinzel)] text-[0.68rem] font-semibold uppercase tracking-[0.32em]"
+                      style={{ color: C.goldDeep }}
+                    >
+                      {section.heading}
+                    </p>
+                    <span
+                      className="h-px w-8"
+                      style={{ background: `linear-gradient(90deg, ${C.gold}, transparent)` }}
+                      aria-hidden
+                    />
+                  </div>
+                ) : null}
+                <ul className="space-y-1">
+                  {section.dishes.map((dish) => (
+                    <li
+                      key={dish}
+                      className="font-[family-name:var(--font-cormorant)] text-[clamp(1.15rem,3vw,1.35rem)] italic leading-tight"
+                      style={{ color: C.ink }}
+                    >
+                      {dish}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div id={panelId} className="mt-3 space-y-1">
+            {lines.map((line, index) =>
+              line.heading ? (
+                <p
+                  key={`${line.text}-${index}`}
+                  className={`${index === 0 ? "" : "pt-2"} font-[family-name:var(--font-cinzel)] text-[0.72rem] uppercase tracking-[0.18em]`}
+                  style={{ color: C.goldDeep }}
+                >
+                  {line.text}
+                </p>
+              ) : (
+                <p
+                  key={`${line.text}-${index}`}
+                  className="font-[family-name:var(--font-cormorant)] text-[clamp(0.98rem,2.4vw,1.125rem)] leading-snug"
+                  style={{ color: C.cocoa }}
+                >
+                  {line.text}
+                </p>
+              )
+            )}
+          </div>
+        )
       ) : null}
     </div>
   );
 }
 
 function DressCard({
+  kicker,
   label,
   body,
   palette: C,
 }: {
+  kicker?: string;
   label: string;
   body: string;
   palette: FaPalette;
@@ -1772,9 +1936,19 @@ function DressCard({
       className="rounded-2xl px-5 py-5 text-left"
       style={{ background: `linear-gradient(180deg, ${C.linen}, ${C.ivory})`, border: `1px solid ${C.border}` }}
     >
-      <p className={T.scriptSm} style={{ color: C.goldDeep }}>
-        {label}
-      </p>
+      {kicker ? (
+        <p
+          className="font-[family-name:var(--font-cinzel)] text-[0.68rem] font-semibold uppercase tracking-[0.2em]"
+          style={{ color: C.goldDeep }}
+        >
+          {kicker}
+        </p>
+      ) : null}
+      {label.trim() ? (
+        <p className={`${T.scriptSm} ${kicker ? "mt-1" : ""}`} style={{ color: C.goldDeep }}>
+          {label}
+        </p>
+      ) : null}
       <p
         className={`mt-2 font-[family-name:var(--font-cormorant)] ${T.body} leading-relaxed`}
         style={{ color: C.cocoa }}
@@ -1797,13 +1971,16 @@ function VenueMapCard({
     place: string;
     address: string;
     mapsUrl: string;
+    pinUrl: string;
     event: CalendarEventInput;
   };
   palette: FaPalette;
   buttonLabel: string;
   staticPreview: boolean;
 }) {
-  const embedUrl = toMapsEmbedUrl(stop.mapsUrl, stop.place);
+  const pinLink = stop.pinUrl || stop.mapsUrl;
+  const hasPin = Boolean(extractMapsCoordinates(pinLink));
+  const embedUrl = hasPin ? null : toMapsEmbedUrl(pinLink, stop.place, 17);
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [calendarApp, setCalendarApp] = useState("your calendar");
 
@@ -1850,22 +2027,35 @@ function VenueMapCard({
           {stop.address}
         </p>
       ) : null}
-      {embedUrl ? (
+      {hasPin || embedUrl ? (
         <div
-          className="mx-auto mt-4 overflow-hidden"
+          className="relative mx-auto mt-4 overflow-hidden"
           style={{
-            borderRadius: 18,
+            borderRadius: 22,
             border: `1px solid ${C.border}`,
-            boxShadow: `0 16px 32px -24px ${C.ink}`,
+            boxShadow: `0 22px 36px -24px ${C.ink}`,
           }}
         >
-          <iframe
-            title={`Map of ${stop.place}`}
-            src={embedUrl}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            className="h-44 w-full bg-[#FBF6EF]"
-          />
+          {hasPin ? (
+            <InvitationMapPreview mapsLink={pinLink} place={stop.place} />
+          ) : (
+            <iframe
+              title={`Map of ${stop.place}`}
+              src={embedUrl ?? undefined}
+              loading="eager"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="pointer-events-none h-56 w-full bg-[#FBF6EF]"
+            />
+          )}
+          {!staticPreview && stop.mapsUrl ? (
+            <Link
+              href={stop.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${stop.place} in Google Maps`}
+              className="absolute inset-0"
+            />
+          ) : null}
         </div>
       ) : null}
       {!staticPreview && stop.mapsUrl ? (

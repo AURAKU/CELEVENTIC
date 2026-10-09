@@ -7,6 +7,7 @@ import {
   normalizeExternalHref,
   resolveMapsLocationHref,
   toGoogleMapsDirectionsHref,
+  webMercatorTile,
 } from "@/lib/invitation/maps-utils";
 
 test("normalizeExternalHref never leaves Google Maps as a same-origin path", () => {
@@ -75,4 +76,10 @@ test("googleMapsPlaceHref pins the named venue to exact coordinates", () => {
   assert.match(href, /@5\.621568,-0\.18492,17z/);
   assert.deepEqual(extractMapsCoordinates(href), { lat: 5.621568, lng: -0.18492 });
   assert.match(toGoogleMapsDirectionsHref(href), /destination=5\.621568%2C-0\.18492/);
+});
+
+test("webMercatorTile places the Tema church on its zoom-16 tile", () => {
+  const tile = webMercatorTile(5.670683, -0.03132, 16);
+  assert.equal(Math.floor(tile.x), 32762);
+  assert.equal(Math.floor(tile.y), 31733);
 });

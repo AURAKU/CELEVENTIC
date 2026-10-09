@@ -26,7 +26,7 @@
     "weddingBoard": {
       "openingInstruction": "Tap anywhere to open",
       "sealMonogram": "E | L",
-      "gateWord": "#EDWINANDLORDINA",
+      "gateWord": "##EdWinsDina26",
       "envelopeAddressLine": "You are cordially invited",
       "envelopeStyle": "ivory-lace",
       "gateStyle": "ivory-arch",
@@ -44,7 +44,7 @@
       "coupleName1": "Edwin Ebow Blankson",
       "coupleName2": "Lordina Ewurafua Anderson",
       "invitationCopy": "Joyfully request the honour of your presence as they begin forever, side by side.",
-      "hashtag": "#EdwinAndLordina",
+      "hashtag": "#EdWinsDina26",
       "heroCaption": "From miles apart to forever side by side",
       "displayDate": "DECEMBER \u2022 24 & 26 \u2022 2026",
       "weekday": "THU \u00b7 SAT",
@@ -74,14 +74,16 @@
           "time": "SAT 26 DEC \u00b7 9:00 AM",
           "title": "White Wedding, Church Ceremony",
           "description": "Assemblies of God Tema Community 12 TCC",
-          "mapUrl": "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z"
+          "mapUrl": "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z",
+          "mapLink": "https://maps.app.goo.gl/na41AsKZ9n3heV2C6"
         },
         {
           "id": "reception",
           "time": "SAT 26 DEC \u00b7 4:00 PM",
           "title": "Reception",
           "description": "Combos & Casa, East Legon Hills",
-          "mapUrl": "https://www.google.com/maps/place/Combos+%26+Casa/@5.706804,-0.11083,17z"
+          "mapUrl": "https://www.google.com/maps/place/Combos+%26+Casa/@5.706804,-0.11083,17z",
+          "mapLink": "https://maps.app.goo.gl/Sbx2eQX7BS2cGeXX9"
         },
         {
           "id": "menu",
@@ -91,8 +93,20 @@
         }
       ],
       "dressCodeHeading": "DRESS CODE",
-      "dressCodeLadies": "Ivory, champagne gold, and navy blue. Elegant, celebratory, and timeless.",
-      "dressCodeGents": "Ivory, champagne gold, and navy blue. A tailored suit or coordinated celebration colours.",
+      "dressCodeLadies": "Traditional ceremony: all white. The wedding: an elegant gown.",
+      "dressCodeGents": "Traditional ceremony: all white. The wedding: a suit or tuxedo.",
+      "dressCodeOccasions": [
+        {
+          "kicker": "Traditional ceremony",
+          "title": "All white",
+          "detail": "Ladies and gentlemen, all in white."
+        },
+        {
+          "kicker": "The Wedding",
+          "title": "",
+          "detail": "A suit or tuxedo for the gentlemen, and an elegant gown for the ladies."
+        }
+      ],
       "guestPolicyHeading": "WHO IS THIS INVITATION FOR?",
       "guestPolicyBody": "This celebration honours the names written on the invitation. Kindly come as invited, and we will look after you.",
       "storyHeading": "Our Love Story",
@@ -188,12 +202,6 @@
       "name": "Edwin & Lordina"
     },
     {
-      "url": "/templates/edwin-lordina/moments/01-stool.jpg",
-      "type": "image",
-      "role": "reference",
-      "name": "Edwin and Lordina"
-    },
-    {
       "url": "/templates/edwin-lordina/moments/02-gold.jpg",
       "type": "image",
       "role": "reference",
@@ -213,12 +221,6 @@
     },
     {
       "url": "/templates/edwin-lordina/moments/05-close.jpg",
-      "type": "image",
-      "role": "reference",
-      "name": "Edwin and Lordina"
-    },
-    {
-      "url": "/templates/edwin-lordina/moments/06-sofa-smile.jpg",
       "type": "image",
       "role": "reference",
       "name": "Edwin and Lordina"

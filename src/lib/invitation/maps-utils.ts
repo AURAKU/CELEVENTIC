@@ -172,6 +172,19 @@ export function hasLocationData(options: {
   return Boolean(buildDirectionsUrl(options));
 }
 
+/** Web-mercator tile position. `x` and `y` are in tile units at `zoom`. */
+export function webMercatorTile(
+  lat: number,
+  lng: number,
+  zoom: number
+): { x: number; y: number } {
+  const n = 2 ** zoom;
+  const x = ((lng + 180) / 360) * n;
+  const rad = (lat * Math.PI) / 180;
+  const y = ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n;
+  return { x, y };
+}
+
 /** Open turn-by-turn to the pin when we have coordinates; otherwise the maps link. */
 export function toGoogleMapsDirectionsHref(
   mapsUrl?: string | null,

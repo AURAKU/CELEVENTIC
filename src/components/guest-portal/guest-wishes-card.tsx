@@ -150,6 +150,7 @@ export function GuestWishesCard({
   const wishInk = colors?.text || colors?.primary || "#1B365D";
   const wishGold = colors?.secondary || colors?.accent || "#C7A35A";
   const wishPaper = colors?.background || "#FBF6EF";
+  const wishScript = `color-mix(in srgb, ${wishGold} 62%, #2a2114)`;
   const resolvedHouseName = houseName ?? fashionHouse?.houseName ?? null;
   const houseLogoSrc = fashion
     ? fashionHouseLogoSrc({
@@ -1207,12 +1208,12 @@ export function GuestWishesCard({
               <h3
                 className={
                   wedding
-                    ? "font-[family-name:var(--font-cinzel)] text-[clamp(1.65rem,5vw,2rem)] font-semibold leading-none tracking-[0.04em]"
+                    ? "font-[family-name:var(--font-great-vibes)] text-[clamp(2.35rem,6.4vw,2.9rem)] font-normal leading-none"
                     : `font-[family-name:var(--font-cormorant)] text-2xl sm:text-[1.65rem] font-semibold tracking-tight leading-none ${
                         dark ? "text-white" : "text-slate-900"
                       }`
                 }
-                style={wedding ? { color: wishInk } : undefined}
+                style={wedding ? { color: wishGold } : undefined}
               >
                 {copy.title}
               </h3>
@@ -1236,12 +1237,20 @@ export function GuestWishesCard({
           <p
             className={
               wedding
-                ? "mt-4 mb-6 font-[family-name:var(--font-cormorant)] text-[clamp(1.2rem,3.2vw,1.38rem)] font-medium italic leading-[1.65]"
+                ? "mt-3 mb-6 leading-[1.7]"
                 : `mt-3 mb-5 text-[15px] leading-relaxed font-[family-name:var(--font-sans)] ${
                     dark ? "text-white/75" : "text-slate-600"
                   }`
             }
-            style={wedding ? { color: wishInk } : undefined}
+            style={
+              wedding
+                ? {
+                    color: wishScript,
+                    fontFamily: 'var(--font-parisienne), "Parisienne", cursive',
+                    fontSize: "clamp(1.55rem, 4.2vw, 1.85rem)",
+                  }
+                : undefined
+            }
           >
             {copy.lead}
             {canModerate ? copy.leadModerator : copy.leadGuest}
@@ -1326,7 +1335,11 @@ export function GuestWishesCard({
           }`}
           style={
             wedding
-              ? { backgroundColor: wishGold, backgroundImage: "none", color: wishInk }
+              ? {
+                  backgroundColor: wishGold,
+                  backgroundImage: `linear-gradient(135deg, color-mix(in srgb, ${wishGold} 46%, white), ${wishGold})`,
+                  color: wishInk,
+                }
               : { backgroundColor: accentColor }
           }
         >
@@ -1429,12 +1442,20 @@ export function GuestWishesCard({
                       <p
                         className={`min-w-0 ${
                           wedding
-                            ? "font-[family-name:var(--font-cormorant)] text-[clamp(1.22rem,3.4vw,1.42rem)] font-medium italic leading-[1.62] tracking-[0.004em]"
+                            ? "leading-[1.65]"
                             : `text-[15px] leading-[1.65] sm:text-base font-[family-name:var(--font-sans)] ${
                                 dark ? "text-white/92" : "text-slate-800"
                               }`
                         }`}
-                        style={wedding ? { color: wishInk } : undefined}
+                        style={
+                          wedding
+                            ? {
+                                color: wishScript,
+                                fontFamily: 'var(--font-parisienne), "Parisienne", cursive',
+                                fontSize: "clamp(1.45rem, 4vw, 1.72rem)",
+                              }
+                            : undefined
+                        }
                       >
                         <span
                           className={`select-none ${
@@ -1510,8 +1531,8 @@ export function GuestWishesCard({
                           wedding
                             ? {
                                 color: wishInk,
-                                boxShadow: `inset 0 -0.78em 0 color-mix(in srgb, ${wishGold} 72%, white)`,
-                                padding: "0.06em 0.32em 0.02em",
+                                borderBottom: `1px solid ${wishGold}`,
+                                paddingBottom: "0.2em",
                               }
                             : { color: accentColor }
                         }

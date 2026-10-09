@@ -203,6 +203,7 @@ export function SeraphineHourglass({
   monogram,
   coupleLine,
   dateLine,
+  tag,
   dial = "dark",
   ink,
   labelInk,
@@ -212,6 +213,8 @@ export function SeraphineHourglass({
   monogram?: string | null;
   coupleLine?: string | null;
   dateLine?: string | null;
+  /** Engraved on the turning plate, and repeated under the dial. */
+  tag?: string | null;
   /** Pale gold figures are for a dark countdown field. Ivory pages need ink. */
   dial?: "dark" | "light";
   ink?: string;
@@ -438,6 +441,7 @@ export function SeraphineHourglass({
                   ))}
                 </div>
               ) : null}
+              {tag?.trim() ? <p className={styles.mark}>{tag.trim()}</p> : null}
             </div>
             <div className={`${styles.face} ${styles.faceBack}`} aria-hidden>
               <svg className={styles.svg} viewBox="0 8 240 340">
@@ -475,7 +479,18 @@ export function SeraphineHourglass({
                     {monogram.trim()}
                   </text>
                 ) : null}
-                {coupleLine?.trim() ? (
+                {tag?.trim() ? (
+                  <text
+                    x={CX}
+                    y="176"
+                    textAnchor="middle"
+                    fill="#6e5524"
+                    fontSize="13"
+                    style={{ fontFamily: 'var(--font-great-vibes), "Great Vibes", cursive' }}
+                  >
+                    {tag.trim()}
+                  </text>
+                ) : coupleLine?.trim() ? (
                   <text
                     x={CX}
                     y="176"

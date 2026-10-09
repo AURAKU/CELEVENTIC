@@ -622,7 +622,10 @@ export function PublicMemoriesGallery({
           </div>
 
           <div
-            className="flex-1 flex items-center justify-center px-2 min-h-0 relative"
+            className={cn(
+              "relative min-h-0 flex-1",
+              isMemoryVideo(lightbox) ? "flex items-center justify-center px-2" : "overflow-hidden"
+            )}
             onClick={() => {
               const now = Date.now();
               if (now - lastTapRef.current < 320) {
@@ -688,9 +691,9 @@ export function PublicMemoriesGallery({
               <img
                 src={resolvePublicMediaUrl(pickMemoryFullSrc(lightbox))}
                 srcSet={resolveMemoryPhotoSrcSet(lightbox, resolvePublicMediaUrl)}
-                sizes="(max-width: 768px) 100vw, min(1200px, 92vw)"
+                sizes="100vw"
                 alt={lightbox.caption ?? ""}
-                className="max-w-full max-h-full object-contain"
+                className="absolute inset-0 h-full w-full object-cover"
               />
             )}
             {heartBurst ? (

@@ -14,12 +14,10 @@ const EVENT_SONG_URL = "/music/edwin-lordina-biblical.mp3";
 const EVENT_SONG_DURATION_SEC = 229.72;
 const EVENT_TITLE = "Edwin & Lordina";
 const MOMENTS = [
-  "/templates/edwin-lordina/moments/01-stool.jpg",
   "/templates/edwin-lordina/moments/02-gold.jpg",
   "/templates/edwin-lordina/moments/03-sofa.jpg",
   "/templates/edwin-lordina/moments/04-navy.jpg",
   "/templates/edwin-lordina/moments/05-close.jpg",
-  "/templates/edwin-lordina/moments/06-sofa-smile.jpg",
 ] as const;
 
 /** Hide the scratch card without touching the rest of a stored board. */

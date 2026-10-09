@@ -301,14 +301,19 @@ export async function shareOrDownloadIcs(
 }
 
 /** Embed-friendly Google Maps URL (no API key). Pins coordinates when the link has them. */
-export function toMapsEmbedUrl(mapsLink?: string | null, venueLabel?: string | null): string | null {
+export function toMapsEmbedUrl(
+  mapsLink?: string | null,
+  venueLabel?: string | null,
+  zoom = 16
+): string | null {
   const link = normalizeExternalHref(mapsLink);
   if (link.includes("output=embed") || link.includes("/maps/embed")) {
     return link;
   }
   const query = extractMapsQuery(link, venueLabel?.trim() || "");
+  const level = Math.min(20, Math.max(12, Math.round(zoom)));
   if (query) {
-    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&hl=en&z=16&output=embed`;
+    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&hl=en&z=${level}&output=embed`;
   }
   if (link && /google\./i.test(link) && link.includes("/maps")) {
     const sep = link.includes("?") ? "&" : "?";

@@ -495,66 +495,205 @@
   gap: 0.15rem;
   width: min(96vw, 34rem);
   max-width: min(96vw, 34rem);
-  padding: 1.55rem 0.7rem 1.45rem;
+  padding: 1.75rem 1.05rem 1.6rem;
   font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0;
   background:
-    radial-gradient(120% 80% at 50% 0%, rgba(199, 163, 90, 0.16), transparent 58%),
-    linear-gradient(180deg, rgba(6, 10, 18, 0.72), rgba(6, 10, 18, 0.5));
-  border: 1px solid color-mix(in srgb, var(--tap-gold) 92%, white 8%);
-  box-shadow:
-    0 28px 60px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 248, 230, 0.28);
+    radial-gradient(90% 80% at 50% 42%, rgba(199, 163, 90, 0.14), transparent 62%),
+    linear-gradient(180deg, rgba(6, 12, 22, 0.22), rgba(6, 12, 22, 0.48) 48%, rgba(6, 12, 22, 0.2));
+  border: 0;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.28);
 }
 
-.namesFormal .coupleLine::before {
+.nameFrame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.frameCorner {
+  position: absolute;
+  width: 1.55rem;
+  height: 1.15rem;
+}
+
+.frameCorner::before,
+.frameCorner::after {
   content: "";
   position: absolute;
-  inset: 7px;
-  border: 1px solid color-mix(in srgb, var(--tap-gold) 70%, transparent);
-  pointer-events: none;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--tap-gold) 92%, #fff8e8 8%);
+}
+
+.frameCorner::before {
+  inset: 0;
+  border-width: 1px;
+}
+
+.frameCorner::after {
+  inset: 4px;
+  border-width: 1px;
+  border-color: color-mix(in srgb, var(--tap-gold) 55%, transparent);
+}
+
+.frameCorner[data-place="tl"] {
+  top: 0.42rem;
+  left: 0.48rem;
+}
+
+.frameCorner[data-place="tr"] {
+  top: 0.42rem;
+  right: 0.48rem;
+}
+
+.frameCorner[data-place="bl"] {
+  bottom: 0.42rem;
+  left: 0.48rem;
+}
+
+.frameCorner[data-place="br"] {
+  bottom: 0.42rem;
+  right: 0.48rem;
+}
+
+.frameCorner[data-place="tl"]::before,
+.frameCorner[data-place="tl"]::after,
+.frameCorner[data-place="tr"]::before,
+.frameCorner[data-place="tr"]::after {
+  border-bottom-width: 0;
+}
+
+.frameCorner[data-place="bl"]::before,
+.frameCorner[data-place="bl"]::after,
+.frameCorner[data-place="br"]::before,
+.frameCorner[data-place="br"]::after {
+  border-top-width: 0;
+}
+
+.frameCorner[data-place="tl"]::before,
+.frameCorner[data-place="tl"]::after,
+.frameCorner[data-place="bl"]::before,
+.frameCorner[data-place="bl"]::after {
+  border-right-width: 0;
+}
+
+.frameCorner[data-place="tr"]::before,
+.frameCorner[data-place="tr"]::after,
+.frameCorner[data-place="br"]::before,
+.frameCorner[data-place="br"]::after {
+  border-left-width: 0;
+}
+
+.frameGem {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: linear-gradient(135deg, #fff8e8 0%, #e8cc8a 42%, #c7a35a 72%, #8a7344 100%);
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(199, 163, 90, 0.55);
+}
+
+.frameCorner[data-place="tl"] .frameGem {
+  top: -2px;
+  left: -2px;
+}
+
+.frameCorner[data-place="tr"] .frameGem {
+  top: -2px;
+  right: -2px;
+}
+
+.frameCorner[data-place="bl"] .frameGem {
+  bottom: -2px;
+  left: -2px;
+}
+
+.frameCorner[data-place="br"] .frameGem {
+  bottom: -2px;
+  right: -2px;
+}
+
+.frameCrest {
+  position: absolute;
+  left: 50%;
+  width: 5.4rem;
+  height: 7px;
+  transform: translateX(-50%);
+}
+
+.frameCrest[data-place="top"] {
+  top: 0.28rem;
+}
+
+.frameCrest[data-place="bottom"] {
+  bottom: 0.28rem;
+}
+
+.frameCrest .frameGem {
+  top: 1px;
+  left: 50%;
+  margin-left: -2.5px;
+}
+
+.frameCrest::before,
+.frameCrest::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  width: 2.15rem;
+  height: 1px;
+}
+
+.frameCrest::before {
+  left: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--tap-gold) 90%, white));
+}
+
+.frameCrest::after {
+  right: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tap-gold) 90%, white), transparent);
+}
+
+
+.namesFormal .fullName,
+.namesFormal .ampRow {
+  position: relative;
+  z-index: 1;
+}
+
+.namesFormal .fullName {
+  color: #f6e7c1;
+  background-image: linear-gradient(
+    185deg,
+    #fffaf0 0%,
+    #f8e4b4 24%,
+    #e4c478 50%,
+    #c9963d 76%,
+    #a67c32 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.62));
 }
 
 .fullName {
   display: block;
   max-width: 100%;
-  padding: 0.12rem 0.15rem 0.28rem;
+  padding: 0.08rem 0.1rem;
   font-family: var(--tap-font-family, var(--font-cinzel), "Cinzel", serif);
   font-size: calc(clamp(0.92rem, 4.55vw, 1.38rem) * var(--tap-scale, 1));
-  font-weight: 600;
+  font-weight: 500;
   font-feature-settings: "kern" 1, "liga" 1;
-  letter-spacing: 0.085em;
-  text-indent: 0.085em;
-  line-height: 1.15;
+  letter-spacing: 0.12em;
+  text-indent: 0.12em;
+  line-height: 1.2;
   white-space: nowrap;
-  color: #fff6e4;
-  background-image: linear-gradient(
-    185deg,
-    #fffdf8 0%,
-    #f8e7c0 34%,
-    #e7cc8c 58%,
-    #c7a35a 82%,
-    #fff4d4 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.55)) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
-}
-
-.fullName::after {
-  content: "";
-  display: block;
-  width: 72%;
-  height: 1px;
-  margin: 0.28rem auto 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--tap-gold) 90%, white 10%),
-    transparent
-  );
+  color: #fffaf3;
+  background: none;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
 .ampRow {
@@ -589,6 +728,14 @@
   );
 }
 
+@media (max-width: 540px) {
+  .namesFormal .fullName {
+    letter-spacing: 0.07em;
+    text-indent: 0.07em;
+    font-size: calc(clamp(0.78rem, 3.7vw, 1.02rem) * var(--tap-scale, 1));
+  }
+}
+
 @media (max-width: 420px) {
   .fullName {
     letter-spacing: 0.045em;
@@ -601,7 +748,21 @@
   }
 
   .namesFormal .coupleLine {
-    padding: 1.15rem 0.55rem 1.2rem;
+    padding: 1.45rem 1.05rem 1.35rem;
+  }
+
+  .frameCorner {
+    width: 1.15rem;
+    height: 0.85rem;
+  }
+
+  .frameCrest {
+    width: 3.4rem;
+  }
+
+  .frameCrest::before,
+  .frameCrest::after {
+    width: 1.25rem;
   }
 }
 
@@ -791,6 +952,26 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
 }
 
+/*
+ * Portrait welcome on a laptop: the phone crop (center 35%) slices the heads.
+ * Anchor near the top so the couple drops into the frame, edge to edge, while
+ * the lockup, seal, and phrase stay in the stage above the photo.
+ */
+@media (min-width: 1024px) {
+  .widePortrait .hero {
+    inset: 0;
+  }
+
+  .widePortrait .heroImg {
+    object-position: center 28%;
+    animation-name: tap-ken-burns-wide;
+  }
+
+  .widePortrait .namesFormal {
+    margin-top: clamp(2.75rem, 10vh, 5.5rem);
+  }
+}
+
 .exiting {
   animation: tap-outro-fade var(--tap-exit-ms) ease-in forwards;
   pointer-events: none;
@@ -844,6 +1025,15 @@
   }
   to {
     transform: scale(1.14) translate(-1.2%, -0.8%);
+  }
+}
+
+@keyframes tap-ken-burns-wide {
+  from {
+    transform: scale(1.02);
+  }
+  to {
+    transform: scale(1.045) translateY(1.2%);
   }
 }
 

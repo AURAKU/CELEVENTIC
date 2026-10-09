@@ -48,6 +48,16 @@ export interface WeddingBoardRsvpContact {
   phone: string;
 }
 
+/** One celebration's dress note, used when the days do not share a single code. */
+export interface WeddingDressOccasion {
+  /** Small line above the dress name, such as Traditional ceremony. */
+  kicker: string;
+  /** The dress name, such as All white or Black tie. */
+  title: string;
+  /** One sentence covering who wears what. */
+  detail: string;
+}
+
 export interface WeddingBoardProgrammeItem {
   /** Stable key for list rendering / editor reordering */
   id: string;
@@ -56,6 +66,11 @@ export interface WeddingBoardProgrammeItem {
   description?: string;
   /** Google Maps place URL for this stop, when it has its own pin. */
   mapUrl?: string;
+  /**
+   * Link opened when a guest taps the map. The preview still pins `mapUrl`.
+   * Use this for a share link such as maps.app.goo.gl.
+   */
+  mapLink?: string;
 }
 
 /** Envelope paper treatment shown in the opening ceremony. */
@@ -201,6 +216,8 @@ export interface WeddingBoardContent {
   dressCodeHeading?: string;
   dressCodeLadies?: string;
   dressCodeGents?: string;
+  /** When set, the invitation shows one card per celebration instead of Ladies / Gents. */
+  dressCodeOccasions?: WeddingDressOccasion[];
 
   // — Guest / child policy —
   guestPolicyHeading?: string;
@@ -248,13 +265,14 @@ export const FOREVER_AFARIS_DEFAULT_SEAL = "J | C";
 export const DEFAULT_WEDDING_BOARD: Required<
   Omit<
     WeddingBoardContent,
-    "features" | "rsvpContacts" | "programmeItems" | "sectionOrder"
+    "features" | "rsvpContacts" | "programmeItems" | "sectionOrder" | "dressCodeOccasions"
   >
 > & {
   rsvpContacts: WeddingBoardRsvpContact[];
   programmeItems: WeddingBoardProgrammeItem[];
   sectionOrder: WeddingSectionId[];
   features: Required<WeddingBoardFeatureFlags>;
+  dressCodeOccasions?: WeddingDressOccasion[];
 } = {
   openingInstruction: "Tap anywhere to open",
   sealMonogram: FOREVER_AFARIS_DEFAULT_SEAL,

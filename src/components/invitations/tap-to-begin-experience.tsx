@@ -228,6 +228,28 @@ function CoupleLockup({ name1, name2 }: { name1: string; name2: string }) {
   return (
     <div className={formal ? `${styles.names} ${styles.namesFormal}` : styles.names}>
       <p className={styles.coupleLine}>
+        {formal ? (
+          <span className={styles.nameFrame} aria-hidden>
+            <span className={styles.frameCorner} data-place="tl">
+              <span className={styles.frameGem} />
+            </span>
+            <span className={styles.frameCorner} data-place="tr">
+              <span className={styles.frameGem} />
+            </span>
+            <span className={styles.frameCorner} data-place="bl">
+              <span className={styles.frameGem} />
+            </span>
+            <span className={styles.frameCorner} data-place="br">
+              <span className={styles.frameGem} />
+            </span>
+            <span className={styles.frameCrest} data-place="top">
+              <span className={styles.frameGem} />
+            </span>
+            <span className={styles.frameCrest} data-place="bottom">
+              <span className={styles.frameGem} />
+            </span>
+          </span>
+        ) : null}
         {first ? (
           <span className={styles.fullName}>{name1}</span>
         ) : (
@@ -452,9 +474,12 @@ export function TapToBeginExperience({
           : ""
   }`;
 
+  const widePortrait = Boolean(hero?.includes("/edwin-lordina/"));
+
   const rootClass = [
     styles.root,
     staticPreview ? styles.rootEmbedded : "",
+    widePortrait ? styles.widePortrait : "",
     invitationFontVars,
     "invite-viewport-live",
     staticPreview ? "" : "safe-area-pt safe-area-pb safe-area-pl safe-area-pr",

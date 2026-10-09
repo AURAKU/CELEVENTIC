@@ -12,12 +12,32 @@
 }
 
 .scene {
+  position: relative;
   width: clamp(9.15rem, 46cqi, 15.25rem);
   max-width: 100%;
   margin-inline: auto;
   perspective: 980px;
   perspective-origin: 50% 46%;
   transform-style: preserve-3d;
+}
+
+.mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 64%;
+  z-index: 5;
+  margin: 0;
+  pointer-events: none;
+  text-align: center;
+  font-family: var(--font-great-vibes), "Great Vibes", cursive;
+  font-size: clamp(1.28rem, 6.2cqi, 1.62rem);
+  line-height: 1;
+  color: #6e5524;
+  white-space: nowrap;
+  text-shadow:
+    0 0 8px rgba(251, 246, 239, 0.98),
+    0 0 2px rgba(251, 246, 239, 1);
 }
 
 .glassWrap {
@@ -230,6 +250,7 @@
   line-height: 1.15;
   color: color-mix(in srgb, #fafaf5 78%, #c5b48a);
 }
+
 
 @keyframes hourTurn {
   from {
