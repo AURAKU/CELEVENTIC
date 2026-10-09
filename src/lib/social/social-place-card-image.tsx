@@ -18,7 +18,6 @@ export type SocialPlaceCardVisual = {
 
 const INK = "#1C1915";
 const PAPER = "#F7F3EC";
-const MAT = "#EFEAE1";
 
 function titleSize(title: string, personalized: boolean): number {
   if (title.length > 42) return personalized ? 34 : 38;
@@ -81,10 +80,13 @@ export function SocialPlaceCardMarkup({
     ? SOCIAL_PLACE_CARD_KICKER
     : kicker?.trim() || SOCIAL_PLACE_CARD_KICKER;
   const lockup = unavailable ? null : coupleLockup(displayTitle);
-  const size = unavailable ? 40 : lockup ? 64 : titleSize(displayTitle, Boolean(greeting));
-  const showPhrase = Boolean(displayPhrase) && (unavailable || !heroSrc || Boolean(greeting));
   const accent = readableAccent(palette.gold);
   const showPhoto = Boolean(heroSrc) && !unavailable;
+  const size = unavailable ? 40 : lockup ? (showPhoto ? 52 : 64) : titleSize(displayTitle, Boolean(greeting));
+  const showPhrase = Boolean(displayPhrase) && !showPhoto;
+  const ink = showPhoto ? "#FFF8EE" : INK;
+  const quiet = showPhoto ? "rgba(255, 248, 238, 0.82)" : "rgba(28, 25, 21, 0.62)";
+  const mark = showPhoto ? "#E6D2A2" : accent;
 
   return (
     <div
@@ -92,6 +94,7 @@ export function SocialPlaceCardMarkup({
         width: "1200px",
         height: "630px",
         display: "flex",
+        position: "relative",
         background: PAPER,
         fontFamily: "Georgia, 'Times New Roman', serif",
       }}
@@ -99,52 +102,51 @@ export function SocialPlaceCardMarkup({
       {showPhoto ? (
         <div
           style={{
-            width: "548px",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "1200px",
             height: "630px",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: MAT,
           }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroSrc ?? ""}
+            alt=""
+            width={1200}
+            height={630}
+            style={{
+              width: "1200px",
+              height: "630px",
+              objectFit: "cover",
+              objectPosition: "center 22%",
+            }}
+          />
           <div
             style={{
-              width: "492px",
-              height: "566px",
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: "1200px",
+              height: "630px",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "#FBF9F5",
-              borderRadius: 18,
-              border: `1px solid ${accent}66`,
-              overflow: "hidden",
+              background:
+                "linear-gradient(180deg, rgba(18, 12, 8, 0.06) 0%, rgba(18, 12, 8, 0.02) 38%, rgba(18, 12, 8, 0.72) 100%)",
             }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={heroSrc ?? ""}
-              alt=""
-              width={492}
-              height={566}
-              style={{
-                width: "492px",
-                height: "566px",
-                objectFit: "contain",
-                objectPosition: "center",
-              }}
-            />
-          </div>
+          />
         </div>
       ) : null}
 
       <div
         style={{
-          width: showPhoto ? "652px" : "1200px",
+          width: "1200px",
           height: "630px",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
-          padding: showPhoto ? "52px 56px 48px 48px" : "72px 88px",
+          justifyContent: showPhoto ? "flex-end" : "space-between",
+          padding: showPhoto ? "48px 64px 46px" : "72px 88px",
+          position: "relative",
         }}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -153,7 +155,7 @@ export function SocialPlaceCardMarkup({
               display: "flex",
               fontSize: 13,
               letterSpacing: "0.42em",
-              color: accent,
+              color: mark,
               fontFamily: "Helvetica, Arial, sans-serif",
             }}
           >
@@ -165,7 +167,7 @@ export function SocialPlaceCardMarkup({
               marginTop: 14,
               width: 42,
               height: 1,
-              background: accent,
+              background: mark,
             }}
           />
         </div>
@@ -175,7 +177,7 @@ export function SocialPlaceCardMarkup({
             <div
               style={{
                 display: "flex",
-                color: "rgba(28, 25, 21, 0.62)",
+                color: quiet,
                 fontSize: 22,
                 fontStyle: "italic",
                 lineHeight: 1.2,
@@ -191,7 +193,7 @@ export function SocialPlaceCardMarkup({
               <div
                 style={{
                   display: "flex",
-                  color: INK,
+                  color: ink,
                   fontSize: size,
                   lineHeight: 0.94,
                   letterSpacing: "-0.03em",
@@ -203,7 +205,7 @@ export function SocialPlaceCardMarkup({
                 <div
                   style={{
                     display: "flex",
-                    color: accent,
+                    color: mark,
                     fontSize: Math.round(size * 0.62),
                     lineHeight: 0.9,
                     marginRight: 14,
@@ -214,7 +216,7 @@ export function SocialPlaceCardMarkup({
                 <div
                   style={{
                     display: "flex",
-                    color: INK,
+                    color: ink,
                     fontSize: size,
                     lineHeight: 0.94,
                     letterSpacing: "-0.03em",
@@ -228,7 +230,7 @@ export function SocialPlaceCardMarkup({
             <div
               style={{
                 display: "flex",
-                color: INK,
+                color: ink,
                 fontSize: size,
                 lineHeight: 1.05,
                 letterSpacing: "-0.03em",
@@ -244,7 +246,7 @@ export function SocialPlaceCardMarkup({
               style={{
                 display: "flex",
                 marginTop: 18,
-                color: accent,
+                color: mark,
                 fontSize: 15,
                 letterSpacing: "0.28em",
                 textTransform: "uppercase",
@@ -262,7 +264,7 @@ export function SocialPlaceCardMarkup({
                 marginTop: 16,
                 fontSize: 22,
                 lineHeight: 1.35,
-                color: "rgba(28, 25, 21, 0.68)",
+                color: quiet,
                 maxWidth: showPhoto ? "520px" : "760px",
               }}
             >
@@ -278,7 +280,7 @@ export function SocialPlaceCardMarkup({
               width: 6,
               height: 6,
               marginRight: 12,
-              background: accent,
+              background: mark,
               transform: "rotate(45deg)",
             }}
           />
@@ -287,7 +289,7 @@ export function SocialPlaceCardMarkup({
               display: "flex",
               fontSize: 12,
               letterSpacing: "0.42em",
-              color: accent,
+              color: mark,
               fontFamily: "Helvetica, Arial, sans-serif",
             }}
           >

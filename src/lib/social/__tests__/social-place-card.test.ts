@@ -270,7 +270,8 @@ describe("social place-card markup", () => {
       .children;
     const serialized = JSON.stringify(tree);
     assert.match(serialized, /\/templates\/aurelia\/hero\.jpg/);
-    assert.match(serialized, /objectFit":"contain"/);
+    assert.match(serialized, /objectFit":"cover"/);
+    assert.match(serialized, /objectPosition":"center 22%"/);
     assert.doesNotMatch(text, /OPEN TO ENTER|https?:\/\//);
     void hero;
   });
@@ -346,7 +347,7 @@ describe("Open Graph / Twitter metadata", () => {
     assert.ok(ogImage && typeof ogImage === "object");
     assert.equal((ogImage as { width?: number }).width, 1200);
     assert.equal((ogImage as { height?: number }).height, 630);
-    assert.equal((ogImage as { type?: string }).type, "image/png");
+    assert.equal((ogImage as { type?: string }).type, "image/jpeg");
     assert.equal((metadata.twitter as { card?: string } | undefined)?.card, "summary_large_image");
     assert.equal(metadata.alternates?.canonical, `${APP}/invite/enock-ruth`);
   });

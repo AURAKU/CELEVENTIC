@@ -94,10 +94,10 @@ export function resolveSocialHeroImage(input: {
 
   const production = firstUrl(input.heroImageUrl);
   if (production) return { url: production, source: "production-hero" };
-  const cover = firstUrl(input.coverImageUrl);
-  if (cover) return { url: cover, source: "cover" };
   const media = firstUrl(input.mediaHeroUrl);
   if (media) return { url: media, source: "media-hero" };
+  const cover = firstUrl(input.coverImageUrl);
+  if (cover) return { url: cover, source: "cover" };
 
   const safe = templateSafeFallback(input);
   if (safe) return { url: safe, source: "template-safe" };

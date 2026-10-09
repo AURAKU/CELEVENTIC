@@ -31,8 +31,8 @@ export type SocialPlaceCardImage = {
 
 export const SOCIAL_PLACE_CARD_WIDTH = 1200;
 export const SOCIAL_PLACE_CARD_HEIGHT = 630;
-export const SOCIAL_PLACE_CARD_TYPE = "image/png";
-export const SOCIAL_PLACE_CARD_ART_VERSION = "full-frame-2";
+export const SOCIAL_PLACE_CARD_TYPE = "image/jpeg";
+export const SOCIAL_PLACE_CARD_ART_VERSION = "couple-faces-1";
 export {
   SOCIAL_PLACE_CARD_PHRASE,
   SOCIAL_PLACE_CARD_PERSONAL_PHRASE,

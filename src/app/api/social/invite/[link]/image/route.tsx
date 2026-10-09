@@ -2,6 +2,8 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { ImageResponse } from "next/og";
 import React, { type ReactElement } from "react";
+import sharp from "sharp";
+import { coupleShareCrop, COUPLE_SHARE_HEIGHT, COUPLE_SHARE_WIDTH } from "@/lib/social/social-hero-frame";
 import { invitationService } from "@/services/invitations/invitation.service";
 import { getServerAppUrl } from "@/lib/app-url";
 import { getDefaultDesignConfig, mergeDesignConfig } from "@/lib/invitation-templates";
@@ -62,7 +64,48 @@ async function heroToImageSrc(hero: string | null | undefined, origin: string): 
   return null;
 }
 
-function pngResponse(
+const WHATSAPP_IMAGE_BUDGET = 280_000;
+
+async function loadImageBuffer(src: string): Promise<Buffer | null> {
+  if (src.startsWith("data:")) {
+    const comma = src.indexOf(",");
+    if (comma < 0) return null;
+    return Buffer.from(src.slice(comma + 1), "base64");
+  }
+  if (/^https?:\/\//i.test(src)) {
+    try {
+      const response = await fetch(src);
+      if (!response.ok) return null;
+      return Buffer.from(await response.arrayBuffer());
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/** Face-weighted 1200×630 JPEG so a standing portrait is not cropped at the torso. */
+async function frameCoupleSharePhoto(src: string): Promise<string | null> {
+  const buffer = await loadImageBuffer(src);
+  if (!buffer) return null;
+  try {
+    const oriented = sharp(buffer).rotate();
+    const meta = await oriented.metadata();
+    const crop = coupleShareCrop(meta.width ?? 0, meta.height ?? 0);
+    if (!crop) return null;
+    const framed = await sharp(buffer)
+      .rotate()
+      .extract(crop)
+      .resize(COUPLE_SHARE_WIDTH, COUPLE_SHARE_HEIGHT, { fit: "fill" })
+      .jpeg({ quality: 84, mozjpeg: true })
+      .toBuffer();
+    return `data:image/jpeg;base64,${framed.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+async function jpegResponse(
   element: ReactElement,
   options: { personalized?: boolean; unavailable?: boolean } = {}
 ) {
@@ -70,7 +113,7 @@ function pngResponse(
   const unavailable = Boolean(options.unavailable);
   const headers: Record<string, string> = {
     "Cache-Control": socialPlaceCardCacheControl({ personalized, unavailable }),
-    "Content-Type": "image/png",
+    "Content-Type": "image/jpeg",
     Vary: "Accept",
   };
   if (personalized) {
@@ -78,11 +121,18 @@ function pngResponse(
     headers["Surrogate-Control"] = "no-store";
     headers.Pragma = "no-cache";
   }
-  return new ImageResponse(element, {
+  const png = new ImageResponse(element, {
     width: SOCIAL_PLACE_CARD_WIDTH,
     height: SOCIAL_PLACE_CARD_HEIGHT,
-    headers,
   });
+  const source = Buffer.from(await png.arrayBuffer());
+  let quality = 78;
+  let jpeg = await sharp(source).jpeg({ quality, mozjpeg: true }).toBuffer();
+  while (jpeg.length > WHATSAPP_IMAGE_BUDGET && quality > 46) {
+    quality -= 8;
+    jpeg = await sharp(source).jpeg({ quality, mozjpeg: true }).toBuffer();
+  }
+  return new Response(jpeg, { headers });
 }
 
 function fallbackCard() {
@@ -105,7 +155,7 @@ export async function GET(
     const origin = await getServerAppUrl();
 
     if (!invitation) {
-      return pngResponse(fallbackCard(), { unavailable: true });
+      return jpegResponse(fallbackCard(), { unavailable: true });
     }
 
     const stored = invitation.designConfig as InvitationDesignConfig | null;
@@ -153,7 +203,7 @@ export async function GET(
     });
 
     if (unavailable) {
-      return pngResponse(
+      return jpegResponse(
         <SocialPlaceCardMarkup
           theme={surface.theme}
           title={surface.title}
@@ -164,8 +214,9 @@ export async function GET(
       );
     }
 
-    const heroSrc = await heroToImageSrc(surface.heroUrl, origin);
-    return pngResponse(
+    const rawHero = await heroToImageSrc(surface.heroUrl, origin);
+    const heroSrc = rawHero ? (await frameCoupleSharePhoto(rawHero)) ?? rawHero : null;
+    return jpegResponse(
       <SocialPlaceCardMarkup
         theme={surface.theme}
         variant={surface.variant}
@@ -179,6 +230,6 @@ export async function GET(
       { personalized: Boolean(socialGuest) }
     );
   } catch {
-    return pngResponse(fallbackCard(), { unavailable: true });
+    return jpegResponse(fallbackCard(), { unavailable: true });
   }
 }

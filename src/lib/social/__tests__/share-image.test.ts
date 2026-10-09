@@ -96,7 +96,7 @@ describe("resolveAureliaShareOgImageForInvitation", () => {
     assert.match(image?.url ?? "", /\/api\/social\/invite\/enock-ruth\/image\?v=/);
     assert.equal(image?.width, 1200);
     assert.equal(image?.height, 630);
-    assert.equal(image?.type, "image/png");
+    assert.equal(image?.type, "image/jpeg");
     const og = shareOgImageToOpenGraph(image!, "Enock & Ruth");
     assert.equal(og.width, 1200);
     assert.equal(og.height, 630);
