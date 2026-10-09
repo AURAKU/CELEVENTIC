@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { edwinDesignIsCurrent } from "@/lib/invitation/edwin-published-design";
+import {
+  EDWIN_EVENT_SONG_URL,
+  edwinDesignIsCurrent,
+  edwinMusicSelection,
+} from "@/lib/invitation/edwin-published-design";
 import {
   EDWIN_PUBLISHED_INVITE_LINK,
   isPublicInviteAlias,
@@ -17,6 +21,13 @@ describe("public invite alias", () => {
 
   it("does not alias other invitations", () => {
     assert.equal(publicInviteAliasTarget("kojo-and-fafa"), null);
+  });
+
+  it("plays the same Biblical track localhost uses", () => {
+    assert.equal(EDWIN_EVENT_SONG_URL, "/music/edwin-lordina-biblical.mp3");
+    const selection = edwinMusicSelection("edwin-lordina-biblical") as { url: string; title: string };
+    assert.equal(selection.url, EDWIN_EVENT_SONG_URL);
+    assert.equal(selection.title, "Biblical — Calum Scott");
   });
 
   it("treats the current portrait and gate word as the live design", () => {

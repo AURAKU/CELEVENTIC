@@ -12,6 +12,7 @@ import { computeGuestCrmPeopleStats } from "@/lib/seating/people-stats";
 import { repairInviteLink } from "@/services/invitations/invite-link-resolver.service";
 import {
   applyEdwinPublishedDesign,
+  EDWIN_EVENT_SONG_URL,
   edwinDesignIsCurrent,
 } from "@/lib/invitation/edwin-published-design";
 import {
@@ -130,10 +131,9 @@ export class InvitationService {
         return this.findInvitationByExactLink(canonical);
       })());
     if (!invitation) return null;
-    if (
-      invitation.uniqueLink === EDWIN_PUBLISHED_INVITE_LINK &&
-      !edwinDesignIsCurrent(invitation.designConfig)
-    ) {
+    const publishedEdwin = invitation.uniqueLink === EDWIN_PUBLISHED_INVITE_LINK;
+    const songReady = invitation.event.defaultMusicTrack?.url === EDWIN_EVENT_SONG_URL;
+    if (publishedEdwin && (!edwinDesignIsCurrent(invitation.designConfig) || !songReady)) {
       try {
         await applyEdwinPublishedDesign(invitation.uniqueLink);
         return this.findInvitationByExactLink(invitation.uniqueLink);

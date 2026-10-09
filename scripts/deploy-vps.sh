@@ -127,8 +127,10 @@ pm2 stop "$APP_NAME"
 npx prisma migrate deploy
 npx prisma migrate status
 
-log "Seeding Kojo & Fafa and Edwin & Lordina invitations"
+log "Seeding Kojo & Fafa"
 npx tsx scripts/seed-kojo-fafa-wedding.ts
+log "Applying the published Edwin & Lordina design and Biblical track"
+npx tsx scripts/apply-edwin-live-design.ts
 
 log "Building Next.js (previous .next already backed up)"
 rm -rf .next

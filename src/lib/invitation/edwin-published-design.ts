@@ -7,6 +7,9 @@ import { EDWIN_PUBLISHED_INVITE_LINK } from "@/lib/invitation/public-invite-alia
 
 const HERO = "/templates/edwin-lordina/hero-navy.jpg";
 const LAYOUT = "forever-afaris-wedding";
+/** Same file the local Edwin event plays through its default music track. */
+export const EDWIN_EVENT_SONG_URL = "/music/edwin-lordina-biblical.mp3";
+const EDWIN_EVENT_SONG_SEC = 229.72;
 const MOMENTS = [
   "/templates/edwin-lordina/moments/02-gold.jpg",
   "/templates/edwin-lordina/moments/03-sofa.jpg",
@@ -57,17 +60,70 @@ function enqueueApply<T>(work: () => Promise<T>): Promise<T> {
  * Replace the stored board for the published Edwin invitation.
  * The guest token is left unchanged. Parallel page and metadata loads share one write.
  */
+export function edwinMusicSelection(trackId: string): Prisma.InputJsonValue {
+  return {
+    source: "library",
+    libraryTrackId: trackId,
+    url: EDWIN_EVENT_SONG_URL,
+    title: "Biblical — Calum Scott",
+    startSec: 0,
+    endSec: EDWIN_EVENT_SONG_SEC,
+    originalDurationSec: EDWIN_EVENT_SONG_SEC,
+    autoPlay: true,
+    loop: true,
+    volume: 0.45,
+    fadeInSec: 1.5,
+    fadeOutSec: 1,
+  };
+}
+
+function selectionPlaysSong(raw: unknown): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  return (raw as { url?: unknown }).url === EDWIN_EVENT_SONG_URL;
+}
+
 export function applyEdwinPublishedDesign(
   uniqueLink = EDWIN_PUBLISHED_INVITE_LINK,
   client: PrismaClient = prisma
-): Promise<{ uniqueLink: string; orders: number }> {
+): Promise<{ uniqueLink: string; orders: number; changed: boolean }> {
   return enqueueApply(() => writeEdwinPublishedDesign(uniqueLink, client));
+}
+
+async function ensureEdwinSong(client: PrismaClient) {
+  const existing = await client.invitationMusicTrack.findFirst({
+    where: { url: EDWIN_EVENT_SONG_URL },
+    select: { id: true },
+  });
+  if (existing) {
+    return client.invitationMusicTrack.update({
+      where: { id: existing.id },
+      data: {
+        title: "Biblical",
+        artist: "Calum Scott",
+        category: "wedding",
+        durationSec: EDWIN_EVENT_SONG_SEC,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+  }
+  return client.invitationMusicTrack.create({
+    data: {
+      title: "Biblical",
+      artist: "Calum Scott",
+      category: "wedding",
+      url: EDWIN_EVENT_SONG_URL,
+      durationSec: EDWIN_EVENT_SONG_SEC,
+      isActive: true,
+    },
+    select: { id: true },
+  });
 }
 
 async function writeEdwinPublishedDesign(
   uniqueLink: string,
   client: PrismaClient
-): Promise<{ uniqueLink: string; orders: number }> {
+): Promise<{ uniqueLink: string; orders: number; changed: boolean }> {
   const invitation = await client.invitation.findUnique({
     where: { uniqueLink },
     select: {
@@ -76,7 +132,12 @@ async function writeEdwinPublishedDesign(
       name: true,
       designConfig: true,
       eventId: true,
-      event: { select: { title: true } },
+      event: {
+        select: {
+          title: true,
+          defaultMusicTrack: { select: { id: true, url: true } },
+        },
+      },
     },
   });
   if (!invitation) {
@@ -85,52 +146,75 @@ async function writeEdwinPublishedDesign(
   if (!isEdwinLordina(invitation.event.title) && !isEdwinLordina(invitation.name)) {
     throw new Error(`Refusing to update ${uniqueLink}: not Edwin & Lordina`);
   }
-  if (edwinDesignIsCurrent(invitation.designConfig)) {
-    return { uniqueLink: invitation.uniqueLink, orders: 0 };
-  }
-  const design = loadEdwinPublishedDesign();
 
   const orders = await client.invitationOrder.findMany({
     where: {
       archivedAt: null,
       OR: [{ invitationId: invitation.id }, { eventId: invitation.eventId }],
     },
-    select: { id: true },
+    select: { id: true, musicSelection: true, musicPreference: true },
   });
-  const catalog = await client.invitationCatalogTemplate.findUnique({
-    where: { slug: LAYOUT },
-    select: { slug: true },
-  });
-  const designJson = design as unknown as Prisma.InputJsonValue;
+  const designCurrent = edwinDesignIsCurrent(invitation.designConfig);
+  const eventSongReady = invitation.event.defaultMusicTrack?.url === EDWIN_EVENT_SONG_URL;
+  const ordersReady = orders.every(
+    (order) =>
+      selectionPlaysSong(order.musicSelection) &&
+      (order.musicPreference == null || order.musicPreference === EDWIN_EVENT_SONG_URL)
+  );
+  if (designCurrent && eventSongReady && ordersReady) {
+    return { uniqueLink: invitation.uniqueLink, orders: orders.length, changed: false };
+  }
 
-  await client.invitation.update({
-    where: { id: invitation.id },
-    data: { designConfig: designJson, status: "ACTIVE" },
-  });
+  const song = await ensureEdwinSong(client);
+  const design = loadEdwinPublishedDesign();
+  const catalog = designCurrent
+    ? null
+    : await client.invitationCatalogTemplate.findUnique({
+        where: { slug: LAYOUT },
+        select: { slug: true },
+      });
+  const designJson = design as unknown as Prisma.InputJsonValue;
+  const musicJson = edwinMusicSelection(song.id);
+
+  if (!designCurrent) {
+    await client.invitation.update({
+      where: { id: invitation.id },
+      data: { designConfig: designJson, status: "ACTIVE" },
+    });
+    await client.eventMedia.deleteMany({ where: { eventId: invitation.eventId } });
+    await client.eventMedia.createMany({
+      data: MOMENTS.map((url, index) => ({
+        eventId: invitation.eventId,
+        url,
+        type: "image",
+        caption: "Edwin and Lordina",
+        sortOrder: index,
+      })),
+    });
+  }
   await client.event.update({
     where: { id: invitation.eventId },
-    data: { coverImageUrl: HERO, qrCenterImageUrl: HERO, qrLogoSize: "bold" },
+    data: {
+      ...(designCurrent ? {} : { coverImageUrl: HERO, qrCenterImageUrl: HERO, qrLogoSize: "bold" }),
+      defaultMusicTrackId: song.id,
+    },
   });
   for (const order of orders) {
     await client.invitationOrder.update({
       where: { id: order.id },
       data: {
-        designConfig: designJson,
-        galleryUrls: [...MOMENTS],
-        ...(catalog ? { templateSlug: LAYOUT } : {}),
+        musicSelection: musicJson,
+        musicPreference: null,
+        ...(designCurrent
+          ? {}
+          : {
+              designConfig: designJson,
+              galleryUrls: [...MOMENTS],
+              ...(catalog ? { templateSlug: LAYOUT } : {}),
+            }),
       },
     });
   }
-  await client.eventMedia.deleteMany({ where: { eventId: invitation.eventId } });
-  await client.eventMedia.createMany({
-    data: MOMENTS.map((url, index) => ({
-      eventId: invitation.eventId,
-      url,
-      type: "image",
-      caption: "Edwin and Lordina",
-      sortOrder: index,
-    })),
-  });
 
-  return { uniqueLink: invitation.uniqueLink, orders: orders.length };
+  return { uniqueLink: invitation.uniqueLink, orders: orders.length, changed: true };
 }
