@@ -21,7 +21,16 @@ import { isAureliaFamilyOpening } from "@/lib/experience/aurelia-editorial";
 import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
-import { createInvitationAudioManager, pauseAllInvitationAudio } from "@/lib/music/invitation-audio-manager";
+import {
+  claimHeldInvitationAudio,
+  consumeInvitationAudioHandoff,
+  createInvitationAudioManager,
+  type InvitationAudioManager,
+  holdInvitationAudio,
+  markInvitationAudioHandoff,
+  pauseAllInvitationAudio,
+  peekHeldInvitationAudio,
+} from "@/lib/music/invitation-audio-manager";
 import {
   phaseAfterSoftIntro,
   introGestureAudioAction,
@@ -252,10 +261,15 @@ export function PremiumInviteWrapper({
     (musicEnabled || musicSelection?.url || musicUrl) &&
     (musicSelection?.url || musicUrl?.startsWith("http") || musicUrl?.startsWith("/"));
 
-  const audioManager = useMemo(
-    () => (hasMusic ? createInvitationAudioManager(musicSelection, musicUrl) : null),
-    [hasMusic, musicSelection, musicUrl]
-  );
+  const audioContinuesRef = useRef(peekHeldInvitationAudio()?.isPlaying() ?? false);
+  const heldAudioRef = useRef<InvitationAudioManager | null | undefined>(undefined);
+  const audioManager = useMemo(() => {
+    if (!hasMusic) return null;
+    if (heldAudioRef.current === undefined) {
+      heldAudioRef.current = claimHeldInvitationAudio();
+    }
+    return heldAudioRef.current ?? createInvitationAudioManager(musicSelection, musicUrl);
+  }, [hasMusic, musicSelection, musicUrl]);
 
   const introEnabled = false;
 
@@ -349,7 +363,7 @@ export function PremiumInviteWrapper({
     (enrichedDesign.layout === "traditional-marriage-ceremony" ? "#F5EBE3" : undefined);
 
   const [phase, setPhaseState] = useState<ExperiencePhase>(() =>
-    resolveInitialInvitePhase(pipelineFlags)
+    audioContinuesRef.current ? "portal" : resolveInitialInvitePhase(pipelineFlags)
   );
   const setPhase = useCallback(
     (next: ExperiencePhase, reason: string) => {
@@ -427,19 +441,43 @@ export function PremiumInviteWrapper({
   }, [props.invitation.id, props.invitation.uniqueLink, props.guestId, skipAnalytics]);
 
   useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const anchor = (event.target as Element | null)?.closest?.("a[href]");
+      const href = anchor?.getAttribute("href") ?? "";
+      if (/\/memories|\/memory-upload|\/memory\//.test(href)) {
+        markInvitationAudioHandoff();
+      }
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
+
+  useEffect(() => {
     return () => {
+      if (consumeInvitationAudioHandoff()) {
+        holdInvitationAudio(audioManager);
+        return;
+      }
       audioManager?.destroy();
     };
   }, [audioManager]);
 
   useEffect(() => {
     if (audioManager && hasMusic) {
+      if (audioManager.isPlaying()) {
+        audioStarted.current = true;
+        return;
+      }
       audioManager.prime();
     }
   }, [audioManager, hasMusic]);
 
   const startAudio = useCallback(async () => {
     if (!audioManager || audioStarted.current) return;
+    if (audioManager.isPlaying()) {
+      audioStarted.current = true;
+      return;
+    }
     if (!wantsAutoplay) return;
     // Call play() immediately from the gesture stack — do not delay with
     // unrelated awaits before the first media.play().

@@ -24,6 +24,53 @@ export function pauseAllInvitationAudio(): void {
   getActiveInvitationAudioManager()?.pause();
 }
 
+const AUDIO_HANDOFF_KEY = "celeventic.inviteAudioHandoff";
+let heldInvitationAudio: InvitationAudioManager | null = null;
+
+/** Remember that the next navigation stays inside the guest celebration. */
+export function markInvitationAudioHandoff(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(AUDIO_HANDOFF_KEY, "1");
+  } catch {
+    /* private mode */
+  }
+}
+
+export function consumeInvitationAudioHandoff(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const marked = window.sessionStorage.getItem(AUDIO_HANDOFF_KEY) === "1";
+    if (marked) window.sessionStorage.removeItem(AUDIO_HANDOFF_KEY);
+    return marked;
+  } catch {
+    return false;
+  }
+}
+
+/** Keep the live track when the invitation unmounts for the album. */
+export function holdInvitationAudio(manager: InvitationAudioManager | null): void {
+  if (manager) heldInvitationAudio = manager;
+}
+
+export function peekHeldInvitationAudio(): InvitationAudioManager | null {
+  return heldInvitationAudio;
+}
+
+/** Reattach the track that was left playing across the album. */
+export function claimHeldInvitationAudio(): InvitationAudioManager | null {
+  const manager = heldInvitationAudio;
+  heldInvitationAudio = null;
+  return manager;
+}
+
+/** Continue the invitation bed if a route change paused it. */
+export function continueInvitationAudio(): void {
+  const manager = getActiveInvitationAudioManager() ?? heldInvitationAudio;
+  if (!manager || manager.isPlaying()) return;
+  void manager.resume();
+}
+
 /** Pause bed music while a guest-started film owns the audio stage. */
 export function duckInvitationAudio(): void {
   const manager = getActiveInvitationAudioManager();

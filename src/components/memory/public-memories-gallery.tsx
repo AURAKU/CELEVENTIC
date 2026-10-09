@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import Link from "next/link";
 import {
   Grid3X3,
   Heart,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/memory/memory-guest-identity";
 import { MemoryShareBar } from "@/components/memory/memory-share-bar";
 import { AlbumUploadBar, type AlbumUploadConfig } from "@/components/memory/album-upload-bar";
+import { continueInvitationAudio } from "@/lib/music/invitation-audio-manager";
 
 export interface MemoryGalleryItem {
   id: string;
@@ -76,6 +78,7 @@ interface PublicMemoriesGalleryProps {
   onItemsChange?: (items: MemoryGalleryItem[]) => void;
   upload?: AlbumUploadConfig | null;
   onRefresh?: () => void;
+  invitationHref?: string | null;
 }
 
 const MUTE_PREF_KEY = "celeventic.memory.videoMuted";
@@ -119,6 +122,7 @@ export function PublicMemoriesGallery({
   onItemsChange,
   upload,
   onRefresh,
+  invitationHref,
 }: PublicMemoriesGalleryProps) {
   const [lightbox, setLightbox] = useState<MemoryGalleryItem | null>(null);
   const [localItems, setLocalItems] = useState(items);
@@ -140,6 +144,10 @@ export function PublicMemoriesGallery({
 
   useEffect(() => {
     setMuted(readMutePref());
+  }, []);
+
+  useEffect(() => {
+    continueInvitationAudio();
   }, []);
 
   useEffect(() => {
@@ -453,6 +461,20 @@ export function PublicMemoriesGallery({
           >
             {memoryCount}
           </p>
+          {invitationHref ? (
+            <Link
+              href={invitationHref}
+              className="mt-4 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-[0.72rem] uppercase tracking-[0.2em] transition-opacity hover:opacity-80"
+              style={{
+                color: "var(--memory-color-ink, #1B365D)",
+                fontFamily: "var(--memory-font-display, var(--font-cinzel), Cinzel, serif)",
+                background: "var(--memory-color-surface, #FBF6EF)",
+                boxShadow: "inset 0 0 0 1px var(--memory-color-accent, #C7A35A)",
+              }}
+            >
+              Back to invitation
+            </Link>
+          ) : null}
         </div>
 
         {filters.length > 0 ? (

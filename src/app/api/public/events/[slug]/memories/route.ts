@@ -50,10 +50,17 @@ export async function GET(
     title: event.title,
     hostName: event.hostName,
   });
-  const [viewToken, uploadToken] = await Promise.all([
+  const [viewToken, uploadToken, invitations] = await Promise.all([
     eventMemoryTokenService.getOrCreateViewToken(event.id),
     eventMemoryTokenService.getOrCreateUploadToken(event.id),
+    prisma.invitation.findMany({
+      where: { eventId: event.id, status: "ACTIVE" },
+      select: { uniqueLink: true },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
+  const invitation =
+    invitations.find((item) => item.uniqueLink === slug) ?? invitations[0] ?? null;
 
   return NextResponse.json({
     success: true,
@@ -67,6 +74,9 @@ export async function GET(
         eyebrow: identity.eyebrow,
         subtitle: identity.subtitle,
         lede: identity.lede,
+        invitationHref: invitation
+          ? `/invite/${encodeURIComponent(invitation.uniqueLink)}`
+          : null,
       },
       allowDownloads: settings.allowDownloads,
       upload: {
