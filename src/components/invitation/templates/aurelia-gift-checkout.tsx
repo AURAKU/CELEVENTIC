@@ -185,6 +185,7 @@ export function AureliaGiftCheckout({
   inviteLink,
   collapsible = false,
   coupleNames,
+  customAmountOnly = false,
 }: {
   giftUrl?: string | null;
   giftQrImageUrl?: string | null;
@@ -201,6 +202,8 @@ export function AureliaGiftCheckout({
   collapsible?: boolean;
   /** Couple the guest is gifting, used on the thank-you and the retry. */
   coupleNames?: string | null;
+  /** Hide the preset amounts and leave only the guest's own figure. */
+  customAmountOnly?: boolean;
 }) {
   const [resolvedGiftUrl, setResolvedGiftUrl] = useState<string | null>(giftUrl ?? null);
   const [resolvedQrImageUrl, setResolvedQrImageUrl] = useState<string | null>(giftQrImageUrl ?? null);
@@ -523,6 +526,7 @@ export function AureliaGiftCheckout({
       ) : null}
 
       <p className={styles.giftLabel}>{campaign?.amountPrompt || "Choose an amount"}</p>
+          {customAmountOnly ? null : (
           <div className={styles.giftAmounts}>
             {suggested.map((value) => {
               const selected = amountMinor === value && !customAmount;
@@ -543,9 +547,10 @@ export function AureliaGiftCheckout({
               );
             })}
           </div>
-          {(campaign?.allowCustomAmount ?? true) ? (
+          )}
+          {(customAmountOnly || (campaign?.allowCustomAmount ?? true)) ? (
             <label className={styles.giftField}>
-              <span>Or enter your own ({currency})</span>
+              <span>{customAmountOnly ? `Enter your amount (${currency})` : `Or enter your own (${currency})`}</span>
               <input
                 inputMode="decimal"
                 value={customAmount}

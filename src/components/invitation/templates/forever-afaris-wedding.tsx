@@ -180,6 +180,7 @@ function WeddingDateSaveRow({
   calendarEvent,
   calendarEvents,
   days,
+  placeHrefs,
   staticPreview,
 }: {
   weekday: string;
@@ -189,6 +190,8 @@ function WeddingDateSaveRow({
   calendarEvent: CalendarEventInput;
   calendarEvents?: CalendarEventInput[];
   days?: CelebrationDay[];
+  /** Driving directions for each celebration, keyed by programme id. */
+  placeHrefs?: Record<string, string>;
   staticPreview: boolean;
 }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -246,94 +249,121 @@ function WeddingDateSaveRow({
         .join(". ")
     : `${weekday} ${displayDate} ${timeLabel}`;
 
+  const frameStyle: CSSProperties = {
+    borderTop: `1px solid ${C.border}`,
+    borderBottom: `1px solid ${C.border}`,
+    outlineColor: C.gold,
+    background:
+      state === "done" ? `color-mix(in srgb, ${C.goldSoft} 22%, transparent)` : "transparent",
+  };
+  const saveDisabled = staticPreview || state === "loading";
+
   return (
     <div className={`mx-auto w-full ${multiDay ? "max-w-[26rem]" : "max-w-[22rem]"}`}>
+      {multiDay ? (
+        <div className="relative mx-auto flex w-full flex-col px-1 py-1 text-left" style={frameStyle}>
+          {sharedMonth ? (
+            <button
+              type="button"
+              disabled={saveDisabled}
+              onClick={() => void saveDate()}
+              className="py-3 text-center font-[family-name:var(--font-cinzel)] text-[0.72rem] font-semibold uppercase tracking-[0.34em] disabled:opacity-70"
+              style={{ color: C.goldDeep }}
+            >
+              {days![0].month} {days![0].year}
+            </button>
+          ) : null}
+          {days!.map((day, index) => (
+            <div
+              key={day.key}
+              className="px-1 py-3.5"
+              style={{
+                borderTop: index > 0 || sharedMonth ? `1px solid ${C.border}` : undefined,
+              }}
+            >
+              <button
+                type="button"
+                disabled={saveDisabled}
+                onClick={() => void saveDate()}
+                aria-label={`${day.weekday} ${day.day} ${day.month}. ${statusLabel}`}
+                title={staticPreview ? "Preview" : statusLabel}
+                className="flex w-full items-baseline justify-between gap-4 text-left disabled:opacity-70"
+              >
+                <span
+                  className="font-[family-name:var(--font-cinzel)] text-[0.68rem] font-semibold uppercase tracking-[0.28em]"
+                  style={{ color: C.cocoa }}
+                >
+                  {day.weekday}
+                </span>
+                <span
+                  className="font-[family-name:var(--font-cinzel)] text-[1.7rem] font-semibold leading-none tracking-[0.04em]"
+                  style={{ color: C.ink }}
+                >
+                  {day.day}
+                </span>
+              </button>
+              <ul className="mt-3 space-y-3">
+                {day.moments.map((moment) => {
+                  const placeHref = placeHrefs?.[moment.id] || "";
+                  return (
+                    <li key={moment.id} className="space-y-0.5">
+                      <button
+                        type="button"
+                        disabled={saveDisabled}
+                        onClick={() => void saveDate()}
+                        className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 text-left disabled:opacity-70"
+                      >
+                        <span
+                          className="font-[family-name:var(--font-cinzel)] text-[clamp(0.82rem,2.4vw,0.95rem)] font-semibold leading-snug"
+                          style={{ color: C.ink }}
+                        >
+                          {moment.title}
+                        </span>
+                        <span
+                          className="whitespace-nowrap font-[family-name:var(--font-cinzel)] text-[0.78rem] font-semibold tracking-[0.12em]"
+                          style={{ color: C.goldDeep }}
+                        >
+                          {moment.timeLabel}
+                        </span>
+                      </button>
+                      {moment.place ? (
+                        placeHref && !staticPreview ? (
+                          <a
+                            href={placeHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Directions to ${moment.place}`}
+                            className="block font-[family-name:var(--font-cormorant)] text-[clamp(0.98rem,2.5vw,1.08rem)] leading-snug underline decoration-1 underline-offset-[0.22em]"
+                            style={{ color: C.cocoa, textDecorationColor: C.goldDeep }}
+                          >
+                            {moment.place}
+                          </a>
+                        ) : (
+                          <span
+                            className="block font-[family-name:var(--font-cormorant)] text-[clamp(0.98rem,2.5vw,1.08rem)] leading-snug"
+                            style={{ color: C.cocoa }}
+                          >
+                            {moment.place}
+                          </span>
+                        )
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ) : (
       <button
         type="button"
-        disabled={staticPreview || state === "loading"}
+        disabled={saveDisabled}
         onClick={() => void saveDate()}
         aria-label={`${spoken}. ${statusLabel}`}
         title={staticPreview ? "Preview" : statusLabel}
-        className={`group relative mx-auto w-full transition-all duration-300 touch-manipulation select-none hover:brightness-[1.02] active:scale-[0.985] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 disabled:opacity-70 ${
-          multiDay
-            ? "flex flex-col px-1 py-1 text-left"
-            : "flex max-w-[22rem] items-stretch justify-center gap-4 py-4 text-center"
-        }`}
-        style={{
-          borderTop: `1px solid ${C.border}`,
-          borderBottom: `1px solid ${C.border}`,
-          outlineColor: C.gold,
-          background:
-            state === "done"
-              ? `color-mix(in srgb, ${C.goldSoft} 22%, transparent)`
-              : "transparent",
-        }}
+        className="group relative mx-auto flex w-full max-w-[22rem] items-stretch justify-center gap-4 py-4 text-center transition-all duration-300 touch-manipulation select-none hover:brightness-[1.02] active:scale-[0.985] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 disabled:opacity-70"
+        style={frameStyle}
       >
-        {multiDay ? (
-          <>
-            {sharedMonth ? (
-              <p
-                className="py-3 text-center font-[family-name:var(--font-cinzel)] text-[0.72rem] font-semibold uppercase tracking-[0.34em]"
-                style={{ color: C.goldDeep }}
-              >
-                {days![0].month} {days![0].year}
-              </p>
-            ) : null}
-            {days!.map((day, index) => (
-              <div
-                key={day.key}
-                className="px-1 py-3.5"
-                style={{
-                  borderTop: index > 0 || sharedMonth ? `1px solid ${C.border}` : undefined,
-                }}
-              >
-                <div className="flex items-baseline justify-between gap-4">
-                  <span
-                    className="font-[family-name:var(--font-cinzel)] text-[0.68rem] font-semibold uppercase tracking-[0.28em]"
-                    style={{ color: C.cocoa }}
-                  >
-                    {day.weekday}
-                  </span>
-                  <span
-                    className="font-[family-name:var(--font-cinzel)] text-[1.7rem] font-semibold leading-none tracking-[0.04em]"
-                    style={{ color: C.ink }}
-                  >
-                    {day.day}
-                  </span>
-                </div>
-                <ul className="mt-3 space-y-3">
-                  {day.moments.map((moment) => (
-                    <li
-                      key={moment.id}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5"
-                    >
-                      <span
-                        className="font-[family-name:var(--font-cinzel)] text-[clamp(0.82rem,2.4vw,0.95rem)] font-semibold leading-snug"
-                        style={{ color: C.ink }}
-                      >
-                        {moment.title}
-                      </span>
-                      <span
-                        className="whitespace-nowrap font-[family-name:var(--font-cinzel)] text-[0.78rem] font-semibold tracking-[0.12em]"
-                        style={{ color: C.goldDeep }}
-                      >
-                        {moment.timeLabel}
-                      </span>
-                      {moment.place ? (
-                        <span
-                          className="col-span-2 font-[family-name:var(--font-cormorant)] text-[clamp(0.98rem,2.5vw,1.08rem)] leading-snug"
-                          style={{ color: C.cocoa }}
-                        >
-                          {moment.place}
-                        </span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </>
-        ) : (
           <>
             <div
               className={`flex flex-col justify-center text-right ${T.labelTight} uppercase tracking-[0.2em]`}
@@ -358,8 +388,8 @@ function WeddingDateSaveRow({
               <span>{timeLabel}</span>
             </div>
           </>
-        )}
       </button>
+      )}
       <div className="mt-3 flex items-center justify-center gap-3">
         <button
           type="button"
@@ -1028,6 +1058,16 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     );
   }, [board.mapUrl, board.programmeItems, board.venueAddress, celebrationDays, celebrationEvents, venueName]);
 
+  const placeHrefs = useMemo(() => {
+    const sharedMap = board.mapUrl?.trim() || "";
+    const hrefs: Record<string, string> = {};
+    for (const item of board.programmeItems) {
+      const href = programmeDirectionsHref(item, venueName, sharedMap);
+      if (href) hrefs[item.id] = href;
+    }
+    return hrefs;
+  }, [board.mapUrl, board.programmeItems, venueName]);
+
   const calendarEvent = useMemo<CalendarEventInput>(
     () => ({
       title:
@@ -1148,6 +1188,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             calendarEvent={calendarEvent}
             calendarEvents={celebrationEvents}
             days={celebrationDays}
+            placeHrefs={placeHrefs}
             staticPreview={staticPreview}
           />
         ) : (
@@ -1430,6 +1471,27 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         >
           {board.guestPolicyBody}
         </p>
+        {board.guestPolicyFollowHeading?.trim() && board.guestPolicyFollowBody?.trim() ? (
+          <>
+            <div className="mx-auto mt-8 flex items-center justify-center gap-3" aria-hidden>
+              <span className="h-px w-10" style={{ background: C.gold }} />
+              <span className="h-1.5 w-1.5 rotate-45" style={{ background: C.gold }} />
+              <span className="h-px w-10" style={{ background: C.gold }} />
+            </div>
+            <h3
+              className="mx-auto mt-8 max-w-[34rem] font-[family-name:var(--font-cinzel)] text-[clamp(0.95rem,2.5vw,1.15rem)] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: C.ink }}
+            >
+              {board.guestPolicyFollowHeading}
+            </h3>
+            <p
+              className={`mx-auto mt-4 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.body} leading-relaxed`}
+              style={{ color: C.cocoa }}
+            >
+              {board.guestPolicyFollowBody}
+            </p>
+          </>
+        ) : null}
       </Reveal>
     ) : null,
 
@@ -1703,6 +1765,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             inviteLink={invitation.uniqueLink}
             returnPath={`/invite/${invitation.uniqueLink}#aurelia-gifts`}
             coupleNames={coupleGiftNames || null}
+            customAmountOnly
             collapsible
           />
         </ClientErrorBoundary>
@@ -1889,9 +1952,9 @@ function isLongProgrammeNote(description: string): boolean {
 }
 
 /**
- * Guest tap target for a pinned place. A host link that already carries
- * coordinates, or a Google share link, wins. Otherwise the guest gets
- * driving directions to the pin.
+ * Driving directions to one place. A host Maps short link is opened as given.
+ * A link that already carries coordinates becomes directions to that point.
+ * Otherwise the saved pin is the destination.
  */
 function guestPlaceHref(
   item: { mapLink?: string } | undefined,
@@ -1899,12 +1962,22 @@ function guestPlaceHref(
   place: string
 ): string {
   const explicit = item?.mapLink?.trim() || "";
-  if (explicit && (extractMapsCoordinates(explicit) || /^https:\/\/share\.google\//i.test(explicit))) {
-    return explicit;
-  }
+  if (explicit && isChosenMapsShortLink(explicit)) return explicit;
+  const fromLink = extractMapsCoordinates(explicit);
+  if (fromLink) return googleMapsDirectionsHref({ label: place, lat: fromLink.lat, lng: fromLink.lng });
   const coords = extractMapsCoordinates(pinUrl);
   if (coords) return googleMapsDirectionsHref({ label: place, lat: coords.lat, lng: coords.lng });
   return explicit || pinUrl;
+}
+
+/** Host-chosen Maps short link. The older reception link stays on its pin. */
+function isChosenMapsShortLink(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === "maps.app.goo.gl" && !parsed.pathname.includes("Sbx2eQX7BS2cGeXX9");
+  } catch {
+    return false;
+  }
 }
 
 /** Map opened from a programme place name. */

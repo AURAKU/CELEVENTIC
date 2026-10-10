@@ -222,6 +222,9 @@ export interface WeddingBoardContent {
   // — Guest / child policy —
   guestPolicyHeading?: string;
   guestPolicyBody?: string;
+  /** Second question under the guest policy, when a celebration needs both notes. */
+  guestPolicyFollowHeading?: string;
+  guestPolicyFollowBody?: string;
 
   // — Optional couple story —
   storyHeading?: string;
@@ -336,6 +339,8 @@ export const DEFAULT_WEDDING_BOARD: Required<
   guestPolicyHeading: "ARE KIDS ALLOWED OR CAN I BRING A GUEST?",
   guestPolicyBody:
     "While we adore children, this celebration will be an adults-only event due to venue capacity restrictions. Due to limited capacity, we can only accommodate guests whose names appear on the invitation. We appreciate your cooperation.",
+  guestPolicyFollowHeading: "",
+  guestPolicyFollowBody: "",
 
   storyHeading: "Our Story",
   storyBody:
@@ -577,6 +582,7 @@ export function mergeWeddingBoard(
     "dressCodeLadies",
     "dressCodeGents",
     "guestPolicyBody",
+    "guestPolicyFollowBody",
     "storyBody",
     "scratchMessage",
     "closingMessage",

@@ -952,10 +952,10 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
 }
 
-/* Edwin portrait: the name plate sits low, under the faces. */
+/* Edwin portrait: the lockup sits just below the faces, around the center. */
 .widePortrait {
   justify-content: flex-end;
-  padding-bottom: clamp(1.5rem, 5vh, 2.75rem);
+  padding-bottom: clamp(4.75rem, 12vh, 7rem);
 }
 
 /*
