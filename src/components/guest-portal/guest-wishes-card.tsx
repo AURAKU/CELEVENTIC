@@ -1495,16 +1495,27 @@ export function GuestWishesCard({
                               type="button"
                               onClick={() => void removeWish(w)}
                               disabled={deletingId === w.id}
-                              aria-label={`Delete wish from ${w.authorName}`}
-                              title="Delete wish"
-                              className={`rounded-md p-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40 ${
-                                dark
-                                  ? "text-white/40 hover:text-white/80 hover:bg-white/10 focus-visible:ring-white/30"
-                                  : "text-slate-400 hover:text-slate-700 hover:bg-rose-50 focus-visible:ring-rose-200"
-                              }`}
+                              aria-label={`Remove wish from ${w.authorName}`}
+                              title="Remove this wish"
+                              className={
+                                wedding
+                                  ? "inline-flex min-h-8 items-center rounded-full border px-2.5 py-1 font-[family-name:var(--font-cinzel)] text-[0.62rem] font-semibold uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40"
+                                  : `rounded-md p-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-40 ${
+                                      dark
+                                        ? "text-white/40 hover:text-white/80 hover:bg-white/10 focus-visible:ring-white/30"
+                                        : "text-slate-400 hover:text-slate-700 hover:bg-rose-50 focus-visible:ring-rose-200"
+                                    }`
+                              }
+                              style={
+                                wedding
+                                  ? { color: wishInk, borderColor: wishGold }
+                                  : undefined
+                              }
                             >
                               {deletingId === w.id ? (
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : wedding ? (
+                                "Remove"
                               ) : (
                                 <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
                               )}

@@ -3140,6 +3140,7 @@ a.giftPay {
 .seraphine .hero {
   background: #8ba888;
   color: #fafaf5;
+  min-height: calc(100dvh + 4.55rem);
   padding-top: calc(5.35rem + env(safe-area-inset-top, 0px));
   padding-bottom: calc(10.2rem + env(safe-area-inset-bottom, 0px));
 }
@@ -3157,7 +3158,7 @@ a.giftPay {
 
 .seraphine .heroImage {
   object-fit: cover;
-  object-position: center 16%;
+  object-position: center 34%;
 }
 
 .seraphine .heroGrade {
@@ -3182,6 +3183,10 @@ a.giftPay {
 }
 
 .seraphine .heroCopy {
+  position: absolute;
+  left: 50%;
+  bottom: calc(4.55rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
   width: var(--seraphine-portrait);
   max-width: 100%;
   padding-inline: clamp(1rem, 4.2cqi, 1.7rem);
@@ -3189,7 +3194,7 @@ a.giftPay {
 
 .seraphine .heroActions {
   width: min(var(--seraphine-portrait), calc(100% - 2 * var(--aurelia-gutter)));
-  bottom: calc(5.7rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
 }
 
 .seraphine .heroRing {
@@ -3214,7 +3219,6 @@ a.giftPay {
     0 4px 18px rgba(250, 250, 245, 0.72);
 }
 
-.seraphine .heroName,
 .seraphine .hero .eyebrow:not(.heroFamily) {
   text-shadow:
     0 1px 2px rgba(44, 58, 46, 0.55),
@@ -3224,11 +3228,17 @@ a.giftPay {
 .seraphine .heroName {
   font-size: clamp(2.05rem, 8.4cqi, 3.15rem);
   letter-spacing: 0.12em;
+  line-height: 0.92;
+  text-shadow: none;
 }
 
 .seraphine .ampersand {
-  color: #c5b48a;
-  font-size: clamp(1.55rem, 5.2cqi, 2.15rem);
+  color: #e8c56a;
+  font-size: clamp(1.9rem, 6.6cqi, 2.65rem);
+  line-height: 0.85;
+  text-shadow:
+    0 1px 0 rgba(92, 64, 16, 0.7),
+    0 2px 8px rgba(44, 58, 46, 0.45);
 }
 
 .seraphine .heroDate {
@@ -3291,6 +3301,7 @@ a.giftPay {
 }
 
 .seraphine .heroMeta {
+  margin-top: 0.4rem;
   color: #fafaf5;
   text-shadow:
     0 1px 1px rgba(44, 58, 46, 0.82),
@@ -3783,7 +3794,7 @@ a.giftPay {
   }
 
   .seraphine .heroImage {
-    object-position: center 14%;
+    object-position: center 26%;
   }
 }
 
@@ -3796,8 +3807,12 @@ a.giftPay {
     padding-bottom: calc(8.8rem + env(safe-area-inset-bottom, 0px));
   }
 
+  .seraphine .heroCopy {
+    bottom: calc(4.35rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .seraphine .heroActions {
-    bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
     width: min(var(--seraphine-portrait), 34rem);
   }
 
@@ -3820,7 +3835,7 @@ a.giftPay {
   }
 
   .seraphine .heroImage {
-    object-position: center 12%;
+    object-position: center 24%;
   }
 
   .seraphine .heroName {
@@ -3828,7 +3843,7 @@ a.giftPay {
   }
 
   .seraphine .heroActions {
-    bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -3838,8 +3853,12 @@ a.giftPay {
     padding-block: 3.8rem 5.6rem;
   }
 
+  .seraphine .heroCopy {
+    bottom: calc(3.7rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .seraphine .heroActions {
-    bottom: calc(3.6rem + env(safe-area-inset-bottom, 0px));
+    bottom: calc(0.55rem + env(safe-area-inset-bottom, 0px));
   }
 
   .seraphine .heroName {
@@ -3854,7 +3873,7 @@ a.giftPay {
 
 @media (min-aspect-ratio: 1/1) {
   .seraphine .heroImage {
-    object-position: center 12%;
+    object-position: center 30%;
   }
 }
 

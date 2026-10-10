@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentType, useState } from "react";
+import { type ComponentType, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -109,8 +109,8 @@ function GuideLogoMark({ size = 34 }: { size?: number }) {
 }
 
 /**
- * Invitation corner: compact glass Guide chip. Sits off the template so
- * celebration CTAs stay clear. Guests can tuck it to a round mark.
+ * Invitation corner: a round glass mark. Sits off the template so
+ * celebration CTAs stay clear. A tap opens the Guide chip.
  */
 export function InviteGuestHelpFab({
   className,
@@ -122,10 +122,40 @@ export function InviteGuestHelpFab({
   /** Kept for callers; the chip always parks bottom-right off the template. */
   alignEnd?: boolean;
 }) {
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(true);
+  const trayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const rest = () => setHidden(true);
+    window.addEventListener("pageshow", rest);
+    return () => window.removeEventListener("pageshow", rest);
+  }, []);
+
+  useEffect(() => {
+    if (hidden) return;
+    const rest = (event: Event) => {
+      const tray = trayRef.current;
+      if (
+        event.type === "pointerdown" &&
+        tray &&
+        event.target instanceof Node &&
+        tray.contains(event.target)
+      ) {
+        return;
+      }
+      setHidden(true);
+    };
+    document.addEventListener("pointerdown", rest, true);
+    document.addEventListener("scroll", rest, true);
+    return () => {
+      document.removeEventListener("pointerdown", rest, true);
+      document.removeEventListener("scroll", rest, true);
+    };
+  }, [hidden]);
 
   return (
     <div
+      ref={trayRef}
       className={cn(
         "pointer-events-none fixed z-[80]",
         "bottom-[max(0.7rem,env(safe-area-inset-bottom))]",

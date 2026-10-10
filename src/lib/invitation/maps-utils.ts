@@ -27,11 +27,17 @@ export function googleMapsPlaceHref(pin: MapsPin): string {
   return `https://www.google.com/maps/place/${slug}/@${pin.lat},${pin.lng},17z`;
 }
 
-/** Turn-by-turn Google Maps URL to a verified pin. */
+/**
+ * Turn-by-turn Google Maps URL to a verified pin.
+ * Coordinates are the destination, so Maps cannot geocode a nearby street instead.
+ * Driving mode opens ready for navigation on the live site, in the Google Maps app, and on desktop.
+ */
 export function googleMapsDirectionsHref(pin: MapsPin): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-    `${pin.lat},${pin.lng}`
-  )}`;
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("destination", `${pin.lat},${pin.lng}`);
+  url.searchParams.set("travelmode", "driving");
+  return url.toString();
 }
 
 export function extractMapsCoordinates(

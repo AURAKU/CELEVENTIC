@@ -75,7 +75,21 @@ test("googleMapsPlaceHref pins the named venue to exact coordinates", () => {
   assert.match(href, /Forest\+Grove|Dzorwulu|335/);
   assert.match(href, /@5\.621568,-0\.18492,17z/);
   assert.deepEqual(extractMapsCoordinates(href), { lat: 5.621568, lng: -0.18492 });
-  assert.match(toGoogleMapsDirectionsHref(href), /destination=5\.621568%2C-0\.18492/);
+  const directions = toGoogleMapsDirectionsHref(href);
+  assert.match(directions, /^https:\/\/www\.google\.com\/maps\/dir\/\?/);
+  assert.match(directions, /destination=5\.621568%2C-0\.18492/);
+  assert.match(directions, /travelmode=driving/);
+});
+
+test("directions open on the exact Tema church pin, not a short link", () => {
+  const href = toGoogleMapsDirectionsHref(
+    "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z",
+    "Assemblies of God Tema Community 12 TCC"
+  );
+  assert.match(href, /^https:\/\/www\.google\.com\/maps\/dir\/\?/);
+  assert.match(href, /destination=5\.670683%2C-0\.03132/);
+  assert.match(href, /travelmode=driving/);
+  assert.doesNotMatch(href, /maps\.app\.goo\.gl/);
 });
 
 test("webMercatorTile places the Tema church on its zoom-16 tile", () => {

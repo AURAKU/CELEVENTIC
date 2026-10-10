@@ -11,6 +11,8 @@ test("every live invitation portal path mounts the glass Guide chip", () => {
   assert.match(portal, /PagedInvitationViewer[\s\S]*<InviteGuestHelpFab \/>/);
   assert.doesNotMatch(portal, /!props\.embedded && \(\s*<InviteGuestHelpFab/);
   assert.match(cinematic, /<InviteGuestHelpFab \/>/);
+  assert.match(fab, /useState\(true\)/);
+  assert.match(fab, /aria-label="Show guide"/);
   assert.match(fab, /BRAND_LOGO_MARK/);
   assert.match(fab, /object-\[50%_18%\]/);
   assert.match(fab, /scale-\[1\.9\]/);

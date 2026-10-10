@@ -14,7 +14,12 @@ import {
 } from "framer-motion";
 import type { InvitationRenderProps } from "@/types/invitation-design";
 import { parseCoupleNames, formatInvitationDateParts } from "@/lib/invitation-templates";
-import { buildDirectionsUrl, extractMapsCoordinates, resolveMapsLocationHref } from "@/lib/invitation/maps-utils";
+import {
+  buildDirectionsUrl,
+  extractMapsCoordinates,
+  googleMapsDirectionsHref,
+  resolveMapsLocationHref,
+} from "@/lib/invitation/maps-utils";
 import { shouldUnoptimizeNextImage } from "@/lib/uploads/media-url";
 import { isVideoUrl } from "@/lib/invitation/theme-media-assets";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
@@ -26,8 +31,8 @@ import {
   type WeddingSectionId,
 } from "@/lib/invitation/wedding-board";
 import { requestInvitationReplay } from "@/lib/experience/replay-invitation";
-import { groupWeddingSectionPages, isEdwinLordinaBook } from "@/lib/invitation/wedding-pages";
-import { WeddingBook } from "@/components/invitation/templates/forever-afaris-wedding-pages";
+import { isEdwinLordinaBook } from "@/lib/invitation/wedding-pages";
+import { WeddingScroll } from "@/components/invitation/templates/forever-afaris-wedding-pages";
 import {
   resolveWeddingPalette,
   type FaPalette,
@@ -55,6 +60,7 @@ import { useCountdown } from "@/hooks/use-countdown";
 import { SeraphineHourglass } from "./seraphine-hourglass";
 import { Bell, BellRing, Phone } from "lucide-react";
 import { WhatsAppIcon } from "@/components/memory/icons/social-brand-icons";
+import { celebrationPath } from "@/lib/music/invitation-audio-manager";
 
 export type ForeverAfarisWeddingProps = InvitationRenderProps & {
   contactEmail?: string | null;
@@ -210,9 +216,9 @@ function WeddingDateSaveRow({
 
   const statusLabel =
     state === "loading"
-      ? "Saving reminder…"
+      ? "Opening your calendar…"
       : state === "done"
-        ? "Saved to your calendar"
+        ? "Check your calendar to confirm"
         : state === "error"
           ? "Couldn’t save — tap to try again"
           : platformHint;
@@ -523,30 +529,48 @@ function CoupleNameLockup({
   gilded?: boolean;
 }) {
   const nameClass = featured
-    ? "mx-auto block w-fit max-w-full whitespace-nowrap font-[family-name:var(--font-cormorant)] text-[clamp(1.32rem,6.15vw,2.35rem)] font-normal italic leading-[1.12] tracking-[0.012em]"
+    ? "mx-auto block w-fit max-w-full whitespace-nowrap font-[family-name:var(--font-cormorant)] text-[clamp(1.35rem,6.2vw,2.28rem)] font-normal italic leading-[1.15] tracking-[0.02em]"
     : compact
       ? T.nameClose
       : T.name;
   const ink = featured || gilded ? C.storyInk : C.ink;
+  if (featured) {
+    return (
+      <>
+        <span className={nameClass} style={{ color: ink }}>
+          {one}
+        </span>
+        <span
+          className="my-1 block text-center font-[family-name:var(--font-cormorant)] text-[clamp(1.2rem,4.4vw,1.7rem)] font-normal italic leading-none tracking-[0.02em]"
+          style={{ color: ink }}
+        >
+          and
+        </span>
+        <span className={nameClass} style={{ color: ink }}>
+          {two}
+        </span>
+      </>
+    );
+  }
   return (
     <>
       <span className={nameClass} style={{ color: ink }}>
         {one}
       </span>
-      <span className={`flex items-center justify-center ${compact ? "my-0.5 gap-2" : featured ? "my-2 gap-3.5" : "my-1.5 gap-3"}`}>
+      <span className={`flex items-center justify-center ${compact ? "my-0.5 gap-2" : "my-1.5 gap-3"}`}>
         <span
-          className={`${compact ? "w-7" : featured ? "w-12" : "w-10"} h-px`}
+          className={`${compact ? "w-7" : "w-10"} h-px`}
           style={{ background: `linear-gradient(90deg, transparent, ${ink})` }}
           aria-hidden
         />
         <span
-          className={`font-[family-name:var(--font-great-vibes)] leading-none ${compact ? "text-[clamp(1.65rem,4.8vw,2.05rem)]" : featured ? "text-[clamp(2.55rem,7.4vw,3.35rem)]" : "text-[clamp(2.15rem,6.2vw,2.85rem)]"}`}
+          className={`font-[family-name:var(--font-great-vibes)] leading-none ${compact ? "text-[clamp(1.65rem,4.8vw,2.05rem)]" : "text-[clamp(2.15rem,6.2vw,2.85rem)]"}`}
           style={{ color: ink }}
         >
           and
         </span>
         <span
-          className={`${compact ? "w-7" : featured ? "w-12" : "w-10"} h-px`}
+          className={`${compact ? "w-7" : "w-10"} h-px`}
           style={{ background: `linear-gradient(90deg, ${ink}, transparent)` }}
           aria-hidden
         />
@@ -877,21 +901,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
   const [openMoment, setOpenMoment] = useState<number | null>(null);
   const [momentPage, setMomentPage] = useState(1);
-  const [momentsPerPage, setMomentsPerPage] = useState(4);
-  useEffect(() => {
-    const tablet = window.matchMedia("(min-width: 640px)");
-    const desktop = window.matchMedia("(min-width: 1024px)");
-    const apply = () => {
-      setMomentsPerPage(desktop.matches ? 9 : tablet.matches ? 6 : 4);
-    };
-    apply();
-    tablet.addEventListener("change", apply);
-    desktop.addEventListener("change", apply);
-    return () => {
-      tablet.removeEventListener("change", apply);
-      desktop.removeEventListener("change", apply);
-    };
-  }, []);
+  const momentsPerPage = 4;
   const momentItems = useMemo(
     () =>
       galleryImages.map((item) => ({
@@ -963,12 +973,17 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         if (!pinUrl || seen.has(pinUrl)) return [];
         seen.add(pinUrl);
         const address = pinUrl === sharedMap ? board.venueAddress?.trim() || "" : "";
-        const guestMapUrl = item?.mapLink?.trim() || pinUrl;
-        const href = resolveMapsLocationHref({
-          mapsUrl: guestMapUrl,
-          locationName: moment.place,
-          address,
-        });
+        const coords = extractMapsCoordinates(pinUrl);
+        const guestMapUrl = coords
+          ? googleMapsDirectionsHref({ label: moment.place, lat: coords.lat, lng: coords.lng })
+          : item?.mapLink?.trim() || pinUrl;
+        const href = coords
+          ? guestMapUrl
+          : resolveMapsLocationHref({
+              mapsUrl: guestMapUrl,
+              locationName: moment.place,
+              address,
+            });
         const base = celebrationEvents.find((entry) => entry.title.endsWith(`— ${moment.title}`));
         const placeLine = calendarEventLocation(moment.place, address);
         const event: CalendarEventInput = {
@@ -1159,7 +1174,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
         {features.location ? (
           venueStops.length >= 2 ? (
-            <div className="mt-7 grid grid-cols-1 gap-8 text-center md:grid-cols-2 md:items-start md:gap-6">
+            <div className="mt-7 grid w-full grid-cols-1 items-stretch gap-8 text-center sm:grid-cols-2 sm:gap-5 md:gap-6 lg:gap-8">
               {venueStops.map((stop) => (
                 <VenueMapCard
                   key={stop.id}
@@ -1293,24 +1308,19 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
     programme:
       features.programme && board.programmeItems.length > 0 ? (
-        <section className="w-full min-w-0">
+        <section className="mx-auto w-full min-w-0 max-w-[34rem]">
           <Reveal>
             <h2 className={`text-center ${T.scriptSm}`} style={{ color: C.goldDeep }}>
               {board.programmeHeading}
             </h2>
           </Reveal>
           {/* Always-visible list — never gate programme copy behind scroll IO. */}
-          <ol className="relative mt-6 space-y-5 pl-7 sm:space-y-6 sm:pl-8">
-            <span
-              aria-hidden
-              className="absolute bottom-2 left-[8px] top-2 w-px sm:left-[9px]"
-              style={{ background: `linear-gradient(180deg, ${C.gold}, ${C.blushDeep})` }}
-            />
+          <ol className="relative mx-auto mt-6 w-full space-y-6 text-center sm:space-y-7">
             {board.programmeItems.map((item) => (
-              <li key={item.id} className="relative min-w-0">
+              <li key={item.id} className="relative min-w-0 text-center">
                 <span
                   aria-hidden
-                  className="absolute -left-7 top-1 h-[13px] w-[13px] rounded-full sm:-left-8"
+                  className="mx-auto mb-2 block h-[9px] w-[9px] rounded-full"
                   style={{ background: C.gold, boxShadow: `0 0 0 3px ${C.ivory}, 0 0 10px ${C.goldSoft}` }}
                 />
                 {item.time ? (
@@ -1325,7 +1335,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                     {item.time}
                   </p>
                 ) : null}
-                <p className={T.programmeTitle} style={{ color: C.ink }}>
+                <p className={`${T.programmeTitle} text-center`} style={{ color: C.ink }}>
                   {item.title}
                 </p>
                 {item.description && (
@@ -1434,7 +1444,11 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             {storyParagraphs(board.storyBody).map((paragraph) => (
               <p
                 key={paragraph}
-                className={`font-[family-name:var(--font-cormorant)] ${T.body} italic leading-[1.65]`}
+                className={`font-[family-name:var(--font-cormorant)] italic leading-[1.65] ${
+                  isEdwinLordinaBook(couple1, couple2)
+                    ? "text-[clamp(1.1875rem,3vw,1.4rem)]"
+                    : T.body
+                }`}
                 style={{ color: C.storyInk }}
               >
                 {paragraph}
@@ -1450,7 +1464,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <h2 className={`text-center ${T.scriptSm}`} style={{ color: C.goldDeep }}>
             {board.galleryHeading}
           </h2>
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:gap-4">
+          <div className="mx-auto mt-5 grid w-full grid-cols-2 gap-2.5 min-[375px]:gap-3 sm:gap-4 lg:gap-5">
             {pagedMoments.map((m) => (
               <button
                 key={`${m.url}-${m.index}`}
@@ -1475,7 +1489,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                     alt=""
                     fill
                     loading="lazy"
-                    sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 280px"
+                    sizes="(max-width: 640px) 46vw, (max-width: 1024px) 42vw, 440px"
                     className="object-cover"
                     unoptimized={shouldUnoptimizeNextImage(m.url)}
                   />
@@ -1547,7 +1561,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             {memoryUploadUrl && (
               <Link
-                href={memoryUploadUrl}
+                href={celebrationPath(memoryUploadUrl)}
                 className={`inline-flex items-center gap-2 rounded-full px-6 py-3 ${T.cta} transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
                 style={{
                   color: C.ink,
@@ -1560,7 +1574,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             )}
             {memoryAlbumUrl && (
               <Link
-                href={memoryAlbumUrl}
+                href={celebrationPath(memoryAlbumUrl)}
                 className={`inline-flex items-center gap-2 border-b pb-0.5 ${T.cta} transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
                 style={{ color: C.cocoa, borderColor: C.border }}
               >
@@ -1621,8 +1635,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       return true;
     });
 
-  const bookPages = groupWeddingSectionPages(visible.map((entry) => entry.id));
-  const showBook = isEdwinLordinaBook(couple1, couple2) && !staticPreview && bookPages.length > 1;
+  const streamSections = isEdwinLordinaBook(couple1, couple2) && !staticPreview;
   const visibleById = new Map(visible.map((entry) => [entry.id, entry]));
 
   const renderEntry = (id: WeddingSectionId, showDivider: boolean) => {
@@ -1658,19 +1671,13 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       }}
     >
       <PageFlora palette={C} />
-      <div
-        className={
-          showBook
-            ? "relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-2 min-[375px]:px-5 sm:max-w-[640px] sm:px-8 sm:pt-4 md:max-w-[760px] md:px-10 lg:max-w-[880px] lg:pt-6"
-            : "relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[640px] sm:px-8 sm:pt-10 md:max-w-[800px] md:px-10 lg:max-w-[960px] lg:pt-14"
-        }
-      >
-        {showBook ? (
-          <WeddingBook
-            pages={bookPages}
-            palette={C}
-            reduced={Boolean(reduced)}
-            childrenFor={(page) => page.sections.map((id, index) => renderEntry(id, index > 0))}
+      <div className="relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[640px] sm:px-8 sm:pt-10 md:max-w-[800px] md:px-10 lg:max-w-[960px] lg:pt-14">
+        {streamSections ? (
+          <WeddingScroll
+            sections={visible.map((entry, index) => ({
+              id: entry.id,
+              node: renderEntry(entry.id, index > 0),
+            }))}
           />
         ) : (
           visible.map((entry, index) => renderEntry(entry.id, index > 0))
@@ -2003,55 +2010,37 @@ function VenueMapCard({
   const pinLink = stop.pinUrl || stop.mapsUrl;
   const hasPin = Boolean(extractMapsCoordinates(pinLink));
   const embedUrl = hasPin ? null : toMapsEmbedUrl(pinLink, stop.place, 17);
-  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [calendarApp, setCalendarApp] = useState("your calendar");
-
-  useEffect(() => {
-    const platform = detectCalendarPlatform();
-    setCalendarApp(
-      platform === "apple" ? "Apple Calendar" : platform === "google" ? "Google Calendar" : "Outlook Calendar"
-    );
-  }, []);
-
-  async function saveReminder() {
-    if (staticPreview || state === "loading") return;
-    setState("loading");
-    const result = await setSmartCalendarReminder(stop.event);
-    setState(result.success ? "done" : "error");
-    if (result.success) window.setTimeout(() => setState("idle"), 3600);
-  }
-
-  const reminderLabel =
-    state === "loading"
-      ? "Saving reminder…"
-      : state === "done"
-        ? "Saved to your calendar"
-        : state === "error"
-          ? "Couldn’t save — tap to try again"
-          : `Tap to add this celebration to ${calendarApp}`;
 
   return (
-    <article className="mx-auto w-full max-w-[26rem]">
-      <p className={`${T.labelTight} uppercase tracking-[0.22em]`} style={{ color: C.goldDeep }}>
-        {stop.when}
-      </p>
-      <h3
-        className="mt-2 font-[family-name:var(--font-cinzel)] text-[clamp(0.95rem,2.5vw,1.15rem)] tracking-[0.12em]"
-        style={{ color: C.ink }}
-      >
-        {stop.title}
-      </h3>
-      <p className={`mt-2 font-[family-name:var(--font-cormorant)] ${T.body}`} style={{ color: C.ink }}>
-        {stop.place}
-      </p>
-      {stop.address ? (
-        <p className={`font-[family-name:var(--font-cormorant)] ${T.body}`} style={{ color: C.cocoa }}>
-          {stop.address}
+    <article className="flex h-full w-full min-w-0 flex-col">
+      <div className="flex flex-1 flex-col">
+        <p
+          className={`${T.labelTight} font-[family-name:var(--font-cinzel)] font-extrabold uppercase tracking-[0.16em]`}
+          style={{ color: C.goldDeep }}
+        >
+          {stop.when}
         </p>
-      ) : null}
+        <h3
+          className="mt-2 text-balance font-[family-name:var(--font-cinzel)] text-[clamp(0.95rem,2.2vw,1.12rem)] font-extrabold leading-snug tracking-[0.08em]"
+          style={{ color: C.ink }}
+        >
+          {stop.title}
+        </h3>
+        <p
+          className={`mt-2 text-balance font-[family-name:var(--font-cormorant)] font-bold ${T.body}`}
+          style={{ color: C.ink }}
+        >
+          {stop.place}
+        </p>
+        {stop.address ? (
+          <p className={`text-balance font-[family-name:var(--font-cormorant)] font-bold ${T.body}`} style={{ color: C.cocoa }}>
+            {stop.address}
+          </p>
+        ) : null}
+      </div>
       {hasPin || embedUrl ? (
         <div
-          className="relative mx-auto mt-4 overflow-hidden"
+          className="relative mt-4 w-full shrink-0 overflow-hidden"
           style={{
             borderRadius: 22,
             border: `1px solid ${C.border}`,
@@ -2085,7 +2074,7 @@ function VenueMapCard({
           href={stop.mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className={`mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 ${T.cta} transition-transform hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
+          className="mt-5 flex min-h-[3.25rem] w-full items-center justify-center rounded-full px-4 py-3 text-center text-[clamp(0.72rem,1.5vw,0.84rem)] font-medium uppercase leading-snug tracking-[0.12em] transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style={{
             color: C.ink,
             background: `linear-gradient(135deg, ${C.goldSoft}, ${C.gold})`,
@@ -2094,16 +2083,6 @@ function VenueMapCard({
         >
           {buttonLabel}
         </Link>
-      ) : null}
-      {!staticPreview && stop.event.startDateRaw ? (
-        <button
-          type="button"
-          onClick={saveReminder}
-          className={`mx-auto mt-3 block max-w-[20rem] ${T.labelTight} leading-relaxed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
-          style={{ color: C.cocoa }}
-        >
-          {reminderLabel}
-        </button>
       ) : null}
     </article>
   );

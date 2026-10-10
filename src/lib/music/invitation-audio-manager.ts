@@ -14,6 +14,22 @@ function setActiveInvitationAudioManager(manager: InvitationAudioManager | null)
   (globalThis as AudioGlobal).__celeventicInviteAudio = manager;
 }
 
+/**
+ * Album and upload links are stored as absolute URLs for QR codes.
+ * Guest taps should stay on the path so the invitation page, and its music,
+ * are not torn down by a full reload.
+ */
+export function celebrationPath(href: string): string {
+  try {
+    const url = new URL(href, "https://celeventic.local");
+    if (!/^\/(?:memory|memory-upload|invite)(?:\/|$)/.test(url.pathname)) return href;
+    if (href.startsWith("/")) return href;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return href;
+  }
+}
+
 /** Guest surfaces (Play Music overlays) toggle the live invitation bed. */
 export function getActiveInvitationAudioManager(): InvitationAudioManager | null {
   return (globalThis as AudioGlobal).__celeventicInviteAudio ?? activeInvitationAudioManager;
@@ -25,15 +41,90 @@ export function pauseAllInvitationAudio(): void {
 }
 
 const AUDIO_HANDOFF_KEY = "celeventic.inviteAudioHandoff";
+const AUDIO_RETURN_KEY = "celeventic.inviteAudioReturn";
+const AUDIO_SNAPSHOT_KEY = "celeventic.inviteAudioSnapshot";
+const AUDIO_SNAPSHOT_MAX_AGE_MS = 20 * 60 * 1000;
 let heldInvitationAudio: InvitationAudioManager | null = null;
+let lastInvitationSelection: MusicSelection | null = null;
+let lastInvitationUrl: string | null = null;
+let pendingResumeAt: number | null = null;
+
+type InvitationAudioSnapshot = {
+  at: number;
+  url: string;
+  selection: MusicSelection | null;
+  currentTime: number;
+  volume: number;
+  muted: boolean;
+  playing: boolean;
+};
+
+function writeInvitationAudioSnapshot(): void {
+  if (typeof window === "undefined") return;
+  const manager = getActiveInvitationAudioManager() ?? heldInvitationAudio;
+  const audio = manager?.getAudio();
+  const url = lastInvitationUrl;
+  if (!manager || !audio || !url) return;
+  const snapshot: InvitationAudioSnapshot = {
+    at: Date.now(),
+    url,
+    selection: lastInvitationSelection,
+    currentTime: audio.currentTime,
+    volume: manager.getVolume(),
+    muted: manager.isMuted(),
+    playing: manager.isPlaying(),
+  };
+  try {
+    window.sessionStorage.setItem(AUDIO_SNAPSHOT_KEY, JSON.stringify(snapshot));
+  } catch {
+    /* private mode */
+  }
+}
+
+function readInvitationAudioSnapshot(): InvitationAudioSnapshot | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(AUDIO_SNAPSHOT_KEY);
+    if (!raw) return null;
+    const snapshot = JSON.parse(raw) as InvitationAudioSnapshot;
+    if (!snapshot?.url || !snapshot.playing) return null;
+    if (Date.now() - snapshot.at > AUDIO_SNAPSHOT_MAX_AGE_MS) return null;
+    return snapshot;
+  } catch {
+    return null;
+  }
+}
 
 /** Remember that the next navigation stays inside the guest celebration. */
 export function markInvitationAudioHandoff(): void {
   if (typeof window === "undefined") return;
+  writeInvitationAudioSnapshot();
   try {
     window.sessionStorage.setItem(AUDIO_HANDOFF_KEY, "1");
   } catch {
     /* private mode */
+  }
+}
+
+/** The album is sending the guest back; keep the same track for the invitation. */
+export function markInvitationAudioReturn(): void {
+  if (typeof window === "undefined") return;
+  writeInvitationAudioSnapshot();
+  try {
+    window.sessionStorage.setItem(AUDIO_RETURN_KEY, "1");
+  } catch {
+    /* private mode */
+  }
+}
+
+export function consumeInvitationAudioReturn(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const marked = window.sessionStorage.getItem(AUDIO_RETURN_KEY) === "1";
+    if (marked) window.sessionStorage.removeItem(AUDIO_RETURN_KEY);
+    return marked;
+  } catch {
+    return false;
   }
 }
 
@@ -64,11 +155,47 @@ export function claimHeldInvitationAudio(): InvitationAudioManager | null {
   return manager;
 }
 
+function restoreInvitationAudioSnapshot(): InvitationAudioManager | null {
+  const snapshot = readInvitationAudioSnapshot();
+  if (!snapshot) return null;
+  const clipStart = snapshot.selection?.startSec ?? 0;
+  const clipEnd = snapshot.selection?.endSec;
+  const withinClip =
+    snapshot.currentTime >= clipStart &&
+    (clipEnd == null || snapshot.currentTime < clipEnd);
+  pendingResumeAt = withinClip ? snapshot.currentTime : clipStart;
+  const manager = createInvitationAudioManager(snapshot.selection, snapshot.url);
+  if (!manager) {
+    pendingResumeAt = null;
+    return null;
+  }
+  if (snapshot.muted) manager.mute();
+  else manager.setVolume(snapshot.volume);
+  holdInvitationAudio(manager);
+  void manager.resume();
+  return manager;
+}
+
 /** Continue the invitation bed if a route change paused it. */
 export function continueInvitationAudio(): void {
   const manager = getActiveInvitationAudioManager() ?? heldInvitationAudio;
-  if (!manager || manager.isPlaying()) return;
-  void manager.resume();
+  if (manager) {
+    if (!manager.isPlaying()) void manager.resume();
+    return;
+  }
+  const fromInvite =
+    typeof document !== "undefined" && /\/invite\//.test(document.referrer);
+  const handedOff = consumeInvitationAudioHandoff();
+  if (!fromInvite && !handedOff) return;
+  restoreInvitationAudioSnapshot();
+}
+
+/** Pick up the track again when the guest returns from the album. */
+export function claimReturningInvitationAudio(): InvitationAudioManager | null {
+  const held = claimHeldInvitationAudio();
+  if (held) return held;
+  if (!consumeInvitationAudioReturn()) return null;
+  return restoreInvitationAudioSnapshot();
 }
 
 /** Pause bed music while a guest-started film owns the audio stage. */
@@ -150,6 +277,8 @@ export function createInvitationAudioManager(
   const url = selectionUrl ?? fallbackUrl;
   if (!url) return null;
   const resolvedUrl: string = url;
+  lastInvitationSelection = musicSelection ?? null;
+  lastInvitationUrl = resolvedUrl;
 
   let audio: HTMLAudioElement | null = null;
   let muted = false;
@@ -228,7 +357,13 @@ export function createInvitationAudioManager(
       audio.loop = false;
       wireTrimLoop(audio);
       audio.addEventListener("loadedmetadata", () => {
-        if (audio) audio.currentTime = musicSelection.startSec;
+        if (!audio) return;
+        if (pendingResumeAt != null) {
+          audio.currentTime = pendingResumeAt;
+          pendingResumeAt = null;
+          return;
+        }
+        audio.currentTime = musicSelection.startSec;
       });
     } else {
       audio.loop = true;

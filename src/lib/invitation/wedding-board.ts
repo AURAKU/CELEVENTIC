@@ -572,7 +572,6 @@ export function mergeWeddingBoard(
 
   // Strip legacy “—” separators from published Studio snapshots and defaults.
   const proseKeys = [
-    "familyIntro",
     "invitationCopy",
     "greetingBody",
     "dressCodeLadies",

@@ -178,7 +178,7 @@ export function AlbumUploadBar({
         }}
       >
         {upload.windowOpen
-          ? `Up to ${upload.maxImageSizeMb}MB each. Guests can like, comment, and download. Only the organizer can remove a photo.`
+          ? `Up to ${upload.maxImageSizeMb}MB each. Guests can like, comment, and download. Only an admin or the organizer can remove a photo.`
           : "Photo uploads are closed for this celebration."}
       </p>
       {status ? (

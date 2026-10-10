@@ -23,7 +23,14 @@ export default function MemoryTokenGalleryPage() {
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<{
-    event: { title: string; hostName: string; eyebrow?: string | null; subtitle?: string | null; lede?: string | null };
+    event: {
+      title: string;
+      hostName: string;
+      eyebrow?: string | null;
+      subtitle?: string | null;
+      lede?: string | null;
+      invitationHref?: string | null;
+    };
     allowDownloads: boolean;
     upload?: AlbumUploadConfig | null;
     canModerate?: boolean;
@@ -85,6 +92,7 @@ export default function MemoryTokenGalleryPage() {
       canModerate={Boolean(data.canModerate)}
       upload={data.upload}
       onRefresh={() => void loadGallery()}
+      invitationHref={data.event.invitationHref}
     />
   );
 }

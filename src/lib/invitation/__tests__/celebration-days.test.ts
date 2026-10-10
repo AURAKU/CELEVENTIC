@@ -21,7 +21,7 @@ const EDWIN = [
   },
   {
     id: "reception",
-    time: "SAT 26 DEC · 4:00 PM",
+    time: "SAT 26 DEC · 3:00 PM",
     title: "Reception",
     description: "Combos & Casa, East Legon Hills",
   },
@@ -41,12 +41,12 @@ describe("celebration days", () => {
       [
         ["Thursday", 24, "9:00 AM", "Bride’s house, Tema Community 12"],
         ["Saturday", 26, "9:00 AM", "Assemblies of God Tema Community 12 TCC"],
-        ["Saturday", 26, "4:00 PM", "Combos & Casa, East Legon Hills"],
+        ["Saturday", 26, "3:00 PM", "Combos & Casa, East Legon Hills"],
       ]
     );
     assert.equal(moments[0]?.startIso, "2026-12-24T09:00:00.000Z");
     assert.equal(moments[1]?.startIso, "2026-12-26T09:00:00.000Z");
-    assert.equal(moments[2]?.startIso, "2026-12-26T16:00:00.000Z");
+    assert.equal(moments[2]?.startIso, "2026-12-26T15:00:00.000Z");
     assert.equal(moments[1]?.endIso, moments[2]?.startIso);
   });
 

@@ -1,9 +1,10 @@
 import {
   buildGoogleCalendarUrl,
+  buildIcsCalendar,
+  buildIcsContent,
   buildOutlookCalendarUrl,
-  downloadIcsCalendar,
-  downloadIcsFile,
   hasValidCalendarWindow,
+  openIcsBlob,
   type CalendarEventInput,
 } from "@/lib/invitation/calendar-utils";
 
@@ -27,6 +28,20 @@ function isAppleSafari(): boolean {
   return /Safari/i.test(ua) && !/Chrome|CriOS|Chromium|Edg|FxiOS|OPR|Opera/i.test(ua);
 }
 
+/**
+ * iPhone, iPad, and Android. Desktop browsers stay on their web calendar.
+ * iPadOS reports itself as a Mac, so a touch Mac is treated as an iPad.
+ */
+export function nativeCalendarHandoff(): "ios" | "android" | null {
+  if (typeof navigator === "undefined") return null;
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isIPadOS = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  if (isIOS || isIPadOS) return "ios";
+  if (/Android/i.test(ua)) return "android";
+  return null;
+}
+
 /** Detect the best native calendar for this device/browser. */
 export function detectCalendarPlatform(): SmartCalendarPlatform {
   if (typeof navigator === "undefined") return "google";
@@ -42,8 +57,11 @@ export function detectCalendarPlatform(): SmartCalendarPlatform {
   if (isIOS || isIPadOS) return "apple";
   if (isMac && isAppleSafari()) return "apple";
   if (isAndroid) return "google";
-  // Windows Calendar lives in Outlook, except Chrome, which keeps Google Calendar.
-  if (isWindows && !/Chrome|CriOS/.test(ua)) return "outlook";
+  // Windows Calendar lives in Outlook. Chrome keeps Google Calendar.
+  // Edge's user agent also contains "Chrome", so it has to be recognised first.
+  const isEdge = /Edg\//.test(ua);
+  const isChrome = /Chrome|CriOS/.test(ua) && !isEdge;
+  if (isWindows && !isChrome) return "outlook";
 
   return "google";
 }
@@ -128,17 +146,13 @@ export async function setSmartCalendarReminder(
         platform,
         label,
         success: true,
-        message: `Opening ${label} with the event date and time.`,
+        message: `Opening ${label} with the date, the place, and a reminder.`,
       };
     }
 
-    downloadIcsFile(event, filename);
-    return {
-      platform,
-      label,
-      success: true,
-      message: `Opening ${label} with the event date and time.`,
-    };
+    const presented = await presentCalendarFile(buildIcsContent(event), filename);
+    const spoken = fileResultMessage(presented, label, 1);
+    return { platform, label, ...spoken };
   } catch {
     return {
       platform,
@@ -151,6 +165,74 @@ export async function setSmartCalendarReminder(
 
 export function openCalendarUrls(urls: string[]) {
   for (const url of urls) openCalendarUrl(url);
+}
+
+type CalendarFileResult = "shared" | "opened" | "cancelled";
+
+/**
+ * Put one calendar file in the guest's hands.
+ * iPhone opens Calendar's Add sheet. Android offers the calendar app
+ * through the system share sheet, then the file itself if sharing is unavailable.
+ */
+export async function presentCalendarFile(
+  ics: string,
+  filename: string
+): Promise<CalendarFileResult> {
+  const handoff = nativeCalendarHandoff();
+  if (!ics) return "opened";
+
+  if (handoff === "android" && typeof navigator !== "undefined" && typeof File !== "undefined") {
+    const file = new File([ics], filename.toLowerCase().endsWith(".ics") ? filename : `${filename}.ics`, {
+      type: "text/calendar",
+    });
+    if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "Add to calendar" });
+        return "shared";
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return "cancelled";
+      }
+    }
+    openIcsBlob(ics, filename, false);
+    return "opened";
+  }
+
+  if (handoff === "ios") {
+    openIcsBlob(ics, filename, false);
+    return "opened";
+  }
+
+  openIcsBlob(ics, filename, true);
+  return "opened";
+}
+
+function fileResultMessage(
+  result: CalendarFileResult,
+  label: string,
+  count: number
+): { success: boolean; message: string } {
+  if (result === "cancelled") {
+    return {
+      success: false,
+      message: "Calendar save was closed. Tap again when you are ready.",
+    };
+  }
+  if (result === "shared") {
+    return {
+      success: true,
+      message:
+        count > 1
+          ? `Choose your calendar app to add all ${count} celebrations.`
+          : `Choose your calendar app to add this celebration.`,
+    };
+  }
+  return {
+    success: true,
+    message:
+      count > 1
+        ? `${label} is opening. Tap Add All to keep every celebration.`
+        : `${label} is opening with the date, the place, and a reminder.`,
+  };
 }
 
 /**
@@ -174,8 +256,9 @@ export function calendarBundleForEvents(
 
 /**
  * Adds every celebration on the device's calendar.
- * Apple gets one file with an alarm on each event.
- * Google and Outlook get one save page per celebration.
+ * iPhone and iPad open one calendar file so Calendar can add them all.
+ * Android offers that same file to the phone's calendar app.
+ * Desktop Google and Outlook still open one save page per celebration.
  */
 export async function setSmartCalendarReminders(
   events: CalendarEventInput[]
@@ -191,14 +274,11 @@ export async function setSmartCalendarReminders(
   const bundle = calendarBundleForEvents(ready, platform);
 
   try {
-    if (bundle.useFile) {
-      downloadIcsCalendar(ready, filename);
-      return {
-        platform,
-        label,
-        success: true,
-        message: `Opening ${label} with each celebration, the place, and a reminder.`,
-      };
+    const handoff = nativeCalendarHandoff();
+    if (bundle.useFile || handoff === "android" || handoff === "ios") {
+      const presented = await presentCalendarFile(buildIcsCalendar(ready), filename);
+      const spoken = fileResultMessage(presented, label, ready.length);
+      return { platform, label, ...spoken };
     }
 
     openCalendarUrls(bundle.urls);

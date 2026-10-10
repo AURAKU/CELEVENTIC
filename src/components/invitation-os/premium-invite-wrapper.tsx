@@ -22,7 +22,7 @@ import type { RevealMode } from "@/lib/invitation-studio/studio-types";
 import { DEFAULT_HUB_TABS } from "@/lib/experience/experience-types";
 import { enrichDesignWithExperienceDNA } from "@/lib/experience/experience-engine-v2";
 import {
-  claimHeldInvitationAudio,
+  claimReturningInvitationAudio,
   consumeInvitationAudioHandoff,
   createInvitationAudioManager,
   type InvitationAudioManager,
@@ -266,7 +266,7 @@ export function PremiumInviteWrapper({
   const audioManager = useMemo(() => {
     if (!hasMusic) return null;
     if (heldAudioRef.current === undefined) {
-      heldAudioRef.current = claimHeldInvitationAudio();
+      heldAudioRef.current = claimReturningInvitationAudio();
     }
     return heldAudioRef.current ?? createInvitationAudioManager(musicSelection, musicUrl);
   }, [hasMusic, musicSelection, musicUrl]);
@@ -365,6 +365,8 @@ export function PremiumInviteWrapper({
   const [phase, setPhaseState] = useState<ExperiencePhase>(() =>
     audioContinuesRef.current ? "portal" : resolveInitialInvitePhase(pipelineFlags)
   );
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
   const setPhase = useCallback(
     (next: ExperiencePhase, reason: string) => {
       setPhaseState((prev) => {
@@ -689,12 +691,14 @@ export function PremiumInviteWrapper({
   // "Replay Opening" inside a template restarts from the brand video intro.
   useEffect(() => onInvitationReplay(restartOpeningCeremony), [restartOpeningCeremony]);
 
-  // Back-forward cache can restore the portal mid-ceremony without remounting —
-  // treat that like a fresh open and restart from the video intro.
+  // A phone can restore this page from memory when the guest switches apps.
+  // That is not a refresh. Once they are inside the invitation, stay there.
+  // Only a frozen opening film should start again.
   useEffect(() => {
     if (embedded || skipSoftIntro === true) return;
     const onPageShow = (event: PageTransitionEvent) => {
       if (!event.persisted) return;
+      if (phaseRef.current === "portal") return;
       restartOpeningCeremony();
     };
     window.addEventListener("pageshow", onPageShow);

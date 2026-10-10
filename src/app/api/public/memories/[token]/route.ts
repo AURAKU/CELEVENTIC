@@ -12,6 +12,7 @@ import {
 } from "@/services/memory/event-memory-social.service";
 import { parsePaginationFromUrl } from "@/lib/pagination";
 import { resolvePublicMemoryMediaType } from "@/lib/memory/memory-vault-policy";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: Request,
@@ -51,13 +52,19 @@ export async function GET(
     canModerate,
     canRemoveMedia,
   });
-  const [{ publicTheme, identity }, uploadToken] = await Promise.all([
+  const [{ publicTheme, identity }, uploadToken, invitations] = await Promise.all([
     eventMemoryThemeService.resolveForEvent(record.eventId, {
       title: record.event.title,
       hostName: record.event.hostName,
     }),
     eventMemoryTokenService.getOrCreateUploadToken(record.eventId),
+    prisma.invitation.findMany({
+      where: { eventId: record.eventId, status: "ACTIVE" },
+      select: { uniqueLink: true },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
+  const invitation = invitations[0] ?? null;
 
   return NextResponse.json({
     success: true,
@@ -71,6 +78,9 @@ export async function GET(
         eyebrow: identity.eyebrow,
         subtitle: identity.subtitle,
         lede: identity.lede,
+        invitationHref: invitation
+          ? `/invite/${encodeURIComponent(invitation.uniqueLink)}`
+          : null,
       },
       allowDownloads: settings.allowDownloads,
       upload: {

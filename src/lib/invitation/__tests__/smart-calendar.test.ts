@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import {
   detectCalendarPlatform,
+  nativeCalendarHandoff,
   resolveCalendarPrimaryAction,
 } from "@/lib/invitation/smart-calendar";
 
@@ -55,6 +56,52 @@ describe("smart calendar platform", () => {
       () => {
         assert.equal(detectCalendarPlatform(), "apple");
         assert.equal(resolveCalendarPrimaryAction(FEMMORA_EVENT)?.kind, "ics");
+      }
+    );
+  });
+
+  it("hands an iPhone one calendar file and an Android phone its own calendar", () => {
+    withNavigator(
+      {
+        userAgent:
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+        platform: "iPhone",
+      },
+      () => {
+        assert.equal(nativeCalendarHandoff(), "ios");
+      }
+    );
+    withNavigator(
+      {
+        userAgent:
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148 Safari/604.1",
+        platform: "iPhone",
+      },
+      () => {
+        assert.equal(nativeCalendarHandoff(), "ios");
+        assert.equal(detectCalendarPlatform(), "apple");
+      }
+    );
+    withNavigator(
+      {
+        userAgent:
+          "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+        platform: "Linux armv8l",
+      },
+      () => {
+        assert.equal(nativeCalendarHandoff(), "android");
+        assert.equal(detectCalendarPlatform(), "google");
+      }
+    );
+    withNavigator(
+      {
+        userAgent:
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        platform: "MacIntel",
+        maxTouchPoints: 0,
+      },
+      () => {
+        assert.equal(nativeCalendarHandoff(), null);
       }
     );
   });

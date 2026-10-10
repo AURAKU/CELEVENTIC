@@ -245,19 +245,35 @@ export function buildIcsBlob(event: CalendarEventInput): Blob {
   return new Blob([buildIcsContent(event)], { type: "text/calendar;charset=utf-8" });
 }
 
-function downloadIcsText(ics: string, filename: string) {
-  if (!ics) return;
+function ensureIcsName(filename: string): string {
+  return filename.toLowerCase().endsWith(".ics") ? filename : `${filename}.ics`;
+}
+
+/**
+ * Open a calendar file.
+ * A download forces Files. iPhone and Android need the file without that
+ * flag so Calendar can offer Add All.
+ */
+export function openIcsBlob(ics: string, filename: string, asDownload: boolean) {
+  if (!ics || typeof document === "undefined") return;
   const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
   a.rel = "noopener";
+  if (asDownload) {
+    a.download = ensureIcsName(filename);
+  } else {
+    a.target = "_blank";
+  }
   document.body.appendChild(a);
   a.click();
   a.remove();
-  // Delay revoke so Safari can finish handing off to Calendar.
-  window.setTimeout(() => URL.revokeObjectURL(url), 2500);
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+function downloadIcsText(ics: string, filename: string) {
+  openIcsBlob(ics, filename, true);
 }
 
 export function downloadIcsFile(event: CalendarEventInput, filename = "event.ics") {

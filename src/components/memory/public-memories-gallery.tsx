@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
   Grid3X3,
   Heart,
   ImageIcon,
@@ -29,7 +30,10 @@ import {
 } from "@/lib/memory/memory-guest-identity";
 import { MemoryShareBar } from "@/components/memory/memory-share-bar";
 import { AlbumUploadBar, type AlbumUploadConfig } from "@/components/memory/album-upload-bar";
-import { continueInvitationAudio } from "@/lib/music/invitation-audio-manager";
+import {
+  continueInvitationAudio,
+  markInvitationAudioReturn,
+} from "@/lib/music/invitation-audio-manager";
 
 export interface MemoryGalleryItem {
   id: string;
@@ -391,8 +395,26 @@ export function PublicMemoriesGallery({
           background: "color-mix(in srgb, var(--memory-color-surface, #FBF6EF) 90%, transparent)",
         }}
       >
+        <div className="mx-auto flex max-w-3xl items-start gap-2.5">
+          {invitationHref ? (
+            <Link
+              href={invitationHref}
+              onClick={() => markInvitationAudioReturn()}
+              aria-label="Back to invitation"
+              className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{
+                color: "var(--memory-color-ink, #1B365D)",
+                background: "var(--memory-color-surface, #FBF6EF)",
+                boxShadow:
+                  "inset 0 0 0 1px color-mix(in srgb, var(--memory-color-accent, #C7A35A) 80%, transparent)",
+                outlineColor: "var(--memory-color-accent, #C7A35A)",
+              }}
+            >
+              <ArrowLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            </Link>
+          ) : null}
         <div
-          className="mx-auto max-w-3xl rounded-[1.35rem] px-5 pb-4 pt-5 text-center"
+          className="min-w-0 flex-1 rounded-[1.35rem] px-5 pb-4 pt-5 text-center"
           style={{
             background:
               "linear-gradient(180deg, color-mix(in srgb, var(--memory-color-surface, #FFFDFA) 88%, white), var(--memory-color-surface, #FBF6EF))",
@@ -461,20 +483,7 @@ export function PublicMemoriesGallery({
           >
             {memoryCount}
           </p>
-          {invitationHref ? (
-            <Link
-              href={invitationHref}
-              className="mt-4 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-[0.72rem] uppercase tracking-[0.2em] transition-opacity hover:opacity-80"
-              style={{
-                color: "var(--memory-color-ink, #1B365D)",
-                fontFamily: "var(--memory-font-display, var(--font-cinzel), Cinzel, serif)",
-                background: "var(--memory-color-surface, #FBF6EF)",
-                boxShadow: "inset 0 0 0 1px var(--memory-color-accent, #C7A35A)",
-              }}
-            >
-              Back to invitation
-            </Link>
-          ) : null}
+        </div>
         </div>
 
         {filters.length > 0 ? (
@@ -570,11 +579,14 @@ export function PublicMemoriesGallery({
               const gridSrc = resolvePublicMediaUrl(pickMemoryGridSrc(item));
               const video = isMemoryVideo(item);
               return (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  className="group relative aspect-[3/4] touch-manipulation overflow-hidden rounded-xl"
+                  className="group relative aspect-[3/4] overflow-hidden rounded-xl"
                   style={{ background: "var(--memory-color-accent-soft, #e2e8f0)" }}
+                >
+                <button
+                  type="button"
+                  className="absolute inset-0 touch-manipulation"
                   onClick={() => onMediaDoubleTap(item)}
                   aria-label={video ? "Open video" : "Open photo"}
                 >
@@ -615,6 +627,21 @@ export function PublicMemoriesGallery({
                     </span>
                   ) : null}
                 </button>
+                {item.canDelete ? (
+                  <button
+                    type="button"
+                    className="absolute bottom-1.5 right-1.5 z-10 inline-flex min-h-7 items-center rounded-full bg-black/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
+                    onClick={() => void deleteMemory(item)}
+                    aria-label={
+                      item.uploaderName
+                        ? `Remove photo from ${item.uploaderName}`
+                        : "Remove this photo"
+                    }
+                  >
+                    Remove
+                  </button>
+                ) : null}
+                </div>
               );
             })}
           </div>

@@ -6,6 +6,7 @@ import { Camera, Images, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useInvitationStaticPreview } from "@/components/invitation/invitation-static-preview";
+import { celebrationPath } from "@/lib/music/invitation-audio-manager";
 import { TM_PALETTE } from "@/components/invitation/templates/traditional-marriage-palette";
 
 export type MemoryAlbumCardProps = {
@@ -58,14 +59,14 @@ export function InvitationMemoryAlbumCard({
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {canUpload && (
             <Button size="sm" className="bg-[#5C3D2E] hover:bg-[#4a3226]" asChild>
-              <Link href={uploadUrl!}>
+              <Link href={celebrationPath(uploadUrl!)}>
                 <Camera className="h-3.5 w-3.5 mr-1.5" /> Upload
               </Link>
             </Button>
           )}
           {canView && (
             <Button size="sm" variant="outline" asChild>
-              <Link href={albumUrl!}>
+              <Link href={celebrationPath(albumUrl!)}>
                 <Images className="h-3.5 w-3.5 mr-1.5" /> View album
               </Link>
             </Button>
@@ -129,7 +130,7 @@ export function InvitationMemoryAlbumCard({
 
         {uploadQrImageUrl && canUpload ? (
           <Link
-            href={uploadUrl!}
+            href={celebrationPath(uploadUrl!)}
             className="relative mt-5 inline-flex flex-col items-center gap-2 group"
             aria-label="Open album upload, take or share photos"
           >
@@ -189,7 +190,7 @@ export function InvitationMemoryAlbumCard({
               style={{ backgroundColor: TM_PALETTE.bronzeDeep, color: TM_PALETTE.linen }}
               asChild
             >
-              <Link href={uploadUrl!}>
+              <Link href={celebrationPath(uploadUrl!)}>
                 <Camera className="h-4 w-4 mr-2" /> Upload
               </Link>
             </Button>
@@ -201,7 +202,7 @@ export function InvitationMemoryAlbumCard({
               style={{ borderColor: TM_PALETTE.border, color: TM_PALETTE.bronzeDeep }}
               asChild
             >
-              <Link href={albumUrl!}>
+              <Link href={celebrationPath(albumUrl!)}>
                 <Images className="h-4 w-4 mr-2" /> View album
               </Link>
             </Button>
@@ -236,7 +237,7 @@ export function InvitationMemoryAlbumCard({
 
       {uploadQrImageUrl && canUpload ? (
         <Link
-          href={uploadUrl!}
+          href={celebrationPath(uploadUrl!)}
           className="mt-5 inline-flex flex-col items-center gap-2 group"
           aria-label="Open album upload, take or share photos"
         >
@@ -276,14 +277,14 @@ export function InvitationMemoryAlbumCard({
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         {canUpload && (
           <Button className="bg-slate-800 hover:bg-slate-900" asChild>
-            <Link href={uploadUrl!}>
+            <Link href={celebrationPath(uploadUrl!)}>
               <Camera className="h-4 w-4 mr-2" /> Upload
             </Link>
           </Button>
         )}
         {canView && (
           <Button variant="outline" asChild>
-            <Link href={albumUrl!}>
+            <Link href={celebrationPath(albumUrl!)}>
               <Images className="h-4 w-4 mr-2" /> View album
             </Link>
           </Button>
