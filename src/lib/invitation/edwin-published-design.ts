@@ -22,6 +22,31 @@ export function edwinDesignIsCurrent(design: unknown): boolean {
   return json.includes("##EdWinsDina26") && json.includes(HERO);
 }
 
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(sortJson(value));
+}
+
+function sortJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortJson);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value as Record<string, unknown>)
+        .sort()
+        .map((key) => [key, sortJson((value as Record<string, unknown>)[key])])
+    );
+  }
+  return value;
+}
+
+let publishedDesignJson: string | null = null;
+
+/** True when the stored board is the fixture guests see on localhost. */
+export function edwinPublishedContentIsCurrent(design: unknown): boolean {
+  if (!edwinDesignIsCurrent(design)) return false;
+  publishedDesignJson ??= canonicalJson(loadEdwinPublishedDesign());
+  return canonicalJson(design) === publishedDesignJson;
+}
+
 export function loadEdwinPublishedDesign(): InvitationDesignConfig {
   const designPath = path.join(process.cwd(), "scripts/fixtures/edwin-lordina-design.json");
   const design = JSON.parse(readFileSync(designPath, "utf8")) as InvitationDesignConfig;
@@ -154,7 +179,8 @@ async function writeEdwinPublishedDesign(
     },
     select: { id: true, musicSelection: true, musicPreference: true },
   });
-  const designCurrent = edwinDesignIsCurrent(invitation.designConfig);
+  const designShapeOk = edwinDesignIsCurrent(invitation.designConfig);
+  const designCurrent = edwinPublishedContentIsCurrent(invitation.designConfig);
   const eventSongReady = invitation.event.defaultMusicTrack?.url === EDWIN_EVENT_SONG_URL;
   const ordersReady = orders.every(
     (order) =>
@@ -167,7 +193,7 @@ async function writeEdwinPublishedDesign(
 
   const song = await ensureEdwinSong(client);
   const design = loadEdwinPublishedDesign();
-  const catalog = designCurrent
+  const catalog = designShapeOk
     ? null
     : await client.invitationCatalogTemplate.findUnique({
         where: { slug: LAYOUT },
@@ -181,6 +207,8 @@ async function writeEdwinPublishedDesign(
       where: { id: invitation.id },
       data: { designConfig: designJson, status: "ACTIVE" },
     });
+  }
+  if (!designShapeOk) {
     await client.eventMedia.deleteMany({ where: { eventId: invitation.eventId } });
     await client.eventMedia.createMany({
       data: MOMENTS.map((url, index) => ({
@@ -195,7 +223,7 @@ async function writeEdwinPublishedDesign(
   await client.event.update({
     where: { id: invitation.eventId },
     data: {
-      ...(designCurrent ? {} : { coverImageUrl: HERO, qrCenterImageUrl: HERO, qrLogoSize: "bold" }),
+      ...(designShapeOk ? {} : { coverImageUrl: HERO, qrCenterImageUrl: HERO, qrLogoSize: "bold" }),
       defaultMusicTrackId: song.id,
     },
   });
@@ -205,10 +233,10 @@ async function writeEdwinPublishedDesign(
       data: {
         musicSelection: musicJson,
         musicPreference: null,
-        ...(designCurrent
+        ...(!designCurrent ? { designConfig: designJson } : {}),
+        ...(designShapeOk
           ? {}
           : {
-              designConfig: designJson,
               galleryUrls: [...MOMENTS],
               ...(catalog ? { templateSlug: LAYOUT } : {}),
             }),

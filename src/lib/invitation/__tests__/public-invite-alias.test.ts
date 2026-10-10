@@ -4,6 +4,8 @@ import {
   EDWIN_EVENT_SONG_URL,
   edwinDesignIsCurrent,
   edwinMusicSelection,
+  edwinPublishedContentIsCurrent,
+  loadEdwinPublishedDesign,
 } from "@/lib/invitation/edwin-published-design";
 import {
   EDWIN_PUBLISHED_INVITE_LINK,
@@ -39,5 +41,16 @@ describe("public invite alias", () => {
       true
     );
     assert.equal(edwinDesignIsCurrent({ gateWord: "#EDWINANDLORDINA" }), false);
+  });
+
+  it("replaces an older Edwin board that is missing the published maps and guest note", () => {
+    assert.equal(
+      edwinPublishedContentIsCurrent({
+        gateWord: "##EdWinsDina26",
+        media: [{ url: "/templates/edwin-lordina/hero-navy.jpg" }],
+      }),
+      false
+    );
+    assert.equal(edwinPublishedContentIsCurrent(loadEdwinPublishedDesign()), true);
   });
 });

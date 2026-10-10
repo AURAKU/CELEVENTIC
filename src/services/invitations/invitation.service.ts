@@ -13,7 +13,7 @@ import { repairInviteLink } from "@/services/invitations/invite-link-resolver.se
 import {
   applyEdwinPublishedDesign,
   EDWIN_EVENT_SONG_URL,
-  edwinDesignIsCurrent,
+  edwinPublishedContentIsCurrent,
 } from "@/lib/invitation/edwin-published-design";
 import {
   EDWIN_PUBLISHED_INVITE_LINK,
@@ -133,7 +133,7 @@ export class InvitationService {
     if (!invitation) return null;
     const publishedEdwin = invitation.uniqueLink === EDWIN_PUBLISHED_INVITE_LINK;
     const songReady = invitation.event.defaultMusicTrack?.url === EDWIN_EVENT_SONG_URL;
-    if (publishedEdwin && (!edwinDesignIsCurrent(invitation.designConfig) || !songReady)) {
+    if (publishedEdwin && (!edwinPublishedContentIsCurrent(invitation.designConfig) || !songReady)) {
       try {
         await applyEdwinPublishedDesign(invitation.uniqueLink);
         return this.findInvitationByExactLink(invitation.uniqueLink);
