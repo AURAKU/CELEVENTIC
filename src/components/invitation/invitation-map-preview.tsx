@@ -4,8 +4,12 @@ import { useEffect, useId, useRef, type CSSProperties } from "react";
 import { extractMapsCoordinates, webMercatorTile } from "@/lib/invitation/maps-utils";
 
 const TILE = 256;
-/** Close enough that two Community 12 pins a few streets apart read as different places. */
-const ZOOM = 17;
+/**
+ * Level 15 is the Esri scale that paints road names and landmarks here.
+ * A closer crop keeps two Community 12 pins from looking like one place.
+ */
+const ZOOM = 15;
+const VIEW_SCALE = 1.22;
 const SPAN = 3;
 
 const STREETS =
@@ -68,7 +72,8 @@ export function InvitationMapPreview({
           top: "50%",
           width: SPAN * TILE,
           height: SPAN * TILE,
-          transform: `translate(${-pinX}px, ${-pinY}px)`,
+          transformOrigin: `${pinX}px ${pinY}px`,
+          transform: `translate(${-pinX}px, ${-pinY}px) scale(${VIEW_SCALE})`,
         }}
       >
         {tiles.map((tile) => {
