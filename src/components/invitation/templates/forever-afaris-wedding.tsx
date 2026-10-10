@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
@@ -533,20 +533,29 @@ function CoupleNameLockup({
     : compact
       ? T.nameClose
       : T.name;
-  const ink = featured || gilded ? C.storyInk : C.ink;
+  const ink = gilded ? C.storyInk : C.ink;
+  const shine: CSSProperties | undefined = featured
+    ? {
+        backgroundImage: `linear-gradient(185deg, #F8E7B0 0%, ${C.gold} 46%, ${C.goldDeep} 100%)`,
+        WebkitBackgroundClip: "text",
+        backgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        color: "transparent",
+      }
+    : undefined;
   if (featured) {
     return (
       <>
-        <span className={nameClass} style={{ color: ink }}>
+        <span className={nameClass} style={shine}>
           {one}
         </span>
         <span
           className="my-1 block text-center font-[family-name:var(--font-cormorant)] text-[clamp(1.2rem,4.4vw,1.7rem)] font-normal italic leading-none tracking-[0.02em]"
-          style={{ color: ink }}
+          style={shine}
         >
           and
         </span>
-        <span className={nameClass} style={{ color: ink }}>
+        <span className={nameClass} style={shine}>
           {two}
         </span>
       </>
