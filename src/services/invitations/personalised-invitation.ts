@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 import { mergeCompanionFeatureConfig } from "@/lib/admission/companion-studio";
+import { isHostIdentityName } from "@/lib/invitation-features/place-card";
 
 /**
  * The primitives every personalised invitation is built from.
@@ -78,6 +79,89 @@ export function featureConfigFor(
     );
   }
   return Object.keys(config).length > 0 ? (config as Prisma.InputJsonValue) : undefined;
+}
+
+export interface CeremonyInvitationCandidate {
+  name: string;
+  isGeneralPass?: boolean | null;
+  designConfig: unknown;
+  templateId?: string | null;
+  updatedAt?: Date | string | number | null;
+}
+
+function designHasLayout(design: unknown): boolean {
+  if (!design || typeof design !== "object") return false;
+  const layout = (design as { layout?: unknown }).layout;
+  return typeof layout === "string" && layout.trim().length > 0;
+}
+
+function updatedTime(value: CeremonyInvitationCandidate["updatedAt"]): number {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+/**
+ * The event's published ceremony invitation — the page guests should open.
+ * Personal names are never treated as that source.
+ */
+export function pickPublishedCeremonyInvitation<T extends CeremonyInvitationCandidate>(
+  eventTitle: string | null | undefined,
+  hostName: string | null | undefined,
+  invitations: T[]
+): T | null {
+  const labels = [eventTitle, hostName];
+  const matches = invitations.filter(
+    (invitation) =>
+      !invitation.isGeneralPass &&
+      designHasLayout(invitation.designConfig) &&
+      isHostIdentityName(invitation.name, labels)
+  );
+  matches.sort((a, b) => updatedTime(b.updatedAt) - updatedTime(a.updatedAt));
+  return matches[0] ?? null;
+}
+
+/** Drop studio history so a guest link does not inherit revision snapshots. */
+export function ceremonyDesignSnapshot(design: unknown): Prisma.InputJsonValue | null {
+  if (!designHasLayout(design)) return null;
+  const { _revisions: _ignored, ...rest } = design as Record<string, unknown>;
+  return rest as Prisma.InputJsonValue;
+}
+
+/**
+ * Design of the event's published ceremony, so a new guest list invitation
+ * opens that same page with the guest's own place card.
+ */
+export async function loadPublishedCeremonyDesign(eventId: string): Promise<{
+  designConfig: Prisma.InputJsonValue;
+  templateId: string | null;
+} | null> {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { title: true, hostName: true },
+  });
+  if (!event) return null;
+
+  const invitations = await prisma.invitation.findMany({
+    where: { eventId, status: "ACTIVE", archivedAt: null },
+    select: {
+      name: true,
+      isGeneralPass: true,
+      designConfig: true,
+      templateId: true,
+      updatedAt: true,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  const ceremony = pickPublishedCeremonyInvitation(event.title, event.hostName, invitations);
+  if (!ceremony) return null;
+  const designConfig = ceremonyDesignSnapshot(ceremony.designConfig);
+  if (!designConfig) return null;
+  return { designConfig, templateId: ceremony.templateId ?? null };
 }
 
 /** Pull the latest Event Companion studio keys for an event, if any. */

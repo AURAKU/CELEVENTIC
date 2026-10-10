@@ -16,6 +16,7 @@ import {
   ensureGuestGateCode,
   featureConfigFor,
   loadEventCompanionFeatureConfig,
+  loadPublishedCeremonyDesign,
   newUniqueLink,
 } from "@/services/invitations/personalised-invitation";
 import { ensureInvitationPass } from "@/services/admission/guest-pass.service";
@@ -318,6 +319,7 @@ export async function promoteOpenHostRsvpGuests(
 
   let promoted = 0;
   const appUrl = await getServerAppUrl();
+  const ceremony = await loadPublishedCeremonyDesign(eventId);
 
   for (const invitation of invitations) {
     if (
@@ -346,7 +348,8 @@ export async function promoteOpenHostRsvpGuests(
           name: displayName,
           slug,
           uniqueLink,
-          templateId: invitation.templateId || undefined,
+          templateId: invitation.templateId || ceremony?.templateId || undefined,
+          designConfig: ceremony?.designConfig,
           status: "ACTIVE",
           admissionAllowance: partySize,
           postAdmissionEnabled: companion?.postAdmissionEnabled ?? false,

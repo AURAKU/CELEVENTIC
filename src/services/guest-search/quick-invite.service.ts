@@ -19,6 +19,7 @@ import {
   ensureGuestGateCode,
   featureConfigFor,
   loadEventCompanionFeatureConfig,
+  loadPublishedCeremonyDesign,
   newUniqueLink,
 } from "@/services/invitations/personalised-invitation";
 
@@ -169,6 +170,7 @@ export async function createQuickInvitation(
 
   const slug = await allocateInvitationSlug(displayName);
   const companion = await loadEventCompanionFeatureConfig(input.eventId);
+  const ceremony = await loadPublishedCeremonyDesign(input.eventId);
 
   const created = await prisma.$transaction(async (tx) => {
     const invitation = await tx.invitation.create({
@@ -177,8 +179,9 @@ export async function createQuickInvitation(
         name: displayName,
         slug,
         uniqueLink: newUniqueLink(),
-        templateId: input.templateId || undefined,
+        templateId: input.templateId || ceremony?.templateId || undefined,
         message: input.message || undefined,
+        designConfig: ceremony?.designConfig,
         status: publish ? "ACTIVE" : "DRAFT",
         admissionAllowance: partySize,
         postAdmissionEnabled: companion?.postAdmissionEnabled ?? false,

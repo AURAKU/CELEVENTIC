@@ -11,6 +11,7 @@ import {
   allocateInvitationSlug,
   featureConfigFor,
   loadEventCompanionFeatureConfig,
+  loadPublishedCeremonyDesign,
   newUniqueLink,
   resolveGuestGroupId,
   tryAllocateManualCode,
@@ -104,7 +105,8 @@ interface RowGenerationResult {
 async function generateRow(
   batch: GuestImportBatch,
   row: GuestImportRow,
-  options: ImportOptions
+  options: ImportOptions,
+  ceremony: Awaited<ReturnType<typeof loadPublishedCeremonyDesign>>
 ): Promise<RowGenerationResult> {
   const eventId = batch.eventId;
   const memberNames = Array.isArray(row.memberNames) ? (row.memberNames as string[]) : [];
@@ -137,8 +139,9 @@ async function generateRow(
           name: row.name,
           slug,
           uniqueLink: newUniqueLink(),
-          templateId: options.templateId || undefined,
+          templateId: options.templateId || ceremony?.templateId || undefined,
           message: options.message || undefined,
+          designConfig: ceremony?.designConfig,
           status: options.publishImmediately ? "ACTIVE" : "DRAFT",
           admissionAllowance: partySize,
           importBatchId: batch.id,
@@ -418,6 +421,7 @@ export async function generateBatchChunk(batchId: string): Promise<ChunkResult> 
   }
 
   const options = mergeImportOptions(batch.options as Partial<ImportOptions> | null);
+  const ceremony = await loadPublishedCeremonyDesign(batch.eventId);
 
   const rows = await prisma.guestImportRow.findMany({
     where: {
@@ -442,7 +446,7 @@ export async function generateBatchChunk(batchId: string): Promise<ChunkResult> 
     });
 
     try {
-      const result = await generateRow(batch, row, options);
+      const result = await generateRow(batch, row, options, ceremony);
       await prisma.guestImportRow.update({
         where: { id: row.id },
         data: {
