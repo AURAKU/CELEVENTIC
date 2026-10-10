@@ -4,7 +4,8 @@ import { useEffect, useId, useRef, type CSSProperties } from "react";
 import { extractMapsCoordinates, webMercatorTile } from "@/lib/invitation/maps-utils";
 
 const TILE = 256;
-const ZOOM = 15;
+/** Close enough that two Community 12 pins a few streets apart read as different places. */
+const ZOOM = 17;
 const SPAN = 3;
 
 const STREETS =

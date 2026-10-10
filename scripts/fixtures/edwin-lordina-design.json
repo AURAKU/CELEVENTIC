@@ -68,7 +68,8 @@
           "time": "THU 24 DEC · 9:00 AM",
           "title": "Traditional Ceremony",
           "description": "Bride’s house, Tema Community 12",
-          "mapUrl": "https://www.google.com/maps/place/Bride's+house,+Tema+Community+12/@5.669508,-0.033181,17z"
+          "mapUrl": "https://www.google.com/maps/place/Bride's+house,+Tema+Community+12/@5.669508,-0.033181,17z",
+          "mapLink": "https://maps.google.com/?q=5.669508,-0.033181"
         },
         {
           "id": "white",
@@ -76,7 +77,7 @@
           "title": "White Wedding, Church Ceremony",
           "description": "Assemblies of God Tema Community 12 TCC",
           "mapUrl": "https://www.google.com/maps/place/Assemblies+of+God+Ghana+Tema+Christian+Centre/@5.670683,-0.03132,17z",
-          "mapLink": "https://maps.app.goo.gl/ef26DfceoerMc4Q87"
+          "mapLink": "https://share.google/Cnsc7wj90EkZuido2"
         },
         {
           "id": "reception",

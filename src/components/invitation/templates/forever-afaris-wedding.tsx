@@ -539,7 +539,7 @@ function CoupleNameLockup({
   gilded?: boolean;
 }) {
   const nameClass = featured
-    ? "mx-auto block w-fit max-w-full whitespace-nowrap font-[family-name:var(--font-cormorant)] text-[clamp(1.35rem,6.2vw,2.28rem)] font-normal italic leading-[1.15] tracking-[0.02em]"
+    ? "mx-auto block w-fit max-w-full whitespace-nowrap font-[family-name:var(--font-cormorant)] text-[clamp(1.35rem,6.2vw,2.28rem)] font-bold italic leading-[1.15] tracking-[0.01em]"
     : compact
       ? T.nameClose
       : T.name;
@@ -992,10 +992,8 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
         if (!pinUrl || seen.has(pinUrl)) return [];
         seen.add(pinUrl);
         const address = pinUrl === sharedMap ? board.venueAddress?.trim() || "" : "";
+        const guestMapUrl = guestPlaceHref(item, pinUrl, moment.place);
         const coords = extractMapsCoordinates(pinUrl);
-        const guestMapUrl = coords
-          ? googleMapsDirectionsHref({ label: moment.place, lat: coords.lat, lng: coords.lng })
-          : item?.mapLink?.trim() || pinUrl;
         const href = coords
           ? guestMapUrl
           : resolveMapsLocationHref({
@@ -1890,7 +1888,26 @@ function isLongProgrammeNote(description: string): boolean {
   return description.length > 140 || lines.length > 3;
 }
 
-/** Driving directions for a programme place, using that stop's own pin. */
+/**
+ * Guest tap target for a pinned place. A host link that already carries
+ * coordinates, or a Google share link, wins. Otherwise the guest gets
+ * driving directions to the pin.
+ */
+function guestPlaceHref(
+  item: { mapLink?: string } | undefined,
+  pinUrl: string,
+  place: string
+): string {
+  const explicit = item?.mapLink?.trim() || "";
+  if (explicit && (extractMapsCoordinates(explicit) || /^https:\/\/share\.google\//i.test(explicit))) {
+    return explicit;
+  }
+  const coords = extractMapsCoordinates(pinUrl);
+  if (coords) return googleMapsDirectionsHref({ label: place, lat: coords.lat, lng: coords.lng });
+  return explicit || pinUrl;
+}
+
+/** Map opened from a programme place name. */
 function programmeDirectionsHref(
   item: { mapUrl?: string; mapLink?: string; description?: string },
   venueName: string,
@@ -1900,9 +1917,7 @@ function programmeDirectionsHref(
   if (!place || isLongProgrammeNote(item.description ?? "")) return "";
   const pinUrl = programmeMapUrl(item, place, venueName, venueMapUrl);
   if (!pinUrl) return "";
-  const coords = extractMapsCoordinates(pinUrl);
-  if (coords) return googleMapsDirectionsHref({ label: place, lat: coords.lat, lng: coords.lng });
-  return item.mapLink?.trim() || pinUrl;
+  return guestPlaceHref(item, pinUrl, place);
 }
 
 const MENU_SMALL_WORDS = new Set(["and", "or", "in", "of", "with", "the", "a"]);

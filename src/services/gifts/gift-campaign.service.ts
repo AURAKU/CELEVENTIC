@@ -22,6 +22,8 @@ import {
   publicTokenFromGiftUrl,
 } from "@/lib/gifts/gift-placement";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
+import { withPublicQrCenter } from "@/lib/qr/qr-constants";
+import { qrBrandingService } from "@/services/qr/qr-branding.service";
 
 /**
  * Gift campaigns — the organiser-owned configuration behind every gift link.
@@ -280,17 +282,21 @@ export class GiftCampaignService {
     return guest;
   }
 
+  private async giftQrImage(eventId: string, targetUrl: string, size: 512 | 1024, download = false) {
+    const mark = await qrBrandingService.resolveCenterMark(eventId).catch(() => null);
+    const path = `/api/qr/image?data=${encodeURIComponent(targetUrl)}&eventId=${encodeURIComponent(
+      eventId
+    )}&size=${size}${download ? "&download=1" : ""}`;
+    return mark ? withPublicQrCenter(path, mark.url, mark.logoSize) : path;
+  }
+
   async links(campaign: EventGiftCampaign) {
     const baseUrl = await getServerAppUrl();
     const giftUrl = `${baseUrl}/gift/${campaign.publicToken}`;
     return {
       giftUrl,
-      qrImageUrl: `/api/qr/image?data=${encodeURIComponent(giftUrl)}&eventId=${encodeURIComponent(
-        campaign.eventId
-      )}&size=512`,
-      qrDownloadUrl: `/api/qr/image?data=${encodeURIComponent(
-        giftUrl
-      )}&eventId=${encodeURIComponent(campaign.eventId)}&size=1024&download=1`,
+      qrImageUrl: await this.giftQrImage(campaign.eventId, giftUrl, 512),
+      qrDownloadUrl: await this.giftQrImage(campaign.eventId, giftUrl, 1024, true),
     };
   }
 
@@ -377,9 +383,7 @@ export class GiftCampaignService {
       giftUrl: personalised,
       // The QR encodes the same URL as the button so scanning from a printed
       // card and tapping in the invite land a guest in the identical flow.
-      qrImageUrl: `/api/qr/image?data=${encodeURIComponent(personalised)}&eventId=${encodeURIComponent(
-        campaign.eventId
-      )}&size=512`,
+      qrImageUrl: await this.giftQrImage(campaign.eventId, personalised, 512),
       title: copy.title,
       subtitle: copy.subtitle,
       ctaLabel: copy.ctaLabel,
