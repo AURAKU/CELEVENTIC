@@ -11,6 +11,11 @@ import { invitationService } from "@/services/invitations/invitation.service";
 import type { InvitationDesignConfig } from "@/types/invitation-design";
 import type { PublicGiftCampaignView } from "@/lib/gifts/gift-privacy";
 
+/** Layouts that render the in-invite Paystack checkout need a live campaign. */
+function layoutOpensInviteGifts(layout?: string | null): boolean {
+  return isAureliaEditorialLayout(layout) || layout === "forever-afaris-wedding";
+}
+
 export type InviteGiftCheckoutPayload = {
   giftUrl: string;
   qrImageUrl: string;
@@ -67,7 +72,7 @@ async function resolveInviteGiftCheckoutUnsafe(input: {
     const design = invitation.designConfig as InvitationDesignConfig | null;
     const layout = design?.layout ?? invitation.template?.slug ?? null;
     return giftCampaignService.resolvePublicInviteCheckout(invitation.event.id, {
-      autoOpen: isAureliaEditorialLayout(layout),
+      autoOpen: layoutOpensInviteGifts(layout),
       invitationId: invitation.id,
       guestQrToken,
     });

@@ -184,6 +184,7 @@ export function AureliaGiftCheckout({
   eventId,
   inviteLink,
   collapsible = false,
+  coupleNames,
 }: {
   giftUrl?: string | null;
   giftQrImageUrl?: string | null;
@@ -198,6 +199,8 @@ export function AureliaGiftCheckout({
   eventId?: string | null;
   inviteLink?: string | null;
   collapsible?: boolean;
+  /** Couple the guest is gifting, used on the thank-you and the retry. */
+  coupleNames?: string | null;
 }) {
   const [resolvedGiftUrl, setResolvedGiftUrl] = useState<string | null>(giftUrl ?? null);
   const [resolvedQrImageUrl, setResolvedQrImageUrl] = useState<string | null>(giftQrImageUrl ?? null);
@@ -693,10 +696,11 @@ export function AureliaGiftCheckout({
               eventTitle={campaign?.event.title}
               hostName={campaign?.event.hostName}
               methods={methods}
+              coupleNames={coupleNames}
             />
           ) : null}
           {phase === "failed" && payment ? (
-            <FailedPanel payment={payment} onRetry={resetToForm} />
+            <FailedPanel payment={payment} onRetry={resetToForm} coupleNames={coupleNames} />
           ) : null}
         </>
       ) : null}
@@ -746,13 +750,16 @@ function SuccessPanel({
   eventTitle,
   hostName,
   methods,
+  coupleNames,
 }: {
   payment: PublicGiftPaymentView;
   copy: ReturnType<typeof getGiftCopy>;
   eventTitle?: string;
   hostName?: string;
   methods: MethodOption[];
+  coupleNames?: string | null;
 }) {
+  const couple = coupleNames?.trim();
   const methodLabel =
     methods.find((item) => item.id === payment.method)?.label || payment.method || "Mobile money";
   const giftType =
@@ -767,6 +774,9 @@ function SuccessPanel({
       <p className={styles.giftKicker}>Received with love</p>
       <h3 className={styles.giftThankYou}>{copy.thankYouTitle}</h3>
       <p className={styles.giftOutcomeCopy}>{copy.thankYouMessage}</p>
+      {couple ? (
+        <p className={styles.giftOutcomeCopy}>{couple} receive this with gratitude.</p>
+      ) : null}
       <p className={styles.giftAmountHero}>
         {formatMinor(payment.amountMinor, payment.currency)}
       </p>
@@ -826,11 +836,14 @@ function SuccessPanel({
 function FailedPanel({
   payment,
   onRetry,
+  coupleNames,
 }: {
   payment: PublicGiftPaymentView;
   onRetry: () => void;
+  coupleNames?: string | null;
 }) {
   const mismatch = payment.failureReason?.toLowerCase().includes("mismatch");
+  const couple = coupleNames?.trim();
   return (
     <div className={styles.giftOutcome} role="alert">
       <span className={styles.giftFailedMark} aria-hidden>
@@ -841,7 +854,9 @@ function FailedPanel({
       <p className={styles.giftOutcomeCopy}>
         {mismatch
           ? "We could not safely confirm this payment. Please try again, or use a different number."
-          : "No successful payment was recorded, so nothing was taken. You may try again whenever you are ready."}
+          : couple
+            ? `Nothing was taken. When you are ready, you can try again for ${couple}.`
+            : "No successful payment was recorded, so nothing was taken. You may try again whenever you are ready."}
       </p>
       {payment.amountMinor ? (
         <p className={styles.giftOutcomeMeta}>

@@ -76,6 +76,12 @@ describe("celebration days", () => {
       programmeMapUrl(undefined, "Bride’s house, Tema Community 12", venue, church),
       ""
     );
+    const house =
+      "https://www.google.com/maps/place/Bride's+house,+Tema+Community+12/@5.669508,-0.033181,17z";
+    assert.equal(
+      programmeMapUrl({ mapUrl: house }, "Bride’s house, Tema Community 12", venue, church),
+      house
+    );
     assert.equal(
       programmeMapUrl(undefined, "Assemblies of God Tema Community 12 TCC", venue, church),
       church

@@ -48,6 +48,13 @@ export function isFamilyHeroQrCenter(value?: string | null): boolean {
   return /\/templates\/(?:aurelia|seraphine)\/hero\.(?:jpe?g|png|webp)$/i.test(pathnameOf(url));
 }
 
+/** Edwin & Lordina’s published couple portrait, used as their gift-code inset. */
+export function isEdwinCoupleQrCenter(value?: string | null): boolean {
+  const url = trimUrl(value);
+  if (!url) return false;
+  return /\/templates\/edwin-lordina\/hero(?:-navy)?\.(?:jpe?g|png|webp)$/i.test(pathnameOf(url));
+}
+
 /** Catalogue / brand / WhatsApp art is never an organizer photo. */
 export function isStockQrCenter(value?: string | null): boolean {
   const url = trimUrl(value);
@@ -81,7 +88,8 @@ export function isPinnedQrCenterAllowed(value?: string | null): boolean {
     isOrganizerUploadedQrCenter(value) ||
     isOfficialCeleventicQrCenter(value) ||
     isFamilyAlbumQrCenter(value) ||
-    isFamilyHeroQrCenter(value)
+    isFamilyHeroQrCenter(value) ||
+    isEdwinCoupleQrCenter(value)
   );
 }
 
@@ -120,6 +128,11 @@ export function resolveQrCenterMark(input: QrCenterResolutionInput): QrCenterMar
 
   const qrUpload = firstUploaded([input.qrCenterImageUrl]);
   if (qrUpload) return { url: qrUpload, source: "qr-upload", logoSize: "hero" };
+
+  const explicitPortrait = trimUrl(input.qrCenterImageUrl);
+  if (explicitPortrait && isEdwinCoupleQrCenter(explicitPortrait)) {
+    return { url: explicitPortrait, source: "couple", logoSize: "hero" };
+  }
 
   return { url: CELEVENTIC_OFFICIAL_LOGO, source: "logo", logoSize: "balanced" };
 }

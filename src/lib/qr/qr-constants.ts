@@ -89,7 +89,7 @@ export function parseQrLogoSizeQuery(raw: unknown): QrLogoSizePreset | null {
 const PUBLIC_QR_CENTER_RE =
   /^\/(?:brand|uploads|api\/uploads)\/[A-Za-z0-9._/-]+\.(?:jpe?g|png|webp)$/;
 const FAMILY_QR_CENTER_RE =
-  /^\/templates\/(?:aurelia|seraphine)\/(?:qr-center|hero)\.(?:jpe?g|png|webp)$/;
+  /^\/templates\/(?:(?:aurelia|seraphine)\/(?:qr-center|hero)|edwin-lordina\/hero(?:-navy)?)\.(?:jpe?g|png|webp)$/;
 
 export function toSafePublicQrCenterPath(raw: unknown): string | null {
   if (typeof raw !== "string") return null;

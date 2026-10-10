@@ -878,6 +878,7 @@ export function GuestInvitationPortal(props: GuestInvitationPortalProps) {
 
           {props.design.layout !== "aurelia-editorial-wedding" &&
             props.design.layout !== "seraphine-champagne-wedding" &&
+            props.design.layout !== "forever-afaris-wedding" &&
             (props.giftUrl || hubTabs.includes("gifts")) && (
           <PortalSection delay={420} id="gifts">
             {props.giftUrl ? (

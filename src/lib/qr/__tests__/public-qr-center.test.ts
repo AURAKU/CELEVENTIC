@@ -20,6 +20,11 @@ describe("public QR center allowlist", () => {
       toSafePublicQrCenterPath("/templates/aurelia/hero.jpg"),
       "/templates/aurelia/hero.jpg"
     );
+    assert.equal(
+      toSafePublicQrCenterPath("/templates/edwin-lordina/hero-navy.jpg"),
+      "/templates/edwin-lordina/hero-navy.jpg"
+    );
+    assert.equal(toSafePublicQrCenterPath("/templates/edwin-lordina/cover-sofa.jpg"), null);
     assert.equal(toSafePublicQrCenterPath("/templates/seraphine/monogram-qr.png"), null);
     assert.equal(toSafePublicQrCenterPath("/brand/logo-full.png"), "/brand/logo-full.png");
     assert.equal(toSafePublicQrCenterPath("/uploads/event/hero.webp"), "/uploads/event/hero.webp");

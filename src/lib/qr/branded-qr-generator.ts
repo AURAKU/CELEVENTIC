@@ -259,8 +259,21 @@ async function fitCenterMarkPng(
   innerLogo: number,
   photograph: boolean
 ): Promise<Buffer> {
-  return sharp(logoSource)
-    .ensureAlpha()
+  let source = sharp(logoSource).ensureAlpha();
+  if (photograph) {
+    const meta = await sharp(logoSource).metadata();
+    const width = meta.width ?? 0;
+    const height = meta.height ?? 0;
+    // Standing portraits keep the faces, which sit in the upper frame.
+    if (width > 0 && height > width * 1.15) {
+      const side = width;
+      const top = Math.min(Math.round(height * 0.02), Math.max(0, height - side));
+      source = sharp(logoSource)
+        .ensureAlpha()
+        .extract({ left: 0, top, width: side, height: Math.min(side, height - top) });
+    }
+  }
+  return source
     .resize(innerLogo, innerLogo, {
       fit: photograph ? "cover" : "contain",
       position: "centre",

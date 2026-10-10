@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { CELEVENTIC_OFFICIAL_LOGO } from "../qr-constants";
 import {
   extractDesignQrPhotoSources,
+  isEdwinCoupleQrCenter,
   isFamilyAlbumQrCenter,
   isFamilyHeroQrCenter,
   isOfficialCeleventicQrCenter,
@@ -55,6 +56,17 @@ describe("QR center resolution", () => {
     assert.equal(mark.logoSize, "hero");
   });
 
+  it("uses Edwin and Lordina's published portrait when that is the QR center", () => {
+    const mark = resolveQrCenterMark({
+      heroImageUrl: "/templates/edwin-lordina/hero-navy.jpg",
+      coverImageUrl: "/templates/edwin-lordina/hero-navy.jpg",
+      qrCenterImageUrl: "/templates/edwin-lordina/hero-navy.jpg",
+    });
+    assert.equal(mark.url, "/templates/edwin-lordina/hero-navy.jpg");
+    assert.equal(mark.source, "couple");
+    assert.equal(mark.logoSize, "hero");
+  });
+
   it("falls back to the official Celeventic logo when nothing was uploaded", () => {
     const mark = resolveQrCenterMark({
       heroImageUrl: "/templates/aurelia/hero.jpg",
@@ -93,6 +105,9 @@ describe("QR center resolution", () => {
     assert.equal(isPinnedQrCenterAllowed("/uploads/events/hero.jpg"), true);
     assert.equal(isPinnedQrCenterAllowed("/templates/aurelia/hero.jpg"), true);
     assert.equal(isPinnedQrCenterAllowed("/templates/seraphine/hero.jpg"), true);
+    assert.equal(isPinnedQrCenterAllowed("/templates/edwin-lordina/hero-navy.jpg"), true);
+    assert.equal(isEdwinCoupleQrCenter("/templates/edwin-lordina/hero-navy.jpg"), true);
+    assert.equal(isEdwinCoupleQrCenter("/templates/edwin-lordina/cover-sofa.jpg"), false);
     assert.equal(isPinnedQrCenterAllowed("/templates/seraphine/monogram-qr.png"), false);
   });
 

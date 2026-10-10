@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 export type WeddingScrollSection = {
   id: string;
   node: React.ReactNode;
+  /** Mount immediately, even when the section is still below the fold. */
+  eager?: boolean;
 };
 
 /**
@@ -16,7 +18,7 @@ export function WeddingScroll({ sections }: { sections: WeddingScrollSection[] }
   return (
     <div className="min-w-0">
       {sections.map((section, index) => (
-        <LazySection key={section.id} eager={index < 2}>
+        <LazySection key={section.id} eager={index < 2 || Boolean(section.eager)}>
           {section.node}
         </LazySection>
       ))}

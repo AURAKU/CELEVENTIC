@@ -541,18 +541,19 @@ export default async function InvitePage({
     backgroundVideoUrl: resolvePublicMediaUrl(rawBackground.backgroundVideoUrl) || null,
   };
 
-  // Gift Wallet placement. Aurelia already renders an in-invite Paystack
-  // checkout, so open a live campaign when that gifts section is on.
+  // Gift Wallet placement. Layouts that render the in-invite Paystack checkout
+  // open a live campaign so guests receive a payment link, not a disabled form.
   const aureliaGiftsOpen =
     isAureliaEditorialLayout(design.layout) &&
     aureliaSectionVisible(
       mergeAureliaWedding(design.experience?.aureliaWedding, aureliaFamilyDefaults(design.layout)),
       "gifts"
     );
+  const foreverGiftsOpen = design.layout === "forever-afaris-wedding";
   const giftPlacement = await giftCampaignService
     .resolveInvitePlacement(event.id, {
       guestQrToken,
-      autoOpen: aureliaGiftsOpen,
+      autoOpen: aureliaGiftsOpen || foreverGiftsOpen,
       invitationId: invitation.id,
     })
     .catch(() => null);

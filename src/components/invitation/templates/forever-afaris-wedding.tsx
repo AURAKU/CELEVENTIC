@@ -61,12 +61,22 @@ import { SeraphineHourglass } from "./seraphine-hourglass";
 import { Bell, BellRing, Phone } from "lucide-react";
 import { WhatsAppIcon } from "@/components/memory/icons/social-brand-icons";
 import { celebrationPath } from "@/lib/music/invitation-audio-manager";
+import { AureliaGiftCheckout } from "./aurelia-gift-checkout";
 
 export type ForeverAfarisWeddingProps = InvitationRenderProps & {
   contactEmail?: string | null;
   mapsLink?: string | null;
   /** Guest-facing gallery URLs supplied by the portal. */
   galleryUrls?: string[];
+  /** Live Gift Wallet placement, when the event has an active campaign. */
+  giftUrl?: string | null;
+  giftQrImageUrl?: string | null;
+  giftTitle?: string | null;
+  giftSubtitle?: string | null;
+  giftCtaLabel?: string | null;
+  giftPrivacyNote?: string | null;
+  guestQrToken?: string | null;
+  eventId?: string | null;
 };
 
 function resolveBoard(design: InvitationRenderProps["design"]): ResolvedWeddingBoard {
@@ -1183,16 +1193,28 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
 
         {features.location ? (
           venueStops.length >= 2 ? (
-            <div className="mt-7 grid w-full grid-cols-1 items-stretch gap-8 text-center sm:grid-cols-2 sm:gap-5 md:gap-6 lg:gap-8">
-              {venueStops.map((stop) => (
-                <VenueMapCard
-                  key={stop.id}
-                  stop={stop}
-                  palette={C}
-                  buttonLabel={board.mapButtonLabel}
-                  staticPreview={staticPreview}
-                />
-              ))}
+            <div className="mt-7 flex w-full flex-col gap-8 text-center sm:gap-6">
+              {venueStops.length === 3 ? (
+                <div className="mx-auto w-full sm:max-w-[calc(50%-0.75rem)]">
+                  <VenueMapCard
+                    stop={venueStops[0]}
+                    palette={C}
+                    buttonLabel={board.mapButtonLabel}
+                    staticPreview={staticPreview}
+                  />
+                </div>
+              ) : null}
+              <div className="grid w-full grid-cols-1 items-stretch gap-8 sm:grid-cols-2 sm:gap-5 md:gap-6 lg:gap-8">
+                {(venueStops.length === 3 ? venueStops.slice(1) : venueStops).map((stop) => (
+                  <VenueMapCard
+                    key={stop.id}
+                    stop={stop}
+                    palette={C}
+                    buttonLabel={board.mapButtonLabel}
+                    staticPreview={staticPreview}
+                  />
+                ))}
+              </div>
             </div>
           ) : (
           <div className="mt-7 text-center">
@@ -1353,6 +1375,11 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
                     title={item.title}
                     description={item.description}
                     palette={C}
+                    mapsHref={
+                      staticPreview
+                        ? ""
+                        : programmeDirectionsHref(item, venueName, board.mapUrl?.trim() || "")
+                    }
                   />
                 )}
               </li>
@@ -1636,6 +1663,55 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
     ) : null,
   };
 
+  const coupleGiftNames = [couple1, couple2].filter(Boolean).join(" and ");
+  const giftTheme = {
+    "--wedding-ivory": C.ivory,
+    "--wedding-cream": C.blush,
+    "--wedding-champagne": C.goldSoft,
+    "--wedding-terracotta": C.ink,
+    "--wedding-blush": C.goldSoft,
+    "--wedding-espresso": C.ink,
+    "--wedding-brown": C.cocoa,
+    "--wedding-gold": C.gold,
+    "--wedding-text": C.ink,
+    "--aurelia-display": "var(--font-cinzel), Cinzel, serif",
+    "--aurelia-body": "var(--font-cormorant), 'Cormorant Garamond', Georgia, serif",
+    "--aurelia-script": "var(--font-great-vibes), cursive",
+  } as CSSProperties;
+  const giftNode = staticPreview ? null : (
+    <section id="aurelia-gifts" className="text-center">
+      <h2 className={T.scriptSm} style={{ color: C.goldDeep }}>
+        Cash Gift
+      </h2>
+      <p
+        className={`mx-auto mt-3 max-w-[34rem] font-[family-name:var(--font-cormorant)] ${T.body} leading-relaxed`}
+        style={{ color: C.cocoa }}
+      >
+        Your presence is the greatest gift. If you would like to send a cash gift, you may do so
+        securely and privately here.
+      </p>
+      <div className="mt-5 text-left" style={giftTheme}>
+        <ClientErrorBoundary fallback={null}>
+          <AureliaGiftCheckout
+            giftUrl={props.giftUrl}
+            giftQrImageUrl={props.giftQrImageUrl}
+            giftTitle={props.giftTitle}
+            giftSubtitle={props.giftSubtitle}
+            giftCtaLabel={props.giftCtaLabel}
+            giftPrivacyNote={props.giftPrivacyNote}
+            guestName={invitedGuestName || undefined}
+            guestQrToken={props.guestQrToken}
+            eventId={props.eventId}
+            inviteLink={invitation.uniqueLink}
+            returnPath={`/invite/${invitation.uniqueLink}#aurelia-gifts`}
+            coupleNames={coupleGiftNames || null}
+            collapsible
+          />
+        </ClientErrorBoundary>
+      </div>
+    </section>
+  );
+
   const visible = board.sectionOrder
     .map((id) => ({ id, node: scenes[id] }))
     .filter((entry): entry is { id: WeddingSectionId; node: React.ReactNode } => {
@@ -1643,6 +1719,22 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       if (props.placeCard && entry.id === "greeting") return false;
       return true;
     });
+
+  const stream: Array<{ id: string; node: React.ReactNode; eager?: boolean }> = [];
+  for (const entry of visible) {
+    stream.push(entry);
+    if (entry.id === "memory" && giftNode) {
+      stream.push({ id: "gifts", node: giftNode, eager: true });
+    }
+  }
+  if (giftNode && !stream.some((entry) => entry.id === "gifts")) {
+    const rsvpIndex = stream.findIndex((entry) => entry.id === "rsvp");
+    stream.splice(rsvpIndex >= 0 ? rsvpIndex : stream.length, 0, {
+      id: "gifts",
+      node: giftNode,
+      eager: true,
+    });
+  }
 
   const streamSections = isEdwinLordinaBook(couple1, couple2) && !staticPreview;
   const visibleById = new Map(visible.map((entry) => [entry.id, entry]));
@@ -1683,13 +1775,31 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       <div className="relative mx-auto w-full max-w-[480px] px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 min-[375px]:px-5 sm:max-w-[640px] sm:px-8 sm:pt-10 md:max-w-[800px] md:px-10 lg:max-w-[960px] lg:pt-14">
         {streamSections ? (
           <WeddingScroll
-            sections={visible.map((entry, index) => ({
+            sections={stream.map((entry, index) => ({
               id: entry.id,
-              node: renderEntry(entry.id, index > 0),
+              eager: entry.eager,
+              node:
+                entry.id === "gifts" ? (
+                  <div key="gifts" className="min-w-0">
+                    {index > 0 ? <Divider palette={C} /> : null}
+                    {entry.node}
+                  </div>
+                ) : (
+                  renderEntry(entry.id as WeddingSectionId, index > 0)
+                ),
             }))}
           />
         ) : (
-          visible.map((entry, index) => renderEntry(entry.id, index > 0))
+          stream.map((entry, index) =>
+            entry.id === "gifts" ? (
+              <div key="gifts" className="min-w-0">
+                {index > 0 ? <Divider palette={C} /> : null}
+                {entry.node}
+              </div>
+            ) : (
+              renderEntry(entry.id as WeddingSectionId, index > 0)
+            )
+          )
         )}
       </div>
     </div>
@@ -1780,6 +1890,21 @@ function isLongProgrammeNote(description: string): boolean {
   return description.length > 140 || lines.length > 3;
 }
 
+/** Driving directions for a programme place, using that stop's own pin. */
+function programmeDirectionsHref(
+  item: { mapUrl?: string; mapLink?: string; description?: string },
+  venueName: string,
+  venueMapUrl: string
+): string {
+  const place = item.description?.split("\n")[0]?.trim() ?? "";
+  if (!place || isLongProgrammeNote(item.description ?? "")) return "";
+  const pinUrl = programmeMapUrl(item, place, venueName, venueMapUrl);
+  if (!pinUrl) return "";
+  const coords = extractMapsCoordinates(pinUrl);
+  if (coords) return googleMapsDirectionsHref({ label: place, lat: coords.lat, lng: coords.lng });
+  return item.mapLink?.trim() || pinUrl;
+}
+
 const MENU_SMALL_WORDS = new Set(["and", "or", "in", "of", "with", "the", "a"]);
 
 /** Title-case a dish the way a printed menu would, keeping names that are already set. */
@@ -1822,26 +1947,41 @@ function ProgrammeNote({
   title,
   description,
   palette: C,
+  mapsHref = "",
 }: {
   id: string;
   title: string;
   description: string;
   palette: FaPalette;
+  mapsHref?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const placeStyle = {
+    color: C.ink,
+    backgroundImage: `linear-gradient(transparent 0.55em, color-mix(in srgb, ${C.gold} 58%, white) 0.55em)`,
+    WebkitBoxDecorationBreak: "clone" as const,
+    boxDecorationBreak: "clone" as const,
+    padding: "0 0.2em 0.08em",
+  };
   if (!isLongProgrammeNote(description)) {
+    const placeClass = `${T.programmeDesc} inline max-w-full italic leading-[1.35] [box-decoration-break:clone]`;
+    if (mapsHref) {
+      return (
+        <a
+          href={mapsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Directions to ${description}`}
+          data-programme-place=""
+          className={`${placeClass} underline decoration-1 underline-offset-[0.28em]`}
+          style={{ ...placeStyle, textDecorationColor: C.goldDeep }}
+        >
+          {description}
+        </a>
+      );
+    }
     return (
-      <p
-        className={`${T.programmeDesc} inline max-w-full italic leading-[1.35] [box-decoration-break:clone]`}
-        data-programme-place=""
-        style={{
-          color: C.ink,
-          backgroundImage: `linear-gradient(transparent 0.55em, color-mix(in srgb, ${C.gold} 58%, white) 0.55em)`,
-          WebkitBoxDecorationBreak: "clone",
-          boxDecorationBreak: "clone",
-          padding: "0 0.2em 0.08em",
-        }}
-      >
+      <p className={placeClass} data-programme-place="" style={placeStyle}>
         {description}
       </p>
     );
