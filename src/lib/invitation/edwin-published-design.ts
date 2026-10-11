@@ -16,6 +16,7 @@ const MOMENTS = [
   "/templates/edwin-lordina/moments/04-navy.jpg",
   "/templates/edwin-lordina/moments/05-close.jpg",
   "/templates/edwin-lordina/cover-sofa.jpg",
+  "/templates/edwin-lordina/moments/07-stool.jpg",
 ] as const;
 
 export function edwinDesignIsCurrent(design: unknown): boolean {

@@ -952,29 +952,40 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
 }
 
-/* Edwin portrait: the lockup sits just below the faces, around the center. */
+/* Edwin portrait: the whole photo sits inside the window, and every word stays below the faces. */
 .widePortrait {
   justify-content: flex-end;
-  padding-bottom: clamp(4.75rem, 12vh, 7rem);
+  padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
 }
 
-/*
- * Portrait welcome on a laptop: the phone crop (center 35%) slices the heads.
- * Anchor near the top so the couple drops into the frame, edge to edge, while
- * the lockup, seal, and phrase stay in the stage above the photo.
- */
+.widePortrait .stage {
+  padding-top: 0.25rem;
+  padding-bottom: 0.35rem;
+}
+
+.widePortrait .namesFormal {
+  margin-top: 0;
+}
+
+.widePortrait .hero {
+  inset: 0;
+}
+
+.widePortrait .heroImg {
+  object-fit: contain;
+  object-position: center;
+  animation: none;
+  transform: none;
+}
+
+.widePortrait.exiting .heroImg {
+  animation: none;
+  transform: none;
+}
+
 @media (min-width: 1024px) {
-  .widePortrait .hero {
-    inset: 0;
-  }
-
-  .widePortrait .heroImg {
-    object-position: center 28%;
-    animation-name: tap-ken-burns-wide;
-  }
-
   .widePortrait .namesFormal {
-    margin-top: clamp(2.75rem, 10vh, 5.5rem);
+    margin-top: 0;
   }
 }
 
@@ -1031,15 +1042,6 @@
   }
   to {
     transform: scale(1.14) translate(-1.2%, -0.8%);
-  }
-}
-
-@keyframes tap-ken-burns-wide {
-  from {
-    transform: scale(1.02);
-  }
-  to {
-    transform: scale(1.045) translateY(1.2%);
   }
 }
 

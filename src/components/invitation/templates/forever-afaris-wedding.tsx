@@ -949,8 +949,6 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
   }, [design.media, props.galleryUrls]);
 
   const [openMoment, setOpenMoment] = useState<number | null>(null);
-  const [momentPage, setMomentPage] = useState(1);
-  const momentsPerPage = 4;
   const momentItems = useMemo(
     () =>
       galleryImages.map((item) => ({
@@ -960,11 +958,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
       })),
     [galleryImages]
   );
-  const momentPageCount = Math.max(1, Math.ceil(galleryImages.length / momentsPerPage));
-  const safeMomentPage = Math.min(momentPage, momentPageCount);
-  const pagedMoments = galleryImages
-    .map((item, index) => ({ ...item, index }))
-    .slice((safeMomentPage - 1) * momentsPerPage, safeMomentPage * momentsPerPage);
+  const momentTiles = galleryImages.map((item, index) => ({ ...item, index }));
 
   useEffect(() => {
     if (openMoment === null || typeof document === "undefined") return;
@@ -1561,7 +1555,7 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
             {board.galleryHeading}
           </h2>
           <div className="mx-auto mt-5 grid w-full grid-cols-2 gap-2.5 min-[375px]:gap-3 sm:gap-4 lg:gap-5">
-            {pagedMoments.map((m) => (
+            {momentTiles.map((m) => (
               <button
                 key={`${m.url}-${m.index}`}
                 type="button"
@@ -1593,31 +1587,6 @@ export function ForeverAfarisWeddingTemplate(props: ForeverAfarisWeddingProps) {
               </button>
             ))}
           </div>
-          {momentPageCount > 1 ? (
-            <div className="mt-5 flex items-center justify-center gap-4">
-              <button
-                type="button"
-                disabled={safeMomentPage <= 1}
-                onClick={() => setMomentPage((current) => Math.max(1, current - 1))}
-                className={`${T.cta} disabled:opacity-35`}
-                style={{ color: C.ink }}
-              >
-                Previous
-              </button>
-              <span className={T.labelTight} style={{ color: C.cocoa }}>
-                {safeMomentPage} / {momentPageCount}
-              </span>
-              <button
-                type="button"
-                disabled={safeMomentPage >= momentPageCount}
-                onClick={() => setMomentPage((current) => Math.min(momentPageCount, current + 1))}
-                className={`${T.cta} disabled:opacity-35`}
-                style={{ color: C.ink }}
-              >
-                Next
-              </button>
-            </div>
-          ) : null}
           {openMoment !== null && typeof document !== "undefined"
             ? createPortal(
                 <InvitationMediaLightbox
