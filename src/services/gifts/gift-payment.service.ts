@@ -683,6 +683,7 @@ export class GiftPaymentService {
       method: methodId,
       guestName: gift.isAnonymous ? null : gift.guestName,
       isAnonymous: gift.isAnonymous,
+      guestMessage: gift.guestMessage?.trim() || null,
       receiptUrl: receiptToken ? `${options.baseUrl}/gift/receipt/${receiptToken}` : null,
       companionReturnUrl,
       failureReason:

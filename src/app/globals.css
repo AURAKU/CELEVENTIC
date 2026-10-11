@@ -1415,3 +1415,32 @@
 #aurelia-journey {
   display: none !important;
 }
+
+/* Save the gift gratitude card on its own, without the rest of the invitation. */
+@media print {
+  body.celeventic-printing-gift * {
+    visibility: hidden !important;
+  }
+
+  body.celeventic-printing-gift .celeventic-gift-card,
+  body.celeventic-printing-gift .celeventic-gift-card * {
+    visibility: visible !important;
+  }
+
+  body.celeventic-printing-gift .celeventic-gift-card {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.celeventic-printing-gift .celeventic-gift-card-actions,
+  body.celeventic-printing-gift .celeventic-gift-card-actions * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}

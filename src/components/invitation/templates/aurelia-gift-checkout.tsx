@@ -233,6 +233,7 @@ export function AureliaGiftCheckout({
   const [open, setOpen] = useState(!collapsible);
   const [phase, setPhase] = useState<CheckoutPhase>("form");
   const [payment, setPayment] = useState<PublicGiftPaymentView | null>(null);
+  const [giftCardPreview, setGiftCardPreview] = useState(false);
   const [checking, setChecking] = useState(false);
   const pollCount = useRef(0);
   const panelId = useId();
@@ -323,6 +324,32 @@ export function AureliaGiftCheckout({
   }, []);
 
   useEffect(() => {
+    if (
+      process.env.NODE_ENV === "development" &&
+      new URLSearchParams(window.location.search).get("giftCard") === "1"
+    ) {
+      setGiftCardPreview(true);
+      setPayment({
+        reference: "CEVGIFT-EDWINLORDINA26",
+        status: "SUCCESS",
+        state: "success",
+        amountMinor: 5000,
+        currency: "GHS",
+        giftType: "WEDDING_GIFT",
+        createdAt: new Date().toISOString(),
+        paidAt: new Date().toISOString(),
+        method: "MTN_MOMO",
+        guestName: "A guest",
+        isAnonymous: false,
+        guestMessage: "token for your journey",
+        receiptUrl: null,
+        companionReturnUrl: null,
+        failureReason: null,
+      });
+      setPhase("success");
+      setOpen(true);
+      return;
+    }
     const reference = readGiftReference();
     if (!reference) return;
     let cancelled = false;
@@ -729,14 +756,21 @@ export function AureliaGiftCheckout({
             />
           ) : null}
           {phase === "success" && payment ? (
-            <SuccessPanel
-              payment={payment}
-              copy={copy}
-              eventTitle={campaign?.event.title}
-              hostName={campaign?.event.hostName}
-              methods={methods}
-              coupleNames={coupleNames}
-            />
+            <>
+              {giftCardPreview ? (
+                <p className={styles.giftPreviewNote}>
+                  This is the card a guest keeps once Paystack confirms the gift.
+                </p>
+              ) : null}
+              <SuccessPanel
+                payment={payment}
+                copy={copy}
+                eventTitle={campaign?.event.title}
+                hostName={campaign?.event.hostName}
+                methods={methods}
+                coupleNames={coupleNames}
+              />
+            </>
           ) : null}
           {phase === "failed" && payment ? (
             <FailedPanel payment={payment} onRetry={resetToForm} coupleNames={coupleNames} />
@@ -800,35 +834,68 @@ function SuccessPanel({
 }) {
   const couple = coupleNames?.trim();
   const methodLabel =
-    methods.find((item) => item.id === payment.method)?.label || payment.method || "Mobile money";
+    methods.find((item) => item.id === payment.method)?.label ||
+    methods.find((item) => item.id === payment.method)?.shortLabel ||
+    payment.method ||
+    "Mobile money";
   const giftType =
     GIFT_TYPE_LABELS[(payment.giftType as EventGiftType) || "WEDDING_GIFT"] || "Gift";
   const paidAt = payment.paidAt || payment.createdAt;
+  const note = payment.guestMessage?.trim();
+  const celebration = Array.from(
+    new Set(
+      [eventTitle, hostName]
+        .map((value) => value?.trim())
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+
+  function saveCard() {
+    document.body.classList.add("celeventic-printing-gift");
+    const clear = () => document.body.classList.remove("celeventic-printing-gift");
+    window.addEventListener("afterprint", clear, { once: true });
+    window.setTimeout(clear, 2000);
+    window.print();
+  }
 
   return (
-    <div className={styles.giftOutcome} role="status" aria-live="polite">
+    <article
+      className={`${styles.giftGratitude} celeventic-gift-card`}
+      role="status"
+      aria-live="polite"
+    >
       <span className={styles.giftSuccessMark} aria-hidden>
         <CheckCircle2 size={34} />
       </span>
-      <p className={styles.giftKicker}>Received with love</p>
+      <p className={styles.giftKicker}>With gratitude</p>
       <h3 className={styles.giftThankYou}>{copy.thankYouTitle}</h3>
-      <p className={styles.giftOutcomeCopy}>{copy.thankYouMessage}</p>
-      {couple ? (
-        <p className={styles.giftOutcomeCopy}>{couple} receive this with gratitude.</p>
-      ) : null}
-      <p className={styles.giftAmountHero}>
-        {formatMinor(payment.amountMinor, payment.currency)}
+      <p className={styles.giftOutcomeCopy}>
+        {couple
+          ? `${couple} receive your gift with love. Thank you for blessing them.`
+          : copy.thankYouMessage}
       </p>
-      {(hostName || eventTitle) && (
-        <p className={styles.giftOutcomeMeta}>
-          {[hostName, eventTitle].filter(Boolean).join(" · ")}
-        </p>
-      )}
+      <p className={styles.giftOutcomeCopy}>This card is your receipt. Save it and keep it with you.</p>
+      <p className={styles.giftAmountHero}>{formatMinor(payment.amountMinor, payment.currency)}</p>
+      <div className={styles.giftOrnament} aria-hidden>
+        <span />
+      </div>
+      {note ? (
+        <>
+          <p className={styles.giftKeepsakeLabel}>Your note</p>
+          <blockquote className={styles.giftKeepsakeNote}>&ldquo;{note}&rdquo;</blockquote>
+        </>
+      ) : null}
       <dl className={styles.giftReceipt}>
         <div>
           <dt>From</dt>
           <dd>{payment.isAnonymous ? "Anonymous" : payment.guestName || "A guest"}</dd>
         </div>
+        {celebration.length ? (
+          <div>
+            <dt>Celebration</dt>
+            <dd>{celebration.join(" · ")}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>Gift</dt>
           <dd>{giftType}</dd>
@@ -846,29 +913,30 @@ function SuccessPanel({
             })}
           </dd>
         </div>
-        <div>
-          <dt>Reference</dt>
-          <dd>{payment.reference}</dd>
-        </div>
+        {payment.reference ? (
+          <div>
+            <dt>Reference</dt>
+            <dd className={styles.giftReceiptReference}>{payment.reference}</dd>
+          </div>
+        ) : null}
       </dl>
-      <div className={styles.giftOutcomeActions}>
+      <p className={styles.giftBlessing}>With love, and with thanks.</p>
+      <div className={`${styles.giftOutcomeActions} celeventic-gift-card-actions`}>
+        <button type="button" className={styles.giftPay} onClick={saveCard}>
+          <Printer size={15} aria-hidden />
+          Save this card
+        </button>
         {payment.receiptUrl ? (
-          <a className={styles.giftPay} href={payment.receiptUrl} target="_blank" rel="noopener noreferrer">
-            <Printer size={15} aria-hidden />
-            View full receipt
+          <a className={styles.giftSecondary} href={payment.receiptUrl} target="_blank" rel="noopener noreferrer">
+            Open the full receipt
           </a>
-        ) : (
-          <button type="button" className={styles.giftPay} onClick={() => window.print()}>
-            <Printer size={15} aria-hidden />
-            Save or print
-          </button>
-        )}
+        ) : null}
       </div>
       <p className={styles.giftPrivacy}>
         <ShieldCheck size={12} aria-hidden />
-        This confirmation is private to you.
+        This card is private to you. Only the couple can see the gift.
       </p>
-    </div>
+    </article>
   );
 }
 

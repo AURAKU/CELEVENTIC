@@ -53,6 +53,8 @@ export interface PublicGiftPaymentView {
   method: string | null;
   guestName: string | null;
   isAnonymous: boolean;
+  /** The note this guest wrote, shown only on their own receipt. */
+  guestMessage?: string | null;
   receiptUrl: string | null;
   /** Safe relative path back to Event Companion after a verified gift. */
   companionReturnUrl: string | null;
