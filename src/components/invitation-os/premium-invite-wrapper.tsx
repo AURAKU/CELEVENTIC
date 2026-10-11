@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuestInvitationPortal } from "@/components/guest-portal/guest-invitation-portal";
 import type { PremiumInviteExperienceProps } from "@/components/invitation-mvp/premium-invite-experience";
 import { TapToBeginExperience } from "@/components/invitations/tap-to-begin-experience";
+import { hourglassEngraving } from "@/lib/invitation/hourglass-identity";
 import { InvitationAudioControls } from "@/components/invitations/invitation-audio-controls";
 import { isDarkColor } from "@/lib/invitation-theme/color-utils";
 import { CeleventicSoftIntro } from "@/components/experience-engine/celeventic-soft-intro";
@@ -861,6 +862,9 @@ export function PremiumInviteWrapper({
             scrim={experience?.welcomeScrim}
             ctaLabelOverride={undefined}
             hideCtaChip={enrichedDesign.layout === "luxury-fashion-flagship"}
+            hashtag={
+              hourglassEngraving({ name1: tapCoupleName1, name2: tapCoupleName2 }).tag || null
+            }
             fashionAtmosphere={enrichedDesign.layout === "luxury-fashion-flagship"}
             ariaLabelOverride={
               enrichedDesign.layout === "luxury-fashion-flagship"

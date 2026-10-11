@@ -71,6 +71,8 @@ export interface TapToBeginExperienceProps {
   hideCtaChip?: boolean;
   /** Fashion-film silk atmosphere — never a living-room photo. */
   fashionAtmosphere?: boolean;
+  /** Shown under the begin line. Edwin & Lordina use #EdWinsDina26. */
+  hashtag?: string | null;
   ariaLabelOverride?: string | null;
 }
 
@@ -305,6 +307,7 @@ export function TapToBeginExperience({
   kickerLines,
   hideCtaChip = false,
   fashionAtmosphere = false,
+  hashtag,
   ariaLabelOverride,
 }: TapToBeginExperienceProps) {
   const reduceMotion = useReducedMotion() || staticPreview;
@@ -630,6 +633,7 @@ export function TapToBeginExperience({
                 </span>
               </span>
               <span className={styles.ctaWord}>{ctaText}</span>
+              {hashtag?.trim() ? <span className={styles.ctaTag}>{hashtag.trim()}</span> : null}
             </>
           )}
         </div>
