@@ -5,6 +5,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { isDuplicateEdwinEvent } from "../src/lib/invitation/edwin-event-identity";
+import { EDWIN_PUBLISHED_INVITE_LINK } from "../src/lib/invitation/public-invite-alias";
+import { eventService } from "../src/services/events/event.service";
 import type { InvitationDesignConfig } from "../src/types/invitation-design";
 
 const EVENT_SLUG = "edwin-and-lordina";
@@ -18,6 +21,8 @@ const MOMENTS = [
   "/templates/edwin-lordina/moments/03-sofa.jpg",
   "/templates/edwin-lordina/moments/04-navy.jpg",
   "/templates/edwin-lordina/moments/05-close.jpg",
+  "/templates/edwin-lordina/cover-sofa.jpg",
+  "/templates/edwin-lordina/moments/07-stool.jpg",
 ] as const;
 
 /** Hide the scratch card without touching the rest of a stored board. */
@@ -43,34 +48,6 @@ function withoutScratchCard(designConfig: unknown): Record<string, unknown> {
   studio.weddingBoard = board;
   design.studio = studio;
   return design;
-}
-
-/** The published invite keeps its link. Countdown, moments, and no scratch card. */
-function withHourglassCountdown(designConfig: unknown): Prisma.InputJsonValue {
-  const design =
-    designConfig && typeof designConfig === "object" && !Array.isArray(designConfig)
-      ? { ...(designConfig as Record<string, unknown>) }
-      : {};
-  const experience =
-    design.experience && typeof design.experience === "object" && !Array.isArray(design.experience)
-      ? { ...(design.experience as Record<string, unknown>) }
-      : {};
-  experience.countdownStyle = "hourglass";
-  design.experience = experience;
-  Object.assign(design, withoutScratchCard(design));
-  const media = Array.isArray(design.media)
-    ? (design.media as Array<Record<string, unknown>>).filter((item) => item.role !== "reference")
-    : [];
-  design.media = [
-    ...media,
-    ...MOMENTS.map((url) => ({
-      url,
-      type: "image",
-      role: "reference",
-      name: "Edwin and Lordina",
-    })),
-  ];
-  return design as Prisma.InputJsonValue;
 }
 
 async function hideScratchOnEventOrders(prisma: PrismaClient, eventId: string) {
@@ -150,31 +127,6 @@ export async function seedEdwinLordinaWedding(
         },
       });
 
-  const published = await prisma.event.findMany({
-    where: { title: EVENT_TITLE, NOT: { slug: EVENT_SLUG } },
-    select: {
-      id: true,
-      invitations: {
-        orderBy: { createdAt: "asc" },
-        select: { id: true, designConfig: true },
-      },
-    },
-  });
-  for (const event of published) {
-    const invitation = event.invitations[0];
-    if (invitation) {
-      await prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { designConfig: withHourglassCountdown(invitation.designConfig) },
-      });
-    }
-    await hideScratchOnEventOrders(prisma, event.id);
-    await replaceEventMoments(prisma, event.id);
-    await prisma.event.update({
-      where: { id: event.id },
-      data: { defaultMusicTrackId: songTrack.id },
-    });
-  }
   const description =
     "Together with their families, Edwin and Lordina invite you to celebrate a love written by God. Traditional 24 December, white wedding and reception 26 December 2026.";
 
@@ -235,7 +187,6 @@ export async function seedEdwinLordinaWedding(
           message: description,
           designConfig: designConfig as unknown as Prisma.InputJsonValue,
           status: "ACTIVE",
-          uniqueLink: INVITE_LINK,
         },
       })
     : await prisma.invitation.create({
@@ -252,6 +203,7 @@ export async function seedEdwinLordinaWedding(
 
   await hideScratchOnEventOrders(prisma, event.id);
   await replaceEventMoments(prisma, event.id);
+  const merged = await mergeDuplicateEdwinEvents(prisma, event.id);
 
   return {
     eventId: event.id,
@@ -261,5 +213,144 @@ export async function seedEdwinLordinaWedding(
     invitationId: invitation.id,
     uniqueLink: invitation.uniqueLink,
     inviteUrl: `/invite/${invitation.uniqueLink}`,
+    mergedEvents: merged,
   };
+}
+
+function spareAdmissionCode(taken: Set<string>): string {
+  for (let value = 0; value < 10000; value += 1) {
+    const code = String(value).padStart(4, "0");
+    if (!taken.has(code)) return code;
+  }
+  throw new Error("No free admission code while merging Edwin & Lordina");
+}
+
+/**
+ * Fold every other Edwin & Lordina event into the canonical wedding.
+ * Guest links, passes, gifts, and wishes move with them. The extra event row
+ * is then removed so the platform list shows one wedding.
+ */
+export async function mergeDuplicateEdwinEvents(prisma: PrismaClient, canonicalEventId: string) {
+  const candidates = await prisma.event.findMany({
+    where: { id: { not: canonicalEventId } },
+    select: { id: true, slug: true, title: true, hostName: true },
+  });
+  const duplicates = candidates.filter((event) => isDuplicateEdwinEvent(event, canonicalEventId));
+  for (const duplicate of duplicates) {
+    await mergeOneEdwinEvent(prisma, canonicalEventId, duplicate.id);
+  }
+  return duplicates.map((event) => event.slug);
+}
+
+async function mergeOneEdwinEvent(prisma: PrismaClient, canonicalEventId: string, duplicateEventId: string) {
+  await prisma.invitation.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+  await prisma.guestGroup.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+
+  const takenGuestCodes = new Set(
+    (
+      await prisma.guest.findMany({
+        where: { eventId: canonicalEventId, manualCode: { not: null } },
+        select: { manualCode: true },
+      })
+    ).map((guest) => guest.manualCode as string)
+  );
+  const incomingGuests = await prisma.guest.findMany({
+    where: { eventId: duplicateEventId },
+    select: { id: true, manualCode: true },
+  });
+  for (const guest of incomingGuests) {
+    const manualCode = guest.manualCode && takenGuestCodes.has(guest.manualCode) ? null : guest.manualCode;
+    if (manualCode) takenGuestCodes.add(manualCode);
+    await prisma.guest.update({
+      where: { id: guest.id },
+      data: { eventId: canonicalEventId, manualCode },
+    });
+  }
+
+  const takenPassCodes = new Set(
+    (await prisma.guestPass.findMany({ where: { eventId: canonicalEventId }, select: { code: true } })).map(
+      (pass) => pass.code
+    )
+  );
+  const incomingPasses = await prisma.guestPass.findMany({
+    where: { eventId: duplicateEventId },
+    select: { id: true, code: true },
+  });
+  for (const pass of incomingPasses) {
+    const code = takenPassCodes.has(pass.code) ? spareAdmissionCode(takenPassCodes) : pass.code;
+    takenPassCodes.add(code);
+    await prisma.guestPass.update({
+      where: { id: pass.id },
+      data: { eventId: canonicalEventId, code },
+    });
+  }
+
+  await prisma.qrCode.updateMany({ where: { eventId: duplicateEventId }, data: { eventId: canonicalEventId } });
+  await prisma.qrScan.updateMany({ where: { eventId: duplicateEventId }, data: { eventId: canonicalEventId } });
+  await prisma.invitationGuestWish.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+  await prisma.eventMemoryUpload.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+  await prisma.eventMemoryLike.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+  await prisma.eventMemoryComment.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+  await prisma.eventMemoryToken.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+  await prisma.eventGiftCampaign.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+  await prisma.eventGiftPayment.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+  await prisma.invitationOrder.updateMany({
+    where: { eventId: duplicateEventId },
+    data: { eventId: canonicalEventId },
+  });
+
+  const keptMedia = new Set(
+    (await prisma.eventMedia.findMany({ where: { eventId: canonicalEventId }, select: { url: true } })).map(
+      (item) => item.url
+    )
+  );
+  const extraMedia = await prisma.eventMedia.findMany({
+    where: { eventId: duplicateEventId },
+    select: { id: true, url: true },
+  });
+  for (const item of extraMedia) {
+    if (keptMedia.has(item.url)) continue;
+    keptMedia.add(item.url);
+    await prisma.eventMedia.update({ where: { id: item.id }, data: { eventId: canonicalEventId } });
+  }
+
+  const guestsLeft = await prisma.guest.count({ where: { eventId: duplicateEventId } });
+  const invitationsLeft = await prisma.invitation.count({ where: { eventId: duplicateEventId } });
+  if (guestsLeft || invitationsLeft) {
+    throw new Error(
+      `Edwin & Lordina merge stopped: ${guestsLeft} guests and ${invitationsLeft} invitations were still on ${duplicateEventId}`
+    );
+  }
+
+  await eventService.deleteEvent(duplicateEventId, { hard: true });
+  console.log(
+    `[edwin-merge] folded ${duplicateEventId} into ${canonicalEventId}; published link ${EDWIN_PUBLISHED_INVITE_LINK} stays`
+  );
 }
