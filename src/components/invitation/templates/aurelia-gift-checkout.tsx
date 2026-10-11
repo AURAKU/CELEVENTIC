@@ -233,7 +233,9 @@ export function AureliaGiftCheckout({
   const [open, setOpen] = useState(!collapsible);
   const [phase, setPhase] = useState<CheckoutPhase>("form");
   const [payment, setPayment] = useState<PublicGiftPaymentView | null>(null);
+  const [keptReceipts, setKeptReceipts] = useState<PublicGiftPaymentView[]>([]);
   const [giftCardPreview, setGiftCardPreview] = useState(false);
+  const formAnchorRef = useRef<HTMLDivElement>(null);
   const [checking, setChecking] = useState(false);
   const pollCount = useRef(0);
   const panelId = useId();
@@ -546,6 +548,29 @@ export function AureliaGiftCheckout({
     setOpen(true);
   }
 
+  function giftAgain() {
+    if (payment?.state === "success") {
+      const confirmed = payment;
+      setKeptReceipts((current) =>
+        current.some((item) => item.reference && item.reference === confirmed.reference)
+          ? current
+          : [...current, confirmed]
+      );
+    }
+    forgetGiftReference();
+    setPayment(null);
+    setPhase("form");
+    setError(null);
+    setSubmitting(false);
+    setOpen(true);
+    setAmountMinor(null);
+    setCustomAmount("");
+    setGuestMessage("");
+    window.setTimeout(() => {
+      formAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
   const needsName = campaign?.requireGuestName !== false;
   const needsContact = campaign?.requireGuestContact !== false;
   const canPay = Boolean(
@@ -738,7 +763,19 @@ export function AureliaGiftCheckout({
               <p>Scan to send a cash gift</p>
             </a>
           ) : null}
-          {phase === "form" ? form : null}
+          {keptReceipts.map((receipt) => (
+            <SuccessPanel
+              key={receipt.reference || receipt.createdAt}
+              payment={receipt}
+              copy={copy}
+              eventTitle={campaign?.event.title}
+              hostName={campaign?.event.hostName}
+              methods={methods}
+              coupleNames={coupleNames}
+              onGiftAgain={giftAgain}
+            />
+          ))}
+          {phase === "form" ? <div ref={formAnchorRef}>{form}</div> : null}
           {phase === "confirming" ? (
             <ConfirmingPanel
               payment={payment}
@@ -769,6 +806,7 @@ export function AureliaGiftCheckout({
                 hostName={campaign?.event.hostName}
                 methods={methods}
                 coupleNames={coupleNames}
+                onGiftAgain={giftAgain}
               />
             </>
           ) : null}
@@ -824,6 +862,7 @@ function SuccessPanel({
   hostName,
   methods,
   coupleNames,
+  onGiftAgain,
 }: {
   payment: PublicGiftPaymentView;
   copy: ReturnType<typeof getGiftCopy>;
@@ -831,6 +870,7 @@ function SuccessPanel({
   hostName?: string;
   methods: MethodOption[];
   coupleNames?: string | null;
+  onGiftAgain?: () => void;
 }) {
   const couple = coupleNames?.trim();
   const methodLabel =
@@ -926,6 +966,12 @@ function SuccessPanel({
           <Printer size={15} aria-hidden />
           Save this card
         </button>
+        {onGiftAgain ? (
+          <button type="button" className={styles.giftSecondary} onClick={onGiftAgain}>
+            <Gift size={15} aria-hidden />
+            Send a cash gift again
+          </button>
+        ) : null}
         {payment.receiptUrl ? (
           <a className={styles.giftSecondary} href={payment.receiptUrl} target="_blank" rel="noopener noreferrer">
             Open the full receipt
