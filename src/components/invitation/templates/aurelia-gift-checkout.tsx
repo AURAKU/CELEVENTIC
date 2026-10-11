@@ -453,7 +453,25 @@ export function AureliaGiftCheckout({
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(payloadError(payload, "We could not start this gift. Please try again."));
+        const message = payloadError(payload, "We could not start this gift. Please try again.");
+        setPayment({
+          reference: typeof payload.data?.reference === "string" ? payload.data.reference : "",
+          status: "FAILED",
+          state: "failed",
+          amountMinor: amountMinor ?? 0,
+          currency,
+          giftType: campaign?.giftType ?? "WEDDING_GIFT",
+          createdAt: new Date().toISOString(),
+          paidAt: null,
+          method,
+          guestName: guestName.trim() || null,
+          isAnonymous: false,
+          receiptUrl: null,
+          companionReturnUrl: null,
+          failureReason: message,
+        });
+        setPhase("failed");
+        setOpen(true);
         setSubmitting(false);
         return;
       }
@@ -467,11 +485,27 @@ export function AureliaGiftCheckout({
       }
       window.location.href = authorizationUrl;
     } catch (err) {
-      setError(
-        isAbortError(err)
-          ? "Paystack took too long to respond. Please try again."
-          : "Network problem. Please check your connection and try again."
-      );
+      const message = isAbortError(err)
+        ? "Paystack took too long to respond. Please try again."
+        : "Network problem. Please check your connection and try again.";
+      setPayment({
+        reference: "",
+        status: "FAILED",
+        state: "failed",
+        amountMinor: amountMinor ?? 0,
+        currency,
+        giftType: campaign?.giftType ?? "WEDDING_GIFT",
+        createdAt: new Date().toISOString(),
+        paidAt: null,
+        method,
+        guestName: guestName.trim() || null,
+        isAnonymous: false,
+        receiptUrl: null,
+        companionReturnUrl: null,
+        failureReason: message,
+      });
+      setPhase("failed");
+      setOpen(true);
       setSubmitting(false);
     }
   }
@@ -849,6 +883,7 @@ function FailedPanel({
 }) {
   const mismatch = payment.failureReason?.toLowerCase().includes("mismatch");
   const couple = coupleNames?.trim();
+  const reason = payment.failureReason?.trim();
   return (
     <div className={styles.giftOutcome} role="alert">
       <span className={styles.giftFailedMark} aria-hidden>
@@ -859,13 +894,20 @@ function FailedPanel({
       <p className={styles.giftOutcomeCopy}>
         {mismatch
           ? "We could not safely confirm this payment. Please try again, or use a different number."
-          : couple
-            ? `Nothing was taken. When you are ready, you can try again for ${couple}.`
-            : "No successful payment was recorded, so nothing was taken. You may try again whenever you are ready."}
+          : reason ||
+            (couple
+              ? `Nothing was taken. When you are ready, you can try again for ${couple}.`
+              : "No successful payment was recorded, so nothing was taken. You may try again whenever you are ready.")}
       </p>
+      {!mismatch && reason && couple ? (
+        <p className={styles.giftOutcomeCopy}>
+          Nothing was taken. When you are ready, you can try again for {couple}.
+        </p>
+      ) : null}
       {payment.amountMinor ? (
         <p className={styles.giftOutcomeMeta}>
-          {formatMinor(payment.amountMinor, payment.currency)} · {payment.reference}
+          {formatMinor(payment.amountMinor, payment.currency)}
+          {payment.reference ? ` · ${payment.reference}` : ""}
         </p>
       ) : null}
       <button type="button" className={styles.giftPay} onClick={onRetry}>
