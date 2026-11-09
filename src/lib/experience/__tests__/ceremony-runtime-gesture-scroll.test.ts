@@ -93,6 +93,8 @@ test("Tap to Begin with showReveal → reveal phase (not portal)", () => {
 test("Tap to Begin on blush-gate goes to the scrollable board", () => {
   assert.equal(resolvePhaseAfterTapBegin(true, "blush-gate"), "portal");
   assert.equal(resolvePhaseAfterTapBegin(true, "wax-seal-black"), "reveal");
+  assert.equal(resolvePhaseAfterTapBegin(true, "envelope-classic"), "reveal");
+  assert.equal(resolvePhaseAfterTapBegin(true, "curtain-wedding"), "reveal");
 });
 
 test("production memorial config resolves showReveal + wax-seal-black", () => {

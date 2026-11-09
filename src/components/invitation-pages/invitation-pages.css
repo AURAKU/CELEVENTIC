@@ -19,6 +19,10 @@
   font-family: var(--inv-font-body);
   /* Isolate paint so cover parallax / oversized ambient never blocks siblings */
   isolation: isolate;
+  /* Size containment lives on the frame, never on the scroller. Container-type
+     on the same node as overflow-y:auto traps the first pan until a tap. */
+  container-type: size;
+  container-name: inv-paged;
 }
 
 .inv-paged-scroll {
@@ -34,9 +38,7 @@
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  /* Scrollport size for page min-heights (avoids 100vh > padded shell) */
-  container-type: size;
-  container-name: inv-paged;
+  pointer-events: auto;
 }
 
 /* Low-tier devices degrade to a plain scroll of the same content */

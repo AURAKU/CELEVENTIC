@@ -451,6 +451,15 @@
     touch-action: pan-y pinch-zoom;
   }
 
+  /* Every live template board, paged or continuous. Arm immediately after open. */
+  .invite-viewport-live .inv-paged-scroll,
+  .invite-viewport-live [data-inv-scroller] {
+    pointer-events: auto;
+    overflow-y: auto;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .invite-viewport-live:focus,
   .invite-viewport-live:focus-visible {
     outline: none;

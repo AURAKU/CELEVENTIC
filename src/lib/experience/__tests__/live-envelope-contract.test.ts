@@ -10,6 +10,7 @@ import {
   resolvePhaseAfterTapBegin,
   resolveShowReveal,
   shouldEnvelopeAutoOpen,
+  tapBeginUnlocksBoard,
 } from "@/lib/experience/live-envelope-contract";
 import { shouldUseMandatoryMemorialEnvelope } from "@/lib/experience/memorial-envelope-family";
 import {
@@ -183,6 +184,10 @@ test("TEST 4: Tap to Begin → reveal phase, not portal", () => {
   });
   assert.equal(resolvePhaseAfterTapBegin(live.showReveal), "reveal");
   assert.notEqual(resolvePhaseAfterTapBegin(live.showReveal), "portal");
+  assert.equal(tapBeginUnlocksBoard("blush-gate"), true);
+  assert.equal(tapBeginUnlocksBoard("none"), true);
+  assert.equal(tapBeginUnlocksBoard("candle-light"), false);
+  assert.equal(tapBeginUnlocksBoard(undefined), false);
 });
 
 test("TEST 5: LIVE envelope autoOpen === false", () => {

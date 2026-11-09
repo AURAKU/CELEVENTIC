@@ -11,6 +11,7 @@ export {
   forceUnlockRevealScroll,
   forceUnlockInvitationViewport,
   armLiveInvitationScroller,
+  LIVE_INVITE_SCROLLER_SELECTOR,
   assertPortalViewportInteractive,
   getInvitationScrollLockCountForTests,
 } from "@/lib/experience-engine/invitation-scroll-lock";

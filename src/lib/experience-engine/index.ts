@@ -102,6 +102,7 @@ export {
   forceUnlockRevealScroll,
   forceUnlockInvitationViewport,
   armLiveInvitationScroller,
+  LIVE_INVITE_SCROLLER_SELECTOR,
   assertPortalViewportInteractive,
   createRevealSession,
   markRevealActive,

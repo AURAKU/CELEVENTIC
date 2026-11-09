@@ -46,6 +46,7 @@ export function InviteViewportShell({
     <div
       ref={scrollerRef}
       tabIndex={liveScrollable ? -1 : undefined}
+      data-inv-scroller={liveScrollable ? "" : undefined}
       className={cn(
         "invite-viewport-root w-full",
         mode === "live" && "invite-viewport-live",

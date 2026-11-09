@@ -88,15 +88,24 @@ export function resolveShowReveal(input: ShowRevealInput): boolean {
   return Boolean(input.revealEnabled) && input.openingExperience !== "none";
 }
 
+/**
+ * Openings whose Tap to Begin already unveiled the invitation. A second
+ * fullscreen overlay traps the first swipe on every device until another tap.
+ * Envelope, curtain, fashion silk, and Aurelia veil still run after this tap.
+ */
+export function tapBeginUnlocksBoard(openingExperience?: string | null): boolean {
+  const id = openingExperience?.trim() ?? "";
+  if (id === "none") return true;
+  return id === "blush-gate";
+}
+
 /** Phase after the guest completes Tap to Begin (gesture #1). */
 export function resolvePhaseAfterTapBegin(
   showReveal: boolean,
   openingExperience?: string | null
 ): "reveal" | "portal" {
   if (!showReveal) return "portal";
-  // Blush Gate's tap-to-begin already is the open. Mounting a second sealed
-  // envelope left a full-screen hit layer over the visible board until another tap.
-  if (openingExperience === "blush-gate") return "portal";
+  if (tapBeginUnlocksBoard(openingExperience)) return "portal";
   return "reveal";
 }
 

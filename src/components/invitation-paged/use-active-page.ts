@@ -48,8 +48,9 @@ export function resetInviteScrollToCover(options?: { smooth?: boolean; pageId?: 
   const paged =
     document.querySelector<HTMLElement>(".inv-paged-scroll") ??
     document.getElementById(pageId)?.closest<HTMLElement>(".inv-paged-scroll");
+  const marked = document.querySelector<HTMLElement>("[data-inv-scroller]");
   const live = document.querySelector<HTMLElement>(".invite-viewport-live");
-  const scroller = paged ?? live;
+  const scroller = paged ?? marked ?? live;
   const isolated = Boolean(
     scroller?.closest('[aria-hidden="true"]') ||
       scroller?.closest(".template-glimpse-live") ||

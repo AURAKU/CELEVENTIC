@@ -602,11 +602,15 @@ export function CinematicInvitationSpotlight(props: CinematicInvitationSpotlight
           staticPreview ? "flex-1" : props.embedded ? "min-h-[min(100dvh,640px)]" : "flex-1"
         )}
       >
-        <div className="flex-1 flex items-center justify-center relative min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4">
+        <div
+          data-inv-scroller=""
+          className="flex-1 flex items-center justify-center relative min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4"
+          style={{ touchAction: "pan-y" }}
+        >
           {!staticPreview ? (
             <>
-              <button type="button" aria-label="Previous" className="absolute left-0 top-0 bottom-0 w-1/4 z-20 touch-manipulation" onClick={prev} />
-              <button type="button" aria-label="Next" className="absolute right-0 top-0 bottom-0 w-1/4 z-20 touch-manipulation" onClick={next} />
+              <button type="button" aria-label="Previous" className="absolute left-0 top-0 bottom-0 w-1/4 z-20" style={{ touchAction: "pan-y" }} onClick={prev} />
+              <button type="button" aria-label="Next" className="absolute right-0 top-0 bottom-0 w-1/4 z-20" style={{ touchAction: "pan-y" }} onClick={next} />
             </>
           ) : null}
 

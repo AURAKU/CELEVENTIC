@@ -137,19 +137,44 @@ export function forceUnlockInvitationViewport(reason = "force"): void {
   logScrollLock({ action: "force-unlock", reason, phase: "portal" });
 }
 
+/** Every live guest board, not a single template. */
+export const LIVE_INVITE_SCROLLER_SELECTOR =
+  ".inv-paged-scroll, .invite-viewport-live, [data-inv-scroller]";
+
+function isPreviewOrHiddenScroller(scroller: HTMLElement): boolean {
+  return Boolean(
+    scroller.closest?.(".interactive-reveal-root") ||
+      scroller.closest?.(".template-glimpse-live") ||
+      scroller.closest?.(".invite-viewport-thumbnail") ||
+      scroller.closest?.('[aria-hidden="true"]')
+  );
+}
+
+function hasDedicatedInnerScroller(scroller: HTMLElement): boolean {
+  if (!scroller.classList?.contains("invite-viewport-live")) return false;
+  try {
+    return Boolean(scroller.querySelector?.(".inv-paged-scroll, [data-inv-scroller]"));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Make the live invitation board the active scroll target without a second tap.
- * Call as soon as the ceremony overlay is gone.
+ * Call as soon as the ceremony overlay is gone. Applies to every template.
  */
 export function armLiveInvitationScroller(): void {
   if (typeof document === "undefined") return;
   try {
-    const scrollers = document.querySelectorAll?.(".inv-paged-scroll, .invite-viewport-live");
+    const scrollers = document.querySelectorAll?.(LIVE_INVITE_SCROLLER_SELECTOR);
     scrollers?.forEach((node) => {
       const scroller = node as HTMLElement;
       if (!scroller.style) return;
-      if (scroller.closest?.(".interactive-reveal-root")) return;
-      if (scroller.classList?.contains("overflow-hidden")) return;
+      if (isPreviewOrHiddenScroller(scroller)) return;
+      if (hasDedicatedInnerScroller(scroller)) {
+        scroller.style.pointerEvents = "auto";
+        return;
+      }
       scroller.style.pointerEvents = "auto";
       scroller.style.overflowY = "auto";
       scroller.style.touchAction = "pan-y";
